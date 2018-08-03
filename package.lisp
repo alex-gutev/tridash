@@ -59,6 +59,7 @@
 	:named-readtables
 	:optima
 
+        :metalink.util
 	:metalink.parser)
 
   (:import-from :let-over-lambda

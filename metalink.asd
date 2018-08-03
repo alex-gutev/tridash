@@ -21,14 +21,21 @@
   :author "Alexander Gutev"
   :license "GPL v3"
   :serial t
-  :components ((:file "package")
+  :components ((:module "util"
+                        :serial t
+                        :components ((:file "package")
+                                     (:file "cut")
+                                     (:file "macros")
+                                     (:file "misc")))
+               (:file "package")
                (:file "lexer")
                (:file "parser")
                (:file "node")
                (:file "meta-node")
                (:file "primitives")
                (:file "node-table")
-               (:file "builder"))
+               (:file "builder")
+               (:file "wait-set"))
 
   :depends-on (:graylex
                :anaphora

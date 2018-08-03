@@ -87,7 +87,7 @@
 (defun n-ary-node? (node)
   "Returns true if NODE has more than one dependency node."
   
-  (> (hash-table-count (dependencies node)) 1))
+  (> (dependencies-count node) 1))
 
 
 ;;; Bindings
@@ -155,7 +155,7 @@
          (appendf conditions (list (cons cond-link value-link))))))
 
 
-;;; Observer/Dependency Lists
+;;; Observers/Dependencies Utility Functions
 
 (defun observer-list (node)
   "Returns a list of all observers of NODE."
@@ -167,6 +167,14 @@
 
   (hash-table-keys (dependencies node)))
 
+
+(defun observers-count (node)
+  "Returns the number of observers of NODE."
+  (hash-table-count (observers node)))
+
+(defun dependencies-count (node)
+  "Returns the number of dependencies of NODE."
+  (hash-table-count (dependencies node)))
 
 ;;; Print Method
 
