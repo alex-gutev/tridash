@@ -50,3 +50,18 @@
 
   (:documentation
    "Package containing the parser and lexer."))
+
+(defpackage :metalink.frontend
+  (:use :common-lisp
+	:alexandria
+	:anaphora
+	:iterate
+	:named-readtables
+	:optima
+
+	:metalink.parser)
+
+  (:import-from :let-over-lambda
+		:lol-syntax
+		:symb
+		:defmacro!))

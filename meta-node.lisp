@@ -1,4 +1,4 @@
-;;;; metalink.asd
+;;;; meta-node.lisp
 ;;;;
 ;;;; Metalink Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
@@ -16,25 +16,26 @@
 ;;;; You should have received a copy of the GNU General Public License
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-(asdf:defsystem #:metalink
-  :description "Metalink Programming Language"
-  :author "Alexander Gutev"
-  :license "GPL v3"
-  :serial t
-  :components ((:file "package")
-               (:file "lexer")
-               (:file "parser")
-               (:file "node")
-               (:file "meta-node")
-               (:file "primitives")
-               (:file "node-table")
-               (:file "builder"))
+;;;; `meta-node' class definition.
 
-  :depends-on (:graylex
-               :anaphora
-               :iterate
-               :alexandria
-               :collectors
-               :named-readtables
-               :let-over-lambda
-               :optima))
+(in-package :metalink.frontend)
+
+(defclass meta-node (node)
+  ((operands
+    :initarg :operands
+    :initform nil
+    :accessor operands
+    :documentation
+    "Symbols naming the meta-node operands.")
+
+   (definition
+    :initarg :definition
+    :initform nil
+    :accessor definition
+    :documentation
+    "The graph corresponding to the body of the meta-node.")))
+
+
+(defun meta-node? (x)
+  "Returns true if X is a `meta-node'."
+  (typep x 'meta-node))

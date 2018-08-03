@@ -1,4 +1,4 @@
-;;;; metalink.asd
+;;;; primitives.lisp
 ;;;;
 ;;;; Metalink Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
@@ -16,25 +16,24 @@
 ;;;; You should have received a copy of the GNU General Public License
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-(asdf:defsystem #:metalink
-  :description "Metalink Programming Language"
-  :author "Alexander Gutev"
-  :license "GPL v3"
-  :serial t
-  :components ((:file "package")
-               (:file "lexer")
-               (:file "parser")
-               (:file "node")
-               (:file "meta-node")
-               (:file "primitives")
-               (:file "node-table")
-               (:file "builder"))
+;;;; Language Primitives.
 
-  :depends-on (:graylex
-               :anaphora
-               :iterate
-               :alexandria
-               :collectors
-               :named-readtables
-               :let-over-lambda
-               :optima))
+(in-package :metalink.frontend)
+
+(defparameter *primitive-ops*
+  (alist-hash-table
+   (list (cons (id-symbol "+") '+)
+         (cons (id-symbol "-") '-)
+         (cons (id-symbol "*") '*)
+         (cons (id-symbol "/") '/)
+
+         (cons (id-symbol "<") '<)
+         (cons (id-symbol ">") '>)
+         (cons (id-symbol "<=") '<=)
+         (cons (id-symbol ">=") '>=)
+         (cons (id-symbol "=") '=)
+         (cons (id-symbol "!=") '!=)))
+
+  "Hash-table of primitive operators where each key is an identifier
+   symbol in the METALINK.SYMBOLS package and the corresponding key is
+   a symbol in the current package, identifying the primitive.")
