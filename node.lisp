@@ -46,16 +46,6 @@
      `node-link' object of this node in the observer node's
      DEPENDENCIES hash-table..")
 
-   (conditions
-    :initform nil
-    :initarg :conditions
-    :accessor conditions
-    :documentation
-    "List of conditional bindings. Each element is of the
-     form (PRED-NODE . VALUE-NODE) where PRED-NODE is the `node-link'
-     object corresponding to the predicate node and VALUE-NODE is the
-     `node-link' object corresponding to the value node.")
-
    (wait-set
     :initform (make-hash-table :test #'eq)
     :initarg :wait-set
@@ -69,7 +59,14 @@
     :accessor value-function
     :initform nil
     :documentation
-    "The function which computes the node's value.")))
+    "The function which computes the node's value. Stored as a list
+     where each element is either the `node-link' object of a
+     dependency node or a list of the form (META-NODE . OPERANDS). If
+     META-NODE is the symbol IF the first element of OPERANDS is the
+     IF condition, the second element is the value set if the
+     condition evaluates to true. If the condition evaluates to false,
+     the value is computed by the next element in the VALUE-FUNCTION
+     list.")))
 
 
 ;;; Predicates
@@ -142,17 +139,17 @@
    default conditional dependency if all other conditions evaluate to
    false."
   
-  (appendf (conditions node) (list link)))
+  (appendf (value-function node) (list link)))
 
 (defun add-condition (node cond-link value-link)
   "Adds a conditional binding. COND-LINK is the `node-link' object
    corresponding to the predicate dependency node and VALUE-LINK is
    the `node-link' object corresponding to the value node."
   
-  (with-slots (conditions) node
-    (aif (member value-link conditions)
-         (setf (car it) (cons cond-link value-link))
-         (appendf conditions (list (cons cond-link value-link))))))
+  (with-slots (value-function) node
+    (aif (member value-link value-function)
+         (setf (car it) (list 'if cond-link value-link))
+         (appendf value-function (list (list 'if cond-link value-link))))))
 
 
 ;;; Observers/Dependencies Utility Functions

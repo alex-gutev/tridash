@@ -216,8 +216,8 @@
       
       (let* ((node (ensure-node name table)))
         (unless (value-function node)
-          (setf (value-function node)
-                (cons meta-node (bind-operands node operands))))
+          (appendf (value-function node)
+                   (list (cons meta-node (bind-operands node operands)))))
 
         (values node table)))))
 
@@ -248,6 +248,6 @@
 
   (flet ((bind-operand (operand)
            (if (value? operand)
-               (list operand)
-               (cons operand (add-binding operand node)))))
+               operand
+               (add-binding operand node nil))))
   (mapcar #'bind-operand operands)))

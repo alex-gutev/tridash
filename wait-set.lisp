@@ -116,14 +116,6 @@
     (mapc #'begin-walk (input-nodes graph))
     (maphash-values (compose #'build-wait-sets #'definition) (meta-nodes graph))))
 
-(defun input-nodes (graph)
-  "Returns the list of nodes which have no dependencies."
-
-  (iter
-    (for (nil node) in-hashtable (nodes graph))
-    (when (zerop (hash-table-count (dependencies node)))
-      (collect node))))
-
 
 (defun add-all-reachable (start reachable-set)
   "Adds all nodes reachable from START to the hash-table

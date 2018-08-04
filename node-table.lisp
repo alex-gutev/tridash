@@ -130,3 +130,14 @@
 
     (setf (gethash name all-nodes) node)
     (setf (gethash name meta-nodes) node)))
+
+
+;;; Utility Functions
+
+(defun input-nodes (graph)
+  "Returns the list of nodes which have no dependencies."
+
+  (iter
+    (for (nil node) in-hashtable (nodes graph))
+    (when (zerop (hash-table-count (dependencies node)))
+      (collect node))))
