@@ -59,14 +59,9 @@
     :accessor value-function
     :initform nil
     :documentation
-    "The function which computes the node's value. Stored as a list
-     where each element is either the `node-link' object of a
-     dependency node or a list of the form (META-NODE . OPERANDS). If
-     META-NODE is the symbol IF the first element of OPERANDS is the
-     IF condition, the second element is the value set if the
-     condition evaluates to true. If the condition evaluates to false,
-     the value is computed by the next element in the VALUE-FUNCTION
-     list.")))
+    "The function which computes the node's value. Dependency nodes
+     are referenced using the `node-link' object created when the node
+     was added as a dependency.")))
 
 
 ;;; Predicates
@@ -150,6 +145,23 @@
     (aif (member value-link value-function)
          (setf (car it) (list 'if cond-link value-link))
          (appendf value-function (list (list 'if cond-link value-link))))))
+
+(defun create-value-function (node)
+  "Converts the list of conditions (stored in the VALUE-FUNCTION slot
+   of NODE), which are of the form (IF COND VALUE), into a value
+   function with a single IF block."
+
+  (labels ((create-conditions (fn)
+             (match (first fn)
+               ((list 'if pred value)
+                `(if ,pred ,value
+                     ,(create-conditions (rest fn))))
+               (nil 'self)
+               (value value))))
+    (with-slots (value-function) node
+      (when value-function
+        (setf value-function
+              (create-conditions value-function))))))
 
 
 ;;; Observers/Dependencies Utility Functions

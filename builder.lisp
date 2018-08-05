@@ -59,6 +59,8 @@
          (process-declaration decl *global-node-table*))
     
     (build-meta-node-graphs *global-node-table*)
+    (maphash-values #'create-value-function (all-nodes *global-node-table*))
+
     *global-node-table*))
 
 (defun build-meta-node-graphs (table)
@@ -81,6 +83,8 @@
         (add-binding last-node meta-node))
 
       (build-meta-node-graphs table)
+      (maphash-values #'create-value-function (all-nodes table))
+
       (setf (definition meta-node) table))))
 
 (defun add-local-nodes (names table)

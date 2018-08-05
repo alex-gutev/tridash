@@ -20,9 +20,9 @@
 
 (in-package :metalink.frontend)
 
-(defun coalesce-simple-nodes (graph)
-  "Coalesces successive simple nodes (nodes without a value function
-   or conditional bindings) into single nodes"
+(defun coalesce-nodes (graph)
+  "Coalesces successive nodes, which only have a single observer, into
+   single nodes"
 
   (let ((visited (make-hash-table :test #'eq)))
     (labels
@@ -68,4 +68,38 @@
                  (remhash dependency observers))))))
 
       (mapc #'coalesce-node (input-nodes graph))
-      (maphash-values (compose #'coalesce-simple-nodes #'definition) (meta-nodes graph)))))
+      (maphash-values (compose #'coalesce-nodes #'definition) (meta-nodes graph))
+      (maphash-values #'coalesce-node-links (all-nodes graph)))))
+
+(defun coalesce-node-links (node)
+  "Replaces the `node-link' objects, within the VALUE-FUNCTION of
+   NODE, which do not directly reference another node, with the value
+   functions stored in them. Merges multiple `node-link' objects which
+   refer to the same node into one `node-link' object and amends the
+   dependency set of NODE such that each node in it is mapped to a
+   single `node-link' object."
+
+  (with-slots (dependencies observers value-function) node
+    (labels ((remove-node-links (fn)
+               (match fn
+                 ((list* meta-node operands)
+                  (list* meta-node (mapcar #'remove-node-links operands)))
+
+                 ((type node-link)
+                  (let ((node (node-link-node fn)))
+                    (typecase node
+                      (node
+                       (gethash node dependencies))
+
+                      (symbol fn)
+
+                      (otherwise (remove-node-links node)))))
+
+                 (_ fn)))
+
+             (make-new-node-link (dependency)
+               (alet (setf (gethash dependency dependencies) (node-link dependency))
+                 (setf (gethash node (observers dependency)) it))))
+
+      (maphash-keys #'make-new-node-link dependencies)
+      (setf value-function (remove-node-links value-function)))))
