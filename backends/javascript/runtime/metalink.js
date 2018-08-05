@@ -138,7 +138,7 @@ MetaLinkNode.prototype.set_value = function(value) {
     this.value = value;
 
     this.send_wait();
-    this.dispatch();
+    this.dispatch(value);
 };
 
 
@@ -166,8 +166,8 @@ MetaLinkNode.prototype.wait = function() {
 /**
  * Dispatches the node's value to each observer nodes.
  */
-MetaLinkNode.prototype.dispatch = function() {
-    this.observers.dispatch(this.value);
+MetaLinkNode.prototype.dispatch = function(value) {
+    this.observers.dispatch(value);
 };
 
 

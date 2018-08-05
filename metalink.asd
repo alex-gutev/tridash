@@ -37,7 +37,14 @@
                (:file "builder")
                (:file "wait-set")
                (:file "coalescer")
-               (:file "interface"))
+               (:file "interface")
+
+               (:module "backends/javascript"
+                        :serial t
+                        :components ((:file "package")
+                                     (:file "ast")
+                                     (:file "print")
+                                     (:file "backend"))))
 
   :depends-on (:graylex
                :anaphora
