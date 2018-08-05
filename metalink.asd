@@ -36,7 +36,8 @@
                (:file "node-table")
                (:file "builder")
                (:file "wait-set")
-               (:file "coalescer"))
+               (:file "coalescer")
+               (:file "interface"))
 
   :depends-on (:graylex
                :anaphora

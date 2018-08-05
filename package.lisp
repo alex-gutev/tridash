@@ -65,4 +65,58 @@
   (:import-from :let-over-lambda
 		:lol-syntax
 		:symb
-		:defmacro!))
+		:defmacro!)
+
+  (:export
+   ;; Node
+   :node
+   :name
+   :dependencies
+   :observers
+   :wait-set
+   :value-function
+
+   :node?
+   :value?
+
+   :observer-list
+   :dependency-list
+
+   :observers-count
+   :dependencies-count
+
+   ;; Node-link
+   :node-link
+   :node-link-node
+
+   ;; Meta-node
+   :meta-node
+   :operands
+   :definition
+
+   :meta-node?
+
+   ;; Primitives
+   :*primitive-ops*
+
+   ;; Node-table
+   :node-table
+   :outer-table
+   :depth
+   :all-nodes
+   :nodes
+   :meta-nodes
+
+   :input-nodes
+
+   ;; Builder
+   :build-graph
+
+   ;; Wait-set
+   :build-wait-sets
+
+   ;; Coalescing Nodes
+   :coalesce-nodes
+
+   ;; Backend Interface
+   :compile-nodes))
