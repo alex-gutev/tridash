@@ -29,23 +29,7 @@
 
   (let ((visited (make-hash-table :test #'eq)))
     (labels
-        ((coalesce-input-node (input-node)
-           "Coalesces the input node into its observer node only if:
-            it has a single observer and all the observer's
-            dependencies are input nodes with a single observer."
-
-           (when (every #'input-dependencies? (observer-list input-node))
-             (remove-node input-node)))
-
-         (input-dependencies? (node)
-           "Returns true if all dependencies of NODE are input
-            nodes (have no dependencies) and only have a single
-            observer."
-
-           (every #L(and (zerop (dependencies-count %1)) (= (observers-count %1) 1))
-                  (dependency-list node)))
-
-         (coalesce-observers (node)
+        ((coalesce-observers (node)
            "Performs node coalescing on the observer nodes of NODE."
 
            (mapc #'coalesce-node (observer-list node)))
@@ -114,9 +98,7 @@
 
                  (remhash dependency observers))))))
 
-      (let ((inputs (input-nodes graph)))
-        (mapc #'coalesce-observers inputs)
-        (mapc #'coalesce-input-node inputs))
+      (mapc #'coalesce-observers (input-nodes graph))
 
       (maphash-values (compose #'coalesce-nodes #'definition) (meta-nodes graph))
       (maphash-values #'coalesce-node-links (all-nodes graph)))))
