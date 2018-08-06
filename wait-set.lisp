@@ -26,28 +26,29 @@
   "Builds the wait sets of each node in GRAPH and the sub-graphs of
    each meta-node."
 
-  (let ((reachable-set (make-hash-table :test #'eq)))
-    (labels
-        ((begin-walk (start)
-           "Traverses the graph beginning at the node START."
+  (labels
+      ((begin-walk (start)
+         "Traverses the graph beginning at the node START."
 
+         (let ((reachable-set (make-hash-table :test #'eq)))
+           (declare (special reachable-set))
            (add-all-reachable start reachable-set)
-           (walk-observers start (list start)))
+           (walk-observers start (list start))))
 
-         (walk-observers (node stack)
-           "Walks the observers of NODE. And marks NODE as visited
+       (walk-observers (node stack)
+         "Walks the observers of NODE. And marks NODE as visited
             with the path to the node being STACK."
 
-           (unless (visited? node)
-             (mark-node node stack)
+         (unless (visited? node)
+           (mark-node node stack)
 
-             (let-if ((stack (cons node stack) stack))
-                 (and (> (observers-count node) 1) (not (eq (first stack) node)))
+           (let-if ((stack (cons node stack) stack))
+               (and (> (observers-count node) 1) (not (eq (first stack) node)))
 
-               (maphash-keys (rcurry #'walk-node stack) (observers node)))))
+             (maphash-keys (rcurry #'walk-node stack) (observers node)))))
 
-         (walk-node (node stack)
-           "Visits the node NODE. If NODE has multiple dependencies
+       (walk-node (node stack)
+         "Visits the node NODE. If NODE has multiple dependencies
             and all dependencies have been visited, they are added to
             the wait set of the last node which is common to the paths
             to all dependencies. If not all dependencies are reachable
@@ -55,60 +56,65 @@
             reachable dependencies are added to the wait-set of the
             input node (the start node of the current traversal)."
 
-           (cond
-             ((n-ary-node? node)
-              (multiple-value-bind (deps all-deps?)
-                  (reachable-deps (dependency-list node))
+         (cond
+           ((n-ary-node? node)
+            (multiple-value-bind (deps all-deps?)
+                (reachable-deps (dependency-list node))
 
-                (awhen (all-marked? deps stack)
-                  ;; Augment the wait-set of either the last node before the
-                  ;; paths to the dependency nodes diverge, or the first node
-                  ;; in the path (if not all dependencies are reachable from
-                  ;; it).
+              (awhen (all-marked? deps stack)
+                ;; Augment the wait-set of either the last node before the
+                ;; paths to the dependency nodes diverge, or the first node
+                ;; in the path (if not all dependencies are reachable from
+                ;; it).
 
-                  (augment-wait-set
-                   (if all-deps? (first it) (lastcar it))
-                   node deps)
+                (augment-wait-set
+                 (if all-deps? (first it) (lastcar it))
+                 node deps)
 
-                  (walk-observers node it))))
+                (walk-observers node it))))
 
-             (t (walk-observers node stack))))
+           (t (walk-observers node stack))))
 
-         (reachable-deps (nodes)
-           "Returns the list of nodes in NODES which are reachable
+       (reachable-deps (nodes)
+         "Returns the list of nodes in NODES which are reachable
             from the input node. The second return value is true if
             all nodes in NODES are reachable."
 
-           (let* ((deps (remove-if-not (rcurry #'in-hash? reachable-set) nodes)))
-             (values deps (same-length? deps nodes))))
+         (declare (special reachable-set))
 
-         (visited? (node)
-           "Returns the path to NODE if it has been visited, NIL otherwise."
-           (gethash node reachable-set))
+         (let* ((deps (remove-if-not (rcurry #'in-hash? reachable-set) nodes)))
+           (values deps (same-length? deps nodes))))
 
-         (mark-node (node stack)
-           "Marks NODE as visited with the path to the node STACK."
+       (visited? (node)
+         "Returns the path to NODE if it has been visited, NIL otherwise."
 
-           (let-if ((stack (rest stack) stack))
-               (and (rest stack)
-                    (eq (first stack) node))
+         (declare (special reachable-set))
+         (gethash node reachable-set))
 
-             (setf (gethash node reachable-set) stack)))
+       (mark-node (node stack)
+         "Marks NODE as visited with the path to the node STACK."
 
-         (all-marked? (nodes stack)
-           "Returns the initial path which is common to the paths to
+         (let-if ((stack (rest stack) stack))
+             (and (rest stack)
+                  (eq (first stack) node))
+
+           (declare (special reachable-set))
+           (setf (gethash node reachable-set) stack)))
+
+       (all-marked? (nodes stack)
+         "Returns the initial path which is common to the paths to
             all nodes in NODES and the path STACK. If not all nodes
             have been visited the return value is NIL."
 
-           (reduce
-            (lambda (stack node)
-              (aif (visited? node)
-                   (common-path it stack)
-                   (return-from all-marked? nil)))
-            nodes :initial-value stack)))
+         (reduce
+          (lambda (stack node)
+            (aif (visited? node)
+                 (common-path it stack)
+                 (return-from all-marked? nil)))
+          nodes :initial-value stack)))
 
-      (mapc #'begin-walk (input-nodes graph))
-      (maphash-values (compose #'build-wait-sets #'definition) (meta-nodes graph)))))
+    (mapc #'begin-walk (input-nodes graph))
+    (maphash-values (compose #'build-wait-sets #'definition) (meta-nodes graph))))
 
 (defun input-nodes (graph)
   "Returns the list of nodes which have no dependencies."
