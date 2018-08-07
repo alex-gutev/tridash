@@ -41,12 +41,14 @@
 
 ;;;; Utility Functions
 
+;;; Access Node Expressions
+
 (defun access-node (node)
   "Returns an expression which references NODE."
 
   (js-element *node-table-var* (js-string (name node))))
 
-(defvar *node-path* #'access-node
+(defparameter *node-path* #'access-node
   "Function which takes a node as an argument and returns an
    expression which references that node.")
 
@@ -55,6 +57,14 @@
    bound to *NODE-PATH*."
 
   (funcall *node-path* node))
+
+
+;;; Call Meta-Node Expressions
+
+(defvar *in-tail-position* t
+  "Boolean flag for whether the expression, currently being compiled,
+   occurs in tail position of the value function, currently being
+   compiled.")
 
 (defun meta-node-id (meta-node)
   "Returns the global meta-node function/operator identifier of
@@ -69,6 +79,24 @@
                      (mkstr "metanode" (hash-table-count *meta-node-ids*))))
 
     (symbol meta-node)))
+
+(defun meta-node-call (meta-node operands)
+  "Returns a `JS-CALL' expression for the meta-node META-NODE with
+   operands OPERANDS."
+
+  (make-js-call (meta-node-id meta-node) operands))
+
+
+(defparameter *meta-node-call* #'meta-node-call
+  "Function which should return a JS expression or block which invokes
+   the meta-node, passed as the first argument, with the operands,
+   passed as the second argument.")
+
+(defun make-meta-node-call (meta-node operands)
+  "Returns an expression or block which calls META-NODE with
+   OPERANDS."
+
+  (funcall *meta-node-call* meta-node operands))
 
 
 ;;;; Compilation
@@ -179,14 +207,30 @@
    nodes."
 
   (with-slots (value-function operands) meta-node
-    (let ((op-vars (make-operand-ids operands)))
+    (let ((op-vars (make-operand-ids operands))
+          (tail-recursive-p nil))
 
-      (flet ((get-input (link)
-               (cdr (assoc (name (node-link-node link)) op-vars))))
+      (labels ((get-input (link)
+                 (cdr (assoc (name (node-link-node link)) op-vars)))
 
-        (js-function (meta-node-id meta-node)
-                     (mapcar #'cdr op-vars)
-                     (make-function-body value-function #'get-input))))))
+               (make-meta-node-call (node operands)
+                 (if (and *in-tail-position* (eq node meta-node))
+                     (prog1
+                         (js-block
+                          (js-call '= (js-array (mapcar #'cdr op-vars)) (js-array operands))
+                          (js-continue))
+                       (setf tail-recursive-p t))
+                     (meta-node-call node operands))))
+
+        (let* ((*meta-node-call* #'make-meta-node-call)
+               (body (make-function-body value-function #'get-input)))
+
+          (js-function (meta-node-id meta-node)
+                       (mapcar #'cdr op-vars)
+                       (list
+                        (if tail-recursive-p
+                            (js-while "true" body)
+                            body))))))))
 
 (defun create-async-meta-node (meta-node)
   "Generates the value-function of the `meta-node'. Unlike
@@ -269,34 +313,124 @@
           (js-lambda (list values-var)
                      (make-function-body value-function #'get-input)))))))
 
-(defun make-function-body (function get-input)
+
+(defvar *get-input* nil
+  "Function which should return an expression that references the
+   value of the dependency corresponding to the `NODE-LINK' object
+   passed as an argument.")
+
+(defvar *var-counter* 0
+  "Variable identifier counter. Appended as a suffix to variables
+   introduced in a function.")
+
+
+(defun make-function-body (function *get-input*)
   "Generates the body of the value computation function
-   FUNCTION. GET-INPUT is a function which is called with a
-   `NODE-LINK' object and should return an expression referencing the
-   dependency corresponding to the object."
+   FUNCTION. *GET-INPUT* is a function which should return an
+   expression that references the value of the dependency
+   corresponding to the `NODE-LINK' object passed as an argument."
 
-  (labels ((make-body (fn)
-             (match fn
-               ((list 'if pred value else)
-                (js-call
-                 (js-lambda
-                  nil
-                  (list
-                   (js-if (make-body pred)
-                          (js-return (make-body value))
-                          (js-return (make-body else)))))))
+  (let ((*var-counter* 0))
+    (make-statements function)))
 
-               ((list* meta-node operands)
-                (make-js-call
-                 (meta-node-id meta-node)
-                 (mapcar #'make-body operands)))
+(defun make-statements (fn &optional ret-var)
+  "Generates the statements making up the body of the value
+   function/expression FN, a list of the statements is returned. An
+   assignment statement is generated, which stores the value computed
+   by the expression in RET-VAR. If RET-VAR is NIL a return statement
+   is generated instead."
 
-               ((type node-link)
-                (funcall get-input fn))
+  (multiple-value-bind (block expression)
+      (make-expression fn ret-var)
+    (list
+     block
+     (if expression (make-return expression ret-var)))))
 
-               (_ fn))))
+(defun make-expression (fn var &optional (*in-tail-position* *in-tail-position*))
+  "Generates the code for a single expression FN. VAR is the name of
+   the variable in which the result of the expression is
+   stored. Returns two values: a block, which computes the result and
+   an expression for referencing that value. If FN is compiled to a
+   single expression, the first return value is NIL and the second
+   value is the expression. If VAR is NIL and FN is not compiled to a
+   single expression, the second return value is NIL as the block
+   returned in the first value contains a return statement."
 
-    (list (js-return (make-body function)))))
+  (match fn
+    ((list 'if cond then else)
+     (make-if cond then else var))
+
+    ((list* meta-node operands)
+     (make-call meta-node operands))
+
+    ((type node-link)
+     (values nil (funcall *get-input* fn)))
+
+    (_ (values nil fn))))
+
+(defun make-if (cond then else ret-var)
+  "Generates an IF block for a conditional expression with condition
+   COND, if-true expression THEN and else expression ELSE."
+
+  (let ((cond-var (var-name)))
+    (multiple-value-bind (cond-block cond-expr)
+        (make-expression cond cond-var nil)
+      (values
+       (js-block
+        (and cond-block cond-var)
+        cond-block
+
+        (js-if cond-expr
+               (make-js-block (make-statements then ret-var))
+               (make-js-block (make-statements else ret-var))))
+       ret-var))))
+
+(defun make-call (meta-node operands)
+  "Generates code which invokes META-NODE with OPERANDS."
+
+  (multiple-value-bind (op-block op-expressions)
+      (make-operands operands)
+
+    (let ((call (make-meta-node-call meta-node op-expressions)))
+      (if (expressionp call)
+          (values op-block call)
+          (values (js-block op-block call) nil)))))
+
+(defun make-operands (operands)
+  "Generates code which computes the value of each operand. The first
+   return value is a list of the statements of a block which computes
+   the value of each operand. The second return value is a list of
+   expressions for referencing the operands' values."
+
+  (iter
+    (for operand in operands)
+    (for op-var = (var-name))
+
+    (multiple-value-bind (op-block op-expr)
+        (make-expression operand op-var nil)
+      (when op-block
+        (collect (js-var op-var) into block-statements)
+        (collect op-block into block-statements))
+      (collect op-expr into expressions))
+
+    (finally (return
+               (values
+                (and block-statements (make-js-block block-statements))
+                expressions)))))
+
+(defun make-return (expression ret-var)
+  "Generates a statement which returns the value computed by the JS
+   expression EXPRESSION. If RET-VAR is NIL a return statement is
+   generated otherwise a statement which stores the value of
+   EXPRESSION in RET-VAR is generated."
+
+  (if ret-var
+      (js-call '= ret-var expression)
+      (js-return expression)))
+
+(defun var-name ()
+  "Returns a new unused variable name."
+  (mkstr "var" (incf *var-counter*)))
 
 
 ;;;; Generate dispatch methods

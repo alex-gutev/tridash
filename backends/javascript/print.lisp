@@ -1,4 +1,4 @@
-;;;; ast.lisp
+;;;; print.lisp
 ;;;;
 ;;;; Metalink Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
@@ -177,9 +177,9 @@
 
 (defun print-binary-expression (operator operands)
   (destructuring-bind (left right) operands
-    (print-ast left nil t)
+    (print-ast left nil (js-call-p left))
     (print-token operator)
-    (print-ast right nil t)))
+    (print-ast right nil (js-call-p right))))
 
 (defun print-unary-expression (operator operands)
   (print-token operator)
@@ -197,7 +197,7 @@
       block
     (print-token "if")
     (print-ast condition nil t)
-    (print-ast then (not else))
+    (print-ast then else)
 
     (when else
       (print-newline)
@@ -216,6 +216,17 @@
   (print-newline)
   (print-token "}"))
 
+
+(defmethod print-ast ((while js-while) &optional semicolon brackets)
+  (declare (ignore semicolon brackets))
+
+  (with-accessors ((condition js-while-condition)
+                   (body js-while-body))
+      while
+
+    (print-token "while")
+    (print-ast condition nil t)
+    (print-ast body)))
 
 (defmethod print-ast ((func js-function) &optional semicolon brackets)
   (declare (ignore semicolon brackets))
@@ -251,6 +262,10 @@
       (print-token "=")
       (print-ast value))))
 
+(defmethod print-ast ((continue js-continue) &optional semicolon brackets)
+  (declare (ignore semicolon brackets))
+  (print-token "continue"))
+
 
 ;;; Other expressions
 
@@ -282,7 +297,8 @@
     (print-token ")" :lead-space nil))
 
   (when (and thing semicolon (not (listp thing)))
-    (print-token ";" :lead-space nil)
+    (unless (js-block-p thing)
+      (print-token ";" :lead-space nil))
     (print-newline)))
 
 

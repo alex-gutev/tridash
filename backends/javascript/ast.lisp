@@ -90,10 +90,20 @@
   condition then else)
 
 (defstruct (js-block
-             (:constructor js-block (&rest statements)))
+             (:constructor make-js-block (statements)))
 
   "Block of statements delimited by { ... }."
   statements)
+
+(defun js-block (&rest statements)
+  (make-js-block statements))
+
+(defstruct (js-while
+             (:constructor js-while (condition body)))
+
+  "While loop."
+  condition
+  body)
 
 (defstruct (js-function
              (:include js-block)
@@ -129,6 +139,10 @@
   "Variable, var x = <value>, declaration statement."
   var value)
 
+(defstruct (js-continue
+             (:constructor js-continue))
+  "Loop continue statement.")
+
 
 ;;; Expression Types
 
@@ -151,7 +165,7 @@
        js-string
        (and js-function (satisfies function-expression?))))
 
-(defun expression-p (thing)
+(defun expressionp (thing)
   "Returns true if THING is an ast-node which refers to a JavaScript
    expression."
 
