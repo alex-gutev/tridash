@@ -266,6 +266,11 @@
   (declare (ignore semicolon brackets))
   (print-token "continue"))
 
+(defmethod print-ast ((throw js-throw) &optional semicolon brackets)
+  (declare (ignore semicolon brackets))
+  (print-token "throw")
+  (print-ast (js-throw-expression throw)))
+
 
 ;;; Other expressions
 

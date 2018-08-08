@@ -143,6 +143,11 @@
              (:constructor js-continue))
   "Loop continue statement.")
 
+(defstruct (js-throw
+             (:constructor js-throw (expression)))
+
+  "Throw statement."
+  expression)
 
 ;;; Expression Types
 

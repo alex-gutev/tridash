@@ -106,6 +106,13 @@ MetaLinkNode.prototype.add_update = function() {
 };
 
 /**
+ * Used as an exception type, which is thrown in order to skip the
+ * invocation of the set_value method. The exception is caught in
+ * order to prevent errors showing up in the console.
+ */
+function EndUpdate() {}
+
+/**
  * Runs the update loop of the node.
  *
  * If at least one dependency queue has a queued value, a value is
@@ -122,7 +129,11 @@ MetaLinkNode.prototype.update = function() {
         Promise.all(deps.map(dep => dep.dequeue()))
             .then(this.compute.bind(this))
             .then(this.set_value.bind(this))
-            .then(this.update.bind(this));
+            .catch((e) => {
+                if (!(e instanceof EndUpdate))
+                    throw e;
+            })
+            .finally(this.update.bind(this));
     }
     else {
         this.running = false;

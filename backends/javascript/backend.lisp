@@ -100,7 +100,7 @@
    meta-node call expression."
 
   (let ((call (make-js-call (meta-node-id meta-node) operands)))
-    (if (eq (meta-node-type meta-node) 'async)
+    (if (async-mete-node? meta-node)
         (cons 'async call)
         call)))
 
@@ -126,6 +126,7 @@
   (let ((*node-link-indices* (make-hash-table :test #'eq))
         (*meta-node-ids* (make-hash-table :test #'eq)))
 
+    (output-code (make-preamble))
     (output-code (generate-code table))))
 
 (defun generate-code (table)
@@ -134,7 +135,6 @@
 
   (with-slots (nodes meta-nodes) table
     (list
-     (make-preamble)
 
      (create-nodes nodes)
      (create-meta-nodes meta-nodes)
@@ -213,12 +213,15 @@
        (create-async-meta-node meta-node)))))
 
 
+(defun async-mete-node? (meta-node)
+  (eq (meta-node-type meta-node) 'async))
+
 (defgeneric meta-node-type (meta-node)
   (:documentation
    "Returns SYNC if the meta-node computes its value synchronously,
     ASYNC if the meta-node computes its value asynchronously.")
 
-  (:method ((meta-node symbol)) 'synchronous))
+  (:method ((meta-node symbol)) 'sync))
 
 (defmethod meta-node-type ((meta-node meta-node))
   "Returns SYNC if `META-NODE' has no subnodes other than its operand
@@ -292,17 +295,62 @@
                                  (access-node node)))))
 
           (labels
-              ((get-node (operand)
+              ((get-operand (operand)
+                 "Returns an expression accessing the operand node
+                  named by OPERAND."
                  (js-element *node-table-var* (js-string operand)))
 
                (send-operand-wait (operand)
-                 (js-call (js-member (get-node (car operand)) "send_wait")))
+                 "Generates an expression which calls the send_wait
+                  method of the operand node OPERAND."
+                 (js-call (js-member (get-operand (car operand)) "send_wait")))
 
                (dispatch-operand-value (operand)
-                 (js-call (js-member (get-node (car operand)) "dispatch")
+                 "Generates an expression which calls the dispatch
+                  method of the operand node passing in the operand's
+                  value. The CAR of OPERAND contains the operand
+                  node's name, the CDR the name of the operand
+                  variable."
+
+                 (js-call (js-member (get-operand (car operand)) "dispatch")
                           (cdr operand)))
 
+               (make-meta-node-call (node operands)
+                 "Generates an expression which invokes the meta-node
+                  NODE with operands OPERANDS. If in tail position a
+                  tail call is generated."
+
+                 (if (and *in-tail-position* (async-mete-node? node))
+                     (make-tail-call node operands)
+                     (meta-node-call node operands)))
+
+               (make-tail-call (node operands)
+                 "Generates a tail call for the meta-node NODE with
+                  operands OPERANDS. The tail call reuses the existing
+                  promise and if it is a self-call the existing node
+                  table is reused."
+
+                 (js-block
+                  (cdr (meta-node-call node (append operands
+                                                    (list promise-var)
+                                                    (when (eq node meta-node)
+                                                      (list *node-table-var*)))))
+                  (js-throw (js-new "EndUpdate"))))
+
+               (create-value-node ()
+                 "Generates the definition of the value node."
+
+                 (list
+                  (js-var "self")
+                  (let ((*meta-node-call* #'make-meta-node-call))
+                    (create-node meta-node))
+
+                  (init-node meta-node)
+                  (create-compute-fn)))
+
                (create-compute-fn ()
+                 "Generates the compute function of the value node."
+
                  (let ((path (node-path meta-node)))
                    (js-call
                     '=
@@ -316,18 +364,24 @@
             (let ((op-vars (make-operand-ids operands)))
               (js-function
                (meta-node-id meta-node)
-               (mapcar #'cdr op-vars)
-               (list (js-var "self")
-                     (create-node meta-node)
-                     (init-node meta-node)
+               (append (mapcar #'cdr op-vars)
+                       (list (js-call '= promise-var (js-new "ValuePromise"))
+                             *node-table-var*))
 
-                     (js-var "promise" (js-new "ValuePromise"))
-                     (create-compute-fn)
+               (list
+                ;; Wrap node table creation in an if which checks
+                ;; whether a node table was provided as an argument.
+                (js-if
+                 (js-call '=== *node-table-var* "undefined")
+                 (js-block
+                  (js-call '= *node-table-var* (js-object))
+                  (create-value-node)
+                  (generate-code definition)))
 
-                     (generate-code definition)
-                     (mapcar #'send-operand-wait op-vars)
-                     (mapcar #'dispatch-operand-value op-vars)
-                     (js-return (js-member "promise" "promise")))))))))))
+                (mapcar #'send-operand-wait op-vars)
+                (mapcar #'dispatch-operand-value op-vars)
+
+                (js-return (js-member "promise" "promise")))))))))))
 
 (defun make-operand-ids (operands)
   "Generates variable names for each operand. Returns an association
@@ -457,7 +511,7 @@
    operands
    (lambda (expressions)
      (let ((call (make-meta-node-call meta-node expressions)))
-       (if (expression? call)
+       (if (value-expression? call)
            (values nil call)
            (values call nil))))))
 
