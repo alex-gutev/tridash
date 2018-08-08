@@ -37,6 +37,7 @@
 
    ;; Macros
    :let-if
+   :let*-if
    :dohash
 
    ;; Functions

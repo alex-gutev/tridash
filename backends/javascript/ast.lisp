@@ -163,7 +163,11 @@
        js-array
        js-object
        js-string
-       (and js-function (satisfies function-expression?))))
+       (and js-function (satisfies function-expression?))
+
+       string
+       symbol
+       number))
 
 (defun expressionp (thing)
   "Returns true if THING is an ast-node which refers to a JavaScript

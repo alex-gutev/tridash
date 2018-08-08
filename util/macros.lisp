@@ -42,6 +42,13 @@
            ,(mapcar #2`(,(first a1) ,a2) bindings gensyms)
          ,@body))))
 
+(defmacro! let*-if ((&rest bindings) o!condition &body body)
+  "Like LET-IF except the variables are bound sequentially."
+  (reduce #2`(let ((,(first a1) (if ,g!condition ,(second a1) ,(third a1)))) ,a2)
+          bindings
+          :initial-value `(progn ,@body)
+          :from-end t))
+
 (defmacro! dohash ((key value hash &optional result) &body body)
   "Iterates over each element of HASH with the key bound to KEY and
    the value bound to VALUE. BODY is evaluated on each iteration in an
