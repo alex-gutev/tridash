@@ -244,6 +244,24 @@ NodeLink.prototype.dispatch = function(value) {
     this.observers.forEach(obs => obs.add_update());
 };
 
+/**
+ * Creates a thunk for lazily computing a value. When the thunk
+ * function is called for the first time @a compute is called and the
+ * value returned is stored. Subsequent invocations of the thunk
+ * function will simply return the stored value.
+ *
+ * @param compute Function of no arguments, which computes the value.
+ *
+ * @return The thunk function.
+ */
+function Thunk(compute) {
+    var value;
+
+    return () => {
+        return value || (value = compute());
+    };
+}
+
 
 /* Value Promise */
 

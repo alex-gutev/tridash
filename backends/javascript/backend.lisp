@@ -129,17 +129,32 @@
     (output-code (make-preamble))
     (output-code (generate-code table))))
 
+
+(defvar *lazy-nodes* nil
+  "Hash-table of nodes which should be evaluated lazily. If a node
+  should be evaluated it is present in the table with the
+  corresponding value T.")
+
+(defun lazy-node? (node)
+  "Returns true if NODE should be evaluated lazily. NODE should be
+   evaluated lazily if it is present in *LAZY-NODES* (with value T)
+   and has a non-NIL value function."
+
+  (and (gethash node *lazy-nodes*)
+       (value-function node)))
+
 (defun generate-code (table)
   "Generates the JavaScript code for the node and meta-node
    definitions in the `NODE-TABLE' TABLE."
 
-  (with-slots (nodes meta-nodes) table
-    (list
+  (let ((*lazy-nodes* (find-lazy-nodes table)))
+    (with-slots (nodes meta-nodes) table
+      (list
 
-     (create-nodes nodes)
-     (create-meta-nodes meta-nodes)
+       (create-nodes nodes)
+       (create-meta-nodes meta-nodes)
 
-     (init-nodes nodes))))
+       (init-nodes nodes)))))
 
 (defun make-preamble ()
   "Creates the code which should appear before any node
@@ -402,12 +417,24 @@
 
   (symbol-macrolet ((values-var "values"))
     (flet ((get-input (link)
-             (js-element values-var (dependency-index node link))))
+             (alet (js-element values-var (dependency-index node link))
+               ;; If the linked node is lazily evaluated, evaluate the
+               ;; thunk.
+               (if (lazy-node? (node-link-node link))
+                   (cons 'async (js-call it))
+                   it))))
 
       (with-slots (value-function) node
         (when value-function
-          (js-lambda (list values-var)
-                     (make-function-body value-function #'get-input)))))))
+          (js-lambda
+           (list values-var)
+
+           (alet (make-function-body value-function #'get-input)
+             ;; If NODE should be evaluated lazily, wrap the compute
+             ;; function in a thunk and return it.
+             (if (lazy-node? node)
+                 (list (js-return (js-call "Thunk" (js-lambda nil it))))
+                 it))))))))
 
 
 (defvar *get-input* nil

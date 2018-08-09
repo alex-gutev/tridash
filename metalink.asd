@@ -44,6 +44,7 @@
                         :components ((:file "package")
                                      (:file "ast")
                                      (:file "print")
+                                     (:file "analyze")
                                      (:file "backend"))))
 
   :depends-on (:graylex
