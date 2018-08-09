@@ -89,6 +89,7 @@
    :node-link
    :node-link-node
    :node-link-p
+   :self
 
    ;; Meta-node
    :meta-node

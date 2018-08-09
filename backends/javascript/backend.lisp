@@ -416,25 +416,41 @@
    function expression is returned."
 
   (symbol-macrolet ((values-var "values"))
-    (flet ((get-input (link)
-             (alet (js-element values-var (dependency-index node link))
-               ;; If the linked node is lazily evaluated, evaluate the
-               ;; thunk.
-               (if (lazy-node? (node-link-node link))
-                   (cons 'async (js-call it))
-                   it))))
+    (let ((uses-old-value nil))
+      (labels ((get-input (link)
+                 (if (eq (node-link-node link) 'self)
+                     (prog1
+                         (if (lazy-node? node)
+                             (js-call "old_value")
+                             "old_value")
+                       (setf uses-old-value t))
 
-      (with-slots (value-function) node
-        (when value-function
-          (js-lambda
-           (list values-var)
+                     (alet (js-element values-var (dependency-index node link))
+                       ;; If the linked node is lazily evaluated, evaluate the
+                       ;; thunk.
+                       (if (lazy-node? (node-link-node link))
+                           (cons 'async (js-call it))
+                           it))))
 
-           (alet (make-function-body value-function #'get-input)
-             ;; If NODE should be evaluated lazily, wrap the compute
-             ;; function in a thunk and return it.
-             (if (lazy-node? node)
-                 (list (js-return (js-call "Thunk" (js-lambda nil it))))
-                 it))))))))
+               (make-body (fn)
+                 (alet (make-function-body fn #'get-input)
+                   ;; If NODE should be evaluated lazily, wrap the compute
+                   ;; function in a thunk and return it.
+                   (if (lazy-node? node)
+                       (list (js-return (js-call "Thunk" (js-lambda nil it))))
+                       it))))
+
+        (with-slots (value-function) node
+          (when value-function
+            (js-lambda
+             (list values-var)
+
+             (let ((body (make-body value-function)))
+               (if uses-old-value
+                   (list
+                    (js-var "old_value" (js-member "this" "value"))
+                    body)
+                   body)))))))))
 
 
 (defvar *get-input* nil

@@ -156,7 +156,7 @@
                ((list 'if pred value)
                 `(if ,pred ,value
                      ,(create-conditions (rest fn))))
-               (nil 'self)
+               (nil (node-link 'self))
                (value value))))
     (with-slots (value-function) node
       (when value-function
