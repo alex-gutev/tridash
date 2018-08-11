@@ -288,6 +288,7 @@
           (js-function (meta-node-id meta-node)
                        (mapcar #'cdr op-vars)
                        (list
+                        (create-meta-nodes (meta-nodes (definition meta-node)))
                         (if tail-recursive-p
                             (js-while "true" body)
                             body))))))))

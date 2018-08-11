@@ -57,5 +57,5 @@
                  ((list* _ operands)
                   (some (curry #'has-node dependency) operands)))))
 
-      (maphash-values #'conditional? (nodes node-table))
+      (maphash-values #'lazy? (nodes node-table))
       lazy-nodes)))
