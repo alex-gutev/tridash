@@ -28,14 +28,13 @@
                  :rules '(("(\\r\\n|\\n|\\r)+" . :newline)
                           ("\\s" . :skip)
                           (";" . :terminate)
-                          ("\\." . :dot)
                           ("," . :comma)
                           ("\\(" . :open-paren)
                           ("\\)" . :close-paren)
                           ("{" . :open-brace)
                           ("}" . :close-brace)
                           ("[0-9]+" . :integer)
-                          ("[^\\s;.,()]+" . :id))))
+                          ("[^\\s;,()]+" . :id))))
 
 (defun next-token (lex &key peek (line-term *line-term*))
   "Returns the next token as two values: the first value is a keyword

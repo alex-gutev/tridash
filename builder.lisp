@@ -22,11 +22,23 @@
 (in-package :metalink.frontend)
 
 
+;;;; Special Operators
+
+(defconstant +outer-operator+ (id-symbol "..")
+  "Special operator for referencing nodes defined in an outer scope.")
+
+
+;;;; Builder State
+
 (defparameter *global-node-table* nil
   "The global node table.")
 
 (defparameter *top-level* t
   "Flag for whether the current node is at the top-level.")
+
+(defparameter *meta-node* nil
+  "The meta-node whose subgraph is currently being built. NIL when the
+   global graph is being built.")
 
 
 ;;;; Generic Functions
@@ -57,9 +69,12 @@
        while decl
        do
          (process-declaration decl *global-node-table*))
-    
+
     (build-meta-node-graphs *global-node-table*)
     (maphash-values #'create-value-function (all-nodes *global-node-table*))
+
+    (find-outer-node-references *global-node-table*)
+    (add-outer-node-operands *global-node-table*)
 
     *global-node-table*))
 
@@ -73,9 +88,10 @@
    meta-node. OUTER-TABLE is the node table in which the meta-node
    definition is located."
 
-  (let ((table (make-inner-node-table outer-table)))
+  (let ((table (make-inner-node-table outer-table))
+        (*meta-node* meta-node))
     (add-local-nodes (operands meta-node) table)
-    
+
     (let* ((*top-level* nil)
            (last-node (process-node-list (definition meta-node) table)))
 
@@ -90,7 +106,7 @@
 (defun add-local-nodes (names table)
   "Creates a node for each element in NAMES, the element being the
    node name, and adds the nodes to TABLE."
-  
+
   (dolist (name names)
     (add-node name (make-instance 'node :name name) table)))
 
@@ -101,7 +117,7 @@
   "Processes the functor by calling PROCESS-FUNCTOR with the OPERATOR
    argument being the CAR of FUNCTOR and OPERANDS being the CDR of
    FUNCTOR."
-  
+
   (destructuring-bind (operator . operands) functor
     (process-functor operator operands table)))
 
@@ -125,7 +141,7 @@
 (defmethod process-functor ((operator (eql +op-operator+)) args table)
   "Registers a node as an infix operator with a specific precedence
    and associativity."
-  
+
   (declare (ignore table))
   (destructuring-bind (op precedence &optional associativity) args
     (add-operator op precedence (operator-associativity associativity))))
@@ -133,7 +149,7 @@
 (defun operator-associativity (assoc)
   "Returns the operator precedence (LEFT or RIGHT) for the precedence
    given as an argument to the op operator."
-  
+
   (cond
     ((eq assoc (id-symbol "left"))
      'left)
@@ -166,7 +182,7 @@
 
 (defun process-node-list (nodes table)
   "Process a list of nodes, returns the last node in the list."
-  
+
   (let ((top-level *top-level*))
     (loop
        for (decl . rest) on nodes
@@ -175,6 +191,32 @@
        for (node node-table) = (multiple-value-list (process-declaration decl table))
        finally
          (return (values node node-table)))))
+
+
+
+;;; Outer nodes
+
+(defmethod process-functor ((operator (eql +outer-operator+)) args table)
+  (with-slots (outer-table) table
+    (unless outer-table
+      (error "Outer node ~a referenced from global node table" (cons operator args)))
+
+    (destructuring-bind (name) args
+      (multiple-value-bind (outer-node outer-table)
+          (lookup-node name outer-table)
+
+        (if outer-node
+            (add-outer-node outer-node outer-table table)
+            (error "Node ~a not found in any outer node table" name))))))
+
+(defun add-outer-node (outer-node outer-table table)
+  "Adds a reference to NODE, which is located in an outer node-table (OUTER-TABLE),
+   to the current meta-node being built (the value of *META-NODE*)."
+
+  (with-slots (outer-nodes) *meta-node*
+    (let ((name (cdr (ensure-gethash outer-node outer-nodes (cons outer-table (outer-node-name *meta-node*))))))
+      (values (ensure-node name table) table))))
+
 
 ;;; Bindings
 
@@ -189,7 +231,7 @@
           (let* ((name (cons operator operands))
                  (cond-node (ensure-node name table))
                  (cond-link (add-binding cond-node target nil)))
-          
+
             (add-condition target cond-link value-link)
             (values cond-node table)))))))
 
@@ -217,13 +259,28 @@
 
   (let ((name (cons operator operands)))
     (multiple-value-bind (operands table) (process-operands operands table)
-      
+
+      ;; Add META-NODE to the meta node references of *META-NODE*
+      (when (and *meta-node*
+                 (not (eq meta-node *meta-node*))
+                 (meta-node? meta-node))
+        (ensure-gethash meta-node (meta-node-references *meta-node*)))
+
       (let* ((node (ensure-node name table)))
         (unless (value-function node)
+          (add-to-instances node meta-node)
+
           (appendf (value-function node)
                    (list (cons meta-node (bind-operands node operands)))))
 
         (values node table)))))
+
+(defun add-to-instances (instance meta-node)
+  "Adds the meta-node instance INSTANCE to the list of instances of
+   META-NODE."
+
+  (when (meta-node? meta-node)
+    (push (cons instance *meta-node*) (instances meta-node))))
 
 
 (defun process-operands (operands table)
@@ -231,14 +288,14 @@
    already in table. Returns the list of `node' objects as the first
    value and the table, in which a node object was found or created,
    with the greatest depth."
-  
+
   (let ((*top-level* nil))
     (iter
       (with op-table = *global-node-table*)
       (for operand in operands)
       (multiple-value-bind (node node-table)
           (process-declaration operand table)
-        
+
         (collect node into nodes)
 
         (when (and node-table (> (depth node-table) (depth op-table)))

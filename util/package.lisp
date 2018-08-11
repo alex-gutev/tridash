@@ -45,7 +45,8 @@
    :adjoin-hash
    :in-hash?
    :merge-hash
-   :partition)
+   :partition
+   :hash-table-keys-values)
 
   (:documentation
    "A collection of utility functions and macros."))

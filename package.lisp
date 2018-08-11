@@ -65,6 +65,7 @@
   (:import-from :let-over-lambda
 		:lol-syntax
 		:symb
+                :mkstr
 		:defmacro!)
 
   (:export

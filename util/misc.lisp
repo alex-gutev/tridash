@@ -64,3 +64,12 @@
      collect element into true
      else collect element into false
      finally (return (values true false))))
+
+(defun hash-table-keys-values (hash-table)
+  "Returns two values: a list of the keys in HASH-TABLE and a list of
+   the corresponding values in HASH-TABLE."
+
+  (iter (for (key value) in-hashtable hash-table)
+        (collect key into keys)
+        (collect value into values)
+        (finally (return (values keys values)))))

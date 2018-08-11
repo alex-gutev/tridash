@@ -28,14 +28,52 @@
     :documentation
     "Symbols naming the meta-node operands.")
 
+   (outer-nodes
+    :initform (make-hash-table :test #'eq)
+    :accessor outer-nodes
+    :documentation
+    "Set of nodes (found in outer node tables) referenced from the
+     meta-node's definition. Each key is the outer `NODE' object with
+     the corresponding value being the name of the local node to
+     which it is bound.")
+
+   (meta-node-references
+    :initform (make-hash-table :test #'eq)
+    :accessor meta-node-references
+    :documentation
+    "Set of meta-nodes of which there are instances in the
+     meta-node's definition.")
+
    (definition
     :initarg :definition
     :initform nil
     :accessor definition
     :documentation
-    "The graph corresponding to the body of the meta-node.")))
+    "The graph corresponding to the body of the meta-node.")
+
+   (instances
+    :initform nil
+    :accessor instances
+    :documentation
+    "List of instances of the meta-node. Each element is of the
+     form (CONS NODE META-NODE) where NODE is the instance NODE itself
+     and META-NODE is the META-NODE in which it appears, NIL if it is
+     at global scope.")))
 
 
 (defun meta-node? (x)
   "Returns true if X is a `meta-node'."
   (typep x 'meta-node))
+
+(defun unique-node-name (hash-table prefix)
+  "Generates a new unique node identifier. The identifier generated is
+   a CONS with PREFIX being the CAR and the CDR being the current
+   number of entries in HASH-TABLE."
+
+  (cons prefix (hash-table-count hash-table)))
+
+(defun outer-node-name (meta-node)
+  "Generates a new name for a local node which will be used to
+   reference an outer node."
+
+  (unique-node-name (outer-nodes meta-node) 'ex))
