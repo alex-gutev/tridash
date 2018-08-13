@@ -46,7 +46,8 @@
                                      (:file "ast")
                                      (:file "print")
                                      (:file "analyze")
-                                     (:file "backend"))))
+                                     (:file "backend")
+                                     (:file "functions"))))
 
   :depends-on (:graylex
                :anaphora

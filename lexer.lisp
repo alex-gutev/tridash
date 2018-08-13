@@ -34,6 +34,7 @@
                           ("{" . :open-brace)
                           ("}" . :close-brace)
                           ("[0-9]+" . :integer)
+                          ("\\.(?!\\.)" . :id)
                           ("[^\\s;,()]+" . :id))))
 
 (defun next-token (lex &key peek (line-term *line-term*))

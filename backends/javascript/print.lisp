@@ -136,9 +136,9 @@
   (let ((*indent-level* (1+ *indent-level*)))
     (flet ((print-field (field)
              (destructuring-bind (field value) field
-               (print-token field)
+               (print-ast field)
                (print-token ":")
-               (print-token value))))
+               (print-ast value))))
 
       (with-accessors ((fields js-object-fields)) object
         (awhen (first fields)

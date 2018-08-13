@@ -27,6 +27,13 @@
 (defconstant +outer-operator+ (id-symbol "..")
   "Special operator for referencing nodes defined in an outer scope.")
 
+(defconstant +out-operator+ (id-symbol "out")
+  "Special operator for creating output nodes, from meta-nodes.")
+
+(defconstant +subnode-operator+ (id-symbol ".")
+  "Special operator for accessing meta-node output nodes from outside
+   the meta-node.")
+
 
 ;;;; Builder State
 
@@ -95,8 +102,7 @@
     (let* ((*top-level* nil)
            (last-node (process-node-list (definition meta-node) table)))
 
-      (when last-node
-        (add-binding last-node meta-node))
+      (make-meta-node-function meta-node last-node)
 
       (build-meta-node-graphs table)
       (maphash-values #'create-value-function (all-nodes table))
@@ -109,6 +115,22 @@
 
   (dolist (name names)
     (add-node name (make-instance 'node :name name) table)))
+
+(defun make-meta-node-function (meta-node last-node)
+  "Creates the value function of the meta-node META-NODE. LAST-NODE is
+   the last-node in the meta-node's definition."
+
+  (with-slots (output-nodes value-function) meta-node
+    (cond
+      ((plusp (hash-table-count output-nodes))
+       (push (cons :object
+                   (iter
+                     (for (name node) in-hashtable output-nodes)
+                     (collect (list name (add-binding node meta-node nil)))))
+             value-function))
+
+      (last-node
+       (add-binding last-node meta-node)))))
 
 
 ;;;; Methods: Processing Declaration
@@ -236,6 +258,34 @@
             (values cond-node table)))))))
 
 
+;;; Output Nodes
+
+(defmethod process-functor ((operator (eql +out-operator+)) operands table)
+  "Creates the output node and adds it to the set of output nodes of
+   the meta-node currently bound to *META-NODE*."
+
+  (destructuring-bind (name) operands
+    (with-slots (output-nodes) *meta-node*
+      (aprog1 (ensure-node (cons operator operands) table)
+        (setf (gethash name output-nodes) it)))))
+
+
+;;; Subnodes
+
+(defmethod process-functor ((operator (eql +subnode-operator+)) operands table)
+  "Creates a node with a value function that accesses an output node
+   of a set of outputs returned by a meta-node instance."
+
+  (destructuring-bind (node key) operands
+    (let ((lhs (process-declaration node table)))
+      (let* ((name (cons operator operands))
+             (node (ensure-node name table)))
+        (unless (value-function node)
+          (push (list :member (add-binding lhs node nil) key)
+                (value-function node)))
+        node))))
+
+
 ;;; Meta-Node instances
 
 (defmethod process-functor (operator operands table)
@@ -270,8 +320,8 @@
         (unless (value-function node)
           (add-to-instances node meta-node)
 
-          (appendf (value-function node)
-                   (list (cons meta-node (bind-operands node operands)))))
+          (push (cons meta-node (bind-operands node operands))
+                (value-function node)))
 
         (values node table)))))
 
