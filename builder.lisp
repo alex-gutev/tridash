@@ -34,6 +34,9 @@
   "Special operator for accessing meta-node output nodes from outside
    the meta-node.")
 
+(defconstant +self-node+ (id-symbol "self")
+  "Special node representing the value of the current meta-node.")
+
 
 ;;;; Builder State
 
@@ -99,8 +102,7 @@
         (*meta-node* meta-node))
     (add-local-nodes (operands meta-node) table)
 
-    (let* ((*top-level* nil)
-           (last-node (process-node-list (definition meta-node) table)))
+    (let* ((last-node (process-node-list (definition meta-node) table t)))
 
       (make-meta-node-function meta-node last-node)
 
@@ -129,7 +131,7 @@
                      (collect (list name (add-binding node meta-node nil)))))
              value-function))
 
-      (last-node
+      ((and last-node (null value-function))
        (add-binding last-node meta-node)))))
 
 
@@ -156,6 +158,19 @@
 
   (declare (ignore table))
   literal)
+
+
+;;; Special Nodes
+
+(defmethod process-declaration ((name (eql +self-node+)) table)
+  "Returns the current meta-node, bound to *META-NODE*. If *META-NODE*
+   is NIL an error condition is signaled."
+
+  (declare (ignore table))
+
+  (if *meta-node*
+      *meta-node*
+      (error "Cannot reference node 'self' outside of a meta-node definition")))
 
 
 ;;;; Methods: Processing Functors
@@ -202,7 +217,7 @@
 
   (process-node-list nodes table))
 
-(defun process-node-list (nodes table)
+(defun process-node-list (nodes table &optional (*top-level* *top-level*))
   "Process a list of nodes, returns the last node in the list."
 
   (let ((top-level *top-level*))
