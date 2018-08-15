@@ -35,7 +35,8 @@
                           ("}" . :close-brace)
                           ("[0-9]+" . :integer)
                           ("\\.(?!\\.)" . :id)
-                          ("[^\\s;,()]+" . :id))))
+                          ("\\.+" . :id)
+                          ("[^\\s;.,()]+" . :id))))
 
 (defun next-token (lex &key peek (line-term *line-term*))
   "Returns the next token as two values: the first value is a keyword
