@@ -50,6 +50,10 @@
   "The meta-node whose subgraph is currently being built. NIL when the
    global graph is being built.")
 
+(defparameter *target?* nil
+  "True if the node currently being built appears as the target of a
+   binding.")
+
 
 ;;;; Generic Functions
 
@@ -261,16 +265,17 @@
   "Establishes a one-way binding from the first to the second node in
    OPERANDS."
 
-  (multiple-value-bind (operands table) (process-operands operands table)
-    (destructuring-bind (source target) operands
-      (let ((value-link (add-binding source target)))
-        (unless *top-level*
-          (let* ((name (cons operator operands))
-                 (cond-node (ensure-node name table))
-                 (cond-link (add-binding cond-node target nil)))
+  (let ((source (process-declaration (first operands) table))
+        (target (let ((*target?* t)) (process-declaration (second operands) table))))
 
-            (add-condition target cond-link value-link)
-            (values cond-node table)))))))
+    (let ((value-link (add-binding source target)))
+      (unless *top-level*
+        (let* ((name (cons operator operands))
+               (cond-node (ensure-node name table))
+               (cond-link (add-binding cond-node target nil)))
+
+          (add-condition target cond-link value-link)
+          (values cond-node table))))))
 
 
 ;;; Output Nodes
@@ -292,13 +297,35 @@
    of a set of outputs returned by a meta-node instance."
 
   (destructuring-bind (node key) operands
-    (let ((lhs (process-declaration node table)))
+    (let ((node (process-declaration node table)))
       (let* ((name (cons operator operands))
-             (node (ensure-node name table)))
-        (unless (value-function node)
-          (push (list :member (add-binding lhs node nil) key)
-                (value-function node)))
-        node))))
+             (subnode (ensure-node name table)))
+
+        (if *target?*
+            (make-target-subnode node key subnode)
+            (make-source-subnode node key subnode))
+        subnode))))
+
+(defun make-source-subnode (node key subnode)
+  "Makes the value function of the subnode for when it appears as the
+   source of a binding. NODE is the object node referenced, KEY is the
+   subnode key and SUBNODE is the `NODE' object of the subnode."
+
+  (unless (value-function subnode)
+    (push (list :member (add-binding node subnode nil) key)
+          (value-function subnode))))
+
+(defun make-target-subnode (node key subnode)
+  "Makes the value function of the subnode for when it appears as the
+   target of a binding. NODE is the object node referenced, KEY is the
+   subnode key and SUBNODE is the `NODE' object of the subnode."
+
+  (with-slots (value-function) node
+    (unless value-function
+      (push (list :object) value-function))
+
+    (push (list key (add-binding subnode node nil))
+          (cdar value-function))))
 
 
 ;;; Meta-Node instances
