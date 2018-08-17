@@ -69,6 +69,9 @@
 		:defmacro!)
 
   (:export
+   ;; Operators
+   :+subnode-operator+
+
    ;; Node
    :node
    :name

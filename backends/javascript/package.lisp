@@ -25,7 +25,14 @@
         :iterate
 
         :metalink.util
+        :metalink.parser
         :metalink.frontend)
 
   (:import-from :let-over-lambda
-                :mkstr))
+                :mkstr
+                :symb)
+
+  (:export
+   :*print-indented*
+   :build-graph-from-html
+   :preprocess-html))

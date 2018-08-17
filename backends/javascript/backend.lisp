@@ -97,11 +97,16 @@
      for node being the hash-value of nodes
      append (create-node node)))
 
-(defun create-node (node)
-  "Generate the node creation code of NODE. This includes the creation
-   of the node, its dependency queues and its value computation
-   function, however it does not include the binding of the node to
-   its observers."
+(defgeneric create-node (node)
+  (:documentation
+   "Generate the node creation code of NODE. This includes the
+    creation of the node, its dependency queues and its value
+    computation function, however it does not include the binding of
+    the node to its observers."))
+
+(defmethod create-node (node)
+  "Generate the node creation code, which creates dependency queues
+   and the value computation function."
 
   (let ((path (node-path node)))
     (establish-dependency-indices node)

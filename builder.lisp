@@ -74,24 +74,23 @@
 
 ;;;; Build Graphs
 
-(defun build-graph (parser)
+(defun build-graph (parser &optional (*global-node-table* (make-instance 'node-table)))
   "Builds the graph from the objects returned by successively calling
    PARSER."
 
-  (let ((*global-node-table* (make-instance 'node-table)))
-    (loop
-       for decl = (funcall parser)
-       while decl
-       do
-         (process-declaration decl *global-node-table*))
+  (loop
+     for decl = (funcall parser)
+     while decl
+     do
+       (process-declaration decl *global-node-table*))
 
-    (build-meta-node-graphs *global-node-table*)
-    (maphash-values #'create-value-function (all-nodes *global-node-table*))
+  (build-meta-node-graphs *global-node-table*)
+  (maphash-values #'create-value-function (all-nodes *global-node-table*))
 
-    (find-outer-node-references *global-node-table*)
-    (add-outer-node-operands *global-node-table*)
+  (find-outer-node-references *global-node-table*)
+  (add-outer-node-operands *global-node-table*)
 
-    *global-node-table*))
+  *global-node-table*)
 
 (defun build-meta-node-graphs (table)
   "Builds the body of each meta-node, in the node table TABLE."

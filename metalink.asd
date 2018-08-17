@@ -47,7 +47,8 @@
                                      (:file "print")
                                      (:file "analyze")
                                      (:file "backend")
-                                     (:file "functions"))))
+                                     (:file "functions")
+                                     (:file "html"))))
 
   :depends-on (:graylex
                :anaphora
@@ -56,4 +57,5 @@
                :collectors
                :named-readtables
                :let-over-lambda
-               :optima))
+               :optima
+               :plump))
