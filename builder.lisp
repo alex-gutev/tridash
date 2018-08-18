@@ -50,9 +50,10 @@
   "The meta-node whose subgraph is currently being built. NIL when the
    global graph is being built.")
 
-(defparameter *target?* nil
-  "True if the node currently being built appears as the target of a
-   binding.")
+(defparameter *source-node* nil
+  "If the node currently being processed appears as the target of a
+   binding, this variable is bound to the source node of the binding,
+   otherwise is NIL.")
 
 
 ;;;; Generic Functions
@@ -265,10 +266,10 @@
   "Establishes a one-way binding from the first to the second node in
    OPERANDS."
 
-  (let ((source (process-declaration (first operands) table))
-        (target (let ((*target?* t)) (process-declaration (second operands) table))))
+  (let* ((*source-node* (process-declaration (first operands) table))
+         (target (process-declaration (second operands) table)))
 
-    (let ((value-link (add-binding source target)))
+    (let ((value-link (add-binding *source-node* target)))
       (unless *top-level*
         (let* ((name (cons operator operands))
                (cond-node (ensure-node name table))
@@ -301,7 +302,7 @@
       (let* ((name (cons operator operands))
              (subnode (ensure-node name table)))
 
-        (if *target?*
+        (if *source-node*
             (make-target-subnode node key subnode)
             (make-source-subnode node key subnode))
         subnode))))
@@ -337,7 +338,9 @@
 
   (acond
     ((lookup-meta-node operator table)
-     (add-meta-node-instance it operator operands table))
+     (if *source-node*
+         (make-target-meta-node-instance it operator operands table)
+         (add-meta-node-instance it operator operands table)))
     (t
      (error "Operator ~s is neither a special operator nor a node meta-node" operator))))
 
@@ -375,13 +378,65 @@
     (push (cons instance *meta-node*) (instances meta-node))))
 
 
+;;; Meta-Node Instance in Target Position
+
+(defgeneric make-target-meta-node-instance (meta-node operator operands table)
+  (:documentation
+   "Creates a meta-node instance that appears as the target of a
+    binding."))
+
+
+(defmethod make-target-meta-node-instance (meta-node operator operands table)
+  "Default method for meta-node instances appearing as targets of a
+   binding. Signals an error condition."
+
+  (declare (ignore meta-node table))
+
+  (error "Meta-node instance ~a cannot appear as the target of a binding"
+         (cons operator operands)))
+
+
+;;; Type Conversions in Target Position
+
+(defmethod make-target-meta-node-instance ((meta-node cons) operator operands table)
+  (match meta-node
+    ((list :type _)
+     (make-target-typed-node meta-node operator operands table))
+
+    (_ (call-next-method))))
+
+(defun make-target-typed-node (type operator operands table)
+  "Creates a node with a value function which coerces the value of
+   *SOURCE-NODE* to the type TYPE."
+
+  (flet ((make-link (decl typed-node)
+           (let ((*source-node* typed-node)
+                 (node (process-declaration decl table)))
+
+             (add-binding typed-node node))
+           (add-binding *source-node* typed-node nil)))
+
+    (destructuring-bind (decl) operands
+      (let* ((node (ensure-node (cons operator operands) table))
+             (link (make-link decl node)))
+
+        (unless (value-function node)
+          (push (list type link)
+                (value-function node)))
+
+        (values node table)))))
+
+
+;;; Binding Operands
+
 (defun process-operands (operands table)
   "Creates the operand nodes and adds them to table if they are not
    already in table. Returns the list of `node' objects as the first
    value and the table, in which a node object was found or created,
    with the greatest depth."
 
-  (let ((*top-level* nil))
+  (let ((*top-level* nil)
+        (*source-node* nil))
     (iter
       (with op-table = *global-node-table*)
       (for operand in operands)

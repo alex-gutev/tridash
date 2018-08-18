@@ -248,7 +248,7 @@
      collect (cons operand (mkstr "a" i))))
 
 
-;;;; Generate node compute functions
+;;;; Node Compute Functions
 
 (defun create-compute-function (node)
   "Generates the value computation function of NODE. The anonymous
@@ -361,6 +361,8 @@
     (_ (values nil fn))))
 
 
+;;;; Special Operator Expressions
+
 (defgeneric make-operator-expression (operator operands)
   (:documentation
    "Generates the code for the value expression with operator OPERATOR
@@ -368,6 +370,9 @@
    the value of the expression (NIL if the expression can be compiled
    to a single JS expression) and an expression for referencing the
    value computed by the expression."))
+
+
+;;; Conditions
 
 (defmethod make-operator-expression ((operator (eql 'if)) operands)
   "Generates an IF block for a conditional expression with condition
@@ -393,6 +398,8 @@
                       (and else (make-js-block (make-statements else)))))
               *return-variable*))))))))
 
+
+;;; Objects
 
 (defmethod make-operator-expression ((operator (eql :object)) operands)
   "Generates an expression which returns an object containing the
@@ -424,6 +431,37 @@
            (lambda (object)
              (values nil (js-element object (js-string member))))))))))
 
+
+;;; Type conversions
+
+(defmethod make-operator-expression ((operator cons) operands)
+  "If OPERATOR is a type conversion operator (of the form (:TYPE
+   type), generates an expression which converts the value of the
+   operand to the type."
+
+  (match operator
+    ((list :type type)
+     (destructuring-bind (expr) operands
+       (let ((value-var (var-name)))
+         (multiple-value-bind (value-block value-expr)
+             (make-expression expr :return-variable value-var :tailp nil)
+           (multiple-value-call #'combine-blocks
+             value-block
+             (use-expression value-expr (curry #'convert-type type)))))))
+
+    (_ (call-next-method))))
+
+(defgeneric convert-type (type expression)
+  (:documentation
+   "Generates an expression which converts EXPRESSION to the type TYPE"))
+
+(defmethod convert-type ((type (eql :integer)) expression)
+  (values
+   nil
+   (js-call "parseInt" expression)))
+
+
+;;; Meta-Node Expressions
 
 (defmethod make-operator-expression (meta-node operands)
   "Generates code which invokes META-NODE with OPERANDS."
@@ -478,6 +516,8 @@
         (use-expressions expressions body-fn))))))
 
 
+;;;; Returning Values
+
 (defun make-return (expression)
   "Generates a statement which returns the value computed by the JS
    expression EXPRESSION. If *RETURN-VARIABLE* is non-NIL an
@@ -493,6 +533,8 @@
   "Returns a new unused variable name."
   (mkstr prefix (incf *var-counter*)))
 
+
+;;;; Promises for Asynchronous Expressions
 
 (defun make-promise (expressions vars body)
   "Generates a promise expression, which waits for the promise
@@ -513,6 +555,9 @@
     (js-call
      (js-member promise "then")
      (js-lambda (list vars) body))))
+
+
+;;;; Combining Blocks
 
 (defun combine-blocks (block1 block2 expression)
   "Combines BLOCK1 BLOCK2 into a single block. Returns as the first
@@ -537,6 +582,9 @@
   (let ((*return-variable* nil)
         (*in-async* t))
     (multiple-value-call #'add-to-block (funcall body-fn arg))))
+
+
+;;;; Using Expressions
 
 (defun use-expression (expression body-fn)
   "Calls the BODY-FN with an expression which references the value

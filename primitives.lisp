@@ -22,17 +22,23 @@
 
 (defparameter *primitive-ops*
   (alist-hash-table
-   (list (cons (id-symbol "+") '+)
-         (cons (id-symbol "-") '-)
-         (cons (id-symbol "*") '*)
-         (cons (id-symbol "/") '/)
+   (list
+    (cons (id-symbol "+") '+)
+    (cons (id-symbol "-") '-)
+    (cons (id-symbol "*") '*)
+    (cons (id-symbol "/") '/)
 
-         (cons (id-symbol "<") '<)
-         (cons (id-symbol ">") '>)
-         (cons (id-symbol "<=") '<=)
-         (cons (id-symbol ">=") '>=)
-         (cons (id-symbol "=") '=)
-         (cons (id-symbol "!=") '!=)))
+    (cons (id-symbol "<") '<)
+    (cons (id-symbol ">") '>)
+    (cons (id-symbol "<=") '<=)
+    (cons (id-symbol ">=") '>=)
+    (cons (id-symbol "=") '=)
+    (cons (id-symbol "!=") '!=)
+
+    ;; Types
+
+    (cons (id-symbol "int") '(:type :integer))
+    (cons (id-symbol "real") '(:type  :real))))
 
   "Hash-table of primitive operators where each key is an identifier
    symbol in the METALINK.SYMBOLS package and the corresponding key is
