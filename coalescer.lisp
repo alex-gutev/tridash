@@ -53,7 +53,7 @@
             within the `node-link' objects of its observer nodes, is
             replaced with the value-function of NODE."
 
-           (when (= (observers-count node) 1)
+           (when (and (may-coalesce? node) (= (observers-count node) 1))
              (remhash (name node) (nodes graph))
              (remhash (name node) (all-nodes graph))
 
@@ -102,6 +102,13 @@
 
       (maphash-values (compose #'coalesce-nodes #'definition) (meta-nodes graph))
       (maphash-values #'coalesce-node-links (all-nodes graph)))))
+
+(defun may-coalesce? (node)
+  "Returns true if NODE may be coalesced into another node. Returns
+   false if the node has the :NO-COALESCE attribute set to T."
+
+  (null (gethash :no-coalesce (attributes node))))
+
 
 (defun coalesce-node-links (node)
   "Replaces the `node-link' objects, within the VALUE-FUNCTION of

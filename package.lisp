@@ -76,6 +76,7 @@
    :observers
    :wait-set
    :value-function
+   :attributes
 
    :node?
    :value?

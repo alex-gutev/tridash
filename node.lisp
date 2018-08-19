@@ -61,7 +61,14 @@
     :documentation
     "The function which computes the node's value. Dependency nodes
      are referenced using the `node-link' object created when the node
-     was added as a dependency.")))
+     was added as a dependency.")
+
+   (attributes
+    :accessor attributes
+    :initform (make-hash-table :test #'eq)
+    :documentation
+    "Set of miscellaneous attributes (key-value pairs) where each
+     attribute is identified by a unique symbol.")))
 
 
 ;;; Predicates
