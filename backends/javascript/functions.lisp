@@ -264,12 +264,7 @@
                              "old_value")
                        (setf uses-old-value t))
 
-                     (alet (js-element values-var (dependency-index node link))
-                       ;; If the linked node is lazily evaluated, evaluate the
-                       ;; thunk.
-                       (if (lazy-node? (node-link-node link))
-                           (cons 'async (js-call it))
-                           it))))
+                     (make-link-expression node link values-var)))
 
                (make-body (fn)
                  (alet (make-function-body fn #'get-input)
@@ -291,6 +286,13 @@
                     body)
                    body)))))))))
 
+(defun make-link-expression (node link &optional (values-var "values"))
+  (alet (js-element values-var (dependency-index node link))
+    ;; If the linked node is lazily evaluated, evaluate the
+    ;; thunk.
+    (if (lazy-node? (node-link-node link))
+        (cons 'async (js-call it))
+        it)))
 
 (defvar *get-input* nil
   "Function which should return an expression that references the

@@ -90,10 +90,7 @@
                "Generates the name of a node corresponding to the
                 attribute ATTRIBUTE of the HTML node with id ID."
 
-               (id-symbol
-                (if attribute
-                    (mkstr (list +subnode-operator+ id attribute))
-                    id)))
+               (list +subnode-operator+ (id-symbol id) (id-symbol attribute)))
 
              (mark-html-node (html-node)
                "Changes the class of the `NODE' object, corresponding
@@ -102,11 +99,33 @@
                (destructuring-bind (html-id tag attribute node-name) html-node
                  (declare (ignore node-name))
 
+                 (mark-html-element tag html-id)
+
                  (let ((node (gethash (make-html-node-name html-id attribute) (nodes graph))))
+
                    (change-class node 'html-node
                                  :tag-name tag
                                  :attribute attribute
                                  :element-id html-id))))
+
+             (mark-html-element (tag id)
+               (let* ((name (id-symbol id))
+                      (node (gethash name (nodes graph))))
+
+                 (remove-observers node)
+                 (if (plusp (dependencies-count node))
+                     (change-class node 'html-node
+                                   :tag-name tag
+                                   :attribute nil
+                                   :element-id id)
+                     (remhash name (nodes graph)))))
+
+             (remove-observers (html-node)
+               (maphash-keys (rcurry #'remove-observer html-node) (observers html-node))
+               (clrhash (observers html-node)))
+
+             (remove-observer (observer node)
+               (remhash node (dependencies observer)))
 
              (mark-dependencies-no-coalesce (node)
                (maphash-keys #'mark-no-coalesce (dependencies node)))
@@ -210,23 +229,27 @@
    as a dependency)."
 
   (with-slots (element-id tag-name attribute value-function) node
-    (let ((code (call-next-method))
-          (path (node-path node)))
+    (let ((value-fn value-function)
+          (dependencies? (plusp (dependencies-count node))))
+      (setf value-function nil)
 
-      (list
-       code
-       (make-onloaded-method
+      (let ((code (call-next-method))
+            (path (node-path node)))
+
         (list
-         (js-call '= (js-member path "html_element")
-                  (js-call (js-member "document" "getElementById")
-                           (js-string element-id)))
-         (unless value-function
-           (make-event-listener node))))
+         code
+         (make-onloaded-method
+          (list
+           (js-call '= (js-member path "html_element")
+                    (js-call (js-member "document" "getElementById")
+                             (js-string element-id)))
+           (unless dependencies?
+             (make-event-listener node))))
 
-       (when value-function
-         (js-call '=
-                  (js-member path "set_value")
-                  (make-set-value node)))))))
+         (when dependencies?
+           (js-call '=
+                    (js-member path "compute")
+                    (make-set-attributes node value-fn))))))))
 
 (defun make-onloaded-method (body)
   "Generates code which executes the code BODY, after the DOM has been
@@ -248,6 +271,36 @@
       (js-call '=
                (js-members "this" "html_element" attribute)
                "value")))))
+
+(defun make-set-attributes (node value-function)
+  (labels ((make-set-attribute (attribute)
+             (destructuring-bind (key value-fn) attribute
+               (let ((*get-input* (curry #'make-link-expression node))
+                     (return-var (var-name)))
+                 (multiple-value-bind (value-block value-expr)
+                     (make-expression value-fn :return-variable return-var :tailp nil)
+                   (multiple-value-call #'make-block
+                     value-block
+                     (use-expression
+                      value-expr
+                      (lambda (expr)
+                        (values
+                         (js-block (set-attribute-expression key expr))
+                         nil))))))))
+
+           (set-attribute-expression (attribute expr)
+             (js-call '=
+                      (js-members "self" "html_element" attribute)
+                      expr))
+
+           (make-block (block1 block2 expression)
+             (js-block block1 block2 expression)))
+
+    (js-lambda
+     (list "values")
+     (list*
+      (js-var "self" "this")
+      (mapcar #'make-set-attribute (rest value-function))))))
 
 
 (defparameter *html-events*
