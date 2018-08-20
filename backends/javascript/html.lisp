@@ -20,6 +20,8 @@
 
 (in-package :metalink.backend.js)
 
+(in-readtable lol-syntax)
+
 
 (defclass html-node (node)
   ((tag-name
@@ -205,17 +207,35 @@
 
 
 (defun extract-metalink-node (value)
-  "Extracts node declaration from the string VALUE, where value is
+  "Extracts node declarations from the string VALUE, where value is
    either the value of an HTML attribute or the text content of an
    HTML text node. Returns the parsed node declaration if any, NIL if
    VALUE does not contain any node declarations."
 
-  (awhen (search "{" value :test #'char=)
-    (let* ((start (1+ it))
-           (end (or (search "}" value :test #'char=) (length value))))
-      (with-input-from-string (in value :start start :end end)
-        (let ((parser (make-parser in)))
-          (funcall parser))))))
+  (flet ((parse-node (start end)
+           (with-input-from-string (in value :start start :end end)
+             (let ((parser (make-parser in)))
+               (funcall parser)))))
+
+    (let ((string-start 0)
+          (strings (make-array 0 :adjustable t :fill-pointer t)))
+
+      (do-scans
+          (start end reg-starts reg-ends #"{{(.*?)}}"# value)
+
+        (when (plusp (- start string-start))
+          (vector-push-extend (subseq value string-start start) strings))
+
+        (setf string-start end)
+
+        (vector-push-extend (parse-node (aref reg-starts 0) (aref reg-ends 0)) strings))
+
+      (cond
+        ((length= 1 strings)
+         (aref strings 0))
+
+        ((not (emptyp strings))
+         (reduce #2`(,(id-symbol "+") ,a1 ,a2) strings))))))
 
 
 ;;;; Compiling HTML nodes

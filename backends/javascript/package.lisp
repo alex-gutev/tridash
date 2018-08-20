@@ -23,6 +23,7 @@
         :named-readtables
         :optima
         :iterate
+        :cl-ppcre
 
         :metalink.util
         :metalink.parser
@@ -30,7 +31,8 @@
 
   (:import-from :let-over-lambda
                 :mkstr
-                :symb)
+                :symb
+                :lol-syntax)
 
   (:export
    :*print-indented*

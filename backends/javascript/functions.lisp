@@ -360,7 +360,21 @@
     ((type node-link)
      (values nil (funcall *get-input* fn)))
 
-    (_ (values nil fn))))
+    (_
+     (values nil (make-literal fn)))))
+
+
+;;;; Literal Values
+
+(defgeneric make-literal (literal)
+  (:documentation
+   "Generates a JS expression for the literal value LITERAL.")
+
+  (:method (literal)
+    literal)
+
+  (:method ((literal string))
+    (js-string literal)))
 
 
 ;;;; Special Operator Expressions
