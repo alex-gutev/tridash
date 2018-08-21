@@ -45,35 +45,22 @@
    "An `HTML-NODE' is a node which corresponds directly to an HTML
     element."))
 
+
+(defvar *global-node-table* nil
+  "The `NODE-TABLE' containing all node definitions extracted from the
+   HTML file and source files linked using script tags.")
+
 (defun build-graph-from-html (stream)
   "Extract node definitions from an HTML file, and build the graph."
 
-  (let ((graph (make-instance 'node-table)))
-    (labels ((array-parser (array next)
-               "Returns a function which when called returns the next
-                element of ARRAY. NEXT is the function to call after
-                all elements of ARRAY have been returned."
-
-               (let ((index 0)
-                     (length (length array)))
-                 (lambda ()
-                   (if (< index length)
-                       (prog1 (aref array index)
-                         (incf index))
-                       (funcall next)))))
-
-             (make-html-nodes (html-nodes)
+  (let ((*global-node-table* (make-instance 'node-table)))
+    (labels ((make-html-nodes (html-nodes)
                "Returns a function which when called generates (and
                 returns) a node declaration for the next HTML node in
                 HTML-NODES."
 
-               (let ((index 0)
-                     (length (length html-nodes)))
-                 (lambda ()
-                   (when (< index length)
-                     (prog1
-                         (make-html-node (aref html-nodes index))
-                       (incf index))))))
+               (iter (for html-node in-vector html-nodes)
+                     (build-node (make-html-node html-node) *global-node-table*)))
 
              (make-html-node (html-node)
                "Generates a node declaration for the HTML node
@@ -82,7 +69,7 @@
                (destructuring-bind (html-id tag attribute node-name) html-node
                  (declare (ignore tag))
                  (let ((html-node (make-html-node-name html-id attribute))
-                       (node (gethash node-name (nodes graph))))
+                       (node (gethash node-name (nodes *global-node-table*))))
                    (list* +bind-operator+
                           (if (plusp (dependencies-count node))
                               (list node html-node)
@@ -103,7 +90,7 @@
 
                  (mark-html-element tag html-id)
 
-                 (let ((node (gethash (make-html-node-name html-id attribute) (nodes graph))))
+                 (let ((node (gethash (make-html-node-name html-id attribute) (nodes *global-node-table*))))
 
                    (change-class node 'html-node
                                  :tag-name tag
@@ -112,7 +99,7 @@
 
              (mark-html-element (tag id)
                (let* ((name (id-symbol id))
-                      (node (gethash name (nodes graph))))
+                      (node (gethash name (nodes *global-node-table*))))
 
                  (remove-observers node)
                  (if (plusp (dependencies-count node))
@@ -120,91 +107,131 @@
                                    :tag-name tag
                                    :attribute nil
                                    :element-id id)
-                     (remhash name (nodes graph)))))
+                     (remhash name (nodes *global-node-table*)))))
 
              (remove-observers (html-node)
                (maphash-keys (rcurry #'remove-observer html-node) (observers html-node))
                (clrhash (observers html-node)))
 
              (remove-observer (observer node)
-               (remhash node (dependencies observer)))
+               (remhash node (dependencies observer))))
 
-             (mark-dependencies-no-coalesce (node)
-               (maphash-keys #'mark-no-coalesce (dependencies node)))
-
-             (mark-no-coalesce (node)
-               (setf (gethash :no-coalesce (attributes node)) t)))
-
-      (multiple-value-bind (nodes html-nodes) (preprocess-html stream)
-        (build-graph (array-parser nodes (make-html-nodes html-nodes)) graph)
+      (let ((html-nodes (preprocess-html stream)))
+        (make-html-nodes html-nodes)
+        (finish-build-graph *global-node-table*)
 
         (iter (for html-node in-vector html-nodes)
               (mark-html-node html-node))
 
-        (coalesce-nodes graph)
-        (build-wait-sets graph)
+        (coalesce-nodes *global-node-table*)
+        (build-wait-sets *global-node-table*)
 
-        graph))))
+        *global-node-table*))))
 
+
+;;;; Process HTML Files
 
 (defun preprocess-html (stream)
-  "Extract node declarations from an HTML file. Returns two values: An
-   array of the parsed node declarations and an array of the HTML
-   nodes, where each element is of the form (ID TAG ATTRIBUTE NODE)
-   where ID is the HTML id of the element, TAG is the tag-name of the
-   element, ATTRIBUTE is the attribute to which the node named NODE is
-   bound."
+  "Extract node declarations from an HTML file and add the `NODE'
+   objects built to the `NODE-TABLE' *GLOBAL-NODE-TABLE*. Returns an
+   array of the HTML nodes containing node declarations, where each
+   element is of the form (ID TAG ATTRIBUTE NODE) where ID is the HTML
+   id of the element, TAG is the tag-name of the element, ATTRIBUTE is
+   the attribute to which the node named NODE is bound."
 
   (let ((root-node (plump:parse stream))
-        (nodes (make-array 0 :adjustable t :fill-pointer t))
         (html-nodes (make-array 0 :adjustable t :fill-pointer t)))
 
-    (plump:traverse root-node (rcurry #'walk-html-node nodes html-nodes))
-    (values nodes html-nodes)))
+    (plump:traverse root-node (rcurry #'walk-html-node html-nodes))
+    html-nodes))
 
-(defgeneric walk-html-node (node nodes html-node-ids)
+
+;;;; Process HTML Nodes
+
+(defgeneric walk-html-node (node html-node-ids)
   (:documentation
    "Traverse the HTML node NODE. Node declarations appearing within
-   the HTML node are extracted and appended to the NODES array, the
-   HTML nodes (in which the node declarations appear) are appended to
-   the HTML-NODE-IDS."))
+    the HTML node are extracted, parsed, the `NODE' objects are built
+    and added to *GLOBAL-NODE-TABLE*. The HTML nodes in which the node
+    declarations appear are appended to the array HTML-NODE-IDS."))
 
-(defmethod walk-html-node ((element plump:element) nodes html-nodes)
-  "Traverses HTML elements. Node declarations are extracted from each
-   attribute, of the element, and appended to the NODES array, the
-   HTML nodes in which they appear are appended to HTML-NODES. "
+
+;;; Process HTML elements
+
+(defmethod walk-html-node ((element plump:element) html-nodes)
+  "Extracts node declarations from each attribute of the element."
 
   (let* ((attributes (plump:attributes element))
          (html-id (gethash "id" attributes)))
 
     (dohash (key value attributes)
       (awhen (extract-metalink-node value)
-        (vector-push-extend it nodes)
+        (build-node it *global-node-table*)
+
         (vector-push-extend (list html-id (plump:tag-name element) key it) html-nodes)
 
         (setf (gethash key attributes) "")))))
 
-(defmethod walk-html-node ((node plump:text-node) nodes html-nodes)
-  "Traverses HTML text nodes. Node declarations are extracted from the
-   text contained in the text node and appended to the NODES
-   array. The HTML node corresponding to the textContent attribute of
-   the parent element (of the text node) is appended to the HTML-NODES
-   array."
+
+;;; Process Text Nodes
+
+(defmethod walk-html-node ((node plump:text-node) html-nodes)
+  "Extracts node declarations from the text contained in the text
+   node."
 
   (with-accessors ((parent plump:parent) (text plump:text)) node
-    (let* ((attributes (and (plump:element-p parent) (plump:attributes parent)))
-           (tag-name (and (plump:element-p parent) (plump:tag-name parent)))
-           (html-id (when attributes (gethash "id" attributes))))
+    (when (plump:element-p parent)
 
-      (awhen (extract-metalink-node text)
-        (vector-push-extend it nodes)
-        (vector-push-extend (list html-id tag-name "textContent" it) html-nodes)
+      (let* ((tag-name (plump:tag-name parent))
+             (html-id (plump:attribute parent "id")))
 
-        (setf text "")))))
+        (awhen (extract-metalink-node text)
+          (build-node it *global-node-table*)
+          (vector-push-extend (list html-id tag-name "textContent" it) html-nodes)
 
-(defmethod walk-html-node (node nodes html-nodes)
-  (declare (ignore node nodes html-nodes)))
+          (setf text ""))))))
 
+(defmethod walk-html-node (node html-nodes)
+  (declare (ignore node html-nodes)))
+
+
+;;; Process Script Tags
+
+(defmethod walk-html-node ((element plump:fulltext-element) html-nodes)
+  "Traverses full text elements such as script and style tags. If the
+   element is a script tag with the language attribute equal to
+   'metalink' the text content of the script tag is parsed as metalink
+   code."
+
+  (declare (ignore html-nodes))
+
+  (let ((children (plump:children element)))
+    (when (and (metalink-script? element)
+               (not (emptyp children)))
+      (let ((text-node (aref children 0)))
+        (process-script text-node))
+
+      (plump:clear element))))
+
+(defun metalink-script? (element)
+  "Returns true if ELEMENT is a script tag containing metalink node
+   declarations."
+
+  (when (string-equal (plump:tag-name element) "script")
+    (aand (plump:attribute element "language")
+          (string-equal it "metalink"))))
+
+(defun process-script (text-node)
+  "Parses the text content of a script tag as metalink code, and adds
+   the node definitions to *GLOBAL-NODE-TABLE*. TEXT-NODE is the
+   text-node child of the script tag."
+
+  (let ((text (plump:text text-node)))
+    (with-input-from-string (in text)
+      (build-partial-graph (make-parser in) *global-node-table*))))
+
+
+;;; Parse Attributes and Text Content
 
 (defun extract-metalink-node (value)
   "Extracts node declarations from the string VALUE, where value is

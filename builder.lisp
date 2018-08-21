@@ -72,25 +72,51 @@
     it was found)."))
 
 
-;;;; Build Graphs
+;;;; Build Graph
 
 (defun build-graph (parser &optional (*global-node-table* (make-instance 'node-table)))
   "Builds the graph from the objects returned by successively calling
    PARSER."
 
+  (build-partial-graph parser *global-node-table*)
+  (finish-build-graph *global-node-table*)
+
+  *global-node-table*)
+
+(defun build-partial-graph (parser *global-node-table*)
+  "Builds the `NODE' objects from the node declarations returned by
+   successively calling PARSER and adds them to the `NODE-TABLE' given
+   in the second argument. This function does not build meta-node
+   definitions."
+
   (loop
      for decl = (funcall parser)
      while decl
      do
-       (process-declaration decl *global-node-table*))
+       (process-declaration decl *global-node-table*)))
+
+(defun build-node (node *global-node-table*)
+  "Builds the `NODE' object from the node declarations NODE and adds
+   it to the `NODE-TABLE' given in the second argument."
+
+  (process-declaration node *global-node-table*))
+
+(defun finish-build-graph (*global-node-table*)
+  "Builds the meta-node definitions and creates the value functions of
+   all nodes in the `NODE-TABLE' passed as an argument. This function
+   should be called separately, to finish building the graph, after
+   building individual nodes using BUILD-PARTIAL-GRAPH and
+   BUILD-NODE. This function should not be called after calling
+   BUILD-GRAPH."
 
   (build-meta-node-graphs *global-node-table*)
   (maphash-values #'create-value-function (all-nodes *global-node-table*))
 
   (find-outer-node-references *global-node-table*)
-  (add-outer-node-operands *global-node-table*)
+  (add-outer-node-operands *global-node-table*))
 
-  *global-node-table*)
+
+;;;; Build Meta-Node
 
 (defun build-meta-node-graphs (table)
   "Builds the body of each meta-node, in the node table TABLE."

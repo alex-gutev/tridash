@@ -118,6 +118,9 @@
 
    ;; Builder
    :build-graph
+   :build-partial-graph
+   :build-node
+   :finish-build-graph
 
    ;; Wait-set
    :build-wait-sets
