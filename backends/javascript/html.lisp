@@ -50,8 +50,13 @@
   "The `NODE-TABLE' containing all node definitions extracted from the
    HTML file and source files linked using script tags.")
 
+
+;;;; Building Graph
+
 (defun build-graph-from-html (stream)
-  "Extract node definitions from an HTML file, and build the graph."
+  "Extract node definitions from an HTML file, and build the
+   graph. Returns two values: the global node table and the HTML root
+   node."
 
   (let ((*global-node-table* (make-instance 'node-table)))
     (labels ((make-html-nodes (html-nodes)
@@ -116,7 +121,7 @@
              (remove-observer (observer node)
                (remhash node (dependencies observer))))
 
-      (let ((html-nodes (preprocess-html stream)))
+      (multiple-value-bind (root-node html-nodes) (preprocess-html stream)
         (make-html-nodes html-nodes)
         (finish-build-graph *global-node-table*)
 
@@ -126,42 +131,50 @@
         (coalesce-nodes *global-node-table*)
         (build-wait-sets *global-node-table*)
 
-        *global-node-table*))))
+        (values *global-node-table* root-node)))))
 
 
 ;;;; Process HTML Files
 
 (defun preprocess-html (stream)
   "Extract node declarations from an HTML file and add the `NODE'
-   objects built to the `NODE-TABLE' *GLOBAL-NODE-TABLE*. Returns an
-   array of the HTML nodes containing node declarations, where each
-   element is of the form (ID TAG ATTRIBUTE NODE) where ID is the HTML
-   id of the element, TAG is the tag-name of the element, ATTRIBUTE is
-   the attribute to which the node named NODE is bound."
+   objects built to the `NODE-TABLE' *GLOBAL-NODE-TABLE*. Returns two
+   values: the root HTML node and an array of the HTML nodes
+   containing node declarations, where each element is of the form (ID
+   TAG ATTRIBUTE NODE) where ID is the HTML id of the element, TAG is
+   the tag-name of the element, ATTRIBUTE is the attribute to which
+   the node named NODE is bound."
 
   (let ((root-node (plump:parse stream))
         (html-nodes (make-array 0 :adjustable t :fill-pointer t)))
 
-    (plump:traverse root-node (rcurry #'walk-html-node html-nodes))
-    html-nodes))
+    (values
+     (walk-html-node root-node html-nodes)
+     html-nodes)))
 
 
 ;;;; Process HTML Nodes
 
-(defgeneric walk-html-node (node html-node-ids)
+(defvar *parent-html-node* nil
+  "The parent node of the HTML node being traversed.")
+
+(defgeneric walk-html-node (node html-node-ids &key &allow-other-keys)
   (:documentation
    "Traverse the HTML node NODE. Node declarations appearing within
-    the HTML node are extracted, parsed, the `NODE' objects are built
-    and added to *GLOBAL-NODE-TABLE*. The HTML nodes in which the node
-    declarations appear are appended to the array HTML-NODE-IDS."))
+    the HTML node are extracted and parsed from which `NODE' objects
+    are built and added to *GLOBAL-NODE-TABLE*. The HTML nodes in
+    which the node declarations appear are appended to the array
+    HTML-NODE-IDS. A new HTML node is returned with the node
+    declarations removed from each attribute."))
 
 
 ;;; Process HTML elements
 
-(defmethod walk-html-node ((element plump:element) html-nodes)
+(defmethod walk-html-node ((element plump:element) html-nodes &key)
   "Extracts node declarations from each attribute of the element."
 
-  (let* ((attributes (plump:attributes element))
+  (let* ((element (plump:clone-node element nil))
+         (attributes (plump:attributes element))
          (html-id (gethash "id" attributes)))
 
     (dohash (key value attributes)
@@ -169,49 +182,86 @@
         (build-node it *global-node-table*)
 
         (vector-push-extend (list html-id (plump:tag-name element) key it) html-nodes)
+        (remhash key attributes)))
 
-        (setf (gethash key attributes) "")))))
+    (call-next-method element html-nodes :clone nil)))
 
 
 ;;; Process Text Nodes
 
-(defmethod walk-html-node ((node plump:text-node) html-nodes)
+(defmethod walk-html-node ((node plump:text-node) html-nodes &key)
   "Extracts node declarations from the text contained in the text
-   node."
+   node. If the node contains node declarations a new empty text node
+   is created and returned, otherwise NODE is returned as is."
 
-  (with-accessors ((parent plump:parent) (text plump:text)) node
-    (when (plump:element-p parent)
+  (with-accessors ((text plump:text)) node
+    (when (plump:element-p *parent-html-node*)
 
-      (let* ((tag-name (plump:tag-name parent))
-             (html-id (plump:attribute parent "id")))
+      (let* ((tag-name (plump:tag-name *parent-html-node*))
+             (html-id (plump:attribute *parent-html-node* "id")))
 
-        (awhen (extract-metalink-node text)
-          (build-node it *global-node-table*)
-          (vector-push-extend (list html-id tag-name "textContent" it) html-nodes)
+        (acond
+          ((extract-metalink-node text)
+           (build-node it *global-node-table*)
+           (vector-push-extend (list html-id tag-name "textContent" it) html-nodes)
 
-          (setf text ""))))))
+           (plump:make-text-node *parent-html-node*))
 
-(defmethod walk-html-node (node html-nodes)
-  (declare (ignore node html-nodes)))
+          (t node))))))
+
+
+;;; Process Child Nodes
+
+(defmethod walk-html-node ((node plump:nesting-node) html-nodes &key (clone t))
+  "Walks each child of NODE, by WALK-HTML-NODE and returns a new node
+   which is a clone of NODE, if CLONE is true, with each child
+   replaced by the new child node returned from WALK-HTML-NODE. If
+   WALK-HTML-NODE returns NIL for a particular child, it is removed
+   from the child nodes array. If CLONE is NIL, NODE is not cloned and
+   its child array is modified directly."
+
+  (let* ((node (if clone (plump:clone-node node nil) node))
+         (*parent-html-node* node)
+         (children (plump:children node)))
+
+    (setf (plump:children node) (plump:make-child-array))
+
+    (iter (for child in-vector children)
+          (awhen (walk-html-node child html-nodes)
+            (plump:append-child node it)))
+
+    node))
+
+(defmethod walk-html-node ((node plump:root) html-nodes &key)
+  (call-next-method (make-instance 'plump:root :children (plump:children node)) html-nodes :clone nil))
+
+(defmethod walk-html-node (node html-nodes &key)
+  (declare (ignore html-nodes))
+  node)
 
 
 ;;; Process Script Tags
 
-(defmethod walk-html-node ((element plump:fulltext-element) html-nodes)
+(defmethod walk-html-node ((element plump:fulltext-element) html-nodes &key)
   "Traverses full text elements such as script and style tags. If the
    element is a script tag with the language attribute equal to
    'metalink' the text content of the script tag is parsed as metalink
-   code."
+   code, and NIL is returned. Otherwise ELEMENT is returned as is."
 
   (declare (ignore html-nodes))
 
   (let ((children (plump:children element)))
-    (when (and (metalink-script? element)
-               (not (emptyp children)))
-      (let ((text-node (aref children 0)))
-        (process-script text-node))
+    (cond
+      ((and (metalink-script? element)
+            (not (emptyp children)))
 
-      (plump:clear element))))
+       (aif (plump:attribute element "src")
+            (process-source-file it)
+            (process-script (aref children 0)))
+
+       nil)
+
+      (t element))))
 
 (defun metalink-script? (element)
   "Returns true if ELEMENT is a script tag containing metalink node
@@ -229,6 +279,12 @@
   (let ((text (plump:text text-node)))
     (with-input-from-string (in text)
       (build-partial-graph (make-parser in) *global-node-table*))))
+
+(defun process-source-file (path)
+  "Processes the metalink source file at PATH."
+
+  (with-open-file (in path)
+    (build-partial-graph (make-parser in) *global-node-table*)))
 
 
 ;;; Parse Attributes and Text Content
