@@ -266,8 +266,8 @@
   "Establishes a one-way binding from the first to the second node in
    OPERANDS."
 
-  (let* ((*source-node* (process-declaration (first operands) table))
-         (target (process-declaration (second operands) table)))
+  (let* ((*source-node* (let (*source-node*) (process-declaration (first operands) table)))
+         (target (let (*top-level*) (process-declaration (second operands) table))))
 
     (let ((value-link (add-binding *source-node* target)))
       (unless *top-level*
@@ -411,6 +411,7 @@
 
   (flet ((make-link (decl typed-node)
            (let ((*source-node* typed-node)
+                 (*top-level* nil)
                  (node (process-declaration decl table)))
 
              (add-binding typed-node node))
