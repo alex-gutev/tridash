@@ -50,88 +50,114 @@
   "The `NODE-TABLE' containing all node definitions extracted from the
    HTML file and source files linked using script tags.")
 
+(defvar *runtime-library-path* "metalink.js"
+  "Path to the Metalink runtime library which will be referenced,
+   using a script tag, in the output HTML file.")
+
+
+;;;; Building HTML files
+
+(defgeneric build-html-file (file &optional node-table)
+  (:documentation
+   "Extracts nodes from the HTML file FILE and adds the node
+    definitions to NODE-TABLE. Prints the processed HTML file to
+    standard output."))
+
+(defmethod build-html-file (file &optional (node-table (make-instance 'node-table)))
+  "Extracts nodes from the HTML file at path FILE."
+
+  (with-open-file (stream file)
+    (build-html-file stream node-table)))
+
+(defmethod build-html-file ((stream stream) &optional (*global-node-table* (make-instance 'node-table)))
+  "Extracts nodes from the input stream STREAM."
+
+  (let ((root-node (nth-value 1 (build-graph-from-html stream *global-node-table*))))
+    (link-runtime-library *runtime-library-path* root-node)
+    (link-graph *global-node-table* root-node)
+    (plump:serialize root-node)))
+
 
 ;;;; Building Graph
 
-(defun build-graph-from-html (stream)
+(defun build-graph-from-html (stream &optional (*global-node-table* (make-instance 'node-table)))
   "Extract node definitions from an HTML file, and build the
    graph. Returns two values: the global node table and the HTML root
    node."
 
-  (let ((*global-node-table* (make-instance 'node-table)))
-    (labels ((make-html-nodes (html-nodes)
-               "Returns a function which when called generates (and
+  (labels ((make-html-nodes (html-nodes)
+             "Returns a function which when called generates (and
                 returns) a node declaration for the next HTML node in
                 HTML-NODES."
 
-               (iter (for html-node in-vector html-nodes)
-                     (build-node (make-html-node html-node) *global-node-table*)))
+             (iter (for html-node in-vector html-nodes)
+                   (build-node (make-html-node html-node) *global-node-table*)))
 
-             (make-html-node (html-node)
-               "Generates a node declaration for the HTML node
+           (make-html-node (html-node)
+             "Generates a node declaration for the HTML node
                 HTML-NODE."
 
-               (destructuring-bind (html-id tag attribute node-name) html-node
-                 (declare (ignore tag))
-                 (let ((html-node (make-html-node-name html-id attribute))
-                       (node (gethash node-name (nodes *global-node-table*))))
-                   (list* +bind-operator+
-                          (if (plusp (dependencies-count node))
-                              (list node html-node)
-                              (list html-node node))))))
+             (destructuring-bind (html-id tag attribute node-name) html-node
+               (declare (ignore tag))
+               (let ((html-node (make-html-node-name html-id attribute))
+                     (node (gethash node-name (nodes *global-node-table*))))
+                 (list* +bind-operator+
+                        (if (plusp (dependencies-count node))
+                            (list node html-node)
+                            (list html-node node))))))
 
-             (make-html-node-name (id attribute)
-               "Generates the name of a node corresponding to the
+           (make-html-node-name (id attribute)
+             "Generates the name of a node corresponding to the
                 attribute ATTRIBUTE of the HTML node with id ID."
 
-               (list +subnode-operator+ (id-symbol id) (id-symbol attribute)))
+             (list +subnode-operator+ (id-symbol id) (id-symbol attribute)))
 
-             (mark-html-node (html-node)
-               "Changes the class of the `NODE' object, corresponding
+           (mark-html-node (html-node)
+             "Changes the class of the `NODE' object, corresponding
                 to HTML-NODE, to `HTML-NODE'"
 
-               (destructuring-bind (html-id tag attribute node-name) html-node
-                 (declare (ignore node-name))
+             (destructuring-bind (html-id tag attribute node-name) html-node
+               (declare (ignore node-name))
 
-                 (mark-html-element tag html-id)
+               (mark-html-element tag html-id)
 
-                 (let ((node (gethash (make-html-node-name html-id attribute) (nodes *global-node-table*))))
+               (let ((node (gethash (make-html-node-name html-id attribute) (nodes *global-node-table*))))
 
+                 (change-class node 'html-node
+                               :tag-name tag
+                               :attribute attribute
+                               :element-id html-id))))
+
+           (mark-html-element (tag id)
+             (let* ((name (id-symbol id))
+                    (node (gethash name (nodes *global-node-table*))))
+
+               (remove-observers node)
+               (if (plusp (dependencies-count node))
                    (change-class node 'html-node
                                  :tag-name tag
-                                 :attribute attribute
-                                 :element-id html-id))))
+                                 :attribute nil
+                                 :element-id id)
+                   (remhash name (nodes *global-node-table*)))))
 
-             (mark-html-element (tag id)
-               (let* ((name (id-symbol id))
-                      (node (gethash name (nodes *global-node-table*))))
+           (remove-observers (html-node)
+             (maphash-keys (rcurry #'remove-observer html-node) (observers html-node))
+             (clrhash (observers html-node)))
 
-                 (remove-observers node)
-                 (if (plusp (dependencies-count node))
-                     (change-class node 'html-node
-                                   :tag-name tag
-                                   :attribute nil
-                                   :element-id id)
-                     (remhash name (nodes *global-node-table*)))))
+           (remove-observer (observer node)
+             (remhash node (dependencies observer))))
 
-             (remove-observers (html-node)
-               (maphash-keys (rcurry #'remove-observer html-node) (observers html-node))
-               (clrhash (observers html-node)))
+    (multiple-value-bind (root-node html-nodes) (preprocess-html stream)
+      (make-html-nodes html-nodes)
+      (finish-build-graph *global-node-table*)
 
-             (remove-observer (observer node)
-               (remhash node (dependencies observer))))
+      (iter (for html-node in-vector html-nodes)
+            (mark-html-node html-node))
 
-      (multiple-value-bind (root-node html-nodes) (preprocess-html stream)
-        (make-html-nodes html-nodes)
-        (finish-build-graph *global-node-table*)
+      (coalesce-nodes *global-node-table*)
+      (build-wait-sets *global-node-table*)
 
-        (iter (for html-node in-vector html-nodes)
-              (mark-html-node html-node))
-
-        (coalesce-nodes *global-node-table*)
-        (build-wait-sets *global-node-table*)
-
-        (values *global-node-table* root-node)))))
+      (values *global-node-table* root-node))))
 
 
 ;;;; Process HTML Files
@@ -151,6 +177,64 @@
     (values
      (walk-html-node root-node html-nodes)
      html-nodes)))
+
+
+;;; Link Runtime Library
+
+(defun link-runtime-library (path root-node)
+  "Inserts a script tag which references the metalink runtime library
+   at path PATH. ROOT-NODE is the root-node of the HTML DOM."
+
+  (plump:make-element
+   (find-head-tag root-node)
+   "script"
+   :attributes (alist-hash-table (acons "src" (mkstr path) nil) :test #'equalp)))
+
+
+(defun find-head-tag (root-node)
+  "Finds the head tag, or an appropriate tag into which a script tag
+   can be inserted, in the HTML DOM with root ROOT-NODE."
+
+  (or (find-tag "head" root-node) (find-tag "html" root-node) root-node))
+
+(defun find-tag (tag root-node)
+  "Finds a tag with name TAG in the HTML DOM with root ROOT-NODE."
+
+  (first (plump:get-elements-by-tag-name root-node tag)))
+
+
+;;; Link Generated Code
+
+(defun link-graph (graph root-node &key path)
+  "Compiles the node definitions in GRAPH to JavaScript code, which is
+   inserted in a script tag. If the keyword argument :PATH is
+   provided, the generated code is written to the file at PATH
+   instead, and a script tag is inserted which references that file."
+
+  (let ((head-tag (find-head-tag root-node)))
+    (cond
+      (path
+       (output-code-to-file graph path)
+       (plump:make-element
+        head-tag "script"
+        :attributes (alist-hash-table (acons "src" (mkstr path) nil) :test #'equalp)))
+
+      (t
+       (plump:make-fulltext-element head-tag "script" :text (output-code-to-string graph))))))
+
+(defun output-code-to-file (graph path)
+  "Compiles the node definitions in GRAPH and outputs the code to the
+   file at path PATH."
+
+  (with-open-file (*standard-output* path :direction :output :if-exists :supersede)
+    (compile-nodes :javascript graph)))
+
+(defun output-code-to-string (graph)
+  "Compiles the node definitions in GRAPH and returns a string of the
+   generated code."
+
+  (with-output-to-string (*standard-output*)
+    (compile-nodes :javascript graph)))
 
 
 ;;;; Process HTML Nodes

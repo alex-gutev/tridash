@@ -36,5 +36,6 @@
 
   (:export
    :*print-indented*
-   :build-graph-from-html
-   :preprocess-html))
+
+   :build-html-file
+   :build-graph-from-html))
