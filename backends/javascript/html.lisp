@@ -54,6 +54,11 @@
   "Path to the Metalink runtime library which will be referenced,
    using a script tag, in the output HTML file.")
 
+(defvar *html-id-counter* 0
+  "Counter for automatically generated HTML element id's. The value of
+   this counter is appended to a prefix in order to generate a unique
+   identifier.")
+
 
 ;;;; Building HTML files
 
@@ -72,7 +77,8 @@
 (defmethod build-html-file ((stream stream) &optional (*global-node-table* (make-instance 'node-table)))
   "Extracts nodes from the input stream STREAM."
 
-  (let ((root-node (nth-value 1 (build-graph-from-html stream *global-node-table*))))
+  (let* ((*html-id-counter* 0)
+         (root-node (nth-value 1 (build-graph-from-html stream *global-node-table*))))
     (link-runtime-library *runtime-library-path* root-node)
     (link-graph *global-node-table* root-node)
     (plump:serialize root-node)))
@@ -258,17 +264,25 @@
   "Extracts node declarations from each attribute of the element."
 
   (let* ((element (plump:clone-node element nil))
-         (attributes (plump:attributes element))
-         (html-id (gethash "id" attributes)))
+         (attributes (plump:attributes element)))
 
     (dohash (key value attributes)
       (awhen (extract-metalink-node value)
-        (build-node it *global-node-table*)
+        (let ((html-id (html-element-id element)))
+          (build-node it *global-node-table*)
 
-        (vector-push-extend (list html-id (plump:tag-name element) key it) html-nodes)
-        (remhash key attributes)))
+          (vector-push-extend (list html-id (plump:tag-name element) key it) html-nodes)
+          (remhash key attributes))))
 
     (call-next-method element html-nodes :clone nil)))
+
+(defun generate-id (&optional (prefix "__id"))
+  "Generates a unique HTML identifier by concatenating PREFIX with the
+   value of *HTML-ID-COUNTER*. The value of *HTML-ID-COUNTER* is
+   incremented."
+
+  (prog1 (mkstr prefix *html-id-counter*)
+    (incf *html-id-counter*)))
 
 
 ;;; Process Text Nodes
@@ -281,17 +295,24 @@
   (with-accessors ((text plump:text)) node
     (when (plump:element-p *parent-html-node*)
 
-      (let* ((tag-name (plump:tag-name *parent-html-node*))
-             (html-id (plump:attribute *parent-html-node* "id")))
+      (let ((tag-name (plump:tag-name *parent-html-node*)))
 
         (acond
           ((extract-metalink-node text)
-           (build-node it *global-node-table*)
-           (vector-push-extend (list html-id tag-name "textContent" it) html-nodes)
+           (let ((html-id (html-element-id *parent-html-node*)))
+             (build-node it *global-node-table*)
+             (vector-push-extend (list html-id tag-name "textContent" it) html-nodes)
 
-           (plump:make-text-node *parent-html-node*))
+             (plump:make-text-node *parent-html-node*)))
 
           (t node))))))
+
+(defun html-element-id (element)
+  "Returns the ID of the HTML element ELEMENT. If ELEMENT does not
+   have an ID a unique ID is generated, using GENERATE-ID, and is set
+   as the ID of ELEMENT."
+
+  (ensure-gethash "id" (plump:attributes element) (generate-id)))
 
 
 ;;; Process Child Nodes
