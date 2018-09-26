@@ -32,18 +32,21 @@
         ((coalesce-observers (node)
            "Performs node coalescing on the observer nodes of NODE."
 
-           (mapc #'coalesce-node (observer-list node)))
+           (maphash #'coalesce-node (observers node)))
 
-         (coalesce-node (node)
+         (coalesce-node (node link)
            "Coalesces the node NODE (into its observer node) if it
             only has a single observer, after node coalescing is
-            performed on its observer nodes."
+            performed on its observer nodes. If LINK is a two-way link
+            NODE is not coalesced."
 
            (unless (gethash node visited)
              (setf (gethash node visited) t)
 
              (coalesce-observers node)
-             (remove-node node)))
+
+             (unless (node-link-2-way-p link)
+               (remove-node node))))
 
          (remove-node (node)
            "Removes the node NODE if it has a single observer. Its
@@ -144,13 +147,14 @@
 
                  (_ fn)))
 
-             (make-new-node-link (dependency)
+             (make-new-node-link (dependency link)
                "Creates a new `node-link' object for the dependency
                 node DEPENDENCY and adds it to the dependencies table
                 of NODE."
 
-               (alet (setf (gethash dependency dependencies) (node-link dependency))
+               (alet (setf (gethash dependency dependencies)
+                           (node-link dependency (and (node-link-p link) (node-link-2-way-p link))))
                  (setf (gethash node (observers dependency)) it))))
 
-      (maphash-keys #'make-new-node-link dependencies)
+      (maphash #'make-new-node-link dependencies)
       (setf value-function (remove-node-links value-function)))))

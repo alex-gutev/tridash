@@ -67,8 +67,15 @@
                 ;; in the path (if not all dependencies are reachable from
                 ;; it).
 
+                ;; If the last node before the paths diverge can
+                ;; function as an input node, do not augment its wait
+                ;; set, instead augment the wait set of the first node
+                ;; in the path
+
                 (augment-wait-set
-                 (if all-deps? (first it) (lastcar it))
+                 (if (and all-deps? (not (input-node? (first it))))
+                     (first it)
+                     (lastcar it))
                  node deps)
 
                 (walk-observers node it))))

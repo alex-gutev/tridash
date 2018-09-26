@@ -85,18 +85,21 @@
 
 (defun n-ary-node? (node)
   "Returns true if NODE has more than one dependency node."
-  
-  (> (dependencies-count node) 1))
+
+  (and
+   (> (dependencies-count node) 1)
+   (not (input-node? node))))
 
 
 ;;; Bindings
 
-(defstruct (node-link (:constructor node-link (node)))
+(defstruct (node-link (:constructor node-link (node &optional 2-way-p)))
   "NODE-LINK objects are used to refer to nodes indirectly. This
    allows nodes to be replaced with other nodes and have all
    references to the node be automatically updated."
 
-  node)
+  node
+  2-way-p)
 
 (defun add-binding (source target &optional (add-condition t))
   "Establishes a binding from the SOURCE node to the TARGET
@@ -105,10 +108,20 @@
   (if (node? source)
       (aprog1
           (add-dependency source target add-condition)
-        (add-observer target source it))
+        (add-observer target source it)
+        (mark-2-way source target it))
       (prog1 source
         (when add-condition
           (add-default-condition target source)))))
+
+(defun mark-2-way (source target link)
+  "If the node TARGET is a dependency of SOURCE, the `NODE-LINK' LINK
+   and the link between SOURCE and TARGET are marked as 2-way
+   links (the 2-WAY-P slots are set to true)."
+
+  (awhen (gethash target (dependencies source))
+    (setf (node-link-2-way-p it) t)
+    (setf (node-link-2-way-p link) t)))
 
 
 (defun add-dependency (dependency node &optional add-condition)

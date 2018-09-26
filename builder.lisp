@@ -109,11 +109,18 @@
    BUILD-NODE. This function should not be called after calling
    BUILD-GRAPH."
 
-  (build-meta-node-graphs *global-node-table*)
-  (maphash-values #'create-value-function (all-nodes *global-node-table*))
+  (create-value-functions *global-node-table*)
 
   (find-outer-node-references *global-node-table*)
   (add-outer-node-operands *global-node-table*))
+
+(defun create-value-functions (graph)
+  "Creates the value function of each node in GRAPH."
+
+  (remove-redundant-links graph)
+
+  (build-meta-node-graphs graph)
+  (maphash-values #'create-value-function (all-nodes graph)))
 
 
 ;;;; Build Meta-Node
@@ -130,15 +137,12 @@
 
   (let ((table (make-inner-node-table outer-table))
         (*meta-node* meta-node))
+
     (add-local-nodes (operands meta-node) table)
 
     (let* ((last-node (process-node-list (definition meta-node) table t)))
-
       (make-meta-node-function meta-node last-node)
-
-      (build-meta-node-graphs table)
-      (maphash-values #'create-value-function (all-nodes table))
-
+      (create-value-functions table)
       (setf (definition meta-node) table))))
 
 (defun add-local-nodes (names table)

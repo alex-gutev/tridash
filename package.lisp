@@ -94,6 +94,7 @@
    :node-link
    :node-link-node
    :node-link-p
+   :node-link-2-way-p
    :self
 
    ;; Meta-node
@@ -115,6 +116,7 @@
    :meta-nodes
 
    :input-nodes
+   :input-node?
 
    ;; Builder
    :build-graph

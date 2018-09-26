@@ -135,9 +135,15 @@
 ;;; Utility Functions
 
 (defun input-nodes (graph)
-  "Returns the list of nodes which have no dependencies."
+  "Returns the list of nodes which have no one-way dependencies."
 
   (iter
     (for (nil node) in-hashtable (nodes graph))
-    (when (zerop (hash-table-count (dependencies node)))
-      (collect node))))
+    (when (input-node? node) (collect node))))
+
+(defun input-node? (node)
+  "Returns true if NODE is an input node that is it has no one-way
+   dependencies."
+
+  (iter (for (nil link) in-hashtable (dependencies node))
+        (always (node-link-2-way-p link))))

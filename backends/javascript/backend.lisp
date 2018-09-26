@@ -116,7 +116,10 @@
 
      (aand (dependencies-count node)
            (plusp it)
-           (js-call (js-member path "make_dependencies") it))
+
+           (if (input-node? node)
+               (js-call (js-member path "create_reserve_queue"))
+               (js-call (js-member path "make_dependencies") it)))
 
      (awhen (create-compute-function node)
        (js-call '= (js-member path "compute") it)))))
@@ -133,8 +136,10 @@
    corresponding to the `NODE-LINK' object LINK. If LINK does not have
    a dependency index, a new index is assigned to it."
 
-  (let ((links (ensure-gethash node *node-link-indices* (make-hash-table :test #'eq))))
-    (ensure-gethash link links (hash-table-count links))))
+  (if (node-link-2-way-p link)
+      0
+      (let ((links (ensure-gethash node *node-link-indices* (make-hash-table :test #'eq))))
+        (ensure-gethash link links (hash-table-count links)))))
 
 
 ;;;; Creating meta-nodes
