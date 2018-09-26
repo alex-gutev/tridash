@@ -47,7 +47,7 @@ function MetaLinkNode() {
     /**
      * Value computation function.
      */
-    this.compute = ([a]) => a;
+    this.compute = (a) => a;
 
 
     /* Wait Information */
@@ -80,6 +80,22 @@ MetaLinkNode.prototype.make_dependencies = function(num) {
     for (var i = 0; i < num; i++) {
         this.dependencies.push(new PromiseQueue(this));
     }
+};
+
+/**
+ * Creates a single reserve queue (type ReserveQueue) and adds it to
+ * the dependencies array.
+ *
+ * The update and set_value method are replaced with
+ * MetaLinkNode.two_way_update and MetaLinkNode.two_way_set_value
+ * respectively.
+ */
+MetaLinkNode.prototype.create_reserve_queue = function() {
+    this.reserve_queue = new ReserveQueue(this);
+    this.dependencies.push(this.reserve_queue);
+
+    this.update = MetaLinkNode.two_way_update.bind(this);
+    this.set_value = MetaLinkNode.two_way_set_value.bind(this);
 };
 
 /**
@@ -150,6 +166,49 @@ MetaLinkNode.prototype.set_value = function(value) {
 
     this.send_wait();
     this.dispatch(value);
+};
+
+
+/* Reserving Paths in two-way bindings */
+
+/**
+ * Update value function for nodes which have all their dependencies
+ * bound using two-way bindings.
+ */
+MetaLinkNode.two_way_update = function() {
+    this.running = true;
+
+    var reserve = this.reserve_queue.dequeue();
+
+    if (reserve) {
+        var {source, reserved, value} = reserve;
+        var new_value = new ValuePromise();
+
+        this.observers.reserve(this, source, new_value)
+            .then(() => reserved.resolve(true))
+            .then(() => value.promise)
+            .then((value) => new_value.resolve(this.compute(value)))
+            .finally(this.update.bind(this));
+    }
+    else {
+        this.running = false;
+    }
+};
+
+/**
+ * Set value function for nodes which have all their dependencies
+ * bound using two-way bindings.
+ *
+ * @param value The value to set.
+ */
+MetaLinkNode.two_way_set_value = function(value) {
+    this.value = value;
+
+    var value_promise = new ValuePromise();
+
+    this.send_wait();
+    this.observers.reserve(this, null, value_promise)
+        .then(() => value_promise.resolve(value));
 };
 
 
@@ -245,6 +304,29 @@ NodeLink.prototype.dispatch = function(value) {
 };
 
 /**
+ * Reserves a path from @a node to all observers excluding @a source.
+ *
+ * @param node The node from which to reserve the path.
+ * @param source The observer node to exclude from the path.
+ * @param value The value promise to send all observers.
+ *
+ * @return A promise which is resolved when all reserved promises,
+ *    sent to the observers, are resolved.
+ */
+NodeLink.prototype.reserve = function(node, source, value) {
+    return Promise.all(this.observers.map((obs) => {
+        if (obs.target !== source) {
+            var promise = new ValuePromise();
+
+            obs.reserve_path(node, promise, value);
+            return promise.promise;
+        }
+
+        return null;
+    }));
+};
+
+/**
  * Creates a thunk for lazily computing a value. When the thunk
  * function is called for the first time @a compute is called and the
  * value returned is stored. Subsequent invocations of the thunk
@@ -304,7 +386,7 @@ function PromiseQueue(target) {
 }
 
 /**
- * Adds a new promise to the queue..
+ * Adds a new promise to the queue.
  *
  * @param promise The Promise.
  */
@@ -343,6 +425,109 @@ PromiseQueue.prototype.add_update = function() {
     this.target.add_update();
 };
 
+/**
+ * Reserves a path.
+ *
+ * Since this queue is used in nodes which have no two-way bound
+ * dependencies, the reserved promise, @a reserved, is resolved, and
+ * the value promise @a value is added to the promise queue.
+ *
+ * The update loop of the target node is run.
+ */
+PromiseQueue.prototype.reserve_path = function(source, reserved, value) {
+    reserved.resolve(true);
+
+    this.enqueue(value.promise);
+    this.add_update();
+};
+
+
+/* Reserve Path Queue */
+
+/**
+ * Dependency queue which is used when the path needs to be reserved
+ * prior to dispatching values.
+ *
+ * The queue stores reserve objects with three fields:
+ *
+ *   source: The node from which the value was received.
+ *
+ *   reserved: A promise which is resolved when the path has been
+ *             reserved.
+ *
+ *   value: A promise resolved when the dependency's value has been
+ *          computed.
+ */
+function ReserveQueue(target) {
+    /**
+     * The target node - the node of which this queue is a dependency
+     * queue.
+     */
+    this.target = target;
+
+    /**
+     * The queue of reserve objects.
+     */
+    this.queue = new Queue();
+}
+
+/**
+ * Adds a new reserve object to the queue with value promise @a
+ * value_promise.
+ *
+ * A reserve object with source null and a new reserved promise is
+ * created.
+ *
+ * @param value_promise Promise which is resolved when the value of
+ *    the dependency node is computed.
+ */
+ReserveQueue.prototype.enqueue = function(value_promise) {
+    this.queue.enqueue({
+        source: null,
+        reserved: new ValuePromise(),
+        value: value_promise
+    });
+};
+
+/**
+ * Dequeues a reserve object from the queue.
+ *
+ * @return The reserve object or null if the queue is empty.
+ */
+ReserveQueue.prototype.dequeue = function() {
+    return this.queue.dequeue();
+};
+
+/**
+ * Runs the update loop of the target node.
+ */
+ReserveQueue.prototype.add_update = function() {
+    this.target.add_update();
+};
+
+/**
+ * Reserves a path by adding a new reserve object to the queue.
+ *
+ * Runs the update loop of the target node.
+ *
+ * @param source: The dependency node from which the path is reserved
+ *    (the previous node in the path).
+ *
+ * @param reserved A promise which is resolved when the path is
+ *    reserved.
+ *
+ * @param value A value which is resolved when the value of the
+ *    dependency node has been computed.
+ */
+ReserveQueue.prototype.reserve_path = function(source, reserved, value) {
+    this.queue.enqueue({
+        source: source,
+        reserved: reserved,
+        value: value
+    });
+
+    this.add_update();
+};
 
 /**
  * A simple implementation of an unbounded FIFO queue.
