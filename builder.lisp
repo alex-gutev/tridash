@@ -56,6 +56,24 @@
    otherwise is NIL.")
 
 
+;;;; Utility Functions and Macros
+
+(defmacro at-source (&body body)
+  "Sets the node position to source in the dynamic extent of the forms
+   in BODY. All declarations, processed by the forms in body, are
+   treated as appearing in source position."
+
+  `(let (*source-node*)
+     ,@body))
+
+(defmacro with-source-node (source &body body)
+  "Evaluates the forms in BODY, with *SOURCE-NODE* bound to the
+   result of the evaluation of the form SOURCE."
+
+  `(let ((*source-node* ,source))
+     ,@body))
+
+
 ;;;; Generic Functions
 
 (defgeneric process-declaration (decl table)
@@ -78,12 +96,12 @@
   "Builds the graph from the objects returned by successively calling
    PARSER."
 
-  (build-partial-graph parser *global-node-table*)
+  (build-parsed-nodes parser *global-node-table*)
   (finish-build-graph *global-node-table*)
 
   *global-node-table*)
 
-(defun build-partial-graph (parser *global-node-table*)
+(defun build-parsed-nodes (parser *global-node-table*)
   "Builds the `NODE' objects from the node declarations returned by
    successively calling PARSER and adds them to the `NODE-TABLE' given
    in the second argument. This function does not build meta-node
@@ -117,10 +135,8 @@
 (defun create-value-functions (graph)
   "Creates the value function of each node in GRAPH."
 
-  (remove-redundant-links graph)
-
-  (build-meta-node-graphs graph)
-  (maphash-values #'create-value-function (all-nodes graph)))
+;  (remove-redundant-links graph)
+  (build-meta-node-graphs graph))
 
 
 ;;;; Build Meta-Node
@@ -156,16 +172,18 @@
   "Creates the value function of the meta-node META-NODE. LAST-NODE is
    the last-node in the meta-node's definition."
 
-  (with-slots (output-nodes value-function) meta-node
+  (with-accessors ((output-nodes output-nodes)
+                   (value-function value-function)
+                   (value-functions value-functions)) meta-node
     (cond
       ((plusp (hash-table-count output-nodes))
-       (push (cons :object
+       (setf value-function
+             (cons :object
                    (iter
                      (for (name node) in-hashtable output-nodes)
-                     (collect (list name (add-binding node meta-node nil)))))
-             value-function))
+                     (collect (list name (add-binding node meta-node nil)))))))
 
-      ((and last-node (null value-function))
+      ((and last-node (zerop (hash-table-count value-functions)))
        (add-binding last-node meta-node)))))
 
 
@@ -208,6 +226,8 @@
 
 
 ;;;; Methods: Processing Functors
+
+;;; Operators
 
 (defmethod process-functor ((operator (eql +op-operator+)) args table)
   "Registers a node as an infix operator with a specific precedence
@@ -264,7 +284,6 @@
          (return (values node node-table)))))
 
 
-
 ;;; Outer nodes
 
 (defmethod process-functor ((operator (eql +outer-operator+)) args table)
@@ -292,20 +311,23 @@
 ;;; Bindings
 
 (defmethod process-functor ((operator (eql +bind-operator+)) operands table)
-  "Establishes a one-way binding from the first to the second node in
+  "Establishes a binding from the first node to the second node in
    OPERANDS."
 
-  (let* ((*source-node* (let (*source-node*) (process-declaration (first operands) table)))
-         (target (let (*top-level*) (process-declaration (second operands) table))))
+  (destructuring-bind (source target) operands
+    (with-source-node (at-source (process-declaration source table))
+      (let* ((target (let (*top-level*) (process-declaration target table)))
+             (value-link (add-binding *source-node* target)))
 
-    (let ((value-link (add-binding *source-node* target)))
-      (unless *top-level*
-        (let* ((name (cons operator operands))
-               (cond-node (ensure-node name table))
-               (cond-link (add-binding cond-node target nil)))
+        (unless *top-level*
+          (let* ((name (cons operator operands))
+                 (cond-node (ensure-node name table))
+                 (cond-link (add-binding cond-node target nil)))
 
-          (add-condition target cond-link value-link)
-          (values cond-node table))))))
+            (setf (value-function target source)
+                  `(if ,cond-link ,value-link ,(node-link :self)))
+
+            (values cond-node table)))))))
 
 
 ;;; Output Nodes
@@ -323,39 +345,47 @@
 ;;; Subnodes
 
 (defmethod process-functor ((operator (eql +subnode-operator+)) operands table)
-  "Creates a node with a value function that accesses an output node
-   of a set of outputs returned by a meta-node instance."
+  "Creates a node with a value function that accesses a particular
+   field of an object. The binding is created in both directions, from
+   the object node (the node containing the object value) to the
+   subnode and from the subnode to the object node. In the latter
+   direction the value of the field of the object value, stored in the
+   object node, is updated."
 
   (destructuring-bind (node key) operands
-    (let ((node (process-declaration node table)))
-      (let* ((name (cons operator operands))
-             (subnode (ensure-node name table)))
+    (let* ((name (cons operator operands))
+           (subnode (ensure-node name table)))
 
-        (if *source-node*
-            (make-target-subnode node key subnode)
-            (make-source-subnode node key subnode))
-        subnode))))
+      (make-source-subnode node key subnode table)
 
-(defun make-source-subnode (node key subnode)
+      (handler-case
+          (make-target-subnode node key subnode table)
+        (target-node-error ()))
+
+      subnode)))
+
+(defun make-source-subnode (node key subnode table)
   "Makes the value function of the subnode for when it appears as the
    source of a binding. NODE is the object node referenced, KEY is the
-   subnode key and SUBNODE is the `NODE' object of the subnode."
+   subnode key and SUBNODE is the subnode `NODE' object."
 
-  (unless (value-function subnode)
-    (push (list :member (add-binding node subnode nil) key)
-          (value-function subnode))))
+  (let ((node (at-source (process-declaration node table))))
+    (unless (value-function subnode node)
+      (setf (value-function subnode node)
+            (list :member (add-binding node subnode nil) key)))))
 
-(defun make-target-subnode (node key subnode)
-  "Makes the value function of the subnode for when it appears as the
-   target of a binding. NODE is the object node referenced, KEY is the
-   subnode key and SUBNODE is the `NODE' object of the subnode."
+(defun make-target-subnode (node key subnode table)
+  "Binds the subnode to the object node and updates the value function
+   of the object node. NODE is the object node declaration, KEY is the
+   field and SUBNODE is the subnode `NODE' object."
 
-  (with-slots (value-function) node
-    (unless value-function
-      (push (list :object) value-function))
+  (with-source-node subnode
+    (let ((object-node (process-declaration node table)))
+      (unless (value-function object-node :object)
+        (setf (value-function object-node :object) (list :object)))
 
-    (push (list key (add-binding subnode node nil))
-          (cdar value-function))))
+      (push (list key (add-binding subnode object-node nil))
+            (cdr (value-function object-node :object))))))
 
 
 ;;; Meta-Node instances
@@ -367,19 +397,45 @@
 
   (acond
     ((lookup-meta-node operator table)
-     (if *source-node*
-         (make-target-meta-node-instance it operator operands table)
-         (add-meta-node-instance it operator operands table)))
+     (make-meta-node-instance it operator operands table))
     (t
      (error "Operator ~s is neither a special operator nor a node meta-node" operator))))
 
 
 ;;; Meta-Node Instances
 
+(defun make-meta-node-instance (meta-node operator operands table)
+  "Creates a node which invokes the meta-node META-NODE with operands
+   OPERANDS, and adds it to TABLE."
+
+  (match meta-node
+    ((list :type _)
+     (create-type-conversion-node meta-node operator operands table))
+
+    (_
+     (if *source-node*
+         (error 'target-node-error :node (cons operator operands))
+         (add-meta-node-instance meta-node operator operands table)))))
+
+
 (defun add-meta-node-instance (meta-node operator operands table)
   "Creates a node with a VALUE-FUNCTION function that invokes the
    meta-node META-NODE with operands OPERANDS, and adds it to
-   table. If table already contains such a node it is returned."
+   TABLE. If TABLE already contains such a node it is returned."
+
+  (multiple-value-bind (instance operands table)
+      (create-instance-node meta-node operator operands table)
+    (add-meta-node-value-function instance meta-node (bind-operands instance operands))
+
+    (values instance table)))
+
+(defun create-instance-node (meta-node operator operands table)
+  "Creates a meta-node instance node. The node is created with
+   name (CONS OPERATOR OPERANDS) and added to TABLE. Additionally
+   processes the operand node declarations in OPERANDS. Does not
+   create the value function of the instance node. Returns three
+   values: the instance node, the operand nodes and the table to which
+   the instance was added."
 
   (let ((name (cons operator operands)))
     (multiple-value-bind (operands table) (process-operands operands table)
@@ -390,14 +446,17 @@
                  (meta-node? meta-node))
         (ensure-gethash meta-node (meta-node-references *meta-node*)))
 
-      (let* ((node (ensure-node name table)))
-        (unless (value-function node)
-          (add-to-instances node meta-node)
+      (values (ensure-node name table) operands table))))
 
-          (push (cons meta-node (bind-operands node operands))
-                (value-function node)))
+(defun add-meta-node-value-function (instance meta-node operands &optional (fn meta-node))
+  "Creates the value function of the meta-node instance INSTANCE,
+   which invokes META-NODE with operands OPERANDS. OPERANDS should be
+   a list containing literal values or `NODE-LINK' objects."
 
-        (values node table)))))
+  (unless (value-function instance fn)
+    (add-to-instances instance meta-node)
+
+    (setf (value-function instance fn) (cons meta-node operands))))
 
 (defun add-to-instances (instance meta-node)
   "Adds the meta-node instance INSTANCE to the list of instances of
@@ -407,54 +466,26 @@
     (push (cons instance *meta-node*) (instances meta-node))))
 
 
-;;; Meta-Node Instance in Target Position
+;;; Type Conversion Nodes
 
-(defgeneric make-target-meta-node-instance (meta-node operator operands table)
-  (:documentation
-   "Creates a meta-node instance that appears as the target of a
-    binding."))
+(defun create-type-conversion-node (meta-node operator operands table)
+  "Creates a node with a value function that converts the received
+   value to a particular type. A two-way binding between the node and
+   operand node (in OPERANDS) is created."
 
+  (destructuring-bind (node) operands
+    (multiple-value-bind (instance operands table)
+        (create-instance-node meta-node operator operands table)
 
-(defmethod make-target-meta-node-instance (meta-node operator operands table)
-  "Default method for meta-node instances appearing as targets of a
-   binding. Signals an error condition."
+      (add-meta-node-value-function instance meta-node (bind-operands instance operands) (first operands))
 
-  (declare (ignore meta-node table))
+      (with-source-node instance
+        (handler-case
+            (let ((node (process-declaration node table)))
+              (add-meta-node-value-function node meta-node (list (add-binding instance node nil)) instance))
+          (target-node-error ())))
 
-  (error "Meta-node instance ~a cannot appear as the target of a binding"
-         (cons operator operands)))
-
-
-;;; Type Conversions in Target Position
-
-(defmethod make-target-meta-node-instance ((meta-node cons) operator operands table)
-  (match meta-node
-    ((list :type _)
-     (make-target-typed-node meta-node operator operands table))
-
-    (_ (call-next-method))))
-
-(defun make-target-typed-node (type operator operands table)
-  "Creates a node with a value function which coerces the value of
-   *SOURCE-NODE* to the type TYPE."
-
-  (flet ((make-link (decl typed-node)
-           (let ((*source-node* typed-node)
-                 (*top-level* nil)
-                 (node (process-declaration decl table)))
-
-             (add-binding typed-node node))
-           (add-binding *source-node* typed-node nil)))
-
-    (destructuring-bind (decl) operands
-      (let* ((node (ensure-node (cons operator operands) table))
-             (link (make-link decl node)))
-
-        (unless (value-function node)
-          (push (list type link)
-                (value-function node)))
-
-        (values node table)))))
+      (values instance table))))
 
 
 ;;; Binding Operands
@@ -471,7 +502,7 @@
       (with op-table = *global-node-table*)
       (for operand in operands)
       (multiple-value-bind (node node-table)
-          (process-declaration operand table)
+          (at-source (process-declaration operand table))
 
         (collect node into nodes)
 

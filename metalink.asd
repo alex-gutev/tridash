@@ -30,6 +30,7 @@
                (:file "package")
                (:file "lexer")
                (:file "parser")
+               (:file "conditions")
                (:file "node")
                (:file "meta-node")
                (:file "primitives")

@@ -55,13 +55,14 @@
      value change. The nodes are stored as values where the keys are
      their common observer.")
 
-   (value-function
-    :accessor value-function
-    :initform nil
+   (value-functions
+    :accessor value-functions
+    :initform (make-hash-table :test #'eq)
     :documentation
-    "The function which computes the node's value. Dependency nodes
-     are referenced using the `node-link' object created when the node
-     was added as a dependency.")
+    "Set of functions which compute the node's value. Stored as
+     hash-table where each key is either a function identifier or is a
+     dependency node and the corresponding value is the value
+     function.")
 
    (attributes
     :accessor attributes
@@ -75,7 +76,7 @@
 
 (defun node? (x)
   "Returns true if X is a `node'."
-  
+
   (typep x 'node))
 
 (defun value? (x)
@@ -101,18 +102,18 @@
   node
   2-way-p)
 
-(defun add-binding (source target &optional (add-condition t))
+(defun add-binding (source target &optional (add-function t))
   "Establishes a binding from the SOURCE node to the TARGET
    node. Returns the `node-link' object of the established binding."
 
   (if (node? source)
       (aprog1
-          (add-dependency source target add-condition)
+          (add-dependency source target add-function)
         (add-observer target source it)
         (mark-2-way source target it))
       (prog1 source
-        (when add-condition
-          (add-default-condition target source)))))
+        (when add-function
+          (setf (value-function target nil) source)))))
 
 (defun mark-2-way (source target link)
   "If the node TARGET is a dependency of SOURCE, the `NODE-LINK' LINK
@@ -124,18 +125,19 @@
     (setf (node-link-2-way-p link) t)))
 
 
-(defun add-dependency (dependency node &optional add-condition)
+(defun add-dependency (dependency node &optional add-function)
   "Adds DEPENDENCY as a dependency node of NODE, returns the
-   `node-link' object of the dependency. if ADD-CONDITION is true
-   DEPENDENCY is added as the default conditional binding."
+   `node-link' object of the dependency. If ADD-FUNCTION is true, a
+   value function, with key DEPENDENCY, which evaluates to the value
+   of DEPENDENCY, is added."
 
   (with-slots (dependencies) node
     (multiple-value-bind (link in-hash?)
         (ensure-gethash dependency dependencies (node-link dependency))
 
-      (when (and add-condition (not in-hash?))
-        (add-default-condition node link))
-      
+      (when (and add-function (not in-hash?))
+        (add-value-function node link))
+
       link)))
 
 (defun add-observer (observer node link)
@@ -182,6 +184,16 @@
       (when value-function
         (setf value-function
               (create-conditions value-function))))))
+;;; Value Functions
+
+(defun value-function (node &optional fn)
+  (gethash fn (value-functions node)))
+
+(defun (setf value-function) (value node &optional fn)
+  (setf (gethash fn (value-functions node)) value))
+
+(defun add-value-function (node link)
+  (setf (value-function node (node-link-node link)) link))
 
 
 ;;; Observers/Dependencies Utility Functions
@@ -210,6 +222,6 @@
 (defmethod print-object ((node node) stream)
   "Prints a representation of the NODE object which includes the
    node's name."
-  
+
   (print-unreadable-object (node stream :type t)
     (format stream "~a" (name node))))

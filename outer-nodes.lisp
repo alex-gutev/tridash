@@ -83,9 +83,9 @@
              "Updates each instance of META-NODE to pass the values of
               each node in NODES as additional arguments."
 
-             (mapc (rcurry #'update-instance nodes) (instances meta-node)))
+             (mapc (rcurry #'update-instance nodes meta-node) (instances meta-node)))
 
-           (update-instance (instance nodes)
+           (update-instance (instance nodes fn)
              "Binds each node in NODES to INSTANCE and appends the
               values of NODES to the argument list of the meta-node,
               within the value function of INSTANCE. If INSTANCE is
@@ -95,7 +95,7 @@
 
              (destructuring-bind (node . meta-node) instance
                (let ((nodes (operand-nodes nodes meta-node)))
-                 (appendf (value-function node) (bind-operands node nodes)))))
+                 (appendf (value-function node fn) (bind-operands node nodes)))))
 
            (operand-nodes (nodes meta-node)
              "Returns the nodes local to META-NODE which reference the

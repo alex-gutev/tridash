@@ -383,13 +383,13 @@
 
   (let ((text (plump:text text-node)))
     (with-input-from-string (in text)
-      (build-partial-graph (make-parser in) *global-node-table*))))
+      (build-parsed-nodes (make-parser in) *global-node-table*))))
 
 (defun process-source-file (path)
   "Processes the metalink source file at PATH."
 
   (with-open-file (in path)
-    (build-partial-graph (make-parser in) *global-node-table*)))
+    (build-parsed-nodes (make-parser in) *global-node-table*)))
 
 
 ;;; Parse Attributes and Text Content
