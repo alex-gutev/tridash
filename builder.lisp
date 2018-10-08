@@ -135,7 +135,6 @@
 (defun create-value-functions (graph)
   "Creates the value function of each node in GRAPH."
 
-;  (remove-redundant-links graph)
   (build-meta-node-graphs graph))
 
 
@@ -425,7 +424,7 @@
 
   (multiple-value-bind (instance operands table)
       (create-instance-node meta-node operator operands table)
-    (add-meta-node-value-function instance meta-node (bind-operands instance operands))
+    (add-meta-node-value-function instance meta-node (bind-operands instance operands meta-node))
 
     (values instance table)))
 
@@ -477,7 +476,7 @@
     (multiple-value-bind (instance operands table)
         (create-instance-node meta-node operator operands table)
 
-      (add-meta-node-value-function instance meta-node (bind-operands instance operands) (first operands))
+      (add-meta-node-value-function instance meta-node (bind-operands instance operands (first operands)) (first operands))
 
       (with-source-node instance
         (handler-case
@@ -511,12 +510,13 @@
 
       (finally (return (values nodes op-table))))))
 
-(defun bind-operands (node operands)
+(defun bind-operands (node operands &optional fn)
   "Establishes bindings between the operands and the meta-node
    instance."
 
   (flet ((bind-operand (operand)
            (if (value? operand)
                operand
-               (add-binding operand node nil))))
+               (aprog1 (add-binding operand node nil)
+                 (setf (node-link-function it) fn)))))
   (mapcar #'bind-operand operands)))

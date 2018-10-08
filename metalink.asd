@@ -36,7 +36,6 @@
                (:file "primitives")
                (:file "node-table")
                (:file "outer-nodes")
-               (:file "two-way")
                (:file "builder")
                (:file "wait-set")
                (:file "coalescer")

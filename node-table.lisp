@@ -51,7 +51,13 @@
     :accessor meta-nodes
     :initform (make-hash-table :test #'eq)
     :documentation
-    "Hash-table containing the meta-nodes."))
+    "Hash-table containing the meta-nodes.")
+
+   (input-nodes
+    :accessor input-nodes
+    :initform nil
+    :documentation
+    "List containing the input nodes of the graph."))
 
   (:documentation
    "Stores the hash-table mapping node names to `node'
@@ -132,18 +138,10 @@
     (setf (gethash name meta-nodes) node)))
 
 
-;;; Utility Functions
+;;; Removing nodes
 
-(defun input-nodes (graph)
-  "Returns the list of nodes which have no one-way dependencies."
+(defun remove-node (name table)
+  "Removes the node with name NAME from TABLE."
 
-  (iter
-    (for (nil node) in-hashtable (nodes graph))
-    (when (input-node? node) (collect node))))
-
-(defun input-node? (node)
-  "Returns true if NODE is an input node that is it has no one-way
-   dependencies."
-
-  (iter (for (nil link) in-hashtable (dependencies node))
-        (always (node-link-2-way-p link))))
+  (remhash name (nodes table))
+  (remhash name (all-nodes table)))

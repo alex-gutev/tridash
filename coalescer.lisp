@@ -32,23 +32,30 @@
         ((coalesce-observers (node)
            "Performs node coalescing on the observer nodes of NODE."
 
-           (maphash #'coalesce-node (observers node)))
+           (setf (gethash node visited) t)
+           (maphash-keys #'coalesce-node (observers node)))
 
-         (coalesce-node (node link)
+         (coalesce-node (node)
            "Coalesces the node NODE (into its observer node) if it
             only has a single observer, after node coalescing is
-            performed on its observer nodes. If LINK is a two-way link
-            NODE is not coalesced."
+            performed on its observer nodes and redundant 2-way
+            bindings are removed."
 
            (unless (gethash node visited)
              (setf (gethash node visited) t)
 
              (coalesce-observers node)
 
-             (unless (node-link-2-way-p link)
-               (remove-node node))))
+             (remove-redundant-2-way-links node)
+             (eliminate-node node)))
 
-         (remove-node (node)
+         (remove-redundant-2-way-links (node)
+           (when (= (dependencies-count node) 1)
+             (let ((dep (first (hash-table-keys (dependencies node)))))
+               (remove-observer node dep))))
+
+
+         (eliminate-node (node)
            "Removes the node NODE if it has a single observer. Its
             dependencies are merged into the dependency set of its
             observer node, it's replaced with its observer node in the
@@ -56,54 +63,58 @@
             within the `node-link' objects of its observer nodes, is
             replaced with the value-function of NODE."
 
-           (when (and (may-coalesce? node) (= (observers-count node) 1))
-             (remhash (name node) (nodes graph))
-             (remhash (name node) (all-nodes graph))
+           (when (coalesce? node)
+             (remove-node (name node) graph)
+             (merge-dependencies node (first (observer-list node)))))
 
-             (let ((observer (first (observer-list node))))
-               (merge-dependencies node observer)
-               (replace-operand node observer))))
+         (coalesce? (node)
+           "Returns true if NODE can be coalesced."
 
-         (replace-operand (operand node)
-           "Replaces the node OPERAND, within the `node-link' objects
-            corresponding to OPERAND within the dependency set of
-            NODE, with the value function of OPERAND."
+           (and (may-coalesce? node)
+                (= (observers-count node) 1)
+                (<= (hash-table-count (value-functions node)) 1)))
 
-           (with-slots (dependencies) node
-             (mapc (rcurry #'replace-link-node (or (value-function operand)
-                                                   (name operand)))
-                   (ensure-list (gethash node (observers operand))))))
-
-         (replace-link-node (link replacement)
-           "Replaces the node with the `node-link' LINK with
-            REPLACEMENT."
-           (setf (node-link-node link) replacement))
-
-         (merge-dependencies (dependency observer)
-           "Merges the dependencies of DEPENDENCY into the dependency
-            set of OBSERVER. DEPENDENCY is removed from the dependency
-            set of OBSERVER."
+         (merge-dependencies (node observer)
+           "Merges the dependencies of NODE into the dependency set of
+            OBSERVER. NODE is removed from the dependency set of
+            OBSERVER and the observer sets of its
+            dependencies. References to NODE within the value function
+            of OBSERVER are replaced with the value function of NODE,
+            this assumes that NODE only has a single value function."
 
            (with-slots (dependencies) observer
-             (remhash dependency dependencies)
+             (let* ((value-function (first (hash-table-values (value-functions node))))
+                    (link (gethash node dependencies))
+                    (fn-key (node-link-function link)))
 
-             ;; For each dependency
-             (dohash (node link (dependencies dependency))
+               ;; Update link NODE -> OBSERVER to store VALUE-FUNCTION of NODE
+               (setf (node-link-node link) value-function)
 
-               ;; Add dependency NODE to dependencies of OBSERVER
-               (slet (gethash node dependencies)
-                 (setf it (union (ensure-list it) (ensure-list link))))
+               ;; Remove NODE from DEPENDENCIES of OBSERVER
+               (remhash node dependencies)
 
-               (with-slots (observers) node
-                 ;; Add OBSERVER to observers of dependency node NODE
-                 (slet (gethash observer observers)
-                   (setf it (union (ensure-list it) (ensure-list link))))
+               ;; Add all dependencies of NODE to dependencies of OBSERVER
+               (dohash (dependency link (dependencies node))
+                 ;; Check if OBSERVER Already has DEPENDENCY as a dependency
+                 (when-let ((old-link (gethash dependency dependencies)))
+                   (unless (eq fn-key (node-link-function old-link))
+                     (error "Dependency bound to multiple value functions."))
 
-                 (remhash dependency observers))))))
+                   (setf (node-link-node old-link) link))
+
+                 ;; Add DEPENDENCY to dependencies of OBSERVER
+                 (setf (gethash dependency dependencies) link)
+                 (setf (node-link-function link) fn-key)
+
+                 (with-slots (observers) dependency
+                   ;; Remove NODE from observers of DEPENDENCY
+                   (remhash node observers)
+                   ;; Add OBSERVER to observers of DEPENDENCY
+                   (setf (gethash observer (observers dependency)) link)))))))
 
       (mapc #'coalesce-observers (input-nodes graph))
-
       (maphash-values (compose #'coalesce-nodes #'definition) (meta-nodes graph))
+
       (maphash-values #'coalesce-node-links (all-nodes graph)))))
 
 (defun may-coalesce? (node)
@@ -112,49 +123,29 @@
 
   (null (gethash :no-coalesce (attributes node))))
 
-
 (defun coalesce-node-links (node)
-  "Replaces the `node-link' objects, within the VALUE-FUNCTION of
+  "Replaces the `node-link' objects, within the value functions of
    NODE, which do not directly reference another node, with the value
    functions stored in them. Merges multiple `node-link' objects which
    refer to the same node into one `node-link' object and amends the
    dependency set of NODE such that each node in it is mapped to a
    single `node-link' object."
 
-  (with-slots (dependencies observers value-function) node
+  (with-slots (dependencies observers value-functions) node
     (labels ((remove-node-links (fn)
                "Replaces all `node-link' objects (within the value
                 function FN), which do not directly reference another
-                node, with their contents. All `node-link' objects
-                which directly reference the same node are replaced
-                with a single `node-link' object referencing that
-                node."
+                node, with their contents."
 
                (match fn
                  ((list* meta-node operands)
                   (list* meta-node (mapcar #'remove-node-links operands)))
 
-                 ((type node-link)
-                  (let ((node (node-link-node fn)))
-                    (typecase node
-                      (node
-                       (gethash node dependencies))
+                 ((node-link- (node (and fn (not (type node)) (not (type symbol)))))
+                  (remove-node-links fn))
 
-                      (symbol
-                       fn)
+                 (_ fn))))
 
-                      (otherwise (remove-node-links node)))))
-
-                 (_ fn)))
-
-             (make-new-node-link (dependency link)
-               "Creates a new `node-link' object for the dependency
-                node DEPENDENCY and adds it to the dependencies table
-                of NODE."
-
-               (alet (setf (gethash dependency dependencies)
-                           (node-link dependency (and (node-link-p link) (node-link-2-way-p link))))
-                 (setf (gethash node (observers dependency)) it))))
-
-      (maphash #'make-new-node-link dependencies)
-      (setf value-function (remove-node-links value-function)))))
+      (dohash (key fn value-functions)
+        (setf (gethash key value-functions)
+              (remove-node-links fn))))))

@@ -94,13 +94,15 @@
 
 ;;; Bindings
 
-(defstruct (node-link (:constructor node-link (node &optional 2-way-p)))
+(defstruct (node-link (:constructor node-link (node &optional 2-way-p function)))
   "NODE-LINK objects are used to refer to nodes indirectly. This
    allows nodes to be replaced with other nodes and have all
    references to the node be automatically updated."
 
   node
-  2-way-p)
+  2-way-p
+
+  function)
 
 (defun add-binding (source target &optional (add-function t))
   "Establishes a binding from the SOURCE node to the TARGET
@@ -133,7 +135,7 @@
 
   (with-slots (dependencies) node
     (multiple-value-bind (link in-hash?)
-        (ensure-gethash dependency dependencies (node-link dependency))
+        (ensure-gethash dependency dependencies (node-link dependency nil dependency))
 
       (when (and add-function (not in-hash?))
         (add-value-function node link))
@@ -148,42 +150,23 @@
   (setf (gethash observer (observers node)) link))
 
 
-;;; Condition nodes
+(defun remove-observer (node observer)
+  (awhen (remove-link node observer #'observers #'dependencies)
+    (remhash (node-link-function it) (value-functions observer))))
 
-(defun add-default-condition (node link)
-  "Adds a dependency node, with the `node-link' object LINK, as the
-   default conditional binding of NODE. NODE takes on the value of the
-   default conditional dependency if all other conditions evaluate to
-   false."
-  
-  (appendf (value-function node) (list link)))
+(defun remove-dependency (node dependency)
+  (awhen (remove-link node dependency #'dependencies #'observers)
+    (remhash (node-link-function it) (value-functions node))))
 
-(defun add-condition (node cond-link value-link)
-  "Adds a conditional binding. COND-LINK is the `node-link' object
-   corresponding to the predicate dependency node and VALUE-LINK is
-   the `node-link' object corresponding to the value node."
-  
-  (with-slots (value-function) node
-    (aif (member value-link value-function)
-         (setf (car it) (list 'if cond-link value-link))
-         (appendf value-function (list (list 'if cond-link value-link))))))
+(defun remove-link (node linked-node set linked-set)
+  (prog1 (gethash linked-node (funcall set node))
+    (when (remhash linked-node (funcall set node))
+      (remhash node (funcall linked-set linked-node))
 
-(defun create-value-function (node)
-  "Converts the list of conditions (stored in the VALUE-FUNCTION slot
-   of NODE), which are of the form (IF COND VALUE), into a value
-   function with a single IF block."
+      (awhen (gethash linked-node (funcall linked-set node))
+        (setf (node-link-2-way-p it) nil)))))
 
-  (labels ((create-conditions (fn)
-             (match (first fn)
-               ((list 'if pred value)
-                `(if ,pred ,value
-                     ,(create-conditions (rest fn))))
-               (nil (node-link 'self))
-               (value value))))
-    (with-slots (value-function) node
-      (when value-function
-        (setf value-function
-              (create-conditions value-function))))))
+
 ;;; Value Functions
 
 (defun value-function (node &optional fn)
