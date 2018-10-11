@@ -153,37 +153,38 @@
   (let ((table (make-inner-node-table outer-table))
         (*meta-node* meta-node))
 
-    (add-local-nodes (operands meta-node) table)
+    (add-operand-nodes (operands meta-node) table)
 
     (let* ((last-node (process-node-list (definition meta-node) table t)))
       (make-meta-node-function meta-node last-node)
       (create-value-functions table)
       (setf (definition meta-node) table))))
 
-(defun add-local-nodes (names table)
+(defun add-operand-nodes (names table)
   "Creates a node for each element in NAMES, the element being the
-   node name, and adds the nodes to TABLE."
+   node name, and adds the nodes to TABLE. The nodes are marked as
+   input nodes of TABLE"
 
   (dolist (name names)
-    (add-node name (make-instance 'node :name name) table)))
+    (add-input (add-node name (make-instance 'node :name name) table) table)))
 
 (defun make-meta-node-function (meta-node last-node)
   "Creates the value function of the meta-node META-NODE. LAST-NODE is
    the last-node in the meta-node's definition."
 
-  (with-accessors ((output-nodes output-nodes)
-                   (value-function value-function)
-                   (value-functions value-functions)) meta-node
-    (cond
-      ((plusp (hash-table-count output-nodes))
-       (setf value-function
-             (cons :object
-                   (iter
-                     (for (name node) in-hashtable output-nodes)
-                     (collect (list name (add-binding node meta-node nil)))))))
+  (with-slots (output-nodes contexts) meta-node
+    (with-accessors ((value-function value-function)) (context meta-node nil)
 
-      ((and last-node (zerop (hash-table-count value-functions)))
-       (add-binding last-node meta-node)))))
+      (cond
+        ((plusp (hash-table-count output-nodes))
+         (setf value-function
+               (cons :object
+                     (iter
+                       (for (name node) in-hashtable output-nodes)
+                       (collect (list name (add-binding node meta-node :context nil :add-function nil)))))))
+
+        ((and last-node (zerop (hash-table-count contexts)))
+         (add-binding last-node meta-node :context nil))))))
 
 
 ;;;; Methods: Processing Declaration
@@ -321,9 +322,9 @@
         (unless *top-level*
           (let* ((name (cons operator operands))
                  (cond-node (ensure-node name table))
-                 (cond-link (add-binding cond-node target nil)))
+                 (cond-link (add-binding cond-node target :context *source-node* :add-function nil)))
 
-            (setf (value-function target source)
+            (setf (value-function (context target *source-node*))
                   `(if ,cond-link ,value-link ,(node-link :self)))
 
             (values cond-node table)))))))
@@ -369,9 +370,8 @@
    subnode key and SUBNODE is the subnode `NODE' object."
 
   (let ((node (at-source (process-declaration node table))))
-    (unless (value-function subnode node)
-      (setf (value-function subnode node)
-            (list :member (add-binding node subnode nil) key)))))
+    (create-context (subnode node)
+      (setf value-function (list :member (bind node) key)))))
 
 (defun make-target-subnode (node key subnode table)
   "Binds the subnode to the object node and updates the value function
@@ -380,11 +380,12 @@
 
   (with-source-node subnode
     (let ((object-node (process-declaration node table)))
-      (unless (value-function object-node :object)
-        (setf (value-function object-node :object) (list :object)))
+      (create-context (object-node :object)
+        (setf value-function (list :object)))
 
-      (push (list key (add-binding subnode object-node nil))
-            (cdr (value-function object-node :object))))))
+      (ensure-binding (subnode object-node :context :object :add-function nil)
+          (link)
+        (push (list key link) (cdr (value-function (context object-node :object))))))))
 
 
 ;;; Meta-Node instances
@@ -424,7 +425,7 @@
 
   (multiple-value-bind (instance operands table)
       (create-instance-node meta-node operator operands table)
-    (add-meta-node-value-function instance meta-node (bind-operands instance operands meta-node))
+    (add-meta-node-value-function instance meta-node operands)
 
     (values instance table)))
 
@@ -447,15 +448,14 @@
 
       (values (ensure-node name table) operands table))))
 
-(defun add-meta-node-value-function (instance meta-node operands &optional (fn meta-node))
+(defun add-meta-node-value-function (instance meta-node operands &key (context meta-node))
   "Creates the value function of the meta-node instance INSTANCE,
-   which invokes META-NODE with operands OPERANDS. OPERANDS should be
-   a list containing literal values or `NODE-LINK' objects."
+   which invokes META-NODE with operands OPERANDS. OPERANDS are bound
+   to INSTANCE and added as operands to the context CONTEXT."
 
-  (unless (value-function instance fn)
+  (create-context (instance context)
     (add-to-instances instance meta-node)
-
-    (setf (value-function instance fn) (cons meta-node operands))))
+    (setf value-function (cons meta-node (bind-operands instance operands :context context)))))
 
 (defun add-to-instances (instance meta-node)
   "Adds the meta-node instance INSTANCE to the list of instances of
@@ -476,12 +476,12 @@
     (multiple-value-bind (instance operands table)
         (create-instance-node meta-node operator operands table)
 
-      (add-meta-node-value-function instance meta-node (bind-operands instance operands (first operands)) (first operands))
+      (add-meta-node-value-function instance meta-node operands :context (first operands))
 
       (with-source-node instance
         (handler-case
             (let ((node (process-declaration node table)))
-              (add-meta-node-value-function node meta-node (list (add-binding instance node nil)) instance))
+              (add-meta-node-value-function node meta-node (list instance) :context instance))
           (target-node-error ())))
 
       (values instance table))))
@@ -510,13 +510,12 @@
 
       (finally (return (values nodes op-table))))))
 
-(defun bind-operands (node operands &optional fn)
+(defun bind-operands (node operands &key context)
   "Establishes bindings between the operands and the meta-node
    instance."
 
   (flet ((bind-operand (operand)
            (if (value? operand)
                operand
-               (aprog1 (add-binding operand node nil)
-                 (setf (node-link-function it) fn)))))
+               (add-binding operand node :context context :add-function nil))))
   (mapcar #'bind-operand operands)))

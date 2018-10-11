@@ -63,3 +63,14 @@
             (unless ,g!next-p
               (return ,result))
             ,@body)))))
+
+(defmacro! multiple-value-return ((&rest vars) expr &body body)
+  "Returns all values which are the result of the evaluation of the
+   form EXPR. The values are simultaneously bound to the variables in
+   VARS and each form in BODY is evaluated (in the environment of the
+   bindings) with its value discarded."
+
+  `(let ((,g!values (multiple-value-list ,expr)))
+     (multiple-value-prog1 (values-list ,g!values)
+       (destructuring-bind ,vars ,g!values
+         ,@body))))

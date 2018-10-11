@@ -145,3 +145,14 @@
 
   (remhash name (nodes table))
   (remhash name (all-nodes table)))
+
+
+;;; Input Nodes
+
+(defun add-input (node table)
+  "Adds NODE to the input nodes of TABLE and sets its :INPUT attribute
+   to T."
+
+  (unless (input-node? node)
+    (setf (gethash :input (attributes node)) t)
+    (push node (input-nodes table))))

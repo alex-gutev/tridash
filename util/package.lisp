@@ -39,6 +39,7 @@
    :let-if
    :let*-if
    :dohash
+   :multiple-value-return
 
    ;; Functions
    :same-length?

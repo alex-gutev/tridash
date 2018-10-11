@@ -46,23 +46,13 @@
      `node-link' object of this node in the observer node's
      DEPENDENCIES hash-table..")
 
-   (wait-set
-    :initform (make-hash-table :test #'eq)
-    :initarg :wait-set
-    :accessor wait-set
-    :documentation
-    "Set of nodes which the node is responsible for informing of a
-     value change. The nodes are stored as values where the keys are
-     their common observer.")
-
-   (value-functions
-    :accessor value-functions
+   (contexts
+    :accessor contexts
     :initform (make-hash-table :test #'eq)
     :documentation
-    "Set of functions which compute the node's value. Stored as
-     hash-table where each key is either a function identifier or is a
-     dependency node and the corresponding value is the value
-     function.")
+    "Set of contexts of the node. Each key is a context
+     identifier (either a dependency node or unique identifier) and
+     the corresponding value is the `node-context' object.")
 
    (attributes
     :accessor attributes
@@ -70,6 +60,36 @@
     :documentation
     "Set of miscellaneous attributes (key-value pairs) where each
      attribute is identified by a unique symbol.")))
+
+(defclass node-context ()
+  ((operands
+    :initarg :operands
+    :initform (make-hash-table :test #'eq)
+    :accessor operands
+    :documentation
+    "Set of dependency nodes which are operands to the context's value
+     function.")
+
+   (value-function
+    :initarg :value-function
+    :initform nil
+    :accessor value-function
+    :documentation
+    "The context's value function.")
+
+   (wait-set
+    :initform (make-hash-table :test #'eq)
+    :initarg :wait-set
+    :accessor wait-set
+    :documentation
+    "Set of nodes which the node is responsible for informing of a
+     value change. The nodes are stored as values where the keys are
+     their common observer."))
+
+  (:documentation
+   "Node context. A node context contains the value function of a
+    node, a set of dependency nodes which are operands to the value
+    function, and the wait-set."))
 
 
 ;;; Predicates
@@ -91,31 +111,65 @@
    (> (dependencies-count node) 1)
    (not (input-node? node))))
 
+(defun input-node? (node)
+  "Returns true if NODE is an input node."
+
+  (gethash :input (attributes node)))
+
 
 ;;; Bindings
 
-(defstruct (node-link (:constructor node-link (node &optional 2-way-p function)))
+(defstruct (node-link (:constructor node-link (node &key 2-way-p context)))
   "NODE-LINK objects are used to refer to nodes indirectly. This
    allows nodes to be replaced with other nodes and have all
-   references to the node be automatically updated."
+   references to the node be automatically updated.
+
+   NODE is the dependency NODE.
+
+   2-WAY-P is a flag for whether the binding is a two-way-binding.
+
+   CONTEXT is the context identifier of which NODE is an operand."
 
   node
   2-way-p
 
-  function)
+  context)
 
-(defun add-binding (source target &optional (add-function t))
+
+(defmacro! ensure-binding ((source target &rest options) (link-var) &body body)
+  "Establishes a binding from SOURCE to TARGET if it does not already
+   exist. OPTIONS are additional optional arguments passed to
+   ADD-BINDING. If the binding had not been previously established,
+   the forms in BODY are evaluated, with the value of the last form
+   being the value of the ENSURE-BINDING form."
+
+  `(multiple-value-bind (,link-var ,g!existed?) (add-binding ,source ,target ,@options)
+     (unless ,g!existed?
+       ,@body)))
+
+(defun add-binding (source target &key (context (and (node? source) source)) (add-function t))
   "Establishes a binding from the SOURCE node to the TARGET
-   node. Returns the `node-link' object of the established binding."
+   node. CONTEXT is the context identifier, of which SOURCE is an
+   operand, defaults to SOURCE. If ADD-FUNCTION is true, the value
+   function of the context is set to the SOURCE node link. Returns the
+   `node-link' object of the established binding, as the first value,
+   and true, as the second value, if the binding had previously been
+   established."
 
   (if (node? source)
-      (aprog1
-          (add-dependency source target add-function)
-        (add-observer target source it)
-        (mark-2-way source target it))
+
+      (multiple-value-return (link in-hash?)
+          (add-dependency source target
+                          :context context
+                          :add-function add-function)
+
+        (unless in-hash?
+          (add-observer target source link)
+          (mark-2-way source target link)))
+
       (prog1 source
         (when add-function
-          (setf (value-function target nil) source)))))
+          (setf (value-function (context target context)) source)))))
 
 (defun mark-2-way (source target link)
   "If the node TARGET is a dependency of SOURCE, the `NODE-LINK' LINK
@@ -127,20 +181,22 @@
     (setf (node-link-2-way-p link) t)))
 
 
-(defun add-dependency (dependency node &optional add-function)
-  "Adds DEPENDENCY as a dependency node of NODE, returns the
-   `node-link' object of the dependency. If ADD-FUNCTION is true, a
-   value function, with key DEPENDENCY, which evaluates to the value
-   of DEPENDENCY, is added."
+(defun add-dependency (dependency node &key context add-function)
+  "Adds DEPENDENCY as a dependency node of NODE. CONTEXT is the
+   context identifier, of which, DEPENDENCY is an operand. If
+   ADD-FUNCTION is true, the value function of the context is set to
+   the node link of DEPENDENCY. Returns the `node-link' object of the
+   dependency, as the first return value, and true, as the second
+   value, if DEPENDENCY was already in the dependency set of NODE."
 
   (with-slots (dependencies) node
-    (multiple-value-bind (link in-hash?)
-        (ensure-gethash dependency dependencies (node-link dependency nil dependency))
+    (multiple-value-return (link in-hash?)
+        (ensure-gethash dependency dependencies (node-link dependency :2-way-p nil :context context))
 
-      (when (and add-function (not in-hash?))
-        (add-value-function node link))
-
-      link)))
+      (when (not in-hash?)
+        (with-slots (operands value-function) (context node context)
+          (setf (gethash dependency operands) link)
+          (when add-function (setf value-function link)))))))
 
 (defun add-observer (observer node link)
   "Adds OBSERVER as an observer node of NODE. LINK is the `node-link'
@@ -151,12 +207,18 @@
 
 
 (defun remove-observer (node observer)
-  (awhen (remove-link node observer #'observers #'dependencies)
-    (remhash (node-link-function it) (value-functions observer))))
+  "Removes OBSERVER from the observer set of NODE."
+
+  (awhen (gethash observer (observers node))
+    (and (remove-operand observer it)
+         (remove-link node observer #'observers #'dependencies))))
 
 (defun remove-dependency (node dependency)
-  (awhen (remove-link node dependency #'dependencies #'observers)
-    (remhash (node-link-function it) (value-functions node))))
+  "Removes DEPENDENCY from the dependency set of NODE."
+
+  (awhen (gethash dependency (dependencies node))
+    (and (remove-operand node it)
+         (remove-link node dependency #'dependencies #'observers))))
 
 (defun remove-link (node linked-node set linked-set)
   (prog1 (gethash linked-node (funcall set node))
@@ -167,16 +229,63 @@
         (setf (node-link-2-way-p it) nil)))))
 
 
-;;; Value Functions
+;;; Contexts
 
-(defun value-function (node &optional fn)
-  (gethash fn (value-functions node)))
+(defun context (node context-id)
+  "Returns the context of NODE with identifier CONTEXT-ID. If node
+   does have such a context, a new context is created."
 
-(defun (setf value-function) (value node &optional fn)
-  (setf (gethash fn (value-functions node)) value))
+  (ensure-gethash context-id (contexts node) (make-instance 'node-context)))
 
-(defun add-value-function (node link)
-  (setf (value-function node (node-link-node link)) link))
+(defun (setf context) (value node context-id)
+  "Sets the context, of NODE, with identifier CONTEXT-ID to VALUE."
+
+  (setf (gethash context-id (contexts node)) value))
+
+(defmacro! create-context ((o!node o!context-id) &body forms)
+  "Creates a context, of NODE, with identifier CONTEXT-ID. If NODE did
+   not already contain a context with that identifier the forms in
+   BODY are evaluated with the value of the last form being the value
+   of the macro form.
+
+   The environment, in which FORMS are evaluated, contains a BIND
+   function which binds the dependency node (passed as the first
+   argument) to NODE. The function takes a single keyword argument
+   ADD-FUNCTION which corresponds to the ADD-FUNCTION argument of
+   ADD-BINDING. The environment also contains a symbol macro
+   VALUE-FUNCTION which is bound to the value function of the
+   context."
+
+  `(multiple-value-bind (,g!context ,g!in-hash?) (context ,g!node ,g!context-id)
+     (unless ,g!in-hash?
+       (flet ((bind (,g!dependency &key (add-function nil))
+                (add-binding ,g!dependency ,g!node :context ,g!context-id :add-function add-function)))
+         (with-slots (value-function) ,g!context
+           ,@forms)))))
+
+
+(defun remove-operand (node operand)
+  "Removes the node OPERAND from the operands of CONTEXT. Returns true
+   if the operand was removed, nil if the operand cannot be removed."
+
+  (with-accessors ((operand node-link-node) (context-id node-link-context)) operand
+    (with-slots (operands value-function) (context node context-id)
+      (when (= (hash-table-count operands) 1)
+        (remhash operand operands)
+        (setf value-function nil)
+
+        (remhash context-id (contexts node))
+
+        t))))
+
+(defun remove-context (node context-id)
+  "Removes the context with identifier CONTEXT-ID if it is redundant,
+   that is it has no operands and no value function."
+
+  (with-slots (operands value-function) (context node context-id)
+    (and (zerop (hash-table-count operands))
+         (null value-function)
+         (remhash context-id (contexts node)))))
 
 
 ;;; Observers/Dependencies Utility Functions
@@ -199,6 +308,7 @@
 (defun dependencies-count (node)
   "Returns the number of dependencies of NODE."
   (hash-table-count (dependencies node)))
+
 
 ;;; Print Method
 

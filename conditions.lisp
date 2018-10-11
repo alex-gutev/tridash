@@ -24,6 +24,10 @@
   (:documentation
    "Base condition class for semantic errors."))
 
+(defmethod print-object ((err semantic-error) stream)
+  (format stream "Semantic Error: ~a" (message err)))
+
+
 (define-condition target-node-error (semantic-error)
   ((node :initarg :node
          :reader node
@@ -39,5 +43,13 @@
 
   (format nil "~a cannot appear as the target of a binding" (node err)))
 
-(defmethod print-object ((err semantic-error) stream)
-  (format stream "Semantic Error: ~a" (message err)))
+
+(define-condition ambiguous-context-error (semantic-error)
+  ((node :initarg :node
+         :reader node
+         :documentation
+         "The node with ambiguous context's"))
+
+  (:documentation
+   "Error condition for when a single path activates multiple contexts
+    of a single node.")  )

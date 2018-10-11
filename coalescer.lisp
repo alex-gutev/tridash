@@ -46,9 +46,9 @@
 
              (coalesce-observers node)
 
-             (remove-redundant-2-way-links node)
-             (eliminate-node node)))
-
+             (unless (input-node? node)
+               (remove-redundant-2-way-links node)
+               (eliminate-node node))))
          (remove-redundant-2-way-links (node)
            (when (= (dependencies-count node) 1)
              (let ((dep (first (hash-table-keys (dependencies node)))))
@@ -72,7 +72,7 @@
 
            (and (may-coalesce? node)
                 (= (observers-count node) 1)
-                (<= (hash-table-count (value-functions node)) 1)))
+                (<= (hash-table-count (contexts node)) 1)))
 
          (merge-dependencies (node observer)
            "Merges the dependencies of NODE into the dependency set of
@@ -83,34 +83,37 @@
             this assumes that NODE only has a single value function."
 
            (with-slots (dependencies) observer
-             (let* ((value-function (first (hash-table-values (value-functions node))))
+             (let* ((context (first (hash-table-values (contexts node))))
                     (link (gethash node dependencies))
-                    (fn-key (node-link-function link)))
+                    (context-id (node-link-context link)))
 
-               ;; Update link NODE -> OBSERVER to store VALUE-FUNCTION of NODE
-               (setf (node-link-node link) value-function)
+               (with-slots (operands value-function) (context observer context-id)
+                 ;; Update link NODE -> OBSERVER to store VALUE-FUNCTION of NODE
+                 (setf (node-link-node link) (value-function context))
 
-               ;; Remove NODE from DEPENDENCIES of OBSERVER
-               (remhash node dependencies)
+                 ;; Remove NODE from DEPENDENCIES of OBSERVER
+                 (remhash node dependencies)
+                 (remhash node operands)
 
-               ;; Add all dependencies of NODE to dependencies of OBSERVER
-               (dohash (dependency link (dependencies node))
-                 ;; Check if OBSERVER Already has DEPENDENCY as a dependency
-                 (when-let ((old-link (gethash dependency dependencies)))
-                   (unless (eq fn-key (node-link-function old-link))
-                     (error "Dependency bound to multiple value functions."))
+                 ;; Add all dependencies of NODE to dependencies of OBSERVER
+                 (dohash (dependency link (dependencies node))
+                   ;; Check if OBSERVER Already has DEPENDENCY as a dependency
+                   (when-let ((old-link (gethash dependency dependencies)))
+                     (unless (gethash dependency operands)
+                       (error 'ambiguous-context-error :node observer))
 
-                   (setf (node-link-node old-link) link))
+                     (setf (node-link-node old-link) link))
 
-                 ;; Add DEPENDENCY to dependencies of OBSERVER
-                 (setf (gethash dependency dependencies) link)
-                 (setf (node-link-function link) fn-key)
+                   ;; Add DEPENDENCY to dependencies of OBSERVER
+                   (setf (gethash dependency dependencies) link)
+                   (setf (gethash dependency operands) link)
+                   (setf (node-link-context link) context-id)
 
-                 (with-slots (observers) dependency
-                   ;; Remove NODE from observers of DEPENDENCY
-                   (remhash node observers)
-                   ;; Add OBSERVER to observers of DEPENDENCY
-                   (setf (gethash observer (observers dependency)) link)))))))
+                   (with-slots (observers) dependency
+                     ;; Remove NODE from observers of DEPENDENCY
+                     (remhash node observers)
+                     ;; Add OBSERVER to observers of DEPENDENCY
+                     (setf (gethash observer (observers dependency)) link))))))))
 
       (mapc #'coalesce-observers (input-nodes graph))
       (maphash-values (compose #'coalesce-nodes #'definition) (meta-nodes graph))
@@ -131,7 +134,7 @@
    dependency set of NODE such that each node in it is mapped to a
    single `node-link' object."
 
-  (with-slots (dependencies observers value-functions) node
+  (with-slots (contexts) node
     (labels ((remove-node-links (fn)
                "Replaces all `node-link' objects (within the value
                 function FN), which do not directly reference another
@@ -146,6 +149,6 @@
 
                  (_ fn))))
 
-      (dohash (key fn value-functions)
-        (setf (gethash key value-functions)
-              (remove-node-links fn))))))
+      (dohash (nil context contexts)
+        (with-slots (value-function) context
+          (setf value-function (remove-node-links value-function)))))))

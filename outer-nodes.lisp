@@ -75,7 +75,7 @@
                (multiple-value-bind (nodes info) (hash-table-keys-values outer-nodes)
                  (let ((names (mapcar #'cdr info)))
                    (appendf operands names)
-                   (add-local-nodes names definition))
+                   (add-operand-nodes names definition))
 
                  (update-instances meta-node nodes))))
 
@@ -85,7 +85,7 @@
 
              (mapc (rcurry #'update-instance nodes meta-node) (instances meta-node)))
 
-           (update-instance (instance nodes fn)
+           (update-instance (instance nodes context)
              "Binds each node in NODES to INSTANCE and appends the
               values of NODES to the argument list of the meta-node,
               within the value function of INSTANCE. If INSTANCE is
@@ -94,8 +94,15 @@
               themselves."
 
              (destructuring-bind (node . meta-node) instance
-               (let ((nodes (operand-nodes nodes meta-node)))
-                 (appendf (value-function node fn) (bind-operands node nodes)))))
+               (update-context node context (operand-nodes nodes meta-node))))
+
+           (update-context (node context-id operands)
+             "Adds OPERANDS as operands to the context, of NODE, with
+              identifier CONTEXT-ID, and appends them to the context's
+              value function."
+
+             (appendf (value-function (context node context-id))
+                      (bind-operands node operands :context context-id)))
 
            (operand-nodes (nodes meta-node)
              "Returns the nodes local to META-NODE which reference the
