@@ -117,10 +117,11 @@
 
    :input-nodes
    :input-node?
+   :add-input
 
    ;; Builder
    :build-graph
-   :build-partial-graph
+   :build-parsed-nodes
    :build-node
    :finish-build-graph
 
@@ -129,6 +130,12 @@
 
    ;; Coalescing Nodes
    :coalesce-nodes
+
+   ;; Error Conditions
+   :semantic-error
+   :message
+   :target-node-error
+   :ambiguous-context-error
 
    ;; Backend Interface
    :compile-nodes))

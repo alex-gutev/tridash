@@ -104,13 +104,6 @@
 
   (numberp x))
 
-(defun n-ary-node? (node)
-  "Returns true if NODE has more than one dependency node."
-
-  (and
-   (> (dependencies-count node) 1)
-   (not (input-node? node))))
-
 (defun input-node? (node)
   "Returns true if NODE is an input node."
 

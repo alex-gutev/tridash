@@ -28,38 +28,53 @@
 
   (labels
       ((begin-walk (start)
-         "Traverses the graph beginning at the node START."
+         "Traverses the graph beginning at the node START, at
+          context :INPUT."
 
          (let ((reachable-set (make-hash-table :test #'eq)))
            (declare (special reachable-set))
            (add-all-reachable start reachable-set)
-           (walk-observers start (list start))))
+           (walk-observers start (context start :input))))
 
-       (walk-observers (node stack)
-         "Walks the observers of NODE. And marks NODE as visited
-            with the path to the node being STACK."
+       (walk-observers (node context &optional (stack (list (cons node context))))
+         "Walks the observers of NODE, in the context CONTEXT.
+          Marks NODE as visited with the path to the node being
+          STACK."
 
          (unless (visited? node)
            (mark-node node stack)
 
-           (let-if ((stack (cons node stack) stack))
-               (and (> (observers-count node) 1) (not (eq (first stack) node)))
+           (let ((observers (next-nodes node context)))
 
-             (maphash-keys (rcurry #'walk-node stack) (observers node)))))
+             (let-if ((stack (acons node context stack) stack))
+                 (and (> (length observers) 1) (not (eq (caar stack) node)))
 
-       (walk-node (node stack)
-         "Visits the node NODE. If NODE has multiple dependencies
-            and all dependencies have been visited, they are added to
-            the wait set of the last node which is common to the paths
-            to all dependencies. If not all dependencies are reachable
-            but all reachable dependencies have been visited: the
-            reachable dependencies are added to the wait-set of the
-            input node (the start node of the current traversal)."
+               (mapc (curry #'apply (rcurry #'walk-node stack)) observers)))))
+
+       (next-nodes (node context)
+         "Returns the next nodes to visit from NODE at context CONTEXT."
+
+         (with-slots (operands) context
+           (iter
+             (for (observer link) in-hashtable (observers node))
+             (unless (gethash observer operands)
+               (collect
+                   (list observer (context observer (node-link-context link))))))))
+
+       (walk-node (node context stack)
+         "Visits the node NODE in context CONTEXT. If CONTEXT has
+          multiple operands and all operands have been visited, they
+          are added to the wait set of context of the last node which
+          is common to the paths to all operand nodes. If not all
+          operands are reachable but all reachable operands have been
+          visited, the reachable operands are added to the wait-set of
+          the context of the input node (the node at the start of the
+          current traversal)."
 
          (cond
-           ((n-ary-node? node)
+           ((n-ary-node? context)
             (multiple-value-bind (deps all-deps?)
-                (reachable-deps (dependency-list node))
+                (reachable-deps (hash-table-keys (operands context)))
 
               (awhen (all-marked? deps stack)
                 ;; Augment the wait-set of either the last node before the
@@ -67,25 +82,24 @@
                 ;; in the path (if not all dependencies are reachable from
                 ;; it).
 
-                ;; If the last node before the paths diverge can
-                ;; function as an input node, do not augment its wait
-                ;; set, instead augment the wait set of the first node
-                ;; in the path
-
                 (augment-wait-set
-                 (if (and all-deps? (not (input-node? (first it))))
-                     (first it)
-                     (lastcar it))
+                 (cdr (if all-deps? (first it) (lastcar it)))
                  node deps)
 
-                (walk-observers node it))))
+                (walk-observers node context it))))
 
-           (t (walk-observers node stack))))
+           (t (walk-observers node context stack))))
+
+       (n-ary-node? (context)
+         "Returns true if the `NODE-CONTEXT' CONTEXT has multiple
+          operands."
+
+         (> (hash-table-count (operands context)) 1))
 
        (reachable-deps (nodes)
-         "Returns the list of nodes in NODES which are reachable
-            from the input node. The second return value is true if
-            all nodes in NODES are reachable."
+         "Returns the list of nodes in NODES which are reachable from
+          the current input node. The second return value is true if
+          all nodes in NODES are reachable."
 
          (declare (special reachable-set))
 
@@ -103,15 +117,15 @@
 
          (let-if ((stack (rest stack) stack))
              (and (rest stack)
-                  (eq (first stack) node))
+                  (eq (caar stack) node))
 
            (declare (special reachable-set))
            (setf (gethash node reachable-set) stack)))
 
        (all-marked? (nodes stack)
-         "Returns the initial path which is common to the paths to
-            all nodes in NODES and the path STACK. If not all nodes
-            have been visited the return value is NIL."
+         "Returns the initial path which is common to the paths to all
+          nodes in NODES and the path STACK. If not all nodes have
+          been visited the return value is NIL."
 
          (reduce
           (lambda (stack node)
@@ -128,10 +142,17 @@
   "Adds all nodes reachable from START to the hash-table
    REACHABLE-SET."
 
-  (labels ((walk (node)
+  (labels ((walk (node context-id)
              (unless (adjoin-hash node reachable-set)
-               (mapc #'walk (observer-list node)))))
-    (walk start)))
+               (walk-observers node (context node context-id))))
+
+           (walk-observers (node context)
+             (with-slots (operands) context
+               (dohash (observer link (observers node))
+                 (unless (gethash observer operands)
+                   (walk observer (node-link-context link)))))))
+
+    (walk start :input)))
 
 
 ;;;; Utility Functions
@@ -141,14 +162,12 @@
    PATH2) to two nodes, that is the node at the front of the list is
    the last common node before the paths diverge."
 
-  (aif (mismatch path1 path2 :from-end t)
+  (aif (mismatch path1 path2 :from-end t :key #'car)
        (subseq path1 it)
        path1))
 
-(defun augment-wait-set (node obs-node nodes)
+(defun augment-wait-set (context obs-node nodes)
   "Adds the dependency nodes NODES, of the observer node OBS-NODE, to
-   the wait set of NODE."
+   the wait set of the `NODE-CONTEXT' CONTEXT."
 
-  (with-accessors ((wait-set wait-set)) node
-    (setf (gethash obs-node wait-set)
-          nodes)))
+  (setf (gethash obs-node (wait-set context)) nodes))
