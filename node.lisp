@@ -209,23 +209,19 @@
 (defun remove-observer (node observer)
   "Removes OBSERVER from the observer set of NODE."
 
-  (awhen (gethash observer (observers node))
-    (and (remove-operand observer it)
-         (remove-link node observer #'observers #'dependencies))))
+  (remove-dependency observer node))
 
 (defun remove-dependency (node dependency)
   "Removes DEPENDENCY from the dependency set of NODE."
 
-  (awhen (gethash dependency (dependencies node))
-    (and (remove-operand node it)
-         (remove-link node dependency #'dependencies #'observers))))
+  (with-slots (dependencies) node
+    (when (aand (gethash dependency dependencies)
+                (remove-operand node it))
 
-(defun remove-link (node linked-node set linked-set)
-  (prog1 (gethash linked-node (funcall set node))
-    (when (remhash linked-node (funcall set node))
-      (remhash node (funcall linked-set linked-node))
+      (remhash dependency dependencies)
+      (remhash node (observers dependency))
 
-      (awhen (gethash linked-node (funcall linked-set node))
+      (awhen (gethash dependency (observers node))
         (setf (node-link-2-way-p it) nil)))))
 
 

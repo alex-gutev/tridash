@@ -29,7 +29,14 @@
 
   (let ((visited (make-hash-table :test #'eq)))
     (labels
-        ((coalesce-observers (node)
+        ((begin-coalesce (node)
+           "Begins node coalescing starting from the node NODE. Clears
+            the visited set."
+
+           (clrhash visited)
+           (coalesce-observers node))
+
+         (coalesce-observers (node)
            "Performs node coalescing on the observer nodes of NODE."
 
            (setf (gethash node visited) t)
@@ -49,10 +56,10 @@
              (unless (input-node? node)
                (remove-redundant-2-way-links node)
                (eliminate-node node))))
+
          (remove-redundant-2-way-links (node)
-           (when (= (dependencies-count node) 1)
-             (let ((dep (first (hash-table-keys (dependencies node)))))
-               (remove-observer node dep))))
+           (when (= (hash-table-count (contexts node)) 1)
+             (maphash-keys (curry #'remove-observer node) (dependencies node))))
 
 
          (eliminate-node (node)
@@ -115,7 +122,7 @@
                      ;; Add OBSERVER to observers of DEPENDENCY
                      (setf (gethash observer (observers dependency)) link))))))))
 
-      (mapc #'coalesce-observers (input-nodes graph))
+      (mapc #'begin-coalesce (input-nodes graph))
       (maphash-values (compose #'coalesce-nodes #'definition) (meta-nodes graph))
 
       (maphash-values #'coalesce-node-links (all-nodes graph)))))
