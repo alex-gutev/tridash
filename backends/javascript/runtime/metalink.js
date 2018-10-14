@@ -33,33 +33,15 @@
  * sets), and the node's runtime state.
  */
 function MetaLinkNode() {
-    /* Link Information */
+    /**
+     * Node contexts.
+     */
+    this.contexts = {};
 
     /**
-     * Array of dependency queues.
+     * The queue to which path reservations are queued.
      */
-    this.dependencies = [];
-    /**
-     * The NodeLink object containing the observers of the node.
-     */
-    this.observers = null;
-
-    /**
-     * Value computation function.
-     */
-    this.compute = (a) => a;
-
-
-    /* Wait Information */
-
-    /**
-     * Array of nodes which should be informed when the node's value
-     * will change.
-     */
-    this.wait_nodes = [];
-
-
-    /* State Information */
+    this.reserve_queue = new Queue();
 
     /**
      * Node Value.
@@ -72,44 +54,110 @@ function MetaLinkNode() {
 };
 
 /**
- * Creates PromiseQueue's and adds them to the 'dependencies' array.
+ * Node Context.
  *
- * @param num The number of queues to create.
+ * Contains a value function
  */
-MetaLinkNode.prototype.make_dependencies = function(num) {
-    for (var i = 0; i < num; i++) {
-        this.dependencies.push(new PromiseQueue(this));
+function NodeContext(node) {
+    /**
+     * The node to which this context belongs.
+     */
+    this.node = node;
+
+    /**
+     * Value computation function. Takes an array of the operand
+     * values as its first and only parameter.
+     */
+    this.compute = ([a]) => a;
+
+    /**
+     * Array of the values of the operands to the value computation
+     * function.
+     *
+     * Each operand node stores its value directly at a particular
+     * index within this array.
+     */
+    this.operands = [];
+
+    /**
+     * Array of observers.
+     *
+     * Each element is an array of two elements: the first element is
+     * the node context of the observer node, the second element is
+     * the index within the observer context's 'operands' array.
+     */
+    this.observers = [];
+}
+
+/**
+ * Reserves a path through the node (of the context).
+ *
+ * @param start A promise which is resolved when the entire path has
+ *    been determined.
+ *
+ * @param value A promise for the operand node's value.
+ *
+ * @param index Index, within the context's operands array, of the
+ *    operand.
+ *
+ * @param visited Visited set.
+ */
+NodeContext.prototype.reserve = function(start, value, index, visited = {}) {
+    if (!visited[this.node.name]) {
+        var promise = new ValuePromise();
+
+        promise.promise = promise.promise
+            .then(() => value)
+            .then((value) => this.operands[index] = value);
+
+        var reserve = {
+            context: this,
+            reserved: promise,
+            value: new ValuePromise(),
+            start: start.promise
+        };
+
+        visited[this.node.name] = reserve;
+
+        this.reserveObservers(start, reserve.value.promise, visited);
+
+        this.node.reserve_queue.enqueue(reserve);
+        this.node.add_update();
+    }
+    else {
+        var reserved = visited[this.node.name].reserved;
+
+        reserved.promise = reserved.promise
+            .then(() => value)
+            .then((value) => this.operands[index] = value);
     }
 };
 
 /**
- * Creates a single reserve queue (type ReserveQueue) and adds it to
- * the dependencies array.
+ * Reserves a path from a node, with this context, to the observer
+ * nodes.
  *
- * The update and set_value method are replaced with
- * MetaLinkNode.two_way_update and MetaLinkNode.two_way_set_value
- * respectively.
+ * @param start Promise which is resolved when the entire path has
+ *    been determined.
+ *
+ * @param value Promise for the value of the node of this context.
+ *
+ * @param visited Visited set.
  */
-MetaLinkNode.prototype.create_reserve_queue = function() {
-    this.reserve_queue = new ReserveQueue(this);
-    this.dependencies.push(this.reserve_queue);
-
-    this.update = MetaLinkNode.two_way_update.bind(this);
-    this.set_value = MetaLinkNode.two_way_set_value.bind(this);
+NodeContext.prototype.reserveObservers = function(start, value, visited) {
+    this.observers.forEach(([obs, index]) => obs.reserve(start, value, index, visited));
 };
 
 /**
- * Creates a new NodeLink object for the observers and stores it in
- * 'observers'.
+ * Computes the value of the node, using the context's value
+ * computation function, with the current value of the operands.
  *
- * @param observers An array where each element is of the form
- *    [observer, index] where observer is the observer node and index
- *    is the index of the queue, within the observers 'dependencies'
- *    array, to which this nodes value will be queued.
+ * @return The new value of the node.
  */
-MetaLinkNode.prototype.add_observers = function(observers) {
-    this.observers = new NodeLink(observers.map(([obs, ind]) => obs.dependencies[ind]));
+NodeContext.prototype.compute_value = function() {
+    return this.compute(this.operands);
 };
+
 
 
 /* Update Loop */
@@ -122,209 +170,47 @@ MetaLinkNode.prototype.add_update = function() {
 };
 
 /**
+ * Runs the update loop of the node, until the reserve queue is empty.
+ */
+MetaLinkNode.prototype.update = function() {
+    this.running = true;
+
+    var reserve = this.reserve_queue.dequeue();
+
+    if (reserve) {
+        var {context, reserved, start} = reserve;
+        reserved.resolve(true);
+
+        start.then(() => reserved.promise)
+            .then(() => context.compute_value())
+            .then((value) => reserve.value.resolve(value))
+            .finally(this.update.bind(this));
+    } else {
+        this.running = false;
+    }
+};
+
+/**
+ * Sets the value of the node. The node must be an input node and must
+ * have an input context.
+ *
+ * A path, throughout the entire graph, is reserved, starting at the
+ * current node with the input context.
+ */
+MetaLinkNode.prototype.set_value = function(value) {
+    var start = new ValuePromise();
+
+    this.contexts["input"].reserve(start, value, 0);
+    start.resolve(true);
+};
+
+/**
  * Used as an exception type, which is thrown in order to skip the
  * invocation of the set_value method. The exception is caught in
  * order to prevent errors showing up in the console.
  */
 function EndUpdate() {}
 
-/**
- * Runs the update loop of the node.
- *
- * If at least one dependency queue has a queued value, a value is
- * dequeued from each dependency, the new value is computed and
- * dispatched, and the next iteration of the update loop is
- * scheduled. If no dependency queue has a new value, the update loop
- * is terminated and the running flag is cleared.
- */
-MetaLinkNode.prototype.update = function() {
-    this.running = true;
-
-    var deps = this.dependencies;
-    if (deps.some(dep => dep.has_value())) {
-        Promise.all(deps.map(dep => dep.dequeue()))
-            .then(this.compute.bind(this))
-            .then(this.set_value.bind(this))
-            .catch((e) => {
-                if (!(e instanceof EndUpdate))
-                    throw e;
-            })
-            .finally(this.update.bind(this));
-    }
-    else {
-        this.running = false;
-    }
-};
-
-/**
- * Updates the node's value and dispatches it.
- *
- * @param value The new value of the node.
- */
-MetaLinkNode.prototype.set_value = function(value) {
-    this.value = value;
-
-    this.send_wait();
-    this.dispatch(value);
-};
-
-
-/* Reserving Paths in two-way bindings */
-
-/**
- * Update value function for nodes which have all their dependencies
- * bound using two-way bindings.
- */
-MetaLinkNode.two_way_update = function() {
-    this.running = true;
-
-    var reserve = this.reserve_queue.dequeue();
-
-    if (reserve) {
-        var {source, reserved, value} = reserve;
-        var new_value = new ValuePromise();
-
-        this.observers.reserve(this, source, new_value)
-            .then(() => reserved.resolve(true))
-            .then(() => value.promise)
-            .then((value) => new_value.resolve(this.compute(value)))
-            .finally(this.update.bind(this));
-    }
-    else {
-        this.running = false;
-    }
-};
-
-/**
- * Set value function for nodes which have all their dependencies
- * bound using two-way bindings.
- *
- * @param value The value to set.
- */
-MetaLinkNode.two_way_set_value = function(value) {
-    this.value = value;
-
-    var value_promise = new ValuePromise();
-
-    this.send_wait();
-    this.observers.reserve(this, null, value_promise)
-        .then(() => value_promise.resolve(value));
-};
-
-
-/* Waiting for changes */
-
-/**
- * Informs each node in 'wait_nodes' to wait for a new value (due to
- * the this node's value having changed).
- */
-MetaLinkNode.prototype.send_wait = function() {
-    this.wait_nodes.forEach(node => node.wait());
-};
-
-/**
- * Informs the node to wait for a new value. A pending promise is
- * queued to each observer's dependency queue.
- */
-MetaLinkNode.prototype.wait = function() {
-    this.observers.promise_value();
-};
-
-
-/* Dispatching values */
-
-/**
- * Dispatches the node's value to each observer nodes.
- */
-MetaLinkNode.prototype.dispatch = function(value) {
-    this.observers.dispatch(value);
-};
-
-
-/* Links between nodes. */
-
-/**
- * Node Link.
- *
- * Manages dispatching values to a set of observers.
- *
- * @param observers Array of the dependency queues, of each observer
- *    node, to which dispatched values will be queued.
- */
-function NodeLink(observers) {
-    /**
-     * Array of observer dependency queues.
-     */
-    this.observers = observers;
-    /**
-     * Queue of pending promises which have been queued to the
-     * observers' dependency queues.
-     */
-    this.promises = new Queue();
-};
-
-/**
- * Returns either the next pending promise, in the queue, or creates a
- * new promise and queues it to the observer's dependency queues.
- *
- * @return The ValuePromise object.
- */
-NodeLink.prototype.next_promise = function() {
-    return this.promises.dequeue() || this.new_promise();
-};
-
-/**
- * Creates a new ValuePromise object and queues it to each observer's
- * dependency queue.
- *
- * @return The ValuePromise object.
- */
-NodeLink.prototype.new_promise = function() {
-    var promise = new ValuePromise();
-
-    this.observers.forEach(obs => obs.enqueue(promise.promise));
-    return promise;
-};
-
-/**
- * Creates a new pending promise, enqueues it to each observer's
- * dependency queue and enqueues it to the 'promises' queue.
- */
-NodeLink.prototype.promise_value = function() {
-    this.promises.enqueue(this.new_promise());
-};
-
-/**
- * Dispatches a value to each observer, and runs each observer's
- * update loop.
- */
-NodeLink.prototype.dispatch = function(value) {
-    this.next_promise().resolve(value);
-    this.observers.forEach(obs => obs.add_update());
-};
-
-/**
- * Reserves a path from @a node to all observers excluding @a source.
- *
- * @param node The node from which to reserve the path.
- * @param source The observer node to exclude from the path.
- * @param value The value promise to send all observers.
- *
- * @return A promise which is resolved when all reserved promises,
- *    sent to the observers, are resolved.
- */
-NodeLink.prototype.reserve = function(node, source, value) {
-    return Promise.all(this.observers.map((obs) => {
-        if (obs.target !== source) {
-            var promise = new ValuePromise();
-
-            obs.reserve_path(node, promise, value);
-            return promise.promise;
-        }
-
-        return null;
-    }));
-};
 
 /**
  * Creates a thunk for lazily computing a value. When the thunk
@@ -344,9 +230,6 @@ function Thunk(compute) {
     };
 }
 
-
-/* Value Promise */
-
 /**
  * Value Promise.
  *
@@ -358,176 +241,6 @@ function ValuePromise() {
         this.reject = reject;
     });
 }
-
-
-/* Dependency Queues */
-
-/**
- * Promise Queue.
- *
- * @param target The target node - the of which this queue is a
- *    dependency queue.
- */
-function PromiseQueue(target) {
-    /**
-     * The target node - the node of which this queue is a dependency
-     * queue.
-     */
-    this.target = target;
-
-    /**
-     * The last promise dequeued.
-     */
-    this.last_value = null;
-    /**
-     * Queue of promises.
-     */
-    this.promises = new Queue();
-}
-
-/**
- * Adds a new promise to the queue.
- *
- * @param promise The Promise.
- */
-PromiseQueue.prototype.enqueue = function(promise) {
-    this.promises.enqueue(promise);
-};
-
-/**
- * Returns true if the promise queue is not empty.
- */
-PromiseQueue.prototype.has_value = function() {
-    return !this.promises.empty();
-};
-
-/**
- * Dequeues a promise from the queue or returns the last promise
- * dequeued.
- *
- * @return The Promise object.
- */
-PromiseQueue.prototype.dequeue = function() {
-    var promise = this.promises.dequeue();
-
-    if (promise) {
-        return (this.last_value = promise);
-    }
-    else {
-        return this.last_value;
-    }
-};
-
-/**
- * Runs the update loop of the target node.
- */
-PromiseQueue.prototype.add_update = function() {
-    this.target.add_update();
-};
-
-/**
- * Reserves a path.
- *
- * Since this queue is used in nodes which have no two-way bound
- * dependencies, the reserved promise, @a reserved, is resolved, and
- * the value promise @a value is added to the promise queue.
- *
- * The update loop of the target node is run.
- */
-PromiseQueue.prototype.reserve_path = function(source, reserved, value) {
-    reserved.resolve(true);
-
-    this.enqueue(value.promise);
-    this.add_update();
-};
-
-
-/* Reserve Path Queue */
-
-/**
- * Dependency queue which is used when the path needs to be reserved
- * prior to dispatching values.
- *
- * The queue stores reserve objects with three fields:
- *
- *   source: The node from which the value was received.
- *
- *   reserved: A promise which is resolved when the path has been
- *             reserved.
- *
- *   value: A promise resolved when the dependency's value has been
- *          computed.
- */
-function ReserveQueue(target) {
-    /**
-     * The target node - the node of which this queue is a dependency
-     * queue.
-     */
-    this.target = target;
-
-    /**
-     * The queue of reserve objects.
-     */
-    this.queue = new Queue();
-}
-
-/**
- * Adds a new reserve object to the queue with value promise @a
- * value_promise.
- *
- * A reserve object with source null and a new reserved promise is
- * created.
- *
- * @param value_promise Promise which is resolved when the value of
- *    the dependency node is computed.
- */
-ReserveQueue.prototype.enqueue = function(value_promise) {
-    this.queue.enqueue({
-        source: null,
-        reserved: new ValuePromise(),
-        value: value_promise
-    });
-};
-
-/**
- * Dequeues a reserve object from the queue.
- *
- * @return The reserve object or null if the queue is empty.
- */
-ReserveQueue.prototype.dequeue = function() {
-    return this.queue.dequeue();
-};
-
-/**
- * Runs the update loop of the target node.
- */
-ReserveQueue.prototype.add_update = function() {
-    this.target.add_update();
-};
-
-/**
- * Reserves a path by adding a new reserve object to the queue.
- *
- * Runs the update loop of the target node.
- *
- * @param source: The dependency node from which the path is reserved
- *    (the previous node in the path).
- *
- * @param reserved A promise which is resolved when the path is
- *    reserved.
- *
- * @param value A value which is resolved when the value of the
- *    dependency node has been computed.
- */
-ReserveQueue.prototype.reserve_path = function(source, reserved, value) {
-    this.queue.enqueue({
-        source: source,
-        reserved: reserved,
-        value: value
-    });
-
-    this.add_update();
-};
 
 /**
  * A simple implementation of an unbounded FIFO queue.
@@ -577,4 +290,3 @@ function Queue() {
         this.head = this.tail = null;
     };
 }
-
