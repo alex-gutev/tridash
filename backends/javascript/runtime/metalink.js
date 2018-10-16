@@ -90,6 +90,34 @@ function NodeContext(node) {
 }
 
 /**
+ * Creates a new node context of node @a node, with a given number of
+ * operands.
+ *
+ * @param node The node to which the context belongs.
+ * @param num_operands The number of operands of the context.
+ *
+ * @return The node context.
+ */
+NodeContext.create = function(node, num_operands) {
+    var context = new NodeContext(node);
+
+    context.operands.length = num_operands;
+    context.operands.fill(null, 0);
+
+    return context;
+};
+
+/**
+ * Adds a new observer to the context.
+ *
+ * @param context The observer node's context.
+ * @param index Index within the operands array of @a context.
+ */
+NodeContext.prototype.add_observer = function(context, index) {
+    this.observers.push([context, index]);
+};
+
+/**
  * Reserves a path through the node (of the context).
  *
  * @param start A promise which is resolved when the entire path has
@@ -183,12 +211,26 @@ MetaLinkNode.prototype.update = function() {
 
         start.then(() => reserved.promise)
             .then(() => context.compute_value())
-            .then((value) => reserve.value.resolve(value))
+            .then((value) => {
+                reserve.value.resolve(value);
+                this.update_value(value);
+            })
             .finally(this.update.bind(this));
     } else {
         this.running = false;
     }
 };
+
+/**
+ * Method which is called after the new value of the node has been
+ * computed.
+ *
+ * By default this method does nothing, it should be overridden if
+ * the new value needs to be reflected somewhere.
+ *
+ * @param value The new value of the node.
+ */
+MetaLinkNode.prototype.update_value = function(value) {};
 
 /**
  * Sets the value of the node. The node must be an input node and must
@@ -201,6 +243,25 @@ MetaLinkNode.prototype.set_value = function(value) {
     var start = new ValuePromise();
 
     this.contexts["input"].reserve(start, value, 0);
+    start.resolve(true);
+};
+
+/**
+ * Reserves a path in the graph, starting at a particular set of input
+ * nodes and sets the values of those input nodes.
+ *
+ * @param node_values Array of the input nodes and their values to
+ *   set. Each element is an array of two elements: the input node and
+ *   its value.
+ */
+MetaLinkNode.set_values = function(node_values) {
+    var start = new ValuePromise();
+    var visited = {};
+
+    node_values.forEach(([node, value]) => {
+        node.contexts["input"].reserve(start, value, 0, visited);
+    });
+
     start.resolve(true);
 };
 

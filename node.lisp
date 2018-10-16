@@ -48,7 +48,7 @@
 
    (contexts
     :accessor contexts
-    :initform (make-hash-table :test #'eq)
+    :initform (make-hash-table :test #'equal)
     :documentation
     "Set of contexts of the node. Each key is a context
      identifier (either a dependency node or unique identifier) and

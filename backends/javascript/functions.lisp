@@ -104,32 +104,37 @@
    only be used if META-NODE has no subnodes, other than its operand
    nodes."
 
-  (with-slots (value-function operands) meta-node
-    (let ((op-vars (make-operand-ids operands))
+  (with-slots (contexts operands) meta-node
+    (when (> (hash-table-count contexts) 1)
+      (error "Meta-node ~a has more than once context." (name meta-node)))
+
+    (let ((context (first (hash-table-values contexts)))
+          (op-vars (make-operand-ids operands))
           (tail-recursive-p nil))
 
-      (labels ((get-input (link)
-                 (cdr (assoc (name (node-link-node link)) op-vars)))
+      (with-slots (value-function) context
+        (labels ((get-input (link)
+                   (cdr (assoc (name (node-link-node link)) op-vars)))
 
-               (make-meta-node-call (node operands)
-                 (if (and *in-tail-position* (not *in-async*) (eq node meta-node))
-                     (prog1
-                         (js-block
-                          (js-call '= (js-array (mapcar #'cdr op-vars)) (js-array operands))
-                          (js-continue))
-                       (setf tail-recursive-p t))
-                     (meta-node-call node operands))))
+                 (make-meta-node-call (node operands)
+                   (if (and *in-tail-position* (not *in-async*) (eq node meta-node))
+                       (prog1
+                           (js-block
+                            (js-call '= (js-array (mapcar #'cdr op-vars)) (js-array operands))
+                            (js-continue))
+                         (setf tail-recursive-p t))
+                       (meta-node-call node operands))))
 
-        (let* ((*meta-node-call* #'make-meta-node-call)
-               (body (make-function-body value-function #'get-input)))
+          (let* ((*meta-node-call* #'make-meta-node-call)
+                 (body (make-function-body value-function #'get-input)))
 
-          (js-function (meta-node-id meta-node)
-                       (mapcar #'cdr op-vars)
-                       (list
-                        (create-meta-nodes (meta-nodes (definition meta-node)))
-                        (if tail-recursive-p
-                            (js-while "true" body)
-                            body))))))))
+            (js-function (meta-node-id meta-node)
+                         (mapcar #'cdr op-vars)
+                         (list
+                          (create-meta-nodes (meta-nodes (definition meta-node)))
+                          (if tail-recursive-p
+                              (js-while "true" body)
+                              body)))))))))
 
 (defun create-async-meta-node (meta-node)
   "Generates the value-function of the `meta-node'. Unlike
@@ -154,20 +159,11 @@
                   named by OPERAND."
                  (js-element *node-table-var* (js-string operand)))
 
-               (send-operand-wait (operand)
-                 "Generates an expression which calls the send_wait
-                  method of the operand node OPERAND."
-                 (js-call (js-member (get-operand (car operand)) "send_wait")))
-
-               (dispatch-operand-value (operand)
-                 "Generates an expression which calls the dispatch
-                  method of the operand node passing in the operand's
-                  value. The CAR of OPERAND contains the operand
-                  node's name, the CDR the name of the operand
-                  variable."
-
-                 (js-call (js-member (get-operand (car operand)) "dispatch")
-                          (cdr operand)))
+               (operand-node-var (operand)
+                 "Returns a JS array with two elements: the operand
+                  node and the variable storing the operand's value."
+                 (js-array (list (get-operand (car operand))
+                                 (cdr operand))))
 
                (make-meta-node-call (node operands)
                  "Generates an expression which invokes the meta-node
@@ -208,7 +204,7 @@
                  (let ((path (node-path meta-node)))
                    (js-call
                     '=
-                    (js-member path "set_value")
+                    (js-member path "update_value")
                     (js-lambda
                      (list "value")
                      (list
@@ -232,8 +228,9 @@
                   (create-value-node)
                   (generate-code definition)))
 
-                (mapcar #'send-operand-wait op-vars)
-                (mapcar #'dispatch-operand-value op-vars)
+                (js-call
+                 (js-member +node-class+ "set_values")
+                 (js-array (mapcar #'operand-node-var op-vars)))
 
                 (js-return (js-member "promise" "promise")))))))))))
 
@@ -250,8 +247,8 @@
 
 ;;;; Node Compute Functions
 
-(defun create-compute-function (node)
-  "Generates the value computation function of NODE. The anonymous
+(defun create-compute-function (context)
+  "Generates the value computation function of CONTEXT. The anonymous
    function expression is returned."
 
   (symbol-macrolet ((values-var "values"))
@@ -259,22 +256,22 @@
       (labels ((get-input (link)
                  (if (eq (node-link-node link) 'self)
                      (prog1
-                         (if (lazy-node? node)
+                         (if (lazy-node? context)
                              (js-call "old_value")
                              "old_value")
                        (setf uses-old-value t))
 
-                     (make-link-expression node link values-var)))
+                     (make-link-expression context link values-var)))
 
                (make-body (fn)
                  (alet (make-function-body fn #'get-input)
                    ;; If NODE should be evaluated lazily, wrap the compute
                    ;; function in a thunk and return it.
-                   (if (lazy-node? node)
+                   (if (lazy-node? context)
                        (list (js-return (js-call "Thunk" (js-lambda nil it))))
                        it))))
 
-        (with-slots (value-function) node
+        (with-slots (value-function) context
           (when value-function
             (js-lambda
              (list values-var)
@@ -286,13 +283,16 @@
                     body)
                    body)))))))))
 
-(defun make-link-expression (node link &optional (values-var "values"))
-  (alet (js-element values-var (dependency-index node link))
-    ;; If the linked node is lazily evaluated, evaluate the
-    ;; thunk.
-    (if (lazy-node? (node-link-node link))
-        (cons 'async (js-call it))
-        it)))
+(defun make-link-expression (context link &optional (values-var "values"))
+  (with-accessors ((link-node node-link-node)) link
+    (alet (js-element values-var (dependency-index context link-node))
+      ;; If the linked node is lazily evaluated, evaluate the
+      ;; thunk.
+      (match link-node
+        ((cons 'async _)
+         (cons 'async (js-call it)))
+
+        (_ it)))))
 
 (defvar *get-input* nil
   "Function which should return an expression that references the

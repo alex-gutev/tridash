@@ -74,8 +74,15 @@
 
 (defmethod print-ast ((ast-nodes list) &optional semicolon brackets)
   "Prints each AST node in AST-NODES."
+
   (mapc (rcurry #'print-ast semicolon brackets) ast-nodes))
 
+(defmethod print-ast ((ast-nodes array) &optional semicolon brackets)
+  "Prints each AST node in AST-NODES if AST-NODES is not a string."
+
+  (if (stringp ast-nodes)
+      (call-next-method ast-nodes)
+      (map nil (rcurry #'print-ast semicolon brackets) ast-nodes)))
 
 ;;; Expressions
 
@@ -118,11 +125,13 @@
   (when brackets
     (print-token "(" :lead-space nil :trail-space nil))
 
-  (awhen (first expressions)
-    (print-ast it)
-    (dolist (expression (rest expressions))
-      (print-token "," :lead-space nil)
-      (print-ast expression)))
+  (flet ((print-expression (expression)
+           (print-token "," :lead-space nil)
+           (print-ast expression)))
+
+    (awhen (first expressions)
+      (print-ast it)
+      (map nil #'print-expression (rest expressions))))
 
   (when brackets
     (print-token ")" :lead-space nil)))
@@ -134,19 +143,21 @@
   (print-newline)
 
   (let ((*indent-level* (1+ *indent-level*)))
-    (flet ((print-field (field)
-             (destructuring-bind (field value) field
-               (print-ast field)
-               (print-token ":")
-               (print-ast value))))
+    (labels ((print-field (field)
+               (destructuring-bind (field value) field
+                 (print-ast field)
+                 (print-token ":")
+                 (print-ast value)))
+
+             (print-field-line (field)
+               (print-token "," :lead-space nil)
+               (print-newline)
+               (print-field field)))
 
       (with-accessors ((fields js-object-fields)) object
         (awhen (first fields)
           (print-field it)
-          (dolist (field (rest fields))
-            (print-token "," :lead-space nil)
-            (print-newline)
-            (print-field field))))))
+          (map nil #'print-field-line (rest fields))))))
 
   (print-token "}"))
 
@@ -211,7 +222,7 @@
   (print-newline)
 
   (let ((*indent-level* (1+ *indent-level*)))
-    (mapc (rcurry #'print-ast t) (js-block-statements block)))
+    (map nil (rcurry #'print-ast t) (js-block-statements block)))
 
   (print-newline)
   (print-token "}"))

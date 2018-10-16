@@ -41,6 +41,14 @@
 (defvar *meta-node-types* (make-hash-table :test #'eq))
 
 
+;;;; Utilities
+
+(defun make-code-array ()
+  "Creates an empty array suitable for pushing JavaScript AST nodes to
+   it."
+  (make-array 0 :adjustable t :fill-pointer t))
+
+
 ;;;; Compilation
 
 (defmethod compile-nodes ((backend (eql :javascript)) table)
@@ -54,31 +62,59 @@
     (output-code (generate-code table))))
 
 
+
+(defvar *context-ids* nil
+  "Hash-table containing the context identifiers of each context of
+   each node. Each key is a `NODE' and the corresponding value is a
+   hash-table mapping context identifiers to their JS identifiers.")
+
+
+(defun context-js-id (node context-id)
+  "Returns the JavaScript context identifier for the context with
+   identifier CONTEXT-ID of NODE."
+
+  (let ((ids (ensure-gethash node *context-ids* (make-hash-table :test #'equal))))
+    (case context-id
+      (:input
+       (js-string "input"))
+
+      (otherwise
+       (ensure-gethash context-id ids (hash-table-count ids))))))
+
+(defun context-path (node context-id)
+  "Returns a JS expression which references the context, with
+   identifier CONTEXT-ID, of NODE."
+
+  (js-element (js-member (node-path node) "contexts")
+              (context-js-id node context-id)))
+
+
 (defvar *lazy-nodes* nil
   "Hash-table of nodes which should be evaluated lazily. If a node
-  should be evaluated it is present in the table with the
-  corresponding value T.")
+   should be evaluated it is present in the table with the
+   corresponding value T.")
 
-(defun lazy-node? (node)
+(defun lazy-node? (context)
   "Returns true if NODE should be evaluated lazily. NODE should be
    evaluated lazily if it is present in *LAZY-NODES* (with value T)
    and has a non-NIL value function."
 
-  (and (gethash node *lazy-nodes*)
-       (value-function node)))
+  (and (gethash context *lazy-nodes*)
+       (value-function context)))
 
-(defun generate-code (table)
+(defun generate-code (table &optional (code (make-array 0 :adjustable t :fill-pointer t)))
   "Generates the JavaScript code for the node and meta-node
    definitions in the `NODE-TABLE' TABLE."
 
-  (let ((*lazy-nodes* (find-lazy-nodes table)))
+  (let ((*lazy-nodes* (find-lazy-nodes table))
+        (*context-ids* (make-hash-table :test #'eq)))
     (with-slots (nodes meta-nodes) table
-      (list
+      (create-nodes nodes code)
+      (create-meta-nodes meta-nodes code)
 
-       (create-nodes nodes)
-       (create-meta-nodes meta-nodes)
+      (init-nodes nodes code)
 
-       (init-nodes nodes)))))
+      code)))
 
 (defun make-preamble ()
   "Creates the code which should appear before any node
@@ -90,76 +126,82 @@
 
 ;;;; Creating nodes
 
-(defun create-nodes (nodes)
+(defun create-nodes (nodes code)
   "Generate the node creation code of each `NODE' in NODES."
 
-  (loop
-     for node being the hash-value of nodes
-     append (create-node node)))
+  (maphash-values (rcurry #'create-node code) nodes)
+  code)
 
-(defgeneric create-node (node)
+(defgeneric create-node (node &optional code)
   (:documentation
    "Generate the node creation code of NODE. This includes the
     creation of the node, its dependency queues and its value
     computation function, however it does not include the binding of
     the node to its observers."))
 
-(defmethod create-node (node)
+(defmethod create-node (node &optional (code (make-code-array)))
   "Generate the node creation code, which creates dependency queues
    and the value computation function."
 
   (let ((path (node-path node)))
-    (establish-dependency-indices node)
+    (vector-push-extend (js-call '= path (js-new +node-class+)) code)
+    (vector-push-extend (js-call '= (js-member path "name") (js-string (name node))) code)
+    (maphash (rcurry #'create-context node code) (contexts node))))
 
-    (list
-     (js-call '= path (js-new +node-class+))
 
-     (aand (dependencies-count node)
-           (plusp it)
+(defun create-context (id context node &optional (code (make-code-array)))
+  "Generates the initialization code for a `NODE-CONTEXT' ID is the
+   context identifier, CONTEXT is the `NODE-CONTEXT' itself and NODE
+   is the `NODE' to which the context belongs."
 
-           (if (input-node? node)
-               (js-call (js-member path "create_reserve_queue"))
-               (js-call (js-member path "make_dependencies") it)))
+  (establish-dependency-indices context)
 
-     (awhen (create-compute-function node)
-       (js-call '= (js-member path "compute") it)))))
+  (let ((node-path (node-path node))
+        (context-path (context-path node id)))
 
-(defun establish-dependency-indices (node)
-  "Establishes the dependency indices of the dependencies of NODE, and
-   adds them to *NODE-LINK-INDICES*."
+    (with-slots (operands) context
+      (vector-push-extend
+       (lexical-block
+        (js-var "context" (js-call (js-member "NodeContext" "create")
+                                   node-path (hash-table-count operands)))
 
-  (dohash (dependency link (dependencies node))
-    (dependency-index node link)))
+        (awhen (create-compute-function context)
+          (js-call '= (js-member "context" "compute") it))
 
-(defun dependency-index (node link)
-  "Returns the dependency index of the dependency (of NODE)
-   corresponding to the `NODE-LINK' object LINK. If LINK does not have
-   a dependency index, a new index is assigned to it."
+        (js-call '= context-path "context"))
+       code))))
 
-  (if (node-link-2-way-p link)
-      0
-      (let ((links (ensure-gethash node *node-link-indices* (make-hash-table :test #'eq))))
-        (ensure-gethash link links (hash-table-count links)))))
+
+(defun establish-dependency-indices (context)
+  "Establishes the indices of the operands of the `NODE-CONTEXT'
+   CONTEXT, and adds them to *NODE-LINK-INDICES*."
+
+  (maphash-keys (curry #'dependency-index context) (operands context)))
+
+(defun dependency-index (context operand)
+  "Returns the index of the operand (of CONTEXT). If OPERAND does not have an index,
+   a new index is assigned to it."
+
+  (let ((operands (ensure-gethash context *node-link-indices* (make-hash-table :test #'eq))))
+    (ensure-gethash operand operands (hash-table-count operands))))
 
 
 ;;;; Creating meta-nodes
 
-(defun create-meta-nodes (meta-nodes)
+(defun create-meta-nodes (meta-nodes &optional (code (make-code-array)))
   "Generates the meta-node functions of each `META-NODE' in META-NODES."
 
-  (loop
-     for meta-node being the hash-value of meta-nodes
-     collect (create-meta-node meta-node)))
+  (dohash (nil meta-node meta-nodes code)
+    (vector-push-extend (create-meta-node meta-node) code)))
 
 (defun create-meta-node (meta-node)
   "Generates the meta-node function of META-NODE."
 
-  (with-slots (definition operands value-function) meta-node
-    (case (meta-node-type meta-node)
-      (sync
-       (create-function-meta-node meta-node))
-      (async
-       (create-async-meta-node meta-node)))))
+  (case (meta-node-type meta-node)
+    (sync
+     (create-function-meta-node meta-node))
+    (async
+     (create-async-meta-node meta-node))))
 
 
 (defun async-mete-node? (meta-node)
@@ -178,7 +220,7 @@
    value function. Returns ASYNC if it has other subnodes besides the
    operand nodes."
 
-  (with-slots (value-function operands definition) meta-node
+  (with-slots (operands definition) meta-node
     (ensure-gethash
      meta-node
      *meta-node-types*
@@ -186,9 +228,8 @@
      (cond
        ;; If meta-node has no subnodes other than the operand nodes, it
        ;; can be coalesced to a single function
-       ((and value-function
-             (= (hash-table-count (nodes definition))
-                (length operands)))
+       ((= (hash-table-count (nodes definition))
+           (length operands))
 
         'sync)
 
@@ -197,38 +238,39 @@
 
 ;;;; Generate dispatch methods
 
-(defun init-nodes (nodes)
+(defun init-nodes (nodes &optional (code (make-code-array)))
   "Generates the initialization code of each `NODE' in NODES."
 
-  (loop
-     for node being the hash-value of nodes
-     append (init-node node)))
+  (maphash-values (rcurry #'init-node code) nodes)
+  code)
 
-(defun init-node (node)
+(defun init-node (node &optional (code (make-code-array)))
   "Generates the initialization code of NODE. This includes the
    binding of the node to its observers and the initialization of the
    wait set."
 
-  (list
-   (bind-observers node)
-   (init-wait-set node)))
+  (maphash (rcurry #'init-context node code) (contexts node))
+  code)
 
-(defun bind-observers (node)
+(defun init-context (context-id context node code)
+  "Generates the initialization code of the node context CONTEXT, with
+   identifier CONTEXT-ID, of the node NODE."
+
+  (bind-observers node context-id context code))
+
+(defun bind-observers (node context-id context code)
   "Generates code which binds the `NODE' NODE to its observers."
 
-  (with-slots (observers) node
-    (js-call
-     (js-member (node-path node) "add_observers")
-     (js-array
-      (iter (for (observer link) in-hashtable (observers node))
-            (for index = (dependency-index observer link))
-            (collect (list (js-array (list (node-path observer) index)))))))))
+  (let* ((context-path (context-path node context-id)))
 
-(defun init-wait-set (node)
-  "Generates the wait-set initialization code of the `NODE' NODE."
-
-  (let ((wait-nodes (remove-duplicates (flatten (hash-table-values (wait-set node))))))
-    (when wait-nodes
-      (js-call '=
-               (js-member (node-path node) "wait_nodes")
-               (js-array (mapcar #'node-path wait-nodes))))))
+    (with-slots (operands) context
+      (with-slots (observers) node
+        (dohash (observer link (observers node))
+          (unless (gethash observer operands)
+            (vector-push-extend
+             (js-call
+              (js-member context-path "add_observer")
+              (context-path observer (node-link-context link))
+              (dependency-index (context observer (node-link-context link))
+                                node))
+             code)))))))

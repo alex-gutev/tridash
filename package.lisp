@@ -77,25 +77,37 @@
    :name
    :dependencies
    :observers
-   :wait-set
-   :value-function
+   :contexts
    :attributes
 
+   ;; Node Contexts
+   :node-context
+   :operands
+   :value-function
+   :wait-set
+
+   :context
+
+   ;; Predicates
    :node?
    :value?
+   :input-node?
+
+   ;; Node-link
+   :node-link
+   :node-link-node
+   :node-link-2-way-p
+   :node-link-context
+   :node-link-p
+   :self
+
+   ;; Utility Functions
 
    :observer-list
    :dependency-list
 
    :observers-count
    :dependencies-count
-
-   ;; Node-link
-   :node-link
-   :node-link-node
-   :node-link-p
-   :node-link-2-way-p
-   :self
 
    ;; Meta-node
    :meta-node
@@ -116,7 +128,6 @@
    :meta-nodes
 
    :input-nodes
-   :input-node?
    :add-input
 
    ;; Builder

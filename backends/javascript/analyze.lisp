@@ -19,43 +19,61 @@
 (in-package :metalink.backend.js)
 
 (defun find-lazy-nodes (node-table)
-  "Determines which nodes in NODE-TABLE should be evaluated lazily. A
-   node should be evaluated lazily if each of its observers should be
-   evaluated lazily or the binding to the observer node is
-   conditional. Returns a hash-table where the value corresponding to
-   each node is T if the node should be evaluated lazily, NIL
-   otherwise."
+  "Determines which nodes in NODE-TABLE, and in which contexts, should
+   be evaluated lazily. A node should be evaluated lazily, in a
+   particular context, if each of its observers in the context should
+   be evaluated lazily or the binding to the observer node is
+   conditional. Returns a hash-table where each key is a node context
+   and the corresponding value is T if the node should be evaluated
+   lazily in the context, NIL otherwise."
 
   (let ((lazy-nodes (make-hash-table :test #'eq)))
-    (labels ((lazy? (node)
+    (labels ((lazy-node? (node)
+               (maphash-values (curry #'lazy? node) (contexts node)))
+
+             (lazy? (node context)
                "Returns true if NODE should be evaluated lazily."
 
                (ensure-gethash
-                node lazy-nodes
-                (when (plusp (observers-count node))
-                  (loop
-                     for observer being the hash-key of (observers node)
-                     always (or (not (unconditional-binding? node observer))
-                                (lazy? observer))))))
+                context lazy-nodes
+                (let ((observers (context-observers node context)))
+                  (when (rest observers)
+                    (loop for (observer link) in observers
+                       always (or (not (unconditional-binding? link observer))
+                                  (lazy? observer
+                                         (context observer (node-link-context link)))))))))
 
-             (unconditional-binding? (dependency observer)
+             (context-observers (node context)
+               "Returns a list of the observer nodes of NODE at
+                context CONTEXT."
+
+               (with-slots (operands) context
+                 (iter (for (observer link) in-hashtable (observers node))
+                       (unless (gethash observer operands)
+                         (collect (list observer link))))))
+
+             (unconditional-binding? (link observer)
                "Returns true if the value of DEPENDENCY is used
                 unconditionally in the value function of OBSERVER."
 
-               (has-node dependency (value-function observer)))
+               (let ((context (context observer (node-link-context link))))
+                 (aprog1 (has-node link (value-function context))
+                   (unless it
+                     (setf (node-link-node link)
+                           (cons 'async (node-link-node link)))))))
 
-             (has-node (dependency fn)
+             (has-node (link fn)
                "Returns true if DEPENDENCY is used unconditionally in FN."
 
                (match fn
-                 ((node-link- node)
-                  (eq node dependency))
+                 ((type node-link)
+                  (eq link fn))
 
                  ((list* 'if cond _)
-                  (has-node dependency cond))
+                  (has-node link cond))
 
                  ((list* _ operands)
-                  (some (curry #'has-node dependency) operands)))))
+                  (some (curry #'has-node link) operands)))))
 
-      (maphash-values #'lazy? (nodes node-table))
+      (maphash-values #'lazy-node? (nodes node-table))
       lazy-nodes)))
