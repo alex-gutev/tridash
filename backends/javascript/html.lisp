@@ -30,10 +30,12 @@
     :documentation
     "The name of the HTML tag.")
 
-   (attribute
-    :initarg :attribute
-    :accessor attribute
-    :documentation "The name of the attribute of the tag.")
+   (html-attribute
+    :initarg :html-attribute
+    :initform nil
+    :accessor html-attribute
+    :documentation
+    "The HTML attribute of the element to which this node is bound.")
 
    (element-id
     :initarg :element-id
@@ -92,66 +94,66 @@
    node."
 
   (labels ((make-html-nodes (html-nodes)
-             "Returns a function which when called generates (and
-                returns) a node declaration for the next HTML node in
-                HTML-NODES."
+             "Builds each HTML node description in HTML-NODES."
 
              (iter (for html-node in-vector html-nodes)
-                   (build-node (make-html-node html-node) *global-node-table*)))
+                   ;; TODO: Make sure that only errors involving the
+                   ;; 2-way binding between the HTML-node are ignored.
+                   (handler-case
+                       (build-node (make-html-node html-node) *global-node-table*)
+                     (target-node-error ()))))
 
            (make-html-node (html-node)
-             "Generates a node declaration for the HTML node
-                HTML-NODE."
+             "Generates a node declaration for the HTML node HTML-NODE."
 
              (destructuring-bind (html-id tag attribute node-name) html-node
                (declare (ignore tag))
-               (let ((html-node (make-html-node-name html-id attribute))
-                     (node (gethash node-name (nodes *global-node-table*))))
-                 (list* +bind-operator+
-                        (if (plusp (dependencies-count node))
-                            (list node html-node)
-                            (list html-node node))))))
+
+               (let ((html-node (make-html-node-name html-id attribute)))
+                 `(,+list-operator+
+                   (,+bind-operator+ ,node-name ,html-node)
+                   (,+bind-operator+ ,html-node ,node-name)))))
 
            (make-html-node-name (id attribute)
-             "Generates the name of a node corresponding to the
-                attribute ATTRIBUTE of the HTML node with id ID."
+             "Generates a declaration for an a node which references
+              the attribute ATTRIBUTE of the HTML element with id ID."
 
              (list +subnode-operator+ (id-symbol id) (id-symbol attribute)))
 
            (mark-html-node (html-node)
-             "Changes the class of the `NODE' object, corresponding
-                to HTML-NODE, to `HTML-NODE'"
+             "Changes the class of the `NODE' object, corresponding to
+              HTML-NODE, to `HTML-NODE'"
 
-             (destructuring-bind (html-id tag attribute node-name) html-node
+             (destructuring-bind (id tag attribute node-name) html-node
                (declare (ignore node-name))
 
-               (mark-html-element tag html-id)
+               (mark-attribute-node id attribute tag)
 
-               (let ((node (gethash (make-html-node-name html-id attribute) (nodes *global-node-table*))))
+               (let* ((name (id-symbol id))
+                      (node (gethash name (nodes *global-node-table*))))
+                 (setf (gethash :no-coalesce (attributes node)) t)
 
-                 (change-class node 'html-node
-                               :tag-name tag
-                               :attribute attribute
-                               :element-id html-id))))
+                 (unless (typep node 'html-node)
+                    (change-class node 'html-node
+                                  :tag-name tag
+                                  :element-id id)))))
 
-           (mark-html-element (tag id)
-             (let* ((name (id-symbol id))
+           (mark-attribute-node (id attribute tag)
+             "Changes the class of the node, corresponding to the
+              attribute ATTRIBUTE of the HTML element with id ID, to
+              `HTML-NODE'."
+
+             (let* ((name (make-html-node-name id attribute))
                     (node (gethash name (nodes *global-node-table*))))
 
-               (remove-observers node)
-               (if (plusp (dependencies-count node))
-                   (change-class node 'html-node
-                                 :tag-name tag
-                                 :attribute nil
-                                 :element-id id)
-                   (remhash name (nodes *global-node-table*)))))
+               (add-input node *global-node-table*)
+               (setf (gethash :no-coalesce (attributes node)) t)
 
-           (remove-observers (html-node)
-             (maphash-keys (rcurry #'remove-observer html-node) (observers html-node))
-             (clrhash (observers html-node)))
-
-           (remove-observer (observer node)
-             (remhash node (dependencies observer))))
+               (unless (typep node 'html-node)
+                 (change-class node 'html-node
+                               :tag-name tag
+                               :html-attribute attribute
+                               :element-id id)))))
 
     (multiple-value-bind (root-node html-nodes) (preprocess-html stream)
       (make-html-nodes html-nodes)
@@ -223,7 +225,11 @@
        (output-code-to-file graph path)
        (plump:make-element
         head-tag "script"
-        :attributes (alist-hash-table (acons "src" (mkstr path) nil) :test #'equalp)))
+        :attributes (alist-hash-table
+                     (list
+                      (cons "src" (mkstr path))
+                      (cons "defer" nil))
+                     :test #'equalp)))
 
       (t
        (plump:make-fulltext-element head-tag "script" :text (output-code-to-string graph))))))
@@ -428,36 +434,72 @@
 
 ;;;; Compiling HTML nodes
 
-(defmethod create-node ((node html-node))
-  "Generates the node definitions for NODES which correspond directly
-   to HTML elements. Either the set_value method is overridden to
-   update the value of the HTML element's attribute (if the node
-   functions as an observer) or an event listener is attached to the
-   element which updates the value of the node (if the node functions
-   as a dependency)."
+(defmethod create-node ((node html-node) &optional (code (make-code-array)))
+  "Generates the node definition for a NODE which corresponds to HTML
+   an element."
 
-  (with-slots (element-id tag-name attribute value-function) node
-    (let ((value-fn value-function)
-          (dependencies? (plusp (dependencies-count node))))
-      (setf value-function nil)
+  ;; Create base node definition first
+  (call-next-method)
 
-      (let ((code (call-next-method))
-            (path (node-path node)))
+  (cond
+    ((gethash :input (contexts node))
+     (make-input-html-node node code))
 
-        (list
-         code
+    ((gethash :object (contexts node))
+     (make-output-html-node node code))))
+
+(defun make-input-html-node (node code)
+  "Generates the node definition for a node which corresponds to an
+   attribute of an HTML element. The HTML element is retrieved and an
+   event listener, for changes to the attribute's value, is attached."
+
+  (let ((path (node-path node)))
+    (with-slots (element-id tag-name html-attribute) node
+      (when html-attribute
+        (vector-push-extend
          (make-onloaded-method
           (list
-           (js-call '= (js-member path "html_element")
-                    (js-call (js-member "document" "getElementById")
-                             (js-string element-id)))
-           (unless dependencies?
-             (make-event-listener node))))
+           (make-get-element path element-id)
 
-         (when dependencies?
-           (js-call '=
-                    (js-member path "compute")
-                    (make-set-attributes node value-fn))))))))
+           (js-call '= (js-member path "value")
+                    (js-members path "html_element" html-attribute))
+
+           (make-event-listener node html-attribute)))
+         code)))))
+
+(defun make-output-html-node (node code)
+  "Generates the node definition for a node which corresponds to an
+   HTML element. The update_value method is overridden to update the
+   attributes of the element."
+
+  (let ((path (node-path node))
+        (context (gethash :object (contexts node))))
+    (with-slots (value-function) context
+      (vector-push-extend
+       (make-onloaded-method
+        (list (make-get-element path (element-id node))))
+       code)
+
+      (vector-push-extend
+       (js-call
+        '=
+        (js-member path "update_value")
+        (js-lambda
+         (list "value")
+         (mapcar (compose (curry #'make-set-attribute node "value") #'first) (rest value-function))
+         )
+        )
+       code)
+      )))
+
+(defun make-get-element (path id)
+  "Generates code which retrieves a reference to the HTML element with
+   id ID, and stores it in the html_element field of the node, which
+   is reference by the expression PATH."
+
+  (js-call '= (js-member path "html_element")
+           (js-call (js-member "document" "getElementById")
+                    (js-string id))))
 
 (defun make-onloaded-method (body)
   "Generates code which executes the code BODY, after the DOM has been
@@ -479,6 +521,18 @@
       (js-call '=
                (js-members "this" "html_element" attribute)
                "value")))))
+
+(defun make-set-attribute (node object attribute)
+  "Generates code which sets the attribute the attribute ATTRIBUTE of
+   the HTML element stored in the html_element field of NODE. OBJECT
+   is an expression referencing a JS object in which the value of the
+   attribute (to be set) is stored in the field ATTRIBUTE."
+
+  (let ((path (node-path node)))
+    (js-call
+     '=
+     (js-members path "html_element" attribute)
+     (js-member object attribute))))
 
 (defun make-set-attributes (node value-function)
   (labels ((make-set-attribute (attribute)
@@ -522,16 +576,21 @@
    name. The hash-table uses the EQUALP test thus the tag names and
    attributes can be specified as case-insensitive strings.")
 
-(defun make-event-listener (node)
-  "Generates code which attaches an event listener to an attribute of
-   an HTML element (stored in NODE), which updates the value of NODE."
+(defun make-event-listener (node attribute)
+  "Generates code which attaches an event listener to the attribute
+   ATTRIBUTE of the HTML element (stored in the html_element field of
+   NODE), which updates the value of NODE."
 
   (let ((path (node-path node)))
-    (with-slots (tag-name attribute) node
-      (js-call (js-members path "html_element" "addEventListener")
-               (js-string (gethash (list tag-name attribute) *html-events*))
-               (js-lambda
-                nil
-                (list
-                 (js-call (js-member path "set_value")
-                          (js-member "this" "value"))))))))
+    (with-slots (tag-name) node
+      (awhen (gethash (list tag-name attribute) *html-events*)
+        (js-call (js-members path "html_element" "addEventListener")
+                 (js-string it)
+                 (js-lambda
+                  nil
+                  (list
+                   (js-call '=
+                            (js-member path "value")
+                            (js-member "this" attribute))
+                   (js-call (js-member path "set_value")
+                            (js-member path "value")))))))))
