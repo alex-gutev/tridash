@@ -56,13 +56,22 @@ function MetaLinkNode() {
 /**
  * Node Context.
  *
- * Contains a value function
+ * Contains the value computation function of a node at a particular
+ * context.
+ *
+ * @param node        The node to which the context belongs.
+ * @param context_id  Global unique context identifier.
  */
-function NodeContext(node) {
+function NodeContext(node, context_id) {
     /**
      * The node to which this context belongs.
      */
     this.node = node;
+
+    /**
+     * Unique global context identifier.
+     */
+    this.context_id = context_id;
 
     /**
      * Value computation function. Takes an array of the operand
@@ -93,13 +102,14 @@ function NodeContext(node) {
  * Creates a new node context of node @a node, with a given number of
  * operands.
  *
- * @param node The node to which the context belongs.
+ * @param node         The node to which the context belongs.
  * @param num_operands The number of operands of the context.
+ * @param context_id   Global unique context identifier.
  *
  * @return The node context.
  */
-NodeContext.create = function(node, num_operands) {
-    var context = new NodeContext(node);
+NodeContext.create = function(node, num_operands, context_id) {
+    var context = new NodeContext(node, context_id);
 
     context.operands.length = num_operands;
     context.operands.fill(null, 0);
@@ -131,7 +141,7 @@ NodeContext.prototype.add_observer = function(context, index) {
  * @param visited Visited set.
  */
 NodeContext.prototype.reserve = function(start, value, index, visited = {}) {
-    if (!visited[this.node.name]) {
+    if (!visited[this.context_id]) {
         var promise = new ValuePromise();
 
         promise.promise = promise.promise
@@ -145,7 +155,7 @@ NodeContext.prototype.reserve = function(start, value, index, visited = {}) {
             start: start.promise
         };
 
-        visited[this.node.name] = reserve;
+        visited[this.context_id] = reserve;
 
         this.reserveObservers(start, reserve.value.promise, visited);
 
@@ -153,7 +163,7 @@ NodeContext.prototype.reserve = function(start, value, index, visited = {}) {
         this.node.add_update();
     }
     else {
-        var reserved = visited[this.node.name].reserved;
+        var reserved = visited[this.context_id].reserved;
 
         reserved.promise = reserved.promise
             .then(() => value)

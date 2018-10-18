@@ -68,6 +68,14 @@
    each node. Each key is a `NODE' and the corresponding value is a
    hash-table mapping context identifiers to their JS identifiers.")
 
+(defvar *context-counter* 0
+  "Counter for generating globally unique context identifiers")
+
+(defun global-context-id ()
+  "Returns a new unique global context identifier."
+
+  (prog1 *context-counter*
+    (incf *context-counter*)))
 
 (defun context-js-id (node context-id)
   "Returns the JavaScript context identifier for the context with
@@ -107,7 +115,8 @@
    definitions in the `NODE-TABLE' TABLE."
 
   (let ((*lazy-nodes* (find-lazy-nodes table))
-        (*context-ids* (make-hash-table :test #'eq)))
+        (*context-ids* (make-hash-table :test #'eq))
+        (*context-counter* 0))
     (with-slots (nodes meta-nodes) table
       (create-nodes nodes code)
       (create-meta-nodes meta-nodes code)
@@ -163,7 +172,7 @@
       (vector-push-extend
        (lexical-block
         (js-var "context" (js-call (js-member "NodeContext" "create")
-                                   node-path (hash-table-count operands)))
+                                   node-path (hash-table-count operands) (global-context-id)))
 
         (awhen (create-compute-function context)
           (js-call '= (js-member "context" "compute") it))
