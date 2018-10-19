@@ -173,18 +173,17 @@
    the last-node in the meta-node's definition."
 
   (with-slots (output-nodes contexts) meta-node
-    (with-accessors ((value-function value-function)) (context meta-node nil)
-
-      (cond
-        ((plusp (hash-table-count output-nodes))
+    (cond
+      ((plusp (hash-table-count output-nodes))
+       (with-slots (value-function) (context meta-node nil)
          (setf value-function
                (cons :object
                      (iter
                        (for (name node) in-hashtable output-nodes)
-                       (collect (list name (add-binding node meta-node :context nil :add-function nil)))))))
+                       (collect (list name (add-binding node meta-node :context nil :add-function nil))))))))
 
-        ((and last-node (zerop (hash-table-count contexts)))
-         (add-binding last-node meta-node :context nil))))))
+      ((and last-node (zerop (hash-table-count contexts)))
+       (add-binding last-node meta-node :context nil)))))
 
 
 ;;;; Methods: Processing Declaration
