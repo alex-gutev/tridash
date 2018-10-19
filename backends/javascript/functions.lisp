@@ -58,6 +58,15 @@
    currently being compiled, should be stored. If NIL the result
    should be returned directly using a return statement.")
 
+(defconstant *js-primitive-operators*
+  (alist-hash-table
+   '((and . &&) (or . \|\|) (not . !))
+
+   :test #'equalp)
+
+  "Hash-table mapping metalink primitive operators to their
+   corresponding JavaScript primitive operators.")
+
 
 (defun meta-node-id (meta-node)
   "Returns the global meta-node function/operator identifier of
@@ -71,7 +80,8 @@
      (ensure-gethash meta-node *meta-node-ids*
                      (mkstr "metanode" (hash-table-count *meta-node-ids*))))
 
-    (symbol meta-node)))
+    (symbol
+     (or (gethash meta-node *js-primitive-operators*) meta-node))))
 
 (defun meta-node-call (meta-node operands)
   "Returns a `JS-CALL' expression for the meta-node META-NODE with
