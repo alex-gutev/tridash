@@ -37,6 +37,9 @@
 (defconstant +self-node+ (id-symbol "self")
   "Special node representing the value of the current meta-node.")
 
+(defconstant +case-operator+ (id-symbol "case")
+  "Case operator.")
+
 
 ;;;; Builder State
 
@@ -260,6 +263,25 @@
     (add-meta-node
      name
      (make-instance 'meta-node :name name :operands args :definition body)
+     table)))
+
+
+;;; Conditions
+
+(defmethod process-functor ((operator (eql +case-operator+)) operands table)
+  "Process case expressions. A case expressions contains a list of
+   conditions each of the form <condition> : <value>. The case
+   expression resolves to the <value> of the first <condition> which
+   resolves to true."
+
+  (flet ((make-if (case expr)
+           (match case
+             ((list (eql +def-operator+) cond node)
+              (list (id-symbol "if") cond node expr))
+
+             (_ case))))
+    (process-declaration
+     (reduce #'make-if operands :from-end t :initial-value nil)
      table)))
 
 

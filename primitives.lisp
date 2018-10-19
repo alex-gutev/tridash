@@ -39,6 +39,8 @@
     (cons (id-symbol "or") 'or)
     (cons (id-symbol "not") 'not)
 
+    (cons (id-symbol "if") 'if)
+
     ;; Types
 
     (cons (id-symbol "int") '(:type :integer))
