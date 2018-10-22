@@ -1,6 +1,6 @@
 ;;;; backend.lisp
 ;;;;
-;;;; Metalink Programming Language.
+;;;; Tridash Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
@@ -18,10 +18,10 @@
 
 ;;;; JavaScript Backend
 
-(in-package :metalink.backend.js)
+(in-package :tridash.backend.js)
 
 
-(defconstant +node-class+ "MetaLinkNode"
+(defconstant +node-class+ "TridashNode"
   "Runtime node class name.")
 
 (defvar *node-table-var* "node_table"

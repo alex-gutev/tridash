@@ -1,6 +1,6 @@
 ;;;; functions.lisp
 ;;;;
-;;;; Metalink Programming Language.
+;;;; Tridash Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 
 ;;;; Compile value function expressions to JS code
 
-(in-package :metalink.backend.js)
+(in-package :tridash.backend.js)
 
 
 ;;;; Utility Functions
@@ -64,7 +64,7 @@
 
    :test #'equalp)
 
-  "Hash-table mapping metalink primitive operators to their
+  "Hash-table mapping tridash primitive operators to their
    corresponding JavaScript primitive operators.")
 
 

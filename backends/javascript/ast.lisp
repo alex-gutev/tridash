@@ -1,6 +1,6 @@
 ;;;; ast.lisp
 ;;;;
-;;;; Metalink Programming Language.
+;;;; Tridash Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 
 ;;;; AST node structures for JavaScript syntactic elements
 
-(in-package :metalink.backend.js)
+(in-package :tridash.backend.js)
 
 
 ;;;; AST nodes

@@ -1,6 +1,6 @@
 ;;;; html.lisp
 ;;;;
-;;;; Metalink Programming Language.
+;;;; Tridash Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 
 ;;;; Extract nodes from html files
 
-(in-package :metalink.backend.js)
+(in-package :tridash.backend.js)
 
 (in-readtable lol-syntax)
 
@@ -52,8 +52,8 @@
   "The `NODE-TABLE' containing all node definitions extracted from the
    HTML file and source files linked using script tags.")
 
-(defvar *runtime-library-path* "metalink.js"
-  "Path to the Metalink runtime library which will be referenced,
+(defvar *runtime-library-path* "tridash.js"
+  "Path to the Tridash runtime library which will be referenced,
    using a script tag, in the output HTML file.")
 
 (defvar *html-id-counter* 0
@@ -190,7 +190,7 @@
 ;;; Link Runtime Library
 
 (defun link-runtime-library (path root-node)
-  "Inserts a script tag which references the metalink runtime library
+  "Inserts a script tag which references the tridash runtime library
    at path PATH. ROOT-NODE is the root-node of the HTML DOM."
 
   (plump:make-element
@@ -273,7 +273,7 @@
          (attributes (plump:attributes element)))
 
     (dohash (key value attributes)
-      (awhen (extract-metalink-node value)
+      (awhen (extract-tridash-node value)
         (let ((html-id (html-element-id element)))
           (build-node it *global-node-table*)
 
@@ -304,7 +304,7 @@
       (let ((tag-name (plump:tag-name *parent-html-node*)))
 
         (acond
-          ((extract-metalink-node text)
+          ((extract-tridash-node text)
            (let ((html-id (html-element-id *parent-html-node*)))
              (build-node it *global-node-table*)
              (vector-push-extend (list html-id tag-name "textContent" it) html-nodes)
@@ -356,14 +356,14 @@
 (defmethod walk-html-node ((element plump:fulltext-element) html-nodes &key)
   "Traverses full text elements such as script and style tags. If the
    element is a script tag with the language attribute equal to
-   'metalink' the text content of the script tag is parsed as metalink
+   'tridash' the text content of the script tag is parsed as tridash
    code, and NIL is returned. Otherwise ELEMENT is returned as is."
 
   (declare (ignore html-nodes))
 
   (let ((children (plump:children element)))
     (cond
-      ((and (metalink-script? element)
+      ((and (tridash-script? element)
             (not (emptyp children)))
 
        (aif (plump:attribute element "src")
@@ -374,16 +374,16 @@
 
       (t element))))
 
-(defun metalink-script? (element)
-  "Returns true if ELEMENT is a script tag containing metalink node
+(defun tridash-script? (element)
+  "Returns true if ELEMENT is a script tag containing tridash node
    declarations."
 
   (when (string-equal (plump:tag-name element) "script")
     (aand (plump:attribute element "language")
-          (string-equal it "metalink"))))
+          (string-equal it "tridash"))))
 
 (defun process-script (text-node)
-  "Parses the text content of a script tag as metalink code, and adds
+  "Parses the text content of a script tag as tridash code, and adds
    the node definitions to *GLOBAL-NODE-TABLE*. TEXT-NODE is the
    text-node child of the script tag."
 
@@ -392,7 +392,7 @@
       (build-parsed-nodes (make-parser in) *global-node-table*))))
 
 (defun process-source-file (path)
-  "Processes the metalink source file at PATH."
+  "Processes the tridash source file at PATH."
 
   (with-open-file (in path)
     (build-parsed-nodes (make-parser in) *global-node-table*)))
@@ -400,7 +400,7 @@
 
 ;;; Parse Attributes and Text Content
 
-(defun extract-metalink-node (value)
+(defun extract-tridash-node (value)
   "Extracts node declarations from the string VALUE, where value is
    either the value of an HTML attribute or the text content of an
    HTML text node. Returns the parsed node declaration if any, NIL if

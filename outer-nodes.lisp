@@ -1,6 +1,6 @@
 ;;;; outer-nodes.lisp
 ;;;;
-;;;; Metalink Programming Language.
+;;;; Tridash Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 
 ;;;; Determines which meta-nodes reference which outer nodes
 
-(in-package :metalink.frontend)
+(in-package :tridash.frontend)
 
 
 (defun find-outer-node-references (node-table)

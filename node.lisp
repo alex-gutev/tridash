@@ -1,6 +1,6 @@
 ;;;; node.lisp
 ;;;;
-;;;; Metalink Programming Language.
+;;;; Tridash Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 
 ;;;; Base `node' class definition.
 
-(in-package :metalink.frontend)
+(in-package :tridash.frontend)
 
 
 (defclass node ()

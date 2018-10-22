@@ -1,6 +1,6 @@
 ;;;; node-table.lisp
 ;;;;
-;;;; Metalink Programming Language.
+;;;; Tridash Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 
 ;;;; `node-table' class and associated functions.
 
-(in-package :metalink.frontend)
+(in-package :tridash.frontend)
 
 (defclass node-table ()
   ((outer-table

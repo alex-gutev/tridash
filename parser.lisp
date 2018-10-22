@@ -1,6 +1,6 @@
 ;;;; parser.lisp
 ;;;;
-;;;; Metalink Programming Language.
+;;;; Tridash Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
 ;;;; You should have received a copy of the GNU General Public License
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-(in-package :metalink.parser)
+(in-package :tridash.parser)
 
 
 (defconstant +bind-operator+ '->)
@@ -170,16 +170,16 @@
 (defmethod parse-node (type lexeme (lex t))
   "Method for invalid tokens, signals an error."
 
-  (error 'metalink-parse-error
+  (error 'tridash-parse-error
          :expected '(or :id :integer :open-paren :open-brace)
          :token (cons type lexeme)
          :rule 'parse-node-operand))
 
 
 (defun id-symbol (name)
-  "Interns a symbol with name NAME into the :METALINK.SYMBOLS package."
+  "Interns a symbol with name NAME into the :TRIDASH.SYMBOLS package."
 
-  (intern name :metalink.symbols))
+  (intern name :tridash.symbols))
 
 (defun parse-prefix-operands (lex)
   "Parses the operands of a prefix node. Returns NIL if the next token
@@ -194,7 +194,7 @@
                   (eq type :comma))
 
                  (otherwise
-                  (error 'metalink-parse-error
+                  (error 'tridash-parse-error
                          :expected '(or :comma :close-paren)
                          :token (cons type lxm)
                          :rule 'parse-prefix-operands)))))
@@ -222,7 +222,7 @@
        (for type = (has-input? lex))
        (until (eq type delimiter))
        (when (null type)
-         (error 'metalink-parse-error
+         (error 'tridash-parse-error
                 :expected delimiter
                 :token nil
                 :rule 'parse-node-list
@@ -236,7 +236,7 @@
 
   (multiple-value-bind (type lxm) (next-token lex)
     (unless (eq type :close-paren)
-      (error 'metalink-parse-error
+      (error 'tridash-parse-error
              :expected :close-paren
              :token (cons type lxm)
              :rule 'parse-sub-node))))
@@ -255,7 +255,7 @@
              (info (gethash op *operator-nodes*)))
 
         (unless info
-          (error 'metalink-parse-error
+          (error 'tridash-parse-error
                  :message (format nil "Parse error: Unknown infix operator: ~S" lexeme)))
 
         (when (>= (first info) min-prec)
@@ -272,7 +272,7 @@
        (next-token lex))
 
       ((not (eq type *list-delimiter*))
-       (error 'metalink-parse-error
+       (error 'tridash-parse-error
               :expected :terminate
               :token (cons type lxm)
               :rule 'parse-terminator)))))
@@ -281,7 +281,7 @@
 
 ;;;; Parse Error Conditions
 
-(define-condition metalink-parse-error (error)
+(define-condition tridash-parse-error (error)
   ((rule :initarg :rule
          :reader rule)
    (message :initarg :message
@@ -292,7 +292,7 @@
    (token-expected :initarg :expected
                    :reader token-expected)))
 
-(defmethod print-object ((err metalink-parse-error) stream)
+(defmethod print-object ((err tridash-parse-error) stream)
   (aif (message err)
        (format stream "Parse Error: ~a" it)
        (format stream "Parse Error (~A): Expected ~A, found ~A instead"

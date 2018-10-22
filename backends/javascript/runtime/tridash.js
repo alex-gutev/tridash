@@ -1,7 +1,7 @@
 /**
- * metalink.js
+ * tridash.js
  *
- * Metalink JavaScript runtime library.
+ * Tridash JavaScript runtime library.
  *
  * Copyright 2017 Alexander Gutev
  *
@@ -32,7 +32,7 @@
  * Stores the node link information (dependencies, observers, wait
  * sets), and the node's runtime state.
  */
-function MetaLinkNode() {
+function TridashNode() {
     /**
      * Node contexts.
      */
@@ -203,14 +203,14 @@ NodeContext.prototype.compute_value = function() {
 /**
  * Runs the update loop if it is not already running.
  */
-MetaLinkNode.prototype.add_update = function() {
+TridashNode.prototype.add_update = function() {
     if (!this.running) this.update();
 };
 
 /**
  * Runs the update loop of the node, until the reserve queue is empty.
  */
-MetaLinkNode.prototype.update = function() {
+TridashNode.prototype.update = function() {
     this.running = true;
 
     var reserve = this.reserve_queue.dequeue();
@@ -240,7 +240,7 @@ MetaLinkNode.prototype.update = function() {
  *
  * @param value The new value of the node.
  */
-MetaLinkNode.prototype.update_value = function(value) {};
+TridashNode.prototype.update_value = function(value) {};
 
 /**
  * Sets the value of the node. The node must be an input node and must
@@ -249,7 +249,7 @@ MetaLinkNode.prototype.update_value = function(value) {};
  * A path, throughout the entire graph, is reserved, starting at the
  * current node with the input context.
  */
-MetaLinkNode.prototype.set_value = function(value) {
+TridashNode.prototype.set_value = function(value) {
     var start = new ValuePromise();
 
     this.contexts["input"].reserve(start, value, 0);
@@ -264,7 +264,7 @@ MetaLinkNode.prototype.set_value = function(value) {
  *   set. Each element is an array of two elements: the input node and
  *   its value.
  */
-MetaLinkNode.set_values = function(node_values) {
+TridashNode.set_values = function(node_values) {
     var start = new ValuePromise();
     var visited = {};
 

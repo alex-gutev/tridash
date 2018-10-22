@@ -1,6 +1,6 @@
-;;;; metalink.asd
+;;;; tridash.asd
 ;;;;
-;;;; Metalink Programming Language.
+;;;; Tridash Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 
 ;;;; Frontend Error Conditions.
 
-(in-package :metalink.frontend)
+(in-package :tridash.frontend)
 
 (define-condition semantic-error (error) ()
   (:documentation

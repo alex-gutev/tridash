@@ -1,6 +1,6 @@
 ;;;; primitives.lisp
 ;;;;
-;;;; Metalink Programming Language.
+;;;; Tridash Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 
 ;;;; Language Primitives.
 
-(in-package :metalink.frontend)
+(in-package :tridash.frontend)
 
 (defparameter *primitive-ops*
   (alist-hash-table
@@ -47,5 +47,5 @@
     (cons (id-symbol "real") '(:type  :real))))
 
   "Hash-table of primitive operators where each key is an identifier
-   symbol in the METALINK.SYMBOLS package and the corresponding key is
+   symbol in the TRIDASH.SYMBOLS package and the corresponding key is
    a symbol in the current package, identifying the primitive.")

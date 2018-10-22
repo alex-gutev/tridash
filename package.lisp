@@ -1,6 +1,6 @@
 ;;;; package.lisp
 ;;;;
-;;;; Metalink Programming Language.
+;;;; Tridash Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
 ;;;; You should have received a copy of the GNU General Public License
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-(defpackage :metalink.symbols
+(defpackage :tridash.symbols
   (:use)
   (:export "->" ":" "macro" "op")
 
@@ -24,13 +24,13 @@
    "The package where symbols, read from source files, are
     interned. The package does not use any other package."))
 
-(defpackage :metalink.parser
+(defpackage :tridash.parser
   (:use :common-lisp
         :alexandria
         :anaphora
         :iterate
         :graylex
-        :metalink.symbols)
+        :tridash.symbols)
 
   (:export
    :*operator-nodes*
@@ -51,7 +51,7 @@
   (:documentation
    "Package containing the parser and lexer."))
 
-(defpackage :metalink.frontend
+(defpackage :tridash.frontend
   (:use :common-lisp
 	:alexandria
 	:anaphora
@@ -59,8 +59,8 @@
 	:named-readtables
 	:optima
 
-        :metalink.util
-	:metalink.parser)
+        :tridash.util
+	:tridash.parser)
 
   (:import-from :let-over-lambda
 		:lol-syntax

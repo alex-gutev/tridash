@@ -1,6 +1,6 @@
 ;;;; cut.lisp
 ;;;;
-;;;; Metalink Programming Language.
+;;;; Tridash Programming Language.
 ;;;; Copyright (C) 2017, Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
@@ -41,7 +41,7 @@
 ;;;;   (+ 1 %1))
 ;;;;
 
-(in-package :metalink.util)
+(in-package :tridash.util)
 
 ;;; Utility functions used by the macros
 
