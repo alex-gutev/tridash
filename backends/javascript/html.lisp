@@ -48,9 +48,7 @@
     element."))
 
 
-(defvar *global-node-table* nil
-  "The `NODE-TABLE' containing all node definitions extracted from the
-   HTML file and source files linked using script tags.")
+(defvar *global-module-table* nil)
 
 (defvar *runtime-library-path* "tridash.js"
   "Path to the Tridash runtime library which will be referenced,
@@ -64,127 +62,48 @@
 
 ;;;; Building HTML files
 
-(defgeneric build-html-file (file &optional node-table)
+(defgeneric build-html-file (file module-table)
   (:documentation
    "Extracts nodes from the HTML file FILE and adds the node
-    definitions to NODE-TABLE. Prints the processed HTML file to
-    standard output."))
+    definitions to the current module of MODULE-TABLE. Prints the
+    processed HTML file to standard output."))
 
-(defmethod build-html-file (file &optional (node-table (make-instance 'node-table)))
+(defmethod build-html-file (file module-table)
   "Extracts nodes from the HTML file at path FILE."
 
   (with-open-file (stream file)
-    (build-html-file stream node-table)))
+    (build-html-file stream module-table)))
 
-(defmethod build-html-file ((stream stream) &optional (*global-node-table* (make-instance 'node-table)))
+(defmethod build-html-file ((stream stream) module-table)
   "Extracts nodes from the input stream STREAM."
 
   (let* ((*html-id-counter* 0)
-         (root-node (nth-value 1 (build-graph-from-html stream *global-node-table*))))
+         (root-node (nth-value 1 (build-graph-from-html stream module-table))))
     (link-runtime-library *runtime-library-path* root-node)
-    (link-graph *global-node-table* root-node)
+    (link-graph module-table root-node)
     (plump:serialize root-node)))
 
 
 ;;;; Building Graph
 
-(defun build-graph-from-html (stream &optional (*global-node-table* (make-instance 'node-table)))
+(defun build-graph-from-html (stream &optional (*global-module-table* (make-instance 'module-table)))
   "Extract node definitions from an HTML file, and build the
-   graph. Returns two values: the global node table and the HTML root
-   node."
+   graph. Returns two values: the global module table and the HTML
+   root node."
 
-  (labels ((make-html-nodes (html-nodes)
-             "Builds each HTML node description in HTML-NODES."
-
-             (iter (for html-node in-vector html-nodes)
-                   ;; TODO: Make sure that only errors involving the
-                   ;; 2-way binding between the HTML-node are ignored.
-                   (handler-case
-                       (build-node (make-html-node html-node) *global-node-table*)
-                     (target-node-error ()))))
-
-           (make-html-node (html-node)
-             "Generates a node declaration for the HTML node HTML-NODE."
-
-             (destructuring-bind (html-id tag attribute node-name) html-node
-               (declare (ignore tag))
-
-               (let ((html-node (make-html-node-name html-id attribute)))
-                 `(,+list-operator+
-                   (,+bind-operator+ ,node-name ,html-node)
-                   (,+bind-operator+ ,html-node ,node-name)))))
-
-           (make-html-node-name (id attribute)
-             "Generates a declaration for an a node which references
-              the attribute ATTRIBUTE of the HTML element with id ID."
-
-             (list +subnode-operator+ (id-symbol id) (id-symbol attribute)))
-
-           (mark-html-node (html-node)
-             "Changes the class of the `NODE' object, corresponding to
-              HTML-NODE, to `HTML-NODE'"
-
-             (destructuring-bind (id tag attribute node-name) html-node
-               (declare (ignore node-name))
-
-               (mark-attribute-node id attribute tag)
-
-               (let* ((name (id-symbol id))
-                      (node (gethash name (nodes *global-node-table*))))
-                 (setf (gethash :no-coalesce (attributes node)) t)
-
-                 (unless (typep node 'html-node)
-                    (change-class node 'html-node
-                                  :tag-name tag
-                                  :element-id id)))))
-
-           (mark-attribute-node (id attribute tag)
-             "Changes the class of the node, corresponding to the
-              attribute ATTRIBUTE of the HTML element with id ID, to
-              `HTML-NODE'."
-
-             (let* ((name (make-html-node-name id attribute))
-                    (node (gethash name (nodes *global-node-table*))))
-
-               (add-input node *global-node-table*)
-               (setf (gethash :no-coalesce (attributes node)) t)
-
-               (unless (typep node 'html-node)
-                 (change-class node 'html-node
-                               :tag-name tag
-                               :html-attribute attribute
-                               :element-id id)))))
-
-    (multiple-value-bind (root-node html-nodes) (preprocess-html stream)
-      (make-html-nodes html-nodes)
-      (finish-build-graph *global-node-table*)
-
-      (iter (for html-node in-vector html-nodes)
-            (mark-html-node html-node))
-
-      (coalesce-nodes *global-node-table*)
-      (build-wait-sets *global-node-table*)
-
-      (values *global-node-table* root-node))))
+  (let ((root-node (preprocess-html stream)))
+    (finish-build-graph *global-module-table*)
+    (values *global-module-table* root-node)))
 
 
 ;;;; Process HTML Files
 
 (defun preprocess-html (stream)
   "Extract node declarations from an HTML file and add the `NODE'
-   objects built to the `NODE-TABLE' *GLOBAL-NODE-TABLE*. Returns two
-   values: the root HTML node and an array of the HTML nodes
-   containing node declarations, where each element is of the form (ID
-   TAG ATTRIBUTE NODE) where ID is the HTML id of the element, TAG is
-   the tag-name of the element, ATTRIBUTE is the attribute to which
-   the node named NODE is bound."
+   objects built to the current module in
+   *GLOBAL-MODULE-TABLE*. Returns the root node."
 
-  (let ((root-node (plump:parse stream))
-        (html-nodes (make-array 0 :adjustable t :fill-pointer t)))
-
-    (values
-     (walk-html-node root-node html-nodes)
-     html-nodes)))
+  (walk-html-node (plump:parse stream)))
 
 
 ;;; Link Runtime Library
@@ -254,33 +173,35 @@
 (defvar *parent-html-node* nil
   "The parent node of the HTML node being traversed.")
 
-(defgeneric walk-html-node (node html-node-ids &key &allow-other-keys)
+(defgeneric walk-html-node (node &key &allow-other-keys)
   (:documentation
    "Traverse the HTML node NODE. Node declarations appearing within
     the HTML node are extracted and parsed from which `NODE' objects
-    are built and added to *GLOBAL-NODE-TABLE*. The HTML nodes in
-    which the node declarations appear are appended to the array
-    HTML-NODE-IDS. A new HTML node is returned with the node
+    are built and added to the current module in
+    *GLOBAL-MODULE-TABLE*. A new HTML node is returned with the node
     declarations removed from each attribute."))
 
 
 ;;; Process HTML elements
 
-(defmethod walk-html-node ((element plump:element) html-nodes &key)
+(defmethod walk-html-node ((element plump:element) &key)
   "Extracts node declarations from each attribute of the element."
 
   (let* ((element (plump:clone-node element nil))
          (attributes (plump:attributes element)))
 
-    (dohash (key value attributes)
-      (awhen (extract-tridash-node value)
-        (let ((html-id (html-element-id element)))
-          (build-node it *global-node-table*)
+    (let ((html-id (html-element-id element))
+          (tag (plump:tag-name element)))
+      (dohash (key value attributes)
+        (awhen (extract-tridash-node value)
+          (make-html-element-node html-id tag *global-module-table*)
 
-          (vector-push-extend (list html-id (plump:tag-name element) key it) html-nodes)
-          (remhash key attributes))))
+          (bind-html-node
+           (make-html-attribute-node html-id tag key *global-module-table*)
+           it
+           *global-module-table*))))
 
-    (call-next-method element html-nodes :clone nil)))
+    (call-next-method element :clone nil)))
 
 (defun generate-id (&optional (prefix "__id"))
   "Generates a unique HTML identifier by concatenating PREFIX with the
@@ -291,9 +212,55 @@
     (incf *html-id-counter*)))
 
 
+;;; Creating HTML nodes
+
+(defun make-html-element-node (html-id tag module-table)
+  "Builds the node corresponding to the HTML element with id HTML-ID."
+
+  (let ((node (build-node (id-symbol html-id) module-table)))
+    (setf (gethash :no-coalesce (attributes node)) t)
+
+    (unless (typep node 'html-node)
+      (change-class node 'html-node
+                    :tag-name tag
+                    :element-id html-id))))
+
+(defun make-html-attribute-node (html-id tag attribute module-table)
+  "Builds the subnode corresponding to the attribute ATTRIBUTE of the
+   HTML element HTML-ID."
+
+  (multiple-value-bind (node table)
+      (build-node (list +subnode-operator+ (id-symbol html-id) (id-symbol attribute)) module-table)
+
+    (add-input node table)
+    (setf (gethash :no-coalesce (attributes node)) t)
+
+    (unless (typep node 'html-node)
+      (change-class node 'html-node
+                    :tag-name tag
+                    :html-attribute attribute
+                    :element-id html-id))
+
+    node))
+
+(defun bind-html-node (html-node decl module-table)
+  "Establishes a two-way binding the HTML node object HTML-NODE and
+   the node declaration DECL."
+
+  (let ((name (name html-node)))
+    (handler-case
+        (build-node
+         `(,+list-operator+
+           (,+bind-operator+ ,decl ,name)
+           (,+bind-operator+ ,name ,decl))
+         module-table)
+
+      (target-node-error ()))))
+
+
 ;;; Process Text Nodes
 
-(defmethod walk-html-node ((node plump:text-node) html-nodes &key)
+(defmethod walk-html-node ((node plump:text-node) &key)
   "Extracts node declarations from the text contained in the text
    node. If the node contains node declarations a new empty text node
    is created and returned, otherwise NODE is returned as is."
@@ -301,15 +268,18 @@
   (with-accessors ((text plump:text)) node
     (when (plump:element-p *parent-html-node*)
 
-      (let ((tag-name (plump:tag-name *parent-html-node*)))
+      (let ((tag-name (plump:tag-name *parent-html-node*))
+            (html-id (html-element-id *parent-html-node*)))
 
         (acond
           ((extract-tridash-node text)
-           (let ((html-id (html-element-id *parent-html-node*)))
-             (build-node it *global-node-table*)
-             (vector-push-extend (list html-id tag-name "textContent" it) html-nodes)
+           (make-html-element-node html-id tag-name *global-module-table*)
+           (bind-html-node
+            (make-html-attribute-node html-id tag-name "textContent" *global-module-table*)
+            it
+            *global-module-table*)
 
-             (plump:make-text-node *parent-html-node*)))
+           (plump:make-text-node *parent-html-node*))
 
           (t node))))))
 
@@ -323,7 +293,7 @@
 
 ;;; Process Child Nodes
 
-(defmethod walk-html-node ((node plump:nesting-node) html-nodes &key (clone t))
+(defmethod walk-html-node ((node plump:nesting-node) &key (clone t))
   "Walks each child of NODE, by WALK-HTML-NODE and returns a new node
    which is a clone of NODE, if CLONE is true, with each child
    replaced by the new child node returned from WALK-HTML-NODE. If
@@ -338,28 +308,25 @@
     (setf (plump:children node) (plump:make-child-array))
 
     (iter (for child in-vector children)
-          (awhen (walk-html-node child html-nodes)
+          (awhen (walk-html-node child)
             (plump:append-child node it)))
 
     node))
 
-(defmethod walk-html-node ((node plump:root) html-nodes &key)
-  (call-next-method (make-instance 'plump:root :children (plump:children node)) html-nodes :clone nil))
+(defmethod walk-html-node ((node plump:root) &key)
+  (call-next-method (make-instance 'plump:root :children (plump:children node)) :clone nil))
 
-(defmethod walk-html-node (node html-nodes &key)
-  (declare (ignore html-nodes))
+(defmethod walk-html-node (node &key)
   node)
 
 
 ;;; Process Script Tags
 
-(defmethod walk-html-node ((element plump:fulltext-element) html-nodes &key)
+(defmethod walk-html-node ((element plump:fulltext-element) &key)
   "Traverses full text elements such as script and style tags. If the
    element is a script tag with the language attribute equal to
    'tridash' the text content of the script tag is parsed as tridash
    code, and NIL is returned. Otherwise ELEMENT is returned as is."
-
-  (declare (ignore html-nodes))
 
   (let ((children (plump:children element)))
     (cond
@@ -389,13 +356,13 @@
 
   (let ((text (plump:text text-node)))
     (with-input-from-string (in text)
-      (build-parsed-nodes (make-parser in) *global-node-table*))))
+      (build-parsed-nodes (make-parser in) *global-module-table*))))
 
 (defun process-source-file (path)
   "Processes the tridash source file at PATH."
 
   (with-open-file (in path)
-    (build-parsed-nodes (make-parser in) *global-node-table*)))
+    (build-parsed-nodes (make-parser in) *global-module-table*)))
 
 
 ;;; Parse Attributes and Text Content
@@ -435,8 +402,8 @@
 ;;;; Compiling HTML nodes
 
 (defmethod create-node ((node html-node) &optional (code (make-code-array)))
-  "Generates the node definition for a NODE which corresponds to HTML
-   an element."
+  "Generates the node definition for a NODE which corresponds to an
+   HTML element."
 
   ;; Create base node definition first
   (call-next-method)

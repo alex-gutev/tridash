@@ -130,6 +130,10 @@
    :input-nodes
    :add-input
 
+   ;; Frontend State
+   :module-table
+   :modules
+
    ;; Builder
    :build-graph
    :build-parsed-nodes

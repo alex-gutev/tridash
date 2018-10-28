@@ -35,6 +35,7 @@
                (:file "meta-node")
                (:file "primitives")
                (:file "node-table")
+               (:file "modules")
                (:file "outer-nodes")
                (:file "builder")
                (:file "wait-set")

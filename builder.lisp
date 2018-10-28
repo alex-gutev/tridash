@@ -40,11 +40,11 @@
 (defconstant +case-operator+ (id-symbol "case")
   "Case operator.")
 
+(defconstant +module-operator+ (id-symbol "module")
+  "Operator which sets the current module.")
+
 
 ;;;; Builder State
-
-(defparameter *global-node-table* nil
-  "The global node table.")
 
 (defparameter *top-level* t
   "Flag for whether the current node is at the top-level.")
@@ -95,45 +95,53 @@
 
 ;;;; Build Graph
 
-(defun build-graph (parser &optional (*global-node-table* (make-instance 'node-table)))
+(defun build-graph (parser &optional (*global-module-table* (make-instance 'module-table)))
   "Builds the graph from the objects returned by successively calling
    PARSER."
 
-  (build-parsed-nodes parser *global-node-table*)
-  (finish-build-graph *global-node-table*)
+  (build-parsed-nodes parser)
+  (finish-build-graph)
 
-  *global-node-table*)
+  *global-module-table*)
 
-(defun build-parsed-nodes (parser *global-node-table*)
+(defun build-parsed-nodes (parser &optional (*global-module-table* *global-module-table*))
   "Builds the `NODE' objects from the node declarations returned by
-   successively calling PARSER and adds them to the `NODE-TABLE' given
-   in the second argument. This function does not build meta-node
-   definitions."
+   successively calling PARSER and adds them to the `NODE-TABLE' of
+   the current module in the `MODULE-TABLE' given in the second
+   argument. This function does not build meta-node definitions."
 
-  (loop
-     for decl = (funcall parser)
-     while decl
-     do
-       (process-declaration decl *global-node-table*)))
+  (with-slots (node-table) *global-module-table*
+    (loop
+       for decl = (funcall parser)
+       while decl
+       do
+         (process-declaration decl node-table))))
 
-(defun build-node (node *global-node-table*)
+(defun build-node (node &optional (*global-module-table* *global-module-table*))
   "Builds the `NODE' object from the node declarations NODE and adds
-   it to the `NODE-TABLE' given in the second argument."
+   it to the `NODE-TABLE' of the current module in the `MODULE-TABLE'
+   given in the second argument."
 
-  (process-declaration node *global-node-table*))
+  (process-declaration node (node-table *global-module-table*)))
 
-(defun finish-build-graph (*global-node-table*)
-  "Builds the meta-node definitions and creates the value functions of
-   all nodes in the `NODE-TABLE' passed as an argument. This function
-   should be called separately, to finish building the graph, after
-   building individual nodes using BUILD-PARTIAL-GRAPH and
-   BUILD-NODE. This function should not be called after calling
-   BUILD-GRAPH."
+(defun finish-build-graph (&optional (*global-module-table* *global-module-table*))
+  "Builds the definitions of all meta-nodes in all modules, and
+   performs node coalescing. This function should be called
+   separately, to finish building the graph, after building individual
+   nodes using BUILD-PARTIAL-GRAPH and BUILD-NODE. This function
+   should not be called after calling BUILD-GRAPH."
 
-  (create-value-functions *global-node-table*)
+  (with-slots (modules) *global-module-table*
+    (maphash-values #'finish-build-module modules)
+    (maphash-values #'coalesce-nodes modules)))
 
-  (find-outer-node-references *global-node-table*)
-  (add-outer-node-operands *global-node-table*))
+(defun finish-build-module (node-table)
+  "Builds the definitions of the meta-nodes in NODE-TABLE."
+
+  (create-value-functions node-table)
+
+  (find-outer-node-references node-table)
+  (add-outer-node-operands node-table))
 
 (defun create-value-functions (graph)
   "Creates the value function of each node in GRAPH."
@@ -231,6 +239,8 @@
 
 ;;; Operators
 
+;;; Operator Declarations
+
 (defmethod process-functor ((operator (eql +op-operator+)) args table)
   "Registers a node as an infix operator with a specific precedence
    and associativity."
@@ -249,6 +259,17 @@
     ((eq assoc (id-symbol "right"))
      'right)
     (t 'right)))
+
+
+;;; Module Declarations
+
+(defmethod process-functor ((operator (eql +module-operator+)) args table)
+  "Changes the current module to the MODULE specified in ARGS."
+
+  (declare (ignore table))
+
+  (destructuring-bind (module) args
+    (change-module module)))
 
 
 ;;; Definitions
@@ -383,7 +404,7 @@
           (make-target-subnode node key subnode table)
         (target-node-error ()))
 
-      subnode)))
+      (values subnode table))))
 
 (defun make-source-subnode (node key subnode table)
   "Makes the value function of the subnode for when it appears as the
@@ -519,8 +540,9 @@
   (let ((*top-level* nil)
         (*source-node* nil))
     (iter
-      (with op-table = *global-node-table*)
+      (with op-table = (node-table *global-module-table*))
       (for operand in operands)
+
       (multiple-value-bind (node node-table)
           (at-source (process-declaration operand table))
 
