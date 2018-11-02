@@ -56,6 +56,7 @@
                :anaphora
                :iterate
                :alexandria
+               :cl-arrows
                :collectors
                :named-readtables
                :let-over-lambda

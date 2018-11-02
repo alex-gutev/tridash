@@ -24,6 +24,9 @@
 
 ;;;; Special Operators
 
+
+(defconstant +bind-operator+ (id-symbol "->"))
+
 (defconstant +outer-operator+ (id-symbol "..")
   "Special operator for referencing nodes defined in an outer scope.")
 

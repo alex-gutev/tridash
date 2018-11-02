@@ -18,8 +18,11 @@
 
 (in-package :tridash.parser)
 
+(defun id-symbol (name)
+  "Interns a symbol with name NAME into the :TRIDASH.SYMBOLS package."
 
-(defconstant +bind-operator+ '->)
+  (intern name :tridash.symbols))
+
 (defconstant +def-operator+ '\:)
 
 (defconstant +macro-operator+ '|macro|)
@@ -29,8 +32,9 @@
 
 (defparameter *operator-nodes*
   (alist-hash-table
-   '((-> 10 right)
-     (\: 5 right)))
+   `((,(id-symbol "->") 10 right)
+     (\: 5 right)
+     (:open-paren 200)))
 
   "Hash table of the current registered operators. Each key is an
    operator symbol the corresponding value is a list of two elements
@@ -100,26 +104,51 @@
              "Returns the minimum operator precedence to use when
               parsing the right operand. If the associativity (ASSOC)
               of the current operator is LEFT, the precedence (PREC)
-              is increment by 1 otherwise is returned as is."
+              is incremented by 1 otherwise PREC is returned as is."
 
              (case assoc
                (left (1+ prec))
                (otherwise prec)))
 
            (parse-expression (lhs min-prec)
-             "If the next token is an infix operator, parses the right
-              operand and returns the list containing the operator,
-              left operand LHS, and right operand. If the next token
-              is not an infix operator, returns LHS."
+             "Attempts to parse a functor expression where LHS is
+              either the first operand of a binary expression or a
+              functor and MIN-PREC is the minimum operator precedence.
 
-             (if-let ((op (parse-operator lex min-prec)))
-               (destructuring-bind (op prec assoc) op
-                 (let ((rhs (parse-expression (parse-node-operand lex :line-term nil)
-                                              (next-precedence prec assoc))))
-                   (parse-expression (list op lhs rhs) min-prec)))
-               lhs)))
+              If the next token is a binary infix operator (OP), the
+              right-hand-side operand (RHS) is parsed and the
+              expression (OP LHS RHS) is returned.
 
-    (parse-expression (parse-node-operand lex :line-term line-term) 0)))
+              If the next token is an open parenthesis :OPEN-PAREN,
+              the operands list (OPERANDS) is parsed and the
+              expression (LHS . OPERANDS) is returned.
+
+              If the next token is neither a binary operator nor an
+              open parenthesis, LHS is returned."
+
+             (acond
+               ((parse-operator lex min-prec)
+                (destructuring-bind (op prec assoc) it
+                  (-<>
+                   (parse-node-operand lex :line-term nil)
+                   (parse-expression (next-precedence prec assoc))
+                   (list op lhs <>))))
+
+               ((parse-prefix-operands lex min-prec)
+                (parse-expression (list* lhs it) min-prec))
+
+               (t lhs)))
+
+           (parse-operand (line-term)
+             "Parses an operand node which can either be an atom or a
+              functor expression."
+
+             (->
+              (parse-node-operand lex :line-term line-term)
+              (parse-expression
+               (car (gethash :open-paren *operator-nodes*))))))
+
+    (parse-expression (parse-operand line-term) 0)))
 
 (defun parse-node-operand (lex &key (line-term *line-term*))
   "Parses an operand of an infix node expression, this can either be
@@ -144,13 +173,11 @@
 
   (parse-integer lexeme))
 
-(defmethod parse-node ((type (eql :id)) lexeme lex)
+(defmethod parse-node ((type (eql :id)) lexeme (lex t))
   "Parses either an atom node or a functor node, if the token
    following the identifier is an :OPEN-PAREN, '(', token."
 
-  (aif (parse-prefix-operands lex)
-       (list* (id-symbol lexeme) it)
-       (id-symbol lexeme)))
+  (id-symbol lexeme))
 
 (defmethod parse-node ((type (eql :open-paren)) (lexeme t) lex)
   "Parses a node expression, enclosed within parenthesis."
@@ -176,12 +203,7 @@
          :rule 'parse-node-operand))
 
 
-(defun id-symbol (name)
-  "Interns a symbol with name NAME into the :TRIDASH.SYMBOLS package."
-
-  (intern name :tridash.symbols))
-
-(defun parse-prefix-operands (lex)
+(defun parse-prefix-operands (lex precedence)
   "Parses the operands of a prefix node. Returns NIL if the next token
    is not :OPEN-PAREN, thus the previous node is not a prefix functor
    node."
@@ -203,7 +225,12 @@
              (cons (parse-node-expression lex)
                    (and (parse-separator) (parse-operands)))))
 
-    (when (eq (next-token lex :peek t) :open-paren)
+    ;; If the precedence of the :OPEN-PAREN operator is greater than
+    ;; or equal to the current precedence then continue with parsing
+    ;; otherwise return.
+
+    (when (and (>= (first (gethash :open-paren *operator-nodes*)) precedence)
+               (eq (next-token lex :peek t) :open-paren))
       (next-token lex)
       (let ((*line-term* nil))
         (parse-operands)))))

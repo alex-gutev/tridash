@@ -18,7 +18,7 @@
 
 (defpackage :tridash.symbols
   (:use)
-  (:export "->" ":" "macro" "op")
+  (:export ":" "macro" "op")
 
   (:documentation
    "The package where symbols, read from source files, are
@@ -28,6 +28,7 @@
   (:use :common-lisp
         :alexandria
         :anaphora
+        :cl-arrows
         :iterate
         :graylex
         :tridash.symbols)
