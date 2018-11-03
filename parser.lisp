@@ -132,7 +132,8 @@
                   (-<>
                    (parse-node-operand lex :line-term nil)
                    (parse-expression (next-precedence prec assoc))
-                   (list op lhs <>))))
+                   (list op lhs <>)
+                   (parse-expression min-prec))))
 
                ((parse-prefix-operands lex min-prec)
                 (parse-expression (list* lhs it) min-prec))
