@@ -37,6 +37,7 @@
 
    (all-nodes
     :accessor all-nodes
+    :initarg :all-nodes
     :initform (make-hash-table :test #'equal)
     :documentation
     "Hash-table containing all nodes (including meta-nodes).")
@@ -52,6 +53,14 @@
     :initform (make-hash-table :test #'eq)
     :documentation
     "Hash-table containing the meta-nodes.")
+
+   (module-aliases
+    :accessor module-aliases
+    :initarg :module-aliases
+    :initform (make-hash-table :test #'eq)
+    :documentation
+    "Hash-table mapping module alias symbols to the `NODE-TABLE' of
+     the module.")
 
    (input-nodes
     :accessor input-nodes
@@ -69,7 +78,12 @@
 
 (defun make-inner-node-table (table)
   "Creates a new node-table that is contained in TABLE."
-  (make-instance 'node-table :outer-table table :depth (1+ (depth table))))
+
+  (make-instance 'node-table
+                 :outer-table table
+                 :depth (1+ (depth table))
+                 :module-aliases (copy-hash-table (module-aliases table))
+                 :all-nodes (copy-hash-table (module-aliases table))))
 
 
 ;;; Predicates
@@ -80,46 +94,77 @@
 
 ;;; Node lookup functions
 
-(defun lookup-node (name table)
+(defvar *create-nodes* t
+  "Flag: If true ENSURE-NODE will create a new node rather than
+   searching up the outer node tables.")
+
+(defun ensure-node (name table &optional (create *create-nodes*))
+  "Searches for the node with identifier NAME in TABLE. If CREATE is
+   true (defaults to the value of *CREATE-NODES*) and the node is not
+   found in TABLE, it is created otherwise it is searched for in the
+   enclosing tables of TABLE."
+
+  (flet ((create-node (c)
+           (declare (ignore c))
+           (when create
+             (return-from ensure-node
+               (add-node name (make-instance 'node :name name) table)))))
+
+    (handler-bind
+        ((non-existent-node #'create-node))
+      (lookup-node name table (unless create (outer-table table))))))
+
+(defun lookup-node (name table &optional (next-table (and table (outer-table table))))
   "Searches for the node with identifier NAME, in TABLE. If the node
    is not found in TABLE, TABLE's OUTER-TABLE is searched
-   recursively (if it is not NIL). Returns two values, the node
-   found (NIL if none found) and the table in which it was found."
+   recursively. If the the node is found it is returned in the first
+   value along with the table, in which it was found, in the second
+   value. If no node is found a `NON-EXISTENT-NODE' condition is
+   signaled."
 
-  (when table
-    (aif (gethash name (all-nodes table))
-         (values it table)
-         (lookup-node name (outer-table table)))))
+  (unless table
+    (error 'non-existent-node :node name :node-table table))
+
+  (aif (gethash name (all-nodes table))
+       (values it table)
+       (lookup-node name next-table)))
+
 
 (defun lookup-meta-node (meta-node table)
-  "Searches for the meta-node with identifier META-NODE in TABLE. If
-   the meta-node is not found in TABLE, TABLE's OUTER-TABLE is
-   searched recursively (if it is not NIL). If META-NODE names a
-   primitive operator (found in *PRIMITIVE-OPS*) it is returned."
+  "Searches for a meta-node by processing the declaration (using
+   PROCESS-DECLARATION) with *CREATE-NODES* set to nil, that is no
+   immediate nodes are created if the node is not found. If a
+   PROCESS-DECLARATION returns a meta-node it is returned. If
+   PROCESS-DECLARATION returns a node which is not a meta-node a
+   `NODE-TYPE-ERROR' condition is signaled. If no node is found but
+   META-NODE names a primitive operator (in *PRIMITIVE-OPS*) it is
+   returned."
 
-  (or (aand (lookup-node meta-node table)
-         (meta-node? it)
-         it)
-      (gethash meta-node *primitive-ops*)))
+  (flet ((primitive-op (c)
+           (declare (ignore c))
+           (awhen (gethash meta-node *primitive-ops*)
+             (return-from lookup-meta-node it))))
 
-(defun ensure-node (name table &optional (create t))
-  "Returns the node with identifier NAME in TABLE. If table does not
-  contain such a node, and CREATE is true a new node is created, added
-  to table and returned, otherwise an error condition is signaled. If
-  TABLE does contain a node with identifier NAME however it is a
-  `meta-node' an error condition is signalled."
+    (let ((*create-nodes* nil))
+      (handler-bind
+          ((non-existent-node #'primitive-op))
 
-  (acond
-    ((gethash name (all-nodes table))
-     (when (meta-node? it)
-       (error "~a is a node meta-node" name))
-     it)
+        (aprog1 (process-declaration meta-node table)
+          (unless (meta-node? it)
+            (error 'node-type-error :node it :expected 'meta-node)))))))
 
-    (create
-     (add-node name (make-instance 'node :name name) table))
 
-    (t
-     (error "No node ~a in local scope" name))))
+(defun node-type (node)
+  "Returns a symbol identifying the type of NODE. META-NODE is
+   returned if NODE is a meta-node. NODE is returned if NODE is an
+   ordinary node. MODULE is returned if NODE is a
+   module (`NODE-TABLE') otherwise LITERAL is returned."
+
+  (typecase node
+    (meta-node 'meta-node)
+    (node 'node)
+    (node-table 'module)
+    (otherwise 'literal)))
 
 
 ;;; Adding nodes
@@ -131,7 +176,7 @@
 
 (defun add-meta-node (name node table)
   (with-slots (all-nodes nodes meta-nodes) table
-    (when (gethash name nodes)
+    (when (aand (gethash name all-nodes) (not (meta-node? it)))
       (error "~a already names a node which is not a meta-node" name))
 
     (setf (gethash name all-nodes) node)
@@ -156,3 +201,17 @@
   (unless (input-node? node)
     (setf (gethash :input (attributes node)) t)
     (push node (input-nodes table))))
+
+
+;;;; Module Aliases
+
+(defun module-alias (alias table)
+  "Returns the `NODE-TABLE' of the module with alias ALIAS in TABLE."
+
+  (gethash alias (module-aliases table)))
+
+(defun (setf module-alias) (module alias table)
+  "Adds ALIAS as an alias for MODULE in TABLE."
+
+  (setf (gethash alias (all-nodes table)) module)
+  (setf (gethash alias (module-aliases table)) module))

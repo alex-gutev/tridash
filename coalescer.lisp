@@ -141,21 +141,22 @@
    dependency set of NODE such that each node in it is mapped to a
    single `node-link' object."
 
-  (with-slots (contexts) node
-    (labels ((remove-node-links (fn)
-               "Replaces all `node-link' objects (within the value
+  (when (node? node)
+    (with-slots (contexts) node
+      (labels ((remove-node-links (fn)
+                 "Replaces all `node-link' objects (within the value
                 function FN), which do not directly reference another
                 node, with their contents."
 
-               (match fn
-                 ((list* meta-node operands)
-                  (list* meta-node (mapcar #'remove-node-links operands)))
+                 (match fn
+                   ((list* meta-node operands)
+                    (list* meta-node (mapcar #'remove-node-links operands)))
 
-                 ((node-link- (node (and fn (not (type node)) (not (type symbol)))))
-                  (remove-node-links fn))
+                   ((node-link- (node (and fn (not (type node)) (not (type symbol)))))
+                    (remove-node-links fn))
 
-                 (_ fn))))
+                   (_ fn))))
 
-      (dohash (nil context contexts)
-        (with-slots (value-function) context
-          (setf value-function (remove-node-links value-function)))))))
+        (dohash (nil context contexts)
+          (with-slots (value-function) context
+            (setf value-function (remove-node-links value-function))))))))

@@ -22,31 +22,6 @@
 (in-package :tridash.frontend)
 
 
-;;;; Special Operators
-
-
-(defconstant +bind-operator+ (id-symbol "->"))
-
-(defconstant +outer-operator+ (id-symbol "..")
-  "Special operator for referencing nodes defined in an outer scope.")
-
-(defconstant +out-operator+ (id-symbol "out")
-  "Special operator for creating output nodes, from meta-nodes.")
-
-(defconstant +subnode-operator+ (id-symbol ".")
-  "Special operator for accessing meta-node output nodes from outside
-   the meta-node.")
-
-(defconstant +self-node+ (id-symbol "self")
-  "Special node representing the value of the current meta-node.")
-
-(defconstant +case-operator+ (id-symbol "case")
-  "Case operator.")
-
-(defconstant +module-operator+ (id-symbol "module")
-  "Operator which sets the current module.")
-
-
 ;;;; Builder State
 
 (defparameter *top-level* t
@@ -274,6 +249,26 @@
   (destructuring-bind (module) args
     (change-module module)))
 
+(defmethod process-functor ((operator (eql +use-operator+)) args table)
+  "Adds a module as a node to the TABLE."
+
+  (iter (for module in args)
+        (process-declaration (list +alias-operator+ module module) table)))
+
+(defmethod process-functor ((operator (eql +alias-operator+)) args table)
+  "Adds an alias for a module to TABLE."
+
+  (destructuring-bind (module alias) args
+    (match (gethash alias (all-nodes table))
+      ((type node)
+       (error 'alias-clash-error :alias alias :module module))
+
+      ((and (type node-table) (not (eql table)))
+       (error 'alias-taken-error :alias alias :module module))
+
+      (nil
+       (setf (module-alias alias table) (get-module module))))))
+
 
 ;;; Definitions
 
@@ -398,16 +393,27 @@
    object node, is updated."
 
   (destructuring-bind (node key) operands
-    (let* ((name (cons operator operands))
-           (subnode (ensure-node name table)))
+    (process-subnode (process-declaration node table) node key table)))
 
-      (make-source-subnode node key subnode table)
 
-      (handler-case
-          (make-target-subnode node key subnode table)
-        (target-node-error ()))
+(defgeneric process-subnode (object-node object-decl key table)
+  (:documentation
+   "Generic function for processing subnode expressions."))
 
-      (values subnode table))))
+(defmethod process-subnode ((object-node node) object-decl key table)
+  "Creates a node which references a field of an object stored in
+   another node."
+
+  (let* ((name (list +subnode-operator+ object-decl key))
+         (subnode (ensure-node name table)))
+    (make-source-subnode object-decl key subnode table)
+
+    (handler-case
+        (make-target-subnode object-decl key subnode table)
+      (target-node-error ()))
+
+    (values subnode table)))
+
 
 (defun make-source-subnode (node key subnode table)
   "Makes the value function of the subnode for when it appears as the
@@ -432,6 +438,11 @@
           (link)
         (push (list key link) (cdr (value-function (context object-node :object))))))))
 
+(defmethod process-subnode ((module node-table) object-decl key table)
+  "Returns the node with identifier KEY in the module MODULE."
+
+  (declare (ignore object-decl table))
+  (values (lookup-node key module) module))
 
 ;;; Meta-Node instances
 
@@ -491,7 +502,7 @@
                  (meta-node? meta-node))
         (ensure-gethash meta-node (meta-node-references *meta-node*)))
 
-      (values (ensure-node name table) operands table))))
+      (values (ensure-node name table t) operands table))))
 
 (defun add-meta-node-value-function (instance meta-node operands &key (context meta-node))
   "Creates the value function of the meta-node instance INSTANCE,
@@ -541,7 +552,8 @@
    with the greatest depth."
 
   (let ((*top-level* nil)
-        (*source-node* nil))
+        (*source-node* nil)
+        (*create-nodes* t))
     (iter
       (with op-table = (node-table *global-module-table*))
       (for operand in operands)

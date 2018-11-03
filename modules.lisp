@@ -58,3 +58,10 @@
    `NODE-TABLE' is created."
 
   (ensure-gethash module (modules frontend) (make-instance 'node-table)))
+
+(defun get-module (module &optional (modules *global-module-table*))
+  "Returns the `NODE-TABLE' of MODULE. If there is module named MODULE
+   in MODULES, signals a `NON-EXISTENT-MODULE' condition."
+
+  (or (gethash module (modules modules))
+      (error 'non-existent-module :module-name module)))
