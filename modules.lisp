@@ -50,7 +50,8 @@
   "Changes the global node table (stored in the NODE-TABLE slot of the
    FRONTEND argument) to the node table of the module MODULE."
 
-  (setf (node-table frontend) (ensure-module module frontend)))
+  (aprog1 (setf (node-table frontend) (ensure-module module frontend))
+    (setf *operator-nodes* (operator-nodes it))))
 
 (defun ensure-module (module &optional (frontend *global-module-table*))
   "Ensures that MODULE names a module and returns its `NODE-TABLE'. If

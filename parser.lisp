@@ -18,24 +18,10 @@
 
 (in-package :tridash.parser)
 
-(defun id-symbol (name)
-  "Interns a symbol with name NAME into the :TRIDASH.SYMBOLS package."
-
-  (intern name :tridash.symbols))
-
-(defconstant +def-operator+ '\:)
-
-(defconstant +macro-operator+ '|macro|)
-(defconstant +op-operator+ '|op|)
 
 (defconstant +list-operator+ 'list)
 
-(defparameter *operator-nodes*
-  (alist-hash-table
-   `((,(id-symbol "->") 10 right)
-     (\: 5 right)
-     (:open-paren 200)))
-
+(defparameter *operator-nodes* (make-hash-table :test #'eq)
   "Hash table of the current registered operators. Each key is an
    operator symbol the corresponding value is a list of two elements
    where the first element is the operator's precedence and the second
@@ -203,6 +189,11 @@
          :token (cons type lexeme)
          :rule 'parse-node-operand))
 
+
+(defun id-symbol (name)
+  "Interns a symbol with name NAME into the :TRIDASH.SYMBOLS package."
+
+  (intern name :tridash.symbols))
 
 (defun parse-prefix-operands (lex precedence)
   "Parses the operands of a prefix node. Returns NIL if the next token

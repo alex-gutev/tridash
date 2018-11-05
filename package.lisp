@@ -36,10 +36,6 @@
   (:export
    :*operator-nodes*
 
-   :+bind-operator+
-   :+def-operator+
-   :+macro-operator+
-   :+op-operator+
    :+list-operator+
 
    :make-parser
@@ -119,6 +115,9 @@
 
    ;; Primitives
    :*primitive-ops*
+
+   ;; Operators
+   :+bind-operator+
 
    ;; Node-table
    :node-table

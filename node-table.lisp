@@ -62,6 +62,16 @@
     "Hash-table mapping module alias symbols to the `NODE-TABLE' of
      the module.")
 
+   (operator-nodes
+    :accessor operator-nodes
+    :initarg :operator-nodes
+    :initform (copy-hash-table +infix-operators+)
+    :documentation
+    "Operator table for the module. The keys are the names of the
+     nodes which can appear as infix operators and the corresponding
+     values are lists containing the operator's precedence and
+     associativity.")
+
    (input-nodes
     :accessor input-nodes
     :initform nil
@@ -83,6 +93,7 @@
                  :outer-table table
                  :depth (1+ (depth table))
                  :module-aliases (copy-hash-table (module-aliases table))
+                 :operator-nodes (copy-hash-table (operator-nodes table))
                  :all-nodes (copy-hash-table (module-aliases table))))
 
 

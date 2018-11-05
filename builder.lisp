@@ -89,11 +89,12 @@
    argument. This function does not build meta-node definitions."
 
   (with-slots (node-table) *global-module-table*
-    (loop
-       for decl = (funcall parser)
-       while decl
-       do
-         (process-declaration decl node-table))))
+    (let ((*operator-nodes* (operator-nodes node-table)))
+      (loop
+         for decl = (funcall parser)
+         while decl
+         do
+           (process-declaration decl node-table)))))
 
 (defun build-node (node &optional (*global-module-table* *global-module-table*))
   "Builds the `NODE' object from the node declarations NODE and adds
@@ -139,8 +140,9 @@
    meta-node. OUTER-TABLE is the node table in which the meta-node
    definition is located."
 
-  (let ((table (make-inner-node-table outer-table))
-        (*meta-node* meta-node))
+  (let* ((table (make-inner-node-table outer-table))
+         (*operator-nodes* (operator-nodes table))
+         (*meta-node* meta-node))
 
     (add-operand-nodes (operands meta-node) table)
 
@@ -288,7 +290,11 @@
         (when (aand (gethash node all-nodes) (not (eq it node)))
           (error 'node-clash-error :name name :module module))
 
-        (add-node name node table)))))
+        (add-node name node table)
+
+        (awhen (gethash name (operator-nodes module))
+          (let ((*operator-nodes* (operator-nodes table)))
+            (add-operator name (first it) (second it))))))))
 
 
 ;;; Definitions
