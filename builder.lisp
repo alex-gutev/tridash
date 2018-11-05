@@ -274,15 +274,21 @@
 
   (with-slots (all-nodes) table
     (destructuring-bind (module &rest nodes) args
-      (iter (with module-table = (get-module module))
+      (let ((module (get-module module)))
+        (if nodes
+            (mapcar (rcurry #'import-node module table) nodes)
+            (maphash-keys (rcurry #'import-node module table) (all-nodes module)))))))
 
-            (for name in nodes)
-            (for node = (lookup-node name module-table))
+(defun import-node (name module table)
+  "Import node NAME from MODULE into TABLE."
 
-            (when (aand (gethash node all-nodes) (not (eq it node)))
-              (error 'node-clash-error :name name :module module))
+  (let* ((node (lookup-node name module)))
+    (when (node? node)
+      (with-slots (all-nodes) table
+        (when (aand (gethash node all-nodes) (not (eq it node)))
+          (error 'node-clash-error :name name :module module))
 
-            (add-node name node table)))))
+        (add-node name node table)))))
 
 
 ;;; Definitions
