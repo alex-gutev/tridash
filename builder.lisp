@@ -269,6 +269,21 @@
       (nil
        (setf (module-alias alias table) (get-module module))))))
 
+(defmethod process-functor ((operator (eql +import-operator+)) args table)
+  "Imports nodes directly into TABLE, from another module."
+
+  (with-slots (all-nodes) table
+    (destructuring-bind (module &rest nodes) args
+      (iter (with module-table = (get-module module))
+
+            (for name in nodes)
+            (for node = (lookup-node name module-table))
+
+            (when (aand (gethash node all-nodes) (not (eq it node)))
+              (error 'node-clash-error :name name :module module))
+
+            (add-node name node table)))))
+
 
 ;;; Definitions
 

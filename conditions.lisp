@@ -122,6 +122,24 @@
           (alias err) (module-name err)))
 
 
+(define-condition node-clash-error (semantic-error)
+  ((name :initarg :name
+         :reader name
+         :documentation "Name of the node.")
+
+   (module-name :initarg :module
+                :reader module-name
+                :documentation
+                "Name of the module from which the node is being imported."))
+
+  (:documentation
+   "Error condition: A node is being imported in a module, which
+    already contains a different node with the same name."))
+
+(defmethod message ((err node-clash-error))
+  (format nil "Importing node ~a from module ~a. There is already a node with the same name."
+          (name err) (module-name err)))
+
 ;;;; Node Context Errors
 
 (define-condition target-node-error (semantic-error)
