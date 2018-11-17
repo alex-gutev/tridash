@@ -16,14 +16,15 @@
 ;;;; You should have received a copy of the GNU General Public License
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-(defpackage :tridash.backend.js
+(defpackage :tridash.builder.html
   (:use :common-lisp
         :alexandria
         :anaphora
-        :named-readtables
-        :optima
+        :cl-arrows
         :iterate
+        :optima
         :cl-ppcre
+        :named-readtables
 
         :tridash.util
         :tridash.parser
@@ -33,7 +34,4 @@
   (:import-from :let-over-lambda
                 :mkstr
                 :symb
-                :lol-syntax)
-
-  (:export
-   :*print-indented*))
+                :lol-syntax))

@@ -42,6 +42,12 @@
                (:file "wait-set")
                (:file "coalescer")
                (:file "interface")
+               (:file "prog-builder")
+
+               (:module "builders/html"
+                        :serial t
+                        :components ((:file "package")
+                                     (:file "builder")))
 
                (:module "backends/javascript"
                         :serial t
@@ -63,4 +69,5 @@
                :let-over-lambda
                :optima
                :plump
-               :cl-ppcre))
+               :cl-ppcre
+               :ppath))

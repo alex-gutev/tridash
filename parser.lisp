@@ -21,7 +21,7 @@
 
 (defconstant +list-operator+ 'list)
 
-(defparameter *operator-nodes* (make-hash-table :test #'eq)
+(defparameter *operator-nodes* nil
   "Hash table of the current registered operators. Each key is an
    operator symbol the corresponding value is a list of two elements
    where the first element is the operator's precedence and the second
@@ -51,11 +51,12 @@
 ;;; source file.
 
 (defun make-parser (stream)
-  "Returns a function which, when called parses a single declaration
-   from the input stream. Returns nil when EOF is reached."
+  "Returns a function of one argument, the operator nodes table. When
+   the function is called single declaration is parsed from the input
+   stream. Returns nil when EOF is reached."
 
   (let ((lex (make-lexer stream)))
-    (lambda ()
+    (lambda (*operator-nodes*)
       (when (has-input? lex)
         (parse-delimited-node lex)))))
 

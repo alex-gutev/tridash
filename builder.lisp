@@ -73,6 +73,11 @@
 
 ;;;; Build Graph
 
+(define-file-builder trd (path module-table)
+  (with-open-file (in path)
+    (build-parsed-nodes (make-parser in) module-table)))
+
+
 (defun build-graph (parser &optional (*global-module-table* (make-instance 'module-table)))
   "Builds the graph from the objects returned by successively calling
    PARSER."
@@ -89,12 +94,11 @@
    argument. This function does not build meta-node definitions."
 
   (with-slots (node-table) *global-module-table*
-    (let ((*operator-nodes* (operator-nodes node-table)))
-      (loop
-         for decl = (funcall parser)
-         while decl
-         do
-           (process-declaration decl node-table)))))
+    (loop
+       for decl = (funcall parser (operator-nodes node-table))
+       while decl
+       do
+         (process-declaration decl node-table))))
 
 (defun build-node (node &optional (*global-module-table* *global-module-table*))
   "Builds the `NODE' object from the node declarations NODE and adds

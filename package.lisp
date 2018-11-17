@@ -34,8 +34,6 @@
         :tridash.symbols)
 
   (:export
-   :*operator-nodes*
-
    :+list-operator+
 
    :make-parser
@@ -48,6 +46,22 @@
   (:documentation
    "Package containing the parser and lexer."))
 
+(defpackage :tridash.interface
+  (:use :common-lisp
+        :alexandria
+        :anaphora
+        :optima)
+
+  (:export
+   ;; Frontend Interface
+   :build-nodes-in-file
+   :set-file-builder
+   :define-file-builder
+   :build-files
+
+   ;; Backend Interface
+   :compile-nodes))
+
 (defpackage :tridash.frontend
   (:use :common-lisp
 	:alexandria
@@ -57,7 +71,8 @@
 	:optima
 
         :tridash.util
-	:tridash.parser)
+	:tridash.parser
+        :tridash.interface)
 
   (:import-from :let-over-lambda
 		:lol-syntax
@@ -126,6 +141,9 @@
    :all-nodes
    :nodes
    :meta-nodes
+   :operator-nodes
+
+   :add-node
 
    :input-nodes
    :add-input
@@ -150,7 +168,4 @@
    :semantic-error
    :message
    :target-node-error
-   :ambiguous-context-error
-
-   ;; Backend Interface
-   :compile-nodes))
+   :ambiguous-context-error))
