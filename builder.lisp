@@ -237,10 +237,10 @@
 
   (cond
     ((eq assoc (id-symbol "left"))
-     'left)
+     :left)
     ((eq assoc (id-symbol "right"))
-     'right)
-    (t 'right)))
+     :right)
+    (t :right)))
 
 
 ;;; Module Declarations

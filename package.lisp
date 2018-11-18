@@ -18,7 +18,6 @@
 
 (defpackage :tridash.symbols
   (:use)
-  (:export ":" "macro" "op")
 
   (:documentation
    "The package where symbols, read from source files, are
@@ -31,17 +30,14 @@
         :cl-arrows
         :iterate
         :graylex
-        :tridash.symbols)
+        :parse-number)
 
   (:export
    :+list-operator+
 
    :make-parser
    :add-operator
-   :id-symbol
-
-   :left
-   :right)
+   :id-symbol)
 
   (:documentation
    "Package containing the parser and lexer."))

@@ -28,9 +28,9 @@
                                      (:file "macros")
                                      (:file "misc")))
                (:file "package")
-               (:file "interface")
                (:file "lexer")
                (:file "parser")
+               (:file "interface")
                (:file "operators")
                (:file "conditions")
                (:file "node")
@@ -70,4 +70,5 @@
                :optima
                :plump
                :cl-ppcre
-               :ppath))
+               :ppath
+               :parse-number))

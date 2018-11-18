@@ -19,13 +19,15 @@
 (in-package :tridash.parser)
 
 
-(defconstant +list-operator+ 'list)
+(defconstant +list-operator+ 'list
+  "List PSEUDO operator. Used to return a list of node declarations
+   aggregated together.")
 
 (defparameter *operator-nodes* nil
   "Hash table of the current registered operators. Each key is an
    operator symbol the corresponding value is a list of two elements
    where the first element is the operator's precedence and the second
-   element is the operator's associativity: the symbol LEFT or RIGHT
+   element is the operator's associativity: the symbol :LEFT or :RIGHT
    for left or right associativity.")
 
 (defparameter *list-delimiter* nil
@@ -34,7 +36,7 @@
    NIL for end of file.")
 
 
-;;; Adding operators
+;;;; Adding operators
 
 (defun add-operator (symbol prec assoc operators)
   "Adds the symbol SYMBOL as an operator with precedence PREC and
@@ -52,8 +54,8 @@
 
 (defun make-parser (stream)
   "Returns a function of one argument, the operator nodes table. When
-   the function is called single declaration is parsed from the input
-   stream. Returns nil when EOF is reached."
+   the function is called, a single declaration is parsed from the
+   input stream. Returns nil when EOF is reached."
 
   (let ((lex (make-lexer stream)))
     (lambda (*operator-nodes*)
@@ -81,20 +83,20 @@
 
 
 (defun parse-node-expression (lex &key (line-term *line-term*))
-  "Parses a node expression, which can either be an atom node or
+  "Parses a node expression, which can either be an atom node or a
    functor. The value of the :LINE-TERM argument determines whether
    newlines occurring before the node are treated as declaration
-   terminators, if no value is provided it defaults to the value of
+   terminators. If no value is provided it defaults to the value of
    *LINE-TERM*."
 
   (labels ((next-precedence (prec assoc)
              "Returns the minimum operator precedence to use when
               parsing the right operand. If the associativity (ASSOC)
-              of the current operator is LEFT, the precedence (PREC)
+              of the current operator is :LEFT, the precedence (PREC)
               is incremented by 1 otherwise PREC is returned as is."
 
              (case assoc
-               (left (1+ prec))
+               (:left (1+ prec))
                (otherwise prec)))
 
            (parse-expression (lhs min-prec)
@@ -139,11 +141,10 @@
     (parse-expression (parse-operand line-term) 0)))
 
 (defun parse-node-operand (lex &key (line-term *line-term*))
-  "Parses an operand of an infix node expression, this can either be
-   an atom or functor node. The value of the :LINE-TERM argument
-   determines whether newlines occurring before the node are treated as
-   declaration terminators, if no value is provided it defaults to the
-   value of *LINE-TERM*."
+  "Parses an operand of an infix node expression. The value of
+   the :LINE-TERM argument determines whether newlines occurring
+   before the node are treated as declaration terminators, if no value
+   is provided it defaults to the value of *LINE-TERM*."
 
   (multiple-value-call #'parse-node
     (next-token lex :line-term line-term)
@@ -161,6 +162,18 @@
 
   (parse-integer lexeme))
 
+(defmethod parse-node ((type (eql :real)) lexeme (lex t))
+  "Parses a floating point real-number: converts the lexeme string to
+   a CL floating-point number."
+
+  (parse-real-number lexeme))
+
+(defmethod parse-node ((type (eql :string)) lexeme (lex t))
+  "Parses a string literal."
+
+  (let ((*read-eval* nil))
+    (read-from-string lexeme)))
+
 (defmethod parse-node ((type (eql :id)) lexeme (lex t))
   "Parses either an atom node or a functor node, if the token
    following the identifier is an :OPEN-PAREN, '(', token."
@@ -176,9 +189,9 @@
 
 (defmethod parse-node ((type (eql :open-brace)) (lexeme t) lex)
   "Parses and accumulates nodes into a list until a :CLOSE-BRACE, '}',
-   token is read. The first element of the list returned is 'LIST
-   followed by the parsed nodes. This function is expected to be
-   called after consuming an :OPEN-BRACE, '{', token."
+   token is read. The first element of the list returned is
+   +LIST-OPERATOR+ followed by the parsed nodes. This function is
+   expected to be called after consuming an :OPEN-BRACE, '{', token."
 
   (parse-node-list :close-brace lex))
 
@@ -186,9 +199,9 @@
   "Method for invalid tokens, signals an error."
 
   (error 'tridash-parse-error
-         :expected '(or :id :integer :open-paren :open-brace)
+         :expected '(or :id :integer :real :string :open-paren :open-brace)
          :token (cons type lexeme)
-         :rule 'parse-node-operand))
+         :rule 'node-operand))
 
 
 (defun id-symbol (name)
@@ -212,7 +225,7 @@
                   (error 'tridash-parse-error
                          :expected '(or :comma :close-paren)
                          :token (cons type lxm)
-                         :rule 'parse-prefix-operands)))))
+                         :rule 'functor-operands)))))
 
            (parse-operands ()
              (cons (parse-node-expression lex)
@@ -231,8 +244,8 @@
 
 (defun parse-node-list (delimiter lex)
   "Parses and accumulates nodes into a list until a token with type
-   DELIMITER is read. The first element of the list returned is 'LIST
-   followed by the parsed nodes."
+   DELIMITER is read. The first element of the list returned is
+   +LIST-OPERATOR+ followed by the parsed nodes."
 
   (let ((*list-delimiter* delimiter))
     (cons
@@ -241,12 +254,13 @@
      (iter
        (for type = (has-input? lex))
        (until (eq type delimiter))
+
        (when (null type)
          (error 'tridash-parse-error
                 :expected delimiter
                 :token nil
-                :rule 'parse-node-list
-                :message (format nil "Unexpected end of file, missing ~s delimiter." delimiter)))
+                :rule 'node-list))
+
        (collect (parse-delimited-node lex))
        (finally (next-token lex))))))
 
@@ -259,7 +273,7 @@
       (error 'tridash-parse-error
              :expected :close-paren
              :token (cons type lxm)
-             :rule 'parse-sub-node))))
+             :rule 'bracketed-node))))
 
 (defun parse-operator (lex min-prec)
   "Checks whether the next token is a binary infix operator. If the
@@ -276,7 +290,9 @@
 
         (unless info
           (error 'tridash-parse-error
-                 :message (format nil "Parse error: Unknown infix operator: ~S" lexeme)))
+                 :rule 'operator
+                 :token (cons type lexeme)
+                 :expected '(or infix-operator terminate)))
 
         (when (>= (first info) min-prec)
           (next-token lex)
@@ -295,7 +311,7 @@
        (error 'tridash-parse-error
               :expected :terminate
               :token (cons type lxm)
-              :rule 'parse-terminator)))))
+              :rule 'terminator)))))
 
 
 
@@ -303,19 +319,25 @@
 
 (define-condition tridash-parse-error (error)
   ((rule :initarg :rule
-         :reader rule)
-   (message :initarg :message
-            :initform nil
-            :reader message)
+         :reader rule
+         :documentation
+         "The grammar rule being parsed.")
+
    (token-read :initarg :token
-               :reader token-read)
+               :reader token-read
+               :documentation
+               "The token (TYPE . LEXEME) which was actually read.")
+
    (token-expected :initarg :expected
-                   :reader token-expected)))
+                   :reader token-expected
+                   :documentation
+                   "The expected token type."))
+
+  (:documentation
+   "Parse error condition."))
 
 (defmethod print-object ((err tridash-parse-error) stream)
-  (aif (message err)
-       (format stream "Parse Error: ~a" it)
-       (format stream "Parse Error (~A): Expected ~A, found ~A instead"
+  (format stream "Parse Error (~A): Expected ~A, found ~A instead"
           (rule err)
           (token-expected err)
-          (token-read err))))
+          (token-read err)))

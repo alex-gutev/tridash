@@ -81,9 +81,9 @@
 
 (defconstant +infix-operators+
   (alist-hash-table
-   `((,+bind-operator+ 10 right)
-     (,+def-operator+ 5 right)
+   `((,+bind-operator+ 10 :right)
+     (,+def-operator+ 5 :right)
      (:open-paren 200)
-     (,+subnode-operator+ 500)))
+     (,+subnode-operator+ 500 :left)))
 
   "Initial infix operator table.")
