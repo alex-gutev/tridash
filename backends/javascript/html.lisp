@@ -51,43 +51,35 @@
 
 ;;; Link Generated Code
 
-(defun link-graph (graph root-node &key path)
-  "Compiles the node definitions in GRAPH to JavaScript code, which is
-   inserted in a script tag. If the keyword argument :PATH is
-   provided, the generated code is written to the file at PATH
-   instead, and a script tag is inserted which references that file."
-
+(defun create-html-file (code root-node)
   (let ((head-tag (find-head-tag root-node)))
-    (cond
-      (path
-       (output-code-to-file graph path)
-       (plump:make-element
-        head-tag "script"
-        :attributes (alist-hash-table
-                     (list
-                      (cons "src" (mkstr path))
-                      (cons "defer" nil))
-                     :test #'equalp)))
+    (link-runtime-library *runtime-library-path* root-node)
+    (plump:make-fulltext-element head-tag "script"
+                                 :text (output-code-to-string code))
+    (plump:serialize root-node)))
 
-      (t
-       (plump:make-fulltext-element head-tag "script" :text (output-code-to-string graph))))))
-
-(defun output-code-to-file (graph path)
+(defun output-code-to-file (code path)
   "Compiles the node definitions in GRAPH and outputs the code to the
    file at path PATH."
 
   (with-open-file (*standard-output* path :direction :output :if-exists :supersede)
-    (compile-nodes :javascript graph)))
+    (output-code code)))
 
-(defun output-code-to-string (graph)
+(defun output-code-to-string (code)
   "Compiles the node definitions in GRAPH and returns a string of the
    generated code."
 
   (with-output-to-string (*standard-output*)
-    (compile-nodes :javascript graph)))
+    (output-code code)))
 
 
 ;;;; Compiling HTML nodes
+
+(defmethod create-node ((node html-component-node) &optional code)
+  (declare (ignore code))
+
+  ;; For now do nothing
+  )
 
 (defmethod create-node ((node html-node) &optional (code (make-code-array)))
   "Generates the node definition for a NODE which corresponds to an

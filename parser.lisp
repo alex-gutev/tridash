@@ -36,11 +36,11 @@
 
 ;;; Adding operators
 
-(defun add-operator (symbol prec assoc)
+(defun add-operator (symbol prec assoc operators)
   "Adds the symbol SYMBOL as an operator with precedence PREC and
    associativity ASSOC."
 
-  (setf (gethash symbol *operator-nodes*) (list prec assoc)))
+  (setf (gethash symbol operators) (list prec assoc)))
 
 
 ;;;; Parsing Functions

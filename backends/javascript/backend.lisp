@@ -51,16 +51,35 @@
 
 ;;;; Compilation
 
-(defmethod compile-nodes ((backend (eql :javascript)) table)
+(defmethod compile-nodes ((backend (eql :javascript)) table &rest options &key &allow-other-keys)
   "Compile the node and meta-node definitions, in the `NODE-TABLE'
    TABLE, to JavaScript."
 
   (let ((*node-link-indices* (make-hash-table :test #'eq))
-        (*meta-node-ids* (make-hash-table :test #'eq)))
+        (*meta-node-ids* (make-hash-table :test #'eq))
+        (code (make-preamble)))
 
-    (output-code (make-preamble))
-    (output-code (generate-code table))))
+    (dohash (nil module (modules table))
+      (generate-code module code))
 
+    (print-output-code code options table)))
+
+(defun print-output-code (code options module-table)
+  (destructuring-bind (&key (type :code) main-ui) options
+    (case type
+      (:html
+       (->>
+        (get-root-node main-ui module-table)
+        (create-html-file code)))
+
+      (:code
+       (output-code code)))))
+
+(defun get-root-node (node module-table)
+  (destructuring-bind (module node) node
+    (->> (tridash.frontend::get-module module module-table)
+         (tridash.frontend::lookup-node node)
+         (element-node))))
 
 
 (defvar *context-ids* nil
@@ -125,12 +144,16 @@
 
       code)))
 
-(defun make-preamble ()
+(defun make-preamble (&optional (code (make-code-array)))
   "Creates the code which should appear before any node
    definitions. Currently this contains only the declaration of the
    node table variable."
 
-  (js-var *node-table-var* (js-object)))
+  (vector-push-extend
+   (js-var *node-table-var* (js-object))
+   code)
+
+  code)
 
 
 ;;;; Creating nodes

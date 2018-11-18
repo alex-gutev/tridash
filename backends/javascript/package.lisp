@@ -24,11 +24,13 @@
         :optima
         :iterate
         :cl-ppcre
+        :cl-arrows
 
         :tridash.util
         :tridash.parser
         :tridash.interface
-        :tridash.frontend)
+        :tridash.frontend
+        :tridash.builder.html)
 
   (:import-from :let-over-lambda
                 :mkstr

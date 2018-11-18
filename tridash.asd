@@ -28,6 +28,7 @@
                                      (:file "macros")
                                      (:file "misc")))
                (:file "package")
+               (:file "interface")
                (:file "lexer")
                (:file "parser")
                (:file "operators")
@@ -41,7 +42,6 @@
                (:file "builder")
                (:file "wait-set")
                (:file "coalescer")
-               (:file "interface")
                (:file "prog-builder")
 
                (:module "builders/html"

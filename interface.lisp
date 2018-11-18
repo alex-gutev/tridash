@@ -95,7 +95,7 @@
 
 ;;; Compiling Nodes
 
-(defgeneric compile-nodes (backend node-table)
+(defgeneric compile-nodes (backend module-table &key &allow-other-keys)
   (:documentation
    "Generates code for the nodes and meta-nodes contained in
     NODE-TABLE using the backend identified by the symbol BACKEND. The

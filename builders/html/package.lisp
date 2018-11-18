@@ -34,4 +34,15 @@
   (:import-from :let-over-lambda
                 :mkstr
                 :symb
-                :lol-syntax))
+                :lol-syntax)
+
+  (:export
+   ;; HTML-NODE
+   :html-node
+   :tag-name
+   :html-attribute
+   :element-id
+
+   ;; HTML-COMPONENT-NODE
+   :html-component-node
+   :element-node))

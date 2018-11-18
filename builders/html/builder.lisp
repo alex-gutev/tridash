@@ -71,10 +71,10 @@
 ;;;; Building HTML files
 
 (define-file-builder (html htm) (file modules options)
-  (destructuring-bind (&key (node-name (gensym "HTML-COMP"))) options
+  (destructuring-bind (&key (node-name (symbol-name (gensym "HTML-COMP")))) options
     (-<>> (build-html-file file modules)
           (make-instance 'html-component-node :element-node)
-          (add-node node-name <> (node-table modules)))))
+          (add-node (id-symbol node-name) <> (node-table modules)))))
 
 
 (defgeneric build-html-file (file module-table)
@@ -127,16 +127,17 @@
   (let* ((element (plump:clone-node element nil))
          (attributes (plump:attributes element)))
 
-    (let ((html-id (html-element-id element))
-          (tag (plump:tag-name element)))
+    (let ((tag (plump:tag-name element)))
       (dohash (key value attributes)
         (awhen (extract-tridash-node value)
-          (make-html-element-node html-id tag *global-module-table*)
+          (let ((html-id (html-element-id element)))
+            (make-html-element-node html-id tag *global-module-table*)
 
-          (bind-html-node
-           (make-html-attribute-node html-id tag key *global-module-table*)
-           it
-           *global-module-table*))))
+            (bind-html-node
+             (make-html-attribute-node html-id tag key *global-module-table*)
+             it
+             *global-module-table*))
+          (setf (gethash key attributes) ""))))
 
     (call-next-method element :clone nil)))
 
@@ -205,16 +206,16 @@
   (with-accessors ((text plump:text)) node
     (when (plump:element-p *parent-html-node*)
 
-      (let ((tag-name (plump:tag-name *parent-html-node*))
-            (html-id (html-element-id *parent-html-node*)))
+      (let ((tag-name (plump:tag-name *parent-html-node*)))
 
         (acond
           ((extract-tridash-node text)
-           (make-html-element-node html-id tag-name *global-module-table*)
-           (bind-html-node
-            (make-html-attribute-node html-id tag-name "textContent" *global-module-table*)
-            it
-            *global-module-table*)
+           (let ((html-id (html-element-id *parent-html-node*)))
+             (make-html-element-node html-id tag-name *global-module-table*)
+             (bind-html-node
+              (make-html-attribute-node html-id tag-name "textContent" *global-module-table*)
+              it
+              *global-module-table*))
 
            (plump:make-text-node *parent-html-node*))
 

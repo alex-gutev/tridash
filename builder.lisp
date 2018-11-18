@@ -145,7 +145,6 @@
    definition is located."
 
   (let* ((table (make-inner-node-table outer-table))
-         (*operator-nodes* (operator-nodes table))
          (*meta-node* meta-node))
 
     (add-operand-nodes (operands meta-node) table)
@@ -229,9 +228,8 @@
   "Registers a node as an infix operator with a specific precedence
    and associativity."
 
-  (declare (ignore table))
   (destructuring-bind (op precedence &optional associativity) args
-    (add-operator op precedence (operator-associativity associativity))))
+    (add-operator op precedence (operator-associativity associativity) (operator-nodes table))))
 
 (defun operator-associativity (assoc)
   "Returns the operator precedence (LEFT or RIGHT) for the precedence
@@ -297,8 +295,7 @@
         (add-node name node table)
 
         (awhen (gethash name (operator-nodes module))
-          (let ((*operator-nodes* (operator-nodes table)))
-            (add-operator name (first it) (second it))))))))
+          (add-operator name (first it) (second it) (operator-nodes table)))))))
 
 
 ;;; Definitions
