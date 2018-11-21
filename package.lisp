@@ -23,25 +23,6 @@
    "The package where symbols, read from source files, are
     interned. The package does not use any other package."))
 
-(defpackage :tridash.parser
-  (:use :common-lisp
-        :alexandria
-        :anaphora
-        :cl-arrows
-        :iterate
-        :graylex
-        :parse-number)
-
-  (:export
-   :+list-operator+
-
-   :make-parser
-   :add-operator
-   :id-symbol)
-
-  (:documentation
-   "Package containing the parser and lexer."))
-
 (defpackage :tridash.interface
   (:use :common-lisp
         :alexandria
@@ -56,7 +37,31 @@
    :build-files
 
    ;; Backend Interface
-   :compile-nodes))
+   :compile-nodes
+
+   ;; Error Reporting
+   :error-description))
+
+(defpackage :tridash.parser
+  (:use :common-lisp
+        :alexandria
+        :anaphora
+        :cl-arrows
+        :iterate
+        :graylex
+        :parse-number
+
+        :tridash.interface)
+
+  (:export
+   :+list-operator+
+
+   :make-parser
+   :add-operator
+   :id-symbol)
+
+  (:documentation
+   "Package containing the parser and lexer."))
 
 (defpackage :tridash.frontend
   (:use :common-lisp
@@ -65,6 +70,7 @@
 	:iterate
 	:named-readtables
 	:optima
+        :cl-arrows
 
         :tridash.util
 	:tridash.parser

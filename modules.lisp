@@ -16,7 +16,7 @@
 ;;;; You should have received a copy of the GNU General Public License
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;;;; Frontend State
+;;;; Functions for creating and switching modules
 
 (in-package :tridash.frontend)
 
@@ -31,7 +31,7 @@
    (node-table
     :accessor node-table
     :initarg :node-table
-    :initform (make-instance 'node-table)
+    :initform (make-instance 'node-table :name :init)
     :documentation
     "The `NODE-TABLE' of the current module.")))
 
@@ -50,15 +50,15 @@
   "Changes the global node table (stored in the NODE-TABLE slot of the
    FRONTEND argument) to the node table of the module MODULE."
 
-  (aprog1 (setf (node-table frontend) (ensure-module module frontend))
-    (setf *operator-nodes* (operator-nodes it))))
+  (setf (node-table frontend)
+        (ensure-module module frontend)))
 
 (defun ensure-module (module &optional (frontend *global-module-table*))
   "Ensures that MODULE names a module and returns its `NODE-TABLE'. If
    MODULE is not present in the MODULES table of FRONTEND a new empty
    `NODE-TABLE' is created."
 
-  (ensure-gethash module (modules frontend) (make-instance 'node-table)))
+  (ensure-gethash module (modules frontend) (make-instance 'node-table :name module)))
 
 (defun get-module (module &optional (modules *global-module-table*))
   "Returns the `NODE-TABLE' of MODULE. If there is module named MODULE

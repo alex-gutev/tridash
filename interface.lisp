@@ -100,3 +100,10 @@
    "Generates code for the nodes and meta-nodes contained in
     NODE-TABLE using the backend identified by the symbol BACKEND. The
     generated code is written to *standard-output*"))
+
+
+;;;; Error Reporting Interface
+
+(defgeneric error-description (e)
+  (:documentation
+   "Returns a string explaining the error E."))

@@ -16,8 +16,8 @@
 ;;;; You should have received a copy of the GNU General Public License
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;;;; Build the node definition structures out of the parsed source
-;;;; files.
+;;;; Functions for building the node definition structures out of the
+;;;; parsed source files.
 
 (in-package :tridash.frontend)
 
@@ -55,20 +55,19 @@
      ,@body))
 
 
-;;;; Generic Functions
+;;;; Declaration Processing Interface
 
 (defgeneric process-declaration (decl table)
   (:documentation
-   "Processes the declaration, creates the node(s) described by the
-    declaration and adds them to TABLE. Returns the node created, if any, and
-    the table to which it was added (or in which it was found)."))
+   "Processes the declaration, creates the node(s) specified by the
+    declaration and adds them to TABLE. Returns the node created, if
+    any, and the table in which it is contained."))
 
 (defgeneric process-functor (operator operands table)
   (:documentation
-   "Processes the declaration functor, creates the node(s) described
+   "Processes the declaration functor, creates the node(s) specified
     by the declaration and adds them to TABLE. Returns the node
-    created, if any, and the table to which it was added (or in which
-    it was found)."))
+    created, if any, and the table in which it is contained."))
 
 
 ;;;; Build Graph
@@ -121,18 +120,13 @@
 (defun finish-build-module (node-table)
   "Builds the definitions of the meta-nodes in NODE-TABLE."
 
-  (create-value-functions node-table)
+  (build-meta-node-graphs node-table)
 
   (find-outer-node-references node-table)
   (add-outer-node-operands node-table))
 
-(defun create-value-functions (graph)
-  "Creates the value function of each node in GRAPH."
 
-  (build-meta-node-graphs graph))
-
-
-;;;; Build Meta-Node
+;;;; Build Meta-Nodes
 
 (defun build-meta-node-graphs (table)
   "Builds the body of each meta-node, in the node table TABLE."
@@ -151,7 +145,7 @@
 
     (let* ((last-node (process-node-list (definition meta-node) table t)))
       (make-meta-node-function meta-node last-node)
-      (create-value-functions table)
+      (build-meta-node-graphs table)
       (setf (definition meta-node) table))))
 
 (defun add-operand-nodes (names table)
@@ -160,7 +154,9 @@
    input nodes of TABLE"
 
   (dolist (name names)
-    (add-input (add-node name (make-instance 'node :name name) table) table)))
+    (-<> (make-instance 'node :name name)
+         (add-node name <> table)
+         (add-input table))))
 
 (defun make-meta-node-function (meta-node last-node)
   "Creates the value function of the meta-node META-NODE. LAST-NODE is
@@ -183,9 +179,9 @@
 ;;;; Methods: Processing Declaration
 
 (defmethod process-declaration ((functor list) table)
-  "Processes the functor by calling PROCESS-FUNCTOR with the OPERATOR
-   argument being the CAR of FUNCTOR and OPERANDS being the CDR of
-   FUNCTOR."
+  "Processes the functor declaration by calling PROCESS-FUNCTOR with
+   the OPERATOR argument being the CAR of FUNCTOR and OPERANDS being
+   the CDR of FUNCTOR."
 
   (destructuring-bind (operator . operands) functor
     (process-functor operator operands table)))
@@ -213,14 +209,21 @@
 
   (declare (ignore table))
 
-  (if *meta-node*
-      *meta-node*
-      (error "Cannot reference node 'self' outside of a meta-node definition")))
+  (or *meta-node* (error 'self-reference-error)))
 
 
 ;;;; Methods: Processing Functors
 
-;;; Operators
+(defmacro match-syntax ((operator &rest expected) args &body clauses)
+  `(match ,args
+     ,@clauses
+     (_
+      (error 'invalid-arguments-error
+             :operator ,operator
+             :arguments ,args
+             :expected ',expected))))
+
+;;; Special Operators
 
 ;;; Operator Declarations
 
@@ -228,8 +231,14 @@
   "Registers a node as an infix operator with a specific precedence
    and associativity."
 
-  (destructuring-bind (op precedence &optional associativity) args
-    (add-operator op precedence (operator-associativity associativity) (operator-nodes table))))
+  (match-syntax (+op-operator+ identifier number (or "left" "right"))
+      args
+
+    ((list* (guard op (symbolp op))
+            (guard precedence (integerp precedence))
+            (optional (list (guard associativity (symbolp associativity)))))
+
+     (add-operator op precedence (operator-associativity associativity) (operator-nodes table)))))
 
 (defun operator-associativity (assoc)
   "Returns the operator precedence (LEFT or RIGHT) for the precedence
@@ -238,9 +247,14 @@
   (cond
     ((eq assoc (id-symbol "left"))
      :left)
-    ((eq assoc (id-symbol "right"))
+    ((or (eq assoc (id-symbol "right"))
+         (null assoc))
      :right)
-    (t :right)))
+    (t
+     (error 'invalid-value-error
+            :thing "operator associativity"
+            :allowed '("left" "right")
+            :value assoc))))
 
 
 ;;; Module Declarations
@@ -250,38 +264,57 @@
 
   (declare (ignore table))
 
-  (destructuring-bind (module) args
-    (change-module module)))
+  (match-syntax (+module-operator+ identifier)
+      args
+    ((list (guard module (symbolp module)))
+     (change-module module))))
 
 (defmethod process-functor ((operator (eql +use-operator+)) args table)
   "Adds a module as a node to the TABLE."
 
-  (iter (for module in args)
-        (process-declaration (list +alias-operator+ module module) table)))
+  (match-syntax (+use-operator+ (list identifier))
+      args
+
+    ((list* args)
+     (iter (for module in args)
+           (process-declaration (list +alias-operator+ module module) table)))))
 
 (defmethod process-functor ((operator (eql +alias-operator+)) args table)
   "Adds an alias for a module to TABLE."
 
-  (destructuring-bind (module alias) args
-    (match (gethash alias (all-nodes table))
-      ((type node)
-       (error 'alias-clash-error :alias alias :module module))
+  (match-syntax (+alias-operator+ identifier identifier)
+      args
+    ((list (guard module (symbolp module))
+           (guard alias (symbolp alias)))
 
-      ((and (type node-table) (not (eql table)))
-       (error 'alias-taken-error :alias alias :module module))
+     (match (gethash alias (all-nodes table))
+       ((type node)
+        (error 'alias-clash-error
+               :node alias
+               :module module
+               :node-table table))
 
-      (nil
-       (setf (module-alias alias table) (get-module module))))))
+       ((and (type node-table) (not (eq table)))
+        (error 'alias-taken-error
+               :node alias
+               :module module
+               :node-table table))
+
+       (nil
+        (setf (module-alias alias table) (get-module module)))))))
 
 (defmethod process-functor ((operator (eql +import-operator+)) args table)
   "Imports nodes directly into TABLE, from another module."
 
   (with-slots (all-nodes) table
-    (destructuring-bind (module &rest nodes) args
-      (let ((module (get-module module)))
-        (if nodes
-            (mapcar (rcurry #'import-node module table) nodes)
-            (maphash-keys (rcurry #'import-node module table) (all-nodes module)))))))
+    (match-syntax (+import-operator+ identifier (list identifier))
+        args
+
+      ((list* (guard module (symbolp module)) nodes)
+       (let ((module (get-module module)))
+         (if nodes
+             (mapcar (rcurry #'import-node module table) nodes)
+             (maphash-keys (rcurry #'import-node module table) (all-nodes module))))))))
 
 (defun import-node (name module table)
   "Import node NAME from MODULE into TABLE."
@@ -290,7 +323,10 @@
     (when (node? node)
       (with-slots (all-nodes) table
         (when (aand (gethash node all-nodes) (not (eq it node)))
-          (error 'node-clash-error :name name :module module))
+          (error 'import-node-error
+                 :node name
+                 :module module
+                 :node-table table))
 
         (add-node name node table)
 
@@ -306,11 +342,14 @@
    identifier but it is not a meta-node an error condition is
    signaled."
 
-  (destructuring-bind ((name . args) . body) operands
-    (add-meta-node
-     name
-     (make-instance 'meta-node :name name :operands args :definition body)
-     table)))
+  (match-syntax (+def-operator+ ((identifier . identifier) . nodes))
+      operands
+
+    ((list* (list* (guard name (symbolp name)) args) body)
+     (add-meta-node
+      name
+      (make-instance 'meta-node :name name :operands args :definition body)
+      table))))
 
 
 ;;; Conditions
@@ -323,7 +362,7 @@
 
   (flet ((make-if (case expr)
            (match case
-             ((list (eql +def-operator+) cond node)
+             ((list (eq +def-operator+) cond node)
               (list (id-symbol "if") cond node expr))
 
              (_ case))))
@@ -357,23 +396,24 @@
 (defmethod process-functor ((operator (eql +outer-operator+)) args table)
   (with-slots (outer-table) table
     (unless outer-table
-      (error "Outer node ~a referenced from global node table" (cons operator args)))
+      (error 'global-outer-reference-error))
 
-    (destructuring-bind (name) args
-      (multiple-value-bind (outer-node outer-table)
-          (lookup-node name outer-table)
+    (match-syntax (+outer-operator+ identifier)
+        args
 
-        (if outer-node
-            (add-outer-node outer-node outer-table table)
-            (error "Node ~a not found in any outer node table" name))))))
+      ((list name)
+       (multiple-value-bind (outer-node outer-table)
+           (lookup-node name outer-table)
+
+         (add-outer-node outer-node outer-table table))))))
 
 (defun add-outer-node (outer-node outer-table table)
   "Adds a reference to NODE, which is located in an outer node-table (OUTER-TABLE),
    to the current meta-node being built (the value of *META-NODE*)."
 
-  (with-slots (outer-nodes) *meta-node*
-    (let ((name (cdr (ensure-gethash outer-node outer-nodes (cons outer-table (outer-node-name *meta-node*))))))
-      (values (ensure-node name table) table))))
+  (-> (outer-node outer-node outer-table *meta-node*)
+      (ensure-node table)
+      (values table)))
 
 
 ;;; Bindings
@@ -382,20 +422,22 @@
   "Establishes a binding from the first node to the second node in
    OPERANDS."
 
-  (destructuring-bind (source target) operands
-    (with-source-node (at-source (process-declaration source table))
-      (let* ((target (let (*top-level*) (process-declaration target table)))
-             (value-link (add-binding *source-node* target)))
+  (match-syntax (+bind-operator+ node node)
+      operands
+    ((list source target)
+     (with-source-node (at-source (process-declaration source table))
+       (let* ((target (let (*top-level*) (process-declaration target table)))
+              (value-link (add-binding *source-node* target)))
 
-        (unless *top-level*
-          (let* ((name (cons operator operands))
-                 (cond-node (ensure-node name table))
-                 (cond-link (add-binding cond-node target :context *source-node* :add-function nil)))
+         (unless *top-level*
+           (let* ((name (cons operator operands))
+                  (cond-node (ensure-node name table))
+                  (cond-link (add-binding cond-node target :context *source-node* :add-function nil)))
 
-            (setf (value-function (context target *source-node*))
-                  `(if ,cond-link ,value-link ,(node-link :self)))
+             (setf (value-function (context target *source-node*))
+                   `(if ,cond-link ,value-link ,(node-link :self)))
 
-            (values cond-node table)))))))
+             (values cond-node table))))))))
 
 
 ;;; Output Nodes
@@ -404,10 +446,17 @@
   "Creates the output node and adds it to the set of output nodes of
    the meta-node currently bound to *META-NODE*."
 
-  (destructuring-bind (name) operands
-    (with-slots (output-nodes) *meta-node*
-      (aprog1 (ensure-node (cons operator operands) table)
-        (setf (gethash name output-nodes) it)))))
+  (match-syntax (+out-operator+ node)
+      operands
+
+    ((list name)
+
+     (unless *meta-node*
+       (error 'out-node-error))
+
+     (with-slots (output-nodes) *meta-node*
+       (aprog1 (ensure-node (cons operator operands) table)
+         (setf (gethash name output-nodes) it))))))
 
 
 ;;; Subnodes
@@ -420,8 +469,11 @@
    direction the value of the field of the object value, stored in the
    object node, is updated."
 
-  (destructuring-bind (node key) operands
-    (process-subnode (process-declaration node table) node key table)))
+  (match-syntax (+subnode-operator+ node identifier)
+      operands
+
+    ((list node key)
+     (process-subnode (process-declaration node table) node key table))))
 
 
 (defgeneric process-subnode (object-node object-decl key table)
@@ -479,11 +531,8 @@
    with identifier OPERATOR and with operands OPERANDS. The operand
    nodes are added as dependencies of the node."
 
-  (acond
-    ((lookup-meta-node operator table)
-     (make-meta-node-instance it operator operands table))
-    (t
-     (error "Operator ~s is neither a special operator nor a node meta-node" operator))))
+  (-> (lookup-meta-node operator table)
+      (make-meta-node-instance operator operands table)))
 
 
 ;;; Meta-Node Instances
@@ -556,19 +605,22 @@
    value to a particular type. A two-way binding between the node and
    operand node (in OPERANDS) is created."
 
-  (destructuring-bind (node) operands
-    (multiple-value-bind (instance operands table)
-        (create-instance-node meta-node operator operands table)
+  (match-syntax (meta-node node)
+      operands
+    ((list node)
 
-      (add-meta-node-value-function instance meta-node operands :context (first operands))
+     (multiple-value-bind (instance operands table)
+         (create-instance-node meta-node operator operands table)
 
-      (with-source-node instance
-        (handler-case
-            (let ((node (process-declaration node table)))
-              (add-meta-node-value-function node meta-node (list instance) :context instance))
-          (target-node-error ())))
+       (add-meta-node-value-function instance meta-node operands :context (first operands))
 
-      (values instance table))))
+       (with-source-node instance
+         (handler-case
+             (let ((node (process-declaration node table)))
+               (add-meta-node-value-function node meta-node (list instance) :context instance))
+           (target-node-error ())))
+
+       (values instance table)))))
 
 
 ;;; Binding Operands
@@ -597,8 +649,8 @@
       (finally (return (values nodes op-table))))))
 
 (defun bind-operands (node operands &key context)
-  "Establishes bindings between the operands and the meta-node
-   instance."
+  "Establishes bindings between the operands (OPERANDS) and the
+   meta-node instance (NODE)."
 
   (flet ((bind-operand (operand)
            (if (value? operand)

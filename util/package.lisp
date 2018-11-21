@@ -20,7 +20,8 @@
   (:use :common-lisp
         :anaphora
         :iterate
-        :named-readtables)
+        :named-readtables
+        :optima)
 
   (:import-from :let-over-lambda
                 :symb
@@ -28,6 +29,7 @@
                 :lol-syntax)
 
   (:import-from :alexandria
+                :copy-hash-table
                 :ensure-gethash)
 
   (:export
@@ -41,11 +43,15 @@
    :dohash
    :multiple-value-return
 
+   ;; Optima Patterns
+   :optional
+
    ;; Functions
    :same-length?
    :adjoin-hash
    :in-hash?
    :merge-hash
+   :union-hash
    :partition
    :hash-table-keys-values)
 

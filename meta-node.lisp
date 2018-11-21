@@ -56,7 +56,9 @@
     :initform nil
     :accessor definition
     :documentation
-    "The graph corresponding to the body of the meta-node.")
+    "The graph corresponding to the body of the meta-node. Prior to
+     the graph being built the list of node declarations, making up
+     the body, are stored in this slot.")
 
    (instances
     :initform nil
@@ -65,7 +67,10 @@
     "List of instances of the meta-node. Each element is of the
      form (CONS NODE META-NODE) where NODE is the instance NODE itself
      and META-NODE is the META-NODE in which it appears, NIL if it is
-     at global scope.")))
+     at global scope."))
+
+  (:documentation
+   "Stores the definition of a meta-node."))
 
 
 (defun meta-node? (x)
@@ -84,3 +89,10 @@
    reference an outer node."
 
   (unique-node-name (outer-nodes meta-node) 'ex))
+
+(defun outer-node (node outer-table meta-node)
+  "Returns the name of the local node which is bound to the outer node
+   NODE, from the table OUTER-TABLE, in META-NODE."
+
+  (with-slots (outer-nodes) meta-node
+    (cdr (ensure-gethash node outer-nodes (cons outer-table (outer-node-name meta-node))))))

@@ -21,7 +21,14 @@
 (in-package :tridash.frontend)
 
 (defclass node-table ()
-  ((outer-table
+  ((name
+    :accessor name
+    :initarg :name
+    :initform nil
+    :documentation
+    "The name of the module.")
+
+   (outer-table
     :accessor outer-table
     :initarg :outer-table
     :initform nil
@@ -40,13 +47,14 @@
     :initarg :all-nodes
     :initform (make-hash-table :test #'equal)
     :documentation
-    "Hash-table containing all nodes (including meta-nodes).")
+    "Hash-table containing all nodes.")
 
    (nodes
     :accessor nodes
     :initform (make-hash-table :test #'equal)
     :documentation
-    "Hash-table only containing actual nodes (excluding meta-nodes).")
+    "Hash-table only containing actual nodes (excluding meta-nodes and
+     module aliases).")
 
    (meta-nodes
     :accessor meta-nodes
@@ -76,38 +84,44 @@
     :accessor input-nodes
     :initform nil
     :documentation
-    "List containing the input nodes of the graph."))
+    "List of all input nodes of the graph."))
 
   (:documentation
-   "Stores the hash-table mapping node names to `node'
-    objects. Additionally nodes are separated into different tables
-    for nodes and meta-nodes."))
+   "Symbol table mapping node identifiers to node objects. Has
+    multiple tables for all types of (pseudo) nodes to facilitate
+    looking up a node of a particular type."))
 
 
-;;; Constructor Function
+;;;; Constructor Functions
 
 (defun make-inner-node-table (table)
   "Creates a new node-table that is contained in TABLE."
 
-  (make-instance 'node-table
-                 :outer-table table
-                 :depth (1+ (depth table))
-                 :module-aliases (copy-hash-table (module-aliases table))
-                 :operator-nodes (copy-hash-table (operator-nodes table))
-                 :all-nodes (copy-hash-table (module-aliases table))))
+  (with-slots (name meta-nodes module-aliases operator-nodes) table
+    (make-instance 'node-table
+                   :name name
+                   :outer-table table
+                   :depth (1+ (depth table))
+                   :meta-nodes (copy-hash-table meta-nodes)
+                   :module-aliases (copy-hash-table module-aliases)
+                   :operator-nodes (copy-hash-table operator-nodes)
+                   :all-nodes (union-hash meta-nodes module-aliases))))
 
 
-;;; Predicates
+;;;; Predicates
 
 (defun global-table? (table)
   (zerop (depth table)))
 
 
-;;; Node lookup functions
+;;;; Node lookup functions
 
 (defvar *create-nodes* t
   "Flag: If true ENSURE-NODE will create a new node rather than
    searching up the outer node tables.")
+
+(defvar *search-module* nil
+  "The name of the module in which the node is currently being looked up")
 
 (defun ensure-node (name table &optional (create *create-nodes*))
   "Searches for the node with identifier NAME in TABLE. If CREATE is
@@ -133,18 +147,20 @@
    value. If no node is found a `NON-EXISTENT-NODE' condition is
    signaled."
 
-  (unless table
-    (error 'non-existent-node :node name :node-table table))
+  (let ((*search-module* (or *search-module* (and table (name table)))))
 
-  (aif (gethash name (all-nodes table))
-       (values it table)
-       (lookup-node name next-table)))
+   (unless table
+     (error 'non-existent-node :node name :module-name *search-module*))
+
+    (aif (gethash name (all-nodes table))
+         (values it table)
+         (lookup-node name next-table))))
 
 
 (defun lookup-meta-node (meta-node table)
   "Searches for a meta-node by processing the declaration (using
    PROCESS-DECLARATION) with *CREATE-NODES* set to nil, that is no
-   immediate nodes are created if the node is not found. If a
+   immediate nodes are created if the node is not found. If
    PROCESS-DECLARATION returns a meta-node it is returned. If
    PROCESS-DECLARATION returns a node which is not a meta-node a
    `NODE-TYPE-ERROR' condition is signaled. If no node is found but
@@ -178,17 +194,24 @@
     (otherwise 'literal)))
 
 
-;;; Adding nodes
+;;;; Adding nodes
 
 (defun add-node (name node table)
+  "Adds the ordinary node NODE with name NAME to TABLE."
+
   (with-slots (all-nodes nodes) table
+    (when (nth-value 1 (gethash name all-nodes))
+      (error 'node-exists-error :node name :node-table table))
+
     (setf (gethash name all-nodes) node)
     (setf (gethash name nodes) node)))
 
 (defun add-meta-node (name node table)
+  "Adds the `META-NODE' NODE with name NAME to TABLE."
+
   (with-slots (all-nodes nodes meta-nodes) table
     (when (aand (gethash name all-nodes) (not (meta-node? it)))
-      (error "~a already names a node which is not a meta-node" name))
+      (error 'meta-node-name-collision :node name :node-table table))
 
     (setf (gethash name all-nodes) node)
     (setf (gethash name meta-nodes) node)))
@@ -197,10 +220,10 @@
 ;;; Removing nodes
 
 (defun remove-node (name table)
-  "Removes the node with name NAME from TABLE."
+  "Removes the ordinary node with name NAME from TABLE."
 
-  (remhash name (nodes table))
-  (remhash name (all-nodes table)))
+  (when (remhash name (nodes table))
+    (remhash name (all-nodes table))))
 
 
 ;;; Input Nodes

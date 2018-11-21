@@ -41,23 +41,23 @@
   "Special operator for referencing nodes defined in an outer scope.")
 
 (defconstant +subnode-operator+ (id-symbol ".")
-  "Special operator for accessing meta-node output nodes from outside
-   the meta-node.")
+  "Special operator for accessing sub-nodes of a node.")
 
 
 ;;; Meta-nodes
 
 (defconstant +self-node+ (id-symbol "self")
-  "Special node representing the value of the current meta-node.")
+  "Special node which references the current meta-node.")
 
 (defconstant +out-operator+ (id-symbol "out")
-  "Special operator for creating output nodes, from meta-nodes.")
+  "Special operator for creating output nodes, from inside meta-node
+   definitions.")
 
 
 ;;; Conditionals
 
 (defconstant +case-operator+ (id-symbol "case")
-  "Case operator.")
+  "Case conditional operator.")
 
 
 ;;; Modules

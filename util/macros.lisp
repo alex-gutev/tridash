@@ -74,3 +74,6 @@
      (multiple-value-prog1 (values-list ,g!values)
        (destructuring-bind ,vars ,g!values
          ,@body))))
+
+(defpattern optional (arg)
+  `(or ,arg nil))

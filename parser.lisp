@@ -124,8 +124,8 @@
                    (list op lhs <>)
                    (parse-expression min-prec))))
 
-               ((parse-prefix-operands lex min-prec)
-                (parse-expression (list* lhs it) min-prec))
+               ((operand-list? lex min-prec)
+                (parse-expression (list* lhs (parse-prefix-operands lex)) min-prec))
 
                (t lhs)))
 
@@ -209,7 +209,18 @@
 
   (intern name :tridash.symbols))
 
-(defun parse-prefix-operands (lex precedence)
+(defun operand-list? (lex precedence)
+  "Returns true if the next token is the start of the operand list of
+   a functor (:OPEN-PAREN). PRECEDENCE is the current minimum operator
+   precedence."
+
+  (and
+   (>= (first (gethash :open-paren *operator-nodes*)) precedence)
+   (eq (next-token lex :peek t) :open-paren)
+   (next-token lex)
+   t))
+
+(defun parse-prefix-operands (lex)
   "Parses the operands of a prefix node. Returns NIL if the next token
    is not :OPEN-PAREN, thus the previous node is not a prefix functor
    node."
@@ -227,18 +238,17 @@
                          :token (cons type lxm)
                          :rule 'functor-operands)))))
 
+           (end-list? ()
+             (when (eq (next-token lex :peek t) :close-paren)
+               (next-token lex)
+               t))
+
            (parse-operands ()
              (cons (parse-node-expression lex)
                    (and (parse-separator) (parse-operands)))))
 
-    ;; If the precedence of the :OPEN-PAREN operator is greater than
-    ;; or equal to the current precedence then continue with parsing
-    ;; otherwise return.
-
-    (when (and (>= (first (gethash :open-paren *operator-nodes*)) precedence)
-               (eq (next-token lex :peek t) :open-paren))
-      (next-token lex)
-      (let ((*line-term* nil))
+    (let ((*line-term* nil))
+      (unless (end-list?)
         (parse-operands)))))
 
 
@@ -336,8 +346,12 @@
   (:documentation
    "Parse error condition."))
 
-(defmethod print-object ((err tridash-parse-error) stream)
-  (format stream "Parse Error (~A): Expected ~A, found ~A instead"
+(defmethod error-description ((err tridash-parse-error))
+  (format nil "Parse Error (~A): Expected ~A, found ~A instead."
           (rule err)
           (token-expected err)
           (token-read err)))
+
+(defmethod print-object ((err tridash-parse-error) stream)
+  (print-unreadable-object (err stream :type t :identity nil)
+    (princ (error-description err) stream)))

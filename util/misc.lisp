@@ -49,6 +49,14 @@
                 (funcall fn old-val new-val))))
   result)
 
+(defun union-hash (hash1 hash2)
+  "Returns a new hash-table which contains all key-value pairs in
+   HASH1 and HASH2."
+
+  (aprog1 (copy-hash-table hash1)
+    (iter (for (key val) in-hashtable hash2)
+          (setf (gethash key it) val))))
+
 (defun partition (test sequence &key (key #'identity))
   "Applies the predicate function TEST passing each element of
    SEQUENCE and partitions SEQUENCE into a list containing all the
