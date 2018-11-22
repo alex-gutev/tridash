@@ -114,16 +114,15 @@
    should not be called after calling BUILD-GRAPH."
 
   (with-slots (modules) *global-module-table*
-    (maphash-values #'finish-build-module modules)
+    ;; Build meta-node definitions
+    (maphash-values #'build-meta-node-graphs modules)
+
+    ;; Determine outer node references
+    (maphash-values #'find-outer-node-references modules)
+    (maphash-values #'add-outer-node-operands modules)
+
+    ;; Coalesce nodes
     (maphash-values #'coalesce-nodes modules)))
-
-(defun finish-build-module (node-table)
-  "Builds the definitions of the meta-nodes in NODE-TABLE."
-
-  (build-meta-node-graphs node-table)
-
-  (find-outer-node-references node-table)
-  (add-outer-node-operands node-table))
 
 
 ;;;; Build Meta-Nodes

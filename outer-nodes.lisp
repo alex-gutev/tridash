@@ -29,11 +29,22 @@
   (let (visited)
     (declare (special visited))
     (labels ((get-outer-node-references (meta-node)
+               "Determines the outer-nodes which are referenced within
+                the definition of META-NODE."
+
                (let ((visited (make-hash-table :test #'eq)))
                  (declare (special visited))
                  (outer-node-references meta-node)))
 
              (outer-node-references (meta-node)
+               "Augments the set of outer-nodes, referenced from
+                within META-NODE, with the set of outer-nodes,
+                referenced by each meta-node used within the
+                definition of META-NODE, which are not in the visited
+                SET. The first return value is the new set of outer
+                nodes and the second return value is true if the set
+                is complete otherwise it is NIL."
+
                (ensure-gethash meta-node visited t)
 
                (with-slots (outer-nodes meta-node-references) meta-node
@@ -49,11 +60,16 @@
                  (values outer-nodes (zerop (hash-table-count meta-node-references)))))
 
              (add-outer-nodes (meta-node refs)
+               "Adds the outer-node references REFS to the outer-nodes
+                set of META-NODE. Excludes outer-nodes which are
+                defined within a sub-table of the definition of
+                META-NODE."
+
                (with-slots (definition outer-nodes) meta-node
-                 (dohash (node info refs)
-                   (let ((table (car info)))
-                     (unless (>= (depth table) (depth definition))
-                       (ensure-gethash node outer-nodes (cons table (outer-node-name meta-node))))))))
+                 (iter
+                   (for (node (table)) in-hashtable refs)
+                   (unless (>= (depth table) (depth definition))
+                     (ensure-gethash node outer-nodes (cons table (outer-node-name meta-node)))))))
 
              (visited? (meta-node)
                (gethash meta-node visited)))
