@@ -153,10 +153,14 @@
    node name, and adds the nodes to TABLE. The nodes are marked as
    input nodes of TABLE"
 
-  (dolist (name names)
-    (-<> (make-instance 'node :name name)
-         (add-node name <> table)
-         (add-input table))))
+  (with-slots (all-nodes) table
+
+   (dolist (name names)
+     (case (node-type (gethash name all-nodes))
+       ((meta-node module)
+        (remhash name all-nodes)))
+
+     (add-input (ensure-node name table) table))))
 
 (defun make-meta-node-function (meta-node last-node)
   "Creates the value function of the meta-node META-NODE. LAST-NODE is

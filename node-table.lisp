@@ -102,7 +102,6 @@
                    :name name
                    :outer-table table
                    :depth (1+ (depth table))
-                   :meta-nodes (copy-hash-table meta-nodes)
                    :module-aliases (copy-hash-table module-aliases)
                    :operator-nodes (copy-hash-table operator-nodes)
                    :all-nodes (union-hash meta-nodes module-aliases))))
