@@ -97,7 +97,7 @@
        for decl = (funcall parser (operator-nodes node-table))
        while decl
        do
-         (process-declaration decl node-table))))
+         (build-node decl))))
 
 (defun build-node (node &optional (*global-module-table* *global-module-table*))
   "Builds the `NODE' object from the node declarations NODE and adds
@@ -183,15 +183,18 @@
    the OPERATOR argument being the CAR of FUNCTOR and OPERANDS being
    the CDR of FUNCTOR."
 
-  (destructuring-bind (operator . operands) functor
-    (process-functor operator operands table)))
+  (let ((*declaration-stack* (cons functor *declaration-stack*)))
+
+   (destructuring-bind (operator . operands) functor
+     (process-functor operator operands table))))
 
 (defmethod process-declaration ((name symbol) table)
   "Creates a node with identifier NAME and adds it to table, if table
    does not already contain a node with that identifier. Returns the
    newly created, or existing, node."
 
-  (values (ensure-node name table) table))
+  (let ((*declaration-stack* (cons name *declaration-stack*)))
+   (values (ensure-node name table) table)))
 
 (defmethod process-declaration (literal table)
   "Method for literal values (everything which is not a symbol or list

@@ -1,4 +1,4 @@
-;;;; tridash.asd
+;;;; conditions.lisp
 ;;;;
 ;;;; Tridash Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
@@ -16,14 +16,28 @@
 ;;;; You should have received a copy of the GNU General Public License
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;;;; Frontend Error Conditions.
+;;;; Error Conditions for semantic errors related to building the node
+;;;; definitions out of the parsed declarations.
 
 (in-package :tridash.frontend)
 
 
 ;;;; Base Error Condition Class
 
-(define-condition semantic-error (error) ()
+(defvar *declaration-stack* nil
+  "List of declarations currently being processed. The tail of the
+   list contains the top-level declaration being processed. The head
+   contains the inner most declaration, of the top-level, declaration
+   currently being processed.")
+
+(define-condition semantic-error (error)
+  ((declaration-stack
+    :initform *declaration-stack*
+    :reader declaration
+    :documentation
+    "The declaration stack leading up to the declaration where the
+     error occurred."))
+
   (:documentation
    "Base condition class for semantic errors."))
 
@@ -140,7 +154,7 @@
 
 (defmethod error-description ((err alias-taken-error))
   (format nil "Cannot add alias ~a for module ~a as it is already an alias for another module, in module ~a."
-          (alias err) (module-name err) (name (node-table err))))
+          (node err) (module-name err) (name (node-table err))))
 
 
 (define-condition import-node-error (node-exists-error)
