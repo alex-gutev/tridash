@@ -135,18 +135,15 @@
 
 (defun coalesce-node-links (node)
   "Replaces the `node-link' objects, within the value functions of
-   NODE, which do not directly reference another node, with the value
-   functions stored in them. Merges multiple `node-link' objects which
-   refer to the same node into one `node-link' object and amends the
-   dependency set of NODE such that each node in it is mapped to a
-   single `node-link' object."
+   NODE, which do not directly reference another node, with their
+   contents."
 
   (when (node? node)
     (with-slots (contexts) node
       (labels ((remove-node-links (fn)
                  "Replaces all `node-link' objects (within the value
-                function FN), which do not directly reference another
-                node, with their contents."
+                  function FN), which do not directly reference
+                  another node, with their contents."
 
                  (match fn
                    ((list* meta-node operands)
