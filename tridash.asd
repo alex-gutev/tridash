@@ -40,7 +40,6 @@
                (:file "modules")
                (:file "outer-nodes")
                (:file "builder")
-               (:file "wait-set")
                (:file "coalescer")
                (:file "prog-builder")
 
