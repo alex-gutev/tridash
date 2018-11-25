@@ -153,6 +153,7 @@
    ;; Frontend State
    :module-table
    :modules
+   :get-module
 
    ;; Builder
    :build-graph

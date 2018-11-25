@@ -44,7 +44,7 @@
     "Id of the corresponding HTML element."))
 
   (:documentation
-   "An `HTML-NODE' is a node which corresponds directly to an HTML
+   "A node referencing an HTML element or an attribute of an HTML
     element."))
 
 (defclass html-component-node (node)
@@ -52,15 +52,14 @@
     :initarg :element-node
     :accessor element-node
     :documentation
-    "The PLUMP HTML element node.")))
+    "The PLUMP HTML element node."))
 
+  (:documentation
+   "A node storing an HTML element which is inserted in another HTML
+    element as a component."))
 
 
 (defvar *global-module-table* nil)
-
-(defvar *runtime-library-path* "tridash.js"
-  "Path to the Tridash runtime library which will be referenced,
-   using a script tag, in the output HTML file.")
 
 (defvar *html-id-counter* 0
   "Counter for automatically generated HTML element id's. The value of
@@ -71,10 +70,31 @@
 ;;;; Building HTML files
 
 (define-file-builder (html htm) (file modules options)
-  (destructuring-bind (&key (node-name (symbol-name (gensym "HTML-COMP")))) options
-    (-<>> (build-html-file file modules)
-          (make-instance 'html-component-node :element-node)
-          (add-node (id-symbol node-name) <> (node-table modules)))))
+  (destructuring-bind (&key node-name) options
+    (multiple-value-bind (module name) (html-node-name node-name)
+     (-<>> (build-html-file file modules)
+           (make-instance 'html-component-node :element-node)
+           (add-node (id-symbol name) <> (get-module module modules))))))
+
+(defun html-node-name (name)
+  "Returns the name of the module and the name of the
+   HTML-COMPONENT-NODE which should be created for the HTML file being
+   processed. If NAME is a list of two elements the first element is
+   returned as the module identifier and the second element as the
+   node name. If NAME is a string or symbol :INIT is returned as the
+   module identifier and NAME is returned as the node name. If NAME is
+   NIL, :INIT is returned as the module identifier and a unique
+   node-name is generated."
+
+  (ematch name
+    ((list module name)
+     (values module name))
+
+    ((or (type string) (type symbol))
+     (values :init name))
+
+    (nil
+     (values :init (gensym "HTML-COMP")))))
 
 
 (defgeneric build-html-file (file module-table)
@@ -133,10 +153,9 @@
           (let ((html-id (html-element-id element)))
             (make-html-element-node html-id tag *global-module-table*)
 
-            (bind-html-node
-             (make-html-attribute-node html-id tag key *global-module-table*)
-             it
-             *global-module-table*))
+            (-> (make-html-attribute-node html-id tag key *global-module-table*)
+                (bind-html-node it *global-module-table*)))
+
           (setf (gethash key attributes) ""))))
 
     (call-next-method element :clone nil)))
@@ -153,44 +172,46 @@
 ;;; Creating HTML nodes
 
 (defun make-html-element-node (html-id tag module-table)
-  "Builds the node corresponding to the HTML element with id HTML-ID."
+  "Builds the node referencing the HTML element with id HTML-ID."
 
-  (let ((node (build-node (id-symbol html-id) module-table)))
-    (setf (gethash :no-coalesce (attributes node)) t)
-
-    (unless (typep node 'html-node)
-      (change-class node 'html-node
-                    :tag-name tag
-                    :element-id html-id))))
+  (-> (build-node (id-symbol html-id) module-table)
+      (node->html-node :tag-name tag :element-id html-id)))
 
 (defun make-html-attribute-node (html-id tag attribute module-table)
-  "Builds the subnode corresponding to the attribute ATTRIBUTE of the
-   HTML element HTML-ID."
+  "Builds the subnode referencing the attribute ATTRIBUTE of the HTML
+   element with id HTML-ID."
 
   (multiple-value-bind (node table)
-      (build-node (list +subnode-operator+ (id-symbol html-id) (id-symbol attribute)) module-table)
+      (-> (list +subnode-operator+ (id-symbol html-id) (id-symbol attribute))
+          (build-node module-table))
 
     (add-input node table)
-    (setf (gethash :no-coalesce (attributes node)) t)
 
-    (unless (typep node 'html-node)
-      (change-class node 'html-node
-                    :tag-name tag
-                    :html-attribute attribute
-                    :element-id html-id))
+    (node->html-node node
+                     :tag-name tag
+                     :html-attribute attribute
+                     :element-id html-id)
 
     node))
+
+(defun node->html-node (node &rest args)
+  "If NODE is an ordinary node changes its type to `HTML-NODE'"
+
+  (setf (gethash :no-coalesce (attributes node)) t)
+
+  (unless (typep node 'html-node)
+    (apply #'change-class node 'html-node args)))
 
 (defun bind-html-node (html-node decl module-table)
   "Establishes a two-way binding between the HTML node object
    HTML-NODE and the node declaration DECL."
 
   (let ((name (name html-node)))
+    (build-node `(,+bind-operator+ ,decl ,name) module-table)
+
     (handler-case
         (build-node
-         `(,+list-operator+
-           (,+bind-operator+ ,decl ,name)
-           (,+bind-operator+ ,name ,decl))
+         `(,+bind-operator+ ,name ,decl)
          module-table)
 
       (target-node-error ()))))
@@ -212,10 +233,9 @@
           ((extract-tridash-node text)
            (let ((html-id (html-element-id *parent-html-node*)))
              (make-html-element-node html-id tag-name *global-module-table*)
-             (bind-html-node
-              (make-html-attribute-node html-id tag-name "textContent" *global-module-table*)
-              it
-              *global-module-table*))
+
+             (-> (make-html-attribute-node html-id tag-name "textContent" *global-module-table*)
+                 (bind-html-node it *global-module-table*)))
 
            (plump:make-text-node *parent-html-node*))
 
@@ -289,7 +309,7 @@
 
 (defun process-script (text-node)
   "Parses the text content of a script tag as tridash code, and adds
-   the node definitions to *GLOBAL-NODE-TABLE*. TEXT-NODE is the
+   the node definitions to *GLOBAL-MODULE-TABLE*. TEXT-NODE is the
    text-node child of the script tag."
 
   (let ((text (plump:text text-node)))
