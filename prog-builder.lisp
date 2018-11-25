@@ -23,7 +23,13 @@
 
 ;;;; Compiler Interface
 
-(defun build-program (&key inputs outputs output-file files)
+(defun build-program (&key inputs outputs files)
+  "Builds the node definitions parsed from the files in FILES. Each
+   element in FILES is either a path to a source file or a list of
+   which the first element is a path and the remaining elements are
+   options passed to the file builder. INPUTS and OUTPUTS are
+   currently unused. Returns the module table."
+
   (let ((modules (make-instance 'module-table)))
     (iter
       (for file in files)
