@@ -32,16 +32,19 @@
                (maphash-values (curry #'lazy? node) (contexts node)))
 
              (lazy? (node context)
-               "Returns true if NODE should be evaluated lazily."
+               "Returns true if NODE should be evaluated lazily in the
+                context CONTEXT."
 
                (ensure-gethash
                 context lazy-nodes
                 (let ((observers (context-observers node context)))
-                  (when (rest observers)
+                  (when observers
                     (loop for (observer link) in observers
-                       always (or (not (unconditional-binding? link observer))
-                                  (lazy? observer
-                                         (context observer (node-link-context link)))))))))
+                       always
+                         (or (not (unconditional-binding? link observer))
+                             (->> (node-link-context link)
+                                  (context observer)
+                                  (lazy? observer))))))))
 
              (context-observers (node context)
                "Returns a list of the observer nodes of NODE at
@@ -53,8 +56,9 @@
                          (collect (list observer link))))))
 
              (unconditional-binding? (link observer)
-               "Returns true if the value of DEPENDENCY is used
-                unconditionally in the value function of OBSERVER."
+               "Returns true if the value of the node with link LINK
+                is used unconditionally in the value function of
+                OBSERVER."
 
                (let ((context (context observer (node-link-context link))))
                  (aprog1 (has-node link (value-function context))
@@ -71,6 +75,9 @@
 
                  ((list* 'if cond _)
                   (has-node link cond))
+
+                 ((list* (or 'and 'or) first _)
+                  (has-node link first))
 
                  ((list* _ operands)
                   (some (curry #'has-node link) operands)))))
