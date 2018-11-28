@@ -28,25 +28,61 @@
   "Global node table variable.")
 
 
+(defvar *node-ids* nil
+  "Hash-table mapping node-objects to their indices within the node
+   table object.")
+
 (defvar *node-link-indices* nil
   "Hash-table storing the dependency indices of each dependency of
-   each node. Each key is a `NODE' object and the corresponding value
-   is a hash-table mapping `NODE-LINK' objects (of the dependency
-   nodes) to their dependency index.")
+   each node context. Each key is a `NODE-CONTEXT' object and the
+   corresponding value is a hash-table mapping `NODE-LINK' objects (of
+   the dependency node) to their dependency index.")
 
 (defvar *meta-node-ids*
   "Hash-table mapping `META-NODE' objects to global meta-node function
    identifiers.")
 
-(defvar *meta-node-types* (make-hash-table :test #'eq))
+(defvar *meta-node-types* (make-hash-table :test #'eq)
+  "Hash-table mapping `META-NODE' objects to the the symbols SYNC or
+   ASYNC indicating whether the meta-node is evaluated synchronously
+   or asynchronously.")
+
+(defvar *lazy-nodes* nil
+  "Hash-table of nodes which should be evaluated lazily. If a node
+   should be evaluated lazily it is present in the table with the
+   corresponding value T.")
+
+(defvar *context-ids* nil
+  "Hash-table containing the context identifiers of each context of
+   each node. Each key is a `NODE' object and the corresponding value
+   is a hash-table mapping context identifiers to their JS
+   identifiers.")
+
+(defvar *context-counter* 0
+  "Counter for generating globally unique context identifiers")
 
 
-;;;; Utilities
+;;;; Code Generation Flags
+
+(defvar *debug-info-p* nil
+  "Flag: If true debug information, such as the names of the nodes is
+   included in the generated code.")
+
+
+;;;; Code Array
+
+(defvar *output-code* nil
+  "Array into which the output JavaScript AST nodes are added.")
 
 (defun make-code-array ()
   "Creates an empty array suitable for pushing JavaScript AST nodes to
    it."
   (make-array 0 :adjustable t :fill-pointer t))
+
+(defun append-code (&rest asts)
+  "Appends each ast node in ASTS to the *OUTPUT-CODE* array."
+
+  (mapc (rcurry #'vector-push-extend *output-code*) asts))
 
 
 ;;;; Compilation
@@ -55,16 +91,23 @@
   "Compile the node and meta-node definitions, in the `NODE-TABLE'
    TABLE, to JavaScript."
 
-  (let ((*node-link-indices* (make-hash-table :test #'eq))
+  (let ((*node-ids* (make-hash-table :test #'eq))
+        (*node-link-indices* (make-hash-table :test #'eq))
         (*meta-node-ids* (make-hash-table :test #'eq))
-        (code (make-preamble)))
+        (*context-ids* (make-hash-table :test #'eq))
+        (*lazy-nodes* (find-lazy-nodes table))
+        (*context-counter* 0)
+        (*output-code* (make-code-array)))
 
-    (dohash (nil module (modules table))
-      (generate-code module code))
+    (make-preamble)
+    (maphash-values #'generate-code (modules table))
 
-    (print-output-code code options table)))
+    (print-output-code *output-code* options table)))
 
 (defun print-output-code (code options module-table)
+  "Prints the JavaScript code represented by the AST nodes in CODE to
+   *STANDARD-OUTPUT*."
+
   (destructuring-bind (&key (type :code) main-ui) options
     (case type
       (:html
@@ -76,19 +119,15 @@
        (output-code code)))))
 
 (defun get-root-node (node module-table)
+  "Gets the root HTML node specified by NODE."
+
   (destructuring-bind (module node) node
-    (->> (tridash.frontend::get-module module module-table)
+    (->> (get-module module module-table)
          (tridash.frontend::lookup-node node)
          (element-node))))
 
 
-(defvar *context-ids* nil
-  "Hash-table containing the context identifiers of each context of
-   each node. Each key is a `NODE' and the corresponding value is a
-   hash-table mapping context identifiers to their JS identifiers.")
-
-(defvar *context-counter* 0
-  "Counter for generating globally unique context identifiers")
+;;; Context Identifiers
 
 (defun global-context-id ()
   "Returns a new unique global context identifier."
@@ -116,73 +155,68 @@
               (context-js-id node context-id)))
 
 
-(defvar *lazy-nodes* nil
-  "Hash-table of nodes which should be evaluated lazily. If a node
-   should be evaluated it is present in the table with the
-   corresponding value T.")
+;;; Querying for Lazy Evaluation
 
 (defun lazy-node? (context)
-  "Returns true if NODE should be evaluated lazily. NODE should be
-   evaluated lazily if it is present in *LAZY-NODES* (with value T)
-   and has a non-NIL value function."
+  "Returns true if the CONTEXT should be evaluated lazily. CONTEXT
+   should be evaluated lazily if it is present in *LAZY-NODES* (with
+   value T) and has a non-NIL value function."
 
   (and (gethash context *lazy-nodes*)
        (value-function context)))
 
-(defun generate-code (table &optional (code (make-array 0 :adjustable t :fill-pointer t)))
+
+;;;; Code Generation
+
+(defun generate-code (table)
   "Generates the JavaScript code for the node and meta-node
    definitions in the `NODE-TABLE' TABLE."
 
-  (let ((*lazy-nodes* (find-lazy-nodes table))
-        (*context-ids* (make-hash-table :test #'eq))
-        (*context-counter* 0))
-    (with-slots (nodes meta-nodes) table
-      (create-nodes nodes code)
-      (create-meta-nodes meta-nodes code)
+  (with-slots (nodes meta-nodes) table
+    (create-nodes nodes)
+    (create-meta-nodes meta-nodes)
 
-      (init-nodes nodes code)
+    (init-nodes nodes)))
 
-      code)))
-
-(defun make-preamble (&optional (code (make-code-array)))
+(defun make-preamble ()
   "Creates the code which should appear before any node
    definitions. Currently this contains only the declaration of the
    node table variable."
 
-  (vector-push-extend
-   (js-var *node-table-var* (js-object))
-   code)
-
-  code)
+  (append-code
+   (js-var *node-table-var* (js-object))))
 
 
 ;;;; Creating nodes
 
-(defun create-nodes (nodes code)
+(defun create-nodes (nodes)
   "Generate the node creation code of each `NODE' in NODES."
 
-  (maphash-values (rcurry #'create-node code) nodes)
-  code)
+  (maphash-values #'create-node nodes))
 
-(defgeneric create-node (node &optional code)
+(defgeneric create-node (node)
   (:documentation
    "Generate the node creation code of NODE. This includes the
     creation of the node, its dependency queues and its value
     computation function, however it does not include the binding of
     the node to its observers."))
 
-(defmethod create-node (node &optional (code (make-code-array)))
-  "Generate the node creation code, which creates dependency queues
-   and the value computation function."
+(defmethod create-node (node)
+  "Generate the node creation code, which creates the dependency
+   queues and the value computation function."
 
   (let ((path (node-path node)))
-    (vector-push-extend (js-call '= path (js-new +node-class+)) code)
-    (vector-push-extend (js-call '= (js-member path "name") (js-string (name node))) code)
-    (maphash (rcurry #'create-context node code) (contexts node))))
+    (append-code
+     (js-call '= path (js-new +node-class+)))
+
+    (when *debug-info-p*
+      (js-call '= (js-member path "name") (js-string (name node))))
+
+    (maphash (rcurry #'create-context node) (contexts node))))
 
 
-(defun create-context (id context node &optional (code (make-code-array)))
-  "Generates the initialization code for a `NODE-CONTEXT' ID is the
+(defun create-context (id context node)
+  "Generates the initialization code for a `NODE-CONTEXT'. ID is the
    context identifier, CONTEXT is the `NODE-CONTEXT' itself and NODE
    is the `NODE' to which the context belongs."
 
@@ -192,16 +226,16 @@
         (context-path (context-path node id)))
 
     (with-slots (operands) context
-      (vector-push-extend
+      (append-code
        (lexical-block
-        (js-var "context" (js-call (js-member "NodeContext" "create")
-                                   node-path (hash-table-count operands) (global-context-id)))
+        (js-var "context"
+                (js-call (js-member "NodeContext" "create")
+                         node-path (hash-table-count operands) (global-context-id)))
 
         (awhen (create-compute-function context)
           (js-call '= (js-member "context" "compute") it))
 
-        (js-call '= context-path "context"))
-       code))))
+        (js-call '= context-path "context"))))))
 
 
 (defun establish-dependency-indices (context)
@@ -220,11 +254,11 @@
 
 ;;;; Creating meta-nodes
 
-(defun create-meta-nodes (meta-nodes &optional (code (make-code-array)))
+(defun create-meta-nodes (meta-nodes)
   "Generates the meta-node functions of each `META-NODE' in META-NODES."
 
-  (dohash (nil meta-node meta-nodes code)
-    (vector-push-extend (create-meta-node meta-node) code)))
+  (dohash (nil meta-node meta-nodes)
+    (append-code (create-meta-node meta-node))))
 
 (defun create-meta-node (meta-node)
   "Generates the meta-node function of META-NODE."
@@ -236,7 +270,7 @@
      (create-async-meta-node meta-node))))
 
 
-(defun async-mete-node? (meta-node)
+(defun async-meta-node? (meta-node)
   (eq (meta-node-type meta-node) 'async))
 
 (defgeneric meta-node-type (meta-node)
@@ -270,39 +304,33 @@
 
 ;;;; Generate dispatch methods
 
-(defun init-nodes (nodes &optional (code (make-code-array)))
+(defun init-nodes (nodes)
   "Generates the initialization code of each `NODE' in NODES."
 
-  (maphash-values (rcurry #'init-node code) nodes)
-  code)
+  (maphash-values #'init-node nodes))
 
-(defun init-node (node &optional (code (make-code-array)))
+(defun init-node (node)
   "Generates the initialization code of NODE. This includes the
-   binding of the node to its observers and the initialization of the
-   wait set."
+   binding of the node to its observers."
 
-  (maphash (rcurry #'init-context node code) (contexts node))
-  code)
+  (maphash (rcurry #'init-context node) (contexts node)))
 
-(defun init-context (context-id context node code)
+(defun init-context (context-id context node)
   "Generates the initialization code of the node context CONTEXT, with
    identifier CONTEXT-ID, of the node NODE."
 
-  (bind-observers node context-id context code))
+  (bind-observers node context-id context))
 
-(defun bind-observers (node context-id context code)
+(defun bind-observers (node context-id context)
   "Generates code which binds the `NODE' NODE to its observers."
 
   (let* ((context-path (context-path node context-id)))
 
-    (with-slots (operands) context
-      (with-slots (observers) node
-        (dohash (observer link (observers node))
-          (unless (gethash observer operands)
-            (vector-push-extend
-             (js-call
-              (js-member context-path "add_observer")
-              (context-path observer (node-link-context link))
-              (dependency-index (context observer (node-link-context link))
-                                node))
-             code)))))))
+    (dohash (observer link (observers node))
+      (unless (gethash observer (operands context))
+        (with-accessors ((link-context node-link-context)) link
+         (append-code
+          (js-call
+           (js-member context-path "add_observer")
+           (context-path observer link-context)
+           (dependency-index (context observer link-context) node))))))))

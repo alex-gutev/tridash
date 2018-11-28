@@ -28,7 +28,12 @@
 (defun access-node (node)
   "Returns an expression which references NODE."
 
-  (js-element *node-table-var* (js-string (name node))))
+  (js-element *node-table-var* (node-index node)))
+
+(defun node-index (node)
+  "Returns the index of NODE within the node table variable."
+
+  (ensure-gethash node *node-ids* (hash-table-count *node-ids*)))
 
 (defparameter *node-path* #'access-node
   "Function which takes a node as an argument and returns an
@@ -90,7 +95,7 @@
    meta-node call expression."
 
   (let ((call (make-js-call (meta-node-id meta-node) operands)))
-    (if (async-mete-node? meta-node)
+    (if (async-meta-node? meta-node)
         (cons 'async call)
         call)))
 
@@ -124,7 +129,7 @@
 
       (with-slots (value-function) context
         (labels ((get-input (link)
-                   (cdr (assoc (name (node-link-node link)) op-vars)))
+                   (cdr (assoc (name (node-link-node link)) op-vars :test #'equal)))
 
                  (make-meta-node-call (node operands)
                    (if (and *in-tail-position* (not *in-async*) (eq node meta-node))
@@ -138,13 +143,14 @@
           (let* ((*meta-node-call* #'make-meta-node-call)
                  (body (make-function-body value-function #'get-input)))
 
-            (js-function (meta-node-id meta-node)
-                         (mapcar #'cdr op-vars)
-                         (list
-                          (create-meta-nodes (meta-nodes (definition meta-node)))
-                          (if tail-recursive-p
-                              (js-while "true" body)
-                              body)))))))))
+            (create-meta-nodes (meta-nodes (definition meta-node)))
+
+            (js-function
+             (meta-node-id meta-node)
+             (mapcar #'cdr op-vars)
+             (if tail-recursive-p
+                 (list (js-while "true" body))
+                 body))))))))
 
 (defun create-async-meta-node (meta-node)
   "Generates the value-function of the `meta-node'. Unlike
@@ -154,95 +160,106 @@
    returns a promise which is resolved when the value of the meta-node
    is computed. This function can be used to compile any meta-node."
 
-  (let ((*node-link-indices* (make-hash-table :test #'eq)))
+  (with-slots (definition operands) meta-node
+    (symbol-macrolet ((promise-var "promise"))
 
-    (with-slots (definition operands) meta-node
-      (symbol-macrolet ((promise-var "promise"))
+      (let ((*node-path* (lambda (node)
+                           (if (eq node meta-node) "self"
+                               (access-node node))))
+            (*node-ids* (make-hash-table :test #'eq)))
 
-        (let ((*node-path* (lambda (node)
-                             (if (eq node meta-node) "self"
-                                 (access-node node)))))
+        (labels
+            ((get-operand (operand)
+               "Returns an expression accessing the operand node named
+                by OPERAND."
 
-          (labels
-              ((get-operand (operand)
-                 "Returns an expression accessing the operand node
-                  named by OPERAND."
-                 (js-element *node-table-var* (js-string operand)))
+               (node-path operand))
 
-               (operand-node-var (operand)
-                 "Returns a JS array with two elements: the operand
-                  node and the variable storing the operand's value."
-                 (js-array (list (get-operand (car operand))
-                                 (cdr operand))))
+             (operand-node-var (operand)
+               "Returns a JS array with two elements: the operand node
+                and the variable storing the operand's value."
 
-               (make-meta-node-call (node operands)
-                 "Generates an expression which invokes the meta-node
-                  NODE with operands OPERANDS. If in tail position a
-                  tail call is generated."
+               (js-array (list (get-operand (car operand))
+                               (cdr operand))))
 
-                 (if (and *in-tail-position* (async-mete-node? node))
-                     (make-tail-call node operands)
-                     (meta-node-call node operands)))
+             (make-meta-node-call (node operands)
+               "Generates an expression which invokes the meta-node
+                NODE with operands OPERANDS. If in tail position a
+                tail call is generated."
 
-               (make-tail-call (node operands)
-                 "Generates a tail call for the meta-node NODE with
-                  operands OPERANDS. The tail call reuses the existing
-                  promise and if it is a self-call the existing node
-                  table is reused."
+               (if (and *in-tail-position* (async-meta-node? node))
+                   (make-tail-call node operands)
+                   (meta-node-call node operands)))
 
-                 (js-block
-                  (cdr (meta-node-call node (append operands
-                                                    (list promise-var)
-                                                    (when (eq node meta-node)
-                                                      (list *node-table-var*)))))
-                  (js-throw (js-new "EndUpdate"))))
+             (make-tail-call (node operands)
+               "Generates a tail call for the meta-node NODE with
+                operands OPERANDS. The tail call reuses the existing
+                promise and if it is a self-call the existing node
+                table is reused."
 
-               (create-value-node ()
-                 "Generates the definition of the value node."
+               (js-block
+                (->> (when (eq node meta-node)
+                       (list *node-table-var*))
 
-                 (list
-                  (js-var "self")
-                  (let ((*meta-node-call* #'make-meta-node-call))
-                    (create-node meta-node))
+                     (append operands (list promise-var))
+                     (meta-node-call node)
+                     (cdr))
+                (js-throw (js-new "EndUpdate"))))
 
-                  (init-node meta-node)
-                  (create-compute-fn)))
+             (create-value-node ()
+               "Generates the definition of the value node."
 
-               (create-compute-fn ()
-                 "Generates the compute function of the value node."
+               (append-code (js-var "self"))
 
-                 (let ((path (node-path meta-node)))
-                   (js-call
-                    '=
-                    (js-member path "update_value")
-                    (js-lambda
-                     (list "value")
-                     (list
-                      (js-call (js-member promise-var "resolve") "value")))))))
+               (let ((*meta-node-call* #'make-meta-node-call))
+                 (create-node meta-node))
+
+               (init-node meta-node)
+               (create-update-fn))
+
+             (create-update-fn ()
+               "Generates the update value function of the value
+                node."
+
+               (let ((path (node-path meta-node)))
+                 (append-code
+                  (js-call
+                   '=
+                   (js-member path "update_value")
+                   (js-lambda
+                    (list "value")
+                    (list
+                     (js-call (js-member promise-var "resolve") "value"))))))))
 
 
-            (let ((op-vars (make-operand-ids operands)))
-              (js-function
-               (meta-node-id meta-node)
-               (append (mapcar #'cdr op-vars)
-                       (list (js-call '= promise-var (js-new "ValuePromise"))
-                             *node-table-var*))
+          (let ((op-vars (make-operand-ids operands))
+                (node-creation-code (make-code-array)))
 
-               (list
-                ;; Wrap node table creation in an if which checks
-                ;; whether a node table was provided as an argument.
-                (js-if
-                 (js-call '=== *node-table-var* "undefined")
-                 (js-block
-                  (js-call '= *node-table-var* (js-object))
-                  (create-value-node)
-                  (generate-code definition)))
+            (let ((*output-code* node-creation-code))
+             (append-code
+              (js-call '= *node-table-var* (js-object)))
 
-                (js-call
-                 (js-member +node-class+ "set_values")
-                 (js-array (mapcar #'operand-node-var op-vars)))
+             (create-value-node)
+             (generate-code definition))
 
-                (js-return (js-member "promise" "promise")))))))))))
+            (js-function
+             (meta-node-id meta-node)
+             (append (mapcar #'cdr op-vars)
+                     (list (js-call '= promise-var (js-new "ValuePromise"))
+                           *node-table-var*))
+
+             (list
+              ;; Wrap node table creation in an if which checks
+              ;; whether a node table was provided as an argument.
+              (js-if
+               (js-call '=== *node-table-var* "undefined")
+               (make-js-block node-creation-code))
+
+              (js-call
+               (js-member +node-class+ "set_values")
+               (js-array (mapcar #'operand-node-var op-vars)))
+
+              (js-return (js-member "promise" "promise"))))))))))
 
 (defun make-operand-ids (operands)
   "Generates variable names for each operand. Returns an association
@@ -294,6 +311,9 @@
                    body)))))))))
 
 (defun make-link-expression (context link &optional (values-var "values"))
+  "Creates an expression which references the node with `NODE-LINK'
+   LINK linked to the context CONTEXT."
+
   (with-accessors ((link-node node-link-node)) link
     (alet (js-element values-var (dependency-index context link-node))
       ;; If the linked node is lazily evaluated, evaluate the
@@ -325,8 +345,8 @@
 (defun make-statements (fn)
   "Generates the statements making up the body of the value
    function/expression FN, the list of statements is returned. The
-   list includes a statement which stores the result computed by the
-   expression in *RETURN-VARIABLE*, or returns the result directly if
+   list includes a statement which stores the result, computed by the
+   expression, in *RETURN-VARIABLE*, or returns the result directly if
    *RETURN_VARIABLE* is NIL."
 
   (multiple-value-call #'add-to-block (make-expression fn)))
@@ -353,15 +373,15 @@
   "Generates the code for a single expression
    FN. :RETURN-VARIABLE (bound to *RETURN-VARIABLE*) is the name of
    the variable in which the result should be stored (NIL if it should
-   be returned directly). :TAILP (bound to *IN-TAIL-POSITION*) if a
+   be returned directly). :TAILP (bound to *IN-TAIL-POSITION*) is a
    flag for whether FN occurs in tail position.
 
    Returns two values: a block, which computes the result and an
    expression for referencing that value. If FN is compiled to a
    single expression, the first return value is NIL and the second
-   value is the expression. If VAR is NIL and FN is not compiled to a
-   single expression, the second return value is NIL as the block
-   returned in the first value contains a return statement."
+   value is the expression. If :RETURN-VARIABLE is NIL and FN is not
+   compiled to a single expression, the second return value is NIL as
+   the block returned in the first value contains a return statement."
 
   (match fn
     ((list* operator operands)
@@ -392,10 +412,10 @@
 (defgeneric make-operator-expression (operator operands)
   (:documentation
    "Generates the code for the value expression with operator OPERATOR
-   and operands OPERANDS. Returns two values: a block which computes
-   the value of the expression (NIL if the expression can be compiled
-   to a single JS expression) and an expression for referencing the
-   value computed by the expression."))
+    and operands OPERANDS. Returns two values: a block which computes
+    the value of the expression (NIL if the expression can be compiled
+    to a single JS expression) and an expression for referencing the
+    value computed by the expression."))
 
 
 ;;; Conditions
@@ -428,11 +448,11 @@
 ;;; Objects
 
 (defmethod make-operator-expression ((operator (eql :object)) operands)
-  "Generates an expression which returns an object containing the
-   value of each output node (in OPERANDS) of the meta node instance."
+  "Generates an expression which returns an object containing each
+   field-value pair in OPERANDS."
 
-  (let ((keys (mapcar #'car operands))
-        (values (mapcar #'cadr operands)))
+  (let ((keys (mapcar #'first operands))
+        (values (mapcar #'second operands)))
     (make-operands
      values
      (lambda (values)
@@ -442,7 +462,7 @@
 
 (defmethod make-operator-expression ((operator (eql :member)) operands)
   "Generates an expression which returns the value of a particular
-   output node of the meta node instance."
+   subnode (field) of an object node."
 
   (destructuring-bind (object member) operands
     (let ((object-var (var-name)))
@@ -486,6 +506,11 @@
    nil
    (js-call "parseInt" expression)))
 
+(defmethod convert-type ((type (eql :real)) expression)
+  (values
+   nil
+   (js-call "parseFloat" expression)))
+
 
 ;;; Meta-Node Expressions
 
@@ -510,16 +535,16 @@
    Two values are returned, a block which computes the values of the
    operands, and an expression.
 
-   If all operands are synchronous expression: the block returned
+   If all operands are synchronous expressions: the block returned
    contains the statements of the block which computes the operands'
    values and the block returned by BODY-FN. The expression returned
    by BODY-FN is returned.
 
-   If there is at least one of the operands is an asynchronous
-   expression: the block returned is the block which computes the
-   operand values, and the expression is a Promise with a then handler
-   function that contains the block returned by BODY-FN followed by a
-   return statement, which returns the expression returned by BODY-FN."
+   If at least one of the operands is an asynchronous expression: the
+   block returned is the block which computes the operand values, and
+   the expression is a Promise with a then handler function that
+   contains the block returned by BODY-FN followed by a return
+   statement, which returns the expression returned by BODY-FN."
 
   (iter
     (for operand in operands)
@@ -573,8 +598,8 @@
    either be a list or a single variable name."
 
   (let*-if ((args (js-array expressions) expressions)
-           (promise (js-call (js-member "Promise" "all") args) expressions)
-           (vars (js-array vars) vars))
+            (promise (js-call (js-member "Promise" "all") args) expressions)
+            (vars (js-array vars) vars))
 
       (listp expressions)
 
@@ -613,7 +638,7 @@
 ;;;; Using Expressions
 
 (defun use-expression (expression body-fn)
-  "Calls the BODY-FN with an expression which references the value
+  "Calls BODY-FN with an expression which references the value
    computed by EXPRESSION. BODY-FN should return two values a block
    and an expression.
 
@@ -653,6 +678,7 @@
 
       (multiple-value-bind (expression var)
           (get-expression expression)
+
         (when var
           (collect expression into promise-args)
           (collect var into fn-args))
@@ -662,12 +688,11 @@
         (finally
          (return
            (if promise-args
-               (values
-                nil
-                (cons 'async
-                      (make-promise promise-args fn-args (make-body-block body-fn body-args))))
-               (funcall body-fn body-args)
-               )))))))
+               (->> (make-body-block body-fn body-args)
+                    (make-promise promise-args fn-args)
+                    (cons 'async)
+                    (values nil))
+               (funcall body-fn body-args))))))))
 
 (defun value-expression? (thing)
   "Returns true if THING is a JS expression. Unlike EXPRESSIONP, this

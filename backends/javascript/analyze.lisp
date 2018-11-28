@@ -18,17 +18,20 @@
 
 (in-package :tridash.backend.js)
 
-(defun find-lazy-nodes (node-table)
-  "Determines which nodes in NODE-TABLE, and in which contexts, should
-   be evaluated lazily. A node should be evaluated lazily, in a
-   particular context, if each of its observers in the context should
-   be evaluated lazily or the binding to the observer node is
-   conditional. Returns a hash-table where each key is a node context
-   and the corresponding value is T if the node should be evaluated
-   lazily in the context, NIL otherwise."
+(defun find-lazy-nodes (module-table)
+  "Determines which nodes in all modules in MODULE-TABLE, and in which
+   contexts, should be evaluated lazily. A node should be evaluated
+   lazily, in a particular context, if each of its observers in the
+   context should be evaluated lazily or the binding to the observer
+   node is conditional. Returns a hash-table where each key is a node
+   context and the corresponding value is T if the node should be
+   evaluated lazily in the context, NIL otherwise."
 
   (let ((lazy-nodes (make-hash-table :test #'eq)))
-    (labels ((lazy-node? (node)
+    (labels ((find-lazy-nodes (node-table)
+               (maphash-values #'lazy-node? (nodes node-table)))
+
+             (lazy-node? (node)
                (maphash-values (curry #'lazy? node) (contexts node)))
 
              (lazy? (node context)
@@ -82,5 +85,5 @@
                  ((list* _ operands)
                   (some (curry #'has-node link) operands)))))
 
-      (maphash-values #'lazy-node? (nodes node-table))
+      (maphash-values #'find-lazy-nodes (modules module-table))
       lazy-nodes)))

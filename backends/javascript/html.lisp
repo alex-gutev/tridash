@@ -52,6 +52,10 @@
 ;;; Link Generated Code
 
 (defun create-html-file (code root-node)
+  "Embeds the generated code, in CODE, inside a script tag within the
+   head node of the HTML with document root ROOT-NODE. Serializes the
+   ROOT-NODE to standard output."
+
   (let ((head-tag (find-head-tag root-node)))
     (link-runtime-library *runtime-library-path* root-node)
     (plump:make-fulltext-element head-tag "script"
@@ -66,8 +70,8 @@
     (output-code code)))
 
 (defun output-code-to-string (code)
-  "Compiles the node definitions in GRAPH and returns a string of the
-   generated code."
+  "Returns a string containing the serialized JavaScript code from the
+   AST nodes in CODE."
 
   (with-output-to-string (*standard-output*)
     (output-code code)))
@@ -75,35 +79,33 @@
 
 ;;;; Compiling HTML nodes
 
-(defmethod create-node ((node html-component-node) &optional code)
-  (declare (ignore code))
-
+(defmethod create-node ((node html-component-node))
   ;; For now do nothing
   )
 
-(defmethod create-node ((node html-node) &optional (code (make-code-array)))
-  "Generates the node definition for a NODE which corresponds to an
-   HTML element."
+(defmethod create-node ((node html-node))
+  "Generates the node definition for a NODE which references an HTML
+   element."
 
   ;; Create base node definition first
   (call-next-method)
 
   (cond
     ((gethash :input (contexts node))
-     (make-input-html-node node code))
+     (make-input-html-node node))
 
     ((gethash :object (contexts node))
-     (make-output-html-node node code))))
+     (make-output-html-node node))))
 
-(defun make-input-html-node (node code)
-  "Generates the node definition for a node which corresponds to an
+(defun make-input-html-node (node)
+  "Generates the node definition for a node which references an
    attribute of an HTML element. The HTML element is retrieved and an
    event listener, for changes to the attribute's value, is attached."
 
   (let ((path (node-path node)))
     (with-slots (element-id tag-name html-attribute) node
       (when html-attribute
-        (vector-push-extend
+        (append-code
          (make-onloaded-method
           (list
            (make-get-element path element-id)
@@ -111,33 +113,28 @@
            (js-call '= (js-member path "value")
                     (js-members path "html_element" html-attribute))
 
-           (make-event-listener node html-attribute)))
-         code)))))
+           (make-event-listener node html-attribute))))))))
 
-(defun make-output-html-node (node code)
+(defun make-output-html-node (node)
   "Generates the node definition for a node which corresponds to an
    HTML element. The update_value method is overridden to update the
    attributes of the element."
 
   (let ((path (node-path node))
         (context (gethash :object (contexts node))))
+
     (with-slots (value-function) context
-      (vector-push-extend
+      (append-code
        (make-onloaded-method
         (list (make-get-element path (element-id node))))
-       code)
 
-      (vector-push-extend
        (js-call
         '=
         (js-member path "update_value")
         (js-lambda
          (list "value")
-         (mapcar (compose (curry #'make-set-attribute node "value") #'first) (rest value-function))
-         )
-        )
-       code)
-      )))
+         (-> (compose (curry #'make-set-attribute node "value") #'first)
+             (mapcar (rest value-function)))))))))
 
 (defun make-get-element (path id)
   "Generates code which retrieves a reference to the HTML element with
@@ -156,23 +153,10 @@
            (js-string "DOMContentLoaded")
            (js-lambda nil body)))
 
-(defun make-set-value (node)
-  "Generates a function which sets the attribute (stored in the
-   ATTRIBUTE slot) of the element corresponding to the HTML node
-   NODE."
-
-  (with-slots (attribute) node
-    (js-lambda
-     (list "value")
-     (list
-      (js-call '=
-               (js-members "this" "html_element" attribute)
-               "value")))))
-
 (defun make-set-attribute (node object attribute)
-  "Generates code which sets the attribute the attribute ATTRIBUTE of
-   the HTML element stored in the html_element field of NODE. OBJECT
-   is an expression referencing a JS object in which the value of the
+  "Generates code which sets the attribute ATTRIBUTE of the HTML
+   element, stored in the html_element field of NODE. OBJECT is an
+   expression referencing a JS object in which the value of the
    attribute (to be set) is stored in the field ATTRIBUTE."
 
   (let ((path (node-path node)))
@@ -180,36 +164,6 @@
      '=
      (js-members path "html_element" attribute)
      (js-member object attribute))))
-
-(defun make-set-attributes (node value-function)
-  (labels ((make-set-attribute (attribute)
-             (destructuring-bind (key value-fn) attribute
-               (let ((*get-input* (curry #'make-link-expression node))
-                     (return-var (var-name)))
-                 (multiple-value-bind (value-block value-expr)
-                     (make-expression value-fn :return-variable return-var :tailp nil)
-                   (multiple-value-call #'make-block
-                     value-block
-                     (use-expression
-                      value-expr
-                      (lambda (expr)
-                        (values
-                         (js-block (set-attribute-expression key expr))
-                         nil))))))))
-
-           (set-attribute-expression (attribute expr)
-             (js-call '=
-                      (js-members "self" "html_element" attribute)
-                      expr))
-
-           (make-block (block1 block2 expression)
-             (js-block block1 block2 expression)))
-
-    (js-lambda
-     (list "values")
-     (list*
-      (js-var "self" "this")
-      (mapcar #'make-set-attribute (rest value-function))))))
 
 
 (defparameter *html-events*
