@@ -129,9 +129,6 @@
    nodes."
 
   (with-slots (contexts operands) meta-node
-    (when (> (hash-table-count contexts) 1)
-      (error "Meta-node ~a has more than once context." (name meta-node)))
-
     (let ((context (first (hash-table-values contexts)))
           (op-vars (make-operand-ids operands))
           (tail-recursive-p nil))

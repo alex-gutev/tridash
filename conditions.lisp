@@ -271,5 +271,15 @@
     of a single node."))
 
 (defmethod error-description ((err ambiguous-context-error))
-  (format nil "Node ~a has two contexts activated by a single common ancestor."
+  (format nil "Node ~a has multiple contexts activated by a single common ancestor."
           (name (node err))))
+
+
+(define-condition ambiguous-meta-node-context (ambiguous-context-error) ()
+  (:documentation
+   "Error condition: Meta-node has more than a single context and thus
+    the value function of the meta-node is ambiguous."))
+
+(defmethod error-description ((e ambiguous-meta-node-context))
+  (format nil "The value function of meta-node ~a is ambiguous as it has multiple contexts."
+          (name (node e))))

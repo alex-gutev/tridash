@@ -176,7 +176,10 @@
                        (collect (list name (add-binding node meta-node :context nil :add-function nil))))))))
 
       ((and last-node (zerop (hash-table-count contexts)))
-       (add-binding last-node meta-node :context nil)))))
+       (add-binding last-node meta-node :context nil))
+
+      ((> (hash-table-count contexts) 1)
+       (error 'ambiguous-meta-node-context :node meta-node)))))
 
 
 ;;;; Methods: Processing Declaration
