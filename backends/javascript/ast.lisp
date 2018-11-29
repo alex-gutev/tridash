@@ -122,8 +122,14 @@
    block, using var statements are only visible within the block and
    shadow variables introduced in outer blocks."
 
-  (js-call (js-lambda nil statements)))
+  (make-lexical-block statements))
 
+(defun make-lexical-block (statements)
+  "Creates a lexically scoped block. All variables introduced in the
+   block, using var statements are only visible within the block and
+   shadow variables introduced in outer blocks."
+
+  (js-call (js-lambda nil statements)))
 
 ;;; Statements
 

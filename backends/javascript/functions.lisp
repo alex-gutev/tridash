@@ -21,6 +21,15 @@
 (in-package :tridash.backend.js)
 
 
+;;;; Symbol Names
+
+(defconstant +thunk-class+ (mkstr +tridash-prefix+ "Thunk")
+  "Thunk constructor function name.")
+
+(defconstant +end-update-class+ (mkstr +tridash-prefix+ "EndUpdate")
+  "EndUpdate class name.")
+
+
 ;;;; Utility Functions
 
 ;;; Access Node Expressions
@@ -204,7 +213,7 @@
                      (append operands (list promise-var))
                      (meta-node-call node)
                      (cdr))
-                (js-throw (js-new "EndUpdate"))))
+                (js-throw (js-new +end-update-class+))))
 
              (create-value-node ()
                "Generates the definition of the value node."
@@ -295,7 +304,7 @@
                    ;; If NODE should be evaluated lazily, wrap the compute
                    ;; function in a thunk and return it.
                    (if (lazy-node? context)
-                       (list (js-return (js-call "Thunk" (js-lambda nil it))))
+                       (list (js-return (js-call +thunk-class+ (js-lambda nil it))))
                        it))))
 
         (with-slots (value-function) context

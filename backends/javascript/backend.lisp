@@ -21,12 +21,22 @@
 (in-package :tridash.backend.js)
 
 
-(defconstant +node-class+ "TridashNode"
+;;;; Symbol Names
+
+(defconstant +tridash-prefix+ "Tridash."
+  "Namespace containing the Tridash runtime library definitions.")
+
+(defconstant +node-class+ (mkstr +tridash-prefix+ "Node")
   "Runtime node class name.")
+
+(defconstant +node-context-class+ (mkstr +tridash-prefix+ "NodeContext")
+  "Runtime node context class name.")
 
 (defvar *node-table-var* "node_table"
   "Global node table variable.")
 
+
+;;;; Backend State
 
 (defvar *node-ids* nil
   "Hash-table mapping node-objects to their indices within the node
@@ -62,7 +72,7 @@
   "Counter for generating globally unique context identifiers")
 
 
-;;;; Code Generation Flags
+;;; Code Generation Flags
 
 (defvar *debug-info-p* nil
   "Flag: If true debug information, such as the names of the nodes is
@@ -100,9 +110,9 @@
         (*output-code* (make-code-array)))
 
     (make-preamble)
-    (maphash-values #'generate-code (modules table))
 
-    (print-output-code *output-code* options table)))
+    (maphash-values #'generate-code (modules table))
+    (print-output-code (make-lexical-block *output-code*) options table)))
 
 (defun print-output-code (code options module-table)
   "Prints the JavaScript code represented by the AST nodes in CODE to
@@ -210,7 +220,8 @@
      (js-call '= path (js-new +node-class+)))
 
     (when *debug-info-p*
-      (js-call '= (js-member path "name") (js-string (name node))))
+      (append-code
+       (js-call '= (js-member path "name") (js-string (name node)))))
 
     (maphash (rcurry #'create-context node) (contexts node))))
 
@@ -229,7 +240,7 @@
       (append-code
        (lexical-block
         (js-var "context"
-                (js-call (js-member "NodeContext" "create")
+                (js-call (js-member +node-context-class+ "create")
                          node-path (hash-table-count operands) (global-context-id)))
 
         (awhen (create-compute-function context)
@@ -257,8 +268,7 @@
 (defun create-meta-nodes (meta-nodes)
   "Generates the meta-node functions of each `META-NODE' in META-NODES."
 
-  (dohash (nil meta-node meta-nodes)
-    (append-code (create-meta-node meta-node))))
+  (maphash-values (compose #'append-code #'create-meta-node) meta-nodes))
 
 (defun create-meta-node (meta-node)
   "Generates the meta-node function of META-NODE."

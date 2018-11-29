@@ -26,13 +26,19 @@
  * SOFTWARE.
  */
 
+
+/**
+ * Tridash Namespace.
+ */
+function Tridash() {}
+
 /**
  * Runtime Node.
  *
  * Stores the node link information (dependencies, observers, wait
  * sets), and the node's runtime state.
  */
-function TridashNode() {
+Tridash.Node = function() {
     /**
      * Node contexts.
      */
@@ -41,7 +47,7 @@ function TridashNode() {
     /**
      * The queue to which path reservations are queued.
      */
-    this.reserve_queue = new Queue();
+    this.reserve_queue = new Tridash.Queue();
 
     /**
      * Node Value.
@@ -62,7 +68,7 @@ function TridashNode() {
  * @param node        The node to which the context belongs.
  * @param context_id  Global unique context identifier.
  */
-function NodeContext(node, context_id) {
+Tridash.NodeContext = function(node, context_id) {
     /**
      * The node to which this context belongs.
      */
@@ -96,7 +102,7 @@ function NodeContext(node, context_id) {
      * the index within the observer context's 'operands' array.
      */
     this.observers = [];
-}
+};
 
 /**
  * Creates a new node context of node @a node, with a given number of
@@ -108,8 +114,8 @@ function NodeContext(node, context_id) {
  *
  * @return The node context.
  */
-NodeContext.create = function(node, num_operands, context_id) {
-    var context = new NodeContext(node, context_id);
+Tridash.NodeContext.create = function(node, num_operands, context_id) {
+    var context = new Tridash.NodeContext(node, context_id);
 
     context.operands.length = num_operands;
     context.operands.fill(null, 0);
@@ -123,7 +129,7 @@ NodeContext.create = function(node, num_operands, context_id) {
  * @param context The observer node's context.
  * @param index Index within the operands array of @a context.
  */
-NodeContext.prototype.add_observer = function(context, index) {
+Tridash.NodeContext.prototype.add_observer = function(context, index) {
     this.observers.push([context, index]);
 };
 
@@ -140,9 +146,9 @@ NodeContext.prototype.add_observer = function(context, index) {
  *
  * @param visited Visited set.
  */
-NodeContext.prototype.reserve = function(start, value, index, visited = {}) {
+Tridash.NodeContext.prototype.reserve = function(start, value, index, visited = {}) {
     if (!visited[this.context_id]) {
-        var promise = new ValuePromise();
+        var promise = new Tridash.ValuePromise();
 
         promise.promise = promise.promise
             .then(() => value)
@@ -151,7 +157,7 @@ NodeContext.prototype.reserve = function(start, value, index, visited = {}) {
         var reserve = {
             context: this,
             reserved: promise,
-            value: new ValuePromise(),
+            value: new Tridash.ValuePromise(),
             start: start.promise
         };
 
@@ -182,7 +188,7 @@ NodeContext.prototype.reserve = function(start, value, index, visited = {}) {
  *
  * @param visited Visited set.
  */
-NodeContext.prototype.reserveObservers = function(start, value, visited) {
+Tridash.NodeContext.prototype.reserveObservers = function(start, value, visited) {
     this.observers.forEach(([obs, index]) => obs.reserve(start, value, index, visited));
 };
 
@@ -192,7 +198,7 @@ NodeContext.prototype.reserveObservers = function(start, value, visited) {
  *
  * @return The new value of the node.
  */
-NodeContext.prototype.compute_value = function() {
+Tridash.NodeContext.prototype.compute_value = function() {
     return this.compute(this.operands);
 };
 
@@ -203,14 +209,14 @@ NodeContext.prototype.compute_value = function() {
 /**
  * Runs the update loop if it is not already running.
  */
-TridashNode.prototype.add_update = function() {
+Tridash.Node.prototype.add_update = function() {
     if (!this.running) this.update();
 };
 
 /**
  * Runs the update loop of the node, until the reserve queue is empty.
  */
-TridashNode.prototype.update = function() {
+Tridash.Node.prototype.update = function() {
     this.running = true;
 
     var reserve = this.reserve_queue.dequeue();
@@ -240,7 +246,7 @@ TridashNode.prototype.update = function() {
  *
  * @param value The new value of the node.
  */
-TridashNode.prototype.update_value = function(value) {};
+Tridash.Node.prototype.update_value = function(value) {};
 
 /**
  * Sets the value of the node. The node must be an input node and must
@@ -249,8 +255,8 @@ TridashNode.prototype.update_value = function(value) {};
  * A path, throughout the entire graph, is reserved, starting at the
  * current node with the input context.
  */
-TridashNode.prototype.set_value = function(value) {
-    var start = new ValuePromise();
+Tridash.Node.prototype.set_value = function(value) {
+    var start = new Tridash.ValuePromise();
 
     this.contexts["input"].reserve(start, value, 0);
     start.resolve(true);
@@ -264,8 +270,8 @@ TridashNode.prototype.set_value = function(value) {
  *   set. Each element is an array of two elements: the input node and
  *   its value.
  */
-TridashNode.set_values = function(node_values) {
-    var start = new ValuePromise();
+Tridash.Node.set_values = function(node_values) {
+    var start = new Tridash.ValuePromise();
     var visited = {};
 
     node_values.forEach(([node, value]) => {
@@ -280,7 +286,7 @@ TridashNode.set_values = function(node_values) {
  * invocation of the set_value method. The exception is caught in
  * order to prevent errors showing up in the console.
  */
-function EndUpdate() {}
+Tridash.EndUpdate = function() {};
 
 
 /**
@@ -293,31 +299,31 @@ function EndUpdate() {}
  *
  * @return The thunk function.
  */
-function Thunk(compute) {
+Tridash.Thunk = function(compute) {
     var value;
 
     return () => {
         return value || (value = compute());
     };
-}
+};
 
 /**
  * Value Promise.
  *
  * Creates a new promise object with resolve and reject methods.
  */
-function ValuePromise() {
+Tridash.ValuePromise = function() {
     this.promise = new Promise((resolve, reject) => {
         this.resolve = resolve;
         this.reject = reject;
     });
-}
+};
 
 /**
  * A simple implementation of an unbounded FIFO queue.
  */
 
-function Queue() {
+Tridash.Queue = function() {
     this.head = null;
     this.tail = null;
 
@@ -360,4 +366,4 @@ function Queue() {
     this.clear = function() {
         this.head = this.tail = null;
     };
-}
+};
