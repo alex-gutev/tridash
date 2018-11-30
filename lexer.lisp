@@ -27,6 +27,7 @@
                  :stream stream
                  :rules '(("(\\r\\n|\\n|\\r)+" . :newline)
                           ("\\s" . :skip)
+                          ("#.*?\\n" . :skip)
                           (";" . :terminate)
                           ("," . :comma)
                           ("\\(" . :open-paren)
