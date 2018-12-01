@@ -122,10 +122,11 @@
                      ;; Add OBSERVER to observers of DEPENDENCY
                      (setf (gethash observer (observers dependency)) link))))))))
 
-      (mapc #'begin-coalesce (input-nodes graph))
-      (maphash-values (compose #'coalesce-nodes #'definition) (meta-nodes graph))
+      (when graph
+        (mapc #'begin-coalesce (input-nodes graph))
+        (maphash-values (compose #'coalesce-nodes #'definition) (meta-nodes graph))
 
-      (maphash-values #'coalesce-node-links (all-nodes graph)))))
+        (maphash-values #'coalesce-node-links (all-nodes graph))))))
 
 (defun may-coalesce? (node)
   "Returns true if NODE may be coalesced into another node. Returns

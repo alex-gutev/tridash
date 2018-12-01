@@ -273,11 +273,12 @@
 (defun create-meta-node (meta-node)
   "Generates the meta-node function of META-NODE."
 
-  (case (meta-node-type meta-node)
-    (sync
-     (create-function-meta-node meta-node))
-    (async
-     (create-async-meta-node meta-node))))
+  (when (not (external-meta-node? meta-node))
+   (case (meta-node-type meta-node)
+     (sync
+      (create-function-meta-node meta-node))
+     (async
+      (create-async-meta-node meta-node)))))
 
 
 (defun async-meta-node? (meta-node)
@@ -288,7 +289,8 @@
    "Returns SYNC if the meta-node computes its value synchronously,
     ASYNC if the meta-node computes its value asynchronously.")
 
-  (:method ((meta-node symbol)) 'sync))
+  (:method ((meta-node symbol)) 'sync)
+  (:method ((meta-node external-meta-node)) 'sync))
 
 (defmethod meta-node-type ((meta-node meta-node))
   "Returns SYNC if `META-NODE' has no subnodes other than its operand

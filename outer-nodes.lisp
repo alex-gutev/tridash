@@ -74,68 +74,70 @@
              (visited? (meta-node)
                (gethash meta-node visited)))
 
-      (maphash-values #'get-outer-node-references (meta-nodes node-table))
-      (maphash-values (compose #'find-outer-node-references #'definition) (meta-nodes node-table)))))
+      (when node-table
+        (maphash-values #'get-outer-node-references (meta-nodes node-table))
+        (maphash-values (compose #'find-outer-node-references #'definition) (meta-nodes node-table))))))
 
 (defun add-outer-node-operands (node-table)
   "To each meta-node in node-table, appends the outer nodes referenced
    by it to the OPERANDS list and updates all instances of the
    meta-node to pass the values of the referenced nodes as arguments."
 
-  (labels ((add-outer-node-operands (meta-node)
-             "Appends the outer nodes referenced by META-NODE to the
+  (when node-table
+   (labels ((add-outer-node-operands (meta-node)
+              "Appends the outer nodes referenced by META-NODE to the
               OPERANDS list of META-NODE and updates all instances to
               pass the values of the nodes as arguments."
 
-             (with-slots (outer-nodes operands definition) meta-node
-               (multiple-value-bind (nodes info) (hash-table-keys-values outer-nodes)
-                 (let ((names (mapcar #'cdr info)))
-                   (appendf operands names)
-                   (add-operand-nodes names definition))
+              (with-slots (outer-nodes operands definition) meta-node
+                (multiple-value-bind (nodes info) (hash-table-keys-values outer-nodes)
+                  (let ((names (mapcar #'cdr info)))
+                    (appendf operands names)
+                    (add-operand-nodes names definition))
 
-                 (update-instances meta-node nodes))))
+                  (update-instances meta-node nodes))))
 
-           (update-instances (meta-node nodes)
-             "Updates each instance of META-NODE to pass the values of
+            (update-instances (meta-node nodes)
+              "Updates each instance of META-NODE to pass the values of
               each node in NODES as additional arguments."
 
-             (mapc (rcurry #'update-instance nodes meta-node) (instances meta-node)))
+              (mapc (rcurry #'update-instance nodes) (instances meta-node)))
 
-           (update-instance (instance nodes context)
-             "Binds each node in NODES to INSTANCE and appends the
+            (update-instance (instance nodes)
+              "Binds each node in NODES to INSTANCE and appends the
               values of NODES to the argument list of the meta-node,
               within the value function of INSTANCE. If INSTANCE is
               located inside another meta-node, the local nodes which
               reference NODES are bound to INSTANCE instead of NODES
               themselves."
 
-             (destructuring-bind (node . meta-node) instance
-               (update-context node context (operand-nodes nodes meta-node))))
+              (destructuring-bind (node context meta-node) instance
+                (update-context node context (operand-nodes nodes meta-node))))
 
-           (update-context (node context-id operands)
-             "Adds OPERANDS as operands to the context, of NODE, with
+            (update-context (node context-id operands)
+              "Adds OPERANDS as operands to the context, of NODE, with
               identifier CONTEXT-ID, and appends them to the context's
               value function."
 
-             (appendf (value-function (context node context-id))
-                      (bind-operands node operands :context context-id)))
+              (appendf (value-function (context node context-id))
+                       (bind-operands node operands :context context-id)))
 
-           (operand-nodes (nodes meta-node)
-             "Returns the nodes local to META-NODE which reference the
+            (operand-nodes (nodes meta-node)
+              "Returns the nodes local to META-NODE which reference the
               outer nodes NODES. If META-NODE is NIL, NODES is
               returned directly."
 
-             (if meta-node
-                 (with-slots (outer-nodes definition) meta-node
-                   (iter (for node in nodes)
-                         (for name = (cdr (gethash node outer-nodes)))
-                         ;; If node not found in outer node
-                         ;; references, assume it is defined in the
-                         ;; meta-nodes node table.
-                         (if name
-                             (collect (ensure-node name definition))
-                             (collect node))))
-                 nodes)))
+              (if meta-node
+                  (with-slots (outer-nodes definition) meta-node
+                    (iter (for node in nodes)
+                          (for name = (cdr (gethash node outer-nodes)))
+                          ;; If node not found in outer node
+                          ;; references, assume it is defined in the
+                          ;; meta-nodes node table.
+                          (if name
+                              (collect (ensure-node name definition))
+                              (collect node))))
+                  nodes)))
 
-    (maphash-values #'add-outer-node-operands (meta-nodes node-table)))
-  (maphash-values (compose #'add-outer-node-operands #'definition) (meta-nodes node-table)))
+     (maphash-values #'add-outer-node-operands (meta-nodes node-table)))
+   (maphash-values (compose #'add-outer-node-operands #'definition) (meta-nodes node-table))))

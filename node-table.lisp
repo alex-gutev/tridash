@@ -42,13 +42,6 @@
     :documentation
     "The depth of the current table. The global table is at depth 0.")
 
-   (all-nodes
-    :accessor all-nodes
-    :initarg :all-nodes
-    :initform (make-hash-table :test #'equal)
-    :documentation
-    "Hash-table containing all nodes.")
-
    (nodes
     :accessor nodes
     :initform (make-hash-table :test #'equal)
@@ -68,6 +61,23 @@
     :initform (make-hash-table :test #'eq)
     :documentation
     "Hash-table mapping module alias symbols to the `NODE-TABLE' of
+     the module.")
+
+   (all-nodes
+    :accessor all-nodes
+    :initarg :all-nodes
+    :initform (make-hash-table :test #'equal)
+    :documentation
+    "Hash-table containing all nodes.")
+
+   (public-nodes
+    :accessor public-nodes
+    :initarg :public-nodes
+    :initform (make-hash-table :test #'equal)
+    :documentation
+    "Hash-table containing the nodes which are exported from the
+     module. When this module is imported into another module by
+     import(<module name>), the nodes in this table are imported into
      the module.")
 
    (operator-nodes
@@ -104,7 +114,7 @@
                    :depth (1+ (depth table))
                    :module-aliases (copy-hash-table module-aliases)
                    :operator-nodes (copy-hash-table operator-nodes)
-                   :all-nodes (union-hash meta-nodes module-aliases))))
+                   :all-nodes module-aliases)))
 
 
 ;;;; Predicates
@@ -166,18 +176,10 @@
    META-NODE names a primitive operator (in *PRIMITIVE-OPS*) it is
    returned."
 
-  (flet ((primitive-op (c)
-           (declare (ignore c))
-           (awhen (gethash meta-node *primitive-ops*)
-             (return-from lookup-meta-node it))))
-
-    (let ((*create-nodes* nil))
-      (handler-bind
-          ((non-existent-node #'primitive-op))
-
-        (aprog1 (process-declaration meta-node table)
-          (unless (meta-node? it)
-            (error 'node-type-error :node it :expected 'meta-node)))))))
+  (let ((*create-nodes* nil))
+    (aprog1 (process-declaration meta-node table)
+      (unless (meta-node? it)
+        (error 'node-type-error :node it :expected 'meta-node)))))
 
 
 (defun node-type (node)

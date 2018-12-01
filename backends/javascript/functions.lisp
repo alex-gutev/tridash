@@ -74,12 +74,42 @@
 
 (defconstant *js-primitive-operators*
   (alist-hash-table
-   '((and . &&) (or . \|\|) (not . !))
+   (list
+    (cons (id-symbol "and") '&&)
+    (cons (id-symbol "or") '\|\|)
+    (cons (id-symbol "not") '!)
+
+    (cons (id-symbol "int") "parseInt")
+    (cons (id-symbol "real") "parseFloat")
+
+    (cons (id-symbol "+") '+)
+    (cons (id-symbol "-") '-)
+    (cons (id-symbol "*") '*)
+    (cons (id-symbol "/") '/)
+    (cons (id-symbol "<") '<)
+    (cons (id-symbol ">") '>)
+    (cons (id-symbol "<=") '<=)
+    (cons (id-symbol ">") '>)
+    (cons (id-symbol "!=") '!=)
+    (cons (id-symbol "=") '==))
 
    :test #'equalp)
 
   "Hash-table mapping tridash primitive operators to their
    corresponding JavaScript primitive operators.")
+
+(define-condition undefined-meta-node (error)
+  ((name :initarg :name
+         :reader name
+         :documentation
+         "The name of the undefined meta-node."))
+
+  (:documentation
+   "Error condition: An externally-defined meta-node was used for
+    which there is no implementation."))
+
+(defmethod error-description ((e undefined-meta-node))
+  (format nil "Undefined external meta-node ~a" (name e)))
 
 
 (defun meta-node-id (meta-node)
@@ -90,12 +120,13 @@
    as is."
 
   (etypecase meta-node
+    (external-meta-node
+     (or (gethash (name meta-node) *js-primitive-operators*)
+         (error 'undefined-meta-node :name (name meta-node))))
+
     (meta-node
      (ensure-gethash meta-node *meta-node-ids*
-                     (mkstr "metanode" (hash-table-count *meta-node-ids*))))
-
-    (symbol
-     (or (gethash meta-node *js-primitive-operators*) meta-node))))
+                     (mkstr "metanode" (hash-table-count *meta-node-ids*))))))
 
 (defun meta-node-call (meta-node operands)
   "Returns a `JS-CALL' expression for the meta-node META-NODE with
@@ -484,41 +515,27 @@
              (values nil (js-element object (js-string member))))))))))
 
 
-;;; Type conversions
-
-(defmethod make-operator-expression ((operator cons) operands)
-  "If OPERATOR is a type conversion operator (of the form (:TYPE
-   type), generates an expression which converts the value of the
-   operand to the type."
-
-  (match operator
-    ((list :type type)
-     (destructuring-bind (expr) operands
-       (let ((value-var (var-name)))
-         (multiple-value-bind (value-block value-expr)
-             (make-expression expr :return-variable value-var :tailp nil)
-           (multiple-value-call #'combine-blocks
-             value-block
-             (use-expression value-expr (curry #'convert-type type)))))))
-
-    (_ (call-next-method))))
-
-(defgeneric convert-type (type expression)
-  (:documentation
-   "Generates an expression which converts EXPRESSION to the type TYPE"))
-
-(defmethod convert-type ((type (eql :integer)) expression)
-  (values
-   nil
-   (js-call "parseInt" expression)))
-
-(defmethod convert-type ((type (eql :real)) expression)
-  (values
-   nil
-   (js-call "parseFloat" expression)))
-
-
 ;;; Meta-Node Expressions
+
+(defvar *special-operators*
+  (alist-hash-table
+   (list (cons (id-symbol "if") 'if)))
+
+  "Hash-table mapping names of externally defined meta-nodes to
+   special operator symbols for which there is a
+   MAKE-OPERATOR-EXPRESSION method.")
+
+(defmethod make-operator-expression ((meta-node external-meta-node) operands)
+  "Generates code which invokes the externally defined meta-node
+   META-NODE with operands OPERANDS. If the meta-node represents a
+   special operator in *SPECIAL-OPERATORS* the appropriate
+   MAKE-OPERATOR-EXPRESSION method is called otherwise the meta-node
+   is treated as an ordinary function."
+
+  (aif (gethash (name meta-node) *special-operators*)
+       (make-operator-expression it operands)
+       (call-next-method)))
+
 
 (defmethod make-operator-expression (meta-node operands)
   "Generates code which invokes META-NODE with OPERANDS."

@@ -53,6 +53,10 @@
   "Special operator for creating output nodes, from inside meta-node
    definitions.")
 
+(defconstant +target-operator+ (id-symbol "target-node")
+  "Special operator for specifying the name of the meta-node to use
+   when binding the meta-node to its operands.")
+
 
 ;;; Conditionals
 
@@ -75,6 +79,17 @@
 (defconstant +use-operator+ (id-symbol "use")
   "Operator for using a module, using its name as an alias, from the
    current module.")
+
+(defconstant +export-operator+ (id-symbol "export")
+  "Operator for adding a node to the public nodes table of the current
+   module.")
+
+
+;;; Externally-Defined Meta-Nodes
+
+(defconstant +extern-operator+ (id-symbol "extern")
+  "Special operator for adding stubs for meta-nodes which are defined
+   externally.")
 
 
 ;;; Infix Operators

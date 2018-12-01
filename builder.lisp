@@ -137,15 +137,16 @@
    meta-node. OUTER-TABLE is the node table in which the meta-node
    definition is located."
 
-  (let* ((table (make-inner-node-table outer-table))
-         (*meta-node* meta-node))
+  (unless (external-meta-node? meta-node)
+    (let* ((table (make-inner-node-table outer-table))
+           (*meta-node* meta-node))
 
-    (add-operand-nodes (operands meta-node) table)
+      (add-operand-nodes (operands meta-node) table)
 
-    (let* ((last-node (process-node-list (definition meta-node) table t)))
-      (make-meta-node-function meta-node last-node)
-      (build-meta-node-graphs table)
-      (setf (definition meta-node) table))))
+      (let* ((last-node (process-node-list (definition meta-node) table t)))
+        (make-meta-node-function meta-node last-node)
+        (build-meta-node-graphs table)
+        (setf (definition meta-node) table)))))
 
 (defun add-operand-nodes (names table)
   "Creates a node for each element in NAMES, the element being the
@@ -191,8 +192,8 @@
 
   (let ((*declaration-stack* (cons functor *declaration-stack*)))
 
-   (destructuring-bind (operator . operands) functor
-     (process-functor operator operands table))))
+    (destructuring-bind (operator . operands) functor
+      (process-functor operator operands table))))
 
 (defmethod process-declaration ((name symbol) table)
   "Creates a node with identifier NAME and adds it to table, if table
@@ -200,7 +201,7 @@
    newly created, or existing, node."
 
   (let ((*declaration-stack* (cons name *declaration-stack*)))
-   (values (ensure-node name table) table)))
+    (values (ensure-node name table) table)))
 
 (defmethod process-declaration (literal table)
   "Method for literal values (everything which is not a symbol or list
@@ -323,24 +324,41 @@
        (let ((module (get-module module)))
          (if nodes
              (mapcar (rcurry #'import-node module table) nodes)
-             (maphash-keys (rcurry #'import-node module table) (all-nodes module))))))))
+             (maphash-keys (rcurry #'import-node module table) (public-nodes module))))))))
 
 (defun import-node (name module table)
   "Import node NAME from MODULE into TABLE."
 
   (let* ((node (lookup-node name module)))
-    (when (node? node)
-      (with-slots (all-nodes) table
-        (when (aand (gethash node all-nodes) (not (eq it node)))
-          (error 'import-node-error
-                 :node name
-                 :module module
-                 :node-table table))
+    (with-slots (all-nodes module-aliases) table
+      (when (aand (gethash name all-nodes) (not (eq it node)))
+        (error 'import-node-error
+               :node name
+               :module module
+               :node-table table))
 
-        (add-node name node table)
+      (when (eq (node-type node) 'module)
+        (setf (gethash name module-aliases) node))
 
-        (awhen (gethash name (operator-nodes module))
-          (add-operator name (first it) (second it) (operator-nodes table)))))))
+      (setf (gethash name all-nodes) node)
+
+      (awhen (gethash name (operator-nodes module))
+        (add-operator name (first it) (second it) (operator-nodes table))))))
+
+
+(defmethod process-functor ((operator (eql +export-operator+)) args table)
+  "Adds nodes to the public-nodes list of TABLE."
+
+  (with-slots (public-nodes) table
+    (flet ((export-node (name)
+             (setf (gethash name public-nodes)
+                   (lookup-node name table))))
+
+      (match-syntax (+export-operator+ (list identifier))
+          args
+
+        ((list* nodes)
+         (mapcar #'export-node nodes))))))
 
 
 ;;; Definitions
@@ -359,6 +377,32 @@
       name
       (make-instance 'meta-node :name name :operands args :definition body)
       table))))
+
+(defmethod process-functor ((operator (eql +extern-operator+)) args table)
+  "Adds a stub for an externally defined meta-node to TABLE."
+
+  (flet ((add-external-meta-node (name)
+           (add-meta-node
+            name
+            (make-instance 'external-meta-node :name name)
+            table)))
+
+   (match-syntax (+extern-operator+ (list identifier))
+       args
+
+     ((list* nodes)
+      (mapcar #'add-external-meta-node nodes)))))
+
+(defmethod process-functor ((operator (eql +target-operator+)) args table)
+  "Sets the name of the meta-node to use for the binding of a
+   meta-node to its operands."
+
+  (match-syntax (+target-operator+ identifier identifier)
+      args
+
+    ((list meta-node target-meta-node)
+     (setf (target-meta-node (lookup-meta-node meta-node table))
+           target-meta-node))))
 
 
 ;;; Conditions
@@ -455,7 +499,7 @@
   "Creates the output node and adds it to the set of output nodes of
    the meta-node currently bound to *META-NODE*."
 
-  (match-syntax (+out-operator+ node)
+  (match-syntax (+out-operator+ identifier)
       operands
 
     ((list name)
@@ -464,8 +508,10 @@
        (error 'out-node-error))
 
      (with-slots (output-nodes) *meta-node*
-       (aprog1 (ensure-node (cons operator operands) table)
-         (setf (gethash name output-nodes) it))))))
+       (values
+        (aprog1 (ensure-node (cons operator operands) table)
+          (setf (gethash name output-nodes) it))
+        table)))))
 
 
 ;;; Subnodes
@@ -533,6 +579,7 @@
   (declare (ignore object-decl table))
   (values (lookup-node key module) module))
 
+
 ;;; Meta-Node instances
 
 (defmethod process-functor (operator operands table)
@@ -544,20 +591,14 @@
       (make-meta-node-instance operator operands table)))
 
 
-;;; Meta-Node Instances
-
 (defun make-meta-node-instance (meta-node operator operands table)
   "Creates a node which invokes the meta-node META-NODE with operands
    OPERANDS, and adds it to TABLE."
 
-  (match meta-node
-    ((list :type _)
-     (create-type-conversion-node meta-node operator operands table))
+  (when (and *source-node* (null (target-meta-node meta-node)))
+    (error 'target-node-error :node (cons operator operands)))
 
-    (_
-     (if *source-node*
-         (error 'target-node-error :node (cons operator operands))
-         (add-meta-node-instance meta-node operator operands table)))))
+  (add-meta-node-instance meta-node operator operands table))
 
 
 (defun add-meta-node-instance (meta-node operator operands table)
@@ -565,11 +606,20 @@
    meta-node META-NODE with operands OPERANDS, and adds it to
    TABLE. If TABLE already contains such a node it is returned."
 
-  (multiple-value-bind (instance operands table)
-      (create-instance-node meta-node operator operands table)
-    (add-meta-node-value-function instance meta-node operands)
+  (with-slots (target-meta-node) meta-node
+   (multiple-value-bind (instance operand-nodes table)
+       (create-instance-node meta-node operator operands table)
+     (add-meta-node-value-function instance meta-node operand-nodes)
 
-    (values instance table)))
+     (when target-meta-node
+       (handler-case
+           (iter
+             (with meta-node = (lookup-meta-node target-meta-node table))
+             (for operand in (process-operands operands table instance))
+             (add-meta-node-value-function operand meta-node (list instance) :context instance))
+         (target-node-error ())))
+
+     (values instance table))))
 
 (defun create-instance-node (meta-node operator operands table)
   "Creates a meta-node instance node. The node is created with
@@ -583,9 +633,7 @@
     (multiple-value-bind (operands table) (process-operands operands table)
 
       ;; Add META-NODE to the meta node references of *META-NODE*
-      (when (and *meta-node*
-                 (not (eq meta-node *meta-node*))
-                 (meta-node? meta-node))
+      (when (and *meta-node* (not (eq meta-node *meta-node*)))
         (ensure-gethash meta-node (meta-node-references *meta-node*)))
 
       (values (ensure-node name table t) operands table))))
@@ -596,59 +644,32 @@
    to INSTANCE and added as operands to the context CONTEXT."
 
   (create-context (instance context)
-    (add-to-instances instance meta-node)
+    (add-to-instances instance meta-node context)
     (setf value-function (cons meta-node (bind-operands instance operands :context context)))))
 
-(defun add-to-instances (instance meta-node)
-  "Adds the meta-node instance INSTANCE to the list of instances of
-   META-NODE."
+(defun add-to-instances (instance meta-node context)
+  "Adds the meta-node instance INSTANCE, at context CONTEXT, to the
+   list of instances of META-NODE."
 
-  (when (meta-node? meta-node)
-    (push (cons instance *meta-node*) (instances meta-node))))
-
-
-;;; Type Conversion Nodes
-
-(defun create-type-conversion-node (meta-node operator operands table)
-  "Creates a node with a value function that converts the received
-   value to a particular type. A two-way binding between the node and
-   operand node (in OPERANDS) is created."
-
-  (match-syntax (meta-node node)
-      operands
-    ((list node)
-
-     (multiple-value-bind (instance operands table)
-         (create-instance-node meta-node operator operands table)
-
-       (add-meta-node-value-function instance meta-node operands :context (first operands))
-
-       (with-source-node instance
-         (handler-case
-             (let ((node (process-declaration node table)))
-               (add-meta-node-value-function node meta-node (list instance) :context instance))
-           (target-node-error ())))
-
-       (values instance table)))))
+  (push (list instance context *meta-node*) (instances meta-node)))
 
 
 ;;; Binding Operands
 
-(defun process-operands (operands table)
+(defun process-operands (operands table &optional *source-node*)
   "Creates the operand nodes and adds them to table if they are not
    already in table. Returns the list of `node' objects as the first
    value and the table, in which a node object was found or created,
    with the greatest depth."
 
   (let ((*top-level* nil)
-        (*source-node* nil)
         (*create-nodes* t))
     (iter
       (with op-table = (node-table *global-module-table*))
       (for operand in operands)
 
       (multiple-value-bind (node node-table)
-          (at-source (process-declaration operand table))
+          (process-declaration operand table)
 
         (collect node into nodes)
 

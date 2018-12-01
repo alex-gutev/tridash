@@ -125,13 +125,13 @@
 
    ;; Meta-node
    :meta-node
+   :external-meta-node
+
    :operands
    :definition
 
    :meta-node?
-
-   ;; Primitives
-   :*primitive-ops*
+   :external-meta-node?
 
    ;; Operators
    :+bind-operator+
