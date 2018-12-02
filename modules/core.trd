@@ -1,0 +1,61 @@
+### Tridash Core Module
+###
+### Contains meta-node stubs, and operator table, for the language
+### primitives.
+
+module(core)
+
+## Operators
+
+# Basic Operators
+
+op(->, 10, right)
+op(:, 5, right)
+
+op(., 500, left)
+
+
+# Arithmetic Operators
+
+op(+, 100, left)
+op(-, 100, left)
+
+op(*, 200, left)
+op(/, 200, left)
+
+
+# Comparison Operators
+
+op(<, 50)
+op(<=, 50)
+op(>, 50)
+op(>=, 50)
+op(=, 50)
+op(!=, 50)
+
+
+# Logical Operators
+
+op(and, 25)
+op(or, 20)
+
+
+# Create stubs for all primitive operators
+
+extern(+, -, *, /, <, <=, >, >=, =, !=)
+
+extern(if)
+
+
+## Type Conversions
+
+extern(int, real)
+
+target-node(int, int)
+target-node(real, real)
+
+
+# Export Primitive Nodes
+
+export(+, -, *, /, <, <=, >, >=, =, !=, if)
+export(int, real)
