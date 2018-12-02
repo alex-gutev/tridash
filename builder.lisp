@@ -393,16 +393,22 @@
      ((list* nodes)
       (mapcar #'add-external-meta-node nodes)))))
 
-(defmethod process-functor ((operator (eql +target-operator+)) args table)
-  "Sets the name of the meta-node to use for the binding of a
-   meta-node to its operands."
 
-  (match-syntax (+target-operator+ identifier identifier)
+;;; Attributes
+
+(defmethod process-functor ((operator (eql +attribute-operator+)) args table)
+  "Sets an attribute of a node to a particular value."
+
+  (match-syntax (+attribute-operator+ node string literal)
       args
+    ((list node
+           (guard attribute (or (symbolp attribute) (stringp attribute)))
+           value)
 
-    ((list meta-node target-meta-node)
-     (setf (target-meta-node (lookup-meta-node meta-node table))
-           target-meta-node))))
+     (-<>> (lookup-node node table)
+           (attributes)
+           (gethash (string attribute))
+           (setf <> value)))))
 
 
 ;;; Conditions
@@ -606,7 +612,7 @@
    meta-node META-NODE with operands OPERANDS, and adds it to
    TABLE. If TABLE already contains such a node it is returned."
 
-  (with-slots (target-meta-node) meta-node
+  (with-accessors ((target-meta-node target-meta-node)) meta-node
    (multiple-value-bind (instance operand-nodes table)
        (create-instance-node meta-node operator operands table)
      (add-meta-node-value-function instance meta-node operand-nodes)

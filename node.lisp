@@ -56,10 +56,10 @@
 
    (attributes
     :accessor attributes
-    :initform (make-hash-table :test #'eq)
+    :initform (make-hash-table :test #'equal)
     :documentation
     "Set of miscellaneous attributes (key-value pairs) where each
-     attribute is identified by a unique symbol."))
+     attribute is identified by a unique symbol or string."))
 
   (:documentation
    "Base node class. Stores the binding information about a node,

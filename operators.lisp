@@ -53,9 +53,11 @@
   "Special operator for creating output nodes, from inside meta-node
    definitions.")
 
-(defconstant +target-operator+ (id-symbol "target-node")
-  "Special operator for specifying the name of the meta-node to use
-   when binding the meta-node to its operands.")
+
+;;; Attributes
+
+(defconstant +attribute-operator+ (id-symbol "attribute")
+  "Special operator for setting node attributes.")
 
 
 ;;; Conditionals

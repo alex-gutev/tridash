@@ -51,8 +51,8 @@ extern(if)
 
 extern(int, real)
 
-target-node(int, int)
-target-node(real, real)
+attribute(int, target-node, int)
+attribute(real, target-node, real)
 
 
 # Export Primitive Nodes

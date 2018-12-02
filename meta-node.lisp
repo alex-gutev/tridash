@@ -67,15 +67,7 @@
     "List of instances of the meta-node. Each element is of the
      form (CONS NODE META-NODE) where NODE is the instance NODE itself
      and META-NODE is the META-NODE in which it appears, NIL if it is
-     at global scope.")
-
-   (target-meta-node
-    :initform nil
-    :accessor target-meta-node
-    :documentation
-    "Name of a meta-node which serves as the value function for the
-     binding of the meta-node to its operand nodes. If this is NIL no
-     binding between the meta-node and its operands is established."))
+     at global scope."))
 
   (:documentation
    "Stores the definition of a meta-node."))
@@ -87,6 +79,8 @@
    "Meta-node which is defined externally."))
 
 
+;;; Predicates
+
 (defun meta-node? (x)
   "Returns true if X is a `meta-node'."
   (typep x 'meta-node))
@@ -94,6 +88,18 @@
 (defun external-meta-node? (x)
   "Returns true if X is an externally defined meta-node."
   (typep x 'external-meta-node))
+
+
+;;; Meta-Node Attributes
+
+(defun target-meta-node (meta-node)
+  "Returns the name of the meta-node to use for the binding from the
+   meta-node instance to the meta-node operands."
+
+  (gethash "target-node" (attributes meta-node)))
+
+
+;;; Outer Node References
 
 (defun unique-node-name (hash-table prefix)
   "Generates a new unique node identifier. The identifier generated is
