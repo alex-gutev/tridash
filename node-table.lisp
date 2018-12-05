@@ -114,7 +114,7 @@
                    :depth (1+ (depth table))
                    :module-aliases (copy-hash-table module-aliases)
                    :operator-nodes (copy-hash-table operator-nodes)
-                   :all-nodes module-aliases)))
+                   :all-nodes (copy-hash-table module-aliases))))
 
 
 ;;;; Predicates
