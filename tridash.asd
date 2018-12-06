@@ -42,6 +42,7 @@
                (:file "builder")
                (:file "coalescer")
                (:file "prog-builder")
+               (:file "main")
 
                (:module "builders/html"
                         :serial t
@@ -71,4 +72,5 @@
                :plump
                :cl-ppcre
                :ppath
-               :parse-number))
+               :parse-number
+               :cl-yaml))
