@@ -33,7 +33,7 @@
 (define-condition semantic-error (error)
   ((declaration-stack
     :initform *declaration-stack*
-    :reader declaration
+    :reader declaration-stack
     :documentation
     "The declaration stack leading up to the declaration where the
      error occurred."))

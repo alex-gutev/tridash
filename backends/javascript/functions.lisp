@@ -23,11 +23,13 @@
 
 ;;;; Symbol Names
 
-(defconstant +thunk-class+ (mkstr +tridash-prefix+ "Thunk")
-  "Thunk constructor function name.")
+(define-constant +thunk-class+ (mkstr +tridash-prefix+ "Thunk")
+  :test #'equal
+  :documentation "Thunk constructor function name.")
 
-(defconstant +end-update-class+ (mkstr +tridash-prefix+ "EndUpdate")
-  "EndUpdate class name.")
+(define-constant +end-update-class+ (mkstr +tridash-prefix+ "EndUpdate")
+  :test #'equal
+  :documentation "EndUpdate class name.")
 
 
 ;;;; Utility Functions
@@ -72,7 +74,7 @@
    currently being compiled, should be stored. If NIL the result
    should be returned directly using a return statement.")
 
-(defconstant *js-primitive-operators*
+(defparameter *js-primitive-operators*
   (alist-hash-table
    (list
     (cons (id-symbol "and") '&&)

@@ -21,19 +21,21 @@
 (in-package :tridash.backend.js)
 
 
-(defconstant +js-binary-operators+
+(define-constant +js-binary-operators+
   '(+ - * / % > < >= <=
     == === != !==
     >> << >>> <<<
     & && \| \|\| ^
     = += -= *= /= %= &= \|= ^=)
 
-  "List of JavaScript binary operators.")
+  :test #'equal
+  :documentation "List of JavaScript binary operators.")
 
-(defconstant +js-unary-operators+
+(define-constant +js-unary-operators+
   '(- ! ~)
 
-  "List of JavaScript unary operators.")
+  :test #'equal
+  :documentation "List of JavaScript unary operators.")
 
 
 (defvar *print-indented* nil

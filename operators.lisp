@@ -96,7 +96,7 @@
 
 ;;; Infix Operators
 
-(defconstant +infix-operators+
+(defparameter +infix-operators+
   (alist-hash-table
    `((,+bind-operator+ 10 :right)
      (,+def-operator+ 5 :right)

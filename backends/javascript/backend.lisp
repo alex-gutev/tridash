@@ -23,14 +23,17 @@
 
 ;;;; Symbol Names
 
-(defconstant +tridash-prefix+ "Tridash."
-  "Namespace containing the Tridash runtime library definitions.")
+(define-constant +tridash-prefix+ "Tridash."
+  :test #'equal
+  :documentation "Namespace containing the Tridash runtime library definitions.")
 
-(defconstant +node-class+ (mkstr +tridash-prefix+ "Node")
-  "Runtime node class name.")
+(define-constant +node-class+ (mkstr +tridash-prefix+ "Node")
+  :test #'equal
+  :documentation "Runtime node class name.")
 
-(defconstant +node-context-class+ (mkstr +tridash-prefix+ "NodeContext")
-  "Runtime node context class name.")
+(define-constant +node-context-class+ (mkstr +tridash-prefix+ "NodeContext")
+  :test #'equal
+  :documentation "Runtime node context class name.")
 
 (defvar *node-table-var* "node_table"
   "Global node table variable.")
