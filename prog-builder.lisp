@@ -34,7 +34,7 @@
     (iter
       (for file in files)
 
-      (destructuring-bind (path &rest options) (ensure-list file)
+      (destructuring-bind (path &optional (options (make-hash-table :test #'equal))) (ensure-list file)
         (change-module :init modules)
         (build-nodes-in-file path modules options)))
 

@@ -75,5 +75,23 @@
        (destructuring-bind ,vars ,g!values
          ,@body))))
 
+(defmacro! with-hash-keys ((&rest keys) o!hashtable &body body)
+  "Creates symbol macros for accessing keys in the hash-table
+   HASHTABLE. Each element in KEYS is a list where the first element
+   is the symbol of the symbol-macro to create and the second element
+   is the key.
+
+   The symbol-macros are established by SYMBOL-MACROLET and are
+   visible to the forms in BODY. The forms in BODY are evaluated with
+   the return value of the last form in BODY being the return value of
+   WITH-HASH-KEYS form."
+
+  (flet ((make-macro (key)
+           (destructuring-bind (sym &optional key) (ensure-list key)
+             `(,sym (gethash ,(or key sym) ,g!hashtable)))))
+    `(symbol-macrolet
+         ,(mapcar #'make-macro keys)
+       ,@body)))
+
 (defpattern optional (arg)
   `(or ,arg nil))

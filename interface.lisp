@@ -54,7 +54,7 @@
   "Sets the file builder, for files with extension EXTENSION, to
    FUNCTION. FUNCTION is an a function of three arguments: the path to
    the file, the module table in which the node definitions should be
-   built and an options plist."
+   built and a hash-table containing builder options."
 
   (setf (gethash (string extension) *file-builders*)
         function))
@@ -81,8 +81,8 @@
    module-table, to which the node definitions should be added, is
    bound.
 
-   OPTIONS-VAR is a symbol naming the variable to which the options
-   plist is bound."
+   OPTIONS-VAR is a symbol naming the variable to which the builder
+   options hash-table is bound."
 
   `(eval-when (:load-toplevel :compile-toplevel :execute)
      (set-file-builders ',(mapcar #'string (ensure-list extensions))
@@ -95,11 +95,12 @@
 
 ;;; Compiling Nodes
 
-(defgeneric compile-nodes (backend module-table &key &allow-other-keys)
+(defgeneric compile-nodes (backend module-table &optional options)
   (:documentation
    "Generates code for the nodes and meta-nodes contained in
     NODE-TABLE using the backend identified by the symbol BACKEND. The
-    generated code is written to *standard-output*"))
+    generated code is written to *standard-output*. OPTIONS is a
+    hash-table of backend specific options."))
 
 
 ;;;; Error Reporting Interface

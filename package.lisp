@@ -40,7 +40,11 @@
    :compile-nodes
 
    ;; Error Reporting
-   :error-description))
+   :error-description)
+
+  (:documentation
+   "Package containing the interface to the frontend, backends and
+    error reporting."))
 
 (defpackage :tridash.parser
   (:use :common-lisp
@@ -50,6 +54,8 @@
         :iterate
         :graylex
         :parse-number
+        :optima
+        :optima.ppcre
 
         :tridash.interface)
 
@@ -58,6 +64,8 @@
 
    :make-parser
    :add-operator
+
+   :node-path->name
    :id-symbol)
 
   (:documentation
@@ -161,6 +169,8 @@
    :build-node
    :finish-build-graph
 
+   :build-program
+
    ;; Wait-set
    :build-wait-sets
 
@@ -171,4 +181,24 @@
    :semantic-error
    :message
    :target-node-error
-   :ambiguous-context-error))
+   :ambiguous-context-error)
+
+  (:documentation
+   "Package containing the compiler frontend, which builds the node
+    definitions out of the parsed source files."))
+
+(defpackage :tridash
+  (:use :common-lisp
+        :alexandria
+        :anaphora
+        :cl-arrows
+        :optima
+        :iterate
+
+        :tridash.util
+        :tridash.parser
+        :tridash.interface
+        :tridash.frontend)
+
+  (:documentation
+   "Package containing the compiler application."))

@@ -30,6 +30,7 @@
 
   (:import-from :alexandria
                 :copy-hash-table
+                :ensure-list
                 :ensure-gethash)
 
   (:export
@@ -42,6 +43,7 @@
    :let*-if
    :dohash
    :multiple-value-return
+   :with-hash-keys
 
    ;; Optima Patterns
    :optional

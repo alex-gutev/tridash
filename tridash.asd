@@ -67,6 +67,7 @@
                :named-readtables
                :let-over-lambda
                :optima
+               :optima.ppcre
                :plump
                :cl-ppcre
                :ppath

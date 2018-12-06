@@ -204,6 +204,27 @@
          :rule 'node-operand))
 
 
+
+(defun node-path->name (path &optional (prefix "NODE"))
+  "Parses the node path PATH, which is expected to be a string which
+   names a node. The name may only be an atomic identifier, and the
+   name of a functor node. If PATH contains a '.' the part preceding
+   the dot is considered as the identifier of the module containing
+   the node and the part following the dot as the the node name. If no
+   PATH does not contain a '.' it is assumed to be in the :INIT
+   module. Returns two values: the module identifier symbol and the
+   node name symbol."
+
+  (ematch path
+    ((ppcre "^(.*?)\\.(.*?)$" module name)
+     (values (id-symbol module) (id-symbol name)))
+
+    ((type string)
+     (values :init (id-symbol path)))
+
+    (nil
+     (values :init (gensym prefix)))))
+
 (defun id-symbol (name)
   "Interns a symbol with name NAME into the :TRIDASH.SYMBOLS package."
 

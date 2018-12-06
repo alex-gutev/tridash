@@ -70,31 +70,11 @@
 ;;;; Building HTML files
 
 (define-file-builder (html htm) (file modules options)
-  (destructuring-bind (&key node-name) options
-    (multiple-value-bind (module name) (html-node-name node-name)
-     (-<>> (build-html-file file modules)
-           (make-instance 'html-component-node :element-node)
-           (add-node (id-symbol name) <> (get-module module modules))))))
-
-(defun html-node-name (name)
-  "Returns the name of the module and the name of the
-   HTML-COMPONENT-NODE which should be created for the HTML file being
-   processed. If NAME is a list of two elements the first element is
-   returned as the module identifier and the second element as the
-   node name. If NAME is a string or symbol :INIT is returned as the
-   module identifier and NAME is returned as the node name. If NAME is
-   NIL, :INIT is returned as the module identifier and a unique
-   node-name is generated."
-
-  (ematch name
-    ((list module name)
-     (values module name))
-
-    ((or (type string) (type symbol))
-     (values :init name))
-
-    (nil
-     (values :init (gensym "HTML-COMP")))))
+  (with-hash-keys ((node-name "node-name")) options
+    (multiple-value-bind (module name) (node-path->name node-name)
+      (-<>> (build-html-file file modules)
+            (make-instance 'html-component-node :name name :element-node)
+            (add-node name <> (get-module module modules))))))
 
 
 (defgeneric build-html-file (file module-table)

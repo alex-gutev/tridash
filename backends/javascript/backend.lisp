@@ -100,7 +100,7 @@
 
 ;;;; Compilation
 
-(defmethod compile-nodes ((backend (eql :javascript)) table &rest options &key &allow-other-keys)
+(defmethod compile-nodes ((backend (eql :javascript)) table &optional (options (make-hash-table :test #'equal)))
   "Compile the node and meta-node definitions, in the `NODE-TABLE'
    TABLE, to JavaScript."
 
@@ -121,20 +121,20 @@
   "Prints the JavaScript code represented by the AST nodes in CODE to
    *STANDARD-OUTPUT*."
 
-  (destructuring-bind (&key (type :code) main-ui) options
-    (case type
-      (:html
+  (with-hash-keys ((type "type") (main-ui "main-ui")) options
+    (match type
+      ((equalp "html")
        (->>
         (get-root-node main-ui module-table)
         (create-html-file code)))
 
-      (:code
+      (_
        (output-code code)))))
 
 (defun get-root-node (node module-table)
   "Gets the root HTML node specified by NODE."
 
-  (destructuring-bind (module node) node
+  (multiple-value-bind (module node) (node-path->name node)
     (->> (get-module module module-table)
          (tridash.frontend::lookup-node node)
          (element-node))))
