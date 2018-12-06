@@ -226,6 +226,12 @@
       (append-code
        (js-call '= (js-member path "name") (js-string (name node)))))
 
+    (awhen (attribute :public-name node)
+      (append-code
+       (-<> (mkstr +tridash-prefix+ "nodes")
+            (js-element (js-string it))
+            (js-call '= <> path))))
+
     (maphash (rcurry #'create-context node) (contexts node))))
 
 

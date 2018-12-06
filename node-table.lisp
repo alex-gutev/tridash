@@ -234,7 +234,7 @@
    to T."
 
   (unless (input-node? node)
-    (setf (gethash :input (attributes node)) t)
+    (setf (attribute :input node) t)
     (context node :input)
     (push node (input-nodes table))))
 

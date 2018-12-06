@@ -96,7 +96,7 @@
   "Returns the name of the meta-node to use for the binding from the
    meta-node instance to the meta-node operands."
 
-  (gethash "target-node" (attributes meta-node)))
+  (attribute :target-node meta-node))
 
 
 ;;; Outer Node References

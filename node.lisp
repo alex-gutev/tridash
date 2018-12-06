@@ -56,7 +56,7 @@
 
    (attributes
     :accessor attributes
-    :initform (make-hash-table :test #'equal)
+    :initform (make-hash-table :test #'equalp)
     :documentation
     "Set of miscellaneous attributes (key-value pairs) where each
      attribute is identified by a unique symbol or string."))
@@ -101,7 +101,22 @@
 (defun input-node? (node)
   "Returns true if NODE is an input node."
 
-  (gethash :input (attributes node)))
+  (attribute :input node))
+
+
+;;;; Utility Functions
+
+(defun attribute (attribute node)
+  "Retrieves a node attribute. ATTRIBUTE is converted to a string if
+   it is a symbol."
+
+  (gethash (string attribute) (attributes node)))
+
+(defun (setf attribute) (value attribute node)
+  "Sets the value of a node attribute. ATTRIBUTE is converted to a
+   string if it is a symbol."
+
+  (setf (gethash (string attribute) (attributes node)) value))
 
 
 ;;;; Bindings

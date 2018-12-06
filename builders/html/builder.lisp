@@ -177,7 +177,7 @@
 (defun node->html-node (node &rest args)
   "If NODE is an ordinary node changes its type to `HTML-NODE'"
 
-  (setf (gethash :no-coalesce (attributes node)) t)
+  (setf (attribute :no-coalesce node) t)
 
   (unless (typep node 'html-node)
     (apply #'change-class node 'html-node args)))

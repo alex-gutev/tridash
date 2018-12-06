@@ -33,6 +33,11 @@
 function Tridash() {}
 
 /**
+ * Object storing publicly accessible nodes.
+ */
+Tridash.nodes = {};
+
+/**
  * Runtime Node.
  *
  * Stores the node link information (dependencies, observers, wait

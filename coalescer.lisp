@@ -132,7 +132,7 @@
   "Returns true if NODE may be coalesced into another node. Returns
    false if the node has the :NO-COALESCE attribute set to T."
 
-  (null (gethash :no-coalesce (attributes node))))
+  (null (attribute :no-coalesce node)))
 
 (defun coalesce-node-links (node)
   "Replaces the `node-link' objects, within the value functions of

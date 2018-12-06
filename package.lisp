@@ -101,6 +101,7 @@
    :observers
    :contexts
    :attributes
+   :attribute
 
    ;; Node Contexts
    :node-context
