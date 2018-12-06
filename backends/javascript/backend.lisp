@@ -104,18 +104,38 @@
   "Compile the node and meta-node definitions, in the `NODE-TABLE'
    TABLE, to JavaScript."
 
-  (let ((*node-ids* (make-hash-table :test #'eq))
-        (*node-link-indices* (make-hash-table :test #'eq))
-        (*meta-node-ids* (make-hash-table :test #'eq))
-        (*context-ids* (make-hash-table :test #'eq))
-        (*lazy-nodes* (find-lazy-nodes table))
-        (*context-counter* 0)
-        (*output-code* (make-code-array)))
+  (let ((*print-indented* (parse-boolean (gethash "indented" options)))
+        (*debug-info-p* (parse-boolean (gethash "debug-info" options))))
 
-    (make-preamble)
+   (let ((*node-ids* (make-hash-table :test #'eq))
+         (*node-link-indices* (make-hash-table :test #'eq))
+         (*meta-node-ids* (make-hash-table :test #'eq))
+         (*context-ids* (make-hash-table :test #'eq))
+         (*lazy-nodes* (find-lazy-nodes table))
+         (*context-counter* 0)
+         (*output-code* (make-code-array)))
 
-    (maphash-values #'generate-code (modules table))
-    (print-output-code (make-lexical-block *output-code*) options table)))
+     (make-preamble)
+
+     (maphash-values #'generate-code (modules table))
+     (print-output-code (make-lexical-block *output-code*) options table))))
+
+(defun parse-boolean (thing)
+  "Converts THING to a boolean value."
+
+  (typecase thing
+    (string
+     (values
+      (eq (char thing 0) #\1)
+      t))
+
+    (integer
+     (values
+      (/= thing 0)
+      t))
+
+    (otherwise
+     (values nil nil))))
 
 (defun print-output-code (code options module-table)
   "Prints the JavaScript code represented by the AST nodes in CODE to
