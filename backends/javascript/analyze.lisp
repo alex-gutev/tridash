@@ -76,10 +76,15 @@
                  ((type node-link)
                   (eq link fn))
 
-                 ((list* 'if cond _)
+                 ((list*
+                   (or 'if
+                       (guard (external-meta-node name)
+                              (eq name (id-symbol "if")))) cond _)
                   (has-node link cond))
 
-                 ((list* (or 'and 'or) first _)
+                 ((list* (guard (external-meta-node name)
+                                (member name '("and" "or") :key #'id-symbol))
+                         first _)
                   (has-node link first))
 
                  ((list* _ operands)
