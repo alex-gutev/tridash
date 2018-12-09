@@ -42,12 +42,22 @@
                 context lazy-nodes
                 (let ((observers (context-observers node context)))
                   (when observers
-                    (loop for (observer link) in observers
-                       always
-                         (or (not (unconditional-binding? link observer))
-                             (->> (node-link-context link)
-                                  (context observer)
-                                  (lazy? observer))))))))
+                    (aprog1
+                     (loop for (observer link) in observers
+                        always
+                          (or (not (unconditional-binding? link observer))
+                              (->> (node-link-context link)
+                                   (context observer)
+                                   (lazy? observer))))
+                      (when it (make-async-links observers)))))))
+
+             (make-async-links (observers)
+               "Change the links to the observer nodes to asynchronous
+                links."
+
+               (iter (for (nil link) in observers)
+                     (setf (node-link-node link)
+                           (cons 'async (node-link-node link)))))
 
              (context-observers (node context)
                "Returns a list of the observer nodes of NODE at
@@ -63,11 +73,8 @@
                 is used unconditionally in the value function of
                 OBSERVER."
 
-               (let ((context (context observer (node-link-context link))))
-                 (aprog1 (has-node link (value-function context))
-                   (unless it
-                     (setf (node-link-node link)
-                           (cons 'async (node-link-node link)))))))
+               (->> (value-function (context observer (node-link-context link)))
+                    (has-node link)))
 
              (has-node (link fn)
                "Returns true if DEPENDENCY is used unconditionally in FN."
