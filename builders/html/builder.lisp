@@ -73,9 +73,15 @@
   (with-hash-keys ((node-name "node-name")) options
     (multiple-value-bind (module name) (node-path->name node-name)
       (-<>> (build-html-file file modules)
-            (make-instance 'html-component-node :name name :element-node)
+            (make-html-component-node name)
             (add-node name <> (get-module module modules))))))
 
+(defun make-html-component-node (name root-node)
+  "Creates the HTML component node of the file. NAME is the name of
+   the node to create and ROOT-NODE is the root HTML node."
+
+  (aprog1 (make-instance 'html-component-node :name name :element-node root-node)
+    (setf (attribute :no-remove it) t)))
 
 (defgeneric build-html-file (file module-table)
   (:documentation
@@ -129,14 +135,18 @@
 
     (let ((tag (plump:tag-name element)))
       (dohash (key value attributes)
-        (awhen (extract-tridash-node value)
-          (let ((html-id (html-element-id element)))
-            (make-html-element-node html-id tag *global-module-table*)
+        (acond
+          ((extract-tridash-node value)
+           (let ((html-id (html-element-id element)))
+             (make-html-element-node html-id tag *global-module-table*)
 
-            (-> (make-html-attribute-node html-id tag key *global-module-table*)
-                (bind-html-node it *global-module-table*)))
+             (-> (make-html-attribute-node html-id tag key *global-module-table*)
+                 (bind-html-node it *global-module-table*)))
 
-          (remhash key attributes))))
+           (remhash key attributes))
+
+          ((plump:attribute element "id")
+           (make-html-element-node it tag *global-module-table*)))))
 
     (call-next-method element :clone nil)))
 
