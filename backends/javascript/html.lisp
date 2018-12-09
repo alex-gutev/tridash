@@ -90,12 +90,11 @@
   ;; Create base node definition first
   (call-next-method)
 
-  (cond
-    ((gethash :input (contexts node))
-     (make-input-html-node node))
+  (when (gethash :input (contexts node))
+    (make-input-html-node node))
 
-    ((gethash :object (contexts node))
-     (make-output-html-node node))))
+  (when (gethash :object (contexts node))
+   (make-output-html-node node)))
 
 (defun make-input-html-node (node)
   "Generates the node definition for a node which references an
@@ -157,13 +156,17 @@
   "Generates code which sets the attribute ATTRIBUTE of the HTML
    element, stored in the html_element field of NODE. OBJECT is an
    expression referencing a JS object in which the value of the
-   attribute (to be set) is stored in the field ATTRIBUTE."
+   attribute (to be set) is stored in the field ATTRIBUTE. If NODE has
+   the HTML-ATTRIBUTE slot, the attribute <HTML-ATTRIBUTE>.<ATTRIBUTE>
+   is set."
 
-  (let ((path (node-path node)))
-    (js-call
-     '=
-     (js-members path "html_element" attribute)
-     (js-member object attribute))))
+  (with-slots (html-attribute) node
+    (unless (equal (string attribute) "style")
+      (let ((path (node-path node)))
+        (js-call
+         '=
+         (apply #'js-members path "html_element" (append (ensure-list html-attribute) (list attribute)))
+         (js-member object attribute))))))
 
 
 (defparameter *html-events*
