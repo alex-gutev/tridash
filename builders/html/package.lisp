@@ -36,6 +36,9 @@
                 :symb
                 :lol-syntax)
 
+  (:import-from :tridash.frontend
+                :process-subnode)
+
   (:export
    ;; HTML-NODE
    :html-node

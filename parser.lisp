@@ -228,7 +228,7 @@
 (defun id-symbol (name)
   "Interns a symbol with name NAME into the :TRIDASH.SYMBOLS package."
 
-  (intern name :tridash.symbols))
+  (intern (string name) :tridash.symbols))
 
 (defun operand-list? (lex precedence)
   "Returns true if the next token is the start of the operand list of

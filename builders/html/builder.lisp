@@ -136,7 +136,7 @@
             (-> (make-html-attribute-node html-id tag key *global-module-table*)
                 (bind-html-node it *global-module-table*)))
 
-          (setf (gethash key attributes) ""))))
+          (remhash key attributes))))
 
     (call-next-method element :clone nil)))
 
@@ -154,8 +154,21 @@
 (defun make-html-element-node (html-id tag module-table)
   "Builds the node referencing the HTML element with id HTML-ID."
 
-  (-> (build-node (id-symbol html-id) module-table)
+  (-> (aprog1 (build-node (id-symbol html-id) module-table)
+        (html-attributes->html-nodes it html-id tag module-table))
+
       (node->html-node :tag-name tag :element-id html-id)))
+
+(defun html-attributes->html-nodes (node html-id tag-name module-table)
+  "If NODE is not an HTML-NODE and has an :OBJECT context, convert all
+   the context's operand nodes to HTML attribute nodes, for the HTML
+   element with id HTML-ID and tag-name TAG-NAME."
+
+  (unless (typep node 'html-node)
+    (when-let ((context (gethash :object (contexts node))))
+      (iter
+        (for (attribute) in (rest (value-function context)))
+        (make-html-attribute-node html-id tag-name attribute module-table)))))
 
 (defun make-html-attribute-node (html-id tag attribute module-table)
   "Builds the subnode referencing the attribute ATTRIBUTE of the HTML
@@ -169,7 +182,7 @@
 
     (node->html-node node
                      :tag-name tag
-                     :html-attribute attribute
+                     :html-attribute (string attribute)
                      :element-id html-id)
 
     node))
@@ -195,6 +208,20 @@
          module-table)
 
       (target-node-error ()))))
+
+
+(defmethod process-subnode ((object-node html-node) object-decl key table)
+  "Convert the subnode node into an HTML attribute node."
+
+  (declare (ignore object-decl table))
+  (multiple-value-return (subnode table) (call-next-method)
+    (add-input subnode table)
+
+    (with-slots (tag-name element-id) object-node
+     (node->html-node subnode
+                      :tag-name tag-name
+                      :html-attribute (string key)
+                      :element-id element-id))))
 
 
 ;;; Process Text Nodes
