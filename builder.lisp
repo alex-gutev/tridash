@@ -121,6 +121,9 @@
     (maphash-values #'find-outer-node-references modules)
     (maphash-values #'add-outer-node-operands modules)
 
+    ;; Remove unreachable nodes
+    (maphash-values #'remove-all-unreachable-nodes modules)
+
     ;; Coalesce nodes
     (maphash-values #'coalesce-nodes modules)))
 

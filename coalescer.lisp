@@ -158,3 +158,32 @@
         (dohash (nil context contexts)
           (with-slots (value-function) context
             (setf value-function (remove-node-links value-function))))))))
+
+
+(defun remove-all-unreachable-nodes (graph)
+  "Removes all unreachable nodes in GRAPH and in the definitions of
+   each meta-node in GRAPH."
+
+  (flet ((remove-unreachable-nodes (graph)
+           (when graph
+             (remove-unreachable-nodes graph))))
+    (remove-unreachable-nodes graph)
+    (maphash-values (compose #'remove-unreachable-nodes #'definition) (meta-nodes graph))))
+
+(defun remove-unreachable-nodes (graph)
+  "Removes all nodes which are not reachable from an input node."
+
+  (with-slots (nodes all-nodes) graph
+    (let ((visited (make-hash-table :test #'eq)))
+      (labels ((mark (node)
+                 (unless (gethash node visited)
+                   (setf (gethash node visited) t)
+                   (maphash-keys #'mark (observers node))))
+
+               (sweep (name node)
+                 (unless (or (gethash node visited) (attribute :no-remove node))
+                   (remhash name nodes)
+                   (remhash name all-nodes))))
+
+        (mapc #'mark (input-nodes graph))
+        (maphash #'sweep nodes)))))
