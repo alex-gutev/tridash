@@ -3,61 +3,61 @@
 ### Contains meta-node stubs, and operator table, for the language
 ### primitives.
 
-module(core)
+:module(core)
 
 ## Operators
 
 # Basic Operators
 
-op(->, 10, right)
-op(:, 5, right)
+:op(->, 10, right)
+:op(:, 5, right)
 
-op(., 500, left)
+:op(., 500, left)
 
 
 # Arithmetic Operators
 
-op(+, 100, left)
-op(-, 100, left)
+:op(+, 100, left)
+:op(-, 100, left)
 
-op(*, 200, left)
-op(/, 200, left)
+:op(*, 200, left)
+:op(/, 200, left)
 
 
 # Comparison Operators
 
-op(<, 50)
-op(<=, 50)
-op(>, 50)
-op(>=, 50)
-op(=, 50)
-op(!=, 50)
+:op(<, 50)
+:op(<=, 50)
+:op(>, 50)
+:op(>=, 50)
+:op(=, 50)
+:op(!=, 50)
 
 
 # Logical Operators
 
-op(and, 25)
-op(or, 20)
+:op(and, 25)
+:op(or, 20)
 
 
 # Create stubs for all primitive operators
 
-extern(+, -, *, /, <, <=, >, >=, =, !=, and, or, not)
+:extern(+, -, *, /, <, <=, >, >=, =, !=, and, or, not)
 
-extern(if)
+:extern(if)
 
-attribute(not, target-node, not)
+:attribute(not, target-node, not)
 
 
 ## Type Conversions
 
-extern(int, real)
+:extern(int, real)
 
-attribute(int, target-node, int)
-attribute(real, target-node, real)
+:attribute(int, target-node, int)
+:attribute(real, target-node, real)
 
 
 # Export Primitive Nodes
 
-export(+, -, *, /, <, <=, >, >=, =, !=, and, or, not, if)
-export(int, real)
+:export(+, -, *, /, <, <=, >, >=, =, !=, and, or, not, if)
+:export(int, real)

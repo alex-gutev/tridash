@@ -28,10 +28,7 @@
 (defconstant +def-operator+ (id-symbol ":")
   "Operator for defining meta-nodes.")
 
-(defconstant +macro-operator+ (id-symbol "macro")
-  "Operator for marking meta-nodes to be expanded at compile-time.")
-
-(defconstant +op-operator+ (id-symbol "op")
+(defconstant +op-operator+ (id-symbol ":op")
   "Operator for marking nodes as infix operators.")
 
 
@@ -52,7 +49,7 @@
 
 ;;; Attributes
 
-(defconstant +attribute-operator+ (id-symbol "attribute")
+(defconstant +attribute-operator+ (id-symbol ":attribute")
   "Special operator for setting node attributes.")
 
 
@@ -64,28 +61,28 @@
 
 ;;; Modules
 
-(defconstant +module-operator+ (id-symbol "module")
+(defconstant +module-operator+ (id-symbol ":module")
   "Operator which sets the current module.")
 
-(defconstant +import-operator+ (id-symbol "import")
+(defconstant +import-operator+ (id-symbol ":import")
   "Operator for importing nodes, from another module, into the current
    module.")
 
-(defconstant +alias-operator+ (id-symbol "alias")
+(defconstant +alias-operator+ (id-symbol ":alias")
   "Operator for adding an alias for a module to the current module.")
 
-(defconstant +use-operator+ (id-symbol "use")
+(defconstant +use-operator+ (id-symbol ":use")
   "Operator for using a module, using its name as an alias, from the
    current module.")
 
-(defconstant +export-operator+ (id-symbol "export")
+(defconstant +export-operator+ (id-symbol ":export")
   "Operator for adding a node to the public nodes table of the current
    module.")
 
 
 ;;; Externally-Defined Meta-Nodes
 
-(defconstant +extern-operator+ (id-symbol "extern")
+(defconstant +extern-operator+ (id-symbol ":extern")
   "Special operator for adding stubs for meta-nodes which are defined
    externally.")
 
