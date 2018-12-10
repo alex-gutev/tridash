@@ -44,13 +44,6 @@
     "Set of meta-nodes of which there are instances in the
      meta-node's definition.")
 
-   (output-nodes
-    :initform (make-hash-table :test #'equal)
-    :accessor output-nodes
-    :documentation
-    "Set (hash-table) of output nodes. Each KEY is the output node's
-     name and the corresponding value is the output `NODE' object.")
-
    (definition
     :initarg :definition
     :initform nil

@@ -144,6 +144,9 @@
     (let* ((table (make-inner-node-table outer-table))
            (*meta-node* meta-node))
 
+      ;; Add implicit self
+      (add-node +self-node+ meta-node table)
+
       (add-operand-nodes (operands meta-node) table)
 
       (let* ((last-node (process-node-list (definition meta-node) table t)))
@@ -171,14 +174,6 @@
 
   (with-slots (output-nodes contexts) meta-node
     (cond
-      ((plusp (hash-table-count output-nodes))
-       (with-slots (value-function) (context meta-node nil)
-         (setf value-function
-               (cons :object
-                     (iter
-                       (for (name node) in-hashtable output-nodes)
-                       (collect (list name (add-binding node meta-node :context nil :add-function nil))))))))
-
       ((and last-node (zerop (hash-table-count contexts)))
        (add-binding last-node meta-node :context nil))
 
@@ -212,17 +207,6 @@
 
   (declare (ignore table))
   literal)
-
-
-;;; Special Nodes
-
-(defmethod process-declaration ((name (eql +self-node+)) table)
-  "Returns the current meta-node, bound to *META-NODE*. If *META-NODE*
-   is NIL an error condition is signaled."
-
-  (declare (ignore table))
-
-  (or *meta-node* (error 'self-reference-error)))
 
 
 ;;;; Methods: Processing Functors
@@ -500,27 +484,6 @@
                    `(if ,cond-link ,value-link ,(node-link :self)))
 
              (values cond-node table))))))))
-
-
-;;; Output Nodes
-
-(defmethod process-functor ((operator (eql +out-operator+)) operands table)
-  "Creates the output node and adds it to the set of output nodes of
-   the meta-node currently bound to *META-NODE*."
-
-  (match-syntax (+out-operator+ identifier)
-      operands
-
-    ((list name)
-
-     (unless *meta-node*
-       (error 'out-node-error))
-
-     (with-slots (output-nodes) *meta-node*
-       (values
-        (aprog1 (ensure-node (cons operator operands) table)
-          (setf (gethash name output-nodes) it))
-        table)))))
 
 
 ;;; Subnodes

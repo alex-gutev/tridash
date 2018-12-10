@@ -174,15 +174,6 @@
 
 ;;;; Special Node/Operator Errors
 
-(define-condition self-reference-error (semantic-error) ()
-  (:documentation
-   "Error condition: Referencing the special self node outside a
-    meta-node definition."))
-
-(defmethod error-description ((err self-reference-error))
-  "'self' node referenced outside a meta-node definition.")
-
-
 (define-condition invalid-arguments-error (semantic-error)
   ((operator :initarg :operator
              :reader operator
@@ -234,14 +225,6 @@
 
 (defmethod error-description ((e global-outer-reference-error))
   "Cannot reference outer nodes from global scope.")
-
-
-(define-condition out-node-error (semantic-error) ()
-  (:documentation
-   "Error condition: out operator outside a meta-node definition."))
-
-(defmethod error-description ((e out-node-error))
-  "Cannot use OUT operator outside a meta-node definition.")
 
 
 ;;;; Node Binding Errors

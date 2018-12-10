@@ -49,10 +49,6 @@
 (defconstant +self-node+ (id-symbol "self")
   "Special node which references the current meta-node.")
 
-(defconstant +out-operator+ (id-symbol "out")
-  "Special operator for creating output nodes, from inside meta-node
-   definitions.")
-
 
 ;;; Attributes
 
