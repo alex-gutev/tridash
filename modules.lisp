@@ -66,3 +66,36 @@
 
   (or (gethash module (modules modules))
       (error 'non-existent-module :module-name module)))
+
+
+;;;; Core Module Definitions
+
+;;; The core module contains a few macro nodes such as the "case"
+;;; meta-node. Eventually a macro-system will be developed and these
+;;; will be specified in Tridash code.
+
+(defun create-core-module (modules)
+  "Creates the core module containing the built-in macro nodes."
+
+  (let ((core (ensure-module (id-symbol "core") modules)))
+    (let ((case-node (add-external-meta-node (id-symbol "case") core)))
+      (setf (attribute :macro-function case-node) #'case-macro-function))))
+
+(defun case-macro-function (operator operands table)
+  "Case macro function. Transforms the case expression into a series
+   of nested if expressions."
+
+  (declare (ignore operator))
+
+  (let ((if-node (list +in-module-operator+ (id-symbol "core") (id-symbol "if"))))
+
+   (flet ((make-if (case expr)
+            (match case
+              ((list (eq +def-operator+) cond node)
+               (list if-node cond node expr))
+
+              (_ case))))
+
+     (process-declaration
+      (reduce #'make-if operands :from-end t :initial-value nil)
+      table))))

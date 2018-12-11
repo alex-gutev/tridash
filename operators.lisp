@@ -79,6 +79,10 @@
   "Operator for adding a node to the public nodes table of the current
    module.")
 
+(defconstant +in-module-operator+ (id-symbol ":in")
+  "Operator for referencing a node in another module which does not
+   have an alias in the current module.")
+
 
 ;;; Externally-Defined Meta-Nodes
 

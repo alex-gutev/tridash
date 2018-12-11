@@ -217,6 +217,14 @@
     (setf (gethash name all-nodes) node)
     (setf (gethash name meta-nodes) node)))
 
+(defun add-external-meta-node (name table)
+  "Adds a stub for an externally defined meta-node with name NAME to
+   TABLE."
+
+  (add-meta-node
+   name
+   (make-instance 'external-meta-node :name name)
+   table))
 
 ;;; Removing nodes
 

@@ -347,6 +347,15 @@
         ((list* nodes)
          (mapcar #'export-node nodes))))))
 
+(defmethod process-functor ((operator (eql +in-module-operator+)) args table)
+  "Looks up a node in another module, which does not have an alias in
+   the current module."
+
+  (match-syntax (+in-module-operator+ identifier node)
+      args
+
+    ((list (guard module (symbolp module)) node)
+     (process-subnode (get-module module *global-module-table*) module node table))))
 
 ;;; Definitions
 
@@ -368,17 +377,11 @@
 (defmethod process-functor ((operator (eql +extern-operator+)) args table)
   "Adds a stub for an externally defined meta-node to TABLE."
 
-  (flet ((add-external-meta-node (name)
-           (add-meta-node
-            name
-            (make-instance 'external-meta-node :name name)
-            table)))
+  (match-syntax (+extern-operator+ (list identifier))
+      args
 
-   (match-syntax (+extern-operator+ (list identifier))
-       args
-
-     ((list* nodes)
-      (mapcar #'add-external-meta-node nodes)))))
+    ((list* nodes)
+     (mapcar (rcurry #'add-external-meta-node table) nodes))))
 
 
 ;;; Attributes
@@ -396,25 +399,6 @@
            (attributes)
            (gethash (string attribute))
            (setf <> value)))))
-
-
-;;; Conditions
-
-(defmethod process-functor ((operator (eql +case-operator+)) operands table)
-  "Process case expressions. A case expressions contains a list of
-   conditions each of the form <condition> : <value>. The case
-   expression resolves to the <value> of the first <condition> which
-   resolves to true."
-
-  (flet ((make-if (case expr)
-           (match case
-             ((list (eq +def-operator+) cond node)
-              (list (id-symbol "if") cond node expr))
-
-             (_ case))))
-    (process-declaration
-     (reduce #'make-if operands :from-end t :initial-value nil)
-     table)))
 
 
 ;;; Node lists
@@ -560,8 +544,17 @@
    nodes are added as dependencies of the node."
 
   (-> (lookup-meta-node operator table)
-      (make-meta-node-instance operator operands table)))
+      (process-meta-node-decl operator operands table)))
 
+(defun process-meta-node-decl (meta-node operator operands table)
+  "Processes a node functor node declaration where the operator is the
+   meta-node META-NODE. If the meta-node has a macro-function it is
+   evaluated and the resulting node is returned, otherwise an instance
+   of the meta-node is created."
+
+  (aif (attribute :macro-function meta-node)
+       (funcall it operator operands table)
+       (make-meta-node-instance meta-node operator operands table)))
 
 (defun make-meta-node-instance (meta-node operator operands table)
   "Creates a node which invokes the meta-node META-NODE with operands

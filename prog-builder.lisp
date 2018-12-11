@@ -31,6 +31,8 @@
    currently unused. Returns the module table."
 
   (let ((modules (make-instance 'module-table)))
+    (create-core-module modules)
+
     (iter
       (for file in files)
 

@@ -59,5 +59,6 @@
 
 # Export Primitive Nodes
 
-:export(+, -, *, /, <, <=, >, >=, =, !=, and, or, not, if)
+:export(+, -, *, /, <, <=, >, >=, =, !=, and, or, not)
+:export(if, case)
 :export(int, real)
