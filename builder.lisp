@@ -390,10 +390,13 @@
            (guard attribute (or (symbolp attribute) (stringp attribute)))
            value)
 
-     (-<>> (lookup-node node table)
-           (attributes)
-           (gethash (string attribute))
-           (setf <> value)))))
+     (let ((node (lookup-node node table))
+           (attribute (string attribute)))
+
+       (when (equalp attribute "input")
+         (add-input node table))
+
+       (setf (attribute attribute node) value)))))
 
 
 ;;; Node lists
