@@ -4,6 +4,7 @@
 ### primitives.
 
 :module(core)
+:import(builtin)
 
 ## Operators
 

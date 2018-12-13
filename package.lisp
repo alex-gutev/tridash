@@ -171,18 +171,46 @@
    :finish-build-graph
 
    :build-program
-
-   ;; Wait-set
-   :build-wait-sets
+   :build-source-file
 
    ;; Coalescing Nodes
    :coalesce-nodes
 
    ;; Error Conditions
    :semantic-error
-   :message
+   :declaration-stack
+   :module-table
+
+   :node-type-error
+   :expected-type
+
+   :non-existent-node
+   :module-name
+
+   :node-exists-error
+   :meta-node-name-collision
+
+   :non-existent-module
+   :alias-clash-error
+   :alias-taken-error
+
+   :import-node-error
+
+   :invalid-arguments-error
+   :operator
+   :arguments
+   :expected
+
+   :invalid-value-error
+   :thing
+   :allowed
+   :value
+
+   :global-outer-reference-error
+
    :target-node-error
-   :ambiguous-context-error)
+   :ambiguous-context-error
+   :ambiguous-meta-node-context)
 
   (:documentation
    "Package containing the compiler frontend, which builds the node

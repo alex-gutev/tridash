@@ -73,4 +73,6 @@
                :cl-ppcre
                :ppath
                :parse-number
-               :cl-yaml))
+               :cl-yaml
+               :cl-fad
+               :osicat))

@@ -20,6 +20,13 @@
 
 (in-package :tridash)
 
+(defvar *module-search-paths*
+  '(#p"/usr/lib/tridash/modules/"
+    #p"/usr/local/lib/tridash/modules/"
+    #p"~/.tridash/modules/")
+
+  "List of paths to search for module build files.")
+
 
 (defun main (argv)
   "Compiler application entry point."
@@ -49,7 +56,9 @@
   "Builds the node definitions out of the sources list
    SOURCES. Returns the global module table."
 
-  (build-program :files (source-file-list sources)))
+  (handler-bind
+      ((non-existent-module #'load-module-handler))
+    (build-program :files (source-file-list sources))))
 
 (defun source-file-list (sources)
   "Converts the sources list SOURCES from the format specified in the
@@ -66,3 +75,41 @@
             source))
 
           (_ source)))))
+
+
+;;; Module Loading
+
+(defun load-module-handler (c)
+  "Handler function for the `NON-EXISTENT-MODULE-ERROR'
+   condition. Searches for the module in the module search paths and
+   if the module is found, builds its source files and invokes the
+   RETRY restart. Otherwise returns normally."
+
+  (with-accessors ((module-name module-name) (module-table module-table)) c
+    (let ((current-module (node-table module-table)))
+      (unwind-protect
+           (when (load-module module-name module-table)
+             (retry))
+
+        (setf (node-table module-table) current-module)))))
+
+(defun load-module (module module-table)
+  "Searches for the module MODULE in the module search paths and if
+   found builds its source files. Returns non-NIL if a module was
+   found, returns NIL otherwise."
+
+  (find-if (rcurry #'load-module-sources module module-table) *module-search-paths*))
+
+(defun load-module-sources (path module module-table)
+  "Searches for the module MODULE in the directory at PATH. If the
+   module was found builds its source files and returns true."
+
+  (let ((module-path (cl-fad:merge-pathnames-as-file path (concatenate 'string (string module) ".yml"))))
+    (when (osicat:regular-file-exists-p module-path)
+      (let ((module-info (yaml:parse module-path)))
+        (unless (hash-table-p module-info)
+          (error "Expected a map."))
+
+        (let ((sources (source-file-list (gethash "sources" module-info))))
+          (mapc (rcurry #'build-source-file module-table) sources)))
+      t)))

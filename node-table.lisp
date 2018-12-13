@@ -247,6 +247,14 @@
     (push node (input-nodes table))))
 
 
+;;; Exporting Nodes
+
+(defun export-node (name table)
+  "Adds the node with name NAME to the PUBLIC-NODES of table."
+
+  (setf (gethash name (public-nodes table))
+        (lookup-node name table)))
+
 ;;;; Module Aliases
 
 (defun module-alias (alias table)

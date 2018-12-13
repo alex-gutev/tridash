@@ -64,22 +64,24 @@
   "Returns the `NODE-TABLE' of MODULE. If there is module named MODULE
    in MODULES, signals a `NON-EXISTENT-MODULE' condition."
 
-  (or (gethash module (modules modules))
-      (error 'non-existent-module :module-name module)))
+  (with-retry-restart
+    (or (gethash module (modules modules))
+        (error 'non-existent-module :module-name module))))
 
 
-;;;; Core Module Definitions
+;;;; Builtin Module Definition
 
-;;; The core module contains a few macro nodes such as the "case"
+;;; The 'builtin' module contains a few macro nodes such as the "case"
 ;;; meta-node. Eventually a macro-system will be developed and these
 ;;; will be specified in Tridash code.
 
-(defun create-core-module (modules)
-  "Creates the core module containing the built-in macro nodes."
+(defun create-builtin-module (modules)
+  "Creates the builtin module."
 
-  (let ((core (ensure-module (id-symbol "core") modules)))
-    (let ((case-node (add-external-meta-node (id-symbol "case") core)))
-      (setf (attribute :macro-function case-node) #'case-macro-function))))
+  (let ((builtin (ensure-module (id-symbol "builtin") modules)))
+    (let ((case-node (add-external-meta-node (id-symbol "case") builtin)))
+      (setf (attribute :macro-function case-node) #'case-macro-function)
+      (export-node (id-symbol "case") builtin))))
 
 (defun case-macro-function (operator operands table)
   "Case macro function. Transforms the case expression into a series

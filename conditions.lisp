@@ -36,7 +36,13 @@
     :reader declaration-stack
     :documentation
     "The declaration stack leading up to the declaration where the
-     error occurred."))
+     error occurred.")
+
+   (module-table
+    :initform *global-module-table*
+    :reader module-table
+    :documentation
+    "The global module table."))
 
   (:documentation
    "Base condition class for semantic errors."))

@@ -336,16 +336,11 @@
 (defmethod process-functor ((operator (eql +export-operator+)) args table)
   "Adds nodes to the public-nodes list of TABLE."
 
-  (with-slots (public-nodes) table
-    (flet ((export-node (name)
-             (setf (gethash name public-nodes)
-                   (lookup-node name table))))
+  (match-syntax (+export-operator+ (list identifier))
+      args
 
-      (match-syntax (+export-operator+ (list identifier))
-          args
-
-        ((list* nodes)
-         (mapcar #'export-node nodes))))))
+    ((list* nodes)
+     (mapcar (rcurry #'export-node table) nodes))))
 
 (defmethod process-functor ((operator (eql +in-module-operator+)) args table)
   "Looks up a node in another module, which does not have an alias in

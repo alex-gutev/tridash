@@ -93,5 +93,18 @@
          ,(mapcar #'make-macro keys)
        ,@body)))
 
+(defmacro! with-retry-restart (&body forms)
+  "Evaluates FORMS with the RETRY restart established, if no error is
+   raised returns the value of the last form in FORMS. If the retry
+   restart is invoked the forms are re-evaluated."
+
+  `(loop named ,g!name
+      do
+        (with-simple-restart (retry "Retry Operation")
+          (return-from ,g!name (progn ,@forms)))))
+
+(defun retry ()
+  (invoke-restart 'retry))
+
 (defpattern optional (arg)
   `(or ,arg nil))

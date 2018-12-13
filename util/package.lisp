@@ -45,6 +45,9 @@
    :multiple-value-return
    :with-hash-keys
 
+   :with-retry-restart
+   :retry
+
    ;; Optima Patterns
    :optional
 
