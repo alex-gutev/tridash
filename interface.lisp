@@ -44,7 +44,7 @@
    to MODULE-TABLE. Options is an PLIST of options passed to the file
    builder."
 
-  (let ((ext (cdr (ppath:splitext path))))
+  (let ((ext (cdr (ppath:splitext (namestring path)))))
     (unless (emptyp ext)
       (funcall (file-builder (subseq ext 1)) path module-table options))))
 
