@@ -23,7 +23,11 @@
 
 ;;;; Symbol Names
 
-(define-constant +tridash-prefix+ "Tridash."
+(define-constant +tridash-namespace+ "Tridash"
+  :test #'equal
+  :documentation "Namespace containing the Tridash runtime library")
+
+(define-constant +tridash-prefix+ (mkstr +tridash-namespace+ ".")
   :test #'equal
   :documentation "Namespace containing the Tridash runtime library definitions.")
 

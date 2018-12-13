@@ -254,6 +254,20 @@ Tridash.Node.prototype.update = function() {
 Tridash.Node.prototype.update_value = function(value) {};
 
 /**
+ * Adds a function which is called when the value of the node changes.
+ *
+ * @param fn A function of one argument - the new value of the node.
+ */
+Tridash.Node.prototype.add_watch = function(fn) {
+    var update_value = this.update_value;
+
+    this.update_value = (value) => {
+        update_value(value);
+        fn(value);
+    };
+};
+
+/**
  * Sets the value of the node. The node must be an input node and must
  * have an input context.
  *
@@ -275,7 +289,7 @@ Tridash.Node.prototype.set_value = function(value) {
  *   set. Each element is an array of two elements: the input node and
  *   its value.
  */
-Tridash.Node.set_values = function(node_values) {
+Tridash.set_values = function(node_values) {
     var start = new Tridash.ValuePromise();
     var visited = {};
 

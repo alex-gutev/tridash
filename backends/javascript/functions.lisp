@@ -295,7 +295,7 @@
                (make-js-block node-creation-code))
 
               (js-call
-               (js-member +node-class+ "set_values")
+               (js-member +tridash-namespace+ "set_values")
                (js-array (mapcar #'operand-node-var op-vars)))
 
               (js-return (js-member "promise" "promise"))))))))))
