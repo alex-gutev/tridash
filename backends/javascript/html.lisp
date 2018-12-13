@@ -171,7 +171,9 @@
 
 (defparameter *html-events*
   (alist-hash-table
-   '((("input" "value") . "change"))
+   '((("input" "value") . "change")
+     (("input" "checked") . "change")
+     (("textarea" "value") . "change"))
    :test #'equalp)
 
   "Hash table containing the \"change\" event names of HTML tag
