@@ -223,6 +223,7 @@
         :cl-arrows
         :optima
         :iterate
+        :split-sequence
 
         :tridash.util
         :tridash.parser

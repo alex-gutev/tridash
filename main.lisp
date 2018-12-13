@@ -20,6 +20,14 @@
 
 (in-package :tridash)
 
+(define-constant +module-paths-var+
+    "TRIDASH_MODULE_PATHS"
+  :test #'string=
+  :documentation "Environment variable containing additional module search paths.")
+
+(define-constant +paths-delimiter+ #\:
+  :documentation "Search path delimiter.")
+
 (defvar *module-search-paths*
   '(#p"/usr/lib/tridash/modules/"
     #p"/usr/local/lib/tridash/modules/"
@@ -39,7 +47,8 @@
   "Builds the application with the source and build options specified
    in the YAML file at path BUILD-FILE."
 
-  (let ((prog-info (yaml:parse build-file)))
+  (let ((*module-search-paths* (search-paths))
+        (prog-info (yaml:parse build-file)))
     (unless (and (hash-table-p prog-info) (= (hash-table-count prog-info) 1))
       (error "Build file should contain a map of 1 key-value pair."))
 
@@ -51,6 +60,16 @@
       (with-open-file (*standard-output* out-path :direction :output :if-exists :supersede)
         (let ((backend (make-keyword (string-upcase (gethash "backend" output-info)))))
           (compile-nodes backend modules output-info))))))
+
+(defun search-paths ()
+  "Returns a list of the module search paths. This contains the search
+   paths in *MODULE-SEARCH-PATHS* and the search paths specified in
+   the environment variable."
+
+  (append
+   (aand (osicat:environment-variable +module-paths-var+)
+         (mapcar #'cl-fad:pathname-as-directory (split-sequence +paths-delimiter+ it)))
+   *module-search-paths*))
 
 (defun build-sources (build-path sources)
   "Builds the node definitions out of the sources list
