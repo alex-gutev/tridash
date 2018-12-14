@@ -72,7 +72,8 @@
 
   `(let ((,g!values (multiple-value-list ,expr)))
      (multiple-value-prog1 (values-list ,g!values)
-       (destructuring-bind ,vars ,g!values
+       (destructuring-bind (&optional ,@vars &rest ,g!rest) ,g!values
+         (declare (ignore ,g!rest))
          ,@body))))
 
 (defmacro! with-hash-keys ((&rest keys) o!hashtable &body body)
@@ -87,8 +88,8 @@
    WITH-HASH-KEYS form."
 
   (flet ((make-macro (key)
-           (destructuring-bind (sym &optional key) (ensure-list key)
-             `(,sym (gethash ,(or key sym) ,g!hashtable)))))
+           (destructuring-bind (sym &optional (key sym)) (ensure-list key)
+             `(,sym (gethash ,key ,g!hashtable)))))
     `(symbol-macrolet
          ,(mapcar #'make-macro keys)
        ,@body)))
@@ -100,7 +101,7 @@
 
   `(loop named ,g!name
       do
-        (with-simple-restart (retry "Retry Operation")
+        (with-simple-restart (retry "Retry")
           (return-from ,g!name (progn ,@forms)))))
 
 (defun retry ()

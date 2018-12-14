@@ -204,7 +204,6 @@
          :rule 'node-operand))
 
 
-
 (defun node-path->name (path &optional (prefix "NODE"))
   "Parses the node path PATH, which is expected to be a string which
    names a node. The name may only be an atomic identifier, and the

@@ -38,12 +38,13 @@
 (defvar *global-module-table* (make-instance 'module-table))
 
 
-(defmethod initialize-instance :after ((state module-table) &key &allow-other-keys)
+(defmethod initialize-instance :after ((module-table module-table) &key &allow-other-keys)
   "Stores the `NODE-TABLE' initially stored in the `NODE-TABLE' slot
    of STATE in the entry for the :INIT module within the `MODULES'
-   STATE."
+   STATE. Creates the builtin module."
 
-  (with-slots (modules node-table) state
+  (with-slots (modules node-table) module-table
+    (create-builtin-module module-table)
     (setf (gethash :init modules) node-table)))
 
 (defun change-module (module &optional (frontend *global-module-table*))
@@ -90,14 +91,13 @@
   (declare (ignore operator))
 
   (let ((if-node (list +in-module-operator+ (id-symbol "core") (id-symbol "if"))))
+    (flet ((make-if (case expr)
+             (match case
+               ((list (eq +def-operator+) cond node)
+                (list if-node cond node expr))
 
-   (flet ((make-if (case expr)
-            (match case
-              ((list (eq +def-operator+) cond node)
-               (list if-node cond node expr))
+               (_ case))))
 
-              (_ case))))
-
-     (process-declaration
-      (reduce #'make-if operands :from-end t :initial-value nil)
-      table))))
+      (process-declaration
+       (reduce #'make-if operands :from-end t :initial-value nil)
+       table))))

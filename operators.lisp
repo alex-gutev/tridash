@@ -1,4 +1,4 @@
-;;;; builder.lisp
+;;;; operators.lisp
 ;;;;
 ;;;; Tridash Programming Language.
 ;;;; Copyright (C) 2018  Alexander Gutev
@@ -22,73 +22,106 @@
 
 ;;; Basic Operators
 
-(defconstant +bind-operator+ (id-symbol "->")
+(define-constant +bind-operator+ (id-symbol "->")
+  :documentation
   "Operator for establishing bindings between nodes.")
 
-(defconstant +def-operator+ (id-symbol ":")
+(define-constant +def-operator+ (id-symbol ":")
+  :documentation
   "Operator for defining meta-nodes.")
 
-(defconstant +op-operator+ (id-symbol ":op")
+(define-constant +op-operator+ (id-symbol ":op")
+  :documentation
   "Operator for marking nodes as infix operators.")
 
 
 ;;; Subnodes and Outer Nodes.
 
-(defconstant +outer-operator+ (id-symbol "..")
+(define-constant +outer-operator+ (id-symbol "..")
+  :documentation
   "Special operator for referencing nodes defined in an outer scope.")
 
-(defconstant +subnode-operator+ (id-symbol ".")
+(define-constant +subnode-operator+ (id-symbol ".")
+  :documentation
   "Special operator for accessing sub-nodes of a node.")
 
 
 ;;; Meta-nodes
 
-(defconstant +self-node+ (id-symbol "self")
+(define-constant +self-node+ (id-symbol "self")
+  :documentation
   "Special node which references the current meta-node.")
 
 
 ;;; Attributes
 
-(defconstant +attribute-operator+ (id-symbol ":attribute")
+(define-constant +attribute-operator+ (id-symbol ":attribute")
+  :documentation
   "Special operator for setting node attributes.")
 
 
 ;;; Conditionals
 
-(defconstant +case-operator+ (id-symbol "case")
+(define-constant +case-operator+ (id-symbol "case")
+  :documentation
   "Case conditional operator.")
 
 
 ;;; Modules
 
-(defconstant +module-operator+ (id-symbol ":module")
+(define-constant +module-operator+ (id-symbol ":module")
+  :documentation
   "Operator which sets the current module.")
 
-(defconstant +import-operator+ (id-symbol ":import")
+(define-constant +import-operator+ (id-symbol ":import")
+  :documentation
   "Operator for importing nodes, from another module, into the current
    module.")
 
-(defconstant +alias-operator+ (id-symbol ":alias")
+(define-constant +alias-operator+ (id-symbol ":alias")
+  :documentation
   "Operator for adding an alias for a module to the current module.")
 
-(defconstant +use-operator+ (id-symbol ":use")
+(define-constant +use-operator+ (id-symbol ":use")
+  :documentation
   "Operator for using a module, using its name as an alias, from the
    current module.")
 
-(defconstant +export-operator+ (id-symbol ":export")
+(define-constant +export-operator+ (id-symbol ":export")
+  :documentation
   "Operator for adding a node to the public nodes table of the current
    module.")
 
-(defconstant +in-module-operator+ (id-symbol ":in")
+(define-constant +in-module-operator+ (id-symbol ":in")
+  :documentation
   "Operator for referencing a node in another module which does not
    have an alias in the current module.")
 
 
 ;;; Externally-Defined Meta-Nodes
 
-(defconstant +extern-operator+ (id-symbol ":extern")
+(define-constant +extern-operator+ (id-symbol ":extern")
+  :documentation
   "Special operator for adding stubs for meta-nodes which are defined
    externally.")
+
+
+(define-constant +special-operators+
+    (list +bind-operator+
+          +def-operator+
+          +op-operator+
+          +outer-operator+
+          +subnode-operator+
+          +attribute-operator+
+          +module-operator+
+          +import-operator+
+          +use-operator+
+          +export-operator+
+          +in-module-operator+
+          +export-operator+)
+
+  :test #'equal
+  :documentation "List of all special operators")
 
 
 ;;; Infix Operators

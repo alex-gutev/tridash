@@ -69,7 +69,7 @@
   ()
 
   (:documentation
-   "Meta-node which is defined externally."))
+   "Node stub for a meta-node which is defined externally."))
 
 
 ;;; Predicates

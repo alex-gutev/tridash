@@ -59,7 +59,7 @@
 
 (defun parse-int (str start)
   "Parses STR as an integer, however returns NIL if STR is not a valid
-   integer rather than signalling a condition. The argument START is
+   integer rather than signaling a condition. The argument START is
    the index of the first character in STR from which the integer is
    parsed."
 

@@ -76,16 +76,6 @@
   (with-open-file (in path)
     (build-parsed-nodes (make-parser in) module-table)))
 
-
-(defun build-graph (parser &optional (*global-module-table* (make-instance 'module-table)))
-  "Builds the graph from the objects returned by successively calling
-   PARSER."
-
-  (build-parsed-nodes parser)
-  (finish-build-graph)
-
-  *global-module-table*)
-
 (defun build-parsed-nodes (parser &optional (*global-module-table* *global-module-table*))
   "Builds the `NODE' objects from the node declarations returned by
    successively calling PARSER and adds them to the `NODE-TABLE' of
@@ -313,24 +303,6 @@
              (mapcar (rcurry #'import-node module table) nodes)
              (maphash-keys (rcurry #'import-node module table) (public-nodes module))))))))
 
-(defun import-node (name module table)
-  "Import node NAME from MODULE into TABLE."
-
-  (let* ((node (lookup-node name module)))
-    (with-slots (all-nodes module-aliases) table
-      (when (aand (gethash name all-nodes) (not (eq it node)))
-        (error 'import-node-error
-               :node name
-               :module module
-               :node-table table))
-
-      (when (eq (node-type node) 'module)
-        (setf (gethash name module-aliases) node))
-
-      (setf (gethash name all-nodes) node)
-
-      (awhen (gethash name (operator-nodes module))
-        (add-operator name (first it) (second it) (operator-nodes table))))))
 
 
 (defmethod process-functor ((operator (eql +export-operator+)) args table)

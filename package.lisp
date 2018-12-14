@@ -39,7 +39,8 @@
    ;; Backend Interface
    :compile-nodes
 
-   ;; Error Reporting
+   ;; Errors
+   :unknown-file-type
    :error-description)
 
   (:documentation
@@ -107,8 +108,6 @@
    :node-context
    :operands
    :value-function
-   :wait-set
-
    :context
 
    ;; Predicates
@@ -119,13 +118,11 @@
    ;; Node-link
    :node-link
    :node-link-node
-   :node-link-2-way-p
    :node-link-context
    :node-link-p
    :self
 
    ;; Utility Functions
-
    :observer-list
    :dependency-list
 
@@ -149,32 +146,29 @@
    :node-table
    :outer-table
    :depth
-   :all-nodes
    :nodes
    :meta-nodes
+   :module-aliases
+   :all-nodes
+   :public-nodes
    :operator-nodes
+   :input-nodes
 
    :add-node
-
-   :input-nodes
    :add-input
 
-   ;; Frontend State
+   ;; Module Table
    :module-table
    :modules
    :get-module
 
    ;; Builder
-   :build-graph
    :build-parsed-nodes
    :build-node
    :finish-build-graph
 
    :build-program
    :build-source-file
-
-   ;; Coalescing Nodes
-   :coalesce-nodes
 
    ;; Error Conditions
    :semantic-error

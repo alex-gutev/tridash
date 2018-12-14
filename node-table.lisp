@@ -165,7 +165,6 @@
          (values it table)
          (lookup-node name next-table))))
 
-
 (defun lookup-meta-node (meta-node table)
   "Searches for a meta-node by processing the declaration (using
    PROCESS-DECLARATION) with *CREATE-NODES* set to nil, that is no
@@ -180,7 +179,6 @@
     (aprog1 (process-declaration meta-node table)
       (unless (meta-node? it)
         (error 'node-type-error :node it :expected 'meta-node)))))
-
 
 (defun node-type (node)
   "Returns a symbol identifying the type of NODE. META-NODE is
@@ -226,6 +224,7 @@
    (make-instance 'external-meta-node :name name)
    table))
 
+
 ;;; Removing nodes
 
 (defun remove-node (name table)
@@ -247,13 +246,33 @@
     (push node (input-nodes table))))
 
 
-;;; Exporting Nodes
+;;; Importing and Exporting Nodes
+
+(defun import-node (name module table)
+  "Import node NAME from MODULE into TABLE."
+
+  (let* ((node (lookup-node name module)))
+    (with-slots (all-nodes module-aliases) table
+      (when (aand (gethash name all-nodes) (not (eq it node)))
+        (error 'import-node-error
+               :node name
+               :module module
+               :node-table table))
+
+      (when (eq (node-type node) 'module)
+        (setf (gethash name module-aliases) node))
+
+      (setf (gethash name all-nodes) node)
+
+      (awhen (gethash name (operator-nodes module))
+        (add-operator name (first it) (second it) (operator-nodes table))))))
 
 (defun export-node (name table)
   "Adds the node with name NAME to the PUBLIC-NODES of table."
 
   (setf (gethash name (public-nodes table))
         (lookup-node name table)))
+
 
 ;;;; Module Aliases
 

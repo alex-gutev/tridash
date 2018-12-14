@@ -31,8 +31,6 @@
    currently unused. Returns the module table."
 
   (let ((modules (make-instance 'module-table)))
-    (create-builtin-module modules)
-
     (mapc (rcurry #'build-source-file modules) files)
 
     (finish-build-graph modules)

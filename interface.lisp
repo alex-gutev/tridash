@@ -36,13 +36,13 @@
    EXTENSIONS. Raises an error if no such file builder exists."
 
   (or (gethash extension *file-builders*)
-      (error "No file builder for extension: ~a" extension)))
+      (error 'unknown-file-type :extension extension)))
 
 (defun build-nodes-in-file (path module-table options)
   "Builds the nodes in file at path PATH, using the file builder
    associated with the file's extension, and adds the node definitions
-   to MODULE-TABLE. Options is an PLIST of options passed to the file
-   builder."
+   to MODULE-TABLE. OPTIONS is a hash-table containing options to the
+   file builder."
 
   (let ((ext (cdr (ppath:splitext (namestring path)))))
     (unless (emptyp ext)
@@ -52,7 +52,7 @@
 
 (defun set-file-builder (extension function)
   "Sets the file builder, for files with extension EXTENSION, to
-   FUNCTION. FUNCTION is an a function of three arguments: the path to
+   FUNCTION. FUNCTION is a function of three arguments: the path to
    the file, the module table in which the node definitions should be
    built and a hash-table containing builder options."
 
@@ -70,8 +70,8 @@
   "Defines a file builder for a particular extension or sets of
    extensions.
 
-   EXTENSIONS is either a symbol, whose symbol-name is the file
-   extension, or a list of symbols, in which case the file builder is
+   EXTENSIONS is either a string designator, for the file extension,
+   or a list of string designators, in which case the file builder is
    added for each extension.
 
    PATH-VAR is a symbol naming the variable to which the file path
@@ -108,3 +108,23 @@
 (defgeneric error-description (e)
   (:documentation
    "Returns a string explaining the error E."))
+
+
+;;;; Errors
+
+(define-condition unknown-file-type (error)
+  ((extension
+    :initarg :extension
+    :reader extension
+    :documentation
+    "Extension of the file."))
+
+  (:documentation
+   "Error condition: No file builder for a source file."))
+
+(defmethod error-description ((e unknown-file-type))
+  (format nil "Don't know how to process file with extension: ~a." (extension e)))
+
+(defmethod print-object ((e unknown-file-type) stream)
+  (print-unreadable-object (e stream :type t)
+    (format stream "Error: ~a" (error-description e))))
