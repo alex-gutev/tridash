@@ -298,7 +298,7 @@
 
       ((list* args)
        (iter (for module in args)
-             (process-declaration (list +alias-operator+ module module) table))))))
+             (process-declaration (list +alias-operator+ module module) table :top-level t))))))
 
 (defmethod process-functor ((operator (eql +alias-operator+)) args table)
   "Adds an alias for a module to TABLE."
