@@ -401,13 +401,20 @@
              (guard attribute (or (symbolp attribute) (stringp attribute)))
              value)
 
-       (let ((node (lookup-node node table))
-             (attribute (string attribute)))
 
-         (when (equalp attribute "input")
-           (add-input node table))
+       (let* ((*return-meta-node* t)
+              (attribute (string attribute)))
 
-         (setf (attribute attribute node) value))))))
+         (multiple-value-bind (node table)
+             (process-declaration node table)
+
+           (unless (node? node)
+             (error 'node-type-error :expected 'node :node node))
+
+           (when (equalp attribute "input")
+             (add-input node table))
+
+           (setf (attribute attribute node) value)))))))
 
 
 ;;; Node lists
