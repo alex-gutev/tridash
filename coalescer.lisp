@@ -16,7 +16,8 @@
 ;;;; You should have received a copy of the GNU General Public License
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;;;; Coalesce successive nodes into a single node.
+;;;; Functions for coalescing successive nodes into one, removing
+;;;; unreachable nodes and checking the graph structure.
 
 (in-package :tridash.frontend)
 
@@ -187,3 +188,63 @@
 
         (mapc #'mark (input-nodes graph))
         (maphash #'sweep nodes)))))
+
+
+(defun check-structure (graph)
+  "Checks the structure of GRAPH making sure there are no cycles and
+   no node has an ambiguous context. If a cycle or ambiguous context
+   is detected, an error condition is signaled."
+
+  (with-slots (nodes all-nodes) graph
+    (let ((visited (make-hash-table :test #'eq)))
+      (labels ((check-meta-node-graph (graph)
+                 "Check the structure of the meta-node graph GRAPH."
+
+                 (when graph
+                   (check-structure graph)))
+
+               (begin-walk (node)
+                 "Clears the visited set and begins the traversal at
+                  NODE in the :INPUT context."
+
+                 (clrhash visited)
+                 (visit node (context node :input)))
+
+               (visit (node context)
+                 "Visits node NODE in the context CONTEXT."
+
+                 (aif (gethash node visited)
+                      (check-context node context it)
+                      (visit-observers node context)))
+
+               (check-context (node new-context marker)
+                 "Checks that if node is visited for a second time, it
+                  is not part of a cycle and it is visited in the same
+                  context."
+
+                 (destructuring-bind (temp? old-context) marker
+                   (cond
+                     (temp?
+                      (error 'node-cycle-error :node node))
+
+                     ((not (eq old-context new-context))
+                      (error 'ambiguous-context-error :node node)))))
+
+               (visit-observers (node context)
+                 "Visits the observers of NODE in the context CONTEXT."
+
+                 ;; Mark Temporarily
+                 (setf (gethash node visited) (list t context))
+
+                 (with-slots (operands) context
+                   (iter
+                     (for (observer link) in-hashtable (observers node))
+                     (for context = (context observer (node-link-context link)))
+                     (when (not (in-hash? observer operands))
+                       (visit observer context))))
+
+                 ;; Mark Permanently
+                 (setf (car (gethash node visited)) nil)))
+
+        (mapc #'begin-walk (input-nodes graph))
+        (maphash-values (compose #'check-meta-node-graph #'definition) (meta-nodes graph))))))

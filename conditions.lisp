@@ -271,6 +271,8 @@
   (format nil "~a cannot appear as the target of a binding." (node err)))
 
 
+;;;; Graph Structure Errors
+
 (define-condition ambiguous-context-error (semantic-error)
   ((node :initarg :node
          :reader node
@@ -294,3 +296,15 @@
 (defmethod error-description ((e ambiguous-meta-node-context))
   (format nil "The value function of meta-node ~a is ambiguous as it has multiple contexts."
           (name (node e))))
+
+
+(define-condition node-cycle-error (semantic-error)
+  ((node :initarg :node
+         :reader node
+         :documentation "The node at which the cycle was detected."))
+
+  (:documentation
+   "Error condition: A cycle in the graph was detected."))
+
+(defmethod error-description ((e node-cycle-error))
+  (format nil "Cycle detected in node ~a" (name (node e))))

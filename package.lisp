@@ -206,7 +206,8 @@
 
    :target-node-error
    :ambiguous-context-error
-   :ambiguous-meta-node-context)
+   :ambiguous-meta-node-context
+   :node-cycle-error)
 
   (:documentation
    "Package containing the compiler frontend, which builds the node

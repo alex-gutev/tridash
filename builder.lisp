@@ -127,6 +127,9 @@
     ;; Remove unreachable nodes
     (maphash-values #'remove-all-unreachable-nodes modules)
 
+    ;; Check for cycles and ambiguous contexts
+    (maphash-values #'check-structure modules)
+
     ;; Coalesce nodes
     (maphash-values #'coalesce-nodes modules)))
 
