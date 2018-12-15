@@ -212,7 +212,7 @@
                "Returns an expression accessing the operand node named
                 by OPERAND."
 
-               (node-path operand))
+               (node-path (gethash operand (nodes definition))))
 
              (operand-node-var (operand)
                "Returns a JS array with two elements: the operand node
@@ -226,7 +226,9 @@
                 NODE with operands OPERANDS. If in tail position a
                 tail call is generated."
 
-               (if (and *in-tail-position* (async-meta-node? node))
+               (if (and (eq *current-node* meta-node)
+                        *in-tail-position*
+                        (async-meta-node? node))
                    (make-tail-call node operands)
                    (meta-node-call node operands)))
 
@@ -244,17 +246,6 @@
                      (meta-node-call node)
                      (cdr))
                 (js-throw (js-new +end-update-class+))))
-
-             (create-value-node ()
-               "Generates the definition of the value node."
-
-               (append-code (js-var "self"))
-
-               (let ((*meta-node-call* #'make-meta-node-call))
-                 (create-node meta-node))
-
-               (init-node meta-node)
-               (create-update-fn))
 
              (create-update-fn ()
                "Generates the update value function of the value
@@ -274,17 +265,18 @@
           (let ((op-vars (make-operand-ids operands))
                 (node-creation-code (make-code-array)))
 
-            (let ((*output-code* node-creation-code))
+            (let ((*output-code* node-creation-code)
+                  (*meta-node-call* #'make-meta-node-call))
              (append-code
               (js-call '= *node-table-var* (js-object)))
 
-             (create-value-node)
-             (generate-code definition))
+             (generate-code definition)
+             (create-update-fn))
 
             (js-function
              (meta-node-id meta-node)
              (append (mapcar #'cdr op-vars)
-                     (list (js-call '= promise-var (js-new "ValuePromise"))
+                     (list (js-call '= promise-var (js-new (js-member +tridash-namespace+ "ValuePromise")))
                            *node-table-var*))
 
              (list

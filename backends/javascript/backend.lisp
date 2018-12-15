@@ -78,6 +78,9 @@
 (defvar *context-counter* 0
   "Counter for generating globally unique context identifiers")
 
+(defvar *current-node* nil
+  "The node whose definition code is currently being generated.")
+
 
 ;;; Code Generation Flags
 
@@ -242,7 +245,8 @@
   "Generate the node creation code, which creates the dependency
    queues and the value computation function."
 
-  (let ((path (node-path node)))
+  (let ((*current-node* node)
+        (path (node-path node)))
     (append-code
      (js-call '= path (js-new +node-class+)))
 
@@ -340,7 +344,7 @@
        ;; If meta-node has no subnodes other than the operand nodes, it
        ;; can be coalesced to a single function
        ((= (hash-table-count (nodes definition))
-           (length operands))
+           (1+ (length operands))) ; 1+ to include the self node
 
         'sync)
 
