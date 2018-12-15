@@ -183,6 +183,7 @@
 
    :node-exists-error
    :meta-node-name-collision
+   :special-operator-name-error
 
    :non-existent-module
    :alias-clash-error
@@ -201,6 +202,7 @@
    :value
 
    :global-outer-reference-error
+   :special-operator-operand
 
    :target-node-error
    :ambiguous-context-error

@@ -125,6 +125,14 @@
             node (name node-table))))
 
 
+(define-condition special-operator-name-error (meta-node-name-collision) ()
+  (:documentation
+   "Error condition: Meta-node names a special operator."))
+
+(defmethod error-description ((e special-operator-name-error))
+  (format nil "Cannot redefine special operator ~a." (node e)))
+
+
 ;;;; Module Errors
 
 (define-condition non-existent-module (semantic-error)
@@ -231,6 +239,20 @@
 
 (defmethod error-description ((e global-outer-reference-error))
   "Cannot reference outer nodes from global scope.")
+
+
+(define-condition special-operator-operand (semantic-error)
+  ((operator :initarg :operator
+             :reader operator
+             :documentation
+             "The special operator symbol."))
+
+  (:documentation
+   "Error condition: A special operator, which can only appear at
+    top-level, appeared as an operand."))
+
+(defmethod error-description ((e special-operator-operand))
+  (format nil "~a declarations may only appear at top-level." (operator e)))
 
 
 ;;;; Node Binding Errors

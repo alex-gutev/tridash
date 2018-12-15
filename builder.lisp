@@ -24,8 +24,9 @@
 
 ;;;; Builder State
 
-(defparameter *top-level* t
-  "Flag for whether the current node is at the top-level.")
+(defparameter *level* 0
+  "The nesting level of the declaration currently being processed. 0
+   indicates the top-level.")
 
 (defparameter *meta-node* nil
   "The meta-node whose subgraph is currently being built. NIL when the
@@ -54,14 +55,24 @@
   `(let ((*source-node* ,source))
      ,@body))
 
+(defun top-level? ()
+  "Returns true if the declaration currently being processed is at the
+   top level."
+
+  (zerop *level*))
 
 ;;;; Declaration Processing Interface
 
-(defgeneric process-declaration (decl table)
+(defgeneric process-declaration (decl table &key &allow-other-keys)
   (:documentation
    "Processes the declaration, creates the node(s) specified by the
     declaration and adds them to TABLE. Returns the node created, if
-    any, and the table in which it is contained."))
+    any, and the table in which it is contained.
+
+    If the :TOP-LEVEL keyword argument is provided and is T, the
+    declaration is processed as though it appears at top-level
+    otherwise it is processed as though it appears at the level
+     (1+ *LEVEL*)."))
 
 (defgeneric process-functor (operator operands table)
   (:documentation
@@ -94,7 +105,9 @@
    it to the `NODE-TABLE' of the current module in the `MODULE-TABLE'
    given in the second argument."
 
-  (process-declaration node (node-table *global-module-table*)))
+  (let ((*declaration-stack* nil)
+        (*source-node* nil))
+    (process-declaration node (node-table *global-module-table*) :top-level t)))
 
 (defun finish-build-graph (&optional (*global-module-table* *global-module-table*))
   "Builds the definitions of all meta-nodes in all modules, and
@@ -134,12 +147,12 @@
     (let* ((table (make-inner-node-table outer-table))
            (*meta-node* meta-node))
 
-      ;; Add implicit self
+      ;; Add implicit self node
       (add-node +self-node+ meta-node table)
 
       (add-operand-nodes (operands meta-node) table)
 
-      (let* ((last-node (process-node-list (definition meta-node) table t)))
+      (let* ((last-node (process-node-list (definition meta-node) table :top-level t)))
         (make-meta-node-function meta-node last-node)
         (build-meta-node-graphs table)
         (setf (definition meta-node) table)))))
@@ -173,25 +186,32 @@
 
 ;;;; Methods: Processing Declaration
 
-(defmethod process-declaration ((functor list) table)
+(defmethod process-declaration ((functor list) table &key top-level)
   "Processes the functor declaration by calling PROCESS-FUNCTOR with
    the OPERATOR argument being the CAR of FUNCTOR and OPERANDS being
    the CDR of FUNCTOR."
 
-  (let ((*declaration-stack* (cons functor *declaration-stack*)))
+  (let ((*declaration-stack* (cons functor *declaration-stack*))
+        (*level* (if top-level 0 (1+ *level*))))
 
     (destructuring-bind (operator . operands) functor
       (process-functor operator operands table))))
 
-(defmethod process-declaration ((name symbol) table)
+(defmethod process-declaration ((name symbol) table &key top-level)
   "Creates a node with identifier NAME and adds it to table, if table
    does not already contain a node with that identifier. Returns the
    newly created, or existing, node."
 
-  (let ((*declaration-stack* (cons name *declaration-stack*)))
-    (values (ensure-node name table) table)))
+  (let* ((*declaration-stack* (cons name *declaration-stack*))
+         (*level* (if top-level 0 (1+ *level*)))
+         (node (ensure-node name table)))
 
-(defmethod process-declaration (literal table)
+    (unless (or *return-meta-node* (not (meta-node? node)) (eq node *meta-node*))
+      (error 'node-type-error :node node :expected 'node))
+
+    (values node table)))
+
+(defmethod process-declaration (literal table &key)
   "Method for literal values (everything which is not a symbol or list
    is considered a literal). The literal value is simply returned."
 
@@ -210,6 +230,17 @@
              :arguments ,args
              :expected ',expected))))
 
+(defmacro ensure-top-level (operator &body body)
+  "Signals an error condition of type SPECIAL-OPERATOR-OPERAND if the
+   declaration currently being processed is not at top-level."
+
+  `(progn
+     (unless (top-level?)
+       (error 'special-operator-operand :operator ,operator))
+
+     ,@body))
+
+
 ;;; Special Operators
 
 ;;; Operator Declarations
@@ -218,14 +249,15 @@
   "Registers a node as an infix operator with a specific precedence
    and associativity."
 
-  (match-syntax (+op-operator+ identifier number (or "left" "right"))
-      args
+  (ensure-top-level operator
+    (match-syntax (+op-operator+ identifier number (or "left" "right"))
+        args
 
-    ((list* (guard op (symbolp op))
-            (guard precedence (integerp precedence))
-            (optional (list (guard associativity (symbolp associativity)))))
+      ((list* (guard op (symbolp op))
+              (guard precedence (integerp precedence))
+              (optional (list (guard associativity (symbolp associativity)))))
 
-     (add-operator op precedence (operator-associativity associativity) (operator-nodes table)))))
+       (add-operator op precedence (operator-associativity associativity) (operator-nodes table))))))
 
 (defun operator-associativity (assoc)
   "Returns the operator precedence (LEFT or RIGHT) for the precedence
@@ -251,68 +283,71 @@
 
   (declare (ignore table))
 
-  (match-syntax (+module-operator+ identifier)
-      args
-    ((list (guard module (symbolp module)))
-     (change-module module))))
+  (ensure-top-level operator
+    (match-syntax (+module-operator+ identifier)
+        args
+      ((list (guard module (symbolp module)))
+       (change-module module)))))
 
 (defmethod process-functor ((operator (eql +use-operator+)) args table)
   "Adds a module as a node to the TABLE."
 
-  (match-syntax (+use-operator+ (list identifier))
-      args
+  (ensure-top-level operator
+    (match-syntax (+use-operator+ (list identifier))
+        args
 
-    ((list* args)
-     (iter (for module in args)
-           (process-declaration (list +alias-operator+ module module) table)))))
+      ((list* args)
+       (iter (for module in args)
+             (process-declaration (list +alias-operator+ module module) table))))))
 
 (defmethod process-functor ((operator (eql +alias-operator+)) args table)
   "Adds an alias for a module to TABLE."
 
-  (match-syntax (+alias-operator+ identifier identifier)
-      args
-    ((list (guard module (symbolp module))
-           (guard alias (symbolp alias)))
+  (ensure-top-level operator
+    (match-syntax (+alias-operator+ identifier identifier)
+        args
+      ((list (guard module (symbolp module))
+             (guard alias (symbolp alias)))
 
-     (match (gethash alias (all-nodes table))
-       ((type node)
-        (error 'alias-clash-error
-               :node alias
-               :module module
-               :node-table table))
+       (match (gethash alias (all-nodes table))
+         ((type node)
+          (error 'alias-clash-error
+                 :node alias
+                 :module module
+                 :node-table table))
 
-       ((and (type node-table) (not (eq table)))
-        (error 'alias-taken-error
-               :node alias
-               :module module
-               :node-table table))
+         ((and (type node-table) (not (eq table)))
+          (error 'alias-taken-error
+                 :node alias
+                 :module module
+                 :node-table table))
 
-       (nil
-        (setf (module-alias alias table) (get-module module)))))))
+         (nil
+          (setf (module-alias alias table) (get-module module))))))))
 
 (defmethod process-functor ((operator (eql +import-operator+)) args table)
   "Imports nodes directly into TABLE, from another module."
 
-  (with-slots (all-nodes) table
-    (match-syntax (+import-operator+ identifier (list identifier))
-        args
+  (ensure-top-level operator
+    (with-slots (all-nodes) table
+      (match-syntax (+import-operator+ identifier (list identifier))
+          args
 
-      ((list* (guard module (symbolp module)) nodes)
-       (let ((module (get-module module)))
-         (if nodes
-             (mapcar (rcurry #'import-node module table) nodes)
-             (maphash-keys (rcurry #'import-node module table) (public-nodes module))))))))
-
-
+        ((list* (guard module (symbolp module)) nodes)
+         (let ((module (get-module module)))
+           (if nodes
+               (mapcar (rcurry #'import-node module table) nodes)
+               (maphash-keys (rcurry #'import-node module table) (public-nodes module)))))))))
 
 (defmethod process-functor ((operator (eql +export-operator+)) args table)
   "Adds nodes to the public-nodes list of TABLE."
 
-  (match-syntax (+export-operator+ (list identifier))
-      args
+  (ensure-top-level operator
+    (match-syntax (+export-operator+ (list identifier))
+        args
 
-    ((list* nodes)
-     (mapcar (rcurry #'export-node table) nodes))))
+      ((list* nodes)
+       (mapcar (rcurry #'export-node table) nodes)))))
 
 (defmethod process-functor ((operator (eql +in-module-operator+)) args table)
   "Looks up a node in another module, which does not have an alias in
@@ -324,6 +359,7 @@
     ((list (guard module (symbolp module)) node)
      (process-subnode (get-module module *global-module-table*) module node table))))
 
+
 ;;; Definitions
 
 (defmethod process-functor ((operator (eql +def-operator+)) operands table)
@@ -332,23 +368,25 @@
    identifier but it is not a meta-node an error condition is
    signaled."
 
-  (match-syntax (+def-operator+ ((identifier . identifier) . nodes))
-      operands
+  (ensure-top-level operator
+    (match-syntax (+def-operator+ ((identifier . identifier) . nodes))
+        operands
 
-    ((list* (list* (guard name (symbolp name)) args) body)
-     (add-meta-node
-      name
-      (make-instance 'meta-node :name name :operands args :definition body)
-      table))))
+      ((list* (list* (guard name (symbolp name)) args) body)
+       (add-meta-node
+        name
+        (make-instance 'meta-node :name name :operands args :definition body)
+        table)))))
 
 (defmethod process-functor ((operator (eql +extern-operator+)) args table)
   "Adds a stub for an externally defined meta-node to TABLE."
 
-  (match-syntax (+extern-operator+ (list identifier))
-      args
+  (ensure-top-level operator
+    (match-syntax (+extern-operator+ (list identifier))
+        args
 
-    ((list* nodes)
-     (mapcar (rcurry #'add-external-meta-node table) nodes))))
+      ((list* nodes)
+       (mapcar (rcurry #'add-external-meta-node table) nodes)))))
 
 
 ;;; Attributes
@@ -356,19 +394,20 @@
 (defmethod process-functor ((operator (eql +attribute-operator+)) args table)
   "Sets an attribute of a node to a particular value."
 
-  (match-syntax (+attribute-operator+ node string literal)
-      args
-    ((list node
-           (guard attribute (or (symbolp attribute) (stringp attribute)))
-           value)
+  (ensure-top-level operator
+    (match-syntax (+attribute-operator+ node string literal)
+        args
+      ((list node
+             (guard attribute (or (symbolp attribute) (stringp attribute)))
+             value)
 
-     (let ((node (lookup-node node table))
-           (attribute (string attribute)))
+       (let ((node (lookup-node node table))
+             (attribute (string attribute)))
 
-       (when (equalp attribute "input")
-         (add-input node table))
+         (when (equalp attribute "input")
+           (add-input node table))
 
-       (setf (attribute attribute node) value)))))
+         (setf (attribute attribute node) value))))))
 
 
 ;;; Node lists
@@ -378,17 +417,15 @@
 
   (process-node-list nodes table))
 
-(defun process-node-list (nodes table &optional (*top-level* *top-level*))
+(defun process-node-list (nodes table &key (top-level (top-level?)))
   "Process a list of nodes, returns the last node in the list."
 
-  (let ((top-level *top-level*))
-    (loop
-       for (decl . rest) on nodes
-       ;; At top-level if not last node or list node is at top-level
-       for *top-level* = (or rest top-level)
-       for (node node-table) = (multiple-value-list (process-declaration decl table))
-       finally
-         (return (values node node-table)))))
+  (loop
+     for (decl . rest) on nodes
+     ;; At top-level if not last node or list node is at top-level
+     for (node node-table) = (multiple-value-list (process-declaration decl table :top-level (or rest top-level)))
+     finally
+       (return (values node node-table))))
 
 
 ;;; Outer nodes
@@ -424,12 +461,13 @@
 
   (match-syntax (+bind-operator+ node node)
       operands
+
     ((list source target)
      (with-source-node (at-source (process-declaration source table))
-       (let* ((target (let (*top-level*) (process-declaration target table)))
+       (let* ((target (process-declaration target table))
               (value-link (add-binding *source-node* target)))
 
-         (unless *top-level*
+         (unless (top-level?)
            (let* ((name (cons operator operands))
                   (cond-node (ensure-node name table))
                   (cond-link (add-binding cond-node target :context *source-node* :add-function nil)))
@@ -597,8 +635,7 @@
    value and the table, in which a node object was found or created,
    with the greatest depth."
 
-  (let ((*top-level* nil)
-        (*create-nodes* t))
+  (let ((*create-nodes* t))
     (iter
       (with op-table = (node-table *global-module-table*))
       (for operand in operands)

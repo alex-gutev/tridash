@@ -132,6 +132,12 @@
 (defvar *search-module* nil
   "The name of the module in which the node is currently being looked up")
 
+(defparameter *return-meta-node* nil
+  "Flag for whether meta-nodes should be returned by
+   PROCESS-DECLARATION. If NIL PROCESS-DECLARATION signals an error if
+   the node returned is a meta-node.")
+
+
 (defun ensure-node (name table &optional (create *create-nodes*))
   "Searches for the node with identifier NAME in TABLE. If CREATE is
    true (defaults to the value of *CREATE-NODES*) and the node is not
@@ -175,7 +181,8 @@
    META-NODE names a primitive operator (in *PRIMITIVE-OPS*) it is
    returned."
 
-  (let ((*create-nodes* nil))
+  (let ((*create-nodes* nil)
+        (*return-meta-node* t))
     (aprog1 (process-declaration meta-node table)
       (unless (meta-node? it)
         (error 'node-type-error :node it :expected 'meta-node)))))
@@ -209,8 +216,12 @@
   "Adds the `META-NODE' NODE with name NAME to TABLE."
 
   (with-slots (all-nodes nodes meta-nodes) table
-    (when (aand (gethash name all-nodes) (not (meta-node? it)))
-      (error 'meta-node-name-collision :node name :node-table table))
+    (cond
+      ((member name +special-operators+)
+       (error 'special-operator-name-error :node name))
+
+      ((aand (gethash name all-nodes) (not (meta-node? it)))
+       (error 'meta-node-name-collision :node name :node-table table)))
 
     (setf (gethash name all-nodes) node)
     (setf (gethash name meta-nodes) node)))
