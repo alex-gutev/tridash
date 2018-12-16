@@ -22,6 +22,7 @@
         :anaphora
         :named-readtables
         :optima
+        :optima.ppcre
         :iterate
         :cl-ppcre
         :cl-arrows
@@ -35,7 +36,4 @@
   (:import-from :let-over-lambda
                 :mkstr
                 :symb
-                :lol-syntax)
-
-  (:export
-   :*print-indented*))
+                :lol-syntax))

@@ -120,29 +120,30 @@
          (*context-ids* (make-hash-table :test #'eq))
          (*lazy-nodes* (find-lazy-nodes table))
          (*context-counter* 0)
-         (*output-code* (make-code-array)))
+         (*output-code* (make-code-array))
+         (defs (make-code-array))
+         (bindings (make-code-array)))
 
      (make-preamble)
 
-     (maphash-values #'generate-code (modules table))
+     (maphash-values (rcurry #'generate-code defs bindings) (modules table))
+     (append-code defs bindings)
+
      (print-output-code (make-lexical-block *output-code*) options table))))
 
 (defun parse-boolean (thing)
   "Converts THING to a boolean value."
 
-  (typecase thing
-    (string
+  (match thing
+    ((ppcre "^[0-9]+$")
+     (parse-boolean (parse-integer thing)))
+
+    ((type integer)
      (values
-      (eq (char thing 0) #\1)
+      (not (zerop thing))
       t))
 
-    (integer
-     (values
-      (/= thing 0)
-      t))
-
-    (otherwise
-     (values nil nil))))
+    (_ (values nil nil))))
 
 (defun print-output-code (code options module-table)
   "Prints the JavaScript code represented by the AST nodes in CODE to
@@ -208,15 +209,19 @@
 
 ;;;; Code Generation
 
-(defun generate-code (table)
+(defun generate-code (table &optional (defs *output-code*) (bindings *output-code*))
   "Generates the JavaScript code for the node and meta-node
-   definitions in the `NODE-TABLE' TABLE."
+   definitions in the `NODE-TABLE' TABLE. DEFS is the code array into
+   which the node definition code is appended. BINDINGS is the code
+   array into which the node binding code is appended."
 
   (with-slots (nodes meta-nodes) table
-    (create-nodes nodes)
-    (create-meta-nodes meta-nodes)
+    (let ((*output-code* defs))
+      (create-nodes nodes)
+      (create-meta-nodes meta-nodes))
 
-    (init-nodes nodes)))
+    (let ((*output-code* bindings))
+      (init-nodes nodes))))
 
 (defun make-preamble ()
   "Creates the code which should appear before any node
