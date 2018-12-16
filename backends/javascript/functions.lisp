@@ -174,12 +174,15 @@
 
             (create-meta-nodes (meta-nodes (definition meta-node)))
 
-            (js-function
-             (meta-node-id meta-node)
-             (mapcar #'cdr op-vars)
-             (if tail-recursive-p
-                 (list (js-while "true" body))
-                 body))))))))
+            (list*
+             (js-function
+              (meta-node-id meta-node)
+              (mapcar #'cdr op-vars)
+              (if tail-recursive-p
+                  (list (js-while "true" body))
+                  body))
+
+             (ensure-list (store-in-public-nodes meta-node (meta-node-id meta-node))))))))))
 
 (defun create-async-meta-node (meta-node)
   "Generates the value-function of the `meta-node'. Unlike
@@ -264,24 +267,27 @@
               (generate-code definition)
               (create-update-fn))
 
-            (js-function
-             (meta-node-id meta-node)
-             (append (mapcar #'cdr op-vars)
-                     (list (js-call '= promise-var (js-new (js-member +tridash-namespace+ "ValuePromise")))
-                           node-table-var))
+            (list
+             (js-function
+              (meta-node-id meta-node)
+              (append (mapcar #'cdr op-vars)
+                      (list (js-call '= promise-var (js-new (js-member +tridash-namespace+ "ValuePromise")))
+                            node-table-var))
 
-             (list
-              ;; Wrap node table creation in an if which checks
-              ;; whether a node table was provided as an argument.
-              (js-if
-               (js-call '=== node-table-var "undefined")
-               (make-js-block node-creation-code))
+              (list
+               ;; Wrap node table creation in an if which checks
+               ;; whether a node table was provided as an argument.
+               (js-if
+                (js-call '=== node-table-var "undefined")
+                (make-js-block node-creation-code))
 
-              (js-call
-               (js-member +tridash-namespace+ "set_values")
-               (js-array (mapcar #'operand-node-var op-vars)))
+               (js-call
+                (js-member +tridash-namespace+ "set_values")
+                (js-array (mapcar #'operand-node-var op-vars)))
 
-              (js-return (js-member "promise" "promise"))))))))))
+               (js-return (js-member "promise" "promise"))))
+
+             (ensure-list (store-in-public-nodes meta-node (meta-node-id meta-node))))))))))
 
 (defun make-operand-ids (operands)
   "Generates variable names for each operand. Returns an association
@@ -293,6 +299,15 @@
      for i = 0 then (1+ i)
      collect (cons operand (mkstr "a" i))))
 
+(defun store-in-public-nodes (node expr)
+  "If NODE has a :PUBLIC-NAME attribute returns an assignment
+   expression which stores EXPR in 'Tridash.nodes' under the key which
+   value of the :PUBLIC-NAME attribute"
+
+  (awhen (attribute :public-name node)
+    (-<> (js-member +tridash-namespace+ "nodes")
+         (js-element (js-string it))
+         (js-call '= <> expr))))
 
 ;;;; Node Compute Functions
 
