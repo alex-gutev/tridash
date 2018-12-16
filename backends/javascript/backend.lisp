@@ -333,6 +333,9 @@
      *meta-node-types*
 
      (cond
+       ((attribute :async meta-node)
+        'async)
+
        ;; If meta-node has no subnodes other than the operand nodes, it
        ;; can be coalesced to a single function
        ((= (hash-table-count (nodes definition))
