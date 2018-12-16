@@ -83,22 +83,11 @@
   (aprog1 (make-instance 'html-component-node :name name :element-node root-node)
     (setf (attribute :no-remove it) t)))
 
-(defgeneric build-html-file (file module-table)
-  (:documentation
-   "Extracts nodes from the HTML file FILE and adds the node
-    definitions to the current module of MODULE-TABLE. Prints the
-    processed HTML file to standard output."))
-
-(defmethod build-html-file (file module-table)
+(defun build-html-file (file *global-module-table*)
   "Extracts nodes from the HTML file at path FILE."
 
   (with-open-file (stream file)
-    (build-html-file stream module-table)))
-
-(defmethod build-html-file ((stream stream) *global-module-table*)
-  "Extracts nodes from the input stream STREAM."
-
-  (preprocess-html stream))
+    (preprocess-html stream)))
 
 
 ;;;; Process HTML Files
@@ -216,6 +205,11 @@
 
   (let ((name (name html-node)))
     (build-node `(,+bind-operator+ ,decl ,name) module-table)
+
+    ;; Establish the binding in the other direction, handling all
+    ;; `target-node-error' conditions since they are caused by the
+    ;; binding in this direction (NAME -> DECL) rather than by DECL
+    ;; itself.
 
     (handler-case
         (build-node
@@ -337,8 +331,7 @@
 (defun process-source-file (path)
   "Processes the tridash source file at PATH."
 
-  (with-open-file (in path)
-    (build-parsed-nodes (make-parser in) *global-module-table*)))
+  (build-source-file path *global-module-table*))
 
 
 ;;; Parse Attributes and Text Content
