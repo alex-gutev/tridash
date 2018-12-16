@@ -39,7 +39,7 @@
 (defun access-node (node)
   "Returns an expression which references NODE."
 
-  (js-element *node-table-var* (node-index node)))
+  (mkstr "node" (node-index node)))
 
 (defun node-index (node)
   "Returns the index of NODE within the node table variable."
@@ -200,11 +200,11 @@
    is computed. This function can be used to compile any meta-node."
 
   (with-slots (definition operands) meta-node
-    (symbol-macrolet ((promise-var "promise"))
+    (symbol-macrolet ((promise-var "promise")
+                      (node-table-var "node_table"))
 
       (let ((*node-path* (lambda (node)
-                           (if (eq node meta-node) "self"
-                               (access-node node))))
+                           (js-element node-table-var (node-index node))))
             (*node-ids* (make-hash-table :test #'eq)))
 
         (labels
@@ -240,7 +240,7 @@
 
                (js-block
                 (->> (when (eq node meta-node)
-                       (list *node-table-var*))
+                       (list node-table-var))
 
                      (append operands (list promise-var))
                      (meta-node-call node)
@@ -267,23 +267,23 @@
 
             (let ((*output-code* node-creation-code)
                   (*meta-node-call* #'make-meta-node-call))
-             (append-code
-              (js-call '= *node-table-var* (js-object)))
 
-             (generate-code definition)
-             (create-update-fn))
+              (append-code (js-call '= node-table-var (js-array)))
+
+              (generate-code definition)
+              (create-update-fn))
 
             (js-function
              (meta-node-id meta-node)
              (append (mapcar #'cdr op-vars)
                      (list (js-call '= promise-var (js-new (js-member +tridash-namespace+ "ValuePromise")))
-                           *node-table-var*))
+                           node-table-var))
 
              (list
               ;; Wrap node table creation in an if which checks
               ;; whether a node table was provided as an argument.
               (js-if
-               (js-call '=== *node-table-var* "undefined")
+               (js-call '=== node-table-var "undefined")
                (make-js-block node-creation-code))
 
               (js-call

@@ -39,9 +39,6 @@
   :test #'equal
   :documentation "Runtime node context class name.")
 
-(defvar *node-table-var* "node_table"
-  "Global node table variable.")
-
 
 ;;;; Backend State
 
@@ -120,16 +117,11 @@
          (*context-ids* (make-hash-table :test #'eq))
          (*lazy-nodes* (find-lazy-nodes table))
          (*context-counter* 0)
-         (*output-code* (make-code-array))
          (defs (make-code-array))
          (bindings (make-code-array)))
 
-     (make-preamble)
-
      (maphash-values (rcurry #'generate-code defs bindings) (modules table))
-     (append-code defs bindings)
-
-     (print-output-code (make-lexical-block *output-code*) options table))))
+     (print-output-code (list defs bindings) options table))))
 
 (defun parse-boolean (thing)
   "Converts THING to a boolean value."
@@ -223,14 +215,6 @@
     (let ((*output-code* bindings))
       (init-nodes nodes))))
 
-(defun make-preamble ()
-  "Creates the code which should appear before any node
-   definitions. Currently this contains only the declaration of the
-   node table variable."
-
-  (append-code
-   (js-var *node-table-var* (js-object))))
-
 
 ;;;; Creating nodes
 
@@ -252,8 +236,11 @@
 
   (let ((*current-node* node)
         (path (node-path node)))
+
     (append-code
-     (js-call '= path (js-new +node-class+)))
+     (if (typep path '(or string symbol))
+         (js-var path (js-new +node-class+))
+         (js-call '= path (js-new +node-class+))))
 
     (when *debug-info-p*
       (append-code
