@@ -92,39 +92,29 @@
     (cons (id-symbol ">") '>)
     (cons (id-symbol "<=") '<=)
     (cons (id-symbol ">") '>)
-    (cons (id-symbol "!=") '!=)
-    (cons (id-symbol "=") '==))
+    (cons (id-symbol "!=") '!==)
+    (cons (id-symbol "=") '===))
 
    :test #'equalp)
 
   "Hash-table mapping tridash primitive operators to their
    corresponding JavaScript primitive operators.")
 
-(define-condition undefined-meta-node (error)
-  ((name :initarg :name
-         :reader name
-         :documentation
-         "The name of the undefined meta-node."))
-
-  (:documentation
-   "Error condition: An externally-defined meta-node was used for
-    which there is no implementation."))
-
-(defmethod error-description ((e undefined-meta-node))
-  (format nil "Undefined external meta-node ~a" (name e)))
-
 
 (defun meta-node-id (meta-node)
   "Returns the global meta-node function/operator identifier of
    META-NODE. If META-NODE is a `META-NODE' object either a new
    identifier is created or the existing identifier is returned. If
-   META-NODE is a symbol naming a primitive operator, it is returned
-   as is."
+   META-NODE is an `EXTERNAL-META-NODE' the JavaScript
+   function/operator name corresponding to the name of the meta-node,
+   in *JS-PRIMITIVE-OPERATORS*, the node's :PUBLIC-NAME attribute, or
+   the name of the meta-node itself is returned."
 
   (etypecase meta-node
     (external-meta-node
      (or (gethash (name meta-node) *js-primitive-operators*)
-         (error 'undefined-meta-node :name (name meta-node))))
+         (attribute :public-name meta-node)
+         (name meta-node)))
 
     (meta-node
      (ensure-gethash meta-node *meta-node-ids*
