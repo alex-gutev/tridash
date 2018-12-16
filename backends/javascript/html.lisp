@@ -52,9 +52,9 @@
 ;;; Link Generated Code
 
 (defun create-html-file (code root-node)
-  "Embeds the generated code, in CODE, inside a script tag within the
-   head node of the HTML with document root ROOT-NODE. Serializes the
-   ROOT-NODE to standard output."
+  "Embeds the generated code, CODE, inside a script tag within the
+   head node of the HTML document with root node ROOT-NODE. Serializes
+   the ROOT-NODE to standard output."
 
   (let ((head-tag (find-head-tag root-node)))
     (link-runtime-library *runtime-library-path* root-node)
@@ -79,9 +79,25 @@
 
 ;;;; Compiling HTML nodes
 
+(define-condition html-component-binding (semantic-error)
+  ((name :initarg :name
+         :reader name
+         :documentation
+         "Name of the `HTML-COMPONENT-NODE'."))
+
+  (:documentation
+   "Error condition: A binding involving an html component node was
+    established, which is not yet supported."))
+
+(defmethod error-description ((e html-component-node))
+  (format nil "Binding involving html component node ~a is not yet supported." (name e)))
+
 (defmethod create-node ((node html-component-node))
-  ;; For now do nothing
-  )
+  "Currently does nothing other than a signal an error if there are
+   any bindings which involve the component node."
+
+  (when (plusp (hash-table-count (contexts node)))
+    (error 'html-component-binding :name (name node))))
 
 (defmethod create-node ((node html-node))
   "Generates the node definition for a NODE which references an HTML
@@ -94,7 +110,7 @@
     (make-input-html-node node))
 
   (when (gethash :object (contexts node))
-   (make-output-html-node node)))
+    (make-output-html-node node)))
 
 (defun make-input-html-node (node)
   "Generates the node definition for a node which references an
@@ -104,15 +120,16 @@
   (let ((path (node-path node)))
     (with-slots (element-id tag-name html-attribute) node
       (when html-attribute
-        (append-code
-         (make-onloaded-method
-          (list
-           (make-get-element path element-id)
+        (when-let ((listener (make-event-listener node html-attribute)))
+          (append-code
+           (make-onloaded-method
+            (list
+             (make-get-element path element-id)
 
-           (js-call '= (js-member path "value")
-                    (js-members path "html_element" html-attribute))
+             (js-call '= (js-member path "value")
+                      (js-members path "html_element" html-attribute))
 
-           (make-event-listener node html-attribute))))))))
+             listener))))))))
 
 (defun make-output-html-node (node)
   "Generates the node definition for a node which corresponds to an
@@ -138,7 +155,7 @@
 (defun make-get-element (path id)
   "Generates code which retrieves a reference to the HTML element with
    id ID, and stores it in the html_element field of the node, which
-   is reference by the expression PATH."
+   is referenced by the expression PATH."
 
   (js-call '= (js-member path "html_element")
            (js-call (js-member "document" "getElementById")
@@ -176,7 +193,7 @@
      (("textarea" "value") . "change"))
    :test #'equalp)
 
-  "Hash table containing the \"change\" event names of HTML tag
+  "Hash table containing the change event names of HTML tag
    attributes. Each key is a list of two values: the tag name and the
    attribute name, with the corresponding value being the change event
    name. The hash-table uses the EQUALP test thus the tag names and

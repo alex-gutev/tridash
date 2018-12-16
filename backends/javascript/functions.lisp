@@ -584,10 +584,10 @@
 
     (finally
      (return
-      (multiple-value-call
-          #'combine-blocks
-        (and block-statements (make-js-block block-statements))
-        (use-expressions expressions body-fn))))))
+       (multiple-value-call
+           #'combine-blocks
+         (and block-statements (make-js-block block-statements))
+         (use-expressions expressions body-fn))))))
 
 
 ;;;; Returning Values
@@ -690,11 +690,11 @@
    reference each expression in EXPRESSIONS."
 
   (flet ((get-expression (expression)
-             (match expression
-               ((cons 'async expression)
-                (values expression (var-name)))
+           (match expression
+             ((cons 'async expression)
+              (values expression (var-name)))
 
-               (_ expression))))
+             (_ expression))))
 
     (iter
       (for expression in expressions)

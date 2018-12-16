@@ -111,17 +111,17 @@
   (let ((*print-indented* (parse-boolean (gethash "indented" options)))
         (*debug-info-p* (parse-boolean (gethash "debug-info" options))))
 
-   (let ((*node-ids* (make-hash-table :test #'eq))
-         (*node-link-indices* (make-hash-table :test #'eq))
-         (*meta-node-ids* (make-hash-table :test #'eq))
-         (*context-ids* (make-hash-table :test #'eq))
-         (*lazy-nodes* (find-lazy-nodes table))
-         (*context-counter* 0)
-         (defs (make-code-array))
-         (bindings (make-code-array)))
+    (let ((*node-ids* (make-hash-table :test #'eq))
+          (*node-link-indices* (make-hash-table :test #'eq))
+          (*meta-node-ids* (make-hash-table :test #'eq))
+          (*context-ids* (make-hash-table :test #'eq))
+          (*lazy-nodes* (find-lazy-nodes table))
+          (*context-counter* 0)
+          (defs (make-code-array))
+          (bindings (make-code-array)))
 
-     (maphash-values (rcurry #'generate-code defs bindings) (modules table))
-     (print-output-code (list defs bindings) options table))))
+      (maphash-values (rcurry #'generate-code defs bindings) (modules table))
+      (print-output-code (list defs bindings) options table))))
 
 (defun parse-boolean (thing)
   "Converts THING to a boolean value."
@@ -248,7 +248,7 @@
 
     (awhen (attribute :public-name node)
       (append-code
-       (-<> (mkstr +tridash-prefix+ "nodes")
+       (-<> (js-member +tridash-namespace+ "nodes")
             (js-element (js-string it))
             (js-call '= <> path))))
 
@@ -303,11 +303,11 @@
   "Generates the meta-node function of META-NODE."
 
   (when (not (external-meta-node? meta-node))
-   (case (meta-node-type meta-node)
-     (sync
-      (create-function-meta-node meta-node))
-     (async
-      (create-async-meta-node meta-node)))))
+    (case (meta-node-type meta-node)
+      (sync
+       (create-function-meta-node meta-node))
+      (async
+       (create-async-meta-node meta-node)))))
 
 
 (defun async-meta-node? (meta-node)
@@ -373,8 +373,8 @@
     (dohash (observer link (observers node))
       (unless (gethash observer (operands context))
         (with-accessors ((link-context node-link-context)) link
-         (append-code
-          (js-call
-           (js-member context-path "add_observer")
-           (context-path observer link-context)
-           (dependency-index (context observer link-context) node))))))))
+          (append-code
+           (js-call
+            (js-member context-path "add_observer")
+            (context-path observer link-context)
+            (dependency-index (context observer link-context) node))))))))
