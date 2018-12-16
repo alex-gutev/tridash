@@ -205,6 +205,7 @@
 
       (let ((*node-path* (lambda (node)
                            (js-element node-table-var (node-index node))))
+            (*lazy-nodes* (find-lazy-nodes definition))
             (*node-ids* (make-hash-table :test #'eq)))
 
         (labels
