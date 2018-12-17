@@ -23,7 +23,7 @@
 
 ;;;; Compiler Interface
 
-(defun build-program (&key inputs outputs files)
+(defun build-program (&key files)
   "Builds the node definitions parsed from the files in FILES. Each
    element in FILES is either a path to a source file or a list of
    which the first element is a path and the remaining elements are
