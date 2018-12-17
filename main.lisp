@@ -36,12 +36,16 @@
   "List of paths to search for module build files.")
 
 
+;;;; Entry Point
+
 (defun main (argv)
   "Compiler application entry point."
 
-  (if (< (length argv) 2)
-      (format *error-output* "Usage: trc [build file]~%")
-      (build-app (pathname (elt argv 1)))))
+  (let ((*print-pprint-dispatch* (pprint-table))
+        (*debugger-hook* #'debugger-hook))
+   (if (< (length argv) 2)
+       (error "Usage: trc [build configuration file]")
+       (build-app (pathname (elt argv 1))))))
 
 (defun build-app (build-file)
   "Builds the application with the source and build options specified
@@ -98,7 +102,7 @@
            (cl-fad:merge-pathnames-as-file build-path source))))))
 
 
-;;; Module Loading
+;;;; Module Loading
 
 (defun load-module-handler (c)
   "Handler function for the `NON-EXISTENT-MODULE-ERROR'
@@ -134,3 +138,62 @@
         (let ((sources (source-file-list module-path (gethash "sources" module-info))))
           (mapc (rcurry #'build-source-file module-table) sources)))
       t)))
+
+
+;;;; Error Reporting
+
+(defun debugger-hook (condition prev-hook)
+  "Compiler application debugger hook. Displays errors to the user
+   and (if applicable) requests an error handling action."
+
+  (format *debug-io* "~&~a~%" condition)
+
+  (let ((restart (choose-restart (compute-restarts condition))))
+    (unless restart
+      (error "Debugger Error"))
+    (let ((*debugger-hook* prev-hook))
+      (invoke-restart-interactively restart))))
+
+(defun pprint-table ()
+  "Returns a PPRINT-DISPATCH table suitable for printing error
+   messages without reader escape characters."
+
+  (let ((old-table *print-pprint-dispatch*))
+    (flet ((print-no-escape (stream object)
+             "Prints OBJECT to STREAM with *PRINT-ESCAPE* bound to NIL."
+             (write object :stream stream :escape nil :pprint-dispatch old-table)))
+
+      (let ((*print-pprint-dispatch* (copy-pprint-dispatch)))
+        (set-pprint-dispatch 'pathname #'print-no-escape)
+        *print-pprint-dispatch*))))
+
+(defun choose-restart (restarts &key (prompt "Choice") (stream *debug-io*))
+  "Chooses a restart to execute out of the list RESTARTS. If RESTARTS
+   contains only one restart, it is returned otherwise PROMPT is
+   displayed along with the list of restarts, the user is queried for
+   the restart to execute, and the chosen restart is returned."
+
+  (let ((n (length restarts)))
+    (cond
+      ((> n 1)
+       (iter
+         (for restart in restarts)
+         (for i initially 1 then (1+ i))
+         (format stream "~&[~d] ~a~%" i restart))
+
+       (iter
+         (for i = (prompt-action prompt stream))
+         (until (typep i `(integer 1 ,n)))
+         (finally (return (nth (- i 1) restarts)))))
+
+      ((= n 1)
+       (first restarts)))))
+
+(defun prompt-action (prompt stream)
+  "Prints PROMPT to the stream and READ an object from STREAM."
+
+  (format stream "~&~a: " prompt)
+  (finish-output stream)
+
+  (prog1 (read)
+    (fresh-line)))

@@ -126,5 +126,4 @@
   (format nil "Don't know how to process file with extension: ~a." (extension e)))
 
 (defmethod print-object ((e unknown-file-type) stream)
-  (print-unreadable-object (e stream :type t)
-    (format stream "Error: ~a" (error-description e))))
+  (format stream "Error: ~a" (error-description e)))

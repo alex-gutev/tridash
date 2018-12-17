@@ -366,12 +366,22 @@
   (:documentation
    "Parse error condition."))
 
-(defmethod error-description ((err tridash-parse-error))
-  (format nil "Parse Error (~A): Expected ~A, found ~A instead."
-          (rule err)
-          (token-expected err)
-          (token-read err)))
+(defmethod error-description ((e tridash-parse-error))
+  (flet ((expected-string (expected)
+           (match expected
+             ((list* 'or tokens)
+              (format nil "~{~a~@{~#[,~; or~:;,~] ~a~}~}" tokens))
+
+             (_ expected))))
+
+    (with-accessors ((rule rule)
+                     (expected token-expected)
+                     (read token-read)) e
+
+      (format nil "Error parsing ~a: Expected ~a, found ~a ~a."
+              rule
+              (expected-string expected)
+              (car read) (cdr read)))))
 
 (defmethod print-object ((err tridash-parse-error) stream)
-  (print-unreadable-object (err stream :type t :identity nil)
-    (princ (error-description err) stream)))
+  (princ (error-description err) stream))
