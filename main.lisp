@@ -38,14 +38,14 @@
 
 ;;;; Entry Point
 
-(defun main (argv)
+(defun main ()
   "Compiler application entry point."
 
-  (let ((*print-pprint-dispatch* (pprint-table))
-        (*debugger-hook* #'debugger-hook))
-   (if (< (length argv) 2)
-       (error "Usage: trc [build configuration file]")
-       (build-app (pathname (elt argv 1))))))
+  (let ((*debugger-hook* #'debugger-hook))
+    (multiple-value-bind (opts free-args) (opts:get-opts)
+      (if (< (length free-args) 1)
+          (error "Usage: ~a [build configuration file]" (elt (opts:argv) 0))
+          (build-app (pathname (elt free-args 0)))))))
 
 (defun build-app (build-file)
   "Builds the application with the source and build options specified
@@ -142,17 +142,18 @@
 
 ;;;; Error Reporting
 
-(defun debugger-hook (condition prev-hook)
-  "Compiler application debugger hook. Displays errors to the user
-   and (if applicable) requests an error handling action."
+(defgeneric debugger-hook (condition prev-hook)
+  (:documentation
+   "Compiler application debugger hook. Currently simply displays the
+    error and exits the application with exit code 1."))
 
-  (format *debug-io* "~&~a~%" condition)
+(defmethod debugger-hook (condition prev-hook)
+  (declare (ignore prev-hook))
 
-  (let ((restart (choose-restart (compute-restarts condition))))
-    (unless restart
-      (error "Debugger Error"))
-    (let ((*debugger-hook* prev-hook))
-      (invoke-restart-interactively restart))))
+  (let ((*print-pprint-dispatch* (pprint-table)))
+    (format *debug-io* "~&~a~%" condition)
+
+    (opts:exit 1)))
 
 (defun pprint-table ()
   "Returns a PPRINT-DISPATCH table suitable for printing error

@@ -75,4 +75,9 @@
                :parse-number
                :cl-yaml
                :cl-fad
-               :osicat))
+               :osicat
+               :unix-opts)
+
+  :build-operation "program-op"
+  :build-pathname "build/tridashc"
+  :entry-point "TRIDASH::MAIN")
