@@ -21,42 +21,46 @@
   :author "Alexander Gutev"
   :license "GPL v3"
   :serial t
-  :components ((:module "util"
-                        :serial t
-                        :components ((:file "package")
-                                     (:file "cut")
-                                     (:file "macros")
-                                     (:file "misc")))
-               (:file "package")
-               (:file "interface")
-               (:file "lexer")
-               (:file "parser")
-               (:file "operators")
-               (:file "conditions")
-               (:file "node")
-               (:file "meta-node")
-               (:file "node-table")
-               (:file "modules")
-               (:file "outer-nodes")
-               (:file "builder")
-               (:file "coalescer")
-               (:file "prog-builder")
-               (:file "main")
+  :components ((:module
+                "src"
 
-               (:module "builders/html"
-                        :serial t
-                        :components ((:file "package")
-                                     (:file "builder")))
+                :components
+                ((:module "util"
+                          :serial t
+                          :components ((:file "package")
+                                       (:file "cut")
+                                       (:file "macros")
+                                       (:file "misc")))
+                 (:file "package")
+                 (:file "interface")
+                 (:file "lexer")
+                 (:file "parser")
+                 (:file "operators")
+                 (:file "conditions")
+                 (:file "node")
+                 (:file "meta-node")
+                 (:file "node-table")
+                 (:file "modules")
+                 (:file "outer-nodes")
+                 (:file "builder")
+                 (:file "coalescer")
+                 (:file "prog-builder")
+                 (:file "main")
 
-               (:module "backends/javascript"
-                        :serial t
-                        :components ((:file "package")
-                                     (:file "ast")
-                                     (:file "print")
-                                     (:file "analyze")
-                                     (:file "backend")
-                                     (:file "functions")
-                                     (:file "html"))))
+                 (:module "builders/html"
+                          :serial t
+                          :components ((:file "package")
+                                       (:file "builder")))
+
+                 (:module "backends/javascript"
+                          :serial t
+                          :components ((:file "package")
+                                       (:file "ast")
+                                       (:file "print")
+                                       (:file "analyze")
+                                       (:file "backend")
+                                       (:file "functions")
+                                       (:file "html"))))))
 
   :depends-on (:graylex
                :anaphora
