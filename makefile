@@ -15,8 +15,9 @@ clean:
 
 install: all
 	cp build/tridashc /usr/local/bin
-	mkdir -p /usr/local/lib/tridash
+	mkdir -p /usr/local/lib/tridash/backends/javascript
 	cp -R modules /usr/local/lib/tridash/modules
+	cp backends/javascript/runtime/tridash.js /usr/local/lib/tridash/backends/javascript
 
 uninstall:
 	rm /usr/local/bin/tridashc
