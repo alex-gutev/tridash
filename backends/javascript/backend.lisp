@@ -85,6 +85,20 @@
   "Flag: If true debug information, such as the names of the nodes is
    included in the generated code.")
 
+(defvar *runtime-library-path* "/usr/local/lib/tridash/backends/javascript/tridash.js"
+  "Path to the runtime library.")
+
+(defvar *runtime-link-type* 'static
+  "The type of linkage which should be used to link the runtime
+   library. Can be one of the following symbols:
+
+   STATIC - The runtime library is directly inserted in the generated code.
+
+   DYNAMIC - A link to the runtime library, at the value of
+   *RUNTIME-LIBRARY-PATH*, is inserted via a script tag.
+
+   NIL - No linkage.")
+
 
 ;;;; Code Array
 
@@ -109,7 +123,9 @@
    TABLE, to JavaScript."
 
   (let ((*print-indented* (parse-boolean (gethash "indented" options)))
-        (*debug-info-p* (parse-boolean (gethash "debug-info" options))))
+        (*debug-info-p* (parse-boolean (gethash "debug-info" options)))
+        (*runtime-library-path* (or (gethash "runtime-path" options) *runtime-library-path*))
+        (*runtime-link-type* (parse-linkage-type (gethash "runtime-linkage" options))))
 
     (let ((*node-ids* (make-hash-table :test #'eq))
           (*node-link-indices* (make-hash-table :test #'eq))
@@ -136,6 +152,19 @@
       t))
 
     (_ (values nil nil))))
+
+(defun parse-linkage-type (linkage)
+  "Parses the runtime library linkage type from the string LINKAGE."
+
+  (match linkage
+    ((or (equalp "static") (eql nil))
+     'static)
+
+    ((equalp "dynamic")
+     'dynamic)
+
+    ((equalp "none")
+     nil)))
 
 (defun print-output-code (code options module-table)
   "Prints the JavaScript code represented by the AST nodes in CODE to

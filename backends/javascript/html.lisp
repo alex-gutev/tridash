@@ -20,21 +20,26 @@
 
 (in-package :tridash.backend.js)
 
-(defvar *runtime-library-path* "tridash.js"
-  "Path to the Tridash runtime library which will be referenced,
-   using a script tag, in the output HTML file.")
-
 
 ;;; Link Runtime Library
 
-(defun link-runtime-library (path root-node)
+(defun link-runtime-library (root-node)
   "Inserts a script tag which references the tridash runtime library
-   at path PATH. ROOT-NODE is the root-node of the HTML DOM."
+   at path *RUNTIME-LIBRARY-PATH*. ROOT-NODE is the root-node of the
+   HTML DOM."
 
-  (plump:make-element
-   (find-head-tag root-node)
-   "script"
-   :attributes (alist-hash-table (acons "src" (mkstr path) nil) :test #'equalp)))
+  (case *runtime-link-type*
+    (static
+     (plump:make-fulltext-element
+      (find-head-tag root-node)
+      "script"
+      :text (slurp-runtime-library *runtime-library-path*)))
+
+    (dynamic
+     (plump:make-element
+      (find-head-tag root-node)
+      "script"
+      :attributes (alist-hash-table (acons "src" (mkstr *runtime-library-path*) nil) :test #'equalp)))))
 
 
 (defun find-head-tag (root-node)
@@ -48,6 +53,9 @@
 
   (first (plump:get-elements-by-tag-name root-node tag)))
 
+(defun slurp-runtime-library (path)
+  "Returns the contents of the runtime library at path PATH."
+  (read-file-into-string path))
 
 ;;; Link Generated Code
 
@@ -57,7 +65,7 @@
    the ROOT-NODE to standard output."
 
   (let ((head-tag (find-head-tag root-node)))
-    (link-runtime-library *runtime-library-path* root-node)
+    (link-runtime-library root-node)
     (plump:make-fulltext-element head-tag "script"
                                  :text (output-code-to-string code))
     (plump:serialize root-node)))
