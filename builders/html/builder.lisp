@@ -105,6 +105,10 @@
 (defvar *parent-html-node* nil
   "The parent node of the HTML node being traversed.")
 
+(defvar *siblings-p* nil
+  "Flag: True if the node currently being walked has sibling nodes.")
+
+
 (defgeneric walk-html-node (node &key &allow-other-keys)
   (:documentation
    "Traverse the HTML node NODE. Node declarations appearing within
@@ -237,21 +241,44 @@
    is created and returned, otherwise NODE is returned as is."
 
   (with-accessors ((text plump:text)) node
-    (when (plump:element-p *parent-html-node*)
+    (labels ((make-node (node)
+               "Creates the HTML node corresponding to the tridash
+                node declaration NODE, the node is automatically added
+                to *PARENT-HTML-NODE*. If NODE is a string a text-node
+                with the string as its contents is created. Otherwise
+                a span element is created."
 
-      (let ((tag-name (plump:tag-name *parent-html-node*)))
+               (typecase node
+                 (string
+                  (plump:make-text-node *parent-html-node* node))
 
-        (acond
-          ((extract-tridash-node text)
-           (let ((html-id (html-element-id *parent-html-node*)))
-             (make-html-element-node html-id tag-name *global-module-table*)
+                 (otherwise
+                  (aprog1 (plump:make-element *parent-html-node* "span")
+                    (make-element-node it node)))))
 
-             (-> (make-html-attribute-node html-id tag-name "textContent" *global-module-table*)
-                 (bind-html-node it *global-module-table*)))
+             (make-element-node (element node)
+               "Creates a Tridash node corresponding to the HTML
+                element ELEMENT and binds it to the node with
+                declaration NODE."
 
-           (plump:make-text-node *parent-html-node*))
+               (let ((tag-name (plump:tag-name element))
+                     (html-id (html-element-id element)))
+                 (make-html-element-node html-id tag-name *global-module-table*)
 
-          (t node))))))
+                 (-> (make-html-attribute-node html-id tag-name "textContent" *global-module-table*)
+                     (bind-html-node node *global-module-table*)))))
+
+      (when (plump:element-p *parent-html-node*)
+        (let ((nodes (extract-nodes text)))
+          (cond
+            ((and (not *siblings-p*) (= (length nodes) 1))
+             (make-element-node *parent-html-node* (aref nodes 0))
+             nil)
+
+            ((> (length nodes) 1)
+             (map nil #'make-node nodes))
+
+            (t node)))))))
 
 (defun html-element-id (element)
   "Returns the ID of the HTML element ELEMENT. If ELEMENT does not
@@ -272,8 +299,9 @@
    its child array is modified directly."
 
   (let* ((node (if clone (plump:clone-node node nil) node))
+         (children (plump:children node))
          (*parent-html-node* node)
-         (children (plump:children node)))
+         (*siblings-p* (> (length children) 1)))
 
     (setf (plump:children node) (plump:make-child-array))
 
@@ -339,11 +367,26 @@
 (defun extract-tridash-node (value)
   "Extracts node declarations from the string VALUE, where value is
    either the value of an HTML attribute or the text content of an
-   HTML text node. Returns the parsed node declaration if any, NIL if
-   VALUE does not contain any node declarations."
+   HTML text node. If VALUE contains inline Tridash node declarations,
+   returns a node declaration which is the concatenation of node
+   declarations and surrounding strings, otherwise returns NIL."
+
+  (let ((strings (extract-nodes value)))
+   (cond
+     ((length= 1 strings)
+      (aref strings 0))
+
+     ((not (emptyp strings))
+      (reduce #2`(,(id-symbol "+") ,a1 ,a2) strings)))))
+
+(defun extract-nodes (string)
+  "Extracts Tridash nodes from the string STRING. If STRING contains
+   inline Tridash node declarations, returns a sequence of the literal
+   string portions and Tridash node declarations (in the order they
+   appear in STRING) otherwise returns NIL."
 
   (flet ((parse-node (start end)
-           (with-input-from-string (in value :start start :end end)
+           (with-input-from-string (in string :start start :end end)
              (let ((parser (make-parser in)))
                (funcall parser (operator-nodes (node-table *global-module-table*)))))))
 
@@ -351,18 +394,16 @@
           (strings (make-array 0 :adjustable t :fill-pointer t)))
 
       (do-scans
-          (start end reg-starts reg-ends #"{{(.*?)}}"# value)
+          (start end reg-starts reg-ends #"{{(.*?)}}"# string)
 
         (when (plusp (- start string-start))
-          (vector-push-extend (subseq value string-start start) strings))
+          (vector-push-extend (subseq string string-start start) strings))
 
         (setf string-start end)
 
         (vector-push-extend (parse-node (aref reg-starts 0) (aref reg-ends 0)) strings))
 
-      (cond
-        ((length= 1 strings)
-         (aref strings 0))
+      (unless (or (zerop string-start) (= string-start (length string)))
+        (vector-push-extend (subseq string string-start) strings))
 
-        ((not (emptyp strings))
-         (reduce #2`(,(id-symbol "+") ,a1 ,a2) strings))))))
+      strings)))
