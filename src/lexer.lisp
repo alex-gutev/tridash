@@ -34,13 +34,13 @@
                           ("\\)" . :close-paren)
                           ("{" . :open-brace)
                           ("}" . :close-brace)
-                          ("-?[0-9]*\\.[0-9]+([dDeEfFlLsS][0-9]+)?" . :real)
-                          ("-?[0-9]*[dDeEfFlLsS][0-9]+" . :real)
-                          ("-?[0-9]+" . :integer)
+                          ("-?[0-9]*\\.[0-9]+([dDeEfFlLsS][0-9]+)?(?=[\\s\\r\\n;,(){}\"]|$)" . :real)
+                          ("-?[0-9]*[dDeEfFlLsS][0-9]+(?=[\\s\\r\\n;,(){}\"]|$)" . :real)
+                          ("-?[0-9]+(?=[\\s\\r\\n;,(){}\"]|$)" . :integer)
                           ("\"(?:[^\"\\\\]|\\\\.)*\"" . :string)
                           ("\\.(?!\\.)" . :id)
                           ("\\.+" . :id)
-                          ("[^\\s;.,()]+" . :id))))
+                          ("[^\\s;.,(){}\"]+" . :id))))
 
 (defun next-token (lex &key peek (line-term *line-term*))
   "Returns the next token as two values: the first value is a keyword

@@ -82,6 +82,28 @@
                :osicat
                :unix-opts)
 
+  :in-order-to ((asdf:test-op (asdf:test-op :tridash.test)))
+
   :build-operation "program-op"
   :build-pathname "build/tridashc"
   :entry-point "TRIDASH::MAIN")
+
+(asdf:defsystem #:tridash.test
+  :description "Units tests for the Tridash."
+  :author "Alexander Gutev"
+  :license "GPL v3"
+  :depends-on (:tridash
+               :prove
+               :prove-asdf
+
+               :cl-interpol)
+  :defsystem-depends-on (:prove-asdf)
+  :components ((:module
+                "test"
+
+                :components
+                ((:file "package")
+                 (:file "lexer"))))
+
+  :perform (asdf:test-op :after (op c)
+                         (funcall (intern #.(string :run) :prove) c)))
