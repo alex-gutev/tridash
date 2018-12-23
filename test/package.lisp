@@ -35,4 +35,14 @@
 
    :*line-term*
    :make-lexer
-   :next-token))
+   :next-token
+
+   :tridash-parse-error)
+
+  (:import-from
+   :tridash.frontend
+
+   :+infix-operators+))
+
+(prove:plan nil)
+(prove:finalize)

@@ -103,7 +103,8 @@
 
                 :components
                 ((:file "package")
-                 (:file "lexer"))))
+                 (:test-file "lexer")
+                 (:test-file "parser"))))
 
   :perform (asdf:test-op :after (op c)
                          (funcall (intern #.(string :run) :prove) c)))
