@@ -34,6 +34,15 @@
        do (is (list type tok) expected)
        finally (ok (null type)))))
 
+(defun is-lexer-error (string)
+  (with-input-from-string (in string)
+    (diag (format nil "Test String: ~s" string))
+    (is-error
+     (loop
+        with lexer = (make-lexer in)
+        while (next-token lexer))
+     'error)))
+
 (subtest "Test Lexer"
   (subtest "Test Simple Identifiers"
     (is-tokens
@@ -221,7 +230,9 @@
      "1.01\"str\"2.33 "
      '((:real "1.01")
        (:string "\"str\"")
-       (:real "2.33"))))
+       (:real "2.33")))
+
+    (is-lexer-error "\"hello "))
 
   (subtest "Dot Characters"
     (is-tokens

@@ -198,14 +198,3 @@
 
   (prog1 (read)
     (fresh-line)))
-
-
-;; (defgeneric print-error (condition stream)
-;;   (:documentation
-;;    "Prints a human readable description of the error CONDITION. The
-;;     output is not intended to be readable by the lisp reader."))
-
-;; (defmethod print-error (condition stream)
-;;   (format stream "~&~a~%" condition))
-
-;; (defmethod print-error ((condition trid)))

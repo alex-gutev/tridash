@@ -79,3 +79,7 @@
   (when (eq type :skip)
     (if peek (stream-read-token lex))
     t))
+
+(defmethod print-object ((e unmatched-lexing-sequence) stream)
+  (format stream "~&Parse Error: Invalid Token: '~a' at position ~a:~a~%"
+          (unmatched-sequence e) (unmatched-sequence-row e) (unmatched-sequence-column e)))
