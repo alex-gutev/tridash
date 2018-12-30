@@ -177,14 +177,21 @@
   (with-slots (nodes all-nodes) graph
     (let ((visited (make-hash-table :test #'eq)))
       (labels ((mark (node)
-                 (unless (gethash node visited)
+                 (unless (visited? node)
                    (setf (gethash node visited) t)
                    (maphash-keys #'mark (observers node))))
 
                (sweep (name node)
-                 (unless (or (gethash node visited) (attribute :no-remove node))
+                 (unless (or (visited? node) (attribute :no-remove node))
                    (remhash name nodes)
-                   (remhash name all-nodes))))
+                   (remhash name all-nodes)
+
+                   (awhen (some #'visited? (observer-list node))
+                     (error 'dependency-not-reachable :dependency node :node it))))
+
+               (visited? (node)
+                 (and (gethash node visited)
+                      node)))
 
         (mapc #'mark (input-nodes graph))
         (maphash #'sweep nodes)))))

@@ -308,3 +308,23 @@
 
 (defmethod error-description ((e node-cycle-error))
   (format nil "Cycle detected in node ~a" (name (node e))))
+
+
+(define-condition dependency-not-reachable (semantic-error)
+  ((node :initarg :node
+         :reader node
+         :documentation
+         "The node with an unreachable dependency.")
+
+   (dependency :initarg :dependency
+               :reader dependency
+               :documentation
+               "The dependency of the node."))
+
+  (:documentation
+   "Error condition: A dependency of a node is not reachable from any
+    input node."))
+
+(defmethod error-description ((e dependency-not-reachable))
+  (format nil "Dependency ~a of ~a is not reachable from any input node."
+          (name (dependency e)) (name (node e))))
