@@ -1,7 +1,7 @@
 ;;;; backend.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018  Alexander Gutev
+;;;; Copyright (C) 2018-2019  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -105,6 +105,11 @@
 (defvar *output-code* nil
   "Array into which the output JavaScript AST nodes are added.")
 
+(defvar *initial-values* nil
+  "List of initial node values to set. Each element is a list where
+   the first element is the node path and the second element is the
+   initial value.")
+
 (defun make-code-array ()
   "Creates an empty array suitable for pushing JavaScript AST nodes to
    it."
@@ -133,6 +138,7 @@
           (*context-ids* (make-hash-table :test #'eq))
           (*lazy-nodes* (find-lazy-nodes table))
           (*context-counter* 0)
+          (*initial-values* nil)
           (defs (make-code-array))
           (bindings (make-code-array)))
 
@@ -170,16 +176,19 @@
   "Prints the JavaScript code represented by the AST nodes in CODE to
    *STANDARD-OUTPUT*."
 
-  (let ((code (lexical-block code)))
-    (with-hash-keys ((type "type") (main-ui "main-ui")) options
-      (match type
-        ((equalp "html")
-         (->>
-          (get-root-node main-ui module-table)
-          (create-html-file code)))
+  (with-hash-keys ((type "type") (main-ui "main-ui")) options
+    (match type
+      ((equalp "html")
+       (->>
+        (get-root-node main-ui module-table)
+        (create-html-file
+         (lexical-block (list code (make-html-set-initial-values *initial-values*))))))
 
-        (_
-         (output-code code))))))
+      (_
+       (-<> (make-set-initial-values *initial-values*)
+            (list code <>)
+            (lexical-block)
+            (output-code))))))
 
 (defun get-root-node (node module-table)
   "Gets the root HTML node specified by NODE."
@@ -188,6 +197,24 @@
     (->> (get-module module module-table)
          (tridash.frontend::lookup-node node)
          (element-node))))
+
+
+;; Initialize nodes to initial values
+
+(defun make-html-set-initial-values (initial-values)
+  "Generates the setting of initial node values code for HTML files."
+
+  (when initial-values
+    (make-onloaded-method
+     (list (make-set-initial-values initial-values)))))
+
+(defun make-set-initial-values (initial-values)
+  "Generates code which sets the initial values of the nodes and
+   dispatches those values to their observer nodes."
+
+  (when initial-values
+    (js-call (js-member +tridash-namespace+ "set_values")
+             (js-array (mapcar #'js-array initial-values)))))
 
 
 ;;; Context Identifiers
@@ -282,6 +309,13 @@
             (js-element (js-string it))
             (js-call '= <> path))))
 
+    ;; If the node has an INIT context, add its initial value to
+    ;; *INITIAL-VALUES* and ensure it has an input context.
+
+    (awhen (gethash :init (contexts node))
+      (context node :input)
+      (push (list path (value-function it)) *initial-values*))
+
     (maphash (rcurry #'create-context node) (contexts node))))
 
 
@@ -290,22 +324,23 @@
    context identifier, CONTEXT is the `NODE-CONTEXT' itself and NODE
    is the `NODE' to which the context belongs."
 
-  (establish-dependency-indices context)
+  (unless (eq id :init)
+    (establish-dependency-indices context)
 
-  (let ((node-path (node-path node))
-        (context-path (context-path node id)))
+    (let ((node-path (node-path node))
+          (context-path (context-path node id)))
 
-    (with-slots (operands) context
-      (append-code
-       (lexical-block
-        (js-var "context"
-                (js-call (js-member +node-context-class+ "create")
-                         node-path (hash-table-count operands) (global-context-id)))
+      (with-slots (operands) context
+        (append-code
+         (lexical-block
+          (js-var "context"
+                  (js-call (js-member +node-context-class+ "create")
+                           node-path (hash-table-count operands) (global-context-id)))
 
-        (awhen (create-compute-function context)
-          (js-call '= (js-member "context" "compute") it))
+          (awhen (create-compute-function context)
+            (js-call '= (js-member "context" "compute") it))
 
-        (js-call '= context-path "context"))))))
+          (js-call '= context-path "context")))))))
 
 
 (defun establish-dependency-indices (context)
@@ -393,7 +428,8 @@
   "Generates the initialization code of the node context CONTEXT, with
    identifier CONTEXT-ID, of the node NODE."
 
-  (bind-observers node context-id context))
+  (unless (eq context-id :init)
+    (bind-observers node context-id context)))
 
 (defun bind-observers (node context-id context)
   "Generates code which binds the `NODE' NODE to its observers."

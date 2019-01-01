@@ -199,7 +199,8 @@
       (let ((*node-path* (lambda (node)
                            (js-element node-table-var (node-index node))))
             (*lazy-nodes* (find-lazy-nodes definition))
-            (*node-ids* (make-hash-table :test #'eq)))
+            (*node-ids* (make-hash-table :test #'eq))
+            (*initial-values* nil))
 
         (labels
             ((get-operand (operand)
@@ -283,7 +284,7 @@
 
                (js-call
                 (js-member +tridash-namespace+ "set_values")
-                (js-array (mapcar #'operand-node-var op-vars)))
+                (js-array (append (mapcar #'operand-node-var op-vars) *initial-values*)))
 
                (js-return (js-member "promise" "promise"))))
 
