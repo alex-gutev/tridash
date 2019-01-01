@@ -197,6 +197,62 @@
         (maphash #'sweep nodes)))))
 
 
+(defun fold-constant-nodes (graph)
+  "Performs constant node folding on all nodes in GRAPH and in the
+   meta-node definitions in GRAPH.
+
+   Removes all constant nodes and replaces links to the nodes with the
+   constant values. Constant nodes are nodes which only have an :INIT
+   context."
+
+  (flet ((fold-constant-nodes (graph)
+           (when graph
+             (fold-value-nodes graph))))
+
+    (fold-constant-nodes graph)
+    (maphash-values (compose #'fold-constant-nodes #'definition) (meta-nodes graph))))
+
+(defun fold-value-nodes (graph)
+  "Removes all constant nodes and replaces links to the nodes with the
+   constant values. Constant nodes are nodes which only have an :INIT
+   context."
+
+  (labels ((value-nodes ()
+             (remove-if-not #'value-node? (hash-table-values (nodes graph))))
+
+           (value-node? (node)
+             (unless (input-node? node)
+               (with-slots (contexts) node
+                 (and (= (hash-table-count contexts) 1)
+                      (-> (first (hash-table-values contexts))
+                          (operands)
+                          (hash-table-count)
+                          (zerop))))))
+
+           (fold-value (node)
+             (when (value-node? node)
+               (let ((obs (observer-list node)))
+                 (-> (contexts node)
+                     (hash-table-values)
+                     (first)
+                     (value-function)
+                     (replace-dependency node))
+
+                 (clrhash (observers node))
+                 (mapc #'fold-value obs))))
+
+           (replace-dependency (value node)
+             (iter
+               (for (obs link) in-hashtable (observers node))
+
+               (remhash node (dependencies obs))
+               (setf (node-link-node link) value)
+
+               (let ((context (context obs (node-link-context link))))
+                 (remhash node (operands context))))))
+
+    (mapc #'fold-value (value-nodes))))
+
 (defun check-structure (graph)
   "Checks the structure of GRAPH making sure there are no cycles and
    no node has an ambiguous context. If a cycle or ambiguous context

@@ -168,7 +168,7 @@
 
       (prog1 source
         (when add-function
-          (setf (value-function (context target context)) source)))))
+          (setf (value-function (context target :init)) source)))))
 
 
 (defun add-dependency (dependency node &key context add-function)
