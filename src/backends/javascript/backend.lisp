@@ -170,15 +170,16 @@
   "Prints the JavaScript code represented by the AST nodes in CODE to
    *STANDARD-OUTPUT*."
 
-  (with-hash-keys ((type "type") (main-ui "main-ui")) options
-    (match type
-      ((equalp "html")
-       (->>
-        (get-root-node main-ui module-table)
-        (create-html-file code)))
+  (let ((code (lexical-block code)))
+    (with-hash-keys ((type "type") (main-ui "main-ui")) options
+      (match type
+        ((equalp "html")
+         (->>
+          (get-root-node main-ui module-table)
+          (create-html-file code)))
 
-      (_
-       (output-code code)))))
+        (_
+         (output-code code))))))
 
 (defun get-root-node (node module-table)
   "Gets the root HTML node specified by NODE."
