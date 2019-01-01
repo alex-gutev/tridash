@@ -213,8 +213,21 @@
    dispatches those values to their observer nodes."
 
   (when initial-values
-    (js-call (js-member +tridash-namespace+ "set_values")
-             (js-array (mapcar #'js-array initial-values)))))
+    (iter
+      (for (node init-value) in initial-values)
+
+      (multiple-value-bind (block expression)
+          (make-expression init-value :return-variable (var-name))
+
+        (when block (collect block into blocks))
+        (collect (js-array (list node expression)) into expressions))
+
+      (finally
+       (return
+         (list
+          blocks
+          (js-call (js-member +tridash-namespace+ "set_values")
+                   (js-array expressions))))))))
 
 
 ;;; Context Identifiers
@@ -312,19 +325,37 @@
     ;; If the node has an INIT context, add its initial value to
     ;; *INITIAL-VALUES* and ensure it has an input context.
 
-    (awhen (gethash :init (contexts node))
+    (awhen (get-init-context node)
       (context node :input)
       (push (list path (value-function it)) *initial-values*))
 
     (maphash (rcurry #'create-context node) (contexts node))))
 
+(defun get-init-context (node)
+  "If NODE has an initial value context, that is a context with no
+   operands and a constant value function, it is returned otherwise
+   NIL is returned."
+
+  (iter
+    (for (id context) in-hashtable (contexts node))
+
+    (when (init-context? id context)
+      (return context))))
+
+(defun init-context? (id context)
+  "Returns true if the node context CONTEXT with identifier ID is an
+   initial value context, that is a context with no operands and a
+   constant value function."
+
+  (and (not (eq id :input))
+       (zerop (hash-table-count (operands context)))))
 
 (defun create-context (id context node)
   "Generates the initialization code for a `NODE-CONTEXT'. ID is the
    context identifier, CONTEXT is the `NODE-CONTEXT' itself and NODE
    is the `NODE' to which the context belongs."
 
-  (unless (eq id :init)
+  (unless (init-context? id context)
     (establish-dependency-indices context)
 
     (let ((node-path (node-path node))
@@ -428,7 +459,7 @@
   "Generates the initialization code of the node context CONTEXT, with
    identifier CONTEXT-ID, of the node NODE."
 
-  (unless (eq context-id :init)
+  (unless (init-context? context-id context)
     (bind-observers node context-id context)))
 
 (defun bind-observers (node context-id context)
