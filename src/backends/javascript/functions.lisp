@@ -319,7 +319,7 @@
   (symbol-macrolet ((values-var "values"))
     (let ((uses-old-value nil))
       (labels ((get-input (link)
-                 (if (eq (node-link-node link) 'self)
+                 (if (eq (node-link-node link) :self)
                      (prog1
                          (if (lazy-node? context)
                              (js-call "old_value")

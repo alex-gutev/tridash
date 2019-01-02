@@ -1,7 +1,7 @@
 ;;;; tridash.asd
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018  Alexander Gutev
+;;;; Copyright (C) 2018-2019  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -104,7 +104,8 @@
                 :components
                 ((:file "package")
                  (:test-file "lexer")
-                 (:test-file "parser"))))
+                 (:test-file "parser")
+                 (:test-file "builder"))))
 
   :perform (asdf:test-op :after (op c)
                          (funcall (intern #.(string :run) :prove) c)))

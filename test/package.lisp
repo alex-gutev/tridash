@@ -1,7 +1,7 @@
 ;;;; package.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018  Alexander Gutev
+;;;; Copyright (C) 2018-2019  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
         :alexandria
         :cl-arrows
         :iterate
+        :optima
         :prove
 
         :tridash.interface
@@ -29,6 +30,8 @@
         :tridash
 
         :tridash.backend.js)
+
+  (:shadowing-import-from :prove :fail)
 
   (:import-from
    :tridash.parser
