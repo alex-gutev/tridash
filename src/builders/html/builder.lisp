@@ -394,7 +394,7 @@
           (strings (make-array 0 :adjustable t :fill-pointer t)))
 
       (do-scans
-          (start end reg-starts reg-ends #"<%(.*?)%>"# string)
+          (start end reg-starts reg-ends (create-scanner #"<%(.*?)%>"# :single-line-mode t) string)
 
         (when (plusp (- start string-start))
           (vector-push-extend (subseq string string-start start) strings))
