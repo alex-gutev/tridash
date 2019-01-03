@@ -50,12 +50,17 @@
 :attribute(not, target-node, not)
 
 
-## Type Conversions
+# Type Conversions
 
-:extern(int, real)
+:extern(int, real, string)
 
 :attribute(int, target-node, int)
 :attribute(real, target-node, real)
+:attribute(string, target-node, string)
+
+# Type Checks
+
+:extern(int?, real?, string?)
 
 
 # Export Primitive Nodes

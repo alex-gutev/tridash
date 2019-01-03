@@ -83,6 +83,11 @@
 
     (cons (id-symbol "int") "parseInt")
     (cons (id-symbol "real") "parseFloat")
+    (cons (id-symbol "string") "String")
+
+    (cons (id-symbol "int?") "Tridash.isInteger")
+    (cons (id-symbol "number?") "Tridash.isReal")
+    (cons (id-symbol "string?") "Tridash.isString")
 
     (cons (id-symbol "+") '+)
     (cons (id-symbol "-") '-)

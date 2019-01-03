@@ -3,7 +3,7 @@
  *
  * Tridash JavaScript runtime library.
  *
- * Copyright 2017 Alexander Gutev
+ * Copyright 2017-2019 Alexander Gutev
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -385,4 +385,20 @@ Tridash.Queue = function() {
     this.clear = function() {
         this.head = this.tail = null;
     };
+};
+
+
+/** Functions */
+
+Tridash.isInteger = Number.isInteger || function(value) {
+    return typeof value === 'number' &&
+        isFinite(value) && Math.floor(value) === value;
+};
+
+Tridash.isReal = function(value) {
+    return !isNaN(value);
+};
+
+Tridash.isString = function(value) {
+    return typeof value === 'string';
 };
