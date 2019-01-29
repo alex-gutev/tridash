@@ -67,4 +67,4 @@
 
 :export(+, -, *, /, <, <=, >, >=, =, !=, and, or, not)
 :export(if, case)
-:export(int, real)
+:export(int, real, string)
