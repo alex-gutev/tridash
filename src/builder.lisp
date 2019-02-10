@@ -407,8 +407,8 @@
              (guard attribute (or (symbolp attribute) (stringp attribute)))
              value)
 
-
        (let* ((*return-meta-node* t)
+              (*create-nodes* nil)
               (attribute (string attribute)))
 
          (multiple-value-bind (node table)
