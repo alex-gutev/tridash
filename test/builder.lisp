@@ -100,14 +100,14 @@
 
                ((_ _) (equal a b))))
 
-           (test-value-function (node context fn)
+           (test-value-function (node context fn &key (test #'value-fn-equal))
              "Tests that the context CONTEXT of node NODE has value
               function FN."
 
              (diag (format nil "Test value function of ~a in context ~a" (name node) context))
 
              (let ((context (gethash context (contexts node))))
-               (is (value-function context) fn :test #'value-fn-equal)))
+               (is (value-function context) fn :test test)))
 
            (test-node-function (node context fn &rest operands)
              "Tests the node NODE has a context CONTEXT with the value
@@ -229,88 +229,121 @@
 
     (subtest "Meta-Nodes"
 
-     (subtest "Meta-Node Definitions"
-       (let ((modules (make-instance 'module-table)))
-         (build-source-file #p"./modules/core.trd" modules)
-         (build-nodes "add(x,y) : x + y; add(a,b)" modules)
+      (subtest "Meta-Node Definitions"
+        (let ((modules (make-instance 'module-table)))
+          (build-source-file #p"./modules/core.trd" modules)
+          (build-nodes "add(x,y) : x + y; add(a,b)" modules)
 
-         (with-nodes ((add "add") (a "a") (b "b") (add-ab ("add" "a" "b"))) modules
-           (is-type add 'meta-node)
-           (is (operands add) (decls '!\x '!\y))
-           (is (definition add) (decls '(!+ !\x !\y)))
+          (with-nodes ((add "add") (a "a") (b "b") (add-ab ("add" "a" "b"))) modules
+            (is-type add 'meta-node)
+            (is (operands add) (decls '!\x '!\y))
+            (is (definition add) (decls '(!+ !\x !\y)))
 
-           (test-node-function add-ab add add a b)))
+            (test-node-function add-ab add add a b)))
 
-       (subtest "Errors"
-         (test-error "x : y")
-         (test-error "{x; y} : z")
-         (test-error "{w; x}(y) : z")
-         (test-error ":(x)")
-         (test-error ":()")
-         (test-error ":(x,y,z)")
+        (subtest "Errors"
+          (test-error "x : y")
+          (test-error "{x; y} : z")
+          (test-error "{w; x}(y) : z")
+          (test-error ":(x)")
+          (test-error ":()")
+          (test-error ":(x,y,z)")
 
-         (test-error "(g(x,y) : f(x,y)) -> z")
-         (test-error "z -> (g(x,y) : f(x,y))")
+          (test-error "(g(x,y) : f(x,y)) -> z")
+          (test-error "z -> (g(x,y) : f(x,y))")
 
-         (diag "Redefining Special Operators")
-         (test-error "->(x, y) : fn(x, y)")
-         (test-error ":(x, y) : z")
-         (test-error ":extern(x) : x")
-         (test-error ":op(a, b) : f(b, a)")
-         (test-error "..(x,z) : g(x, z)")
-         (test-error ".(a) : h(a)")
-         (test-error ":attribute(m, n) : f(m,n)")
-         (test-error ":module(m) : m")
-         (test-error ":import(x) : x")
-         (test-error ":use(z) : z")
-         (test-error ":export(y) : h(y)")
-         (test-error ":in(x, y) : add(x, y)")
+          (diag "Redefining Special Operators")
+          (test-error "->(x, y) : fn(x, y)")
+          (test-error ":(x, y) : z")
+          (test-error ":extern(x) : x")
+          (test-error ":op(a, b) : f(b, a)")
+          (test-error "..(x,z) : g(x, z)")
+          (test-error ".(a) : h(a)")
+          (test-error ":attribute(m, n) : f(m,n)")
+          (test-error ":module(m) : m")
+          (test-error ":import(x) : x")
+          (test-error ":use(z) : z")
+          (test-error ":export(y) : h(y)")
+          (test-error ":in(x, y) : add(x, y)")
 
-         (let ((modules (make-instance 'module-table)))
-           ;; Test node name collisions with meta-nodes
-           (build-nodes "a;b" modules)
-           (is-error (build-nodes #1="a(x,y) : add(x,y)" modules) 'semantic-error #1#)
+          (let ((modules (make-instance 'module-table)))
+            ;; Test node name collisions with meta-nodes
+            (build-nodes "a;b" modules)
+            (is-error (build-nodes #1="a(x,y) : add(x,y)" modules) 'semantic-error #1#)
 
-           (with-slots (node-table) modules
-             (build-nodes "f(x) : x" modules)
+            (with-slots (node-table) modules
+              (build-nodes "f(x) : x" modules)
 
-             (with-nodes ((f "f")) modules
-               (is-type f 'meta-node)
-               (is (operands f) (decls '!\x))
-               (is (definition f) (decls '!\x)))
+              (with-nodes ((f "f")) modules
+                (is-type f 'meta-node)
+                (is (operands f) (decls '!\x))
+                (is (definition f) (decls '!\x)))
 
-             (build-nodes "f(x, y) : +(x, y)" modules)
+              (build-nodes "f(x, y) : +(x, y)" modules)
 
-             ;; Test meta-node redefinitions
-             (with-nodes ((f "f")) modules
-               (is-type f 'meta-node)
-               (is (operands f) (decls '!\x '!\y))
-               (is (definition f) (decls '(!+ !\x !\y))))
+              ;; Test meta-node redefinitions
+              (with-nodes ((f "f")) modules
+                (is-type f 'meta-node)
+                (is (operands f) (decls '!\x '!\y))
+                (is (definition f) (decls '(!+ !\x !\y))))
 
-             ;; Test name collisions with atom nodes
-             (is-error (build-nodes "f" modules) 'semantic-error "f")))))
+              ;; Test name collisions with atom nodes
+              (is-error (build-nodes "f" modules) 'semantic-error "f")))))
 
-     (subtest "External Meta-Node Definitions"
-       (let ((modules (make-instance 'module-table)))
-         (build-nodes ":extern(add, sub); add(a,b); sub(a,b)" modules)
+      (subtest "External Meta-Node Definitions"
+        (let ((modules (make-instance 'module-table)))
+          (build-nodes ":extern(add, sub); add(a,b); sub(a,b)" modules)
 
-         (with-nodes ((add "add") (sub "sub")
-                      (a "a") (b "b")
-                      (add-ab ("add" "a" "b")) (sub-ab ("sub" "a" "b")))
-             modules
+          (with-nodes ((add "add") (sub "sub")
+                       (a "a") (b "b")
+                       (add-ab ("add" "a" "b")) (sub-ab ("sub" "a" "b")))
+              modules
 
-           (is-type add 'external-meta-node)
-           (is-type sub 'external-meta-node)
+            (is-type add 'external-meta-node)
+            (is-type sub 'external-meta-node)
 
-           (is (definition add) nil)
-           (is (definition sub) nil)
+            (is (definition add) nil)
+            (is (definition sub) nil)
 
-           (test-node-function add-ab add add a b)
-           (test-node-function sub-ab sub sub a b)))
+            (test-node-function add-ab add add a b)
+            (test-node-function sub-ab sub sub a b)))
 
-       (subtest "Errors"
-         (test-error "x -> :extern(y)")
-         (test-error ":extern(y) -> x"))))))
+        (subtest "Errors"
+          (test-error "x -> :extern(y)")
+          (test-error ":extern(y) -> x"))))
+
+    (subtest "Subnodes"
+      (let ((modules (make-instance 'module-table)))
+        (build-nodes "x -> a.first; y -> a.last; a.last -> y" modules)
+
+        (with-nodes ((x "x") (y "y") (a "a")
+                     (a.first ("." "a" "first")) (a.last ("." "a" "last")))
+            modules
+
+          (-<>
+           `(:object (,(id-symbol "first") ,(test-binding a.first a :object))
+                     (,(id-symbol "last") ,(test-binding a.last a :object)))
+           (test-value-function a :object <> :test (rcurry #'set-equal :test #'value-fn-equal)))
+
+          (->>
+           `(:member ,(test-binding a a.first) ,(id-symbol "first"))
+           (test-value-function a.first a))
+
+          (->>
+           `(:member ,(test-binding a a.last) ,(id-symbol "last"))
+           (test-value-function a.last a))
+
+          (->>
+           (test-binding x a.first)
+           (test-value-function a.first x))
+
+          (->>
+           (test-binding y a.last)
+           (test-value-function a.last y))
+
+          (->>
+           (test-binding a.last y)
+           (test-value-function y a.last)))))))
 
 (finalize)
 
