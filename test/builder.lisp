@@ -31,6 +31,17 @@
     (cons (mapcar #'node-id name))
     (otherwise (id-symbol name))))
 
+(defun test/get-node (name node-table)
+  "Retrieves the node with name NAME from NODE-TABLE and checks that
+   its NAME slot matches NAME."
+
+  (diag (format nil "Check node ~a" name))
+
+  (let ((id (node-id name)))
+    (aprog1 (gethash id (all-nodes node-table))
+      (is-type it 'node "Is Node")
+      (is (name it) id "Node Name"))))
+
 (defmacro! with-nodes ((&rest nodes) o!modules &body body)
   "Binds the nodes to variables. Each element of NODES is of the
    form (VAR NAME) where VAR is the variable to which the node is
@@ -38,7 +49,7 @@
 
   (flet ((make-binding (node)
            (destructuring-bind (var name) node
-             `(,var (gethash ',(node-id name) (all-nodes (node-table ,g!modules)))))))
+             `(,var (test/get-node ',(node-id name) (node-table ,g!modules))))))
     `(let ,(mapcar #'make-binding nodes)
        ,@body)))
 
@@ -47,19 +58,8 @@
              (with-input-from-string (in string)
                (build-parsed-nodes (make-parser in) modules)))
 
-           (get-node (name node-table)
-             "Returns the node with identifier NAME in
-              NODE-TABLE. Checks that such a node actually exists and
-              that its NAME slot has the correct identifier."
-
-             (diag (format nil "Check node ~a" name))
-             (with-slots (nodes) node-table
-               (let* ((id (node-id name))
-                      (node (gethash id nodes)))
-                 (is-type node 'node (format nil "Node ~a created" name))
-                 (is (name node) id (format nil "Name of ~a is ~a" name name))
-
-                 node)))
+           (test-nodes (modules &rest nodes)
+             (mapc (rcurry #'test/get-node (node-table modules)) nodes))
 
            (test-binding (src target &optional (context src))
              "Tests that a binding between node SRC and TARGET has
@@ -109,83 +109,66 @@
              (let ((context (gethash context (contexts node))))
                (is (value-function context) fn :test #'value-fn-equal)))
 
+           (test-node-function (node context fn &rest operands)
+             "Tests the node NODE has a context CONTEXT with the value
+              function being FN applied to operands OPERANDS."
+
+             (->>
+              (list* fn (mapcar (rcurry #'test-binding node context) operands))
+              (test-value-function node context)))
+
            (test-error (str)
+             "Tests that building the source STR results in a
+              `SEMANTIC-ERROR'."
+
              (is-error (build-nodes str (make-instance 'module-table)) 'semantic-error str)))
 
     (subtest "Simple Atom Nodes"
       (let ((modules (make-instance 'module-table)))
         (build-nodes "a;b;c" modules)
 
-        (with-slots (node-table) modules
-          (get-node "a" node-table)
-          (get-node "b" node-table)
-          (get-node "c" node-table))))
+        (test-nodes modules "a" "b" "c")))
 
     (subtest "Bindings"
       (let ((modules (make-instance 'module-table)))
         (build-nodes "a -> b; c -> b" modules)
 
-        (with-slots (node-table) modules
-          (let ((a (get-node "a" node-table))
-                (b (get-node "b" node-table))
-                (c (get-node "c" node-table)))
+        (with-nodes ((a "a") (b "b") (c "c")) modules
+          (->> (test-binding a b)
+               (test-value-function b a))
 
-            (->> (test-binding a b)
-                 (test-value-function b a))
-
-            (->> (test-binding c b)
-                 (test-value-function b c)))))
+          (->> (test-binding c b)
+               (test-value-function b c))))
 
       (let ((modules (make-instance 'module-table)))
         (build-nodes "a -> (b -> c)" modules)
 
-        (with-slots (node-table) modules
-          (let ((a (get-node "a" node-table))
-                (b (get-node "b" node-table))
-                (c (get-node "c" node-table))
-                (b->c (get-node '("->" "b" "c") node-table)))
+        (with-nodes ((a "a") (b "b") (c "c") (b->c ("->" "b" "c"))) modules
+          (->> (test-binding a b->c)
+               (test-value-function b->c a))
 
-            (->> (test-binding a b->c)
-                 (test-value-function b->c a))
-
-            (->>
-             `(if ,(test-binding b->c c b)
-                  ,(test-binding b c)
-                  ,(node-link :self))
-             (test-value-function c b))))))
+          (->>
+           `(if ,(test-binding b->c c b)
+                ,(test-binding b c)
+                ,(node-link :self))
+           (test-value-function c b)))))
 
     (subtest "Functor Nodes"
       (let ((modules (make-instance 'module-table)))
         (build-source-file #p"./modules/core.trd" modules)
         (build-nodes "a + b -> output; int(x) -> z" modules)
 
-        (with-slots (node-table) modules
-          (let ((fn (gethash (id-symbol "+") (meta-nodes node-table)))
-                (a (get-node "a" node-table))
-                (b (get-node "b" node-table))
-                (a+b (get-node '("+" "a" "b") node-table))
-                (output (get-node "output" node-table)))
+        (with-nodes ((fn "+") (a "a") (b "b")
+                     (a+b ("+" "a" "b")) (output "output"))
+            modules
 
-            (test-binding a+b output)
+          (test-binding a+b output)
+          (test-node-function a+b fn fn a b))
 
-            (->>
-             `(,fn
-               ,(test-binding a a+b fn)
-               ,(test-binding b a+b fn))
-             (test-value-function a+b fn)))
-
-          (let ((fn (gethash (id-symbol "int") (meta-nodes node-table)))
-                (x (get-node "x" node-table))
-                (int-x (get-node '("int" "x") node-table))
-                (z (get-node "z" node-table)))
-
-            (test-binding int-x z)
-
-            (->> `(,fn ,(test-binding x int-x fn))
-                 (test-value-function int-x fn))
-
-            (->> `(,fn ,(test-binding int-x x))
-                 (test-value-function x int-x))))))
+        (with-nodes ((fn "int") (x "x") (z "z") (int-x ("int" "x"))) modules
+          (test-binding int-x z)
+          (test-node-function int-x fn fn x)
+          (test-node-function x int-x fn int-x))))
 
     (subtest "Special Operators"
       (subtest ":op Operator - Registering Infix Operators"
@@ -221,20 +204,12 @@
           (build-source-file #p"./modules/core.trd" modules)
           (build-nodes "add(x,y) : x + y; add(a,b)" modules)
 
-          (with-slots (node-table) modules
-            (let ((add (gethash (id-symbol "add") (meta-nodes node-table)))
-                  (a (get-node "a" node-table))
-                  (b (get-node "b" node-table))
-                  (add-ab (get-node '("add" "a" "b") node-table)))
+          (with-nodes ((add "add") (a "a") (b "b") (add-ab ("add" "a" "b"))) modules
+            (is-type add 'meta-node)
+            (is (operands add) (decls '!\x '!\y))
+            (is (definition add) (decls '(!+ !\x !\y)))
 
-              (is-type add 'meta-node)
-              (is (operands add) (decls '!\x '!\y))
-              (is (definition add) (decls '(!+ !\x !\y)))
-
-              (->>
-               `(,add ,(test-binding a add-ab add)
-                      ,(test-binding b add-ab add))
-               (test-value-function add-ab add)))))
+            (test-node-function add-ab add add a b)))
 
         (subtest "Errors"
           (test-error "x : y")
@@ -262,14 +237,14 @@
           (test-error ":in(x, y) : add(x, y)")
 
           (let ((modules (make-instance 'module-table)))
-            ;; Test atom/meta-node name collisions
+            ;; Test node name collisions with meta-nodes
             (build-nodes "a;b" modules)
             (is-error (build-nodes #1="a(x,y) : add(x,y)" modules) 'semantic-error #1#)
 
             (with-slots (node-table) modules
               (build-nodes "f(x) : x" modules)
 
-              (let ((f (gethash (id-symbol "f") (meta-nodes node-table))))
+              (with-nodes ((f "f")) modules
                 (is-type f 'meta-node)
                 (is (operands f) (decls '!\x))
                 (is (definition f) (decls '!\x)))
@@ -277,7 +252,7 @@
               (build-nodes "f(x, y) : +(x, y)" modules)
 
               ;; Test meta-node redefinitions
-              (let ((f (gethash (id-symbol "f") (meta-nodes node-table))))
+              (with-nodes ((f "f")) modules
                 (is-type f 'meta-node)
                 (is (operands f) (decls '!\x '!\y))
                 (is (definition f) (decls '(!+ !\x !\y))))
@@ -300,15 +275,8 @@
             (is (definition add) nil)
             (is (definition sub) nil)
 
-            (->>
-             `(,add ,(test-binding a add-ab add)
-                    ,(test-binding b add-ab add))
-             (test-value-function add-ab add))
-
-            (->>
-             `(,sub ,(test-binding a sub-ab sub)
-                    ,(test-binding b sub-ab sub))
-             (test-value-function sub-ab sub))))
+            (test-node-function add-ab add add a b)
+            (test-node-function sub-ab sub sub a b)))
 
         (subtest "Errors"
           (test-error "x -> :extern(y)")

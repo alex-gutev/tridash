@@ -19,6 +19,7 @@
 (defpackage :tridash.test
   (:use :common-lisp
         :alexandria
+        :anaphora
         :cl-arrows
         :iterate
         :optima
