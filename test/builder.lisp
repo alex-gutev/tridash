@@ -98,7 +98,10 @@
              (diag (format nil "Test value function of ~a in context ~a" (name node) context))
 
              (let ((context (gethash context (contexts node))))
-               (is (value-function context) fn :test #'value-fn-equal))))
+               (is (value-function context) fn :test #'value-fn-equal)))
+
+           (test-error (str)
+             (is-error (build-nodes str (make-instance 'module-table)) 'semantic-error str)))
 
     (subtest "Simple Atom Nodes"
       (let ((modules (make-instance 'module-table)))
@@ -176,7 +179,7 @@
                  (test-value-function x int-x))))))
 
     (subtest "Special Operators"
-      (subtest "op Operator - Registering Infix Operators"
+      (subtest ":op Operator - Registering Infix Operators"
         (flet ((test-op (id operators prec assoc)
                  (diag (format nil "Test infix operator ~a" id))
 
@@ -196,16 +199,13 @@
               (test-op "*" operator-nodes 100 :right))))
 
         (subtest "Errors"
-          (flet ((test-error (str)
-                   (is-error (build-nodes str (make-instance 'module-table)) 'semantic-error)))
-
-            (test-error ":op()")
-            (test-error ":op(*)")
-            (test-error ":op(*,*)")
-            (test-error ":op(*,9,x)")
-            (test-error ":op(\"*\", 10, left)")
-            (test-error "a -> :op(*, 10, left)")
-            (test-error ":op(*, 10, left) -> a"))))
+          (test-error ":op()")
+          (test-error ":op(*)")
+          (test-error ":op(*,*)")
+          (test-error ":op(*,9,x)")
+          (test-error ":op(\"*\", 10, left)")
+          (test-error "a -> :op(*, 10, left)")
+          (test-error ":op(*, 10, left) -> a")))
 
       (subtest "Meta-Node Definitions"
         (let ((modules (make-instance 'module-table)))
@@ -225,7 +225,56 @@
               (->>
                `(,add ,(test-binding a add-ab add)
                       ,(test-binding b add-ab add))
-               (test-value-function add-ab add)))))))))
+               (test-value-function add-ab add)))))
+
+        (subtest "Errors"
+          (test-error "x : y")
+          (test-error "{x; y} : z")
+          (test-error "{w; x}(y) : z")
+          (test-error ":(x)")
+          (test-error ":()")
+          (test-error ":(x,y,z)")
+
+          (test-error "(g(x,y) : f(x,y)) -> z")
+          (test-error "z -> (g(x,y) : f(x,y))")
+
+          (diag "Redefining Special Operators")
+          (test-error "->(x, y) : fn(x, y)")
+          (test-error ":(x, y) : z")
+          (test-error ":extern(x) : x")
+          (test-error ":op(a, b) : f(b, a)")
+          (test-error "..(x,z) : g(x, z)")
+          (test-error ".(a) : h(a)")
+          (test-error ":attribute(m, n) : f(m,n)")
+          (test-error ":module(m) : m")
+          (test-error ":import(x) : x")
+          (test-error ":use(z) : z")
+          (test-error ":export(y) : h(y)")
+          (test-error ":in(x, y) : add(x, y)")
+
+          (let ((modules (make-instance 'module-table)))
+            ;; Test atom/meta-node name collisions
+            (build-nodes "a;b" modules)
+            (is-error (build-nodes #1="a(x,y) : add(x,y)" modules) 'semantic-error #1#)
+
+            (with-slots (node-table) modules
+              (build-nodes "f(x) : x" modules)
+
+              (let ((f (gethash (id-symbol "f") (meta-nodes node-table))))
+                (is-type f 'meta-node)
+                (is (operands f) (decls '!\x))
+                (is (definition f) (decls '!\x)))
+
+              (build-nodes "f(x, y) : +(x, y)" modules)
+
+              ;; Test meta-node redefinitions
+              (let ((f (gethash (id-symbol "f") (meta-nodes node-table))))
+                (is-type f 'meta-node)
+                (is (operands f) (decls '!\x '!\y))
+                (is (definition f) (decls '(!+ !\x !\y))))
+
+              ;; Test name collisions with atom nodes
+              (is-error (build-nodes "f" modules) 'semantic-error "f"))))))))
 
 (finalize)
 

@@ -109,6 +109,7 @@
 (define-constant +special-operators+
     (list +bind-operator+
           +def-operator+
+          +extern-operator+
           +op-operator+
           +outer-operator+
           +subnode-operator+
@@ -118,7 +119,7 @@
           +use-operator+
           +export-operator+
           +in-module-operator+
-          +export-operator+)
+          +list-operator+)
 
   :test #'equal
   :documentation "List of all special operators")
