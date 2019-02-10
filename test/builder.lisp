@@ -24,6 +24,23 @@
 
 (plan nil)
 
+(defun node-id (name)
+  "Converts a string/list node identifier to an identifier symbol."
+
+  (typecase name
+    (cons (mapcar #'node-id name))
+    (otherwise (id-symbol name))))
+
+(defmacro! with-nodes ((&rest nodes) o!modules &body body)
+  "Binds the nodes to variables. Each element of NODES is of the
+   form (VAR NAME) where VAR is the variable to which the node is
+   bound and NAME designates the node's name."
+
+  (flet ((make-binding (node)
+           (destructuring-bind (var name) node
+             `(,var (gethash ',(node-id name) (all-nodes (node-table ,g!modules)))))))
+    `(let ,(mapcar #'make-binding nodes)
+       ,@body)))
 
 (subtest "Test Node Builder"
   (labels ((build-nodes (string modules)
@@ -43,14 +60,6 @@
                  (is (name node) id (format nil "Name of ~a is ~a" name name))
 
                  node)))
-
-           (node-id (name)
-             "Converts a string/list node identifier to an identifier
-              symbol."
-
-             (typecase name
-               (cons (mapcar #'node-id name))
-               (otherwise (id-symbol name))))
 
            (test-binding (src target &optional (context src))
              "Tests that a binding between node SRC and TARGET has
@@ -274,7 +283,36 @@
                 (is (definition f) (decls '(!+ !\x !\y))))
 
               ;; Test name collisions with atom nodes
-              (is-error (build-nodes "f" modules) 'semantic-error "f"))))))))
+              (is-error (build-nodes "f" modules) 'semantic-error "f")))))
+
+      (subtest "External Meta-Node Definitions"
+        (let ((modules (make-instance 'module-table)))
+          (build-nodes ":extern(add, sub); add(a,b); sub(a,b)" modules)
+
+          (with-nodes ((add "add") (sub "sub")
+                       (a "a") (b "b")
+                       (add-ab ("add" "a" "b")) (sub-ab ("sub" "a" "b")))
+              modules
+
+            (is-type add 'external-meta-node)
+            (is-type sub 'external-meta-node)
+
+            (is (definition add) nil)
+            (is (definition sub) nil)
+
+            (->>
+             `(,add ,(test-binding a add-ab add)
+                    ,(test-binding b add-ab add))
+             (test-value-function add-ab add))
+
+            (->>
+             `(,sub ,(test-binding a sub-ab sub)
+                    ,(test-binding b sub-ab sub))
+             (test-value-function sub-ab sub))))
+
+        (subtest "Errors"
+          (test-error "x -> :extern(y)")
+          (test-error ":extern(y) -> x"))))))
 
 (finalize)
 

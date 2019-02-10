@@ -33,6 +33,8 @@
 
   (:shadowing-import-from :prove :fail)
 
+  (:import-from :lol :defmacro!)
+
   (:import-from
    :tridash.parser
 
