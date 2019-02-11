@@ -83,14 +83,14 @@
 
                link))
 
-           (test-simple-binding (src target)
+           (test-simple-binding (src target &optional (context src))
              "Tests that a binding between node SRC and TARGET has
-              been established and that the value function of TARGET
-              is the `NODE-LINK' itself."
+              been established and that the value function of
+              TARGET (in context CONTEXT) is the `NODE-LINK' itself."
 
              (->>
-              (test-binding src target)
-              (test-value-function target src)))
+              (test-binding src target context)
+              (test-value-function target context)))
 
            (value-fn-equal (a b)
              "Value function equality comparison. Returns true if the
@@ -143,18 +143,14 @@
         (build-nodes "a -> b; c -> b" modules)
 
         (with-nodes ((a "a") (b "b") (c "c")) modules
-          (->> (test-binding a b)
-               (test-value-function b a))
-
-          (->> (test-binding c b)
-               (test-value-function b c))))
+          (test-simple-binding a b)
+          (test-simple-binding c b)))
 
       (let ((modules (make-instance 'module-table)))
         (build-nodes "a -> (b -> c)" modules)
 
         (with-nodes ((a "a") (b "b") (c "c") (b->c ("->" "b" "c"))) modules
-          (->> (test-binding a b->c)
-               (test-value-function b->c a))
+          (test-simple-binding a b->c a)
 
           (->>
            `(if ,(test-binding b->c c b)
