@@ -29,6 +29,7 @@
 
   (typecase name
     (cons (mapcar #'node-id name))
+    (symbol name)
     (otherwise (id-symbol name))))
 
 (defun test/get-node (name node-table)
@@ -42,6 +43,14 @@
       (is-type it 'node "Is Node")
       (is (name it) id "Node Name"))))
 
+(defun ensure-node-table (thing)
+  "If THING is a `MODULE-TABLE' return the node table bound to the
+   NODE-TABLE slot. Otherwise if THING is a `NODE-TABLE' return it."
+
+  (etypecase thing
+    (module-table (node-table thing))
+    (node-table thing)))
+
 (defmacro! with-nodes ((&rest nodes) o!modules &body body)
   "Binds the nodes to variables. Each element of NODES is of the
    form (VAR NAME) where VAR is the variable to which the node is
@@ -49,8 +58,20 @@
 
   (flet ((make-binding (node)
            (destructuring-bind (var name) node
-             `(,var (test/get-node ',(node-id name) (node-table ,g!modules))))))
-    `(let ,(mapcar #'make-binding nodes)
+             `(,var (test/get-node ',(node-id name) ,g!node-table)))))
+    `(let ((,g!node-table (ensure-node-table ,g!modules)))
+       (let ,(mapcar #'make-binding nodes)
+         ,@body))))
+
+(defmacro! with-modules ((&rest modules) o!module-table &body body)
+  "Binds module `NODE-TABLE's to variables. Each element of MODULES is
+   of the form (VAR NAME) where VAR is the variable to which the
+   module is bound and NAME designates the module's name."
+  (flet ((make-binding (module)
+           (destructuring-bind (var name) module
+             `(,var (aprog1 (gethash ',(node-id name) (modules ,g!module-table))
+                      (is-type it 'node-table ,(format nil "~a is a module" name)))))))
+    `(let ,(mapcar #'make-binding modules)
        ,@body)))
 
 (subtest "Test Node Builder"
@@ -59,7 +80,7 @@
                (build-parsed-nodes (make-parser in) modules)))
 
            (test-nodes (modules &rest nodes)
-             (mapc (rcurry #'test/get-node (node-table modules)) nodes))
+             (mapc (rcurry #'test/get-node (ensure-node-table modules)) nodes))
 
            (test-binding (src target &optional (context src))
              "Tests that a binding between node SRC and TARGET has
@@ -126,11 +147,22 @@
               (list* fn (mapcar (rcurry #'test-binding node context) operands))
               (test-value-function node context)))
 
-           (test-error (str)
+           (test-error (str &optional (error 'semantic-error))
              "Tests that building the source STR results in a
               `SEMANTIC-ERROR'."
 
-             (is-error (build-nodes str (make-instance 'module-table)) 'semantic-error str)))
+             (is-error (build-nodes str (make-instance 'module-table)) error
+                       (format nil "`~a` raises an error of type `~s'" str error)))
+
+           (test-top-level-only (decl &rest code)
+             "Tests that an error is raised if the declaration DECL
+              appears in a non-top-level position. Each element in
+              CODE is prepended (separated by ';') to DECL before
+              performing the tests."
+
+             (test-error (format nil "~{~a; ~}~a -> a" code decl))
+             (test-error (format nil "~{~a; ~}a -> ~a" code decl))
+             (test-error (format nil "~{~a; ~}f(x) : x; f(~a)" code decl))))
 
     (subtest "Simple Atom Nodes"
       (let ((modules (make-instance 'module-table)))
@@ -360,7 +392,124 @@
 
             (test-node-function person person-fn person-fn first last)
             (test-member-fn person.first "first" person)
-            (test-simple-binding person.first name)))))))
+            (test-simple-binding person.first name)))))
+
+    (subtest "Modules"
+      (let ((modules (make-instance 'module-table)))
+        (build-nodes "x;y" modules)
+        (build-nodes ":module(my-mod); a; b" modules)
+        (build-nodes ":module(my-mod); +(x,y) : add(x,y); :op(+, 50, left)" modules)
+        (build-nodes ":module(my-mod); :export(a,+)" modules)
+
+        (with-modules ((init :init) (my-mod "my-mod"))
+            modules
+          (test-nodes init "x" "y")
+
+          (with-nodes ((my-mod.a "a") (my-mod.b "b") (+ "+")) my-mod
+            (subtest "Test :use operator"
+              (build-nodes ":module(mod2); :use(my-mod); my-mod.a -> a; my-mod.+(n,m)" modules)
+
+              (with-modules ((mod2 "mod2")) modules
+                (with-nodes ((a "a") (n "n") (m "m") (n+m (("." "my-mod" "+") "n" "m"))) mod2
+                  (test-simple-binding my-mod.a a)
+                  (test-node-function n+m + + n m))))
+
+            (subtest "Test :alias operator"
+              (build-nodes ":module(mod3); :alias(my-mod, m); m.a -> a; m.+(j,k)" modules)
+
+              (with-modules ((mod3 "mod3")) modules
+                (with-nodes ((a "a") (j "j") (k "k") (j+k (("." "m" "+") "j" "k"))) mod3
+                  (test-simple-binding my-mod.a a)
+                  (test-node-function j+k + + j k))))
+
+            (subtest "Test :import operator with arguments"
+              (build-nodes ":module(mod4); :import(my-mod, +); a + b" modules)
+
+              (with-modules ((mod4 "mod4")) modules
+                (with-nodes ((a "a") (b "b") (a+b ("+" "a" "b"))) mod4
+                  (test-node-function a+b + + a b)
+
+                  (isnt a my-mod.a :test #'eq)
+                  (isnt b my-mod.b :test #'eq))))
+
+            (subtest "Test :import operator without arguments"
+              (build-nodes ":module(mod5); :import(my-mod); a + b" modules)
+
+              (with-modules ((mod5 "mod5")) modules
+                (with-nodes ((a "a") (b "b") (a+b ("+" "a" "b"))) mod5
+                  (test-node-function a+b + + a b)
+
+                  (is a my-mod.a :test #'eq)
+                  (isnt b my-mod.b :test #'eq))))
+
+            (subtest "Test :in operator"
+              (build-nodes ":module(mod6); :in(my-mod,+)(:in(my-mod, a), b)" modules)
+
+              (with-modules ((mod6 "mod6")) modules
+                (with-nodes ((b "b") (a+b ((":in" "my-mod" "+") (":in" "my-mod" "a") "b"))) mod6
+                  (test-node-function a+b + + my-mod.a b)
+
+                  (isnt b my-mod.b :test #'eq))))))
+
+        (subtest "Errors"
+          (subtest "Module Semantics"
+            (is-error (build-nodes ":module(mod2); +(j,k)" modules) 'semantic-error)
+            (is-error (build-nodes ":module(mod2); j + k" modules) 'tridash-parse-error)
+            (is-error (build-nodes ":module(mod2); my-mod.z" modules) 'semantic-error)
+
+            (is-error (build-nodes ":module(mod3); +(j,k)" modules) 'semantic-error)
+            (is-error (build-nodes ":module(mod3); j + k" modules) 'tridash-parse-error)
+            (is-error (build-nodes ":module(mod3); m.z" modules) 'semantic-error)
+
+            (is-error (build-nodes ":module(mod4); my-mod.+(a,b)" modules) 'semantic-error)
+            (is-error (build-nodes ":module(mod4); :in(my-mod, z)" modules) 'semantic-error)
+
+            (test-error ":use(no-such-module)")
+            (test-error ":alias(no-such-module, m)")
+            (test-error ":import(no-such-module)")
+            (test-error ":import(no-such-module, node)")
+            (test-error ":in(no-such-module, x)")
+            (test-error ":export(no-such-node)")
+            (test-error "x; :export(x, no-such-node)"))
+
+          (subtest ":module Operator Syntax"
+            (test-error ":module()")
+            (test-error ":module(a, b, c)")
+            (test-error ":module(1, 2, 3)")
+            (test-error ":module(1)")
+
+            (test-top-level-only ":module(m)"))
+
+          (subtest ":use Operator Syntax"
+            (test-error ":use(1,2,3)")
+            (test-top-level-only ":use(m1)" ":module(m1)" ":module(m2)"))
+
+          (subtest ":alias Operator Syntax"
+            (test-error ":alias()")
+            (test-error ":alias(m)")
+            (test-error ":alias(1)")
+            (test-error ":alias(1,2)")
+            (test-error ":module(m1); :module(m2); :alias(m1, m, x, y)")
+
+            (test-top-level-only ":alias(mod, m)" ":module(mod)" ":module(m1)"))
+
+          (subtest ":import Operator Syntax"
+            (test-error ":import()")
+            (test-error ":import(1)")
+
+            (test-top-level-only ":import(mod)" ":module(mod)" ":module(m1)")
+            (test-top-level-only ":import(mod, x)" ":module(mod); x" ":module(m1)"))
+
+          (subtest ":export Operator Syntax"
+            (test-error ":export(1, 2, 3)")
+
+            (test-top-level-only ":export(x)" "x"))
+
+          (subtest ":in Operator Syntax"
+            (test-error ":in()")
+            (test-error ":in(x)")
+            (test-error ":module(m1); x; :module(m2); :in(m1,x, y)")
+            (test-error ":in(1, x)")))))))
 
 (finalize)
 
