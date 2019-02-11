@@ -83,6 +83,15 @@
 
                link))
 
+           (test-simple-binding (src target)
+             "Tests that a binding between node SRC and TARGET has
+              been established and that the value function of TARGET
+              is the `NODE-LINK' itself."
+
+             (->>
+              (test-binding src target)
+              (test-value-function target src)))
+
            (value-fn-equal (a b)
              "Value function equality comparison. Returns true if the
               value function A is equivalent to the value function B."
@@ -313,37 +322,49 @@
           (test-error ":extern(y) -> x"))))
 
     (subtest "Subnodes"
-      (let ((modules (make-instance 'module-table)))
-        (build-nodes "x -> a.first; y -> a.last; a.last -> y" modules)
+      (labels ((test-object-fn (node &rest fields)
+                 (-<>
+                  (list* :object (mapcar (curry #'make-field node) fields))
+                  (test-value-function node :object <> :test (rcurry #'set-equal :test #'value-fn-equal))))
 
-        (with-nodes ((x "x") (y "y") (a "a")
-                     (a.first ("." "a" "first")) (a.last ("." "a" "last")))
-            modules
+               (make-field (node field)
+                 (destructuring-bind (field dep) field
+                   (list (id-symbol field) (test-binding dep node :object))))
 
-          (-<>
-           `(:object (,(id-symbol "first") ,(test-binding a.first a :object))
-                     (,(id-symbol "last") ,(test-binding a.last a :object)))
-           (test-value-function a :object <> :test (rcurry #'set-equal :test #'value-fn-equal)))
+               (test-member-fn (node field dep)
+                 (->>
+                  `(:member ,(test-binding dep node) ,(id-symbol field))
+                  (test-value-function node dep))))
 
-          (->>
-           `(:member ,(test-binding a a.first) ,(id-symbol "first"))
-           (test-value-function a.first a))
+        (let ((modules (make-instance 'module-table)))
+          (build-nodes "x -> a.first; y -> a.last; a.last -> y" modules)
 
-          (->>
-           `(:member ,(test-binding a a.last) ,(id-symbol "last"))
-           (test-value-function a.last a))
+          (with-nodes ((x "x") (y "y") (a "a")
+                       (a.first ("." "a" "first")) (a.last ("." "a" "last")))
+              modules
 
-          (->>
-           (test-binding x a.first)
-           (test-value-function a.first x))
+            (test-object-fn a (list "first" a.first) (list "last" a.last))
+            (test-member-fn a.first "first" a)
+            (test-member-fn a.last "last" a)
 
-          (->>
-           (test-binding y a.last)
-           (test-value-function a.last y))
+            (test-simple-binding x a.first)
+            (test-simple-binding y a.last)
+            (test-simple-binding a.last y)))
 
-          (->>
-           (test-binding a.last y)
-           (test-value-function y a.last)))))))
+        (let ((modules (make-instance 'module-table)))
+          (build-nodes "Person(first, last) : { first -> self.first; last -> self.last }" modules)
+          (build-nodes "Person(first, last).first -> name" modules)
+
+          (with-nodes ((person-fn "Person")
+                       (first "first") (last "last")
+                       (person ("Person" "first" "last"))
+                       (person.first ("." ("Person" "first" "last") "first"))
+                       (name "name"))
+              modules
+
+            (test-node-function person person-fn person-fn first last)
+            (test-member-fn person.first "first" person)
+            (test-simple-binding person.first name)))))))
 
 (finalize)
 
