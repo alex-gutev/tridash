@@ -67,6 +67,7 @@
   "Binds module `NODE-TABLE's to variables. Each element of MODULES is
    of the form (VAR NAME) where VAR is the variable to which the
    module is bound and NAME designates the module's name."
+
   (flet ((make-binding (module)
            (destructuring-bind (var name) module
              `(,var (aprog1 (gethash ',(node-id name) (modules ,g!module-table))
@@ -74,96 +75,116 @@
     `(let ,(mapcar #'make-binding modules)
        ,@body)))
 
-(subtest "Test Node Builder"
-  (labels ((build-nodes (string modules)
-             (with-input-from-string (in string)
-               (build-parsed-nodes (make-parser in) modules)))
+(labels ((build-nodes (string modules)
+	   (with-input-from-string (in string)
+	     (build-parsed-nodes (make-parser in) modules)))
 
-           (test-nodes (modules &rest nodes)
-             (mapc (rcurry #'test/get-node (ensure-node-table modules)) nodes))
+	 (test-nodes (modules &rest nodes)
+	   (mapc (rcurry #'test/get-node (ensure-node-table modules)) nodes))
 
-           (test-binding (src target &optional (context src))
-             "Tests that a binding between node SRC and TARGET has
-              been established in the context CONTEXT."
+	 (test-binding (src target &optional (context src))
+	   "Tests that a binding between node SRC and TARGET has been
+            established in the context CONTEXT."
 
-             (diag (format nil "Test binding ~a -> ~a" (name src) (name target)))
+	   (diag (format nil "Test binding ~a -> ~a" (name src) (name target)))
 
-             (let ((link (gethash target (observers src))))
-               (is-type link 'node-link "Node link created")
-               (is link (gethash src (dependencies target))
-                   (format nil "Node link added to dependencies of ~a" (name target)))
+	   (let ((link (gethash target (observers src))))
+	     (is-type link 'node-link "Node link created")
+	     (is link (gethash src (dependencies target))
+		 (format nil "Node link added to dependencies of ~a" (name target)))
 
-               (is (node-link-node link) src "Node link points to correct node")
-               (is (node-link-context link) context "Link context is correct")
+	     (is (node-link-node link) src "Node link points to correct node")
+	     (is (node-link-context link) context "Link context is correct")
 
-               (let ((id context)
-                     (context (gethash context (contexts target))))
-                 (is-type context 'node-context (format nil "Node context ~a created" id))
-                 (is (gethash src (operands context)) link
-                     (format nil "~a added to context operands" (name src))))
+	     (let ((id context)
+		   (context (gethash context (contexts target))))
+	       (is-type context 'node-context (format nil "Node context ~a created" id))
+	       (is (gethash src (operands context)) link
+		   (format nil "~a added to context operands" (name src))))
 
-               link))
+	     link))
 
-           (test-simple-binding (src target &optional (context src))
-             "Tests that a binding between node SRC and TARGET has
-              been established and that the value function of
-              TARGET (in context CONTEXT) is the `NODE-LINK' itself."
+	 (test-simple-binding (src target &optional (context src))
+	   "Tests that a binding between node SRC and TARGET has been
+            established and that the value function of TARGET (in
+            context CONTEXT) is the `NODE-LINK' itself."
 
-             (->>
-              (test-binding src target context)
-              (test-value-function target context)))
+	   (->>
+	    (test-binding src target context)
+	    (test-value-function target context)))
 
-           (value-fn-equal (a b)
-             "Value function equality comparison. Returns true if the
-              value function A is equivalent to the value function B."
+	 (value-fn-equal (a b)
+	   "Value function equality comparison. Returns true if the
+            value function A is equivalent to the value function B."
 
-             (multiple-value-match (values a b)
-               (((cons a as) (cons b bs))
-                (and (value-fn-equal a b)
-                     (value-fn-equal as bs)))
+	   (multiple-value-match (values a b)
+	     (((cons a as) (cons b bs))
+	      (and (value-fn-equal a b)
+		   (value-fn-equal as bs)))
 
-               (((node-link- (node node-a) (context context-a))
-                 (node-link- (node node-b) (context context-b)))
+	     (((node-link- (node node-a) (context context-a))
+	       (node-link- (node node-b) (context context-b)))
 
-                (and (eq node-a node-b)
-                     (eq context-a context-b)))
+	      (and (eq node-a node-b)
+		   (eq context-a context-b)))
 
-               ((_ _) (equal a b))))
+	     ((_ _) (equal a b))))
 
-           (test-value-function (node context fn &key (test #'value-fn-equal))
-             "Tests that the context CONTEXT of node NODE has value
-              function FN."
+	 (test-value-function (node context fn &key (test #'value-fn-equal))
+	   "Tests that the context CONTEXT of node NODE has value
+            function FN."
 
-             (diag (format nil "Test value function of ~a in context ~a" (name node) context))
+	   (diag (format nil "Test value function of ~a in context ~a" (name node) context))
 
-             (let ((context (gethash context (contexts node))))
-               (is (value-function context) fn :test test)))
+	   (let ((context (gethash context (contexts node))))
+	     (is (value-function context) fn :test test)))
 
-           (test-node-function (node context fn &rest operands)
-             "Tests the node NODE has a context CONTEXT with the value
-              function being FN applied to operands OPERANDS."
+	 (test-node-function (node context fn &rest operands)
+	   "Tests the node NODE has a context CONTEXT with the value
+            function being FN applied to operands OPERANDS."
 
-             (->>
-              (list* fn (mapcar (rcurry #'test-binding node context) operands))
-              (test-value-function node context)))
+	   (->>
+	    (list* fn (mapcar (rcurry #'test-binding node context) operands))
+	    (test-value-function node context)))
 
-           (test-error (str &optional (error 'semantic-error))
-             "Tests that building the source STR results in a
-              `SEMANTIC-ERROR'."
+	 (test-error (str &optional (error 'semantic-error))
+	   "Tests that building the source STR results in a
+            `SEMANTIC-ERROR'."
 
-             (is-error (build-nodes str (make-instance 'module-table)) error
-                       (format nil "`~a` raises an error of type `~s'" str error)))
+	   (is-error (build-nodes str (make-instance 'module-table)) error
+		     (format nil "`~a` raises an error of type `~s'" str error)))
 
-           (test-top-level-only (decl &rest code)
-             "Tests that an error is raised if the declaration DECL
-              appears in a non-top-level position. Each element in
-              CODE is prepended (separated by ';') to DECL before
-              performing the tests."
+	 (test-top-level-only (decl &rest code)
+	   "Tests that an error is raised if the declaration DECL
+            appears in a non-top-level position. Each element in CODE
+            is prepended (separated by ';') to DECL before performing
+            the tests."
 
-             (test-error (format nil "~{~a; ~}~a -> a" code decl))
-             (test-error (format nil "~{~a; ~}a -> ~a" code decl))
-             (test-error (format nil "~{~a; ~}f(x) : x; f(~a)" code decl))))
+	   (test-error (format nil "~{~a; ~}~a -> a" code decl))
+	   (test-error (format nil "~{~a; ~}a -> ~a" code decl))
+	   (test-error (format nil "~{~a; ~}f(x) : x; f(~a)" code decl)))
 
+	 (test-not-nodes (modules &rest ids)
+	   "Tests that there are no nodes with identifiers IDS in
+            MODULES."
+
+	   (mapc (curry #'test-not-node modules) ids))
+
+	 (test-not-node (modules id)
+	   "Tests that there is no node with identifier ID in
+            MODULES."
+
+	   (ok (null (gethash (node-id id) (all-nodes (ensure-node-table modules))))
+	       (format nil "~a is not a node" id)))
+
+	 (test-dependency (dep node)
+	   "Tests that DEP is a dependency of NODE and returns the
+            `NODE-LINK'"
+
+	   (aprog1 (gethash dep (dependencies node))
+	     (format nil "~a is a dependency of ~a" dep node))))
+
+  (subtest "Test Node Builder"
     (subtest "Simple Atom Nodes"
       (let ((modules (make-instance 'module-table)))
         (build-nodes "a;b;c" modules)
@@ -506,7 +527,21 @@
             (test-error ":in()")
             (test-error ":in(x)")
             (test-error ":module(m1); x; :module(m2); :in(m1,x, y)")
-            (test-error ":in(1, x)")))))))
+            (test-error ":in(1, x)"))))))
+
+  (subtest "Test Node Coalescer"
+    (subtest "Simple Nodes"
+      (let ((modules (make-instance 'module-table)))
+	(build-nodes "a -> b; b -> c; c -> d" modules)
+	(build-nodes ":attribute(a, input, 1)" modules)
+	(finish-build-graph modules)
+
+	(test-not-nodes modules "b" "c")
+
+	(with-nodes ((a "a") (d "d")) modules
+	  (->> (test-dependency a d)
+	       (node-link-context)
+	       (test-simple-binding a d)))))))
 
 (finalize)
 
