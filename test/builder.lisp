@@ -233,8 +233,8 @@
           (test-error ":op(*,*)")
           (test-error ":op(*,9,x)")
           (test-error ":op(\"*\", 10, left)")
-          (test-error "a -> :op(*, 10, left)")
-          (test-error ":op(*, 10, left) -> a")))
+
+          (test-top-level-only ":op(*, 10, left)")))
 
       (subtest ":attribute Operator - Node Attributes"
         (let ((modules (make-instance 'module-table)))
@@ -261,11 +261,9 @@
           (test-error ":attribute(1, attribute, value)")
           (test-error ":attribute(non-existant-node, public-name, \"node\")")
 
-          (test-error "node; :attribute(node, input, 1) -> x")
-          (test-error "node; x -> :attribute(node, input, 1)"))))
+          (test-top-level-only ":attribute(node, input, 1)" "node"))))
 
     (subtest "Meta-Nodes"
-
       (subtest "Meta-Node Definitions"
         (let ((modules (make-instance 'module-table)))
           (build-source-file #p"./modules/core.trd" modules)
@@ -286,8 +284,7 @@
           (test-error ":()")
           (test-error ":(x,y,z)")
 
-          (test-error "(g(x,y) : f(x,y)) -> z")
-          (test-error "z -> (g(x,y) : f(x,y))")
+          (test-top-level-only "(g(x,y) : f(x,y))")
 
           (diag "Redefining Special Operators")
           (test-error "->(x, y) : fn(x, y)")
@@ -346,8 +343,8 @@
             (test-node-function sub-ab sub sub a b)))
 
         (subtest "Errors"
-          (test-error "x -> :extern(y)")
-          (test-error ":extern(y) -> x"))))
+
+          (test-top-level-only ":extern(y)"))))
 
     (subtest "Subnodes"
       (labels ((test-object-fn (node &rest fields)
