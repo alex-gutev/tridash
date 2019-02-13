@@ -127,14 +127,15 @@
     ;; Fold constant nodes
     (maphash-values #'fold-constant-nodes modules)
 
+    ;; Coalesce nodes
+    (coalesce-nodes *global-module-table*)
+    (coalesce-node-links *global-module-table*)
+
     ;; Remove unreachable nodes
     (remove-unreachable-nodes *global-module-table*)
 
     ;; Check for cycles and ambiguous contexts
-    (maphash-values #'check-structure modules)
-
-    ;; Coalesce nodes
-    (maphash-values #'coalesce-nodes modules)))
+    (maphash-values #'check-structure modules)))
 
 
 ;;;; Build Meta-Nodes

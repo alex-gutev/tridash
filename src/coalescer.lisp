@@ -23,8 +23,7 @@
 
 (in-readtable cut-syntax)
 
-
-(defun coalesce-nodes (graph)
+(defun coalesce-nodes (module-table)
   "Coalesces successive nodes, which only have a single observer, into
    single nodes"
 
@@ -72,8 +71,14 @@
             replaced with the value-function of NODE."
 
            (when (coalesce? node)
-             (remove-node (name node) graph)
-             (merge-dependencies node (first (observer-list node)))))
+             (merge-dependencies node (first (observer-list node)))
+
+             ;; Clear observer, dependency and context sets to prepare
+             ;; the node for removal as it is now not reachable from
+             ;; any input node
+             (clrhash (observers node))
+             (clrhash (dependencies node))
+             (clrhash (contexts node))))
 
          (coalesce? (node)
            "Returns true if NODE can be coalesced."
@@ -121,13 +126,19 @@
                      ;; Remove NODE from observers of DEPENDENCY
                      (remhash node observers)
                      ;; Add OBSERVER to observers of DEPENDENCY
-                     (setf (gethash observer (observers dependency)) link))))))))
+                     (setf (gethash observer (observers dependency)) link)))))))
 
-      (when graph
-        (mapc #'begin-coalesce (input-nodes graph))
-        (maphash-values (compose #'coalesce-nodes #'definition) (meta-nodes graph))
 
-        (maphash-values #'coalesce-node-links (all-nodes graph))))))
+         (coalesce-nodes-in-module (module)
+           (mapc #'begin-coalesce (input-nodes module))
+           (maphash-values #'coalesce-nodes-in-meta-node (meta-nodes module)))
+
+         (coalesce-nodes-in-meta-node (meta-node)
+           (with-slots (definition) meta-node
+             (when definition
+               (coalesce-nodes-in-module definition)))))
+
+      (maphash-values #'coalesce-nodes-in-module (modules module-table)))))
 
 (defun may-coalesce? (node)
   "Returns true if NODE may be coalesced into another node. Returns
@@ -135,30 +146,42 @@
 
   (null (attribute :no-coalesce node)))
 
-(defun coalesce-node-links (node)
+(defun coalesce-node-links (module-table)
   "Replaces the `node-link' objects, within the value functions of
    NODE, which do not directly reference another node, with their
    contents."
 
-  (when (node? node)
-    (with-slots (contexts) node
-      (labels ((remove-node-links (fn)
-                 "Replaces all `node-link' objects (within the value
-                  function FN), which do not directly reference
-                  another node, with their contents."
+  (labels ((remove-node-links (fn)
+             "Replaces all `node-link' objects (within the value
+              function FN), which do not directly reference another
+              node, with their contents."
 
-                 (match fn
-                   ((list* meta-node operands)
-                    (list* meta-node (mapcar #'remove-node-links operands)))
+             (match fn
+               ((list* meta-node operands)
+                (list* meta-node (mapcar #'remove-node-links operands)))
 
-                   ((node-link- (node (and fn (not (type node)) (not (type symbol)))))
-                    (remove-node-links fn))
+               ((node-link- (node (and fn (not (type node)) (not (type symbol)))))
+                (remove-node-links fn))
 
-                   (_ fn))))
+               (_ fn)))
 
-        (dohash (nil context contexts)
-          (with-slots (value-function) context
-            (setf value-function (remove-node-links value-function))))))))
+           (coalesce-links-in-node (node)
+             (when (node? node)
+               (with-slots (contexts) node
+                 (dohash (nil context contexts)
+                   (with-slots (value-function) context
+                     (setf value-function (remove-node-links value-function)))))))
+
+           (coalesce-links-in-module (module)
+             (maphash-values #'coalesce-links-in-node (all-nodes module))
+             (maphash-values #'coalesce-links-in-meta-node (meta-nodes module)))
+
+           (coalesce-links-in-meta-node (meta-node)
+             (with-slots (definition) meta-node
+               (when definition
+                 (coalesce-links-in-module definition)))))
+
+    (maphash-values #'coalesce-links-in-module (modules module-table))))
 
 
 (defun remove-unreachable-nodes (module-table)

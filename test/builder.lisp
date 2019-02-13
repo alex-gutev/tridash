@@ -707,7 +707,27 @@
 
                 (with-nodes ((m2.a "a") (m2.b "b") (m2.d "d")) m2
                   (has-value-function (m1.b) m2.a m1.b)
-                  (has-value-function (m2.b) m2.d m2.b))))))))))
+                  (has-value-function (m2.b) m2.d m2.b))))))
+
+        (subtest "Functor Nodes"
+          (let ((modules (make-instance 'module-table)))
+            (build-nodes ":module(m1); in -> a; in -> b" modules)
+            (build-nodes ":attribute(in, input, 1)" modules)
+
+            (build-nodes ":module(m2); :use(m1);" modules)
+            (build-nodes ":extern(+); :op(+, 50, left)" modules)
+            (build-nodes "m1.a + m1.b + c -> output" modules)
+            (build-nodes ":attribute(c, input, 1)" modules)
+
+            (finish-build-graph modules)
+
+            (with-modules ((m1 "m1") (m2 "m2")) modules
+              (test-not-nodes m1 "a" "b")
+              (test-not-nodes m2 '("+" ("+" ("." "m1" "a") ("." "m1" "b")) "c"))
+
+              (with-nodes ((in "in")) m1
+                (with-nodes ((+ "+") (c "c") (output "output")) m2
+                  (has-value-function (in c) output `(,+ (,+ ,in ,in) ,c)))))))))))
 
 (finalize)
 
