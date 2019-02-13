@@ -606,6 +606,7 @@
           (test-not-nodes modules "c" "d")
 
           (with-nodes ((a "a") (b "b") (e "e") (f "f")) modules
+            (has-value-function (a) b a)
             (has-value-function (b) e b)
             (has-value-function (b) f b))))
 
