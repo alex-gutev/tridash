@@ -161,40 +161,55 @@
             (setf value-function (remove-node-links value-function))))))))
 
 
-(defun remove-all-unreachable-nodes (graph)
-  "Removes all unreachable nodes in GRAPH and in the definitions of
-   each meta-node in GRAPH."
+(defun remove-unreachable-nodes (module-table)
+  "Removes unreachable nodes in each module in MODULE-TABLE. An
+   unreachable node is a node which is not reachable from any
+   input-node of any module.
 
-  (flet ((remove-unreachable-nodes (graph)
-           (when graph
-             (remove-unreachable-nodes graph))))
-    (remove-unreachable-nodes graph)
-    (maphash-values (compose #'remove-unreachable-nodes #'definition) (meta-nodes graph))))
+   Unreachable nodes are also removed from the sub-graphs of each
+   meta-node in each module."
 
-(defun remove-unreachable-nodes (graph)
-  "Removes all nodes which are not reachable from an input node."
+  (let ((visited (make-hash-table :test #'eq)))
+    (labels ((mark (node)
+               (unless (visited? node)
+                 (setf (gethash node visited) t)
+                 (maphash-keys #'mark (observers node))))
 
-  (with-slots (nodes all-nodes) graph
-    (let ((visited (make-hash-table :test #'eq)))
-      (labels ((mark (node)
-                 (unless (visited? node)
-                   (setf (gethash node visited) t)
-                   (maphash-keys #'mark (observers node))))
+             (sweep (name node node-table)
+               (unless (or (visited? node) (attribute :no-remove node))
+                 (remhash name (nodes node-table))
+                 (remhash name (all-nodes node-table))
 
-               (sweep (name node)
-                 (unless (or (visited? node) (attribute :no-remove node))
-                   (remhash name nodes)
-                   (remhash name all-nodes)
+                 (awhen (some #'visited? (observer-list node))
+                   (error 'dependency-not-reachable :dependency node :node it))))
 
-                   (awhen (some #'visited? (observer-list node))
-                     (error 'dependency-not-reachable :dependency node :node it))))
+             (visited? (node)
+               (and (gethash node visited)
+                    node))
 
-               (visited? (node)
-                 (and (gethash node visited)
-                      node)))
+             (mark-in-module (node-table)
+               (mapc #'mark (input-nodes node-table)))
 
-        (mapc #'mark (input-nodes graph))
-        (maphash #'sweep nodes)))))
+             (sweep-in-module (node-table)
+               (maphash (rcurry #'sweep node-table) (nodes node-table)))
+
+             (mark-sweep-in-meta-nodes (node-table)
+               (maphash-values #'mark-sweep-in-meta-node (meta-nodes node-table)))
+
+             (mark-sweep-in-meta-node (meta-node)
+               (with-slots (definition) meta-node
+                 (when definition
+                   (mark-in-module definition)
+                   (sweep-in-module definition)
+
+                   (mark-sweep-in-meta-nodes definition)
+                   (maphash-values #'mark-sweep-in-meta-node (meta-nodes definition))))))
+
+      (with-slots (modules) module-table
+        (maphash-values #'mark-in-module modules)
+        (maphash-values #'sweep-in-module modules)
+
+        (maphash-values #'mark-sweep-in-meta-nodes modules)))))
 
 
 (defun fold-constant-nodes (graph)

@@ -628,8 +628,7 @@
                           '("+" ("+" ("+" "a" "b") "c") "d"))
 
           (with-nodes ((+ "+") (a "a") (b "b") (c "c") (d "d") (output "output")) modules
-            (has-value-function (a b c d) output
-              `(,+ (,+ (,+ ,a ,b) ,c) ,d))))
+            (has-value-function (a b c d) output `(,+ (,+ (,+ ,a ,b) ,c) ,d))))
 
         (subtest "Multiple Observers"
           (let ((modules (make-instance 'module-table)))
@@ -651,8 +650,7 @@
                          (out1 "out1") (out2 "out2"))
                 modules
 
-              (has-value-function (a+b c d) out1
-                `(,+ (,+ ,a+b ,c) ,d))
+              (has-value-function (a+b c d) out1 `(,+ (,+ ,a+b ,c) ,d))
 
               (has-value-function (a+b) out2 a+b)
               (has-value-function (a b) a+b `(,+ ,a ,b))))
@@ -686,7 +684,30 @@
             (build-nodes "a -> b; add(b, d) -> output" modules)
             (build-nodes "c -> d" modules) ; Unreachable Nodes
             (build-nodes ":attribute(a, input, 1)" modules)
-            (is-error (finish-build-graph modules) 'semantic-error)))))))
+            (is-error (finish-build-graph modules) 'semantic-error))))
+
+      (subtest "Cross-Module Bindings"
+        (subtest "Simple Bindings"
+          (let ((modules (make-instance 'module-table)))
+            (build-nodes ":module(m1); a -> b; b -> c; c -> d" modules)
+            (build-nodes ":attribute(a, input, 1)" modules)
+
+            (build-nodes ":module(m2); :use(m1); m1.b -> a; b -> c; c -> d" modules)
+            (build-nodes ":attribute(b, input, 1)" modules)
+
+            (finish-build-graph modules)
+
+            (with-modules ((m1 "m1") (m2 "m2")) modules
+              (test-not-nodes m1 "c")
+              (test-not-nodes m2 "c")
+
+              (with-nodes ((m1.a "a") (m1.b "b") (m1.d "d")) m1
+                (has-value-function (m1.a) m1.b m1.a)
+                (has-value-function (m1.b) m1.d m1.b)
+
+                (with-nodes ((m2.a "a") (m2.b "b") (m2.d "d")) m2
+                  (has-value-function (m1.b) m2.a m1.b)
+                  (has-value-function (m2.b) m2.d m2.b))))))))))
 
 (finalize)
 

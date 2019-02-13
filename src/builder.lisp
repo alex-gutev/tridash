@@ -128,7 +128,7 @@
     (maphash-values #'fold-constant-nodes modules)
 
     ;; Remove unreachable nodes
-    (maphash-values #'remove-all-unreachable-nodes modules)
+    (remove-unreachable-nodes *global-module-table*)
 
     ;; Check for cycles and ambiguous contexts
     (maphash-values #'check-structure modules)
