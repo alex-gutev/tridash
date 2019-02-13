@@ -574,61 +574,112 @@
 
     (subtest "Test Node Coalescer"
       (subtest "Simple Nodes"
-        (let ((modules (make-instance 'module-table)))
-          (diag "One-Way Bindings")
-	  (build-nodes "a -> b; b -> c; c -> d" modules)
-	  (build-nodes ":attribute(a, input, 1)" modules)
-	  (finish-build-graph modules)
+        (subtest "One-Way Bindings"
+          (let ((modules (make-instance 'module-table)))
+	    (build-nodes "a -> b; b -> c; c -> d" modules)
+	    (build-nodes ":attribute(a, input, 1)" modules)
+	    (finish-build-graph modules)
 
-	  (test-not-nodes modules "b" "c")
+	    (test-not-nodes modules "b" "c")
 
-	  (with-nodes ((a "a") (d "d")) modules
-            (has-value-function (a) d a)))
+	    (with-nodes ((a "a") (d "d")) modules
+              (has-value-function (a) d a)))
 
-        (let ((modules (make-instance 'module-table)))
-          (diag "Two-Way Bindings")
-          (build-nodes "a -> b; b -> c; c -> d" modules)
-          (build-nodes "d -> c; c -> b; b -> a" modules)
-          (build-nodes ":attribute(a, input, 1)" modules)
-          (finish-build-graph modules)
+          (subtest "NO-COALESCE Attribute"
+            (let ((modules (make-instance 'module-table)))
+              (build-nodes "a -> b; b -> c; c -> d" modules)
+              (build-nodes ":attribute(a, input, 1)" modules)
+              (build-nodes ":attribute(b, no-coalesce, 1)" modules)
+              (finish-build-graph modules)
 
-          (test-not-nodes modules "b" "c")
+              (test-not-nodes modules "c")
 
-	  (with-nodes ((a "a") (d "d")) modules
-            (has-value-function (a) d a)))
+              (with-nodes ((a "a") (b "b") (d "d")) modules
+                (has-value-function (a) b a)
+                (has-value-function (b) d b)))))
 
-        (let ((modules (make-instance 'module-table)))
-          (diag "Multiple Observers")
-          (build-nodes "a -> b; b -> c; b -> d; c -> e; d -> f" modules)
-          (build-nodes ":attribute(a, input, 1)" modules)
-          (finish-build-graph modules)
+        (subtest "Two-Way Bindings"
+          (let ((modules (make-instance 'module-table)))
+            (build-nodes "a -> b; b -> c; c -> d" modules)
+            (build-nodes "d -> c; c -> b; b -> a" modules)
+            (build-nodes ":attribute(a, input, 1)" modules)
+            (finish-build-graph modules)
 
-          (test-not-nodes modules "c" "d")
+            (test-not-nodes modules "b" "c")
 
-          (with-nodes ((a "a") (b "b") (e "e") (f "f")) modules
-            (has-value-function (a) b a)
-            (has-value-function (b) e b)
-            (has-value-function (b) f b))))
+	    (with-nodes ((a "a") (d "d")) modules
+              (has-value-function (a) d a)))
+
+          (subtest "NO-COALESCE Attribute"
+            (let ((modules (make-instance 'module-table)))
+              (build-nodes "a -> b; b -> c; c -> d" modules)
+              (build-nodes "d -> c; c -> b; b -> a" modules)
+              (build-nodes ":attribute(a, input, 1)" modules)
+              (build-nodes ":attribute(b, input, 1)" modules)
+              (finish-build-graph modules)
+
+              (test-not-nodes modules "c")
+
+	      (with-nodes ((a "a") (b "b") (d "d")) modules
+                (test-simple-binding a b)
+                (test-simple-binding b a)
+
+                (has-value-function (b) d b)))))
+
+        (subtest "Multiple Observers"
+          (let ((modules (make-instance 'module-table)))
+            (build-nodes "a -> b; b -> c; b -> d; c -> e; d -> f" modules)
+            (build-nodes ":attribute(a, input, 1)" modules)
+            (finish-build-graph modules)
+
+            (test-not-nodes modules "c" "d")
+
+            (with-nodes ((a "a") (b "b") (e "e") (f "f")) modules
+              (has-value-function (a) b a)
+              (has-value-function (b) e b)
+              (has-value-function (b) f b)))))
 
       (subtest "Functor Nodes"
-        (let ((modules (make-instance 'module-table)))
-          (diag "Simple Functor Nodes")
+        (subtest "Simple Functor Nodes"
+          (let ((modules (make-instance 'module-table)))
+            (build-nodes ":extern(+); :op(+, 50, left)" modules)
+            (build-nodes "a + b + c + d -> output" modules)
+            (build-nodes ":attribute(a, input, 1)" modules)
+            (build-nodes ":attribute(b, input, 1)" modules)
+            (build-nodes ":attribute(c, input, 1)" modules)
+            (build-nodes ":attribute(d, input, 1)" modules)
+            (finish-build-graph modules)
 
-          (build-nodes ":extern(+); :op(+, 50, left)" modules)
-          (build-nodes "a + b + c + d -> output" modules)
-          (build-nodes ":attribute(a, input, 1)" modules)
-          (build-nodes ":attribute(b, input, 1)" modules)
-          (build-nodes ":attribute(c, input, 1)" modules)
-          (build-nodes ":attribute(d, input, 1)" modules)
-          (finish-build-graph modules)
+            (test-not-nodes modules
+                            '("+" "a" "b")
+                            '("+" ("+" "a" "b") "c")
+                            '("+" ("+" ("+" "a" "b") "c") "d"))
 
-          (test-not-nodes modules
-                          '("+" "a" "b")
-                          '("+" ("+" "a" "b") "c")
-                          '("+" ("+" ("+" "a" "b") "c") "d"))
+            (with-nodes ((+ "+") (a "a") (b "b") (c "c") (d "d") (output "output")) modules
+              (has-value-function (a b c d) output `(,+ (,+ (,+ ,a ,b) ,c) ,d))))
 
-          (with-nodes ((+ "+") (a "a") (b "b") (c "c") (d "d") (output "output")) modules
-            (has-value-function (a b c d) output `(,+ (,+ (,+ ,a ,b) ,c) ,d))))
+          (subtest "NO-COALESCE Attribute"
+            (let ((modules (make-instance 'module-table)))
+              (build-nodes ":extern(+); :op(+, 50, left)" modules)
+              (build-nodes "a + b + c + d -> output" modules)
+              (build-nodes ":attribute(a, input, 1)" modules)
+              (build-nodes ":attribute(b, input, 1)" modules)
+              (build-nodes ":attribute(c, input, 1)" modules)
+              (build-nodes ":attribute(d, input, 1)" modules)
+              (build-nodes ":attribute(a + b, no-coalesce, 1)" modules)
+              (finish-build-graph modules)
+
+              (test-not-nodes modules
+                              '("+" ("+" "a" "b") "c")
+                              '("+" ("+" ("+" "a" "b") "c") "d"))
+
+              (with-nodes ((+ "+") (a "a") (b "b") (c "c") (d "d")
+                           (a+b ("+" "a" "b"))
+                           (output "output"))
+                  modules
+
+                (has-value-function (a b) a+b `(,+ ,a ,b))
+                (has-value-function (a+b c d) output `(,+ (,+ ,a+b ,c) ,d))))))
 
         (subtest "Multiple Observers"
           (let ((modules (make-instance 'module-table)))
@@ -677,6 +728,14 @@
 
           (with-nodes ((a "a") (c "c")) modules
             (has-value-function (a) c a)))
+
+        (subtest "NO-REMOVE Attribute"
+          (let ((modules (make-instance 'module-table)))
+            (build-nodes "some-special-node" modules)
+            (build-nodes ":attribute(some-special-node, no-remove, 1)" modules)
+            (finish-build-graph modules)
+
+            (test-nodes modules "some-special-node")))
 
         (subtest "Unreachable Dependency Errors"
           (let ((modules (make-instance 'module-table)))
