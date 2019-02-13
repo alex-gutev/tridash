@@ -18,11 +18,35 @@
 
 ;;;; Unit tests for parser
 
-(in-package :tridash.test)
+(defpackage :tridash.test.parser
+  (:use :cl
+        :alexandria
+        :anaphora
+        :cl-arrows
+        :iterate
+        :optima
+        :prove
+
+        :tridash.parser
+        :tridash.frontend
+
+        :tridash.test.util)
+
+  (:shadowing-import-from :prove :fail)
+
+  (:import-from :tridash.parser
+                :tridash-parse-error)
+
+  (:import-from :tridash.frontend
+                :+infix-operators+))
+
+
+(in-package :tridash.test.parser)
 
 (cl-interpol:enable-interpol-syntax)
 
 (plan nil)
+
 
 (defun test-parser (string decls &optional (operators +infix-operators+))
   "Checks that the node declarations parsed from STRING are equal to
@@ -37,30 +61,6 @@
          while got
          do (is got expected)
          finally (ok (null got))))))
-
-(defmacro decls (&rest decls)
-  "Utility macro for creating node declaration lists. Each form in
-   DECLS is evaluated with the all symbols, which begin with a !
-   replaced with the symbol with an equivalent symbol name in the
-   TRIDASH.SYMBOLS package.
-
-   Might not work across all implementations if the backquote syntax
-   is used."
-
-  (labels ((!-sym-p (sym)
-             (when (char= #\! (char (symbol-name sym) 0))
-               (id-symbol (subseq (symbol-name sym) 1))))
-
-           (replace-!-syms (decl)
-             (typecase decl
-               (symbol
-                (or (!-sym-p decl) decl))
-
-               (cons
-                (mapcar #'replace-!-syms decl))
-
-               (otherwise decl))))
-    `(list ,@(replace-!-syms decls))))
 
 (defun parse-error-p (string &optional (operators +infix-operators+))
   "Tests that parsing a single declaration from STRING results in a
@@ -194,6 +194,7 @@
       (parse-error-p #?"a -> b}")
       (parse-error-p #?"{a -> b; c\nd}}")
       (parse-error-p #?"{{a -> b;c\nd}"))))
+
 
 (finalize)
 

@@ -102,7 +102,7 @@
                 "test"
 
                 :components
-                ((:file "package")
+                ((:file "util")
                  (:test-file "lexer")
                  (:test-file "parser")
                  (:test-file "builder"))))

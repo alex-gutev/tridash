@@ -18,7 +18,28 @@
 
 ;;;; Unit tests for lexer
 
-(in-package :tridash.test)
+(defpackage :tridash.test.lexer
+  (:use :cl
+        :alexandria
+        :anaphora
+        :cl-arrows
+        :iterate
+        :optima
+        :prove
+
+        :tridash.parser
+
+        :tridash.test.util)
+
+  (:shadowing-import-from :prove :fail)
+
+  (:import-from :tridash.parser
+
+                :*line-term*
+                :make-lexer
+                :next-token))
+
+(in-package :tridash.test.lexer)
 
 (cl-interpol:enable-interpol-syntax)
 
