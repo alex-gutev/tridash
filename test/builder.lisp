@@ -666,7 +666,27 @@
             (test-not-nodes modules "b" "c" "d")
 
             (with-nodes ((add "add") (a "a") (e "e")) modules
-              (has-value-function (a) e (list add a a)))))))))
+              (has-value-function (a) e (list add a a))))))
+
+      (subtest "Removing Unreachable Nodes"
+        (let ((modules (make-instance 'module-table)))
+          (build-nodes "a -> b; b -> c;" modules)
+          (build-nodes "e -> f" modules) ; Unreachable Nodes
+          (build-nodes ":attribute(a, input, 1)" modules)
+          (finish-build-graph modules)
+
+          (test-not-nodes modules "b" "e" "f")
+
+          (with-nodes ((a "a") (c "c")) modules
+            (has-value-function (a) c a)))
+
+        (subtest "Unreachable Dependency Errors"
+          (let ((modules (make-instance 'module-table)))
+            (build-nodes ":extern(add)" modules)
+            (build-nodes "a -> b; add(b, d) -> output" modules)
+            (build-nodes "c -> d" modules) ; Unreachable Nodes
+            (build-nodes ":attribute(a, input, 1)" modules)
+            (is-error (finish-build-graph modules) 'semantic-error)))))))
 
 (finalize)
 
