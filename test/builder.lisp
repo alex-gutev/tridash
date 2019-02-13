@@ -51,6 +51,15 @@
     (module-table (node-table thing))
     (node-table thing)))
 
+
+(defun test-dependency (dep node)
+  "Tests that DEP is a dependency of NODE and returns the
+   `NODE-LINK'."
+
+  (aprog1 (gethash dep (dependencies node))
+    (ok it (format nil "~a is a dependency of ~a" dep node))))
+
+
 (defmacro! with-nodes ((&rest nodes) o!modules &body body)
   "Binds the nodes to variables. Each element of NODES is of the
    form (VAR NAME) where VAR is the variable to which the node is
@@ -74,6 +83,25 @@
                       (is-type it 'node-table ,(format nil "~a is a module" name)))))))
     `(let ,(mapcar #'make-binding modules)
        ,@body)))
+
+(defmacro! with-dependencies ((&rest deps) o!node &body body)
+  "Tests that NODE has the dependencies in DEPS and binds the
+   corresponding `NODE-LINK' objects to variables. Each element of
+   DEPS is either a symbol naming a variable which evaluates to the
+   dependency NODE or is of the form (VAR NODE) where NODE is a form
+   that evaluates to the dependency node and VAR is the variable to
+   which the `NODE-LINK' object is bound."
+
+  (flet ((make-binding (dep)
+           (ematch dep
+             ((list var dep)
+              (list var `(test-dependency ,dep ,g!node)))
+
+             ((type symbol)
+              (list dep `(test-dependency ,dep ,g!node))))))
+    `(let ,(mapcar #'make-binding deps)
+       ,@body)))
+
 
 (labels ((build-nodes (string modules)
 	   (with-input-from-string (in string)
@@ -175,14 +203,7 @@
             MODULES."
 
 	   (ok (null (gethash (node-id id) (all-nodes (ensure-node-table modules))))
-	       (format nil "~a is not a node" id)))
-
-	 (test-dependency (dep node)
-	   "Tests that DEP is a dependency of NODE and returns the
-            `NODE-LINK'"
-
-	   (aprog1 (gethash dep (dependencies node))
-	     (format nil "~a is a dependency of ~a" dep node))))
+	       (format nil "~a is not a node" id))))
 
   (subtest "Test Node Builder"
     (subtest "Simple Atom Nodes"
@@ -529,19 +550,122 @@
             (test-error ":module(m1); x; :module(m2); :in(m1,x, y)")
             (test-error ":in(1, x)"))))))
 
-  (subtest "Test Node Coalescer"
-    (subtest "Simple Nodes"
-      (let ((modules (make-instance 'module-table)))
-	(build-nodes "a -> b; b -> c; c -> d" modules)
-	(build-nodes ":attribute(a, input, 1)" modules)
-	(finish-build-graph modules)
+  (macrolet
+      ((has-value-function ((&rest deps) node function)
+         "Tests that the value function of NODE is equal to
+          FUNCTION.
 
-	(test-not-nodes modules "b" "c")
+          DEPS is a list of the dependency nodes which are passed to
+          WITH-DEPENDENCIES.
 
-	(with-nodes ((a "a") (d "d")) modules
-	  (->> (test-dependency a d)
-	       (node-link-context)
-	       (test-simple-binding a d)))))))
+          FUNCTION is evaluated as if in the body of the
+          WITH-DEPENDENCIES form with DEPS bound to the dependency
+          `NODE-LINK' objects.
+
+          The value function of the context of the `NODE-LINK',
+          corresponding to the first dependency in DEPS, is tested
+          that it is equal to FUNCTION."
+
+         (with-gensyms (context)
+           (once-only (node)
+             `(with-dependencies ,deps ,node
+                (let ((,context (node-link-context ,(ensure-car (first deps)))))
+                  (test-value-function ,node ,context ,function)))))))
+
+    (subtest "Test Node Coalescer"
+      (subtest "Simple Nodes"
+        (let ((modules (make-instance 'module-table)))
+          (diag "One-Way Bindings")
+	  (build-nodes "a -> b; b -> c; c -> d" modules)
+	  (build-nodes ":attribute(a, input, 1)" modules)
+	  (finish-build-graph modules)
+
+	  (test-not-nodes modules "b" "c")
+
+	  (with-nodes ((a "a") (d "d")) modules
+            (has-value-function (a) d a)))
+
+        (let ((modules (make-instance 'module-table)))
+          (diag "Two-Way Bindings")
+          (build-nodes "a -> b; b -> c; c -> d" modules)
+          (build-nodes "d -> c; c -> b; b -> a" modules)
+          (build-nodes ":attribute(a, input, 1)" modules)
+          (finish-build-graph modules)
+
+          (test-not-nodes modules "b" "c")
+
+	  (with-nodes ((a "a") (d "d")) modules
+            (has-value-function (a) d a)))
+
+        (let ((modules (make-instance 'module-table)))
+          (diag "Multiple Observers")
+          (build-nodes "a -> b; b -> c; b -> d; c -> e; d -> f" modules)
+          (build-nodes ":attribute(a, input, 1)" modules)
+          (finish-build-graph modules)
+
+          (test-not-nodes modules "c" "d")
+
+          (with-nodes ((a "a") (b "b") (e "e") (f "f")) modules
+            (has-value-function (b) e b)
+            (has-value-function (b) f b))))
+
+      (subtest "Functor Nodes"
+        (let ((modules (make-instance 'module-table)))
+          (diag "Simple Functor Nodes")
+
+          (build-nodes ":extern(+); :op(+, 50, left)" modules)
+          (build-nodes "a + b + c + d -> output" modules)
+          (build-nodes ":attribute(a, input, 1)" modules)
+          (build-nodes ":attribute(b, input, 1)" modules)
+          (build-nodes ":attribute(c, input, 1)" modules)
+          (build-nodes ":attribute(d, input, 1)" modules)
+          (finish-build-graph modules)
+
+          (test-not-nodes modules
+                          '("+" "a" "b")
+                          '("+" ("+" "a" "b") "c")
+                          '("+" ("+" ("+" "a" "b") "c") "d"))
+
+          (with-nodes ((+ "+") (a "a") (b "b") (c "c") (d "d") (output "output")) modules
+            (has-value-function (a b c d) output
+              `(,+ (,+ (,+ ,a ,b) ,c) ,d))))
+
+        (subtest "Multiple Observers"
+          (let ((modules (make-instance 'module-table)))
+            (build-nodes ":extern(+); :op(+, 50, left)" modules)
+            (build-nodes "a + b + c + d -> out1" modules)
+            (build-nodes "a + b -> out2" modules)
+            (build-nodes ":attribute(a, input, 1)" modules)
+            (build-nodes ":attribute(b, input, 1)" modules)
+            (build-nodes ":attribute(c, input, 1)" modules)
+            (build-nodes ":attribute(d, input, 1)" modules)
+            (finish-build-graph modules)
+
+            (test-not-nodes modules
+                            '("+" ("+" "a" "b") "c")
+                            '("+" ("+" ("+" "a" "b") "c") "d"))
+
+            (with-nodes ((+ "+") (a "a") (b "b") (c "c") (d "d")
+                         (a+b ("+" "a" "b"))
+                         (out1 "out1") (out2 "out2"))
+                modules
+
+              (has-value-function (a+b c d) out1
+                `(,+ (,+ ,a+b ,c) ,d))
+
+              (has-value-function (a+b) out2 a+b)
+              (has-value-function (a b) a+b `(,+ ,a ,b))))
+
+          (let ((modules (make-instance 'module-table)))
+            (build-nodes ":extern(add)" modules)
+            (build-nodes "a -> b; b -> c; b -> d; add(c,d) -> e" modules)
+            (build-nodes ":attribute(a, input, 1)" modules)
+            (finish-build-graph modules)
+
+            (test-not-nodes modules "b" "c" "d")
+
+            (with-nodes ((add "add") (a "a") (e "e")) modules
+              (has-value-function (a) e (list add a a)))))))))
 
 (finalize)
 
