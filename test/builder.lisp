@@ -175,6 +175,16 @@
    (list* fn (mapcar (rcurry #'test-binding node context) operands))
    (test-value-function node context)))
 
+(defun init-context (node)
+  "Checks whether node has an init context and returns its identifier."
+
+  (aprog1
+      (iter (for (id context) in-hashtable (contexts node))
+            (finding id such-that
+                     (and (not (eq id :input))
+                          (zerop (hash-table-count (operands context))))))
+    (ok it (format nil "~a has an :INIT context" node))))
+
 
 ;;; Test Errors
 
@@ -853,6 +863,106 @@
                (has-value-function (in c) output `(,+ (,+ ,in ,in) ,c))))))))))
 
 (run-test 'coalescer)
+
+
+(deftest constant-folding
+  (subtest "Test Constant Folding"
+    (subtest "Literal Constant Values"
+      (with-module-table modules
+        (build ":extern(add)"
+               "add(a, b) -> c"
+               "1 -> constant; constant -> b"
+               ":attribute(a, input, 1)")
+
+        (finish-build)
+
+        (test-not-nodes modules "b" "constant")
+
+        (with-nodes ((add "add") (a "a") (c "c")) modules
+          (has-value-function (a) c `(,add ,a 1))))
+
+      (with-module-table modules
+        (build "a -> b; b -> c"
+               "3 -> constant; constant -> b"
+               ":attribute(a, input, 1)")
+        (finish-build)
+
+        (test-not-nodes modules "constant")
+
+        (with-nodes ((a "a") (b "b") (c "c")) modules
+          (test-simple-binding a b)
+          (test-simple-binding b c)
+
+          (test-value-function b (init-context b) 3)))
+
+      (with-module-table modules
+        (build "a -> b; b -> c"
+               "\"hello\" -> constant; constant -> a"
+               ":attribute(a, input, 1)")
+        (finish-build)
+
+        (test-not-nodes modules "b" "constant")
+
+        (with-nodes ((a "a") (c "c")) modules
+          (has-value-function (a) c a)
+
+          (test-value-function a (init-context a) "hello"))))
+
+    (subtest "Constant Functor Nodes"
+      (with-module-table modules
+        (build ":extern(add)"
+               "add(a, b) -> c"
+
+               "1 -> c1; 2 -> c2; c2 -> c3"
+               "add(c1, c3) -> b"
+
+               ":attribute(a, input, 1)")
+
+        (finish-build)
+
+        (test-not-nodes modules "b" "c1" "c2" "c3")
+
+        (with-nodes ((add "add") (a "a") (c "c")) modules
+          (has-value-function (a) c `(,add ,a (,add 1 2)))))
+
+      (with-module-table modules
+        (build ":extern(add)"
+               "a -> b; b -> c"
+
+               "5 -> c1; 10 -> c2; c2 -> c3"
+               "add(c1, add(c2, c3)) -> b"
+
+               ":attribute(a, input, 1)")
+
+        (finish-build)
+
+        (test-not-nodes modules "c1" "c2" "c3")
+
+        (with-nodes ((add "add") (a "a") (b "b") (c "c")) modules
+          (test-simple-binding a b)
+          (test-simple-binding b c)
+
+          (test-value-function b (init-context b) `(,add 5 (,add 10 10)))))
+
+      (with-module-table modules
+        (build "a -> b; b -> c"
+
+               "\"hello\" -> constant; constant -> a"
+               "constant -> c"
+
+               ":attribute(a, input, 1)")
+
+        (finish-build)
+
+        (test-not-nodes modules "b" "constant")
+
+        (with-nodes ((a "a") (c "c")) modules
+          (has-value-function (a) c a)
+
+          (test-value-function a (init-context a) "hello")
+          (test-value-function c (init-context c) "hello"))))))
+
+(run-test 'constant-folding)
 
 
 (finalize)
