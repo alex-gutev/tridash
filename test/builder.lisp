@@ -196,6 +196,23 @@
 
 ;;;; Utility Macros
 
+(defmacro! with-module-table (var &body body)
+  "Creates a new `MODULE-TABLE' and binds it to VAR. The binding is
+   visible to the forms in BODY.
+
+   Two lexical function definitions are visible to the forms in BODY:
+   BUILD and FINISH-BUILD. BUILD builds each source string, passed as
+   an argument, into the module-table VAR. FINISH-BUILD calls
+   FINISH-BUILD-GRAPH on the module-table VAR."
+
+  `(let ((,var (make-instance 'module-table)))
+     (flet ((build (&rest ,g!strings)
+              (mapc (rcurry #'build-nodes ,var) ,g!strings))
+
+            (finish-build (&optional (,g!module-table ,var))
+              (finish-build-graph ,g!module-table)))
+      ,@body)))
+
 (defmacro! with-nodes ((&rest nodes) o!modules &body body)
   "Binds the nodes to variables. Each element of NODES is of the
    form (VAR NAME) where VAR is the variable to which the node is
@@ -258,566 +275,584 @@
 
 ;;;; Tests
 
-(subtest "Test Node Builder"
-  (subtest "Simple Atom Nodes"
-    (let ((modules (make-instance 'module-table)))
-      (build-nodes "a;b;c" modules)
-
-      (test-nodes modules "a" "b" "c")))
-
-  (subtest "Bindings"
-    (let ((modules (make-instance 'module-table)))
-      (build-nodes "a -> b; c -> b" modules)
-
-      (with-nodes ((a "a") (b "b") (c "c")) modules
-        (test-simple-binding a b)
-        (test-simple-binding c b)))
-
-    (let ((modules (make-instance 'module-table)))
-      (build-nodes "a -> (b -> c)" modules)
-
-      (with-nodes ((a "a") (b "b") (c "c") (b->c ("->" "b" "c"))) modules
-        (test-simple-binding a b->c a)
-
-        (->>
-         `(if ,(test-binding b->c c b)
-              ,(test-binding b c)
-              ,(node-link :self))
-         (test-value-function c b)))))
-
-  (subtest "Functor Nodes"
-    (let ((modules (make-instance 'module-table)))
-      (build-source-file #p"./modules/core.trd" modules)
-      (build-nodes "a + b -> output; int(x) -> z" modules)
-
-      (with-nodes ((fn "+") (a "a") (b "b")
-                   (a+b ("+" "a" "b")) (output "output"))
-          modules
-
-        (test-binding a+b output)
-        (test-node-function a+b fn fn a b))
-
-      (with-nodes ((fn "int") (x "x") (z "z") (int-x ("int" "x"))) modules
-        (test-binding int-x z)
-        (test-node-function int-x fn fn x)
-        (test-node-function x int-x fn int-x))))
-
-  (subtest "Special Operators"
-    (subtest ":op Operator - Registering Infix Operators"
-      (flet ((test-op (id operators prec assoc)
-               (diag (format nil "Test infix operator ~a" id))
-
-               (let ((op (gethash (id-symbol id) operators)))
-                 (ok op "Operator registered")
-                 (is (length op) 2 "Operator details added")
-                 (is (first op) prec "Operator precedence")
-                 (is (second op) assoc "Operator associativity"))))
-
-        (let ((modules (make-instance 'module-table)))
-          (build-nodes ":op(+, 50, left); :op(-, 70); :op(*, 100, right)" modules)
-
-          (with-slots (operator-nodes) (node-table modules)
-
-            (test-op "+" operator-nodes 50 :left)
-            (test-op "-" operator-nodes 70 :right)
-            (test-op "*" operator-nodes 100 :right))))
-
-      (subtest "Errors"
-        (test-error ":op()")
-        (test-error ":op(*)")
-        (test-error ":op(*,*)")
-        (test-error ":op(*,9,x)")
-        (test-error ":op(\"*\", 10, left)")
-
-        (test-top-level-only ":op(*, 10, left)")))
-
-    (subtest ":attribute Operator - Node Attributes"
-      (let ((modules (make-instance 'module-table)))
-        ;; Build Nodes
-        (build-nodes "add(a, b) : +(a, b); node1; node2" modules)
-
-        ;; Build Attribute Declarations
-        (build-nodes ":attribute(node1, no-coalesce, 1)" modules)
-        (build-nodes ":attribute(add, \"public-name\", \"sum\")" modules)
-        (build-nodes ":attribute(node2, input, 1)" modules)
-
-        (with-nodes ((add "add") (node1 "node1") (node2 "node2")) modules
-          (is (attribute :no-coalesce node1) 1)
-          (is (attribute :public-name add) "sum")
-          (is (attribute :input node2) 1)
-
-          (ok (input-node? node2) "(INPUT-NODE? node2)")
-          (ok (member node2 (input-nodes (node-table modules))) "node2 in input-nodes")))
-
-      (subtest "Errors"
-        (test-error ":attribute()")
-        (test-error "node; :attribute(node, attribute)")
-        (test-error "node; :attribute(node, 1, 2)")
-        (test-error ":attribute(1, attribute, value)")
-        (test-error ":attribute(non-existant-node, public-name, \"node\")")
-
-        (test-top-level-only ":attribute(node, input, 1)" "node"))))
-
-  (subtest "Meta-Nodes"
-    (subtest "Meta-Node Definitions"
-      (let ((modules (make-instance 'module-table)))
-        (build-source-file #p"./modules/core.trd" modules)
-        (build-nodes "add(x,y) : x + y; add(a,b)" modules)
-
-        (with-nodes ((add "add") (a "a") (b "b") (add-ab ("add" "a" "b"))) modules
-          (is-type add 'meta-node)
-          (is (operands add) (decls '!\x '!\y))
-          (is (definition add) (decls '(!+ !\x !\y)))
-
-          (test-node-function add-ab add add a b)))
-
-      (subtest "Errors"
-        (test-error "x : y")
-        (test-error "{x; y} : z")
-        (test-error "{w; x}(y) : z")
-        (test-error ":(x)")
-        (test-error ":()")
-        (test-error ":(x,y,z)")
-
-        (test-top-level-only "(g(x,y) : f(x,y))")
-
-        (diag "Redefining Special Operators")
-        (test-error "->(x, y) : fn(x, y)")
-        (test-error ":(x, y) : z")
-        (test-error ":extern(x) : x")
-        (test-error ":op(a, b) : f(b, a)")
-        (test-error "..(x,z) : g(x, z)")
-        (test-error ".(a) : h(a)")
-        (test-error ":attribute(m, n) : f(m,n)")
-        (test-error ":module(m) : m")
-        (test-error ":import(x) : x")
-        (test-error ":use(z) : z")
-        (test-error ":export(y) : h(y)")
-        (test-error ":in(x, y) : add(x, y)")
-
-        (let ((modules (make-instance 'module-table)))
-          ;; Test node name collisions with meta-nodes
-          (build-nodes "a;b" modules)
-          (is-error (build-nodes #1="a(x,y) : add(x,y)" modules) 'semantic-error #1#)
-
-          (with-slots (node-table) modules
-            (build-nodes "f(x) : x" modules)
-
-            (with-nodes ((f "f")) modules
-              (is-type f 'meta-node)
-              (is (operands f) (decls '!\x))
-              (is (definition f) (decls '!\x)))
-
-            (build-nodes "f(x, y) : +(x, y)" modules)
-
-            ;; Test meta-node redefinitions
-            (with-nodes ((f "f")) modules
-              (is-type f 'meta-node)
-              (is (operands f) (decls '!\x '!\y))
-              (is (definition f) (decls '(!+ !\x !\y))))
-
-            ;; Test name collisions with atom nodes
-            (is-error (build-nodes "f" modules) 'semantic-error "f")))))
-
-    (subtest "External Meta-Node Definitions"
-      (let ((modules (make-instance 'module-table)))
-        (build-nodes ":extern(add, sub); add(a,b); sub(a,b)" modules)
-
-        (with-nodes ((add "add") (sub "sub")
-                     (a "a") (b "b")
-                     (add-ab ("add" "a" "b")) (sub-ab ("sub" "a" "b")))
-            modules
-
-          (is-type add 'external-meta-node)
-          (is-type sub 'external-meta-node)
-
-          (is (definition add) nil)
-          (is (definition sub) nil)
-
-          (test-node-function add-ab add add a b)
-          (test-node-function sub-ab sub sub a b)))
-
-      (subtest "Errors"
-
-        (test-top-level-only ":extern(y)"))))
-
-  (subtest "Subnodes"
-    (labels ((test-object-fn (node &rest fields)
-               (-<>
-                (list* :object (mapcar (curry #'make-field node) fields))
-                (test-value-function node :object <> :test (rcurry #'set-equal :test #'value-fn-equal))))
-
-             (make-field (node field)
-               (destructuring-bind (field dep) field
-                 (list (id-symbol field) (test-binding dep node :object))))
-
-             (test-member-fn (node field dep)
-               (->>
-                `(:member ,(test-binding dep node) ,(id-symbol field))
-                (test-value-function node dep))))
-
-      (let ((modules (make-instance 'module-table)))
-        (build-nodes "x -> a.first; y -> a.last; a.last -> y" modules)
-
-        (with-nodes ((x "x") (y "y") (a "a")
-                     (a.first ("." "a" "first")) (a.last ("." "a" "last")))
-            modules
-
-          (test-object-fn a (list "first" a.first) (list "last" a.last))
-          (test-member-fn a.first "first" a)
-          (test-member-fn a.last "last" a)
-
-          (test-simple-binding x a.first)
-          (test-simple-binding y a.last)
-          (test-simple-binding a.last y)))
-
-      (let ((modules (make-instance 'module-table)))
-        (build-nodes "Person(first, last) : { first -> self.first; last -> self.last }" modules)
-        (build-nodes "Person(first, last).first -> name" modules)
-
-        (with-nodes ((person-fn "Person")
-                     (first "first") (last "last")
-                     (person ("Person" "first" "last"))
-                     (person.first ("." ("Person" "first" "last") "first"))
-                     (name "name"))
-            modules
-
-          (test-node-function person person-fn person-fn first last)
-          (test-member-fn person.first "first" person)
-          (test-simple-binding person.first name)))))
-
-  (subtest "Modules"
-    (let ((modules (make-instance 'module-table)))
-      (build-nodes "x;y" modules)
-      (build-nodes ":module(my-mod); a; b" modules)
-      (build-nodes ":module(my-mod); +(x,y) : add(x,y); :op(+, 50, left)" modules)
-      (build-nodes ":module(my-mod); :export(a,+)" modules)
-
-      (with-modules ((init :init) (my-mod "my-mod"))
-          modules
-        (test-nodes init "x" "y")
-
-        (with-nodes ((my-mod.a "a") (my-mod.b "b") (+ "+")) my-mod
-          (subtest "Test :use operator"
-            (build-nodes ":module(mod2); :use(my-mod); my-mod.a -> a; my-mod.+(n,m)" modules)
-
-            (with-modules ((mod2 "mod2")) modules
-              (with-nodes ((a "a") (n "n") (m "m") (n+m (("." "my-mod" "+") "n" "m"))) mod2
-                (test-simple-binding my-mod.a a)
-                (test-node-function n+m + + n m))))
-
-          (subtest "Test :alias operator"
-            (build-nodes ":module(mod3); :alias(my-mod, m); m.a -> a; m.+(j,k)" modules)
-
-            (with-modules ((mod3 "mod3")) modules
-              (with-nodes ((a "a") (j "j") (k "k") (j+k (("." "m" "+") "j" "k"))) mod3
-                (test-simple-binding my-mod.a a)
-                (test-node-function j+k + + j k))))
-
-          (subtest "Test :import operator with arguments"
-            (build-nodes ":module(mod4); :import(my-mod, +); a + b" modules)
-
-            (with-modules ((mod4 "mod4")) modules
-              (with-nodes ((a "a") (b "b") (a+b ("+" "a" "b"))) mod4
-                (test-node-function a+b + + a b)
-
-                (isnt a my-mod.a :test #'eq)
-                (isnt b my-mod.b :test #'eq))))
-
-          (subtest "Test :import operator without arguments"
-            (build-nodes ":module(mod5); :import(my-mod); a + b" modules)
-
-            (with-modules ((mod5 "mod5")) modules
-              (with-nodes ((a "a") (b "b") (a+b ("+" "a" "b"))) mod5
-                (test-node-function a+b + + a b)
-
-                (is a my-mod.a :test #'eq)
-                (isnt b my-mod.b :test #'eq))))
-
-          (subtest "Test :in operator"
-            (build-nodes ":module(mod6); :in(my-mod,+)(:in(my-mod, a), b)" modules)
-
-            (with-modules ((mod6 "mod6")) modules
-              (with-nodes ((b "b") (a+b ((":in" "my-mod" "+") (":in" "my-mod" "a") "b"))) mod6
-                (test-node-function a+b + + my-mod.a b)
-
-                (isnt b my-mod.b :test #'eq))))))
-
-      (subtest "Errors"
-        (subtest "Module Semantics"
-          (is-error (build-nodes ":module(mod2); +(j,k)" modules) 'semantic-error)
-          (is-error (build-nodes ":module(mod2); j + k" modules) 'tridash-parse-error)
-          (is-error (build-nodes ":module(mod2); my-mod.z" modules) 'semantic-error)
-
-          (is-error (build-nodes ":module(mod3); +(j,k)" modules) 'semantic-error)
-          (is-error (build-nodes ":module(mod3); j + k" modules) 'tridash-parse-error)
-          (is-error (build-nodes ":module(mod3); m.z" modules) 'semantic-error)
-
-          (is-error (build-nodes ":module(mod4); my-mod.+(a,b)" modules) 'semantic-error)
-          (is-error (build-nodes ":module(mod4); :in(my-mod, z)" modules) 'semantic-error)
-
-          (test-error ":use(no-such-module)")
-          (test-error ":alias(no-such-module, m)")
-          (test-error ":import(no-such-module)")
-          (test-error ":import(no-such-module, node)")
-          (test-error ":in(no-such-module, x)")
-          (test-error ":export(no-such-node)")
-          (test-error "x; :export(x, no-such-node)"))
-
-        (subtest ":module Operator Syntax"
-          (test-error ":module()")
-          (test-error ":module(a, b, c)")
-          (test-error ":module(1, 2, 3)")
-          (test-error ":module(1)")
-
-          (test-top-level-only ":module(m)"))
-
-        (subtest ":use Operator Syntax"
-          (test-error ":use(1,2,3)")
-          (test-top-level-only ":use(m1)" ":module(m1)" ":module(m2)"))
-
-        (subtest ":alias Operator Syntax"
-          (test-error ":alias()")
-          (test-error ":alias(m)")
-          (test-error ":alias(1)")
-          (test-error ":alias(1,2)")
-          (test-error ":module(m1); :module(m2); :alias(m1, m, x, y)")
-
-          (test-top-level-only ":alias(mod, m)" ":module(mod)" ":module(m1)"))
-
-        (subtest ":import Operator Syntax"
-          (test-error ":import()")
-          (test-error ":import(1)")
-
-          (test-top-level-only ":import(mod)" ":module(mod)" ":module(m1)")
-          (test-top-level-only ":import(mod, x)" ":module(mod); x" ":module(m1)"))
-
-        (subtest ":export Operator Syntax"
-          (test-error ":export(1, 2, 3)")
-
-          (test-top-level-only ":export(x)" "x"))
-
-        (subtest ":in Operator Syntax"
-          (test-error ":in()")
-          (test-error ":in(x)")
-          (test-error ":module(m1); x; :module(m2); :in(m1,x, y)")
-          (test-error ":in(1, x)"))))))
-
-(subtest "Test Node Coalescer"
-  (subtest "Simple Nodes"
-    (subtest "One-Way Bindings"
-      (let ((modules (make-instance 'module-table)))
-	(build-nodes "a -> b; b -> c; c -> d" modules)
-	(build-nodes ":attribute(a, input, 1)" modules)
-	(finish-build-graph modules)
-
-	(test-not-nodes modules "b" "c")
-
-	(with-nodes ((a "a") (d "d")) modules
-          (has-value-function (a) d a)))
-
-      (subtest "NO-COALESCE Attribute"
-        (let ((modules (make-instance 'module-table)))
-          (build-nodes "a -> b; b -> c; c -> d" modules)
-          (build-nodes ":attribute(a, input, 1)" modules)
-          (build-nodes ":attribute(b, no-coalesce, 1)" modules)
-          (finish-build-graph modules)
-
-          (test-not-nodes modules "c")
-
-          (with-nodes ((a "a") (b "b") (d "d")) modules
-            (has-value-function (a) b a)
-            (has-value-function (b) d b)))))
-
-    (subtest "Two-Way Bindings"
-      (let ((modules (make-instance 'module-table)))
-        (build-nodes "a -> b; b -> c; c -> d" modules)
-        (build-nodes "d -> c; c -> b; b -> a" modules)
-        (build-nodes ":attribute(a, input, 1)" modules)
-        (finish-build-graph modules)
-
-        (test-not-nodes modules "b" "c")
-
-	(with-nodes ((a "a") (d "d")) modules
-          (has-value-function (a) d a)))
-
-      (subtest "NO-COALESCE Attribute"
-        (let ((modules (make-instance 'module-table)))
-          (build-nodes "a -> b; b -> c; c -> d" modules)
-          (build-nodes "d -> c; c -> b; b -> a" modules)
-          (build-nodes ":attribute(a, input, 1)" modules)
-          (build-nodes ":attribute(b, input, 1)" modules)
-          (finish-build-graph modules)
-
-          (test-not-nodes modules "c")
-
-	  (with-nodes ((a "a") (b "b") (d "d")) modules
-            (test-simple-binding a b)
-            (test-simple-binding b a)
-
-            (has-value-function (b) d b)))))
-
-    (subtest "Multiple Observers"
-      (let ((modules (make-instance 'module-table)))
-        (build-nodes "a -> b; b -> c; b -> d; c -> e; d -> f" modules)
-        (build-nodes ":attribute(a, input, 1)" modules)
-        (finish-build-graph modules)
-
-        (test-not-nodes modules "c" "d")
-
-        (with-nodes ((a "a") (b "b") (e "e") (f "f")) modules
-          (has-value-function (a) b a)
-          (has-value-function (b) e b)
-          (has-value-function (b) f b)))))
-
-  (subtest "Functor Nodes"
-    (subtest "Simple Functor Nodes"
-      (let ((modules (make-instance 'module-table)))
-        (build-nodes ":extern(+); :op(+, 50, left)" modules)
-        (build-nodes "a + b + c + d -> output" modules)
-        (build-nodes ":attribute(a, input, 1)" modules)
-        (build-nodes ":attribute(b, input, 1)" modules)
-        (build-nodes ":attribute(c, input, 1)" modules)
-        (build-nodes ":attribute(d, input, 1)" modules)
-        (finish-build-graph modules)
-
-        (test-not-nodes modules
-                        '("+" "a" "b")
-                        '("+" ("+" "a" "b") "c")
-                        '("+" ("+" ("+" "a" "b") "c") "d"))
-
-        (with-nodes ((+ "+") (a "a") (b "b") (c "c") (d "d") (output "output")) modules
-          (has-value-function (a b c d) output `(,+ (,+ (,+ ,a ,b) ,c) ,d))))
-
-      (subtest "NO-COALESCE Attribute"
-        (let ((modules (make-instance 'module-table)))
-          (build-nodes ":extern(+); :op(+, 50, left)" modules)
-          (build-nodes "a + b + c + d -> output" modules)
-          (build-nodes ":attribute(a, input, 1)" modules)
-          (build-nodes ":attribute(b, input, 1)" modules)
-          (build-nodes ":attribute(c, input, 1)" modules)
-          (build-nodes ":attribute(d, input, 1)" modules)
-          (build-nodes ":attribute(a + b, no-coalesce, 1)" modules)
-          (finish-build-graph modules)
-
-          (test-not-nodes modules
-                          '("+" ("+" "a" "b") "c")
-                          '("+" ("+" ("+" "a" "b") "c") "d"))
-
-          (with-nodes ((+ "+") (a "a") (b "b") (c "c") (d "d")
-                       (a+b ("+" "a" "b"))
-                       (output "output"))
-              modules
-
-            (has-value-function (a b) a+b `(,+ ,a ,b))
-            (has-value-function (a+b c d) output `(,+ (,+ ,a+b ,c) ,d))))))
-
-    (subtest "Multiple Observers"
-      (let ((modules (make-instance 'module-table)))
-        (build-nodes ":extern(+); :op(+, 50, left)" modules)
-        (build-nodes "a + b + c + d -> out1" modules)
-        (build-nodes "a + b -> out2" modules)
-        (build-nodes ":attribute(a, input, 1)" modules)
-        (build-nodes ":attribute(b, input, 1)" modules)
-        (build-nodes ":attribute(c, input, 1)" modules)
-        (build-nodes ":attribute(d, input, 1)" modules)
-        (finish-build-graph modules)
-
-        (test-not-nodes modules
-                        '("+" ("+" "a" "b") "c")
-                        '("+" ("+" ("+" "a" "b") "c") "d"))
-
-        (with-nodes ((+ "+") (a "a") (b "b") (c "c") (d "d")
-                     (a+b ("+" "a" "b"))
-                     (out1 "out1") (out2 "out2"))
-            modules
-
-          (has-value-function (a+b c d) out1 `(,+ (,+ ,a+b ,c) ,d))
-
-          (has-value-function (a+b) out2 a+b)
-          (has-value-function (a b) a+b `(,+ ,a ,b))))
-
-      (let ((modules (make-instance 'module-table)))
-        (build-nodes ":extern(add)" modules)
-        (build-nodes "a -> b; b -> c; b -> d; add(c,d) -> e" modules)
-        (build-nodes ":attribute(a, input, 1)" modules)
-        (finish-build-graph modules)
-
-        (test-not-nodes modules "b" "c" "d")
-
-        (with-nodes ((add "add") (a "a") (e "e")) modules
-          (has-value-function (a) e (list add a a))))))
-
-  (subtest "Removing Unreachable Nodes"
-    (let ((modules (make-instance 'module-table)))
-      (build-nodes "a -> b; b -> c;" modules)
-      (build-nodes "e -> f" modules)    ; Unreachable Nodes
-      (build-nodes ":attribute(a, input, 1)" modules)
-      (finish-build-graph modules)
-
-      (test-not-nodes modules "b" "e" "f")
-
-      (with-nodes ((a "a") (c "c")) modules
-        (has-value-function (a) c a)))
-
-    (subtest "NO-REMOVE Attribute"
-      (let ((modules (make-instance 'module-table)))
-        (build-nodes "some-special-node" modules)
-        (build-nodes ":attribute(some-special-node, no-remove, 1)" modules)
-        (finish-build-graph modules)
-
-        (test-nodes modules "some-special-node")))
-
-    (subtest "Unreachable Dependency Errors"
-      (let ((modules (make-instance 'module-table)))
-        (build-nodes ":extern(add)" modules)
-        (build-nodes "a -> b; add(b, d) -> output" modules)
-        (build-nodes "c -> d" modules)  ; Unreachable Nodes
-        (build-nodes ":attribute(a, input, 1)" modules)
-        (is-error (finish-build-graph modules) 'semantic-error))))
-
-  (subtest "Cross-Module Bindings"
-    (subtest "Simple Bindings"
-      (let ((modules (make-instance 'module-table)))
-        (build-nodes ":module(m1); a -> b; b -> c; c -> d" modules)
-        (build-nodes ":attribute(a, input, 1)" modules)
-
-        (build-nodes ":module(m2); :use(m1); m1.b -> a; b -> c; c -> d" modules)
-        (build-nodes ":attribute(b, input, 1)" modules)
-
-        (finish-build-graph modules)
-
-        (with-modules ((m1 "m1") (m2 "m2")) modules
-          (test-not-nodes m1 "c")
-          (test-not-nodes m2 "c")
-
-          (with-nodes ((m1.a "a") (m1.b "b") (m1.d "d")) m1
-            (has-value-function (m1.a) m1.b m1.a)
-            (has-value-function (m1.b) m1.d m1.b)
-
-            (with-nodes ((m2.a "a") (m2.b "b") (m2.d "d")) m2
-              (has-value-function (m1.b) m2.a m1.b)
-              (has-value-function (m2.b) m2.d m2.b))))))
-
-    (subtest "Functor Nodes"
-      (let ((modules (make-instance 'module-table)))
-        (build-nodes ":module(m1); in -> a; in -> b" modules)
-        (build-nodes ":attribute(in, input, 1)" modules)
-
-        (build-nodes ":module(m2); :use(m1);" modules)
-        (build-nodes ":extern(+); :op(+, 50, left)" modules)
-        (build-nodes "m1.a + m1.b + c -> output" modules)
-        (build-nodes ":attribute(c, input, 1)" modules)
-
-        (finish-build-graph modules)
-
-        (with-modules ((m1 "m1") (m2 "m2")) modules
-          (test-not-nodes m1 "a" "b")
-          (test-not-nodes m2 '("+" ("+" ("." "m1" "a") ("." "m1" "b")) "c"))
-
-          (with-nodes ((in "in")) m1
-            (with-nodes ((+ "+") (c "c") (output "output")) m2
-              (has-value-function (in c) output `(,+ (,+ ,in ,in) ,c)))))))))
+(deftest builder
+ (subtest "Test Node Builder"
+   (subtest "Simple Atom Nodes"
+     (with-module-table modules
+       (build "a;b;c")
+
+       (test-nodes modules "a" "b" "c")))
+
+   (subtest "Bindings"
+     (with-module-table modules
+       (build "a -> b; c -> b")
+
+       (with-nodes ((a "a") (b "b") (c "c")) modules
+         (test-simple-binding a b)
+         (test-simple-binding c b)))
+
+     (with-module-table modules
+       (build "a -> (b -> c)")
+
+       (with-nodes ((a "a") (b "b") (c "c") (b->c ("->" "b" "c"))) modules
+         (test-simple-binding a b->c a)
+
+         (->>
+          `(if ,(test-binding b->c c b)
+               ,(test-binding b c)
+               ,(node-link :self))
+          (test-value-function c b)))))
+
+   (subtest "Functor Nodes"
+     (with-module-table modules
+       (build-source-file #p"./modules/core.trd" modules)
+       (build "a + b -> output; int(x) -> z")
+
+       (with-nodes ((fn "+") (a "a") (b "b")
+                    (a+b ("+" "a" "b")) (output "output"))
+           modules
+
+         (test-binding a+b output)
+         (test-node-function a+b fn fn a b))
+
+       (with-nodes ((fn "int") (x "x") (z "z") (int-x ("int" "x"))) modules
+         (test-binding int-x z)
+         (test-node-function int-x fn fn x)
+         (test-node-function x int-x fn int-x))))
+
+   (subtest "Special Operators"
+     (subtest ":op Operator - Registering Infix Operators"
+       (flet ((test-op (id operators prec assoc)
+                (diag (format nil "Test infix operator ~a" id))
+
+                (let ((op (gethash (id-symbol id) operators)))
+                  (ok op "Operator registered")
+                  (is (length op) 2 "Operator details added")
+                  (is (first op) prec "Operator precedence")
+                  (is (second op) assoc "Operator associativity"))))
+
+         (with-module-table modules
+           (build ":op(+, 50, left); :op(-, 70); :op(*, 100, right)")
+
+           (with-slots (operator-nodes) (node-table modules)
+
+             (test-op "+" operator-nodes 50 :left)
+             (test-op "-" operator-nodes 70 :right)
+             (test-op "*" operator-nodes 100 :right))))
+
+       (subtest "Errors"
+         (test-error ":op()")
+         (test-error ":op(*)")
+         (test-error ":op(*,*)")
+         (test-error ":op(*,9,x)")
+         (test-error ":op(\"*\", 10, left)")
+
+         (test-top-level-only ":op(*, 10, left)")))
+
+     (subtest ":attribute Operator - Node Attributes"
+       (with-module-table modules
+         ;; Build Nodes
+         (build "add(a, b) : +(a, b); node1; node2")
+
+         ;; Build Attribute Declarations
+         (build ":attribute(node1, no-coalesce, 1)")
+         (build ":attribute(add, \"public-name\", \"sum\")")
+         (build ":attribute(node2, input, 1)")
+
+         (with-nodes ((add "add") (node1 "node1") (node2 "node2")) modules
+           (is (attribute :no-coalesce node1) 1)
+           (is (attribute :public-name add) "sum")
+           (is (attribute :input node2) 1)
+
+           (ok (input-node? node2) "(INPUT-NODE? node2)")
+           (ok (member node2 (input-nodes (node-table modules))) "node2 in input-nodes")))
+
+       (subtest "Errors"
+         (test-error ":attribute()")
+         (test-error "node; :attribute(node, attribute)")
+         (test-error "node; :attribute(node, 1, 2)")
+         (test-error ":attribute(1, attribute, value)")
+         (test-error ":attribute(non-existant-node, public-name, \"node\")")
+
+         (test-top-level-only ":attribute(node, input, 1)" "node"))))
+
+   (subtest "Meta-Nodes"
+     (subtest "Meta-Node Definitions"
+       (with-module-table modules
+         (build-source-file #p"./modules/core.trd" modules)
+         (build "add(x,y) : x + y; add(a,b)")
+
+         (with-nodes ((add "add") (a "a") (b "b") (add-ab ("add" "a" "b"))) modules
+           (is-type add 'meta-node)
+           (is (operands add) (decls '!\x '!\y))
+           (is (definition add) (decls '(!+ !\x !\y)))
+
+           (test-node-function add-ab add add a b)))
+
+       (subtest "Errors"
+         (test-error "x : y")
+         (test-error "{x; y} : z")
+         (test-error "{w; x}(y) : z")
+         (test-error ":(x)")
+         (test-error ":()")
+         (test-error ":(x,y,z)")
+
+         (test-top-level-only "(g(x,y) : f(x,y))")
+
+         (diag "Redefining Special Operators")
+         (test-error "->(x, y) : fn(x, y)")
+         (test-error ":(x, y) : z")
+         (test-error ":extern(x) : x")
+         (test-error ":op(a, b) : f(b, a)")
+         (test-error "..(x,z) : g(x, z)")
+         (test-error ".(a) : h(a)")
+         (test-error ":attribute(m, n) : f(m,n)")
+         (test-error ":module(m) : m")
+         (test-error ":import(x) : x")
+         (test-error ":use(z) : z")
+         (test-error ":export(y) : h(y)")
+         (test-error ":in(x, y) : add(x, y)")
+
+         (with-module-table modules
+           ;; Test node name collisions with meta-nodes
+           (build "a;b")
+           (is-error (build #1="a(x,y) : add(x,y)") 'semantic-error #1#)
+
+           (with-slots (node-table) modules
+             (build "f(x) : x")
+
+             (with-nodes ((f "f")) modules
+               (is-type f 'meta-node)
+               (is (operands f) (decls '!\x))
+               (is (definition f) (decls '!\x)))
+
+             (build "f(x, y) : +(x, y)")
+
+             ;; Test meta-node redefinitions
+             (with-nodes ((f "f")) modules
+               (is-type f 'meta-node)
+               (is (operands f) (decls '!\x '!\y))
+               (is (definition f) (decls '(!+ !\x !\y))))
+
+             ;; Test name collisions with atom nodes
+             (is-error (build "f") 'semantic-error "f")))))
+
+     (subtest "External Meta-Node Definitions"
+       (with-module-table modules
+         (build ":extern(add, sub); add(a,b); sub(a,b)")
+
+         (with-nodes ((add "add") (sub "sub")
+                      (a "a") (b "b")
+                      (add-ab ("add" "a" "b")) (sub-ab ("sub" "a" "b")))
+             modules
+
+           (is-type add 'external-meta-node)
+           (is-type sub 'external-meta-node)
+
+           (is (definition add) nil)
+           (is (definition sub) nil)
+
+           (test-node-function add-ab add add a b)
+           (test-node-function sub-ab sub sub a b)))
+
+       (subtest "Errors"
+
+         (test-top-level-only ":extern(y)"))))
+
+   (subtest "Subnodes"
+     (labels ((test-object-fn (node &rest fields)
+                (-<>
+                 (list* :object (mapcar (curry #'make-field node) fields))
+                 (test-value-function node :object <> :test (rcurry #'set-equal :test #'value-fn-equal))))
+
+              (make-field (node field)
+                (destructuring-bind (field dep) field
+                  (list (id-symbol field) (test-binding dep node :object))))
+
+              (test-member-fn (node field dep)
+                (->>
+                 `(:member ,(test-binding dep node) ,(id-symbol field))
+                 (test-value-function node dep))))
+
+       (with-module-table modules
+         (build "x -> a.first; y -> a.last; a.last -> y")
+
+         (with-nodes ((x "x") (y "y") (a "a")
+                      (a.first ("." "a" "first")) (a.last ("." "a" "last")))
+             modules
+
+           (test-object-fn a (list "first" a.first) (list "last" a.last))
+           (test-member-fn a.first "first" a)
+           (test-member-fn a.last "last" a)
+
+           (test-simple-binding x a.first)
+           (test-simple-binding y a.last)
+           (test-simple-binding a.last y)))
+
+       (with-module-table modules
+         (build "Person(first, last) : { first -> self.first; last -> self.last }"
+                "Person(first, last).first -> name")
+
+         (with-nodes ((person-fn "Person")
+                      (first "first") (last "last")
+                      (person ("Person" "first" "last"))
+                      (person.first ("." ("Person" "first" "last") "first"))
+                      (name "name"))
+             modules
+
+           (test-node-function person person-fn person-fn first last)
+           (test-member-fn person.first "first" person)
+           (test-simple-binding person.first name)))))
+
+   (subtest "Modules"
+     (with-module-table modules
+       (build "x;y"
+              ":module(my-mod); a; b"
+              ":module(my-mod); +(x,y) : add(x,y); :op(+, 50, left)"
+              ":module(my-mod); :export(a,+)")
+
+       (with-modules ((init :init) (my-mod "my-mod"))
+           modules
+         (test-nodes init "x" "y")
+
+         (with-nodes ((my-mod.a "a") (my-mod.b "b") (+ "+")) my-mod
+           (subtest "Test :use operator"
+             (build ":module(mod2); :use(my-mod); my-mod.a -> a; my-mod.+(n,m)")
+
+             (with-modules ((mod2 "mod2")) modules
+               (with-nodes ((a "a") (n "n") (m "m") (n+m (("." "my-mod" "+") "n" "m"))) mod2
+                 (test-simple-binding my-mod.a a)
+                 (test-node-function n+m + + n m))))
+
+           (subtest "Test :alias operator"
+             (build ":module(mod3); :alias(my-mod, m); m.a -> a; m.+(j,k)")
+
+             (with-modules ((mod3 "mod3")) modules
+               (with-nodes ((a "a") (j "j") (k "k") (j+k (("." "m" "+") "j" "k"))) mod3
+                 (test-simple-binding my-mod.a a)
+                 (test-node-function j+k + + j k))))
+
+           (subtest "Test :import operator with arguments"
+             (build ":module(mod4); :import(my-mod, +); a + b")
+
+             (with-modules ((mod4 "mod4")) modules
+               (with-nodes ((a "a") (b "b") (a+b ("+" "a" "b"))) mod4
+                 (test-node-function a+b + + a b)
+
+                 (isnt a my-mod.a :test #'eq)
+                 (isnt b my-mod.b :test #'eq))))
+
+           (subtest "Test :import operator without arguments"
+             (build ":module(mod5); :import(my-mod); a + b")
+
+             (with-modules ((mod5 "mod5")) modules
+               (with-nodes ((a "a") (b "b") (a+b ("+" "a" "b"))) mod5
+                 (test-node-function a+b + + a b)
+
+                 (is a my-mod.a :test #'eq)
+                 (isnt b my-mod.b :test #'eq))))
+
+           (subtest "Test :in operator"
+             (build ":module(mod6); :in(my-mod,+)(:in(my-mod, a), b)")
+
+             (with-modules ((mod6 "mod6")) modules
+               (with-nodes ((b "b") (a+b ((":in" "my-mod" "+") (":in" "my-mod" "a") "b"))) mod6
+                 (test-node-function a+b + + my-mod.a b)
+
+                 (isnt b my-mod.b :test #'eq))))))
+
+       (subtest "Errors"
+         (subtest "Module Semantics"
+           (is-error (build ":module(mod2); +(j,k)") 'semantic-error)
+           (is-error (build ":module(mod2); j + k") 'tridash-parse-error)
+           (is-error (build ":module(mod2); my-mod.z") 'semantic-error)
+
+           (is-error (build ":module(mod3); +(j,k)") 'semantic-error)
+           (is-error (build ":module(mod3); j + k") 'tridash-parse-error)
+           (is-error (build ":module(mod3); m.z") 'semantic-error)
+
+           (is-error (build ":module(mod4); my-mod.+(a,b)") 'semantic-error)
+           (is-error (build ":module(mod4); :in(my-mod, z)") 'semantic-error)
+
+           (test-error ":use(no-such-module)")
+           (test-error ":alias(no-such-module, m)")
+           (test-error ":import(no-such-module)")
+           (test-error ":import(no-such-module, node)")
+           (test-error ":in(no-such-module, x)")
+           (test-error ":export(no-such-node)")
+           (test-error "x; :export(x, no-such-node)"))
+
+         (subtest ":module Operator Syntax"
+           (test-error ":module()")
+           (test-error ":module(a, b, c)")
+           (test-error ":module(1, 2, 3)")
+           (test-error ":module(1)")
+
+           (test-top-level-only ":module(m)"))
+
+         (subtest ":use Operator Syntax"
+           (test-error ":use(1,2,3)")
+           (test-top-level-only ":use(m1)" ":module(m1)" ":module(m2)"))
+
+         (subtest ":alias Operator Syntax"
+           (test-error ":alias()")
+           (test-error ":alias(m)")
+           (test-error ":alias(1)")
+           (test-error ":alias(1,2)")
+           (test-error ":module(m1); :module(m2); :alias(m1, m, x, y)")
+
+           (test-top-level-only ":alias(mod, m)" ":module(mod)" ":module(m1)"))
+
+         (subtest ":import Operator Syntax"
+           (test-error ":import()")
+           (test-error ":import(1)")
+
+           (test-top-level-only ":import(mod)" ":module(mod)" ":module(m1)")
+           (test-top-level-only ":import(mod, x)" ":module(mod); x" ":module(m1)"))
+
+         (subtest ":export Operator Syntax"
+           (test-error ":export(1, 2, 3)")
+
+           (test-top-level-only ":export(x)" "x"))
+
+         (subtest ":in Operator Syntax"
+           (test-error ":in()")
+           (test-error ":in(x)")
+           (test-error ":module(m1); x; :module(m2); :in(m1,x, y)")
+           (test-error ":in(1, x)")))))))
+
+(run-test 'builder)
+
+
+(deftest coalescer
+ (subtest "Test Node Coalescer"
+   (subtest "Simple Nodes"
+     (subtest "One-Way Bindings"
+       (with-module-table modules
+	 (build "a -> b; b -> c; c -> d"
+	        ":attribute(a, input, 1)")
+
+	 (finish-build)
+
+	 (test-not-nodes modules "b" "c")
+
+	 (with-nodes ((a "a") (d "d")) modules
+           (has-value-function (a) d a)))
+
+       (subtest "NO-COALESCE Attribute"
+         (with-module-table modules
+           (build "a -> b; b -> c; c -> d"
+                  ":attribute(a, input, 1)"
+                  ":attribute(b, no-coalesce, 1)")
+
+           (finish-build)
+
+           (test-not-nodes modules "c")
+
+           (with-nodes ((a "a") (b "b") (d "d")) modules
+             (has-value-function (a) b a)
+             (has-value-function (b) d b)))))
+
+     (subtest "Two-Way Bindings"
+       (with-module-table modules
+         (build "a -> b; b -> c; c -> d"
+                "d -> c; c -> b; b -> a"
+                ":attribute(a, input, 1)")
+
+         (finish-build)
+
+         (test-not-nodes modules "b" "c")
+
+	 (with-nodes ((a "a") (d "d")) modules
+           (has-value-function (a) d a)))
+
+       (subtest "NO-COALESCE Attribute"
+         (with-module-table modules
+           (build "a -> b; b -> c; c -> d"
+                  "d -> c; c -> b; b -> a"
+                  ":attribute(a, input, 1)"
+                  ":attribute(b, input, 1)")
+
+           (finish-build)
+
+           (test-not-nodes modules "c")
+
+	   (with-nodes ((a "a") (b "b") (d "d")) modules
+             (test-simple-binding a b)
+             (test-simple-binding b a)
+
+             (has-value-function (b) d b)))))
+
+     (subtest "Multiple Observers"
+       (with-module-table modules
+         (build "a -> b; b -> c; b -> d; c -> e; d -> f"
+                ":attribute(a, input, 1)")
+
+         (finish-build)
+
+         (test-not-nodes modules "c" "d")
+
+         (with-nodes ((a "a") (b "b") (e "e") (f "f")) modules
+           (has-value-function (a) b a)
+           (has-value-function (b) e b)
+           (has-value-function (b) f b)))))
+
+   (subtest "Functor Nodes"
+     (subtest "Simple Functor Nodes"
+       (with-module-table modules
+         (build ":extern(+); :op(+, 50, left)"
+                "a + b + c + d -> output"
+                ":attribute(a, input, 1)"
+                ":attribute(b, input, 1)"
+                ":attribute(c, input, 1)"
+                ":attribute(d, input, 1)")
+
+         (finish-build)
+
+         (test-not-nodes modules
+                         '("+" "a" "b")
+                         '("+" ("+" "a" "b") "c")
+                         '("+" ("+" ("+" "a" "b") "c") "d"))
+
+         (with-nodes ((+ "+") (a "a") (b "b") (c "c") (d "d") (output "output")) modules
+           (has-value-function (a b c d) output `(,+ (,+ (,+ ,a ,b) ,c) ,d))))
+
+       (subtest "NO-COALESCE Attribute"
+         (with-module-table modules
+           (build ":extern(+); :op(+, 50, left)"
+                  "a + b + c + d -> output"
+                  ":attribute(a, input, 1)"
+                  ":attribute(b, input, 1)"
+                  ":attribute(c, input, 1)"
+                  ":attribute(d, input, 1)"
+                  ":attribute(a + b, no-coalesce, 1)")
+
+           (finish-build)
+
+           (test-not-nodes modules
+                           '("+" ("+" "a" "b") "c")
+                           '("+" ("+" ("+" "a" "b") "c") "d"))
+
+           (with-nodes ((+ "+") (a "a") (b "b") (c "c") (d "d")
+                        (a+b ("+" "a" "b"))
+                        (output "output"))
+               modules
+
+             (has-value-function (a b) a+b `(,+ ,a ,b))
+             (has-value-function (a+b c d) output `(,+ (,+ ,a+b ,c) ,d))))))
+
+     (subtest "Multiple Observers"
+       (with-module-table modules
+         (build ":extern(+); :op(+, 50, left)"
+                "a + b + c + d -> out1"
+                "a + b -> out2"
+                ":attribute(a, input, 1)"
+                ":attribute(b, input, 1)"
+                ":attribute(c, input, 1)"
+                ":attribute(d, input, 1)")
+
+         (finish-build)
+
+         (test-not-nodes modules
+                         '("+" ("+" "a" "b") "c")
+                         '("+" ("+" ("+" "a" "b") "c") "d"))
+
+         (with-nodes ((+ "+") (a "a") (b "b") (c "c") (d "d")
+                      (a+b ("+" "a" "b"))
+                      (out1 "out1") (out2 "out2"))
+             modules
+
+           (has-value-function (a+b c d) out1 `(,+ (,+ ,a+b ,c) ,d))
+
+           (has-value-function (a+b) out2 a+b)
+           (has-value-function (a b) a+b `(,+ ,a ,b))))
+
+       (with-module-table modules
+         (build ":extern(add)"
+                "a -> b; b -> c; b -> d; add(c,d) -> e"
+                ":attribute(a, input, 1)")
+         (finish-build)
+
+         (test-not-nodes modules "b" "c" "d")
+
+         (with-nodes ((add "add") (a "a") (e "e")) modules
+           (has-value-function (a) e (list add a a))))))
+
+   (subtest "Removing Unreachable Nodes"
+     (with-module-table modules
+       (build "a -> b; b -> c;"
+              "e -> f" ; Unreachable Nodes
+              ":attribute(a, input, 1)")
+
+       (finish-build)
+
+       (test-not-nodes modules "b" "e" "f")
+
+       (with-nodes ((a "a") (c "c")) modules
+         (has-value-function (a) c a)))
+
+     (subtest "NO-REMOVE Attribute"
+       (with-module-table modules
+         (build "some-special-node"
+                ":attribute(some-special-node, no-remove, 1)")
+
+         (finish-build)
+
+         (test-nodes modules "some-special-node")))
+
+     (subtest "Unreachable Dependency Errors"
+       (with-module-table modules
+         (build ":extern(add)"
+                "a -> b; add(b, d) -> output"
+                "c -> d" ; Unreachable Nodes
+                ":attribute(a, input, 1)")
+
+         (is-error (finish-build) 'semantic-error))))
+
+   (subtest "Cross-Module Bindings"
+     (subtest "Simple Bindings"
+       (with-module-table modules
+         (build ":module(m1); a -> b; b -> c; c -> d"
+                ":attribute(a, input, 1)")
+
+         (build ":module(m2); :use(m1); m1.b -> a; b -> c; c -> d"
+                ":attribute(b, input, 1)")
+
+         (finish-build)
+
+         (with-modules ((m1 "m1") (m2 "m2")) modules
+           (test-not-nodes m1 "c")
+           (test-not-nodes m2 "c")
+
+           (with-nodes ((m1.a "a") (m1.b "b") (m1.d "d")) m1
+             (has-value-function (m1.a) m1.b m1.a)
+             (has-value-function (m1.b) m1.d m1.b)
+
+             (with-nodes ((m2.a "a") (m2.b "b") (m2.d "d")) m2
+               (has-value-function (m1.b) m2.a m1.b)
+               (has-value-function (m2.b) m2.d m2.b))))))
+
+     (subtest "Functor Nodes"
+       (with-module-table modules
+         (build ":module(m1); in -> a; in -> b"
+                ":attribute(in, input, 1)")
+
+         (build ":module(m2); :use(m1);"
+                ":extern(+); :op(+, 50, left)"
+                "m1.a + m1.b + c -> output"
+                ":attribute(c, input, 1)")
+
+         (finish-build)
+
+         (with-modules ((m1 "m1") (m2 "m2")) modules
+           (test-not-nodes m1 "a" "b")
+           (test-not-nodes m2 '("+" ("+" ("." "m1" "a") ("." "m1" "b")) "c"))
+
+           (with-nodes ((in "in")) m1
+             (with-nodes ((+ "+") (c "c") (output "output")) m2
+               (has-value-function (in c) output `(,+ (,+ ,in ,in) ,c))))))))))
+
+(run-test 'coalescer)
 
 
 (finalize)
