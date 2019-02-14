@@ -131,7 +131,7 @@
   (alist-hash-table
    `((,+bind-operator+ 10 :right)
      (,+def-operator+ 5 :right)
-     (:open-paren 200)
-     (,+subnode-operator+ 500 :left)))
+     (:open-paren 900)
+     (,+subnode-operator+ 1000 :left)))
 
   "Initial infix operator table.")

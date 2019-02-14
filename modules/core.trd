@@ -13,7 +13,7 @@
 :op(->, 10, right)
 :op(:, 5, right)
 
-:op(., 500, left)
+:op(., 1000, left)
 
 
 # Arithmetic Operators

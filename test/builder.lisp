@@ -1224,6 +1224,93 @@
 (run-test 'structure-checks)
 
 
+(defmacro! test-meta-node (o!meta-node (&rest operands) function)
+  "Test that various properties of a meta-node are correct, namely
+   that its definition has been built, its subgraph contains the
+   implicit self-node and that its value-function is correct.
+
+   OPERANDS is a list of the meta-node's operands (in the form passed
+   to WITH-DEPENDENCIES).
+
+   FUNCTION is the expected value function of the meta-node. Any
+   symbol in the value function, that is bound to an operand (appears
+   in OPERANDS), is replaced with the `NODE-LINK' corresponding to the
+   dependency between the operand node and meta-node."
+
+  (flet ((make-input-test (operand)
+           `(ok (input-node? ,(car operand))
+                (format nil "Argument ~a is an input node" ,(cadr operand)))))
+    `(subtest (format nil "Test Meta-Node: ~a" ,g!meta-node)
+       (is-type ,g!meta-node 'meta-node
+                (format nil "~a is a meta-node" ,g!meta-node))
+
+       (with-slots ((,g!def definition)) ,g!meta-node
+         (is-type ,g!def 'node-table "Meta-Node Body Built")
+
+         (is (gethash (node-id "self") (all-nodes ,g!def)) ,g!meta-node
+             "Implicit Self Node in ALL-NODES")
+
+         (is (gethash (node-id "self") (nodes ,g!def)) ,g!meta-node
+             "Implicit Self Node in NODES")
+
+         (with-nodes ,operands ,g!def
+           ,@(mapcar #'make-input-test operands)
+           (has-value-function ,(mapcar #'car operands) ,g!meta-node ,function))))))
+
+(deftest meta-nodes
+  (subtest "Test Building Meta-Node Definitions"
+    (subtest "Simple Functions"
+      (with-module-table modules
+        (build ":extern(add)"
+               "1+(n) : add(n, 1)")
+        (finish-build)
+
+        (with-nodes ((add "add") (fn "1+")) modules
+          (test-meta-node fn ((n "n")) `(,add ,n 1)))))
+
+    (subtest "Recursive Functions"
+      (subtest "Simple Recursion"
+        (with-module-table modules
+          (build-source-file "./modules/core.trd" modules)
+
+          (build ":import(core)"
+                 "fact(n) : {
+                    case(
+                      n < 2 : 1,
+                      n * fact(n - 1)
+                    )
+                  }")
+
+          (finish-build)
+
+          (with-modules ((core "core")) modules
+            (with-nodes ((if "if")) core
+              (with-nodes ((- "-") (+ "+") (* "*") (< "<") (fact "fact")) modules
+                (test-meta-node fact ((n "n")) `(,if (,< ,n 2) 1 (,* ,n (,fact (,- ,n 1))))))))))
+
+      (subtest "Tail Recursion with Nested Functions"
+        (with-module-table modules
+          (build-source-file "./modules/core.trd" modules)
+
+          (build ":import(core)")
+          (build "fact(n) : {
+                    iter(n, acc) :
+                        case(n < 2 : acc, iter(n - 1, n * acc))
+                    iter(n, 1)
+                  }")
+
+          (finish-build)
+
+          (with-modules ((core "core")) modules
+            (with-nodes ((if "if")) core
+              (with-nodes ((- "-") (+ "+") (* "*") (< "<") (fact "fact")) modules
+                (with-nodes ((iter "iter")) (definition fact)
+                  (test-meta-node fact ((n "n")) `(,iter ,n 1))
+                  (test-meta-node iter ((n "n") (acc "acc"))
+                                  `(,if (,< ,n 2) ,acc (,iter (,- ,n 1) (,* ,n ,acc)))))))))))))
+
+(run-test 'meta-nodes)
+
 (finalize)
 
 (cl-interpol:disable-interpol-syntax)
