@@ -135,7 +135,7 @@
     (remove-unreachable-nodes *global-module-table*)
 
     ;; Check for cycles and ambiguous contexts
-    (maphash-values #'check-structure modules)))
+    (check-structure *global-module-table*)))
 
 
 ;;;; Build Meta-Nodes

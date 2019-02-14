@@ -291,61 +291,64 @@
 
     (mapc #'fold-value (value-nodes))))
 
-(defun check-structure (graph)
-  "Checks the structure of GRAPH making sure there are no cycles and
-   no node has an ambiguous context. If a cycle or ambiguous context
-   is detected, an error condition is signaled."
+(defun check-structure (module-table)
+  "Checks the structure of each module ensuring there are no cycles
+   and no ambiguous contexts. If a cycle or ambiguous context is
+   detected, an error condition is signaled."
 
-  (with-slots (nodes all-nodes) graph
-    (let ((visited (make-hash-table :test #'eq)))
-      (labels ((check-meta-node-graph (graph)
-                 "Check the structure of the meta-node graph GRAPH."
+  (let ((visited (make-hash-table :test #'eq)))
+    (labels ((begin-walk (node)
+               "Clears the visited set and begins the traversal at
+                NODE in the :INPUT context."
 
-                 (when graph
-                   (check-structure graph)))
+               (clrhash visited)
+               (visit node (context node :input)))
 
-               (begin-walk (node)
-                 "Clears the visited set and begins the traversal at
-                  NODE in the :INPUT context."
+             (visit (node context)
+               "Visits node NODE in the context CONTEXT."
 
-                 (clrhash visited)
-                 (visit node (context node :input)))
+               (aif (gethash node visited)
+                    (check-context node context it)
+                    (visit-observers node context)))
 
-               (visit (node context)
-                 "Visits node NODE in the context CONTEXT."
+             (check-context (node new-context marker)
+               "Checks that if node is visited for a second time, it
+                is not part of a cycle and it is visited in the same
+                context."
 
-                 (aif (gethash node visited)
-                      (check-context node context it)
-                      (visit-observers node context)))
+               (destructuring-bind (temp? old-context) marker
+                 (cond
+                   (temp?
+                    (error 'node-cycle-error :node node))
 
-               (check-context (node new-context marker)
-                 "Checks that if node is visited for a second time, it
-                  is not part of a cycle and it is visited in the same
-                  context."
+                   ((not (eq old-context new-context))
+                    (error 'ambiguous-context-error :node node)))))
 
-                 (destructuring-bind (temp? old-context) marker
-                   (cond
-                     (temp?
-                      (error 'node-cycle-error :node node))
+             (visit-observers (node context)
+               "Visits the observers of NODE in the context CONTEXT."
 
-                     ((not (eq old-context new-context))
-                      (error 'ambiguous-context-error :node node)))))
+               ;; Mark Temporarily
+               (setf (gethash node visited) (list t context))
 
-               (visit-observers (node context)
-                 "Visits the observers of NODE in the context CONTEXT."
+               (with-slots (operands) context
+                 (iter
+                   (for (observer link) in-hashtable (observers node))
+                   (for context = (context observer (node-link-context link)))
 
-                 ;; Mark Temporarily
-                 (setf (gethash node visited) (list t context))
+                   (when (not (in-hash? observer operands))
+                     (visit observer context))))
 
-                 (with-slots (operands) context
-                   (iter
-                     (for (observer link) in-hashtable (observers node))
-                     (for context = (context observer (node-link-context link)))
-                     (when (not (in-hash? observer operands))
-                       (visit observer context))))
+               ;; Mark Permanently
+               (setf (car (gethash node visited)) nil))
 
-                 ;; Mark Permanently
-                 (setf (car (gethash node visited)) nil)))
+             (check-module (module)
+               (mapc #'begin-walk (input-nodes module))
+               (maphash-values #'check-meta-node (meta-nodes module)))
 
-        (mapc #'begin-walk (input-nodes graph))
-        (maphash-values (compose #'check-meta-node-graph #'definition) (meta-nodes graph))))))
+             (check-meta-node (meta-node)
+               "Check the structure of the meta-node graph GRAPH."
+
+               (awhen (definition meta-node)
+                 (check-module it))))
+
+      (maphash-values #'check-module (modules module-table)))))

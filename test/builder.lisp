@@ -1018,6 +1018,212 @@
 (run-test 'constant-folding)
 
 
+(deftest structure-checks
+  (subtest "Test Structure Checking"
+    (subtest "Cycle Checks"
+      (subtest "Simple Bindings"
+        (with-module-table modules
+          (build "a -> b"
+                 "b -> c"
+
+                 "c -> d"
+                 "c -> out2"
+
+                 "d -> out1"
+                 "d -> b"
+
+                 ":attribute(a, input, 1)")
+
+          (is-error (finish-build) 'node-cycle-error))
+
+        (subtest "Cross-Module Bindings"
+          (with-module-table modules
+            (build ":module(m1)"
+                   "a -> b"
+                   "b -> c"
+
+                   ":attribute(a, input, 1)"
+
+                   ":module(m2)"
+                   ":use(m1)"
+
+                   "m1.c -> d"
+                   "m1.c -> out2"
+
+                   "d -> out1"
+                   "d -> m1.b")
+
+            (is-error (finish-build) 'node-cycle-error))
+
+          ;; Switch module names to test a possibly different module
+          ;; order.
+          (with-module-table modules
+            (build ":module(m2)"
+                   "a -> b"
+                   "b -> c"
+
+                   ":attribute(a, input, 1)"
+
+                   ":module(m1)"
+                   ":use(m2)"
+
+                   "m2.c -> d"
+                   "m2.c -> out2"
+
+                   "d -> out1"
+                   "d -> m2.b")
+
+            (is-error (finish-build) 'node-cycle-error))))
+
+      (subtest "Functional Bindings"
+        (with-module-table modules
+          (build ":extern(add)"
+                 "add(a, b) -> c"
+
+                 "c -> out1"
+                 "c -> d"
+
+                 "d -> out2"
+                 "d -> a"
+
+                 ":attribute(a, input, 1)"
+                 ":attribute(b, input, 1)")
+
+          (is-error (finish-build) 'node-cycle-error))
+
+        (subtest "Cross-Module Bindings"
+          (with-module-table modules
+            (build ":module(m1)"
+                   "a; c"
+                   ":attribute(a, input, 1)"
+
+                   ":module(m2)"
+                   ":use(m1)"
+
+                   ":extern(add)"
+                   "add(m1.a, b) -> m1.c"
+
+                   "m1.c -> out1"
+                   "m1.c -> d"
+
+                   "d -> out2"
+                   "d -> m1.a"
+
+                   ":attribute(b, input, 1)")
+
+            (is-error (finish-build) 'node-cycle-error))
+
+          ;; Switch module names to test possibly different module
+          ;; order
+          (with-module-table modules
+            (build ":module(m2)"
+                   "a; c"
+                   ":attribute(a, input, 1)"
+
+                   ":module(m1)"
+                   ":use(m2)"
+
+                   ":extern(add)"
+                   "add(m2.a, b) -> m2.c"
+
+                   "m2.c -> out1"
+                   "m2.c -> d"
+
+                   "d -> out2"
+                   "d -> m2.a"
+
+                   ":attribute(b, input, 1)")
+
+            (is-error (finish-build) 'node-cycle-error)))))
+
+    (subtest "Ambiguous Context Checks"
+      (subtest "Simple Bindings"
+        (with-module-table modules
+          (build "a -> d"
+                 "a -> b; b -> c; c -> d"
+                 "d -> e"
+
+                 ":attribute(a, input, 1)")
+
+          (is-error (finish-build) 'ambiguous-context-error))
+
+        (subtest "Cross-Module Bindings"
+          (with-module-table modules
+            (build ":module(m1)"
+                   "a -> d"
+                   ":attribute(a, input, 1)"
+
+                   ":module(m2)"
+                   ":use(m1)"
+
+                   "m1.a -> b; b -> c; c -> m1.d"
+                   "m1.d -> e")
+
+            (is-error (finish-build) 'ambiguous-context-error))
+
+          ;; Switch module names to test possibly different module
+          ;; order.
+          (with-module-table modules
+            (build ":module(m2)"
+                   "a -> d"
+                   ":attribute(a, input, 1)"
+
+                   ":module(m1)"
+                   ":use(m2)"
+
+                   "m2.a -> b; b -> c; c -> m2.d"
+                   "m2.d -> e")
+
+            (is-error (finish-build) 'ambiguous-context-error))))
+
+      (subtest "Functional Bindings"
+        (with-module-table modules
+          (build ":extern(add)"
+                 "add(a, b) -> d"
+                 "a -> c; c -> d"
+                 ":attribute(a, input, 1)"
+                 ":attribute(b, input, 1)")
+
+          (is-error (finish-build) 'ambiguous-context-error))
+
+        (subtest "Cross-Module Bindings"
+          (with-module-table modules
+            (build ":module(m1)"
+                   "a; b;"
+                   ":attribute(a, input, 1)"
+                   ":attribute(b, input, 1)"
+
+                   ":module(m2)"
+                   ":use(m1)"
+                   ":extern(add)"
+
+                   "add(m1.a, m1.b) -> d"
+                   "m1.a -> c; c -> d"
+                   "d -> e")
+
+            (is-error (finish-build) 'ambiguous-context-error))
+
+          ;; Switch module names to test possibly different module
+          ;; order.
+          (with-module-table modules
+            (build ":module(m2)"
+                   "a; b;"
+                   ":attribute(a, input, 1)"
+                   ":attribute(b, input, 1)"
+
+                   ":module(m1)"
+                   ":use(m2)"
+                   ":extern(add)"
+
+                   "add(m2.a, m2.b) -> d"
+                   "m2.a -> c; c -> d"
+                   "d -> e")
+
+            (is-error (finish-build) 'ambiguous-context-error)))))))
+
+(run-test 'structure-checks)
+
+
 (finalize)
 
 (cl-interpol:disable-interpol-syntax)
