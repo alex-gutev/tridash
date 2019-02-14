@@ -960,7 +960,60 @@
           (has-value-function (a) c a)
 
           (test-value-function a (init-context a) "hello")
-          (test-value-function c (init-context c) "hello"))))))
+          (test-value-function c (init-context c) "hello"))))
+
+    (subtest "Cross-Module Constant Folding"
+      (with-module-table modules
+        (build ":module(m1)"
+               "1 -> constant"
+               "constant -> param"
+
+               ":module(m2)"
+               ":use(m1)"
+               ":extern(add)"
+
+               "2 -> param"
+               "add(param, m1.param) -> sum"
+               "add(a, sum) -> b"
+               "b -> c"
+
+               ":attribute(a, input, 1)")
+
+        (finish-build)
+
+        (with-modules ((m1 "m1") (m2 "m2")) modules
+          (test-not-nodes m1 "constant" "param")
+          (test-not-nodes m2 "param" "sum" "b")
+
+          (with-nodes ((add "add") (a "a") (c "c")) m2
+            (has-value-function (a) c `(,add ,a (,add 2 1))))))
+
+      ;; Switch module names to test that constant folding is not
+      ;; dependent on the way the modules are ordered
+      (with-module-table modules
+        (build ":module(m2)"
+               "1 -> constant"
+               "constant -> param"
+
+               ":module(m1)"
+               ":use(m2)"
+               ":extern(add)"
+
+               "2 -> param"
+               "add(param, m2.param) -> sum"
+               "add(a, sum) -> b"
+               "b -> c"
+
+               ":attribute(a, input, 1)")
+
+        (finish-build)
+
+        (with-modules ((m1 "m1") (m2 "m2")) modules
+          (test-not-nodes m2 "constant" "param")
+          (test-not-nodes m1 "param" "sum" "b")
+
+          (with-nodes ((add "add") (a "a") (c "c")) m1
+            (has-value-function (a) c `(,add ,a (,add 2 1)))))))))
 
 (run-test 'constant-folding)
 
