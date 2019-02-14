@@ -235,27 +235,15 @@
         (maphash-values #'mark-sweep-in-meta-nodes modules)))))
 
 
-(defun fold-constant-nodes (graph)
-  "Performs constant node folding on all nodes in GRAPH and in the
-   meta-node definitions in GRAPH.
+(defun fold-constant-nodes (module-table)
+  "Performs constant node folding on all nodes in each module in
+   MODULE-TABLE.
 
    Removes all constant nodes and replaces links to the nodes with the
    constant values. Constant nodes are nodes which only have an :INIT
    context."
 
-  (flet ((fold-constant-nodes (graph)
-           (when graph
-             (fold-value-nodes graph))))
-
-    (fold-constant-nodes graph)
-    (maphash-values (compose #'fold-constant-nodes #'definition) (meta-nodes graph))))
-
-(defun fold-value-nodes (graph)
-  "Removes all constant nodes and replaces links to the nodes with the
-   constant values. Constant nodes are nodes which only have an :INIT
-   context."
-
-  (labels ((value-nodes ()
+  (labels ((value-nodes (graph)
              (remove-if-not #'value-node? (hash-table-values (nodes graph))))
 
            (value-node? (node)
@@ -287,9 +275,18 @@
                (setf (node-link-node link) value)
 
                (let ((context (context obs (node-link-context link))))
-                 (remhash node (operands context))))))
+                 (remhash node (operands context)))))
 
-    (mapc #'fold-value (value-nodes))))
+           (fold-constants-in-module (module)
+             (mapc #'fold-value (value-nodes module))
+             (maphash-values #'fold-constants-in-meta-node (meta-nodes module)))
+
+           (fold-constants-in-meta-node (meta-node)
+             (awhen (definition meta-node)
+               (fold-constants-in-module it))))
+
+    (maphash-values #'fold-constants-in-module (modules module-table))))
+
 
 (defun check-structure (module-table)
   "Checks the structure of each module ensuring there are no cycles

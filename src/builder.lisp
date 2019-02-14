@@ -125,7 +125,7 @@
     (maphash-values #'add-outer-node-operands modules)
 
     ;; Fold constant nodes
-    (maphash-values #'fold-constant-nodes modules)
+    (fold-constant-nodes *global-module-table*)
 
     ;; Coalesce nodes
     (coalesce-nodes *global-module-table*)

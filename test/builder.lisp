@@ -1268,6 +1268,9 @@
         (with-nodes ((add "add") (fn "1+")) modules
           (test-meta-node fn ((n "n")) `(,add ,n 1)))))
 
+    ;; The following tests also test that node-coalescing and constant
+    ;; folding work within meta-node definitions.
+
     (subtest "Recursive Functions"
       (subtest "Simple Recursion"
         (with-module-table modules
@@ -1275,9 +1278,19 @@
 
           (build ":import(core)"
                  "fact(n) : {
+                    # Additional nodes to test node coalescing
+                    n -> m
+                    m -> k
+
+                    m - 1 -> next
+
+                    # Additional nodes to test constant folding
+                    two -> limit;
+                    2 -> two
+
                     case(
-                      n < 2 : 1,
-                      n * fact(n - 1)
+                      k < limit : 1,
+                      k * fact(next)
                     )
                   }")
 
@@ -1294,9 +1307,26 @@
 
           (build ":import(core)")
           (build "fact(n) : {
-                    iter(n, acc) :
-                        case(n < 2 : acc, iter(n - 1, n * acc))
-                    iter(n, 1)
+                    n -> m
+
+                    iter(n, acc) : {
+                      # Additional nodes to test node coalescing
+                      n -> m
+                      m -> k
+
+                      m - 1 -> next
+
+                      # Additional nodes to test constant folding
+                      two -> limit
+                      2 -> two
+
+                      case(
+                        k < limit : acc,
+                        iter(next, k * acc)
+                      )
+                    }
+
+                    iter(m, 1)
                   }")
 
           (finish-build)
