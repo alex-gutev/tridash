@@ -1297,13 +1297,30 @@
    referenced by the meta-node."
 
   (with-slots (operands outer-nodes) fn
-    (labels ((find-arg-pos (arg)
-               (cons arg (position (outer-node arg) operands :test #'equal)))
+    (labels ((get-arg-pos (arg)
+               (match arg
+                 ((cons outer-node link)
+                  (cons link (find-pos outer-node)))
+
+                 (_
+                  (cons arg (find-pos arg)))))
+
+             (find-pos (arg)
+               (position (outer-node arg) operands :test #'equal))
 
              (outer-node (arg)
-               (cdr (gethash (node-link-node arg) outer-nodes))))
+               (ematch arg
+                 ((node-link- node)
+                  (outer-node node))
 
-      `(,fn ,@args ,@(mapcar #'car (sort (mapcar #'find-arg-pos outers) #'< :key #'cdr))))))
+                 ((type node)
+                  (cdr (gethash arg outer-nodes))))))
+
+      (-<> (mapcar #'get-arg-pos outers)
+           (sort #'< :key #'cdr)
+           (mapcar #'car <>)
+           (append args <>)
+           (list* fn <>)))))
 
 (deftest meta-nodes
   (subtest "Test Building Meta-Node Definitions"
@@ -1470,8 +1487,8 @@
                           :test #'object-fn-equal))))
 
     (subtest "Outer-Node References"
-      (with-module-table modules
-        (subtest "Simple Outer-Node References"
+      (subtest "Simple Outer-Node References"
+        (with-module-table modules
           (build-source-file "./modules/core.trd" modules)
 
           (build ":import(core)"
@@ -1502,10 +1519,85 @@
                             `(,addy (,+ ,x ,a) ,y))
 
             (has-value-function (in2 y) out2 `(,addy ,in2 ,y))
-            (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y))))
-          ))
-      )
-    ))
+            (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y))))))
+
+      (subtest "Outer-Node References from Mutually Recursive Functions"
+        (with-module-table modules
+          (build-source-file "./modules/core.trd" modules)
+
+          (build ":import(core)"
+
+                 "addx(a) : addy(..(x) + a)"
+                 "addy(a) : addx(a + ..(y))"
+
+                 "x; y"
+
+                 "addx(in1) -> out1"
+                 "addy(in2) -> out2"
+
+                 ":attribute(x, input, 1)"
+                 ":attribute(y, input, 1)"
+                 ":attribute(in1, input, 1)"
+                 ":attribute(in2, input, 1)")
+
+          (finish-build)
+
+          (with-nodes ((+ "+")
+                       (addx "addx") (addy "addy")
+                       (x "x") (y "y")
+                       (in1 "in1") (in2 "in2") (out1 "out1") (out2 "out2"))
+              modules
+
+            (test-meta-node addy ((a "a") (in-x (outer x)) (in-y (outer y)))
+                            (make-function-call addx `((,+ ,a ,in-y)) `((,x . ,in-x) (,y . ,in-y))))
+            (test-meta-node addx ((a "a") (in-x (outer x)) (in-y (outer y)))
+                            (make-function-call addy `((,+ ,in-x ,a)) `((,x . ,in-x) (,y . ,in-y))))
+
+            (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y)))
+            (has-value-function (in2 x y) out2 (make-function-call addy (list in2) (list x y))))))
+
+      (subtest "Outer-Node References from Nested Functions"
+        (with-module-table modules
+          (build-source-file "./modules/core.trd" modules)
+
+          (build ":import(core)"
+
+                 "count(end) : {
+                    iter(n, acc) : {
+                      case (
+                        n < ..(end) : iter(n + 1, acc + n),
+                        ..(start) + acc
+                      )
+                    }
+                    iter(0, 0)
+                  }"
+
+                 "start"
+                 ":attribute(start, input, 1)"
+
+                 "count(in) -> out"
+                 ":attribute(in, input, 1)")
+
+          (finish-build)
+
+          (with-nodes ((+ "+") (< "<") (if "if")
+                       (count "count")
+                       (start "start")
+                       (in "in") (out "out"))
+              modules
+
+            (with-nodes ((iter "iter") (end "end")) (definition count)
+              (test-meta-node count ((end "end") (in-start (outer start)))
+                              (make-function-call iter '(0 0) `((,start . ,in-start) ,end)))
+
+              (test-meta-node
+               iter
+               ((n "n") (acc "acc") (in-start (outer start)) (in-end (outer end)))
+               `(,if (,< ,n ,in-end)
+                     ,(make-function-call iter `((,+ ,n 1) (,+ ,acc ,n)) `((,start . ,in-start) (,end . ,in-end)))
+                     (,+ ,in-start ,acc))))
+
+            (has-value-function (in start) out (make-function-call count (list in) (list start)))))))))
 
 (run-test 'meta-nodes)
 
