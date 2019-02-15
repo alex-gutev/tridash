@@ -216,7 +216,13 @@
     (unless (or *return-meta-node* (not (meta-node? node)) (eq node *meta-node*))
       (error 'node-type-error :node node :expected 'node))
 
-    (values node table)))
+    (if (and *meta-node*
+             (node? node)
+             (not (meta-node? node))
+             (not (home-module? node table)))
+
+        (add-outer-node node (attribute :module node) table)
+        (values node table))))
 
 (defmethod process-declaration (literal table &key)
   "Method for literal values (everything which is not a symbol or list
@@ -554,8 +560,12 @@
 (defmethod process-subnode ((module node-table) object-decl key table)
   "Returns the node with identifier KEY in the module MODULE."
 
-  (declare (ignore object-decl table))
-  (values (lookup-node key module) module))
+  (declare (ignore object-decl))
+
+  (let ((node (lookup-node key module)))
+    (if (and *meta-node* (node? node) (not (meta-node? node)))
+        (add-outer-node node module table)
+        (values node module))))
 
 
 ;;; Meta-Node instances

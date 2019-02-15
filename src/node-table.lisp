@@ -199,6 +199,12 @@
     (node-table 'module)
     (otherwise 'literal)))
 
+(defun home-module? (node table)
+  "Returns true if NODE was declared in the module TABLE, false if it
+   was imported into it."
+
+  (eq (attribute :module node) table))
+
 
 ;;;; Adding nodes
 
@@ -208,6 +214,8 @@
   (with-slots (all-nodes nodes) table
     (when (nth-value 1 (gethash name all-nodes))
       (error 'node-exists-error :node name :node-table table))
+
+    (setf (attribute :module node) table)
 
     (setf (gethash name all-nodes) node)
     (setf (gethash name nodes) node)))
