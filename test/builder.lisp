@@ -1813,7 +1813,81 @@
                            ,(make-function-call iter `((,+ ,n 1) (,+ ,acc ,n)) `((,start . ,in-start) (,end . ,in-end)))
                            (,+ ,in-start ,acc))))
 
-                  (has-value-function (in start) out (make-function-call count (list in) (list start))))))))))))
+                  (has-value-function (in start) out (make-function-call count (list in) (list start))))))))))
+
+    (subtest "Structure Checking"
+      (subtest "Cycle Checks"
+        (subtest "Simple Bindings"
+          (with-module-table modules
+            (build "f(a) : {
+                      a -> b
+                      b -> c
+                      c -> d
+                      c -> self.out2
+                      d -> self.out1
+                      d -> b
+                    }")
+
+            (is-error (finish-build) 'node-cycle-error)))
+
+        (subtest "Functional Bindings"
+          (with-module-table modules
+            (build ":extern(add)"
+
+                   "f(a, b) : {
+                      add(a, b) -> c
+                      c -> self.out1
+                      c -> d
+                      d -> self.out2
+                      d -> a
+                    }")
+
+            (is-error (finish-build) 'node-cycle-error))))
+
+      (subtest "Ambiguous Context Checks"
+        (subtest "Simple Bindings"
+          (with-module-table modules
+            (build "f(a) : {
+                      a -> d
+                      a -> b
+                      b -> c
+                      c -> d
+                      d -> e
+                      e
+                    }")
+
+            (is-error (finish-build) 'ambiguous-context-error))
+
+          (with-module-table modules
+            (build "f(a, b) : {
+                      a -> self
+                      b -> self
+                    }")
+
+            (is-error (finish-build) 'ambiguous-context-error)))
+
+        (subtest "Functional Bindings"
+          (with-module-table modules
+            (build ":extern(add)"
+
+                   "f(a, b) : {
+                      add(a, b) -> d
+                      a -> c; c -> d
+                      d
+                    }")
+
+            (is-error (finish-build) 'ambiguous-context-error))
+
+          (with-module-table modules
+            (build ":extern(add)"
+
+                   "f(a, b) : {
+                      a -> self
+                      b -> self
+                      add(a, b) -> self
+                    }")
+
+            (is-error (finish-build) 'ambiguous-context-error)))))))
 
 (run-test 'meta-nodes)
 
