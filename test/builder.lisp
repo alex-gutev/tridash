@@ -1337,7 +1337,37 @@
                 (with-nodes ((iter "iter")) (definition fact)
                   (test-meta-node fact ((n "n")) `(,iter ,n 1))
                   (test-meta-node iter ((n "n") (acc "acc"))
-                                  `(,if (,< ,n 2) ,acc (,iter (,- ,n 1) (,* ,n ,acc)))))))))))))
+                                  `(,if (,< ,n 2) ,acc (,iter (,- ,n 1) (,* ,n ,acc))))))))))
+
+      (subtest "Mutually Recursive Functions"
+        (with-module-table modules
+          (build-source-file "./modules/core.trd" modules)
+
+          (build ":import(core)"
+                 "fib(n) :
+                    case(
+                      n > 1 : fib1(n) + fib2(n),
+                      1
+                    )"
+                 "fib1(n) : fib(n - 1)"
+                 "fib2(n) : fib(n - 2)"
+                 "fib(in) -> out"
+                 ":attribute(in, input, 1)")
+
+          (finish-build)
+
+          (with-nodes ((if "if") (- "-") (+ "+") (> ">")
+                       (fib "fib") (fib1 "fib1") (fib2 "fib2")
+                       (in "in") (out "out"))
+              modules
+
+            (test-meta-node fib ((n "n"))
+                            `(,if (,> ,n 1) (,+ (,fib1 ,n) (,fib2 ,n))))
+
+            (test-meta-node fib1 ((n "n")) `(,fib (,- ,n 1)))
+            (test-meta-node fib2 ((n "n")) `(,fib (,- ,n 2)))
+
+            (has-value-function (in) out `(,fib ,in))))))))
 
 (run-test 'meta-nodes)
 
