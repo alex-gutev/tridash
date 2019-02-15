@@ -1263,10 +1263,12 @@
       (with-module-table modules
         (build ":extern(add)"
                "1+(n) : add(n, 1)")
+
         (finish-build)
 
         (with-nodes ((add "add") (fn "1+")) modules
-          (test-meta-node fn ((n "n")) `(,add ,n 1)))))
+          (test-meta-node fn ((n "n")) `(,add ,n 1))
+          (test-not-nodes (definition fn) '("add" "n" 1)))))
 
     ;; The following tests also test that node-coalescing and constant
     ;; folding work within meta-node definitions.
@@ -1277,6 +1279,7 @@
           (build-source-file "./modules/core.trd" modules)
 
           (build ":import(core)"
+
                  "fact(n) : {
                     # Additional nodes to test node coalescing
                     n -> m
@@ -1296,17 +1299,25 @@
 
           (finish-build)
 
-          (with-modules ((core "core")) modules
-            (with-nodes ((if "if")) core
-              (with-nodes ((- "-") (+ "+") (* "*") (< "<") (fact "fact")) modules
-                (test-meta-node fact ((n "n")) `(,if (,< ,n 2) 1 (,* ,n (,fact (,- ,n 1))))))))))
+          (with-nodes ((if "if") (- "-") (+ "+") (* "*") (< "<") (fact "fact")) modules
+            (test-meta-node fact ((n "n")) `(,if (,< ,n 2) 1 (,* ,n (,fact (,- ,n 1)))))
+            (test-not-nodes (definition fact)
+                            "m" "k" '("-" "m" 1) "next"
+                            "two" "limit"
+                            '#1=("<" "k" "limit")
+                            '#2=("fact" "next")
+                            '#3=("*" "k" #2#)
+                            '("case"
+                              (":" #1# 1)
+                              #3#)))))
 
       (subtest "Tail Recursion with Nested Functions"
         (with-module-table modules
           (build-source-file "./modules/core.trd" modules)
 
-          (build ":import(core)")
-          (build "fact(n) : {
+          (build ":import(core)"
+
+                 "fact(n) : {
                     n -> m
 
                     iter(n, acc) : {
@@ -1331,13 +1342,24 @@
 
           (finish-build)
 
-          (with-modules ((core "core")) modules
-            (with-nodes ((if "if")) core
-              (with-nodes ((- "-") (+ "+") (* "*") (< "<") (fact "fact")) modules
-                (with-nodes ((iter "iter")) (definition fact)
-                  (test-meta-node fact ((n "n")) `(,iter ,n 1))
-                  (test-meta-node iter ((n "n") (acc "acc"))
-                                  `(,if (,< ,n 2) ,acc (,iter (,- ,n 1) (,* ,n ,acc))))))))))
+          (with-nodes ((if "if") (- "-") (+ "+") (* "*") (< "<") (fact "fact")) modules
+            (with-nodes ((iter "iter")) (definition fact)
+              (test-meta-node fact ((n "n")) `(,iter ,n 1))
+              (test-meta-node iter ((n "n") (acc "acc"))
+                              `(,if (,< ,n 2) ,acc (,iter (,- ,n 1) (,* ,n ,acc))))
+
+              (test-not-nodes (definition fact)
+                              "m" '("iter" "m" 1))
+
+              (test-not-nodes (definition iter)
+                              "m" "k" '("-" "m" 1) "next"
+                              "two" "limit"
+                              '#10=("<" "k" "limit")
+                              '#11=("*" "k" "acc")
+                              '#12=("iter" "next" #11#)
+                              '("case"
+                                (":" #10# "acc")
+                                #12#))))))
 
       (subtest "Mutually Recursive Functions"
         (with-module-table modules
@@ -1362,10 +1384,25 @@
               modules
 
             (test-meta-node fib ((n "n"))
-                            `(,if (,> ,n 1) (,+ (,fib1 ,n) (,fib2 ,n))))
+                            `(,if (,> ,n 1) (,+ (,fib1 ,n) (,fib2 ,n)) 1))
 
             (test-meta-node fib1 ((n "n")) `(,fib (,- ,n 1)))
             (test-meta-node fib2 ((n "n")) `(,fib (,- ,n 2)))
+
+            (test-not-nodes (definition fib)
+                            '#20=(">" "n" "1")
+                            '#21=("fib1" "n")
+                            '#22=("fib2" "n")
+                            '#23=("+" #21# #22#)
+                            '("case" (":" #20# #23#) 1))
+
+            (test-not-nodes (definition fib1)
+                            '#30=("-" "n" "1")
+                            '#31=("fib" #30#))
+
+            (test-not-nodes (definition fib2)
+                            '#40=("-" "n" "2")
+                            '#41=("fib" #40#))
 
             (has-value-function (in) out `(,fib ,in))))))))
 

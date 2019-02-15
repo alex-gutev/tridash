@@ -59,5 +59,5 @@
 
   (typecase name
     (cons (mapcar #'node-id name))
-    (symbol name)
-    (otherwise (id-symbol name))))
+    (string (id-symbol name))
+    (otherwise name)))
