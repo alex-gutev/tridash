@@ -26,6 +26,7 @@
         :iterate
         :optima
         :prove
+        :named-readtables
 
         :tridash.parser
         :tridash.frontend
@@ -34,13 +35,20 @@
 
   (:shadowing-import-from :prove :fail)
 
-  (:import-from :lol :defmacro!)
+  (:import-from :lol
+                :defmacro!
+                :lol-syntax)
 
   (:import-from :tridash.parser
-                :tridash-parse-error))
+                :tridash-parse-error)
+
+  (:import-from :tridash.frontend
+                :outer-nodes))
 
 
 (in-package :tridash.test.builder)
+
+(in-readtable lol-syntax)
 
 (cl-interpol:enable-interpol-syntax)
 
@@ -159,6 +167,14 @@
 
     ((_ _) (equal a b))))
 
+(defun object-fn-equal (a b)
+  "Object value function equality comparison. Returns true if the
+   object value function A declares the same fields as the object
+   value function B."
+
+  (set-equal a b :test #'value-fn-equal))
+
+
 (defun test-value-function (node context fn &key (test #'value-fn-equal))
   "Tests that the context CONTEXT of node NODE has value function FN."
 
@@ -223,14 +239,21 @@
               (finish-build-graph ,g!module-table)))
       ,@body)))
 
-(defmacro! with-nodes ((&rest nodes) o!modules &body body)
+(defmacro with-nodes ((&rest nodes) modules &body body)
   "Binds the nodes to variables. Each element of NODES is of the
    form (VAR NAME) where VAR is the variable to which the node is
-   bound and NAME designates the node's name."
+   bound and NAME (quoted) designates the node's name."
+
+  `(with-nodes% ,(mapcar #`(,(first a1) ',(node-id (second a1))) nodes) ,modules ,@body))
+
+(defmacro! with-nodes% ((&rest nodes) o!modules &body body)
+  "Binds the nodes to variables. Each element of NODES is of the
+   form (VAR NAME) where VAR is the variable to which the node is
+   bound and NAME (evaluated) designates the node's name."
 
   (flet ((make-binding (node)
            (destructuring-bind (var name) node
-             `(,var (test/get-node ',(node-id name) ,g!node-table)))))
+             `(,var (test/get-node ,name ,g!node-table)))))
     `(let ((,g!node-table (ensure-node-table ,g!modules)))
        (let ,(mapcar #'make-binding nodes)
          ,@body))))
@@ -265,7 +288,7 @@
     `(let ,(mapcar #'make-binding deps)
        ,@body)))
 
-(defmacro! has-value-function ((&rest deps) o!node function)
+(defmacro! has-value-function ((&rest deps) o!node function &rest test-args)
   "Tests that the value function of NODE is equal to FUNCTION.
 
    DEPS is a list of the dependency nodes which are passed to
@@ -280,7 +303,7 @@
 
   `(with-dependencies ,deps ,g!node
      (let ((,g!context (node-link-context ,(ensure-car (first deps)))))
-       (test-value-function ,g!node ,g!context ,function))))
+       (test-value-function ,g!node ,g!context ,function ,@test-args))))
 
 
 ;;;; Tests
@@ -1224,7 +1247,7 @@
 (run-test 'structure-checks)
 
 
-(defmacro! test-meta-node (o!meta-node (&rest operands) function)
+(defmacro! test-meta-node (o!meta-node (&rest operands) function &rest test-args)
   "Test that various properties of a meta-node are correct, namely
    that its definition has been built, its subgraph contains the
    implicit self-node and that its value-function is correct.
@@ -1238,8 +1261,17 @@
    dependency between the operand node and meta-node."
 
   (flet ((make-input-test (operand)
-           `(ok (input-node? ,(car operand))
-                (format nil "Argument ~a is an input node" ,(cadr operand)))))
+           `(ok (input-node? ,(first operand))
+                (format nil "Argument ~a is an input node" ',(second operand))))
+
+         (get-operand-node (operand)
+           (ematch operand
+             ((list var (list 'outer node))
+              `(,var (cdr (gethash ,node (outer-nodes ,g!meta-node)))))
+
+             ((list var name)
+              `(,var ',(node-id name))))))
+
     `(subtest (format nil "Test Meta-Node: ~a" ,g!meta-node)
        (is-type ,g!meta-node 'meta-node
                 (format nil "~a is a meta-node" ,g!meta-node))
@@ -1253,9 +1285,25 @@
          (is (gethash (node-id "self") (nodes ,g!def)) ,g!meta-node
              "Implicit Self Node in NODES")
 
-         (with-nodes ,operands ,g!def
+         (with-nodes% ,(mapcar #'get-operand-node operands) ,g!def
            ,@(mapcar #'make-input-test operands)
-           (has-value-function ,(mapcar #'car operands) ,g!meta-node ,function))))))
+           (has-value-function ,(mapcar #'car operands) ,g!meta-node ,function ,@test-args))))))
+
+(defun make-function-call (fn args outers)
+  "Creates a meta-node function call expression where FN is the
+   meta-node, ARGS is the list of the `NODE-LINK' objects
+   corresponding to the explicit operands of the meta-node and OUTERS
+   is the list of `NODE-LINK' objects corresponding to the outer node
+   referenced by the meta-node."
+
+  (with-slots (operands outer-nodes) fn
+    (labels ((find-arg-pos (arg)
+               (cons arg (position (outer-node arg) operands :test #'equal)))
+
+             (outer-node (arg)
+               (cdr (gethash (node-link-node arg) outer-nodes))))
+
+      `(,fn ,@args ,@(mapcar #'car (sort (mapcar #'find-arg-pos outers) #'< :key #'cdr))))))
 
 (deftest meta-nodes
   (subtest "Test Building Meta-Node Definitions"
@@ -1404,9 +1452,63 @@
                             '#40=("-" "n" "2")
                             '#41=("fib" #40#))
 
-            (has-value-function (in) out `(,fib ,in))))))))
+            (has-value-function (in) out `(,fib ,in))))))
+
+    (subtest "Self-Node References"
+      (with-module-table modules
+        (build "Person(name, surname) : {
+                  name -> self.first
+                  surname -> self.last
+                }")
+
+        (finish-build)
+
+        (with-nodes ((person "Person")) modules
+          (test-meta-node person ((name "name") (surname "surname"))
+                          `(:object (,(id-symbol "first") ,name)
+                                    (,(id-symbol "last") ,surname))
+                          :test #'object-fn-equal))))
+
+    (subtest "Outer-Node References"
+      (with-module-table modules
+        (subtest "Simple Outer-Node References"
+          (build-source-file "./modules/core.trd" modules)
+
+          (build ":import(core)"
+
+                 "addx(a) : addy(..(x) + a)"
+                 "addy(a) : a + ..(y)"
+
+                 "x; y"
+
+                 "addx(in1) -> out1"
+                 "addy(in2) -> out2"
+
+                 ":attribute(x, input, 1)"
+                 ":attribute(y, input, 1)"
+                 ":attribute(in1, input, 1)"
+                 ":attribute(in2, input, 1)")
+
+          (finish-build)
+
+          (with-nodes ((+ "+")
+                       (addx "addx") (addy "addy")
+                       (x "x") (y "y")
+                       (in1 "in1") (in2 "in2") (out1 "out1") (out2 "out2"))
+              modules
+
+            (test-meta-node addy ((a "a") (y (outer y))) `(,+ ,a ,y))
+            (test-meta-node addx ((a "a") (x (outer x)) (y (outer y)))
+                            `(,addy (,+ ,x ,a) ,y))
+
+            (has-value-function (in2 y) out2 `(,addy ,in2 ,y))
+            (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y))))
+          ))
+      )
+    ))
 
 (run-test 'meta-nodes)
+
 
 (finalize)
 

@@ -58,6 +58,6 @@
   "Converts a string/list node identifier to an identifier symbol."
 
   (typecase name
-    (cons (mapcar #'node-id name))
+    (cons (cons (node-id (car name)) (node-id (cdr name))))
     (string (id-symbol name))
     (otherwise name)))
