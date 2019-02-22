@@ -87,8 +87,8 @@
   (let ((id (node-id name)))
     (aprog1 (gethash id (all-nodes node-table))
       (subtest (format nil "Test Node: ~a" name)
-        (is-type it 'node (format nil "~a is a node" name))
-        (is (name it) id (format nil "Node name = ~a" name))))))
+        (is-type! it 'node "~a is a node" name)
+        (isf (name it) id "Node name = ~a" name)))))
 
 (defun test-nodes (modules &rest ids)
   "Tests that each identifier in IDS names a node in MODULES."
@@ -118,7 +118,8 @@
 
   (let ((link (gethash target (observers src))))
     (subtest (format nil "Test binding ~a -> ~a" (name src) (name target))
-      (is-type link 'node-link "Node link created")
+      (is-type! link 'node-link "Node link created")
+
       (isf link (gethash src (dependencies target))
 	   "Node link added to dependencies of ~a" (name target))
 
@@ -179,10 +180,10 @@
 (defun test-value-function (node context fn &key (test #'value-fn-equal))
   "Tests that the context CONTEXT of node NODE has value function FN."
 
-  (diag (format nil "Test value function of ~a in context ~a" (name node) context))
-
-  (let ((context (gethash context (contexts node))))
-    (is (value-function context) fn :test test)))
+  (subtest (format nil "Test value function of ~a in context ~a" (name node) context)
+    (let ((context (gethash context (contexts node))))
+      (is-type! context 'node-context "Node ~a has context ~a" node context)
+      (is (value-function context) fn :test test))))
 
 (defun test-node-function (node context fn &rest operands)
   "Tests that node NODE has a context CONTEXT with value function FN
@@ -200,7 +201,7 @@
             (finding id such-that
                      (and (not (eq id :input))
                           (zerop (hash-table-count (operands context))))))
-    (ok it (format nil "~a has an :INIT context" node))))
+    (ok! it "~a has an :INIT context" node)))
 
 
 ;;; Test Errors
@@ -267,7 +268,7 @@
   (flet ((make-binding (module)
            (destructuring-bind (var name) module
              `(,var (aprog1 (gethash ',(node-id name) (modules ,g!module-table))
-                      (is-type it 'node-table ,(format nil "~a is a module" name)))))))
+                      (is-type! it 'node-table ,(format nil "~a is a module" name)))))))
     `(let ,(mapcar #'make-binding modules)
        ,@body)))
 

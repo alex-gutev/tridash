@@ -20,13 +20,19 @@
   (:use :cl
         :tridash.parser)
 
+  (:import-from :lol :defmacro!)
+
   (:export :decls
            :node-id
 
 	   :testf
 	   :okf
 	   :isf
-	   :is-typef)
+	   :is-typef
+
+	   :ok!
+	   :is!
+	   :is-type!)
 
   (:documentation
    "Contains utility functions and macros which are used in all test
@@ -93,3 +99,33 @@
    ,@DESC)."
 
   `(testf (prove:is-type ,got ,expected-type) ,@desc))
+
+
+(define-condition abort-test (error) ()
+  (:documentation
+   "Condition raised to abort the current subtest (preventing the
+    remaining tests from being run) when a test fails."))
+
+(defmacro! ok! (o!test &rest desc)
+  "Same as OKF but signals an ABORT-TEST condition if the test fails."
+
+  `(progn
+     (okf ,g!test ,@desc)
+     (unless ,g!test
+       (error 'abort-test))))
+
+(defmacro! is! (o!got o!expected &rest desc)
+  "Same as ISF but signals an ABORT-TEST condition if the test fails."
+
+  `(progn
+     (isf ,g!got ,g!expected ,@desc)
+     (unless (funcall prove:*default-test-function* ,g!got ,g!expected)
+       (error 'abort-test))))
+
+(defmacro! is-type! (o!got o!type &rest desc)
+  "Same as IS-TYPEF but signals an ABORT-TEST condition if the test fails."
+
+  `(progn
+     (is-typef ,g!got ,g!type ,@desc)
+     (unless (typep ,g!got ,g!type)
+       (error 'abort-test))))
