@@ -207,7 +207,9 @@
    :target-node-error
    :ambiguous-context-error
    :ambiguous-meta-node-context
-   :node-cycle-error)
+   :node-cycle-error
+
+   :dependency-not-reachable)
 
   (:documentation
    "Package containing the compiler frontend, which builds the node

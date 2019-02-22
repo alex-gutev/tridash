@@ -21,7 +21,12 @@
         :tridash.parser)
 
   (:export :decls
-           :node-id)
+           :node-id
+
+	   :testf
+	   :okf
+	   :isf
+	   :is-typef)
 
   (:documentation
    "Contains utility functions and macros which are used in all test
@@ -61,3 +66,30 @@
     (cons (cons (node-id (car name)) (node-id (cdr name))))
     (string (id-symbol name))
     (otherwise name)))
+
+
+;;; Utility Test Macros
+
+(defmacro testf ((&rest test) &rest desc)
+  "Performs the test TEST with the description obtained by (FORMAT NIL
+   ,@DESC)."
+
+  `(,@test ,@(when desc `((format nil ,@desc)))))
+
+(defmacro okf (test &rest desc)
+  "Performs an OK with the description obtained by (FORMAT NIL
+   ,@DESC)."
+
+  `(testf (prove:ok ,test) ,@desc))
+
+(defmacro isf (got expected &rest desc)
+  "Performs an IS test with the description obtained by (FORMAT NIL
+   ,@DESC)."
+
+  `(testf (prove:is ,got ,expected) ,@desc))
+
+(defmacro is-typef (got expected-type &rest desc)
+  "Performs an IS-TYPE with the description obtained by (FORMAT NIL
+   ,@DESC)."
+
+  `(testf (prove:is-type ,got ,expected-type) ,@desc))

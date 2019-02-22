@@ -110,42 +110,43 @@
 
 ;;; Test Bindings
 
-(defun test-dependency (dep node)
-  "Tests that DEP is a dependency of NODE and returns the
-   `NODE-LINK'."
-
-  (aprog1 (gethash dep (dependencies node))
-    (ok it (format nil "~a is a dependency of ~a" dep node))))
-
-(defun test-binding (src target &optional (context src))
+(defun test-binding (src target &key (context nil context-sp))
   "Tests that a binding between node SRC and TARGET has been
-   established in the context CONTEXT."
+   established in the context CONTEXT. If CONTEXT is not supplied the
+   context of the `NODE-LINK' between SRC and TARGET is
+   checked. Returns the `NODE-LINK' object."
 
   (let ((link (gethash target (observers src))))
     (subtest (format nil "Test binding ~a -> ~a" (name src) (name target))
       (is-type link 'node-link "Node link created")
-      (is link (gethash src (dependencies target))
-	  (format nil "Node link added to dependencies of ~a" (name target)))
+      (isf link (gethash src (dependencies target))
+	   "Node link added to dependencies of ~a" (name target))
 
-      (is (node-link-node link) src "Node link points to correct node")
-      (is (node-link-context link) context "Link context is correct")
+      (isf (node-link-node link) src
+	   "Node link points to node ~a" (name src))
 
-      (let ((id context)
-	    (context (gethash context (contexts target))))
-        (is-type context 'node-context (format nil "Node context ~a created" id))
-        (is (gethash src (operands context)) link
-	    (format nil "~a added to context operands" (name src)))))
+      (when context-sp
+	(isf (node-link-context link) context
+	     "Link context is ~a" context))
+
+      (let* ((id (if context-sp context (node-link-context link)))
+	     (context (gethash id (contexts target))))
+
+	(is-typef context 'node-context
+		  "Node context ~a created" id)
+	(isf (gethash src (operands context)) link
+	     "~a added to context operands" (name src))))
 
     link))
 
-(defun test-simple-binding (src target &optional (context src))
+(defun test-simple-binding (src target &rest args)
   "Tests that a binding between node SRC and TARGET has been
-   established and that the value function of TARGET (in context
-   CONTEXT) is the `NODE-LINK' itself."
+   established and that the value function of TARGET (in the context
+   of the `NODE-LINK' or the context provided as the :CONTEXT
+   parameter) is the `NODE-LINK' itself."
 
-  (->>
-   (test-binding src target context)
-   (test-value-function target context)))
+  (let ((link (apply #'test-binding src target args)))
+    (test-value-function target (node-link-context link) link)))
 
 
 ;;; Test Value Functions
@@ -188,7 +189,7 @@
    applied to operands OPERANDS."
 
   (->>
-   (list* fn (mapcar (rcurry #'test-binding node context) operands))
+   (list* fn (mapcar (rcurry #'test-binding node :context context) operands))
    (test-value-function node context)))
 
 (defun init-context (node)
@@ -215,9 +216,9 @@
    non-top-level position. Each element in CODE is
    prepended (separated by ';') to DECL before performing the tests."
 
-  (test-error (format nil "~{~a; ~}~a -> a" code decl))
-  (test-error (format nil "~{~a; ~}a -> ~a" code decl))
-  (test-error (format nil "~{~a; ~}f(x) : x; f(~a)" code decl)))
+  (test-error (format nil "~{~a; ~}~a -> a" code decl) 'special-operator-operand)
+  (test-error (format nil "~{~a; ~}a -> ~a" code decl) 'special-operator-operand)
+  (test-error (format nil "~{~a; ~}f(x) : x; f(~a)" code decl)) 'special-operator-operand)
 
 
 ;;;; Utility Macros
@@ -280,11 +281,17 @@
 
   (flet ((make-binding (dep)
            (ematch dep
-             ((list var dep)
-              (list var `(test-dependency ,dep ,g!node)))
+	     ((list (or (and (type symbol) dep var)
+			(list var dep))
+		    :context context)
 
-             ((type symbol)
-              (list dep `(test-dependency ,dep ,g!node))))))
+              (list var `(test-binding ,dep ,g!node :context ,context)))
+
+	     ((or (and (type symbol) dep var)
+		  (list var dep))
+
+	      (list var `(test-binding ,dep ,g!node))))))
+
     `(let ,(mapcar #'make-binding deps)
        ,@body)))
 
@@ -321,37 +328,38 @@
        (build "a -> b; c -> b")
 
        (with-nodes ((a "a") (b "b") (c "c")) modules
-         (test-simple-binding a b)
-         (test-simple-binding c b)))
+         (test-simple-binding a b :context a)
+         (test-simple-binding c b :context c)))
 
      (with-module-table modules
        (build "a -> (b -> c)")
 
        (with-nodes ((a "a") (b "b") (c "c") (b->c ("->" "b" "c"))) modules
-         (test-simple-binding a b->c a)
+         (test-simple-binding a b->c :context a)
 
-         (->>
-          `(if ,(test-binding b->c c b)
-               ,(test-binding b c)
-               ,(node-link :self))
-          (test-value-function c b)))))
+	 (has-value-function
+	  ((b :context b) (b->c :context b))
+	  c
+
+	  `(if ,b->c ,b ,(node-link :self))))))
 
    (subtest "Functor Nodes"
      (with-module-table modules
        (build-source-file #p"./modules/core.trd" modules)
        (build "a + b -> output; int(x) -> z")
 
-       (with-nodes ((fn "+") (a "a") (b "b")
+       (with-nodes ((+ "+") (a "a") (b "b")
                     (a+b ("+" "a" "b")) (output "output"))
            modules
 
-         (test-binding a+b output)
-         (test-node-function a+b fn fn a b))
+         (test-simple-binding a+b output :context a+b)
+         (test-node-function a+b + + a b))
 
-       (with-nodes ((fn "int") (x "x") (z "z") (int-x ("int" "x"))) modules
-         (test-binding int-x z)
-         (test-node-function int-x fn fn x)
-         (test-node-function x int-x fn int-x))))
+       (with-nodes ((int "int") (x "x") (z "z") (int-x ("int" "x"))) modules
+         (test-simple-binding int-x z :context int-x)
+
+         (test-node-function int-x int int x)
+         (test-node-function x int-x int int-x))))
 
    (subtest "Special Operators"
      (subtest ":op Operator - Registering Infix Operators"
@@ -374,11 +382,11 @@
              (test-op "*" operator-nodes 100 :right))))
 
        (subtest "Errors"
-         (test-error ":op()")
-         (test-error ":op(*)")
-         (test-error ":op(*,*)")
-         (test-error ":op(*,9,x)")
-         (test-error ":op(\"*\", 10, left)")
+         (test-error ":op()" 'invalid-arguments-error)
+         (test-error ":op(*)" 'invalid-arguments-error)
+         (test-error ":op(*,*)" 'invalid-arguments-error)
+         (test-error ":op(*,9,x)" 'invalid-arguments-error)
+         (test-error ":op(\"*\", 10, left)" 'invalid-arguments-error)
 
          (test-top-level-only ":op(*, 10, left)")))
 
@@ -401,11 +409,11 @@
            (ok (member node2 (input-nodes (node-table modules))) "node2 in input-nodes")))
 
        (subtest "Errors"
-         (test-error ":attribute()")
-         (test-error "node; :attribute(node, attribute)")
-         (test-error "node; :attribute(node, 1, 2)")
-         (test-error ":attribute(1, attribute, value)")
-         (test-error ":attribute(non-existant-node, public-name, \"node\")")
+         (test-error ":attribute()" 'invalid-arguments-error)
+         (test-error "node; :attribute(node, attribute)" 'invalid-arguments-error)
+         (test-error "node; :attribute(node, 1, 2)" 'invalid-arguments-error)
+         (test-error ":attribute(1, attribute, value)" 'invalid-arguments-error)
+         (test-error ":attribute(non-existent-node, public-name, \"node\")" 'non-existent-node)
 
          (test-top-level-only ":attribute(node, input, 1)" "node"))))
 
@@ -423,33 +431,33 @@
            (test-node-function add-ab add add a b)))
 
        (subtest "Errors"
-         (test-error "x : y")
-         (test-error "{x; y} : z")
-         (test-error "{w; x}(y) : z")
-         (test-error ":(x)")
-         (test-error ":()")
-         (test-error ":(x,y,z)")
+         (test-error "x : y" 'invalid-arguments-error)
+         (test-error "{x; y} : z" 'invalid-arguments-error)
+         (test-error "{w; x}(y) : z" 'invalid-arguments-error)
+         (test-error ":(x)" 'invalid-arguments-error)
+         (test-error ":()" 'invalid-arguments-error)
+         (test-error ":(x,y,z)" 'invalid-arguments-error)
 
          (test-top-level-only "(g(x,y) : f(x,y))")
 
          (diag "Redefining Special Operators")
-         (test-error "->(x, y) : fn(x, y)")
-         (test-error ":(x, y) : z")
-         (test-error ":extern(x) : x")
-         (test-error ":op(a, b) : f(b, a)")
-         (test-error "..(x,z) : g(x, z)")
-         (test-error ".(a) : h(a)")
-         (test-error ":attribute(m, n) : f(m,n)")
-         (test-error ":module(m) : m")
-         (test-error ":import(x) : x")
-         (test-error ":use(z) : z")
-         (test-error ":export(y) : h(y)")
-         (test-error ":in(x, y) : add(x, y)")
+         (test-error "->(x, y) : fn(x, y)" 'special-operator-name-error)
+         (test-error ":(x, y) : z" 'special-operator-name-error)
+         (test-error ":extern(x) : x" 'special-operator-name-error)
+         (test-error ":op(a, b) : f(b, a)" 'special-operator-name-error)
+         (test-error "..(x,z) : g(x, z)" 'special-operator-name-error)
+         (test-error ".(a) : h(a)" 'special-operator-name-error)
+         (test-error ":attribute(m, n) : f(m,n)" 'special-operator-name-error)
+         (test-error ":module(m) : m" 'special-operator-name-error)
+         (test-error ":import(x) : x" 'special-operator-name-error)
+         (test-error ":use(z) : z" 'special-operator-name-error)
+         (test-error ":export(y) : h(y)" 'special-operator-name-error)
+         (test-error ":in(x, y) : add(x, y)" 'special-operator-name-error)
 
          (with-module-table modules
            ;; Test node name collisions with meta-nodes
            (build "a;b")
-           (is-error (build #1="a(x,y) : add(x,y)") 'semantic-error #1#)
+           (is-error (build #1="a(x,y) : add(x,y)") 'meta-node-name-collision #1#)
 
            (with-slots (node-table) modules
              (build "f(x) : x")
@@ -489,7 +497,6 @@
            (test-node-function sub-ab sub sub a b)))
 
        (subtest "Errors"
-
          (test-top-level-only ":extern(y)"))))
 
    (subtest "Subnodes"
@@ -500,11 +507,11 @@
 
               (make-field (node field)
                 (destructuring-bind (field dep) field
-                  (list (id-symbol field) (test-binding dep node :object))))
+                  (list (id-symbol field) (test-binding dep node :context :object))))
 
               (test-member-fn (node field dep)
                 (->>
-                 `(:member ,(test-binding dep node) ,(id-symbol field))
+                 `(:member ,(test-binding dep node :context dep) ,(id-symbol field))
                  (test-value-function node dep))))
 
        (with-module-table modules
@@ -518,9 +525,9 @@
            (test-member-fn a.first "first" a)
            (test-member-fn a.last "last" a)
 
-           (test-simple-binding x a.first)
-           (test-simple-binding y a.last)
-           (test-simple-binding a.last y)))
+           (test-simple-binding x a.first :context x)
+           (test-simple-binding y a.last :context y)
+           (test-simple-binding a.last y :context a.last)))
 
        (with-module-table modules
          (build "Person(first, last) : { first -> self.first; last -> self.last }"
@@ -535,7 +542,7 @@
 
            (test-node-function person person-fn person-fn first last)
            (test-member-fn person.first "first" person)
-           (test-simple-binding person.first name)))))
+           (test-simple-binding person.first name :context person.first)))))
 
    (subtest "Modules"
      (with-module-table modules
@@ -554,7 +561,7 @@
 
              (with-modules ((mod2 "mod2")) modules
                (with-nodes ((a "a") (n "n") (m "m") (n+m (("." "my-mod" "+") "n" "m"))) mod2
-                 (test-simple-binding my-mod.a a)
+                 (test-simple-binding my-mod.a a :context my-mod.a)
                  (test-node-function n+m + + n m))))
 
            (subtest "Test :alias operator"
@@ -562,7 +569,7 @@
 
              (with-modules ((mod3 "mod3")) modules
                (with-nodes ((a "a") (j "j") (k "k") (j+k (("." "m" "+") "j" "k"))) mod3
-                 (test-simple-binding my-mod.a a)
+                 (test-simple-binding my-mod.a a :context my-mod.a)
                  (test-node-function j+k + + j k))))
 
            (subtest "Test :import operator with arguments"
@@ -596,30 +603,30 @@
 
        (subtest "Errors"
          (subtest "Module Semantics"
-           (is-error (build ":module(mod2); +(j,k)") 'semantic-error)
+           (is-error (build ":module(mod2); +(j,k)") 'non-existent-node)
            (is-error (build ":module(mod2); j + k") 'tridash-parse-error)
-           (is-error (build ":module(mod2); my-mod.z") 'semantic-error)
+           (is-error (build ":module(mod2); my-mod.z") 'non-existent-node)
 
-           (is-error (build ":module(mod3); +(j,k)") 'semantic-error)
+           (is-error (build ":module(mod3); +(j,k)") 'non-existent-node)
            (is-error (build ":module(mod3); j + k") 'tridash-parse-error)
-           (is-error (build ":module(mod3); m.z") 'semantic-error)
+           (is-error (build ":module(mod3); m.z") 'non-existent-node)
 
-           (is-error (build ":module(mod4); my-mod.+(a,b)") 'semantic-error)
-           (is-error (build ":module(mod4); :in(my-mod, z)") 'semantic-error)
+           (is-error (build ":module(mod4); my-mod.+(a,b)") 'non-existent-node)
+           (is-error (build ":module(mod4); :in(my-mod, z)") 'non-existent-node)
 
-           (test-error ":use(no-such-module)")
-           (test-error ":alias(no-such-module, m)")
-           (test-error ":import(no-such-module)")
-           (test-error ":import(no-such-module, node)")
-           (test-error ":in(no-such-module, x)")
-           (test-error ":export(no-such-node)")
-           (test-error "x; :export(x, no-such-node)"))
+           (test-error ":use(no-such-module)" 'non-existent-module)
+           (test-error ":alias(no-such-module, m)" 'non-existent-module)
+           (test-error ":import(no-such-module)" 'non-existent-module)
+           (test-error ":import(no-such-module, node)" 'non-existent-module)
+           (test-error ":in(no-such-module, x)" 'non-existent-module)
+           (test-error ":export(no-such-node)" 'non-existent-node)
+           (test-error "x; :export(x, no-such-node)" 'non-existent-node))
 
          (subtest ":module Operator Syntax"
-           (test-error ":module()")
-           (test-error ":module(a, b, c)")
-           (test-error ":module(1, 2, 3)")
-           (test-error ":module(1)")
+           (test-error ":module()" 'invalid-arguments-error)
+           (test-error ":module(a, b, c)" 'invalid-arguments-error)
+           (test-error ":module(1, 2, 3)" 'invalid-arguments-error)
+           (test-error ":module(1)" 'invalid-arguments-error)
 
            (test-top-level-only ":module(m)"))
 
@@ -628,17 +635,17 @@
            (test-top-level-only ":use(m1)" ":module(m1)" ":module(m2)"))
 
          (subtest ":alias Operator Syntax"
-           (test-error ":alias()")
-           (test-error ":alias(m)")
-           (test-error ":alias(1)")
-           (test-error ":alias(1,2)")
-           (test-error ":module(m1); :module(m2); :alias(m1, m, x, y)")
+           (test-error ":alias()" 'invalid-arguments-error)
+           (test-error ":alias(m)" 'invalid-arguments-error)
+           (test-error ":alias(1)" 'invalid-arguments-error)
+           (test-error ":alias(1,2)" 'invalid-arguments-error)
+           (test-error ":module(m1); :module(m2); :alias(m1, m, x, y)" 'invalid-arguments-error)
 
            (test-top-level-only ":alias(mod, m)" ":module(mod)" ":module(m1)"))
 
          (subtest ":import Operator Syntax"
-           (test-error ":import()")
-           (test-error ":import(1)")
+           (test-error ":import()" 'invalid-arguments-error)
+           (test-error ":import(1)" 'invalid-arguments-error)
 
            (test-top-level-only ":import(mod)" ":module(mod)" ":module(m1)")
            (test-top-level-only ":import(mod, x)" ":module(mod); x" ":module(m1)"))
@@ -649,10 +656,10 @@
            (test-top-level-only ":export(x)" "x"))
 
          (subtest ":in Operator Syntax"
-           (test-error ":in()")
-           (test-error ":in(x)")
-           (test-error ":module(m1); x; :module(m2); :in(m1,x, y)")
-           (test-error ":in(1, x)")))))))
+           (test-error ":in()" 'invalid-arguments-error)
+           (test-error ":in(x)" 'invalid-arguments-error)
+           (test-error ":module(m1); x; :module(m2); :in(m1, x, y)" 'invalid-arguments-error)
+           (test-error ":in(1, x)" 'invalid-arguments-error)))))))
 
 (run-test 'builder)
 
@@ -670,7 +677,7 @@
 	 (test-not-nodes modules "b" "c")
 
 	 (with-nodes ((a "a") (d "d")) modules
-           (has-value-function (a) d a)))
+	   (test-simple-binding a d)))
 
        (subtest "NO-COALESCE Attribute"
          (with-module-table modules
@@ -683,8 +690,8 @@
            (test-not-nodes modules "c")
 
            (with-nodes ((a "a") (b "b") (d "d")) modules
-             (has-value-function (a) b a)
-             (has-value-function (b) d b)))))
+	     (test-simple-binding a b)
+	     (test-simple-binding b d)))))
 
      (subtest "Two-Way Bindings"
        (with-module-table modules
@@ -697,7 +704,7 @@
          (test-not-nodes modules "b" "c")
 
 	 (with-nodes ((a "a") (d "d")) modules
-           (has-value-function (a) d a)))
+	   (test-simple-binding a d)))
 
        (subtest "NO-COALESCE Attribute"
          (with-module-table modules
@@ -713,8 +720,7 @@
 	   (with-nodes ((a "a") (b "b") (d "d")) modules
              (test-simple-binding a b)
              (test-simple-binding b a)
-
-             (has-value-function (b) d b)))))
+	     (test-simple-binding b d)))))
 
      (subtest "Multiple Observers"
        (with-module-table modules
@@ -726,9 +732,9 @@
          (test-not-nodes modules "c" "d")
 
          (with-nodes ((a "a") (b "b") (e "e") (f "f")) modules
-           (has-value-function (a) b a)
-           (has-value-function (b) e b)
-           (has-value-function (b) f b)))))
+           (test-simple-binding a b)
+           (test-simple-binding b e)
+           (test-simple-binding b f)))))
 
    (subtest "Functor Nodes"
      (subtest "Simple Functor Nodes"
@@ -797,7 +803,7 @@
 
            (has-value-function (a+b c d) out1 `(,+ (,+ ,a+b ,c) ,d))
 
-           (has-value-function (a+b) out2 a+b)
+           (test-simple-binding a+b out2)
            (has-value-function (a b) a+b `(,+ ,a ,b))))
 
        (with-module-table modules
@@ -822,7 +828,7 @@
        (test-not-nodes modules "b" "e" "f")
 
        (with-nodes ((a "a") (c "c")) modules
-         (has-value-function (a) c a)))
+         (test-simple-binding a c)))
 
      (subtest "NO-REMOVE Attribute"
        (with-module-table modules
@@ -840,7 +846,7 @@
                 "c -> d" ; Unreachable Nodes
                 ":attribute(a, input, 1)")
 
-         (is-error (finish-build) 'semantic-error))))
+         (is-error (finish-build) 'dependency-not-reachable))))
 
    (subtest "Cross-Module Bindings"
      (subtest "Simple Bindings"
@@ -858,12 +864,12 @@
            (test-not-nodes m2 "c")
 
            (with-nodes ((m1.a "a") (m1.b "b") (m1.d "d")) m1
-             (has-value-function (m1.a) m1.b m1.a)
-             (has-value-function (m1.b) m1.d m1.b)
+             (test-simple-binding m1.a m1.b)
+             (test-simple-binding m1.b m1.d)
 
              (with-nodes ((m2.a "a") (m2.b "b") (m2.d "d")) m2
-               (has-value-function (m1.b) m2.a m1.b)
-               (has-value-function (m2.b) m2.d m2.b))))))
+               (test-simple-binding m1.b m2.a)
+               (test-simple-binding m2.b m2.d))))))
 
      (subtest "Functor Nodes"
        (with-module-table modules
@@ -927,7 +933,7 @@
         (test-not-nodes modules "b" "constant")
 
         (with-nodes ((a "a") (c "c")) modules
-          (has-value-function (a) c a)
+          (test-simple-binding a c)
 
           (test-value-function a (init-context a) "hello"))))
 
@@ -980,7 +986,7 @@
         (test-not-nodes modules "b" "constant")
 
         (with-nodes ((a "a") (c "c")) modules
-          (has-value-function (a) c a)
+          (test-simple-binding a c)
 
           (test-value-function a (init-context a) "hello")
           (test-value-function c (init-context c) "hello"))))
