@@ -358,14 +358,15 @@
    LINK linked to the context CONTEXT."
 
   (with-accessors ((link-node node-link-node)) link
-    (alet (js-element values-var (dependency-index context link-node))
-      ;; If the linked node is lazily evaluated, evaluate the
-      ;; thunk.
-      (match link-node
-        ((cons 'async _)
-         (cons 'async (js-call it)))
+    (flet ((make-ref (node)
+             (js-element values-var (dependency-index context node))))
 
-        (_ it)))))
+      (match link-node
+        ((cons 'async node)
+         ;; Linked node is lazy => Evaluate the thunk.
+         (cons 'async (js-call (make-ref node))))
+
+        (_ (make-ref link-node))))))
 
 (defvar *get-input* nil
   "Function which should return an expression that references the
