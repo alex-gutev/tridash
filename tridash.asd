@@ -105,7 +105,13 @@
                 ((:file "util")
                  (:test-file "lexer")
                  (:test-file "parser")
-                 (:test-file "builder"))))
+                 (:test-file "builder")
+
+                 (:module
+                  "backends/javascript"
+
+                  :components
+                  ((:test-file "backend"))))))
 
   :perform (asdf:test-op :after (op c)
                          (funcall (intern #.(string :run) :prove) c)))
