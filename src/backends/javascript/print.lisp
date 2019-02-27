@@ -93,7 +93,8 @@
 
 (defmethod print-ast ((expression js-new) &key)
   (print-token "new" :space t)
-  (call-next-method))
+  (print-expression (js-new-operator expression)
+                    (js-new-operands expression)))
 
 (defmethod print-ast ((expression js-element) &key)
   (with-accessors ((object js-element-object)
@@ -165,24 +166,28 @@
 ;;; Operator/Function call expressions
 
 (defmethod print-ast ((expression js-call) &key)
-  (with-accessors ((operator js-call-operator)
-                   (operands js-call-operands))
-      expression
+  (print-expression (js-call-operator expression)
+                    (js-call-operands expression)))
 
-    (let ((num-args (length operands)))
-      (cond
-        ((and (= num-args 2)
-              (member operator +js-binary-operators+))
-         (print-binary-expression operator operands))
+(defun print-expression (operator operands)
+  "Print an expression consisting of OPERATOR applied to OPERANDS."
 
-        ((and (= num-args 1)
-              (member operator +js-unary-operators+))
-         (print-unary-expression operator operands))
+  (let ((num-args (length operands)))
+    (cond
+      ((and (= num-args 2)
+            (member operator +js-binary-operators+))
+       (print-binary-expression operator operands))
 
-        (t
-         (print-function-call operator operands))))))
+      ((and (= num-args 1)
+            (member operator +js-unary-operators+))
+       (print-unary-expression operator operands))
+
+      (t
+       (print-function-call operator operands)))))
 
 (defun print-function-call (function arguments)
+  "Print a function call expression."
+
   (print-ast function
              :semicolon nil
              :brackets (or (js-call-p function)
@@ -190,12 +195,18 @@
   (print-ast-list arguments t))
 
 (defun print-binary-expression (operator operands)
+  "Print the expression consisting of the binary infix OPERATOR applied
+   to OPERANDS."
+
   (destructuring-bind (left right) operands
     (print-ast left :semicolon nil :brackets (js-call-p left))
     (print-token operator)
     (print-ast right :semicolon nil :brackets (js-call-p right))))
 
 (defun print-unary-expression (operator operands)
+  "Print the expression consisting of the unary OPERATOR applied to
+   OPERANDS."
+
   (print-token operator)
   (print-ast (first operands) :semicolon nil :brackets t))
 
@@ -217,17 +228,6 @@
       (print-token "else" :space t)
       (print-ast else))))
 
-(defmethod print-ast ((block js-block) &key)
-  (print-token "{")
-  (print-newline)
-
-  (let ((*indent-level* (1+ *indent-level*)))
-    (map nil (rcurry #'print-ast :semicolon t) (js-block-statements block)))
-
-  (print-newline)
-  (print-token "}"))
-
-
 (defmethod print-ast ((while js-while) &key)
   (with-accessors ((condition js-while-condition)
                    (body js-while-body))
@@ -247,7 +247,23 @@
       (print-token name))
 
     (print-ast-list args t)
-    (call-next-method)))
+    (print-block (js-function-statements func))))
+
+
+(defmethod print-ast ((block js-block) &key)
+  (print-block (js-block-statements block)))
+
+(defun print-block (statements)
+  "Print a block containing the statements STATEMENTS."
+
+  (print-token "{")
+  (print-newline)
+
+  (let ((*indent-level* (1+ *indent-level*)))
+    (map nil (rcurry #'print-ast :semicolon t) statements))
+
+  (print-newline)
+  (print-token "}"))
 
 
 ;;; Statements

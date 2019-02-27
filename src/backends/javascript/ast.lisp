@@ -18,7 +18,7 @@
 
 ;;;; AST node structures for JavaScript syntactic elements
 
-(in-package :tridash.backend.js)
+(in-package :tridash.backend.js.ast)
 
 
 ;;;; AST nodes
@@ -36,10 +36,10 @@
 
 
 (defstruct (js-new
-             (:include js-call)
              (:constructor js-new (operator &optional operands)))
 
-  "New object expression.")
+  "New object expression."
+  operator operands)
 
 (defstruct (js-element
              (:constructor js-element (object element)))
@@ -106,11 +106,13 @@
   body)
 
 (defstruct (js-function
-             (:include js-block)
              (:constructor js-function (name arguments statements)))
 
   "Function block or expression (in the case of anonymous functions)."
-  name arguments)
+
+  name
+  arguments
+  statements)
 
 (defun js-lambda (arguments statements)
   "Creates an anonymous function."

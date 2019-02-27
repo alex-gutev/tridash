@@ -16,6 +16,97 @@
 ;;;; You should have received a copy of the GNU General Public License
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+(defpackage :tridash.backend.js.ast
+  (:use :common-lisp)
+
+  (:import-from :let-over-lambda
+                :mkstr)
+
+  (:export
+   ;; AST Nodes
+
+   :js-call
+   :js-call-p
+   :js-call-operator
+   :js-call-operands
+   :make-js-call
+
+   :js-new
+   :js-new-p
+   :js-new-operator
+   :js-new-operands
+
+   :js-element
+   :js-element-p
+   :js-element-object
+   :js-element-element
+
+   :js-member
+   :js-member-p
+   :js-member-object
+   :js-member-field
+   :js-members
+
+   :js-string
+   :js-string-p
+   :js-string-string
+
+   :js-array
+   :js-array-p
+   :js-array-elements
+
+   :js-object
+   :js-object-p
+   :js-object-fields
+
+   :js-if
+   :js-if-p
+   :js-if-condition
+   :js-if-then
+   :js-if-else
+
+   :js-block
+   :js-block-p
+   :js-block-statements
+   :make-js-block
+
+   :js-while
+   :js-while-p
+   :js-while-condition
+   :js-while-body
+
+   :js-function
+   :js-function-p
+   :js-function-name
+   :js-function-arguments
+   :js-function-statements
+
+   :js-lambda
+   :lexical-block
+   :make-lexical-block
+
+   :js-return
+   :js-return-p
+   :js-return-value
+
+   :js-var
+   :js-var-p
+   :js-var-var
+   :js-var-value
+
+   :js-continue
+   :js-continue-p
+
+   :js-throw
+   :js-throw-p
+   :js-throw-expression
+
+   :function-expression?
+   :expression
+   :expressionp)
+
+  (:documentation "Contains the JavaScript AST Definitions."))
+
 (defpackage :tridash.backend.js
   (:use :common-lisp
         :alexandria
@@ -31,9 +122,13 @@
         :tridash.parser
         :tridash.interface
         :tridash.frontend
-        :tridash.builder.html)
+        :tridash.builder.html
+
+        :tridash.backend.js.ast)
 
   (:import-from :let-over-lambda
                 :mkstr
                 :symb
-                :lol-syntax))
+                :lol-syntax)
+
+  (:documentation "JavaScript Backend."))
