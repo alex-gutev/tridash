@@ -472,11 +472,11 @@
 
         (subtest "Nested in If Condition"
           (mock-backend-state
-            (mock-meta-nodes (f < +)
+            (mock-meta-nodes (< +)
               (mock-contexts
                   ((context (a b c d e)
                             `(if ,a
-                                 (if (,f (if (,< ,b ,c) ,b ,c))
+                                 (if (if (,< ,b ,c) ,b ,c)
                                      (,+ ,b ,c)
                                      ,d)
                                  ,e)))
@@ -484,23 +484,23 @@
                 (test-compute-function context
                   (js-if '(d a)
                          (js-block
-                          (js-var '($ arg))
+                          (js-var '($ cond))
                           (js-if (js-call < '(d b) '(d c))
                                  (js-call '= '($ arg) '(d b))
                                  (js-call '= '($ arg) '(d c)))
 
-                          (js-if (js-call f '($ arg))
+                          (js-if '($ cond)
                                  (js-return (js-call + '(d b) '(d c)))
                                  (js-return '(d d))))
                          (js-return '(d e)))))))
 
           (subtest "Lazy Dependencies"
             (mock-backend-state
-              (mock-meta-nodes (f < +)
+              (mock-meta-nodes (< +)
                 (mock-contexts
                     ((context (a (async . b) c (async . d) e)
                               `(if ,a
-                                   (if (,f (if (,< ,b ,c) ,b ,c))
+                                   (if (if (,< ,b ,c) ,b ,c)
                                        (,+ ,b ,c)
                                        ,d)
                                    ,e)))
@@ -510,21 +510,17 @@
                      '(d a)
 
                      (-<>
-                      (((js-call
-                         (js-member
-                          (promise (((js-call '(d b)) '($ b1)))
-                            (js-return (js-call < '($ b1) '(d c))))
-                          "then")
+                      (js-call
+                       (js-member
+                        (promise (((js-call '(d b)) '($ b1)))
+                          (js-return (js-call < '($ b1) '(d c))))
+                        "then")
 
-                         (js-lambda '(($ cond1))
-                                    (list
-                                     (js-if '($ cond1)
-                                            (js-return (js-call '(d b)))
-                                            (js-return '(d c))))))
-                        '($ arg)))
-
-                      (promise
-                          (js-return (js-call f '($ arg))))
+                       (js-lambda '(($ cond1))
+                                  (list
+                                   (js-if '($ cond1)
+                                          (js-return (js-call '(d b)))
+                                          (js-return '(d c))))))
 
                       (js-member "then")
 
