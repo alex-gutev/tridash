@@ -266,6 +266,10 @@
   (ast-list= (js-block-statements got) (js-block-statements expected)))
 
 
+(defmethod ast= ((got js-var) (expected js-var))
+  (and (ast= (js-var-var got) (js-var-var expected))
+       (ast= (js-var-value got) (js-var-value expected))))
+
 (defmethod ast= ((got js-return) (expected js-return))
   (ast= (js-return-value got) (js-return-value expected)))
 
@@ -418,7 +422,126 @@
                              (js-return
                               (promise (((js-call '(d a)) '($ a3))
                                         ((js-call '(d b)) '($ b3)))
-                                (js-return (js-call - '($ a3) '($ b3)))))))))))))))))))
+                                (js-return (js-call - '($ a3) '($ b3))))))))))))))))
+
+      (subtest "Nested If Statements"
+        (subtest "Function Call Arguments"
+          (mock-backend-state
+            (mock-meta-nodes (f < +)
+              (mock-contexts
+                  ((context (a b c d)
+                            `(,f (if (,< ,a 3) (,+ ,b ,c) ,d) ,a)))
+
+                (test-compute-function context
+                  (js-var '($ arg1))
+                  (js-if (js-call < '(d a) 3)
+                         (js-call '= '($ arg1) (js-call + '(d b) '(d c)))
+                         (js-call '= '($ arg1) '(d d)))
+
+                  (js-return (js-call f '($ arg1) '(d a)))))))
+
+          (subtest "Lazy Dependencies"
+            (mock-backend-state
+              (mock-meta-nodes (f < +)
+                (mock-contexts
+                    ((context ((async . a) b c (async . d))
+                              `(,f (if (,< ,a 3) (,+ ,b ,c) ,d) ,a)))
+
+                  (test-compute-function context
+                    (-<>
+                     (js-call
+                      (js-member
+                       (promise (((js-call '(d a)) '($ a1)))
+                         (js-return (js-call < '($ a1) 3)))
+
+                       "then")
+
+                      (js-lambda
+                       '(($ cond))
+
+                       (list
+                        (js-if '($ cond)
+                               (js-return (js-call + '(d b) '(d c)))
+                               (js-return (js-call '(d d)))))))
+
+                     (<> '($ arg1))
+                     (<> ((js-call '(d a)) '($ a2)))
+                     (promise <>
+                       (js-return (js-call f '($ arg1) '($ a2))))
+                     (js-return))))))))
+
+        (subtest "Nested in If Condition"
+          (mock-backend-state
+            (mock-meta-nodes (f < +)
+              (mock-contexts
+                  ((context (a b c d e)
+                            `(if ,a
+                                 (if (,f (if (,< ,b ,c) ,b ,c))
+                                     (,+ ,b ,c)
+                                     ,d)
+                                 ,e)))
+
+                (test-compute-function context
+                  (js-if '(d a)
+                         (js-block
+                          (js-var '($ arg))
+                          (js-if (js-call < '(d b) '(d c))
+                                 (js-call '= '($ arg) '(d b))
+                                 (js-call '= '($ arg) '(d c)))
+
+                          (js-if (js-call f '($ arg))
+                                 (js-return (js-call + '(d b) '(d c)))
+                                 (js-return '(d d))))
+                         (js-return '(d e)))))))
+
+          (subtest "Lazy Dependencies"
+            (mock-backend-state
+              (mock-meta-nodes (f < +)
+                (mock-contexts
+                    ((context (a (async . b) c (async . d) e)
+                              `(if ,a
+                                   (if (,f (if (,< ,b ,c) ,b ,c))
+                                       (,+ ,b ,c)
+                                       ,d)
+                                   ,e)))
+
+                  (test-compute-function context
+                    (js-if
+                     '(d a)
+
+                     (-<>
+                      (((js-call
+                         (js-member
+                          (promise (((js-call '(d b)) '($ b1)))
+                            (js-return (js-call < '($ b1) '(d c))))
+                          "then")
+
+                         (js-lambda '(($ cond1))
+                                    (list
+                                     (js-if '($ cond1)
+                                            (js-return (js-call '(d b)))
+                                            (js-return '(d c))))))
+                        '($ arg)))
+
+                      (promise
+                          (js-return (js-call f '($ arg))))
+
+                      (js-member "then")
+
+                      (js-call
+                       (js-lambda
+                        '(($ cond2))
+
+                        (list
+                         (js-if '($ cond2)
+                                (js-return
+                                 (promise (((js-call '(d b)) '($ b2)))
+                                   (js-return (js-call + '($ b2) '(d c)))))
+                                (js-return (js-call '(d d)))))))
+
+                      (js-return))
+
+                     (js-return '(d e)))))))))))))
 
 (run-test 'functions)
 
