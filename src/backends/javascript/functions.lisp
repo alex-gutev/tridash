@@ -398,7 +398,10 @@
 (defun add-to-block (block expression)
   "Creates a new block which contains BLOCK and a statement which
    returns the result of EXPRESSION, generated using MAKE-RETURN. The
-   list of the block's statements is returned."
+   list of the block's statements is returned.
+
+   The second return value is true if EXPRESSION is an asynchronous
+   expression."
 
   (flet ((get-expression (expression)
            "If EXPRESSION is a CONS with the CAR equal to the symbol
@@ -406,12 +409,20 @@
             returned. Otherwise EXPRESSION is returned as is."
 
            (match expression
-             ((cons 'async expression) expression)
+             ((cons 'async expression)
+              (values expression t))
+
              (_ expression))))
 
-    (list block
-          (when expression
-            (make-return (get-expression expression))))))
+    (multiple-value-bind (expression async?)
+        (get-expression expression)
+
+      (values
+       (list block
+             (when expression
+               (make-return (get-expression expression))))
+
+       async?))))
 
 (defun make-expression (fn &key ((:return-variable *return-variable*) *return-variable*) ((:tailp *in-tail-position*) *in-tail-position*))
   "Generates the code for a single expression
@@ -475,18 +486,30 @@
 
         (multiple-value-call
             #'combine-blocks
-          cond-block
+
+          (when cond-block
+            (js-block (js-var cond-var) cond-block))
 
           (use-expression
            cond-expr
 
            (lambda (cond-expr)
-             (values
-              (js-block
-               (js-if cond-expr
-                      (make-js-block (make-statements then))
-                      (and else (make-js-block (make-statements else)))))
-              *return-variable*))))))))
+             (multiple-value-bind (then-block then-async?)
+                 (make-statements then)
+
+               (multiple-value-bind (else-block else-async?)
+                   (make-statements else)
+
+                 (values
+                  (js-block
+                   (js-if cond-expr
+                          (make-js-block then-block)
+                          (make-js-block else-block)))
+
+                  (if (and *return-variable* (or then-async? else-async?))
+                      (cons 'async
+                            (js-call (js-member "Promise" "resolve") *return-variable*))
+                      *return-variable*)))))))))))
 
 
 ;;; Objects
