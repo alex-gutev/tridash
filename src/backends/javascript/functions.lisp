@@ -535,8 +535,11 @@
     (let ((object-var (var-name)))
       (multiple-value-bind (object-block object-expr)
           (make-expression object :return-variable object-var :tailp nil)
+
         (multiple-value-call #'combine-blocks
-          object-block
+
+          (when object-block
+            (js-block (js-var object-var) object-block))
 
           (use-expression
            object-expr
