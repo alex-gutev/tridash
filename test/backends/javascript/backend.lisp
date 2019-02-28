@@ -541,7 +541,40 @@
 
                       (js-return))
 
-                     (js-return '(d e)))))))))))))
+                     (js-return '(d e))))))))))
+
+      (subtest "Old Value References"
+        (mock-backend-state
+          (mock-contexts
+              ((context (a cond)
+                        `(if ,cond ,a ,(node-link :self))))
+
+            (test-compute-function context
+              (js-var '($ old-value) (js-member "this" "value"))
+              (js-if '(d cond)
+                     (js-return '(d a))
+                     (js-return '($ old-value))))))
+
+        (subtest "Lazy Node"
+          (mock-backend-state
+            (mock-contexts
+                ((context (a cond)
+                          `(if ,cond ,a ,(node-link :self))))
+
+              (with-lazy-nodes (context)
+                (test-compute-function context
+                  (js-var '($ old-value) (js-member "this" "value"))
+                  (js-return
+                   (js-call
+                    +thunk-class+
+
+                    (js-lambda
+                     nil
+
+                     (list
+                      (js-if '(d cond)
+                             (js-return '(d a))
+                             (js-return (js-call '($ old-value)))))))))))))))))
 
 (run-test 'functions)
 
