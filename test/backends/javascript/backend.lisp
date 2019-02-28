@@ -570,7 +570,221 @@
                      (list
                       (js-if '(d cond)
                              (js-return '(d a))
-                             (js-return (js-call '($ old-value)))))))))))))))))
+                             (js-return (js-call '($ old-value)))))))))))))))
+
+    (subtest "Objects"
+      (subtest "Object Creation"
+        (subtest "Simple Field Value Expressions"
+          (mock-backend-state
+            (mock-meta-nodes (+ -)
+              (mock-contexts
+                  ((context (x y) `(:object (|sum| (,+ ,x ,y))
+                                            (|difference| (,- ,x ,y))
+                                            (|x| ,x)
+                                            (|y| ,y))))
+
+                (test-compute-function context
+                  (js-return
+                   (js-object
+                    (list
+                     (list (js-string "sum") (js-call + '(d x) '(d y)))
+                     (list (js-string "difference") (js-call - '(d x) '(d y)))
+                     (list (js-string "x") '(d x))
+                     (list (js-string "y") '(d y)))))))))
+
+          (subtest "Lazy Dependencies"
+            (mock-backend-state
+              (mock-meta-nodes (+ -)
+                (mock-contexts
+                    ((context ((async . x) y) `(:object (|sum| (,+ ,x ,y))
+                                                        (|difference| (,- ,x ,y))
+                                                        (|x| ,x)
+                                                        (|y| ,y))))
+
+                  (test-compute-function context
+                    (js-return
+                     (promise
+                         (((promise (((js-call '(d x)) '($ x1)))
+                             (js-return (js-call + '($ x1) '(d y))))
+                           '($ sum))
+
+                          ((promise (((js-call '(d x)) '($ x2)))
+                             (js-return (js-call - '($ x2) '(d y))))
+                           '($ diff))
+
+                          ((js-call '(d x)) '($ x3)))
+
+                       (js-return
+                        (js-object
+                         (list
+                          (list (js-string "sum") '($ sum))
+                          (list (js-string "difference") '($ diff))
+                          (list (js-string "x") '($ x3))
+                          (list (js-string "y") '(d y)))))))))))))
+
+        (subtest "If Expressions in Field Values"
+          (mock-backend-state
+            (mock-meta-nodes (<)
+              (mock-contexts
+                  ((context (x y) `(:object (|min| (if (,< ,x ,y) ,x ,y))
+                                            (|max| (if (,< ,y ,x) ,x ,y)))))
+
+                (test-compute-function context
+                  (js-var '($ min))
+                  (js-if (js-call < '(d x) '(d y))
+                         (js-call '= '($ min) '(d x))
+                         (js-call '= '($ min) '(d y)))
+
+                  (js-var '($ max))
+                  (js-if (js-call < '(d y) '(d x))
+                         (js-call '= '($ max) '(d x))
+                         (js-call '= '($ max) '(d y)))
+                  (js-return
+                   (js-object
+                    (list
+                     (list (js-string "min") '($ min))
+                     (list (js-string "max") '($ max)))))))))
+
+          (subtest "Lazy Dependencies"
+            (mock-backend-state
+              (mock-meta-nodes (<)
+                (mock-contexts
+                    ((context ((async . x) y) `(:object (|min| (if (,< ,x ,y) ,x ,y))
+                                                        (|max| (if (,< ,y ,x) ,x ,y)))))
+
+                  (test-compute-function context
+                    (js-return
+                     (-<>
+                      (((js-call
+                         (js-member
+                          (promise (((js-call '(d x)) '($ x1)))
+                            (js-return (js-call < '($ x1) '(d y))))
+                          "then")
+
+                         (js-lambda
+                          '(($ cond-min))
+
+                          (list
+                           (js-if '($ cond-min)
+                                  (js-return (js-call '(d x)))
+                                  (js-return '(d y))))))
+                        '($ min))
+
+                       ((js-call
+                         (js-member
+                          (promise (((js-call '(d x)) '($ x2)))
+                            (js-return (js-call < '(d y) '($ x2))))
+                          "then")
+
+                         (js-lambda
+                          '(($ cond-max))
+
+                          (list
+                           (js-if '($ cond-max)
+                                  (js-return (js-call '(d x)))
+                                  (js-return '(d y))))))
+                        '($ max)))
+
+                      (promise <>
+                        (js-return
+                         (js-object
+                          (list
+                           (list (js-string "min") '($ min))
+                           (list (js-string "max") '($ max)))))))))))))))
+
+      (subtest "Member Access"
+        (subtest "Direct Member Access"
+          (mock-backend-state
+            (mock-meta-nodes (f)
+              (mock-contexts
+                  ((context (object) `(,f (:member ,object |field|))))
+
+                (test-compute-function context
+                  (js-return
+                   (js-call f (js-element '(d object) (js-string "field"))))))))
+
+          (subtest "Lazy Dependencies"
+            (mock-backend-state
+              (mock-meta-nodes (f)
+                (mock-contexts
+                    ((context ((async . object)) `(,f (:member ,object |field|))))
+
+                  (test-compute-function context
+                    (js-return
+                     (promise
+                         (((js-call
+                            (js-member (js-call '(d object)) "then")
+
+                            (js-lambda
+                             '(($ object))
+
+                             (list
+                              (js-return (js-element '($ object) (js-string "field"))))))
+
+                           '($ value)))
+                       (js-return (js-call f '($ value)))))))))))
+
+        (subtest "Expression Member Access"
+          (mock-backend-state
+            (mock-meta-nodes (f)
+              (mock-contexts
+                  ((context (a) `(:member (,f ,a) \x)))
+
+                (test-compute-function context
+                  (js-return (js-element (js-call f '(d a)) (js-string "x")))))))
+
+          (subtest "Lazy Dependencies"
+            (mock-backend-state
+              (mock-meta-nodes (f)
+                (mock-contexts
+                    ((context ((async . a)) `(:member (,f ,a) \x)))
+
+                  (test-compute-function context
+                    (js-return
+                     (js-call
+                      (js-member
+                       (promise (((js-call '(d a)) '($ a)))
+                         (js-return (js-call f '($ a))))
+                       "then")
+
+                      (js-lambda
+                       '(($ object))
+
+                       (list
+                        (js-return (js-element '($ object) (js-string "x")))))))))))))
+
+        (subtest "Member Access of If Expression"
+          (mock-backend-state
+            (mock-contexts
+                ((context (cond a b) `(:member (if ,cond ,a ,b) \z)))
+
+              (test-compute-function context
+                (js-var '($ object))
+                (js-if '(d cond)
+                       (js-call '= '($ object) '(d a))
+                       (js-call '= '($ object) '(d b)))
+
+                (js-return (js-element '($ object) (js-string "z"))))))
+
+          (subtest "Lazy Dependencies"
+            (mock-backend-state
+              (mock-contexts
+                  ((context (cond a (async . b)) `(:member (if ,cond ,a ,b) \z)))
+
+                (test-compute-function context
+                  (js-var '($ object))
+                  (js-if '(d cond)
+                         (js-call '= '($ object) '(d a))
+                         (js-call '= '($ object) (js-call '(d b))))
+
+                  (js-return
+                   (js-call
+                    (js-member
+                     (js-call (js-member "Promise" "resolve") '($ object))
+                     "then")
+
+                    (js-lambda '(($ arg))
+                               (list (js-return (js-element '($ arg) (js-string "z"))))))))))))))))
 
 (run-test 'functions)
 
