@@ -177,17 +177,21 @@
           (let* ((*meta-node-call* #'make-meta-node-call)
                  (body (make-function-body value-function #'get-input)))
 
-            (create-meta-nodes (meta-nodes (definition meta-node)))
-
-            (list*
+            (list
              (js-function
               (meta-node-id meta-node)
               (mapcar #'cdr op-vars)
-              (if tail-recursive-p
-                  (list (js-while "true" body))
-                  body))
 
-             (ensure-list (store-in-public-nodes meta-node (meta-node-id meta-node))))))))))
+              (list
+               (let ((*output-code* (make-code-array)))
+                 (create-meta-nodes (meta-nodes (definition meta-node)))
+                 *output-code*)
+
+               (if tail-recursive-p
+                   (js-while "true" (js-block body))
+                   body)))
+
+             (store-in-public-nodes meta-node (meta-node-id meta-node)))))))))
 
 (defun create-async-meta-node (meta-node)
   "Generates the value-function of the `meta-node'. Unlike
@@ -823,17 +827,22 @@
 (defmethod strip-redundant ((block js-block) &key strip-block)
   (let ((statements (strip-redundant (js-block-statements block))))
     (cond
-      ((or strip-block (null statements))
-       statements)
-
       ((null (rest statements))
        (first statements))
+
+      ((or strip-block (null statements))
+       statements)
 
       (t (make-js-block statements)))))
 
 (defmethod strip-redundant ((statements list) &key)
   (mappend (compose #'ensure-list (rcurry #'strip-redundant :strip-block t))
            statements))
+
+(defmethod strip-redundant ((statements sequence) &key)
+  (if (stringp statements)
+      statements
+      (strip-redundant (coerce statements 'list))))
 
 (defmethod strip-redundant ((function js-function) &key)
   (js-function
