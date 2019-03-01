@@ -75,78 +75,7 @@
 (plan nil)
 
 
-;;;; Test Utilities
-
-(defmacro match* ((&rest forms) &rest clauses)
-  `(multiple-value-match (values ,@forms) ,@clauses))
-
-(defmacro mock-backend-state (&body body)
-  "Evaluates the forms in BODY in an environment in which the
-   backend's state has been initialized with mocked values."
-
-  `(let ((*node-ids* (make-hash-table :test #'eq))
-         (*node-link-indices* (make-hash-table :test #'eq))
-         (*meta-node-ids* (make-hash-table :test #'eq))
-         (*context-ids* (make-hash-table :test #'eq))
-         (*lazy-nodes* (make-hash-table :test #'eq))
-         (*context-counter* 0)
-         (*initial-values* nil))
-     ,@body))
-
-(defmacro with-lazy-nodes ((&rest nodes) &body body)
-  "Evaluates the forms in BODY with the nodes in NODES set as lazy
-   nodes."
-
-  `(let ((*lazy-nodes* (alist-hash-table (list ,@(mapcar #`(cons ,a1 t) nodes)) :test #'eq)))
-     ,@body))
-
-(defun mock-meta-nodes% (names)
-  "Returns a list of `EXTERNAL-META-NODE's with names NAMES."
-
-  (flet ((make-meta-node (name)
-           (make-instance 'external-meta-node :name name)))
-    (mapcar #'make-meta-node names)))
-
-(defmacro mock-meta-nodes ((&rest names) &body body)
-  "Evaluates the forms in BODY with each symbol in NAMES bound to an
-   `EXTERNAL-META-NODE' created by MOCK-META-NODES%."
-
-  `(destructuring-bind ,names (mock-meta-nodes% ',names)
-     ,@body))
-
-(defmacro! mock-context ((&rest operands) value-function)
-  "Creates a context (the return value of the form) with operands
-   OPERANDS and value VALUE-FUNCTION.
-
-   VALUE-FUNCTION is evaluated in an environment in which each symbol
-   in OPERANDS is bound to the `NODE-LINK' object of the
-   dependency. If an element of OPERANDS is a CONS with the CAR being
-   the symbol ASYNC an asynchronous `NODE-LINK' is created and bound
-   to the symbol in the CDR."
-
-  (flet ((make-binding (operand)
-           (match operand
-             ((or (cons 'async dep)
-                  dep)
-
-              `(,dep (setf (gethash ',dep (operands ,g!context))
-                               (node-link ',operand)))))))
-
-    `(let ((,g!context (make-instance 'node-context)))
-       (let ,(mapcar #'make-binding operands)
-         (setf (value-function ,g!context) ,value-function))
-       ,g!context)))
-
-(defmacro! mock-contexts ((&rest contexts) &body body)
-  "Evaluates the forms in BODY with a number of mocked
-   `NODE-CONTEXT's. Each element of CONTEXTS is of the form (SYMBOL
-   . ARGS) where SYMBOL is the variable to which the context is bound
-   and ARGS are the arguments passed to MOCK-CONTEXT."
-
-  (flet ((make-binding (context)
-           `(,(first context) (mock-context ,@(rest context)))))
-    `(let ,(mapcar #'make-binding contexts) ,@body)))
-
+;;;; AST Equality Comparison
 
 (defvar *current-context* nil
   "The context whose value function is currently being tested.")
@@ -157,51 +86,6 @@
 
 (defvar *ast-aliases* nil
   "Hash table mapping alias identifier to the aliased AST nodes.")
-
-(defun test-compute-function% (code fn)
-  "Tests that the compute function CODE contains the statements in
-   FN."
-
-  (with-accessors ((name js-function-name)
-                   (args js-function-arguments)
-                   (body js-function-statements))
-      code
-
-    (is-type! code 'js-function "Is a function")
-    (is! name nil "Anonymous function")
-
-    (is! (length args) 1 "Single argument")
-
-    (let ((prove:*default-test-function* #'ast-list=)
-          (*values-var* (first args))
-          (*ast-aliases* (make-hash-table :test #'eq)))
-      (is body fn))))
-
-(defmacro! test-compute-function (o!context &body statements)
-  "Tests that the generated compute function, of CONTEXT, contains
-   STATEMENTS in its body.
-
-   Some nodes have a special meaning:
-
-   A `META-NODE' is replaced with the name of the function
-   implementing the meta-node, obtained by META-NODE-ID.
-
-   A CONS with the CAR being the symbol D references the dependency
-   node in the CDR. It is replaced with an expression that references
-   the element, at the index corresponding to the dependency index of
-   the dependency node, within the values argument to the compute
-   function.
-
-   A CONS with the car being the symbol $ creates an alias, with the
-   identifier in the CDR, for the corresponding AST node of the
-   generated compute function. The first occurrence of ($ a) always
-   compares equal to the corresponding AST node of the generated
-   function and establishes an establishes an alias, with identifier
-   'a', for that node. Subsequent occurrences are replaced with the
-   aliased AST node."
-
-  `(let ((*current-context* ,g!context))
-     (test-compute-function% (strip-redundant (create-compute-function ,g!context)) (list ,@statements))))
 
 
 (defmethod ast-list= (got expected)
@@ -302,6 +186,143 @@
   (equal got expected))
 
 
+(defmacro $ (alias)
+  "Convenience macro expanding to `($ ,ALIAS). When this appears in an
+   EXPECTED argument to AST= it is interpreted as an alias to the AST
+   node in the GOT argument. On the first occurrence an alias, with
+   identifier, for the corresponding node in GOT is created and stored
+   in *AST-ALIASES*. Subsequent occurrences are replaced with the
+   aliased AST node, retrieved from *AST-ALIASES*."
+
+  `'($ ,alias))
+
+(defmacro d (dependency)
+  "Convenience macro expanding to `(d ,DEPENDENCY). When this appears
+   in an EXPECTED argument to AST= it is replaced with an expression
+   that references the dependency node DEPENDENCY."
+
+  `'(d ,dependency))
+
+
+;;;; Test Mock Utilities
+
+(defmacro mock-backend-state (&body body)
+  "Evaluates the forms in BODY in an environment in which the
+   backend's state has been initialized with mocked values."
+
+  `(let ((*node-ids* (make-hash-table :test #'eq))
+         (*node-link-indices* (make-hash-table :test #'eq))
+         (*meta-node-ids* (make-hash-table :test #'eq))
+         (*context-ids* (make-hash-table :test #'eq))
+         (*lazy-nodes* (make-hash-table :test #'eq))
+         (*context-counter* 0)
+         (*initial-values* nil))
+     ,@body))
+
+(defmacro with-lazy-nodes ((&rest nodes) &body body)
+  "Evaluates the forms in BODY with the nodes in NODES set as lazy
+   nodes."
+
+  `(let ((*lazy-nodes* (alist-hash-table (list ,@(mapcar #`(cons ,a1 t) nodes)) :test #'eq)))
+     ,@body))
+
+(defun mock-meta-nodes% (names)
+  "Returns a list of `EXTERNAL-META-NODE's with names NAMES."
+
+  (flet ((make-meta-node (name)
+           (make-instance 'external-meta-node :name name)))
+    (mapcar #'make-meta-node names)))
+
+(defmacro mock-meta-nodes ((&rest names) &body body)
+  "Evaluates the forms in BODY with each symbol in NAMES bound to an
+   `EXTERNAL-META-NODE' created by MOCK-META-NODES%."
+
+  `(destructuring-bind ,names (mock-meta-nodes% ',names)
+     ,@body))
+
+(defmacro! mock-context ((&rest operands) value-function)
+  "Creates a context (the return value of the form) with operands
+   OPERANDS and value VALUE-FUNCTION.
+
+   VALUE-FUNCTION is evaluated in an environment in which each symbol
+   in OPERANDS is bound to the `NODE-LINK' object of the
+   dependency. If an element of OPERANDS is a CONS with the CAR being
+   the symbol ASYNC an asynchronous `NODE-LINK' is created and bound
+   to the symbol in the CDR."
+
+  (flet ((make-binding (operand)
+           (match operand
+             ((or (cons 'async dep)
+                  dep)
+
+              `(,dep (setf (gethash ',dep (operands ,g!context))
+                               (node-link ',operand)))))))
+
+    `(let ((,g!context (make-instance 'node-context)))
+       (let ,(mapcar #'make-binding operands)
+         (setf (value-function ,g!context) ,value-function))
+       ,g!context)))
+
+(defmacro! mock-contexts ((&rest contexts) &body body)
+  "Evaluates the forms in BODY with a number of mocked
+   `NODE-CONTEXT's. Each element of CONTEXTS is of the form (SYMBOL
+   . ARGS) where SYMBOL is the variable to which the context is bound
+   and ARGS are the arguments passed to MOCK-CONTEXT."
+
+  (flet ((make-binding (context)
+           `(,(first context) (mock-context ,@(rest context)))))
+    `(let ,(mapcar #'make-binding contexts) ,@body)))
+
+
+;;;; Test Value Function Utilities
+
+(defun test-compute-function% (code fn)
+  "Tests that the compute function CODE contains the statements in
+   FN."
+
+  (is-type! code 'js-function "Is a function")
+
+  (with-accessors ((name js-function-name)
+                   (args js-function-arguments)
+                   (body js-function-statements))
+      code
+
+    (is! name nil "Anonymous function")
+
+    (is! (length args) 1 "Single argument")
+
+    (let ((prove:*default-test-function* #'ast-list=)
+          (*values-var* (first args))
+          (*ast-aliases* (make-hash-table :test #'eq)))
+      (is body fn))))
+
+(defmacro! test-compute-function (o!context &body statements)
+  "Tests that the generated compute function, of CONTEXT, contains
+   STATEMENTS in its body.
+
+   Some nodes have a special meaning:
+
+   A `META-NODE' is replaced with the name of the function
+   implementing the meta-node, obtained by META-NODE-ID.
+
+   A CONS with the CAR being the symbol D references the dependency
+   node in the CDR. It is replaced with an expression that references
+   the element, at the index corresponding to the dependency index of
+   the dependency node, within the values argument to the compute
+   function.
+
+   A CONS with the car being the symbol $ creates an alias, with the
+   identifier in the CDR, for the corresponding AST node of the
+   generated compute function. The first occurrence of ($ a) always
+   compares equal to the corresponding AST node of the generated
+   function and establishes an establishes an alias, with identifier
+   'a', for that node. Subsequent occurrences are replaced with the
+   aliased AST node."
+
+  `(let ((*current-context* ,g!context))
+     (test-compute-function% (strip-redundant (create-compute-function ,g!context)) (list ,@statements))))
+
+
 (defmacro promise ((&rest args) &body body)
   "Creates an expression which resolves the expressions in ARGS and
    attaches the 'then' handler function BODY to the promise.
@@ -334,7 +355,7 @@
 
 ;;;; Tests
 
-(deftest functions
+(deftest node-functions
   (subtest "Test Node Value Function Code Generation"
     (subtest "Function Calls"
       (mock-backend-state
@@ -343,7 +364,7 @@
               ((context (a b) `(,f ,a ,b)))
 
             (test-compute-function context
-              (js-return (js-call f '(d a) '(d b)))))))
+              (js-return (js-call f (d a) (d b)))))))
 
       (subtest "Lazy Dependencies"
         (mock-backend-state
@@ -358,14 +379,14 @@
 
                    (js-call
                     (js-member "Promise" "all")
-                    (js-array (list (js-call '(d a)))))
+                    (js-array (list (js-call (d a)))))
 
                    "then")
 
                   (js-lambda
-                   (list (js-array (list '($ a))))
+                   (list (js-array (list ($ a))))
                    (list
-                    (js-return (js-call f '($ a) '(d b))))))))))))
+                    (js-return (js-call f ($ a) (d b))))))))))))
 
       (subtest "Lazy Nodes"
         (mock-backend-state
@@ -381,7 +402,7 @@
                     (js-lambda
                      nil
                      (list
-                      (js-return (js-call f '(d a) '(d b))))))))))))))
+                      (js-return (js-call f (d a) (d b))))))))))))))
 
     (subtest "Conditionals"
       (subtest "Simple If Statements"
@@ -391,9 +412,9 @@
                 ((context (a b) `(if (,< ,a ,b) (,- ,b ,a) (,- ,a ,b))))
 
               (test-compute-function context
-                (js-if (js-call < '(d a) '(d b))
-                       (js-return (js-call - '(d b) '(d a)))
-                       (js-return (js-call - '(d a) '(d b))))))))
+                (js-if (js-call < (d a) (d b))
+                       (js-return (js-call - (d b) (d a)))
+                       (js-return (js-call - (d a) (d b))))))))
 
         (subtest "Lazy Dependencies"
           (mock-backend-state
@@ -405,24 +426,24 @@
                   (js-return
                    (js-call
                     (js-member
-                     (promise (((js-call '(d a)) '($ a1))
-                               ((js-call '(d b)) '($ b1)))
-                       (js-return (js-call < '($ a1) '($ b1))))
+                     (promise (((js-call (d a)) ($ a1))
+                               ((js-call (d b)) ($ b1)))
+                       (js-return (js-call < ($ a1) ($ b1))))
                      "then")
 
                     (js-lambda
-                     (list '($ a<b))
+                     (list ($ a<b))
                      (list
-                      (js-if '($ a<b)
+                      (js-if ($ a<b)
                              (js-return
-                              (promise (((js-call '(d b)) '($ b2))
-                                        ((js-call '(d a)) '($ a2)))
-                                (js-return (js-call - '($ b2) '($ a2)))))
+                              (promise (((js-call (d b)) ($ b2))
+                                        ((js-call (d a)) ($ a2)))
+                                (js-return (js-call - ($ b2) ($ a2)))))
 
                              (js-return
-                              (promise (((js-call '(d a)) '($ a3))
-                                        ((js-call '(d b)) '($ b3)))
-                                (js-return (js-call - '($ a3) '($ b3))))))))))))))))
+                              (promise (((js-call (d a)) ($ a3))
+                                        ((js-call (d b)) ($ b3)))
+                                (js-return (js-call - ($ a3) ($ b3))))))))))))))))
 
       (subtest "Nested If Statements"
         (subtest "Function Call Arguments"
@@ -433,12 +454,12 @@
                             `(,f (if (,< ,a 3) (,+ ,b ,c) ,d) ,a)))
 
                 (test-compute-function context
-                  (js-var '($ arg1))
-                  (js-if (js-call < '(d a) 3)
-                         (js-call '= '($ arg1) (js-call + '(d b) '(d c)))
-                         (js-call '= '($ arg1) '(d d)))
+                  (js-var ($ arg1))
+                  (js-if (js-call < (d a) 3)
+                         (js-call '= ($ arg1) (js-call + (d b) (d c)))
+                         (js-call '= ($ arg1) (d d)))
 
-                  (js-return (js-call f '($ arg1) '(d a)))))))
+                  (js-return (js-call f ($ arg1) (d a)))))))
 
           (subtest "Lazy Dependencies"
             (mock-backend-state
@@ -451,8 +472,8 @@
                     (-<>
                      (js-call
                       (js-member
-                       (promise (((js-call '(d a)) '($ a1)))
-                         (js-return (js-call < '($ a1) 3)))
+                       (promise (((js-call (d a)) ($ a1)))
+                         (js-return (js-call < ($ a1) 3)))
 
                        "then")
 
@@ -460,14 +481,14 @@
                        '(($ cond))
 
                        (list
-                        (js-if '($ cond)
-                               (js-return (js-call + '(d b) '(d c)))
-                               (js-return (js-call '(d d)))))))
+                        (js-if ($ cond)
+                               (js-return (js-call + (d b) (d c)))
+                               (js-return (js-call (d d)))))))
 
-                     (<> '($ arg1))
-                     (<> ((js-call '(d a)) '($ a2)))
+                     (<> ($ arg1))
+                     (<> ((js-call (d a)) ($ a2)))
                      (promise <>
-                       (js-return (js-call f '($ arg1) '($ a2))))
+                       (js-return (js-call f ($ arg1) ($ a2))))
                      (js-return))))))))
 
         (subtest "Nested in If Condition"
@@ -482,17 +503,17 @@
                                  ,e)))
 
                 (test-compute-function context
-                  (js-if '(d a)
+                  (js-if (d a)
                          (js-block
-                          (js-var '($ cond))
-                          (js-if (js-call < '(d b) '(d c))
-                                 (js-call '= '($ arg) '(d b))
-                                 (js-call '= '($ arg) '(d c)))
+                          (js-var ($ cond))
+                          (js-if (js-call < (d b) (d c))
+                                 (js-call '= ($ arg) (d b))
+                                 (js-call '= ($ arg) (d c)))
 
-                          (js-if '($ cond)
-                                 (js-return (js-call + '(d b) '(d c)))
-                                 (js-return '(d d))))
-                         (js-return '(d e)))))))
+                          (js-if ($ cond)
+                                 (js-return (js-call + (d b) (d c)))
+                                 (js-return (d d))))
+                         (js-return (d e)))))))
 
           (subtest "Lazy Dependencies"
             (mock-backend-state
@@ -507,20 +528,20 @@
 
                   (test-compute-function context
                     (js-if
-                     '(d a)
+                     (d a)
 
                      (-<>
                       (js-call
                        (js-member
-                        (promise (((js-call '(d b)) '($ b1)))
-                          (js-return (js-call < '($ b1) '(d c))))
+                        (promise (((js-call (d b)) ($ b1)))
+                          (js-return (js-call < ($ b1) (d c))))
                         "then")
 
                        (js-lambda '(($ cond1))
                                   (list
-                                   (js-if '($ cond1)
-                                          (js-return (js-call '(d b)))
-                                          (js-return '(d c))))))
+                                   (js-if ($ cond1)
+                                          (js-return (js-call (d b)))
+                                          (js-return (d c))))))
 
                       (js-member "then")
 
@@ -529,15 +550,15 @@
                         '(($ cond2))
 
                         (list
-                         (js-if '($ cond2)
+                         (js-if ($ cond2)
                                 (js-return
-                                 (promise (((js-call '(d b)) '($ b2)))
-                                   (js-return (js-call + '($ b2) '(d c)))))
-                                (js-return (js-call '(d d)))))))
+                                 (promise (((js-call (d b)) ($ b2)))
+                                   (js-return (js-call + ($ b2) (d c)))))
+                                (js-return (js-call (d d)))))))
 
                       (js-return))
 
-                     (js-return '(d e))))))))))
+                     (js-return (d e))))))))))
 
       (subtest "Old Value References"
         (mock-backend-state
@@ -546,10 +567,10 @@
                         `(if ,cond ,a ,(node-link :self))))
 
             (test-compute-function context
-              (js-var '($ old-value) (js-member "this" "value"))
-              (js-if '(d cond)
-                     (js-return '(d a))
-                     (js-return '($ old-value))))))
+              (js-var ($ old-value) (js-member "this" "value"))
+              (js-if (d cond)
+                     (js-return (d a))
+                     (js-return ($ old-value))))))
 
         (subtest "Lazy Node"
           (mock-backend-state
@@ -559,7 +580,7 @@
 
               (with-lazy-nodes (context)
                 (test-compute-function context
-                  (js-var '($ old-value) (js-member "this" "value"))
+                  (js-var ($ old-value) (js-member "this" "value"))
                   (js-return
                    (js-call
                     +thunk-class+
@@ -568,9 +589,9 @@
                      nil
 
                      (list
-                      (js-if '(d cond)
-                             (js-return '(d a))
-                             (js-return (js-call '($ old-value)))))))))))))))
+                      (js-if (d cond)
+                             (js-return (d a))
+                             (js-return (js-call ($ old-value)))))))))))))))
 
     (subtest "Objects"
       (subtest "Object Creation"
@@ -587,10 +608,10 @@
                   (js-return
                    (js-object
                     (list
-                     (list (js-string "sum") (js-call + '(d x) '(d y)))
-                     (list (js-string "difference") (js-call - '(d x) '(d y)))
-                     (list (js-string "x") '(d x))
-                     (list (js-string "y") '(d y)))))))))
+                     (list (js-string "sum") (js-call + (d x) (d y)))
+                     (list (js-string "difference") (js-call - (d x) (d y)))
+                     (list (js-string "x") (d x))
+                     (list (js-string "y") (d y)))))))))
 
           (subtest "Lazy Dependencies"
             (mock-backend-state
@@ -604,23 +625,23 @@
                   (test-compute-function context
                     (js-return
                      (promise
-                         (((promise (((js-call '(d x)) '($ x1)))
-                             (js-return (js-call + '($ x1) '(d y))))
-                           '($ sum))
+                         (((promise (((js-call (d x)) ($ x1)))
+                             (js-return (js-call + ($ x1) (d y))))
+                           ($ sum))
 
-                          ((promise (((js-call '(d x)) '($ x2)))
-                             (js-return (js-call - '($ x2) '(d y))))
-                           '($ diff))
+                          ((promise (((js-call (d x)) ($ x2)))
+                             (js-return (js-call - ($ x2) (d y))))
+                           ($ diff))
 
-                          ((js-call '(d x)) '($ x3)))
+                          ((js-call (d x)) ($ x3)))
 
                        (js-return
                         (js-object
                          (list
-                          (list (js-string "sum") '($ sum))
-                          (list (js-string "difference") '($ diff))
-                          (list (js-string "x") '($ x3))
-                          (list (js-string "y") '(d y)))))))))))))
+                          (list (js-string "sum") ($ sum))
+                          (list (js-string "difference") ($ diff))
+                          (list (js-string "x") ($ x3))
+                          (list (js-string "y") (d y)))))))))))))
 
         (subtest "If Expressions in Field Values"
           (mock-backend-state
@@ -630,20 +651,20 @@
                                             (|max| (if (,< ,y ,x) ,x ,y)))))
 
                 (test-compute-function context
-                  (js-var '($ min))
-                  (js-if (js-call < '(d x) '(d y))
-                         (js-call '= '($ min) '(d x))
-                         (js-call '= '($ min) '(d y)))
+                  (js-var ($ min))
+                  (js-if (js-call < (d x) (d y))
+                         (js-call '= ($ min) (d x))
+                         (js-call '= ($ min) (d y)))
 
-                  (js-var '($ max))
-                  (js-if (js-call < '(d y) '(d x))
-                         (js-call '= '($ max) '(d x))
-                         (js-call '= '($ max) '(d y)))
+                  (js-var ($ max))
+                  (js-if (js-call < (d y) (d x))
+                         (js-call '= ($ max) (d x))
+                         (js-call '= ($ max) (d y)))
                   (js-return
                    (js-object
                     (list
-                     (list (js-string "min") '($ min))
-                     (list (js-string "max") '($ max)))))))))
+                     (list (js-string "min") ($ min))
+                     (list (js-string "max") ($ max)))))))))
 
           (subtest "Lazy Dependencies"
             (mock-backend-state
@@ -657,40 +678,40 @@
                      (-<>
                       (((js-call
                          (js-member
-                          (promise (((js-call '(d x)) '($ x1)))
-                            (js-return (js-call < '($ x1) '(d y))))
+                          (promise (((js-call (d x)) ($ x1)))
+                            (js-return (js-call < ($ x1) (d y))))
                           "then")
 
                          (js-lambda
                           '(($ cond-min))
 
                           (list
-                           (js-if '($ cond-min)
-                                  (js-return (js-call '(d x)))
-                                  (js-return '(d y))))))
-                        '($ min))
+                           (js-if ($ cond-min)
+                                  (js-return (js-call (d x)))
+                                  (js-return (d y))))))
+                        ($ min))
 
                        ((js-call
                          (js-member
-                          (promise (((js-call '(d x)) '($ x2)))
-                            (js-return (js-call < '(d y) '($ x2))))
+                          (promise (((js-call (d x)) ($ x2)))
+                            (js-return (js-call < (d y) ($ x2))))
                           "then")
 
                          (js-lambda
                           '(($ cond-max))
 
                           (list
-                           (js-if '($ cond-max)
-                                  (js-return (js-call '(d x)))
-                                  (js-return '(d y))))))
-                        '($ max)))
+                           (js-if ($ cond-max)
+                                  (js-return (js-call (d x)))
+                                  (js-return (d y))))))
+                        ($ max)))
 
                       (promise <>
                         (js-return
                          (js-object
                           (list
-                           (list (js-string "min") '($ min))
-                           (list (js-string "max") '($ max)))))))))))))))
+                           (list (js-string "min") ($ min))
+                           (list (js-string "max") ($ max)))))))))))))))
 
       (subtest "Member Access"
         (subtest "Direct Member Access"
@@ -701,7 +722,7 @@
 
                 (test-compute-function context
                   (js-return
-                   (js-call f (js-element '(d object) (js-string "field"))))))))
+                   (js-call f (js-element (d object) (js-string "field"))))))))
 
           (subtest "Lazy Dependencies"
             (mock-backend-state
@@ -713,16 +734,16 @@
                     (js-return
                      (promise
                          (((js-call
-                            (js-member (js-call '(d object)) "then")
+                            (js-member (js-call (d object)) "then")
 
                             (js-lambda
                              '(($ object))
 
                              (list
-                              (js-return (js-element '($ object) (js-string "field"))))))
+                              (js-return (js-element ($ object) (js-string "field"))))))
 
-                           '($ value)))
-                       (js-return (js-call f '($ value)))))))))))
+                           ($ value)))
+                       (js-return (js-call f ($ value)))))))))))
 
         (subtest "Expression Member Access"
           (mock-backend-state
@@ -731,7 +752,7 @@
                   ((context (a) `(:member (,f ,a) \x)))
 
                 (test-compute-function context
-                  (js-return (js-element (js-call f '(d a)) (js-string "x")))))))
+                  (js-return (js-element (js-call f (d a)) (js-string "x")))))))
 
           (subtest "Lazy Dependencies"
             (mock-backend-state
@@ -743,15 +764,15 @@
                     (js-return
                      (js-call
                       (js-member
-                       (promise (((js-call '(d a)) '($ a)))
-                         (js-return (js-call f '($ a))))
+                       (promise (((js-call (d a)) ($ a)))
+                         (js-return (js-call f ($ a))))
                        "then")
 
                       (js-lambda
                        '(($ object))
 
                        (list
-                        (js-return (js-element '($ object) (js-string "x")))))))))))))
+                        (js-return (js-element ($ object) (js-string "x")))))))))))))
 
         (subtest "Member Access of If Expression"
           (mock-backend-state
@@ -759,12 +780,12 @@
                 ((context (cond a b) `(:member (if ,cond ,a ,b) \z)))
 
               (test-compute-function context
-                (js-var '($ object))
-                (js-if '(d cond)
-                       (js-call '= '($ object) '(d a))
-                       (js-call '= '($ object) '(d b)))
+                (js-var ($ object))
+                (js-if (d cond)
+                       (js-call '= ($ object) (d a))
+                       (js-call '= ($ object) (d b)))
 
-                (js-return (js-element '($ object) (js-string "z"))))))
+                (js-return (js-element ($ object) (js-string "z"))))))
 
           (subtest "Lazy Dependencies"
             (mock-backend-state
@@ -772,20 +793,20 @@
                   ((context (cond a (async . b)) `(:member (if ,cond ,a ,b) \z)))
 
                 (test-compute-function context
-                  (js-var '($ object))
-                  (js-if '(d cond)
-                         (js-call '= '($ object) '(d a))
-                         (js-call '= '($ object) (js-call '(d b))))
+                  (js-var ($ object))
+                  (js-if (d cond)
+                         (js-call '= ($ object) (d a))
+                         (js-call '= ($ object) (js-call (d b))))
 
                   (js-return
                    (js-call
                     (js-member
-                     (js-call (js-member "Promise" "resolve") '($ object))
+                     (js-call (js-member "Promise" "resolve") ($ object))
                      "then")
 
                     (js-lambda '(($ arg))
-                               (list (js-return (js-element '($ arg) (js-string "z"))))))))))))))))
+                               (list (js-return (js-element ($ arg) (js-string "z"))))))))))))))))
 
-(run-test 'functions)
+(run-test 'node-functions)
 
 (finalize)

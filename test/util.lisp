@@ -18,11 +18,14 @@
 
 (defpackage :tridash.test.util
   (:use :cl
-        :tridash.parser)
+        :tridash.parser
+        :optima)
 
   (:import-from :lol :defmacro!)
 
-  (:export :decls
+  (:export :match*
+
+           :decls
            :node-id
 
 	   :testf
@@ -40,6 +43,13 @@
 
 
 (in-package :tridash.test.util)
+
+
+;;;; General Utilities
+
+(defmacro match* ((&rest forms) &rest clauses)
+  `(multiple-value-match (values ,@forms) ,@clauses))
+
 
 (defmacro decls (&rest decls)
   "Utility macro for creating node declaration lists. Each form in
