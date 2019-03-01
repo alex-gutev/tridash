@@ -45,6 +45,9 @@
                 :*module-search-paths*
                 :build-program)
 
+  (:import-from :tridash.frontend
+                :build-source-file)
+
   (:import-from :tridash.backend.js
 
                 :+thunk-class+
@@ -63,9 +66,17 @@
                 :dependency-index
 
                 :create-compute-function
-                :strip-redundant
+                :create-meta-node
 
-                :output-code))
+                :strip-redundant
+                :output-code)
+
+  (:import-from :tridash.test.builder
+                :with-module-table
+                :with-nodes
+
+                :build
+                :finish-build))
 
 
 (in-package :tridash.test.backend.js)
@@ -808,5 +819,91 @@
                                (list (js-return (js-element ($ arg) (js-string "z"))))))))))))))))
 
 (run-test 'node-functions)
+
+
+(defun test-function% (got expected)
+  "Tests that the generated code GOT is equal to EXPECTED. The test is
+   performed with *AST-ALIASES* bound to a new empty alias table."
+
+  (let ((prove:*default-test-function* #'ast-list=)
+        (*ast-aliases* (make-hash-table :test #'eq)))
+    (is got expected)))
+
+(defmacro! test-meta-node-function (o!meta-node &body code)
+  "Tests that the code generated for the function of META-NODE is
+   equal to CODE."
+
+  `(test-function% (strip-redundant (create-meta-node ,g!meta-node)) (list ,@code)))
+
+(deftest meta-node-functions
+  (subtest "Test Meta-Node Function Code Generation"
+    (subtest "Simple Single Function Meta-Nodes"
+      (subtest "Simple Function"
+        (with-module-table modules
+          (build-source-file #p"./modules/core.trd" modules)
+          (build "add(x, y) : x + y")
+          (finish-build)
+
+          (with-nodes ((add "add")) modules
+            (mock-backend-state
+              (test-meta-node-function add
+                (js-function
+                 (meta-node-id add)
+                 '(($ x) ($ y))
+
+                 (list
+                  (js-return (js-call '+ ($ x) ($ y))))))))))
+
+      (subtest "Recursive Meta-Nodes"
+        (with-module-table modules
+          (build-source-file #p"./modules/core.trd" modules)
+          (build "fact(n) : case(n < 1 : 1, n * fact(n - 1))")
+          (finish-build)
+
+          (with-nodes ((fact "fact")) modules
+            (mock-backend-state
+              (test-meta-node-function fact
+                (js-function
+                 (meta-node-id fact)
+                 '(($ n))
+
+                 (list
+                  (js-if (js-call '< ($ n) 1)
+                         (js-return 1)
+                         (js-return (js-call '* ($ n) (js-call fact (js-call '- ($ n) 1))))))))))))
+
+      (subtest "Tail Recursive Meta-Nodes"
+        (with-module-table modules
+          (build-source-file #p"./modules/core.trd" modules)
+          (build "fact(n) : { iter(n, acc) : case(n < 1 : acc, iter(n - 1, n * acc)); iter(n, 1) }")
+          (finish-build)
+
+          (with-nodes ((fact "fact")) modules
+            (with-nodes ((iter "iter")) (definition fact)
+              (mock-backend-state
+                (test-meta-node-function fact
+                  (js-function
+                   (meta-node-id fact)
+                   '(($ n1))
+
+                   (list
+                    (js-function
+                     (meta-node-id iter)
+                     '(($ n2) ($ acc))
+
+                     (list
+                      (js-while
+                       "true"
+                       (js-if (js-call '< ($ n2) 1)
+                              (js-return ($ acc))
+                              (js-block
+                               (js-call '=
+                                        (js-array '(($ n2) ($ acc)))
+                                        (js-array (list (js-call '- ($ n2) 1) (js-call '* ($ n2) ($ acc)))))
+                               (js-continue))))))
+
+                    (js-return (js-call iter ($ n1) 1)))))))))))))
+
+(run-test 'meta-node-functions)
 
 (finalize)
