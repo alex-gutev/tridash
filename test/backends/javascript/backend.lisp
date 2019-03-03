@@ -114,8 +114,8 @@
        (ast-list= (js-call-operands got) (js-call-operands expected))))
 
 (defmethod ast= ((got js-new) (expected js-new))
-  (and (ast= (js-call-operator got) (js-call-operator expected))
-       (ast-list= (js-call-operands got) (js-call-operands expected))))
+  (and (ast= (js-new-operator got) (js-new-operator expected))
+       (ast-list= (js-new-operands got) (js-new-operands expected))))
 
 
 (defmethod ast= ((got js-element) (expected js-element))
