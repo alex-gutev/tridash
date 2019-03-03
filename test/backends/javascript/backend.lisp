@@ -902,7 +902,44 @@
                                         (js-array (list (js-call '- ($ n2) 1) (js-call '* ($ n2) ($ acc)))))
                                (js-continue))))))
 
-                    (js-return (js-call iter ($ n1) 1)))))))))))))
+                    (js-return (js-call iter ($ n1) 1))))))))))
+
+      (subtest "Mutually Recursive Meta-Nodes"
+        (with-module-table modules
+          (build-source-file #p"./modules/core.trd" modules)
+          (build "fib(n) : case(n > 1 : fib1(n) + fib2(n), 1)")
+          (build "fib1(n) : fib(n - 1)")
+          (build "fib2(n) : fib(n - 2)")
+          (finish-build)
+
+          (with-nodes ((fib "fib") (fib1 "fib1") (fib2 "fib2")) modules
+            (mock-backend-state
+              (test-meta-node-function fib
+                (js-function
+                 (meta-node-id fib)
+                 '(($ n))
+
+                 (list
+                  (js-if (js-call '> ($ n) 1)
+                         (js-return
+                          (js-call '+ (js-call fib1 ($ n)) (js-call fib2 ($ n))))
+                         (js-return 1)))))
+
+              (test-meta-node-function fib1
+                (js-function
+                 (meta-node-id fib1)
+                 '(($ n))
+
+                 (list
+                  (js-return (js-call fib (js-call '- ($ n) 1))))))
+
+              (test-meta-node-function fib2
+                (js-function
+                 (meta-node-id fib2)
+                 '(($ n))
+
+                 (list
+                  (js-return (js-call fib (js-call '- ($ n) 2)))))))))))))
 
 (run-test 'meta-node-functions)
 
