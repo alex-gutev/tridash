@@ -134,7 +134,7 @@
             (list
              (make-get-element path element-id)
 
-             (js-call '= (js-member path "value")
+             (js-call "=" (js-member path "value")
                       (js-members path "html_element" html-attribute))
 
              listener))))))))
@@ -165,7 +165,7 @@
    id ID, and stores it in the html_element field of the node, which
    is referenced by the expression PATH."
 
-  (js-call '= (js-member path "html_element")
+  (js-call "=" (js-member path "html_element")
            (js-call (js-member "document" "getElementById")
                     (js-string id))))
 
@@ -220,7 +220,7 @@
                  (js-lambda
                   nil
                   (list
-                   (js-call '=
+                   (js-call "="
                             (js-member path "value")
                             (js-member "this" attribute))
                    (js-call (js-member path "set_value")

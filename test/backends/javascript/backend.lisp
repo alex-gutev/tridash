@@ -467,8 +467,8 @@
                 (test-compute-function context
                   (js-var ($ arg1))
                   (js-if (js-call < (d a) 3)
-                         (js-call '= ($ arg1) (js-call + (d b) (d c)))
-                         (js-call '= ($ arg1) (d d)))
+                         (js-call "=" ($ arg1) (js-call + (d b) (d c)))
+                         (js-call "=" ($ arg1) (d d)))
 
                   (js-return (js-call f ($ arg1) (d a)))))))
 
@@ -518,8 +518,8 @@
                          (js-block
                           (js-var ($ cond))
                           (js-if (js-call < (d b) (d c))
-                                 (js-call '= ($ arg) (d b))
-                                 (js-call '= ($ arg) (d c)))
+                                 (js-call "=" ($ arg) (d b))
+                                 (js-call "=" ($ arg) (d c)))
 
                           (js-if ($ cond)
                                  (js-return (js-call + (d b) (d c)))
@@ -664,13 +664,13 @@
                 (test-compute-function context
                   (js-var ($ min))
                   (js-if (js-call < (d x) (d y))
-                         (js-call '= ($ min) (d x))
-                         (js-call '= ($ min) (d y)))
+                         (js-call "=" ($ min) (d x))
+                         (js-call "=" ($ min) (d y)))
 
                   (js-var ($ max))
                   (js-if (js-call < (d y) (d x))
-                         (js-call '= ($ max) (d x))
-                         (js-call '= ($ max) (d y)))
+                         (js-call "=" ($ max) (d x))
+                         (js-call "=" ($ max) (d y)))
                   (js-return
                    (js-object
                     (list
@@ -793,8 +793,8 @@
               (test-compute-function context
                 (js-var ($ object))
                 (js-if (d cond)
-                       (js-call '= ($ object) (d a))
-                       (js-call '= ($ object) (d b)))
+                       (js-call "=" ($ object) (d a))
+                       (js-call "=" ($ object) (d b)))
 
                 (js-return (js-element ($ object) (js-string "z"))))))
 
@@ -806,8 +806,8 @@
                 (test-compute-function context
                   (js-var ($ object))
                   (js-if (d cond)
-                         (js-call '= ($ object) (d a))
-                         (js-call '= ($ object) (js-call (d b))))
+                         (js-call "=" ($ object) (d a))
+                         (js-call "=" ($ object) (js-call (d b))))
 
                   (js-return
                    (js-call
@@ -852,7 +852,7 @@
                  '(($ x) ($ y))
 
                  (list
-                  (js-return (js-call '+ ($ x) ($ y))))))))))
+                  (js-return (js-call "+" ($ x) ($ y))))))))))
 
       (subtest "Recursive Meta-Nodes"
         (with-module-table modules
@@ -868,9 +868,9 @@
                  '(($ n))
 
                  (list
-                  (js-if (js-call '< ($ n) 1)
+                  (js-if (js-call "<" ($ n) 1)
                          (js-return 1)
-                         (js-return (js-call '* ($ n) (js-call fact (js-call '- ($ n) 1))))))))))))
+                         (js-return (js-call "*" ($ n) (js-call fact (js-call "-" ($ n) 1))))))))))))
 
       (subtest "Tail Recursive Meta-Nodes"
         (with-module-table modules
@@ -894,12 +894,12 @@
                      (list
                       (js-while
                        "true"
-                       (js-if (js-call '< ($ n2) 1)
+                       (js-if (js-call "<" ($ n2) 1)
                               (js-return ($ acc))
                               (js-block
-                               (js-call '=
+                               (js-call "="
                                         (js-array '(($ n2) ($ acc)))
-                                        (js-array (list (js-call '- ($ n2) 1) (js-call '* ($ n2) ($ acc)))))
+                                        (js-array (list (js-call "-" ($ n2) 1) (js-call "*" ($ n2) ($ acc)))))
                                (js-continue))))))
 
                     (js-return (js-call iter ($ n1) 1))))))))))
@@ -920,9 +920,9 @@
                  '(($ n))
 
                  (list
-                  (js-if (js-call '> ($ n) 1)
+                  (js-if (js-call ">" ($ n) 1)
                          (js-return
-                          (js-call '+ (js-call fib1 ($ n)) (js-call fib2 ($ n))))
+                          (js-call "+" (js-call fib1 ($ n)) (js-call fib2 ($ n))))
                          (js-return 1)))))
 
               (test-meta-node-function fib1
@@ -931,7 +931,7 @@
                  '(($ n))
 
                  (list
-                  (js-return (js-call fib (js-call '- ($ n) 1))))))
+                  (js-return (js-call fib (js-call "-" ($ n) 1))))))
 
               (test-meta-node-function fib2
                 (js-function
@@ -939,7 +939,7 @@
                  '(($ n))
 
                  (list
-                  (js-return (js-call fib (js-call '- ($ n) 2)))))))))))))
+                  (js-return (js-call fib (js-call "-" ($ n) 2)))))))))))))
 
 (run-test 'meta-node-functions)
 

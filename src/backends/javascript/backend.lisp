@@ -310,17 +310,17 @@
     (append-code
      (if (typep path '(or string symbol))
          (js-var path (js-new +node-class+))
-         (js-call '= path (js-new +node-class+))))
+         (js-call "=" path (js-new +node-class+))))
 
     (when *debug-info-p*
       (append-code
-       (js-call '= (js-member path "name") (js-string (name node)))))
+       (js-call "=" (js-member path "name") (js-string (name node)))))
 
     (awhen (attribute :public-name node)
       (append-code
        (-<> (js-member +tridash-namespace+ "nodes")
             (js-element (js-string it))
-            (js-call '= <> path))))
+            (js-call "=" <> path))))
 
     ;; If the node has an INIT context, add its initial value to
     ;; *INITIAL-VALUES* and ensure it has an input context.
@@ -369,9 +369,9 @@
                            node-path (hash-table-count operands) (global-context-id)))
 
           (awhen (create-compute-function context)
-            (js-call '= (js-member "context" "compute") it))
+            (js-call "=" (js-member "context" "compute") it))
 
-          (js-call '= context-path "context")))))))
+          (js-call "=" context-path "context")))))))
 
 
 (defun establish-dependency-indices (context)

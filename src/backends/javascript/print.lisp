@@ -22,17 +22,17 @@
 
 
 (define-constant +js-binary-operators+
-  '(+ - * / % > < >= <=
-    == === != !==
-    >> << >>> <<<
-    & && \| \|\| ^
-    = += -= *= /= %= &= \|= ^=)
+  '("+" "-" "*" "/" "%" ">" "<" ">=" "<="
+    "==" "===" "!=" "!=="
+    ">>" "<<" ">>>" "<<<"
+    "&" "&&" "|" "||" "^"
+    "=" "+=" "-=" "*=" "/=" "%=" "&=" "|=" "^=")
 
   :test #'equal
   :documentation "List of JavaScript binary operators.")
 
 (define-constant +js-unary-operators+
-  '(- ! ~)
+  '("-" "!" "~")
 
   :test #'equal
   :documentation "List of JavaScript unary operators.")
@@ -175,11 +175,11 @@
   (let ((num-args (length operands)))
     (cond
       ((and (= num-args 2)
-            (member operator +js-binary-operators+))
+            (member operator +js-binary-operators+ :test #'equal))
        (print-binary-expression operator operands))
 
       ((and (= num-args 1)
-            (member operator +js-unary-operators+))
+            (member operator +js-unary-operators+ :test #'equal))
        (print-unary-expression operator operands))
 
       (t

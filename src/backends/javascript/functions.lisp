@@ -77,9 +77,9 @@
 (defparameter *js-primitive-operators*
   (alist-hash-table
    (list
-    (cons (id-symbol "and") '&&)
-    (cons (id-symbol "or") '\|\|)
-    (cons (id-symbol "not") '!)
+    (cons (id-symbol "and") "&&")
+    (cons (id-symbol "or") "||")
+    (cons (id-symbol "not") "!")
 
     (cons (id-symbol "int") "parseInt")
     (cons (id-symbol "real") "parseFloat")
@@ -89,16 +89,16 @@
     (cons (id-symbol "number?") "Tridash.isReal")
     (cons (id-symbol "string?") "Tridash.isString")
 
-    (cons (id-symbol "+") '+)
-    (cons (id-symbol "-") '-)
-    (cons (id-symbol "*") '*)
-    (cons (id-symbol "/") '/)
-    (cons (id-symbol "<") '<)
-    (cons (id-symbol ">") '>)
-    (cons (id-symbol "<=") '<=)
-    (cons (id-symbol ">") '>)
-    (cons (id-symbol "!=") '!==)
-    (cons (id-symbol "=") '===))
+    (cons (id-symbol "+") "+")
+    (cons (id-symbol "-") "-")
+    (cons (id-symbol "*") "*")
+    (cons (id-symbol "/") "/")
+    (cons (id-symbol "<") "<")
+    (cons (id-symbol ">") ">")
+    (cons (id-symbol "<=") "<=")
+    (cons (id-symbol ">") ">")
+    (cons (id-symbol "!=") "!==")
+    (cons (id-symbol "=") "==="))
 
    :test #'equalp)
 
@@ -169,7 +169,7 @@
                    (if (and *in-tail-position* (not *in-async*) (eq node meta-node))
                        (prog1
                            (js-block
-                            (js-call '= (js-array (mapcar #'cdr op-vars)) (js-array operands))
+                            (js-call "=" (js-array (mapcar #'cdr op-vars)) (js-array operands))
                             (js-continue))
                          (setf tail-recursive-p t))
                        (meta-node-call node operands))))
@@ -258,7 +258,7 @@
                (let ((path (node-path meta-node)))
                  (append-code
                   (js-call
-                   '=
+                   "="
                    (js-member path "update_value")
                    (js-lambda
                     (list "value")
@@ -272,7 +272,7 @@
             (let ((*output-code* node-creation-code)
                   (*meta-node-call* #'make-meta-node-call))
 
-              (append-code (js-call '= node-table-var (js-array)))
+              (append-code (js-call "=" node-table-var (js-array)))
 
               (generate-code definition)
               (create-update-fn))
@@ -281,14 +281,14 @@
              (js-function
               (meta-node-id meta-node)
               (append (mapcar #'cdr op-vars)
-                      (list (js-call '= promise-var (js-new (js-member +tridash-namespace+ "ValuePromise")))
+                      (list (js-call "=" promise-var (js-new (js-member +tridash-namespace+ "ValuePromise")))
                             node-table-var))
 
               (list
                ;; Wrap node table creation in an if which checks
                ;; whether a node table was provided as an argument.
                (js-if
-                (js-call '=== node-table-var "undefined")
+                (js-call "===" node-table-var "undefined")
                 (make-js-block node-creation-code))
 
                (js-call
@@ -317,7 +317,7 @@
   (awhen (attribute :public-name node)
     (-<> (js-member +tridash-namespace+ "nodes")
          (js-element (js-string it))
-         (js-call '= <> expr))))
+         (js-call "=" <> expr))))
 
 ;;;; Node Compute Functions
 
@@ -637,7 +637,7 @@
    otherwise a return statement is generated."
 
   (if *return-variable*
-      (js-call '= *return-variable* expression)
+      (js-call "=" *return-variable* expression)
       (js-return expression)))
 
 (defun var-name (&optional (prefix "var"))
