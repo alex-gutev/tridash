@@ -50,7 +50,9 @@
 
   (:import-from :tridash.backend.js
 
+                :+tridash-namespace+
                 :+thunk-class+
+                :+end-update-class+
 
                 :*node-ids*
                 :*node-link-indices*
@@ -59,14 +61,21 @@
                 :*lazy-nodes*
                 :*context-counter*
                 :*initial-values*
+                :*output-code*
 
                 :async
+
+                :make-code-array
 
                 :meta-node-id
                 :dependency-index
 
+                :create-node
+
                 :create-compute-function
                 :create-meta-node
+
+                :make-meta-node-call
 
                 :strip-redundant
                 :output-code)
@@ -175,10 +184,19 @@
   (ast= (js-throw-expression got) (js-throw-expression expected)))
 
 
+(defmethod ast= ((got cons) (expected cons))
+  (match* (got expected)
+    (((cons 'async got) (cons 'async expected))
+     (ast= got expected))
+
+    ((_ _) (call-next-method))))
+
 (defmethod ast= (got (expected list))
   (match expected
     ((list 'd dependency)
      (ast= got (js-element *values-var* (dependency-index *current-context* dependency))))
+
+    ((list '$ '_) t)
 
     ((list '$ alias)
      (acond
@@ -829,15 +847,71 @@
         (*ast-aliases* (make-hash-table :test #'eq)))
     (is got expected)))
 
-(defmacro! test-meta-node-function (o!meta-node &body code)
+(defun test-meta-node-function% (meta-node expected)
+  (let ((*ast-aliases* (make-hash-table :test #'eq)))
+    (is (strip-redundant (create-meta-node meta-node)) expected :test #'ast-list=)))
+
+(defmacro test-meta-node-function (meta-node &body code)
   "Tests that the code generated for the function of META-NODE is
    equal to CODE."
 
-  `(test-function% (strip-redundant (create-meta-node ,g!meta-node)) (list ,@code)))
+  `(test-meta-node-function% ,meta-node (list ,@code)))
+
+(defmacro! test-meta-node-calls ((&rest calls) &body body)
+  "Tests that the expected expressions are being generated for
+   meta-node calls. This is achieved by replacing the definition of
+   the MAKE-META-NODE-CALL, by SHADOW-FUNCTION, function in the
+   dynamic extent of the forms in BODY.
+
+   Each element of CALLS is of the form (META-NODE EXPRESSION) where
+   META-NODE is the meta-node and EXPRESSION is the expression that is
+   expected to be generated for a call to the meta-node. Each time
+   MAKE-META-NODE is called, the generated expression for the
+   meta-node is compared to the corresponding expected expression. The
+   comparison is done using AST=, with the existing binding of
+   *AST-ALIASES*."
+
+  (flet ((make-test-call (call)
+           (destructuring-bind (meta-node expr) call
+             `((eq ,g!meta-node ,meta-node)
+               (is it ,expr :test #'ast=)))))
+    `(shadow-function
+         (make-meta-node-call
+          (,g!meta-node ,g!operands)
+
+          (aprog1 (previous ,g!meta-node ,g!operands)
+            (cond ,@(mapcar #'make-test-call calls))))
+       ,@body)))
+
+(defmacro test-async-meta-node (meta-node (&rest arguments))
+  "Tests that the code generated for the asynchronous meta-node
+   META-NODE contains the creation of the node-table, value promise
+   and setting of the values of the argument nodes. The aliases
+   PROMISE and NODE-TABLE are created for the promise and node-table
+   argument variables. ARGUMENTS are the list of the symbols of the
+   aliases to create for the meta-node arguments."
+
+  `(test-meta-node-function ,meta-node
+     (js-function
+      (meta-node-id ,meta-node)
+      (list ,@(mapcar #`($ ,a1) arguments)
+            (js-call "=" ($ promise) (js-new (js-member +tridash-namespace+ "ValuePromise")))
+            ($ node-table))
+
+      (list
+       (js-if (js-call "===" ($ node-table) "undefined")
+              ($ _))
+
+       (js-call
+        (js-member +tridash-namespace+ "set_values")
+        (js-array
+         (list ,@(mapcar #`(js-array (list ($ _) ($ ,a1))) arguments))))
+
+       (js-return (js-member ($ promise) "promise"))))))
 
 (deftest meta-node-functions
   (subtest "Test Meta-Node Function Code Generation"
-    (subtest "Simple Single Function Meta-Nodes"
+    (subtest "Single Function Meta-Nodes"
       (subtest "Simple Function"
         (with-module-table modules
           (build-source-file #p"./modules/core.trd" modules)
@@ -939,7 +1013,74 @@
                  '(($ n))
 
                  (list
-                  (js-return (js-call fib (js-call "-" ($ n) 2)))))))))))))
+                  (js-return (js-call fib (js-call "-" ($ n) 2)))))))))))
+
+    (subtest "Asynchronous Meta-Nodes"
+      (subtest "Tail-Recursive Meta-Nodes"
+        (with-module-table modules
+          (build-source-file #p"./modules/core.trd" modules)
+          (build "fact(n) : case(n < 1 : 1, n * fact(n - 1))")
+          (build ":attribute(fact, async, 1)")
+
+          (finish-build)
+
+          (with-nodes ((fact "fact")) modules
+            (mock-backend-state
+              (test-meta-node-calls
+                  ((fact
+                    (cons 'async (js-call fact (js-call "-" ($ n2) 1)))))
+
+                (test-async-meta-node fact (n)))))))
+
+      (subtest "Tail-Recursive Meta-Nodes"
+        (with-module-table modules
+          (build-source-file #p"./modules/core.trd" modules)
+          (build "fact(n, acc) : case(n < 1 : 1, fact(n - 1, n * acc))")
+          (build ":attribute(fact, async, 1)")
+
+          (finish-build)
+
+          (with-nodes ((fact "fact")) modules
+            (mock-backend-state
+              (test-meta-node-calls
+                  ((fact
+                    (js-block
+                     (js-call fact (js-call "-" ($ n2) 1) (js-call "*" ($ n2) ($ acc2)) ($ promise) ($ node-table))
+                     (js-throw (js-new +end-update-class+)))))
+
+                (test-async-meta-node fact (n acc)))))))
+
+      (subtest "Mutually Recursive Meta-Nodes"
+        (with-module-table modules
+          (build-source-file #p"./modules/core.trd" modules)
+          (build "fib(n) : case(n > 1 : fib1(n) + fib2(n), 1)")
+          (build "fib1(n) : fib(n - 1)")
+          (build "fib2(n) : fib(n - 2)")
+          (build ":attribute(fib, async, 1)")
+          (build ":attribute(fib1, async, 1)")
+          (build ":attribute(fib2, async, 1)")
+
+          (finish-build)
+
+          (with-nodes ((fib "fib") (fib1 "fib1") (fib2 "fib2")) modules
+            (mock-backend-state
+              (test-meta-node-calls
+                  ((fib1
+                    (cons 'async (js-call fib1 ($ n1))))
+
+                   (fib2
+                    (cons 'async (js-call fib2 ($ n2)))))
+
+                (test-async-meta-node fib (n)))
+
+              (test-meta-node-calls
+                  ((fib
+                    (js-block
+                     (js-call fib ($ arg) ($ promise))
+                     (js-throw (js-new +end-update-class+)))))
+
+                (test-async-meta-node fib1 (n))
+                (test-async-meta-node fib2 (n))))))))))
 
 (run-test 'meta-node-functions)
 

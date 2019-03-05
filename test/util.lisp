@@ -24,6 +24,8 @@
   (:import-from :lol :defmacro!)
 
   (:export :match*
+           :shadow-function
+           :previous
 
            :decls
            :node-id
@@ -49,6 +51,25 @@
 
 (defmacro match* ((&rest forms) &rest clauses)
   `(multiple-value-match (values ,@forms) ,@clauses))
+
+(defmacro! shadow-function ((name (&rest fn-lambda-list) &body fn-body) &body body)
+  "Replaces the definition of a function, by (SETF FDEFINITION), such
+   that any invocation of the function, within the dynamic extent of
+   the SHADOW-FUNCTION form will invoke the new definition.
+
+   FN-LAMBDA-LIST and FN-BODY are the new lambda list and body of the
+   function. BODY are the forms making up the body (the dynamic
+   extent) of the SHADOW-FUNCTION form."
+
+  `(let ((,g!previous (fdefinition ',name)))
+     (unwind-protect
+          (progn
+            (flet ((previous (&rest ,g!args)
+                     (apply ,g!previous ,g!args)))
+              (setf (fdefinition ',name)
+                    (lambda ,fn-lambda-list ,@fn-body)))
+            ,@body)
+       (setf (fdefinition ',name) ,g!previous))))
 
 
 (defmacro decls (&rest decls)
