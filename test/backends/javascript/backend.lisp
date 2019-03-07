@@ -66,22 +66,22 @@
                 :async
 
                 :make-code-array
-
                 :meta-node-id
                 :dependency-index
 
                 :create-node
-
                 :create-compute-function
                 :create-meta-node
-
                 :make-meta-node-call
+
+                :find-lazy-nodes
 
                 :strip-redundant
                 :output-code)
 
   (:import-from :tridash.test.builder
                 :with-module-table
+                :with-modules
                 :with-nodes
 
                 :build
@@ -1083,5 +1083,254 @@
                 (test-async-meta-node fib2 (n))))))))))
 
 (run-test 'meta-node-functions)
+
+
+(defmacro get-lazy-nodes (module-table &body body)
+  "Calls FIND-LAZY-NODES, on MODULE-TABLE, and binds the result to
+   *LAZY-NODES*."
+
+  `(let ((*lazy-nodes* (find-lazy-nodes ,module-table)))
+     ,@body))
+
+(defun default-context (node)
+  "Retrieves the first context of NODE. This should only be used if
+   NODE has a single context, otherwise there is no guarantee which
+   context will be returned."
+
+  (first (hash-table-values (contexts node))))
+
+(defmacro test-lazy-nodes (&rest nodes)
+  "Tests that each node in NODES is determined to be a lazy node. If
+   an element of nodes is a list of the form (NOT NODE), then it is
+   tested that NODE is not determined to be a lazy node."
+
+  (labels ((make-node-test (node)
+             (match node
+               ((list 'not node)
+                (once-only (node)
+                  `(okf (not ,(test-node-context node))
+                        "~a is not a lazy node." (name ,node))))
+
+               (_
+                (once-only (node)
+                  `(okf ,(test-node-context node) "Node ~a is a lazy node." (name ,node))))))
+
+           (test-node-context (node)
+             `(gethash (default-context ,node) *lazy-nodes*)))
+
+    `(progn
+      ,@(mapcar #'make-node-test nodes))))
+
+(deftest lazy-node-analysis
+  (subtest "Test Lazy Node Analysis"
+    (subtest "Single Module"
+      (subtest "All Lazy Nodes"
+        (with-module-table modules
+          (build-source-file #p"./modules/core.trd" modules)
+          (build "case(a < b : b - a, a - b) -> out")
+          (build ":attribute(a < b, no-coalesce, 1)")
+          (build ":attribute(b - a, no-coalesce, 1)")
+          (build ":attribute(a - b, no-coalesce, 1)")
+          (build ":attribute(a, input, 1)")
+          (build ":attribute(b, input, 1)")
+          (finish-build)
+
+          (with-nodes ((a "a") (b "b") (out "out")
+                       (a<b ("<" "a" "b")) (b-a ("-" "b" "a")) (a-b ("-" "a" "b")))
+              modules
+
+            (mock-backend-state
+              (get-lazy-nodes modules
+                (test-lazy-nodes b-a a-b (not a<b) (not out))
+
+                (test-compute-function (default-context b-a)
+                  (js-return
+                   (js-call
+                    +thunk-class+
+                    (js-lambda
+                     nil
+
+                     (list
+                      (js-return (js-call "-" `(d ,b) `(d ,a))))))))
+
+                (test-compute-function (default-context a-b)
+                  (js-return
+                   (js-call
+                    +thunk-class+
+                    (js-lambda
+                     nil
+
+                     (list
+                      (js-return (js-call "-" `(d ,a) `(d ,b))))))))
+
+                (test-compute-function (default-context a<b)
+                  (js-return (js-call "<" `(d ,a) `(d ,b))))
+
+                (test-compute-function (default-context out)
+                  (js-if `(d ,a<b)
+                         (js-return (js-call `(d ,b-a)))
+                         (js-return (js-call `(d ,a-b))))))))))
+
+      (subtest "Not Lazy Nodes"
+        (with-module-table modules
+          (build-source-file #p"./modules/core.trd" modules)
+          (build "case(a < b : b - a, a - b) -> out1")
+          (build "b - a -> out2")
+          (build ":attribute(a < b, no-coalesce, 1)")
+          (build ":attribute(b - a, no-coalesce, 1)")
+          (build ":attribute(a - b, no-coalesce, 1)")
+          (build ":attribute(a, input, 1)")
+          (build ":attribute(b, input, 1)")
+          (finish-build)
+
+          (with-nodes ((a "a") (b "b") (out1 "out1") (out2 "out2")
+                       (a<b ("<" "a" "b")) (b-a ("-" "b" "a")) (a-b ("-" "a" "b")))
+              modules
+
+            (mock-backend-state
+              (get-lazy-nodes modules
+                (test-lazy-nodes a-b (not b-a) (not a<b) (not out1) (not out2))
+
+                (test-compute-function (default-context b-a)
+                  (js-return (js-call "-" `(d ,b) `(d ,a))))
+
+                (test-compute-function (default-context a-b)
+                  (js-return
+                   (js-call
+                    +thunk-class+
+                    (js-lambda
+                     nil
+
+                     (list
+                      (js-return (js-call "-" `(d ,a) `(d ,b))))))))
+
+                (test-compute-function (default-context a<b)
+                  (js-return (js-call "<" `(d ,a) `(d ,b))))
+
+                (test-compute-function (default-context out1)
+                  (js-if `(d ,a<b)
+                         (js-return `(d ,b-a))
+                         (js-return (js-call `(d ,a-b)))))
+
+                (test-compute-function (default-context out2)
+                  (js-return `(d ,b-a)))))))))
+
+    (subtest "Multiple Modules"
+      (subtest "All Lazy Nodes"
+        (with-module-table modules
+          (build-source-file #p"./modules/core.trd" modules)
+
+          (build ":module(mod1)")
+          (build "a; b")
+          (build ":attribute(a, input, 1)")
+          (build ":attribute(b, input, 2)")
+
+          (build ":module(mod2)")
+          (build ":import(core)")
+          (build ":alias(mod1, m)")
+          (build "case(m.a < m.b : m.b - m.a, m.a - m.b) -> out")
+
+          (build ":attribute(m.a < m.b, no-coalesce, 1)")
+          (build ":attribute(m.b - m.a, no-coalesce, 1)")
+          (build ":attribute(m.a - m.b, no-coalesce, 1)")
+          (finish-build)
+
+          (with-modules ((mod1 "mod1") (mod2 "mod2")) modules
+            (with-nodes ((a "a") (b "b")) mod1
+              (with-nodes ((a<b ("<" ("." "m" "a") ("." "m" "b")))
+                           (b-a ("-" ("." "m" "b") ("." "m" "a")))
+                           (a-b ("-" ("." "m" "a") ("." "m" "b")))
+                           (out "out"))
+                  mod2
+
+                (mock-backend-state
+                  (get-lazy-nodes modules
+                    (test-lazy-nodes b-a a-b (not a<b) (not out))
+
+                    (test-compute-function (default-context b-a)
+                      (js-return
+                       (js-call
+                        +thunk-class+
+                        (js-lambda
+                         nil
+
+                         (list
+                          (js-return (js-call "-" `(d ,b) `(d ,a))))))))
+
+                    (test-compute-function (default-context a-b)
+                      (js-return
+                       (js-call
+                        +thunk-class+
+                        (js-lambda
+                         nil
+
+                         (list
+                          (js-return (js-call "-" `(d ,a) `(d ,b))))))))
+
+                    (test-compute-function (default-context a<b)
+                      (js-return (js-call "<" `(d ,a) `(d ,b))))
+
+                    (test-compute-function (default-context out)
+                      (js-if `(d ,a<b)
+                             (js-return (js-call `(d ,b-a)))
+                             (js-return (js-call `(d ,a-b))))))))))))
+
+      (subtest "Not Lazy Nodes"
+        (with-module-table modules
+          (build-source-file #p"./modules/core.trd" modules)
+
+          (build ":module(mod1)")
+          (build "a; b; out2")
+          (build ":attribute(a, input, 1)")
+          (build ":attribute(b, input, 2)")
+
+          (build ":module(mod2)")
+          (build ":import(core)")
+          (build ":alias(mod1, m)")
+          (build "case(m.a < m.b : m.b - m.a, m.a - m.b) -> out1")
+          (build "m.a - m.b -> m.out2")
+
+          (build ":attribute(m.a < m.b, no-coalesce, 1)")
+          (build ":attribute(m.b - m.a, no-coalesce, 1)")
+          (build ":attribute(m.a - m.b, no-coalesce, 1)")
+          (finish-build)
+
+          (with-modules ((mod1 "mod1") (mod2 "mod2")) modules
+            (with-nodes ((a "a") (b "b") (out2 "out2")) mod1
+              (with-nodes ((a<b ("<" ("." "m" "a") ("." "m" "b")))
+                           (b-a ("-" ("." "m" "b") ("." "m" "a")))
+                           (a-b ("-" ("." "m" "a") ("." "m" "b")))
+                           (out1 "out1"))
+                  mod2
+
+                (mock-backend-state
+                  (get-lazy-nodes modules
+                    (test-lazy-nodes b-a (not a-b) (not a<b) (not out1) (not out2))
+
+                    (test-compute-function (default-context b-a)
+                      (js-return
+                       (js-call
+                        +thunk-class+
+                        (js-lambda
+                         nil
+
+                         (list
+                          (js-return (js-call "-" `(d ,b) `(d ,a))))))))
+
+                    (test-compute-function (default-context a-b)
+                      (js-return (js-call "-" `(d ,a) `(d ,b))))
+
+                    (test-compute-function (default-context a<b)
+                      (js-return (js-call "<" `(d ,a) `(d ,b))))
+
+                    (test-compute-function (default-context out1)
+                      (js-if `(d ,a<b)
+                             (js-return (js-call `(d ,b-a)))
+                             (js-return `(d ,a-b))))
+
+                    (test-compute-function (default-context out2)
+                      (js-return `(d ,a-b)))))))))))))
+
+(run-test 'lazy-node-analysis)
 
 (finalize)
