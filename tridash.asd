@@ -80,7 +80,9 @@
                :cl-yaml
                :cl-fad
                :osicat
-               :unix-opts)
+               :unix-opts
+
+               :generic-cl)
 
   :in-order-to ((asdf:test-op (asdf:test-op :tridash.test)))
 

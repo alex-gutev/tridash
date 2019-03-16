@@ -127,7 +127,7 @@
          (attributes (plump:attributes element)))
 
     (let ((tag (plump:tag-name element)))
-      (dohash (key value attributes)
+      (doseq ((key . value) attributes)
         (acond
           ((extract-tridash-node value)
            (let ((html-id (html-element-id element)))
@@ -136,7 +136,7 @@
              (-> (make-html-attribute-node html-id tag key *global-module-table*)
                  (bind-html-node it *global-module-table*)))
 
-           (remhash key attributes))
+           (erase attributes key))
 
           ((plump:attribute element "id")
            (make-html-element-node it tag *global-module-table*)))))
@@ -166,7 +166,7 @@
    element with id HTML-ID and tag-name TAG-NAME."
 
   (unless (typep node 'html-node)
-    (when-let ((context (gethash :object (contexts node))))
+    (when-let ((context (get :object (contexts node))))
       (iter
         (for (attribute link) in (rest (value-function context)))
         (make-attribute-reference (node-link-node link) html-id tag-name attribute table)))))
@@ -272,11 +272,11 @@
         (let ((nodes (extract-nodes text)))
           (cond
             ((and (not *siblings-p*) (= (length nodes) 1))
-             (make-element-node *parent-html-node* (aref nodes 0))
+             (make-element-node *parent-html-node* (elt nodes 0))
              nil)
 
             ((> (length nodes) 1)
-             (map nil #'make-node nodes))
+             (foreach #'make-node nodes))
 
             (t node)))))))
 
@@ -285,7 +285,7 @@
    have an ID a unique ID is generated, using GENERATE-ID, and is set
    as the ID of ELEMENT."
 
-  (ensure-gethash "id" (plump:attributes element) (generate-id)))
+  (ensure-get "id" (plump:attributes element) (generate-id)))
 
 
 ;;; Process Child Nodes
@@ -333,7 +333,7 @@
 
        (aif (plump:attribute element "src")
             (process-source-file it)
-            (process-script (aref children 0)))
+            (process-script (elt children 0)))
 
        nil)
 
@@ -374,7 +374,7 @@
   (let ((strings (extract-nodes value)))
    (cond
      ((length= 1 strings)
-      (aref strings 0))
+      (elt strings 0))
 
      ((not (emptyp strings))
       (reduce #2`(,(id-symbol "+") ,a1 ,a2) strings)))))

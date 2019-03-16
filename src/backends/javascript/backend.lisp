@@ -23,21 +23,17 @@
 
 ;;;; Symbol Names
 
-(define-constant +tridash-namespace+ "Tridash"
-  :test #'equal
-  :documentation "Namespace containing the Tridash runtime library")
+(defconstant +tridash-namespace+ "Tridash"
+  "Namespace containing the Tridash runtime library")
 
-(define-constant +tridash-prefix+ (mkstr +tridash-namespace+ ".")
-  :test #'equal
-  :documentation "Namespace containing the Tridash runtime library definitions.")
+(defconstant +tridash-prefix+ (mkstr +tridash-namespace+ ".")
+  "Namespace containing the Tridash runtime library definitions.")
 
-(define-constant +node-class+ (mkstr +tridash-prefix+ "Node")
-  :test #'equal
-  :documentation "Runtime node class name.")
+(defconstant +node-class+ (mkstr +tridash-prefix+ "Node")
+  "Runtime node class name.")
 
-(define-constant +node-context-class+ (mkstr +tridash-prefix+ "NodeContext")
-  :test #'equal
-  :documentation "Runtime node context class name.")
+(defconstant +node-context-class+ (mkstr +tridash-prefix+ "NodeContext")
+  "Runtime node context class name.")
 
 
 ;;;; Backend State
@@ -56,10 +52,10 @@
   "Hash-table mapping `META-NODE' objects to global meta-node function
    identifiers.")
 
-(defvar *meta-node-types* (make-hash-table :test #'eq)
-  "Hash-table mapping `META-NODE' objects to the the symbols SYNC or
-   ASYNC indicating whether the meta-node is evaluated synchronously
-   or asynchronously.")
+(defvar *meta-node-types* (make-hash-map)
+  "Map mapping `META-NODE' objects to the the symbols SYNC or ASYNC
+   indicating whether the meta-node is evaluated synchronously or
+   asynchronously.")
 
 (defvar *lazy-nodes* nil
   "Hash-table of nodes which should be evaluated lazily. If a node
@@ -113,36 +109,37 @@
 (defun make-code-array ()
   "Creates an empty array suitable for pushing JavaScript AST nodes to
    it."
+
   (make-array 0 :adjustable t :fill-pointer t))
 
 (defun append-code (&rest asts)
   "Appends each ast node in ASTS to the *OUTPUT-CODE* array."
 
-  (mapc (rcurry #'vector-push-extend *output-code*) asts))
+  (foreach (rcurry #'vector-push-extend *output-code*) asts))
 
 
 ;;;; Compilation
 
-(defmethod compile-nodes ((backend (eql :javascript)) table &optional (options (make-hash-table :test #'equal)))
+(defmethod compile-nodes ((backend (eql :javascript)) table &optional (options (make-hash-map :test #'cl:equalp)))
   "Compile the node and meta-node definitions, in the `NODE-TABLE'
    TABLE, to JavaScript."
 
-  (let ((*print-indented* (parse-boolean (gethash "indented" options)))
-        (*debug-info-p* (parse-boolean (gethash "debug-info" options)))
-        (*runtime-library-path* (or (gethash "runtime-path" options) *runtime-library-path*))
-        (*runtime-link-type* (parse-linkage-type (gethash "runtime-linkage" options))))
+  (let ((*print-indented* (parse-boolean (get "indented" options)))
+        (*debug-info-p* (parse-boolean (get "debug-info" options)))
+        (*runtime-library-path* (or (get "runtime-path" options) *runtime-library-path*))
+        (*runtime-link-type* (parse-linkage-type (get "runtime-linkage" options))))
 
-    (let ((*node-ids* (make-hash-table :test #'eq))
-          (*node-link-indices* (make-hash-table :test #'eq))
-          (*meta-node-ids* (make-hash-table :test #'eq))
-          (*context-ids* (make-hash-table :test #'eq))
+    (let ((*node-ids* (make-hash-map))
+          (*node-link-indices* (make-hash-map))
+          (*meta-node-ids* (make-hash-map))
+          (*context-ids* (make-hash-map))
           (*lazy-nodes* (find-lazy-nodes table))
           (*context-counter* 0)
           (*initial-values* nil)
           (defs (make-code-array))
           (bindings (make-code-array)))
 
-      (maphash-values (rcurry #'generate-code defs bindings) (modules table))
+      (generate-code table defs bindings)
       (print-output-code (list defs bindings) options table))))
 
 (defun parse-boolean (thing)
@@ -163,13 +160,13 @@
   "Parses the runtime library linkage type from the string LINKAGE."
 
   (match linkage
-    ((or (equalp "static") (eql nil))
+    ((or (cl:equalp "static") (eql nil))
      'static)
 
-    ((equalp "dynamic")
+    ((cl:equalp "dynamic")
      'dynamic)
 
-    ((equalp "none")
+    ((cl:equalp "none")
      nil)))
 
 (defun print-output-code (code options module-table)
@@ -178,7 +175,7 @@
 
   (with-hash-keys ((type "type") (main-ui "main-ui")) options
     (match type
-      ((equalp "html")
+      ((cl:equalp "html")
        (->>
         (get-root-node main-ui module-table)
         (create-html-file
@@ -242,13 +239,13 @@
   "Returns the JavaScript context identifier for the context with
    identifier CONTEXT-ID of NODE."
 
-  (let ((ids (ensure-gethash node *context-ids* (make-hash-table :test #'equal))))
+  (let ((ids (ensure-get node *context-ids* (make-hash-map))))
     (case context-id
       (:input
        (js-string "input"))
 
       (otherwise
-       (ensure-gethash context-id ids (hash-table-count ids))))))
+       (ensure-get context-id ids (length ids))))))
 
 (defun context-path (node context-id)
   "Returns a JS expression which references the context, with
@@ -265,7 +262,7 @@
    should be evaluated lazily if it is present in *LAZY-NODES* (with
    value T) and has a non-NIL value function."
 
-  (and (gethash context *lazy-nodes*)
+  (and (get context *lazy-nodes*)
        (value-function context)))
 
 
@@ -291,7 +288,8 @@
 (defun create-nodes (nodes)
   "Generate the node creation code of each `NODE' in NODES."
 
-  (maphash-values #'create-node nodes))
+  (foreach #'create-node nodes))
+
 
 (defgeneric create-node (node)
   (:documentation
@@ -329,63 +327,61 @@
       (context node :input)
       (push (list path (value-function it)) *initial-values*))
 
-    (maphash (rcurry #'create-context node) (contexts node))))
+    (foreach (rcurry #'create-context node) (contexts node))))
 
 (defun get-init-context (node)
   "If NODE has an initial value context, that is a context with no
    operands and a constant value function, it is returned otherwise
    NIL is returned."
 
-  (iter
-    (for (id context) in-hashtable (contexts node))
+  (find-if #'init-context? (contexts node)))
 
-    (when (init-context? id context)
-      (return context))))
-
-(defun init-context? (id context)
+(defun init-context? (context)
   "Returns true if the node context CONTEXT with identifier ID is an
    initial value context, that is a context with no operands and a
    constant value function."
 
-  (and (not (eq id :input))
-       (zerop (hash-table-count (operands context)))))
+  (destructuring-bind (id . context) context
+    (and (not (eq id :input))
+         (emptyp (operands context)))))
 
-(defun create-context (id context node)
+(defun create-context (context node)
   "Generates the initialization code for a `NODE-CONTEXT'. ID is the
    context identifier, CONTEXT is the `NODE-CONTEXT' itself and NODE
    is the `NODE' to which the context belongs."
 
-  (unless (init-context? id context)
-    (establish-dependency-indices context)
+  (unless (init-context? context)
+    (destructuring-bind (id . context) context
+      (establish-dependency-indices context)
 
-    (let ((node-path (node-path node))
-          (context-path (context-path node id)))
+      (let ((node-path (node-path node))
+            (context-path (context-path node id)))
 
-      (with-slots (operands) context
-        (append-code
-         (lexical-block
-          (js-var "context"
-                  (js-call (js-member +node-context-class+ "create")
-                           node-path (hash-table-count operands) (global-context-id)))
+        (with-slots (operands) context
+          (append-code
+           (lexical-block
+            (js-var "context"
+                    (js-call (js-member +node-context-class+ "create")
+                             node-path (length operands) (global-context-id)))
 
-          (awhen (create-compute-function context)
-            (js-call "=" (js-member "context" "compute") it))
+            (awhen (create-compute-function context)
+              (js-call "=" (js-member "context" "compute") it))
 
-          (js-call "=" context-path "context")))))))
+            (js-call "=" context-path "context"))))))))
 
 
 (defun establish-dependency-indices (context)
   "Establishes the indices of the operands of the `NODE-CONTEXT'
    CONTEXT, and adds them to *NODE-LINK-INDICES*."
 
-  (maphash-keys (curry #'dependency-index context) (operands context)))
+  (foreach (curry #'dependency-index context) (map-keys (operands context))))
 
 (defun dependency-index (context operand)
   "Returns the index of the operand (of CONTEXT). If OPERAND does not have an index,
    a new index is assigned to it."
 
-  (let ((operands (ensure-gethash context *node-link-indices* (make-hash-table :test #'eq))))
-    (ensure-gethash operand operands (hash-table-count operands))))
+  (let ((operands (ensure-get context *node-link-indices* (make-hash-map))))
+    (ensure-get operand operands (length operands))))
 
 
 ;;;; Creating meta-nodes
@@ -393,7 +389,7 @@
 (defun create-meta-nodes (meta-nodes)
   "Generates the meta-node functions of each `META-NODE' in META-NODES."
 
-  (maphash-values (compose #'append-code #'create-meta-node) meta-nodes))
+  (foreach (compose #'append-code #'create-meta-node) meta-nodes))
 
 (defun create-meta-node (meta-node)
   "Generates the meta-node function of META-NODE."
@@ -407,7 +403,7 @@
 
 
 (defun async-meta-node? (meta-node)
-  (eq (meta-node-type meta-node) 'async))
+  (= (meta-node-type meta-node) 'async))
 
 (defgeneric meta-node-type (meta-node)
   (:documentation
@@ -424,7 +420,7 @@
    operand nodes."
 
   (with-slots (operands definition) meta-node
-    (ensure-gethash
+    (ensure-get
      meta-node
      *meta-node-types*
 
@@ -434,7 +430,7 @@
 
        ;; If meta-node has no subnodes other than the operand nodes, it
        ;; can be coalesced to a single function
-       ((= (hash-table-count (nodes definition))
+       ((= (length (nodes definition))
            (1+ (length operands))) ; 1+ to include the self node
 
         'sync)
@@ -447,28 +443,28 @@
 (defun init-nodes (nodes)
   "Generates the initialization code of each `NODE' in NODES."
 
-  (maphash-values #'init-node nodes))
+  (foreach #'init-node nodes))
 
 (defun init-node (node)
   "Generates the initialization code of NODE. This includes the
    binding of the node to its observers."
 
-  (maphash (rcurry #'init-context node) (contexts node)))
+  (foreach (rcurry #'init-context node) (contexts node)))
 
-(defun init-context (context-id context node)
+(defun init-context (context node)
   "Generates the initialization code of the node context CONTEXT, with
    identifier CONTEXT-ID, of the node NODE."
 
-  (unless (init-context? context-id context)
-    (bind-observers node context-id context)))
+  (unless (init-context? context)
+    (bind-observers node (car context) (cdr context))))
 
 (defun bind-observers (node context-id context)
   "Generates code which binds the `NODE' NODE to its observers."
 
   (let* ((context-path (context-path node context-id)))
 
-    (dohash (observer link (observers node))
-      (unless (gethash observer (operands context))
+    (doseq ((observer . link) (observers node))
+      (unless (get observer (operands context))
         (with-accessors ((link-context node-link-context)) link
           (append-code
            (js-call

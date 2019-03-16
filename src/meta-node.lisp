@@ -26,19 +26,19 @@
     :initform nil
     :accessor operands
     :documentation
-    "Symbols naming the meta-node operands.")
+    "List containing the symbols naming the meta-node's operands.")
 
    (outer-nodes
-    :initform (make-hash-table :test #'eq)
+    :initform (make-hash-map)
     :accessor outer-nodes
     :documentation
-    "Set of nodes (found in outer node tables) referenced from the
+    "Map of nodes (found in outer node tables) referenced from the
      meta-node's definition. Each key is the outer `NODE' object with
      the corresponding value being the name of the local node to
      which it is bound.")
 
    (meta-node-references
-    :initform (make-hash-table :test #'eq)
+    :initform (make-hash-set)
     :accessor meta-node-references
     :documentation
     "Set of meta-nodes of which there are instances in the
@@ -51,7 +51,9 @@
     :documentation
     "The graph corresponding to the body of the meta-node. Prior to
      the graph being built the list of node declarations, making up
-     the body, are stored in this slot.")
+     the body, are stored in this slot. After the meta-node's
+     definition is built, this slot contains a `FLAT-NODE-TABLE'
+     containing the nodes in the meta-node's body.")
 
    (instances
     :initform nil
@@ -70,6 +72,18 @@
 
   (:documentation
    "Node stub for a meta-node which is defined externally."))
+
+
+;;; Utilities
+
+(defun process-meta-node (fn)
+  "Returns a function of one argument, a meta-node, that applies FN on
+   the definition of the meta-node. If the definition of the meta-node
+   is NIL, FN is not applied on it."
+
+  (lambda (meta-node)
+    (awhen (definition meta-node)
+      (funcall fn it))))
 
 
 ;;; Predicates
@@ -96,10 +110,10 @@
 
 (defun unique-node-name (hash-table prefix)
   "Generates a new unique node identifier. The identifier generated is
-   a CONS with PREFIX being the CAR and the CDR being the current
+   a CONS with with the CAR set to PREFIX and the CDR set to the
    number of entries in HASH-TABLE."
 
-  (cons prefix (hash-table-count hash-table)))
+  (cons prefix (length hash-table)))
 
 (defun outer-node-name (meta-node)
   "Generates a new name for a local node which will be used to
@@ -112,4 +126,4 @@
    NODE, from the table OUTER-TABLE, in META-NODE."
 
   (with-slots (outer-nodes) meta-node
-    (cdr (ensure-gethash node outer-nodes (cons outer-table (outer-node-name meta-node))))))
+    (cdr (ensure-get node outer-nodes (cons outer-table (outer-node-name meta-node))))))

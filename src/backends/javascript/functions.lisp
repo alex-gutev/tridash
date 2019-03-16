@@ -44,7 +44,7 @@
 (defun node-index (node)
   "Returns the index of NODE within the node table variable."
 
-  (ensure-gethash node *node-ids* (hash-table-count *node-ids*)))
+  (ensure-get node *node-ids* (length *node-ids*)))
 
 (defparameter *node-path* #'access-node
   "Function which takes a node as an argument and returns an
@@ -74,8 +74,8 @@
    currently being compiled, should be stored. If NIL the result
    should be returned directly using a return statement.")
 
-(defparameter *js-primitive-operators*
-  (alist-hash-table
+(defconstant +js-primitive-operators+
+  (alist-hash-map
    (list
     (cons (id-symbol "and") "&&")
     (cons (id-symbol "or") "||")
@@ -98,12 +98,10 @@
     (cons (id-symbol "<=") "<=")
     (cons (id-symbol ">") ">")
     (cons (id-symbol "!=") "!==")
-    (cons (id-symbol "=") "==="))
+    (cons (id-symbol "=") "===")))
 
-   :test #'equalp)
-
-  "Hash-table mapping tridash primitive operators to their
-   corresponding JavaScript primitive operators.")
+  "Map mapping tridash primitive operators to their corresponding
+   JavaScript primitive operators.")
 
 
 (defun meta-node-id (meta-node)
@@ -112,18 +110,18 @@
    identifier is created or the existing identifier is returned. If
    META-NODE is an `EXTERNAL-META-NODE' the JavaScript
    function/operator name corresponding to the name of the meta-node,
-   in *JS-PRIMITIVE-OPERATORS*, the node's :PUBLIC-NAME attribute, or
+   in +JS-PRIMITIVE-OPERATORS+, the node's :PUBLIC-NAME attribute, or
    the name of the meta-node itself is returned."
 
   (etypecase meta-node
     (external-meta-node
-     (or (gethash (name meta-node) *js-primitive-operators*)
+     (or (get (name meta-node) +js-primitive-operators+)
          (attribute :public-name meta-node)
          (name meta-node)))
 
     (meta-node
-     (ensure-gethash meta-node *meta-node-ids*
-                     (mkstr "metanode" (hash-table-count *meta-node-ids*))))))
+     (ensure-get meta-node *meta-node-ids*
+                 (mkstr "metanode" (length *meta-node-ids*))))))
 
 (defun meta-node-call (meta-node operands)
   "Returns a `JS-CALL' expression for the meta-node META-NODE with
@@ -157,7 +155,7 @@
    nodes."
 
   (with-slots (contexts operands) meta-node
-    (let ((context (first (hash-table-values contexts)))
+    (let ((context (cdr (first contexts)))
           (op-vars (make-operand-ids operands))
           (tail-recursive-p nil))
 
@@ -169,7 +167,7 @@
                    (if (and *in-tail-position* (not *in-async*) (eq node meta-node))
                        (prog1
                            (js-block
-                            (js-call "=" (js-array (mapcar #'cdr op-vars)) (js-array operands))
+                            (js-call "=" (js-array (map #'cdr op-vars)) (js-array operands))
                             (js-continue))
                          (setf tail-recursive-p t))
                        (meta-node-call node operands))))
@@ -180,7 +178,7 @@
             (list
              (js-function
               (meta-node-id meta-node)
-              (mapcar #'cdr op-vars)
+              (map #'cdr op-vars)
 
               (list
                (let ((*output-code* (make-code-array)))
@@ -208,7 +206,7 @@
       (let ((*node-path* (lambda (node)
                            (js-element node-table-var (node-index node))))
             (*lazy-nodes* (find-lazy-nodes definition))
-            (*node-ids* (make-hash-table :test #'eq))
+            (*node-ids* (make-hash-map))
             (*initial-values* nil))
 
         (labels
@@ -216,7 +214,7 @@
                "Returns an expression accessing the operand node named
                 by OPERAND."
 
-               (node-path (gethash operand (nodes definition))))
+               (node-path (get operand (nodes definition))))
 
              (operand-node-var (operand)
                "Returns a JS array with two elements: the operand node
@@ -243,7 +241,7 @@
                 table is reused."
 
                (js-block
-                (->> (when (eq node meta-node)
+                (->> (when (= node meta-node)
                        (list node-table-var))
 
                      (append operands (list promise-var))
@@ -280,7 +278,7 @@
             (list
              (js-function
               (meta-node-id meta-node)
-              (append (mapcar #'cdr op-vars)
+              (append (map #'cdr op-vars)
                       (list (js-call "=" promise-var (js-new (js-member +tridash-namespace+ "ValuePromise")))
                             node-table-var))
 
@@ -293,7 +291,7 @@
 
                (js-call
                 (js-member +tridash-namespace+ "set_values")
-                (js-array (append (mapcar #'operand-node-var op-vars) *initial-values*)))
+                (js-array (append (map #'operand-node-var op-vars) *initial-values*)))
 
                (js-return (js-member "promise" "promise"))))
 
@@ -319,6 +317,7 @@
          (js-element (js-string it))
          (js-call "=" <> expr))))
 
+
 ;;;; Node Compute Functions
 
 (defun create-compute-function (context)
@@ -328,7 +327,7 @@
   (symbol-macrolet ((values-var "values"))
     (let ((uses-old-value nil))
       (labels ((get-input (link)
-                 (if (eq (node-link-node link) :self)
+                 (if (= (node-link-node link) :self)
                      (prog1
                          (if (lazy-node? context)
                              (js-call "old_value")
@@ -522,14 +521,15 @@
   "Generates an expression which returns an object containing each
    field-value pair in OPERANDS."
 
-  (let ((keys (mapcar #'first operands))
-        (values (mapcar #'second operands)))
+  (let ((keys (map #'first operands))
+        (values (map #'second operands)))
+
     (make-operands
      values
      (lambda (values)
        (values
         nil
-        (js-object (mapcar #'list (mapcar #'js-string keys) values)))))))
+        (js-object (map #'list (map #'js-string keys) values)))))))
 
 (defmethod make-operator-expression ((operator (eql :member)) operands)
   "Generates an expression which returns the value of a particular
@@ -554,13 +554,13 @@
 
 ;;; Meta-Node Expressions
 
-(defvar *special-operators*
-  (alist-hash-table
+(defconstant +special-operators+
+  (alist-hash-map
    (list (cons (id-symbol "if") 'if)))
 
-  "Hash-table mapping names of externally defined meta-nodes to
-   special operator symbols for which there is a
-   MAKE-OPERATOR-EXPRESSION method.")
+  "Map mapping names of externally defined meta-nodes to special
+   operator symbols for which there is a MAKE-OPERATOR-EXPRESSION
+   method.")
 
 (defmethod make-operator-expression ((meta-node external-meta-node) operands)
   "Generates code which invokes the externally defined meta-node
@@ -569,7 +569,7 @@
    MAKE-OPERATOR-EXPRESSION method is called otherwise the meta-node
    is treated as an ordinary function."
 
-  (aif (gethash (name meta-node) *special-operators*)
+  (aif (get (name meta-node) +special-operators+)
        (make-operator-expression it operands)
        (call-next-method)))
 

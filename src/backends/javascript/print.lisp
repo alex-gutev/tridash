@@ -21,21 +21,19 @@
 (in-package :tridash.backend.js)
 
 
-(define-constant +js-binary-operators+
+(defconstant +js-binary-operators+
   '("+" "-" "*" "/" "%" ">" "<" ">=" "<="
     "==" "===" "!=" "!=="
     ">>" "<<" ">>>" "<<<"
     "&" "&&" "|" "||" "^"
     "=" "+=" "-=" "*=" "/=" "%=" "&=" "|=" "^=")
 
-  :test #'equal
-  :documentation "List of JavaScript binary operators.")
+  "JavaScript binary operators.")
 
-(define-constant +js-unary-operators+
+(defconstant +js-unary-operators+
   '("-" "!" "~")
 
-  :test #'equal
-  :documentation "List of JavaScript unary operators.")
+  "JavaScript unary operators.")
 
 
 (defvar *print-indented* nil
@@ -76,17 +74,12 @@
     true, the code is followed by a semicolon. If :BRACKETS is true
     the code is enclosed in brackets (... code ...)."))
 
-(defmethod print-ast ((ast-nodes list) &key semicolon brackets)
+(defmethod print-ast ((ast-nodes sequence) &key semicolon brackets)
   "Prints each AST node in AST-NODES."
-
-  (mapc (rcurry #'print-ast :semicolon semicolon :brackets brackets) ast-nodes))
-
-(defmethod print-ast ((ast-nodes array) &key semicolon brackets)
-  "Prints each AST node in AST-NODES if AST-NODES is not a string."
 
   (if (stringp ast-nodes)
       (call-next-method ast-nodes)
-      (map nil (rcurry #'print-ast :semicolon semicolon :brackets brackets) ast-nodes)))
+      (foreach (rcurry #'print-ast :semicolon semicolon :brackets brackets) ast-nodes)))
 
 
 ;;; Expressions
@@ -134,7 +127,7 @@
 
     (awhen (first expressions)
       (print-ast it)
-      (map nil #'print-expression (rest expressions))))
+      (foreach #'print-expression (rest expressions))))
 
   (when brackets
     (print-token ")" :lead-space nil)))
@@ -158,7 +151,7 @@
       (with-accessors ((fields js-object-fields)) object
         (awhen (first fields)
           (print-field it)
-          (map nil #'print-field-line (rest fields))))))
+          (foreach #'print-field-line (rest fields))))))
 
   (print-token "}"))
 
@@ -175,11 +168,11 @@
   (let ((num-args (length operands)))
     (cond
       ((and (= num-args 2)
-            (member operator +js-binary-operators+ :test #'equal))
+            (memberp operator +js-binary-operators+))
        (print-binary-expression operator operands))
 
       ((and (= num-args 1)
-            (member operator +js-unary-operators+ :test #'equal))
+            (memberp operator +js-unary-operators+))
        (print-unary-expression operator operands))
 
       (t
@@ -260,7 +253,7 @@
   (print-newline)
 
   (let ((*indent-level* (1+ *indent-level*)))
-    (map nil (rcurry #'print-ast :semicolon t) statements))
+    (foreach (rcurry #'print-ast :semicolon t) statements))
 
   (print-newline)
   (print-token "}"))

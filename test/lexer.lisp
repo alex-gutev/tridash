@@ -19,7 +19,7 @@
 ;;;; Unit tests for lexer
 
 (defpackage :tridash.test.lexer
-  (:use :cl
+  (:use :generic-cl
         :alexandria
         :anaphora
         :cl-arrows
@@ -30,6 +30,11 @@
         :tridash.parser
 
         :tridash.test.util)
+
+  (:shadowing-import-from :generic-cl
+                          :emptyp
+                          :multiply
+                          :accumulate)
 
   (:shadowing-import-from :prove :fail)
 

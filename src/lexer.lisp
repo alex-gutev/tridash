@@ -76,7 +76,7 @@
    PEEK is true and the token is a skip token it is removed from the
    lexer's buffer."
 
-  (when (eq type :skip)
+  (when (= type :skip)
     (if peek (stream-read-token lex))
     t))
 

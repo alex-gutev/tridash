@@ -18,55 +18,60 @@
 
 (in-package :tridash.backend.js)
 
-(defgeneric find-lazy-nodes (table &optional lazy-nodes)
-  (:documentation
-   "Determines which nodes in all modules in MODULE-TABLE, and in
-    which contexts, should be evaluated lazily. A node should be
-    evaluated lazily, in a particular context, if each of its
-    observers in the context should be evaluated lazily or the binding
-    to the observer node is conditional. Returns a hash-table where
-    each key is a node context and the corresponding value is T if the
-    node should be evaluated lazily in the context, NIL otherwise."))
+(defun find-lazy-nodes (table &optional (lazy-nodes (make-hash-map)))
+  "Determines which nodes, and in which contexts, should be evaluated
+   lazily. A node should be evaluated lazily, in a particular
+   contexts, of each of its observers, in that context, should be
+   evaluated lazily or the binding to the observer node is
+   condition. Returns a map which each key is a node context and the
+   corresponding value is T if the node should be evaluated lazily in
+   the context, NIL otherwise."
 
-(defmethod find-lazy-nodes ((table node-table) &optional (lazy-nodes (make-hash-table :test #'eq)))
   (labels ((lazy-node? (node)
-             (maphash-values (curry #'lazy? node) (contexts node)))
+             (foreach (curry #'lazy? node) (map-values (contexts node))))
 
            (lazy? (node context)
              "Returns true if NODE should be evaluated lazily in the
-                context CONTEXT."
+              context CONTEXT."
 
              (unless (and (input-node? node)
-                          (eq (gethash :input (contexts node)) context))
-               (ensure-gethash
+                          (= (get :input (contexts node)) context))
+
+               (ensure-get
                 context lazy-nodes
+
                 (let ((observers (context-observers node context)))
-                  (when observers
+                  (unless (emptyp observers)
                     (aprog1
-                        (loop for (observer link) in observers
-                           always
-                             (or (not (unconditional-binding? link observer))
-                                 (->> (node-link-context link)
-                                      (context observer)
-                                      (lazy? observer))))
+                        (every #'lazy-link? observers)
                       (when it (make-async-links observers))))))))
+
+           (lazy-link? (observer)
+             "Returns true if the value of the node is only
+              conditionally used by the observer."
+
+             (destructuring-bind (observer . link) observer
+               (or (not (unconditional-binding? link observer))
+                   (->> (node-link-context link)
+                        (context observer)
+                        (lazy? observer)))))
 
            (make-async-links (observers)
              "Change the links to the observer nodes to asynchronous
-                links."
+              links."
 
-             (iter (for (nil link) in observers)
-                   (setf (node-link-node link)
-                         (cons 'async (node-link-node link)))))
+             (doseq ((obs . link) observers)
+               (declare (ignore obs))
+
+               (setf (node-link-node link)
+                     (cons 'async (node-link-node link)))))
 
            (context-observers (node context)
-             "Returns a list of the observer nodes of NODE at
-                context CONTEXT."
+             "Returns a list of the observer nodes of NODE at context
+              CONTEXT."
 
              (with-slots (operands) context
-               (iter (for (observer link) in-hashtable (observers node))
-                     (unless (gethash observer operands)
-                       (collect (list observer link))))))
+               (remove-if (compose (rcurry #'memberp operands) #'car) (observers node))))
 
            (unconditional-binding? (link observer)
              "Returns true if the value of the node with link LINK
@@ -86,7 +91,8 @@
                ((list*
                  (or 'if
                      (guard (external-meta-node name)
-                            (eq name (id-symbol "if")))) cond _)
+                            (eq name (id-symbol "if"))))
+                 cond _)
                 (has-node link cond))
 
                ((list* (guard (external-meta-node name)
@@ -97,9 +103,5 @@
                ((list* _ operands)
                 (some (curry #'has-node link) operands)))))
 
-    (maphash-values #'lazy-node? (nodes table))
+    (foreach #'lazy-node? (nodes table))
     lazy-nodes))
-
-(defmethod find-lazy-nodes ((modules module-table) &optional (lazy-nodes (make-hash-table :test #'eq)))
-  (maphash-values (rcurry #'find-lazy-nodes lazy-nodes) (modules modules))
-  lazy-nodes)

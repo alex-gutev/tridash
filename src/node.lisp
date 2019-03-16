@@ -28,51 +28,51 @@
     :documentation "The node's identifier name.")
 
    (dependencies
-    :initform (make-hash-table :test #'eq)
+    :initform (make-hash-map)
     :initarg :dependencies
     :accessor dependencies
     :documentation
-    "Hash table of the nodes on which the node's value depends, where
-     each key is a `node' object and each value is the corresponding
-     `node-link' object.")
+    "Map of the node's dependency nodes, i.e. the nodes on which this
+     node's value depends. Each key is a `NODE' object and the
+     corresponding value is the `NODE-LINK' object.")
 
    (observers
-    :initform (make-hash-table :test #'eq)
+    :initform (make-hash-map)
     :initarg :observers
     :accessor observers
     :documentation
-    "Hash table of the nodes which are dependent on the node's value,
-     where each key is a `node' object and each value is the
-     `node-link' object of this node in the observer node's
-     DEPENDENCIES hash-table..")
+    "Map of the node's observer nodes, i.e. the nodes whose values are
+     dependent on the value of this node. Each key is a `NODE' object
+     and the corresponding value is the `node-link' object of this
+     node in the observer node's DEPENDENCIES map.")
 
    (contexts
     :accessor contexts
-    :initform (make-hash-table :test #'equal)
+    :initform (make-hash-map)
     :documentation
-    "Set of contexts of the node. Each key is a context
-     identifier (either a dependency node or unique identifier) and
-     the corresponding value is the `node-context' object.")
+    "Map of the node's contexts. Each key is a context identifier and
+     the corresponding value is the `NODE-CONTEXT' object.")
 
    (attributes
     :accessor attributes
-    :initform (make-hash-table :test #'equalp)
+    :initform (make-hash-map :test #'cl:equalp)
     :documentation
-    "Set of miscellaneous attributes (key-value pairs) where each
-     attribute is identified by a unique symbol or string."))
+    "Map of the node's attributes (miscellaneous key-value pairs)."))
 
   (:documentation
    "Base node class. Stores the binding information about a node,
-    i.e. the node's dependencies and observers"))
+    i.e. the node's dependencies and observers, and the node's
+    contexts."))
 
 (defclass node-context ()
   ((operands
     :initarg :operands
-    :initform (make-hash-table :test #'eq)
+    :initform (make-hash-map)
     :accessor operands
     :documentation
-    "Set of dependency nodes which are operands to the context's value
-     function.")
+    "Map containing the dependency nodes which are operands to this
+     context's value function. Each key is the dependency `NODE'
+     object and the corresponding value is the `NODE-LINK' object.")
 
    (value-function
     :initarg :value-function
@@ -84,6 +84,12 @@
   (:documentation
    "Node context. A node context stores information about the node's
     value is computed at a particular moment (context)."))
+
+
+;;;; Hash Function
+
+(defmethod hash ((node node))
+  (hash (name node)))
 
 
 ;;;; Predicates
@@ -110,13 +116,13 @@
   "Retrieves a node attribute. ATTRIBUTE is converted to a string if
    it is a symbol."
 
-  (gethash (string attribute) (attributes node)))
+  (get (string attribute) (attributes node)))
 
 (defun (setf attribute) (value attribute node)
   "Sets the value of a node attribute. ATTRIBUTE is converted to a
    string if it is a symbol."
 
-  (setf (gethash (string attribute) (attributes node)) value))
+  (setf (get (string attribute) (attributes node)) value))
 
 
 ;;;; Bindings
@@ -181,11 +187,11 @@
 
   (with-slots (dependencies) node
     (multiple-value-return (link in-hash?)
-        (ensure-gethash dependency dependencies (node-link dependency :context context))
+        (ensure-get dependency dependencies (node-link dependency :context context))
 
       (when (not in-hash?)
         (with-slots (operands value-function) (context node context)
-          (setf (gethash dependency operands) link)
+          (setf (get dependency operands) link)
           (when add-function (setf value-function link)))))))
 
 (defun add-observer (observer node link)
@@ -193,7 +199,7 @@
    object corresponding to the dependency NODE within the DEPENDENCIES
    hash-table of OBSERVER."
 
-  (setf (gethash observer (observers node)) link))
+  (setf (get observer (observers node)) link))
 
 
 ;;; Removing Bindings
@@ -207,11 +213,11 @@
   "Removes DEPENDENCY from the dependency set of NODE."
 
   (with-slots (dependencies) node
-    (when (aand (gethash dependency dependencies)
+    (when (aand (get dependency dependencies)
                 (remove-operand node it))
 
-      (remhash dependency dependencies)
-      (remhash node (observers dependency)))))
+      (erase dependencies dependency)
+      (erase (observers dependency) node))))
 
 
 ;;;; Contexts
@@ -220,12 +226,12 @@
   "Returns the context of NODE with identifier CONTEXT-ID. If node
    does have such a context, a new context is created."
 
-  (ensure-gethash context-id (contexts node) (make-instance 'node-context)))
+  (ensure-get context-id (contexts node) (make-instance 'node-context)))
 
 (defun (setf context) (value node context-id)
   "Sets the context, of NODE, with identifier CONTEXT-ID to VALUE."
 
-  (setf (gethash context-id (contexts node)) value))
+  (setf (get context-id (contexts node)) value))
 
 (defmacro! create-context ((o!node o!context-id) &body forms)
   "Creates a context, of NODE, with identifier CONTEXT-ID. If NODE
@@ -255,11 +261,11 @@
 
   (with-accessors ((operand node-link-node) (context-id node-link-context)) operand
     (with-slots (operands value-function) (context node context-id)
-      (when (= (hash-table-count operands) 1)
-        (remhash operand operands)
+      (when (= (length operands) 1)
+        (erase operands operand)
         (setf value-function nil)
 
-        (remhash context-id (contexts node))
+        (erase (contexts node) context-id)
 
         t))))
 
@@ -268,33 +274,9 @@
    that is it has no operands and no value function."
 
   (with-slots (operands value-function) (context node context-id)
-    (and (zerop (hash-table-count operands))
+    (and (emptyp operands)
          (null value-function)
-         (remhash context-id (contexts node)))))
-
-
-;;;; Observers/Dependencies Utility Functions
-
-(defun observer-list (node)
-  "Returns a list of all observers of NODE."
-
-  (hash-table-keys (observers node)))
-
-(defun dependency-list (node)
-  "Returns a list of all dependencies of NODE."
-
-  (hash-table-keys (dependencies node)))
-
-
-(defun observers-count (node)
-  "Returns the number of observers of NODE."
-
-  (hash-table-count (observers node)))
-
-(defun dependencies-count (node)
-  "Returns the number of dependencies of NODE."
-
-  (hash-table-count (dependencies node)))
+         (erase (contexts node) context-id))))
 
 
 ;;; Print Method

@@ -24,10 +24,12 @@
     interned. The package does not use any other package."))
 
 (defpackage :tridash.interface
-  (:use :common-lisp
+  (:use :generic-cl
         :alexandria
         :anaphora
         :optima)
+
+  (:shadowing-import-from :generic-cl :emptyp)
 
   (:export
    ;; Frontend Interface
@@ -48,7 +50,7 @@
     error reporting."))
 
 (defpackage :tridash.parser
-  (:use :common-lisp
+  (:use :generic-cl
         :alexandria
         :anaphora
         :cl-arrows
@@ -59,6 +61,11 @@
         :optima.ppcre
 
         :tridash.interface)
+
+  (:shadowing-import-from :generic-cl
+                          :emptyp
+                          :accumulate
+                          :multiply)
 
   (:export
    :+list-operator+
@@ -73,7 +80,7 @@
    "Package containing the parser and lexer."))
 
 (defpackage :tridash.frontend
-  (:use :common-lisp
+  (:use :generic-cl
 	:alexandria
 	:anaphora
 	:iterate
@@ -84,6 +91,11 @@
         :tridash.util
 	:tridash.parser
         :tridash.interface)
+
+  (:shadowing-import-from :generic-cl
+                          :emptyp
+                          :accumulate
+                          :multiply)
 
   (:import-from :let-over-lambda
 		:lol-syntax
@@ -144,6 +156,8 @@
 
    ;; Node-table
    :node-table
+   :flat-node-table
+
    :outer-table
    :depth
    :nodes
@@ -216,7 +230,7 @@
     definitions out of the parsed source files."))
 
 (defpackage :tridash
-  (:use :common-lisp
+  (:use :generic-cl
         :alexandria
         :anaphora
         :cl-arrows
@@ -228,6 +242,11 @@
         :tridash.parser
         :tridash.interface
         :tridash.frontend)
+
+  (:shadowing-import-from :generic-cl
+                          :emptyp
+                          :multiply
+                          :accumulate)
 
   (:documentation
    "Package containing the compiler application."))

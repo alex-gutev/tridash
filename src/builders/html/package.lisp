@@ -17,7 +17,7 @@
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 (defpackage :tridash.builder.html
-  (:use :common-lisp
+  (:use :generic-cl
         :alexandria
         :anaphora
         :cl-arrows
@@ -30,6 +30,11 @@
         :tridash.parser
         :tridash.interface
         :tridash.frontend)
+
+  (:shadowing-import-from :generic-cl
+                          :emptyp
+                          :accumulate
+                          :multiply)
 
   (:import-from :let-over-lambda
                 :mkstr

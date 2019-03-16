@@ -24,11 +24,11 @@
    aggregated together.")
 
 (defparameter *operator-nodes* nil
-  "Hash table of the current registered operators. Each key is an
-   operator symbol the corresponding value is a list of two elements
-   where the first element is the operator's precedence and the second
-   element is the operator's associativity: the symbol :LEFT or :RIGHT
-   for left or right associativity.")
+  "Map of the current registered operators. Each key is an operator
+   symbol and the corresponding value is a list of two elements where
+   the first element is the operator's precedence and the second
+   element is the operator's associativity: :LEFT for left
+   associativity or :RIGHT for right associativity.")
 
 (defparameter *list-delimiter* nil
   "The delimiting token type of the node list currently being parsed,
@@ -42,7 +42,7 @@
   "Adds the symbol SYMBOL as an operator with precedence PREC and
    associativity ASSOC."
 
-  (setf (gethash symbol operators) (list prec assoc)))
+  (setf (get symbol operators) (list prec assoc)))
 
 
 ;;;; Parsing Functions
@@ -53,9 +53,9 @@
 ;;; source file.
 
 (defun make-parser (stream)
-  "Returns a function of one argument, the operator nodes table. When
-   the function is called, a single declaration is parsed from the
-   input stream. Returns nil when EOF is reached."
+  "Returns a function of one argument, the operator nodes map When the
+   function is called, a single declaration is parsed from the input
+   stream. Returns nil when EOF is reached."
 
   (let ((lex (make-lexer stream)))
     (lambda (*operator-nodes*)
@@ -70,7 +70,7 @@
 
   (loop
      for type = (next-token lex :peek t)
-     while (eq type :terminate)
+     while (= type :terminate)
      do (next-token lex)
      finally (return type)))
 
@@ -136,7 +136,7 @@
              (->
               (parse-node-operand lex :line-term line-term)
               (parse-expression
-               (car (gethash :open-paren *operator-nodes*))))))
+               (car (get :open-paren *operator-nodes*))))))
 
     (parse-expression (parse-operand line-term) 0)))
 
@@ -235,8 +235,8 @@
    precedence."
 
   (and
-   (>= (first (gethash :open-paren *operator-nodes*)) precedence)
-   (eq (next-token lex :peek t) :open-paren)
+   (>= (first (get :open-paren *operator-nodes*)) precedence)
+   (= (next-token lex :peek t) :open-paren)
    (next-token lex)
    t))
 
@@ -250,7 +250,7 @@
                (case type
                  ((:comma :close-paren)
                   (next-token lex)
-                  (eq type :comma))
+                  (= type :comma))
 
                  (otherwise
                   (error 'tridash-parse-error
@@ -259,7 +259,7 @@
                          :rule 'functor-operands)))))
 
            (end-list? ()
-             (when (eq (next-token lex :peek t) :close-paren)
+             (when (= (next-token lex :peek t) :close-paren)
                (next-token lex)
                t))
 
@@ -283,7 +283,7 @@
 
      (iter
        (for type = (has-input? lex))
-       (until (eq type delimiter))
+       (until (= type delimiter))
 
        (when (null type)
          (error 'tridash-parse-error
@@ -299,7 +299,7 @@
   "Consumes the closing parenthesis."
 
   (multiple-value-bind (type lxm) (next-token lex)
-    (unless (eq type :close-paren)
+    (unless (= type :close-paren)
       (error 'tridash-parse-error
              :expected :close-paren
              :token (cons type lxm)
@@ -314,9 +314,9 @@
    error condition is signaled otherwise NIL is returned."
 
   (multiple-value-bind (type lexeme) (next-token lex :peek t)
-    (when (eq type :id)
+    (when (= type :id)
       (let* ((op (id-symbol lexeme))
-             (info (gethash op *operator-nodes*)))
+             (info (get op *operator-nodes*)))
 
         (unless info
           (error 'tridash-parse-error
@@ -334,10 +334,10 @@
 
   (multiple-value-bind (type lxm) (next-token lex :peek t)
     (cond
-      ((eq type :terminate)
+      ((= type :terminate)
        (next-token lex))
 
-      ((not (eq type *list-delimiter*))
+      ((/= type *list-delimiter*)
        (error 'tridash-parse-error
               :expected :terminate
               :token (cons type lxm)

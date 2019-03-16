@@ -25,17 +25,17 @@
 
 ;;; Building Individual Files
 
-(defvar *file-builders* (make-hash-table :test #'equalp)
-  "Hash table of file processing functions. Each key is a file
-   extension string and the corresponding value is a function for
-   extracting node definitions from that file. The path to the file
-   and the `NODE-TABLE' are passed to the function as arguments.")
+(defvar *file-builders* (make-hash-map :test #'cl:equalp)
+  "Map of file processing functions. Each key is a file extension
+   string and the corresponding value is a function for extracting
+   node definitions from that file. The function takes two arguments
+   the path to the file and the global `MODULE-TABLE'.")
 
 (defun file-builder (extension)
   "Returns the file builder associated with the file extension
    EXTENSIONS. Raises an error if no such file builder exists."
 
-  (or (gethash extension *file-builders*)
+  (or (get extension *file-builders*)
       (error 'unknown-file-type :extension extension)))
 
 (defun build-nodes-in-file (path module-table options)
@@ -56,14 +56,14 @@
    the file, the module table in which the node definitions should be
    built and a hash-table containing builder options."
 
-  (setf (gethash (string extension) *file-builders*)
+  (setf (get (string extension) *file-builders*)
         function))
 
 (defun set-file-builders (extensions function)
   "Sets the file builders for each extension, in EXTENSIONS, to
    FUNCTION."
 
-  (mapcar (rcurry #'set-file-builder function) extensions))
+  (foreach (rcurry #'set-file-builder function) extensions))
 
 
 (defmacro define-file-builder (extensions (path-var module-table-var &optional (options-var (gensym))) &body body)
@@ -85,7 +85,7 @@
    options hash-table is bound."
 
   `(eval-when (:load-toplevel :compile-toplevel :execute)
-     (set-file-builders ',(mapcar #'string (ensure-list extensions))
+     (set-file-builders ',(map #'string (ensure-list extensions))
                         (lambda (,path-var ,module-table-var ,options-var)
                           (declare (ignorable ,options-var))
                           ,@body))))

@@ -38,6 +38,30 @@
    otherwise is NIL.")
 
 
+(defclass flat-node-table ()
+  ((nodes
+    :accessor nodes
+    :initarg :nodes
+    :documentation
+    "Set of nodes. Does not include meta-nodes.")
+
+   (meta-nodes
+    :accessor meta-nodes
+    :initarg :meta-nodes
+    :documentation
+    "Set of meta-nodes.")
+
+   (input-nodes
+    :accessor input-nodes
+    :initarg :input-nodes
+    :documentation
+    "Set of input nodes."))
+
+  (:documentation
+   "Contains all nodes in all modules, without separation between
+    modules."))
+
+
 ;;;; Utility Functions and Macros
 
 (defmacro at-source (&body body)
@@ -110,32 +134,83 @@
     (process-declaration node (node-table *global-module-table*) :top-level t)))
 
 (defun finish-build-graph (&optional (*global-module-table* *global-module-table*))
-  "Builds the definitions of all meta-nodes in all modules, and
-   performs node coalescing. This function should be called
-   separately, to finish building the graph, after building individual
-   nodes using BUILD-PARTIAL-GRAPH and BUILD-NODE. This function
-   should not be called after calling BUILD-GRAPH."
+  "Performs the final build steps which include building the
+   meta-nodes, node coalescing, removal of unreachable nodes, constant
+   folding and structure checking. This function should be called
+   separately, to finish building the graph, after adding the
+   individual nodes using BUILD-PARTIAL-GRAPH and BUILD-NODE.
+
+   Returns a `FLAT-NODE-TABLE' containing all nodes and meta-nodes."
 
   (with-slots (modules) *global-module-table*
-    ;; Build meta-node definitions
-    (maphash-values #'build-meta-node-graphs modules)
+    (let ((node-table (flatten-modules modules)))
+      ;; Build meta-node definitions
+      (foreach #'build-meta-node-graphs (map-values modules))
 
-    ;; Determine outer node references
-    (maphash-values #'find-outer-node-references modules)
-    (maphash-values #'add-outer-node-operands modules)
+      ;; Determine outer node references
+      (foreach #'find-outer-node-references (map-values modules))
+      (add-outer-node-operands (meta-nodes node-table))
 
+      (finish-build node-table)
+
+      node-table)))
+
+(defun flatten-modules (module-table)
+  "Returns a `FLAT-NODE-TABLE' containing all nodes and meta-nodes in
+   each module in MODULE-TABLE."
+
+  (let ((modules (map-values module-table)))
+    (flet ((merge-nodes (node-set nodes)
+             (nunion node-set (coerce (map-values nodes) 'hash-set)))
+
+           (flatten (fn key)
+             (reduce fn modules :key key :initial-value (hash-set))))
+
+      (make-instance 'flat-node-table
+                     :nodes (flatten #'merge-nodes #'nodes)
+                     :meta-nodes (flatten #'merge-nodes #'meta-nodes)
+                     :input-nodes (flatten #'union #'input-nodes)))))
+
+(defun flatten-meta-node (definition)
+  "Converts the `NODE-TABLE' DEFINITION, containing the body of the
+   meta-node's definition, into a single `FLAT-NODE-TABLE'."
+
+  (with-slots (nodes meta-nodes input-nodes) definition
+    (make-instance 'flat-node-table
+                   :nodes (coerce (map-values nodes) 'hash-set)
+                   :meta-nodes (coerce (map-values meta-nodes) 'hash-set)
+                   :input-nodes input-nodes)))
+
+(defun finish-build (node-table)
+  "Performs node coalescing, removal of unreachable nodes, constant
+   folding and structure checking. NODE-TABLE is the `FLAT-NODE-TABLE'
+   containing all nodes and meta-nodes."
+
+  (with-slots (nodes input-nodes) node-table
     ;; Fold constant nodes
-    (fold-constant-nodes *global-module-table*)
+    (fold-constant-nodes nodes)
 
     ;; Coalesce nodes
-    (coalesce-nodes *global-module-table*)
-    (coalesce-node-links *global-module-table*)
+    (coalesce-nodes input-nodes)
+    (coalesce-node-links nodes)
 
     ;; Remove unreachable nodes
-    (remove-unreachable-nodes *global-module-table*)
+    (remove-unreachable-nodes input-nodes nodes)
 
     ;; Check for cycles and ambiguous contexts
-    (check-structure *global-module-table*)))
+    (check-structure input-nodes)
+
+    ;; Finish Building Meta-Node Subgraphs
+    (foreach #'finish-build-meta-node (meta-nodes node-table))))
+
+(defun finish-build-meta-node (meta-node)
+  "Performs the final build steps (node coalescing, etc.) in the
+   definition of META-NODE. The DEFINITION of META-NODE is converted
+   to a `FLAT-NODE-TABLE'."
+
+  (with-slots (definition) meta-node
+    (awhen definition
+      (finish-build (setf definition (flatten-meta-node definition))))))
 
 
 ;;;; Build Meta-Nodes
@@ -143,7 +218,7 @@
 (defun build-meta-node-graphs (table)
   "Builds the body of each meta-node, in the node table TABLE."
 
-  (maphash-values (rcurry #'build-meta-node-graph table) (meta-nodes table)))
+  (foreach (rcurry #'build-meta-node-graph table) (map-values (meta-nodes table))))
 
 (defun build-meta-node-graph (meta-node outer-table)
   "Builds the graph corresponding to the body of the node
@@ -162,6 +237,7 @@
       (let* ((last-node (process-node-list (definition meta-node) table :top-level t)))
         (make-meta-node-function meta-node last-node)
         (build-meta-node-graphs table)
+
         (setf (definition meta-node) table)))))
 
 (defun add-operand-nodes (names table)
@@ -170,13 +246,12 @@
    input nodes of TABLE"
 
   (with-slots (all-nodes) table
+    (dolist (name names)
+      (case (node-type (get name all-nodes))
+        ((meta-node module)
+         (erase all-nodes name)))
 
-   (dolist (name names)
-     (case (node-type (gethash name all-nodes))
-       ((meta-node module)
-        (remhash name all-nodes)))
-
-     (add-input (ensure-node name table) table))))
+      (add-input (ensure-node name table) table))))
 
 (defun make-meta-node-function (meta-node last-node)
   "Creates the value function of the meta-node META-NODE. LAST-NODE is
@@ -184,10 +259,10 @@
 
   (with-slots (output-nodes contexts) meta-node
     (cond
-      ((and last-node (zerop (hash-table-count contexts)))
+      ((and last-node (emptyp contexts))
        (add-binding last-node meta-node :context nil))
 
-      ((> (hash-table-count contexts) 1)
+      ((> (length contexts) 1)
        (error 'ambiguous-meta-node-context :node meta-node)))))
 
 
@@ -213,7 +288,7 @@
          (*level* (if top-level 0 (1+ *level*)))
          (node (ensure-node name table)))
 
-    (unless (or *return-meta-node* (not (meta-node? node)) (eq node *meta-node*))
+    (unless (or *return-meta-node* (not (meta-node? node)) (= node *meta-node*))
       (error 'node-type-error :node node :expected 'node))
 
     (if (and *meta-node*
@@ -277,9 +352,9 @@
    given as an argument to the op operator."
 
   (cond
-    ((eq assoc (id-symbol "left"))
+    ((= assoc (id-symbol "left"))
      :left)
-    ((or (eq assoc (id-symbol "right"))
+    ((or (= assoc (id-symbol "right"))
          (null assoc))
      :right)
     (t
@@ -322,7 +397,7 @@
       ((list (guard module (symbolp module))
              (guard alias (symbolp alias)))
 
-       (match (gethash alias (all-nodes table))
+       (match (get alias (all-nodes table))
          ((type node)
           (error 'alias-clash-error
                  :node alias
@@ -349,8 +424,8 @@
         ((list* (guard module (symbolp module)) nodes)
          (let ((module (get-module module)))
            (if nodes
-               (mapcar (rcurry #'import-node module table) nodes)
-               (maphash-keys (rcurry #'import-node module table) (public-nodes module)))))))))
+               (foreach (rcurry #'import-node module table) nodes)
+               (foreach (rcurry #'import-node module table) (map-keys (public-nodes module))))))))))
 
 (defmethod process-functor ((operator (eql +export-operator+)) args table)
   "Adds nodes to the public-nodes list of TABLE."
@@ -360,7 +435,7 @@
         args
 
       ((list* nodes)
-       (mapcar (rcurry #'export-node table) nodes)))))
+       (foreach (rcurry #'export-node table) nodes)))))
 
 (defmethod process-functor ((operator (eql +in-module-operator+)) args table)
   "Looks up a node in another module, which does not have an alias in
@@ -399,7 +474,7 @@
         args
 
       ((list* nodes)
-       (mapcar (rcurry #'add-external-meta-node table) nodes)))))
+       (foreach (rcurry #'add-external-meta-node table) nodes)))))
 
 
 ;;; Attributes
@@ -424,7 +499,7 @@
            (unless (node? node)
              (error 'node-type-error :expected 'node :node node))
 
-           (when (equalp attribute "input")
+           (when (cl:equalp attribute "input")
              (add-input node table))
 
            (setf (attribute attribute node) value)))))))
@@ -604,19 +679,19 @@
    TABLE. If TABLE already contains such a node it is returned."
 
   (with-accessors ((target-meta-node target-meta-node)) meta-node
-   (multiple-value-bind (instance operand-nodes table)
-       (create-instance-node meta-node operator operands table)
-     (add-meta-node-value-function instance meta-node operand-nodes)
+    (multiple-value-bind (instance operand-nodes table)
+        (create-instance-node meta-node operator operands table)
+      (add-meta-node-value-function instance meta-node operand-nodes)
 
-     (when target-meta-node
-       (handler-case
-           (iter
-             (with meta-node = (lookup-meta-node target-meta-node table))
-             (for operand in (process-operands operands table instance))
-             (add-meta-node-value-function operand meta-node (list instance) :context instance))
-         (target-node-error ())))
+      (when target-meta-node
+        (handler-case
+            (iter
+              (with meta-node = (lookup-meta-node target-meta-node table))
+              (for operand in (process-operands operands table instance))
+              (add-meta-node-value-function operand meta-node (list instance) :context instance))
+          (target-node-error ())))
 
-     (values instance table))))
+      (values instance table))))
 
 (defun create-instance-node (meta-node operator operands table)
   "Creates a meta-node instance node. The node is created with
@@ -630,8 +705,8 @@
     (multiple-value-bind (operands table) (process-operands operands table)
 
       ;; Add META-NODE to the meta node references of *META-NODE*
-      (when (and *meta-node* (not (eq meta-node *meta-node*)))
-        (ensure-gethash meta-node (meta-node-references *meta-node*)))
+      (when (and *meta-node* (/= meta-node *meta-node*))
+        (nadjoin meta-node (meta-node-references *meta-node*)))
 
       (values (ensure-node name table t) operands table))))
 
@@ -682,4 +757,4 @@
            (if (value? operand)
                operand
                (add-binding operand node :context context :add-function nil))))
-  (mapcar #'bind-operand operands)))
+  (map #'bind-operand operands)))

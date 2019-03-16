@@ -17,7 +17,7 @@
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 (defpackage :tridash.backend.js.ast
-  (:use :common-lisp)
+  (:use :generic-cl)
 
   (:import-from :let-over-lambda
                 :mkstr)
@@ -108,7 +108,7 @@
   (:documentation "Contains the JavaScript AST Definitions."))
 
 (defpackage :tridash.backend.js
-  (:use :common-lisp
+  (:use :generic-cl
         :alexandria
         :anaphora
         :named-readtables
@@ -125,6 +125,11 @@
         :tridash.builder.html
 
         :tridash.backend.js.ast)
+
+  (:shadowing-import-from :generic-cl
+                          :emptyp
+                          :multiply
+                          :accumulate)
 
   (:import-from :let-over-lambda
                 :mkstr

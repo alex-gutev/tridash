@@ -44,46 +44,45 @@
 
    (nodes
     :accessor nodes
-    :initform (make-hash-table :test #'equal)
+    :initform (make-hash-map)
     :documentation
-    "Hash-table only containing actual nodes (excluding meta-nodes and
-     module aliases).")
+    "Map of the actual nodes (excluding meta-nodes and module
+     aliases).")
 
    (meta-nodes
     :accessor meta-nodes
-    :initform (make-hash-table :test #'eq)
+    :initform (make-hash-map)
     :documentation
-    "Hash-table containing the meta-nodes.")
+    "Map of the meta-nodes.")
 
    (module-aliases
     :accessor module-aliases
     :initarg :module-aliases
-    :initform (make-hash-table :test #'eq)
+    :initform (make-hash-map)
     :documentation
-    "Hash-table mapping module alias symbols to the `NODE-TABLE' of
-     the module.")
+    "Map of the model aliases. Each key is the alias symbol and the
+     corresponding value is the module's `NODE-TABLE'.")
 
    (all-nodes
     :accessor all-nodes
     :initarg :all-nodes
-    :initform (make-hash-table :test #'equal)
+    :initform (make-hash-map)
     :documentation
-    "Hash-table containing all nodes.")
+    "Map of all nodes.")
 
    (public-nodes
     :accessor public-nodes
     :initarg :public-nodes
-    :initform (make-hash-table :test #'equal)
+    :initform (make-hash-map)
     :documentation
-    "Hash-table containing the nodes which are exported from the
-     module. When this module is imported into another module by
-     import(<module name>), the nodes in this table are imported into
-     the module.")
+    "Map of nodes which are exported from the module. When this module
+     is imported into another module by import(<module name>), the
+     nodes in this table are imported into the module.")
 
    (operator-nodes
     :accessor operator-nodes
     :initarg :operator-nodes
-    :initform (copy-hash-table +infix-operators+)
+    :initform (copy +infix-operators+)
     :documentation
     "Operator table for the module. The keys are the names of the
      nodes which can appear as infix operators and the corresponding
@@ -92,9 +91,9 @@
 
    (input-nodes
     :accessor input-nodes
-    :initform nil
+    :initform (make-hash-set)
     :documentation
-    "List of all input nodes of the graph."))
+    "Set of all input nodes of the graph."))
 
   (:documentation
    "Symbol table mapping node identifiers to node objects. Has
@@ -112,9 +111,9 @@
                    :name name
                    :outer-table table
                    :depth (1+ (depth table))
-                   :module-aliases (copy-hash-table module-aliases)
-                   :operator-nodes (copy-hash-table operator-nodes)
-                   :all-nodes (copy-hash-table module-aliases :test #'equal))))
+                   :module-aliases (copy module-aliases)
+                   :operator-nodes (copy operator-nodes)
+                   :all-nodes (copy module-aliases))))
 
 
 ;;;; Predicates
@@ -167,7 +166,7 @@
    (unless table
      (error 'non-existent-node :node name :module-name *search-module*))
 
-    (aif (gethash name (all-nodes table))
+    (aif (get name (all-nodes table))
          (values it table)
          (lookup-node name next-table))))
 
@@ -212,27 +211,27 @@
   "Adds the ordinary node NODE with name NAME to TABLE."
 
   (with-slots (all-nodes nodes) table
-    (when (nth-value 1 (gethash name all-nodes))
+    (when (memberp name all-nodes)
       (error 'node-exists-error :node name :node-table table))
 
     (setf (attribute :module node) table)
 
-    (setf (gethash name all-nodes) node)
-    (setf (gethash name nodes) node)))
+    (setf (get name all-nodes) node)
+    (setf (get name nodes) node)))
 
 (defun add-meta-node (name node table)
   "Adds the `META-NODE' NODE with name NAME to TABLE."
 
   (with-slots (all-nodes nodes meta-nodes) table
     (cond
-      ((member name +special-operators+)
+      ((memberp name +special-operators+)
        (error 'special-operator-name-error :node name))
 
-      ((aand (gethash name all-nodes) (not (meta-node? it)))
+      ((aand (get name all-nodes) (not (meta-node? it)))
        (error 'meta-node-name-collision :node name :node-table table)))
 
-    (setf (gethash name all-nodes) node)
-    (setf (gethash name meta-nodes) node)))
+    (setf (get name all-nodes) node)
+    (setf (get name meta-nodes) node)))
 
 (defun add-external-meta-node (name table)
   "Adds a stub for an externally defined meta-node with name NAME to
@@ -249,8 +248,8 @@
 (defun remove-node (name table)
   "Removes the ordinary node with name NAME from TABLE."
 
-  (when (remhash name (nodes table))
-    (remhash name (all-nodes table))))
+  (when (erase (nodes table) name)
+    (erase (all-nodes table) name)))
 
 
 ;;; Input Nodes
@@ -262,7 +261,7 @@
   (unless (input-node? node)
     (setf (attribute :input node) t)
     (context node :input)
-    (push node (input-nodes table))))
+    (nadjoin node (input-nodes table))))
 
 
 ;;; Importing and Exporting Nodes
@@ -272,24 +271,24 @@
 
   (let* ((node (lookup-node name module)))
     (with-slots (all-nodes module-aliases) table
-      (when (aand (gethash name all-nodes) (not (eq it node)))
+      (when (aand (get name all-nodes) (/= it node))
         (error 'import-node-error
                :node name
                :module module
                :node-table table))
 
-      (when (eq (node-type node) 'module)
-        (setf (gethash name module-aliases) node))
+      (when (= (node-type node) 'module)
+        (setf (get name module-aliases) node))
 
-      (setf (gethash name all-nodes) node)
+      (setf (get name all-nodes) node)
 
-      (awhen (gethash name (operator-nodes module))
+      (awhen (get name (operator-nodes module))
         (add-operator name (first it) (second it) (operator-nodes table))))))
 
 (defun export-node (name table)
   "Adds the node with name NAME to the PUBLIC-NODES of table."
 
-  (setf (gethash name (public-nodes table))
+  (setf (get name (public-nodes table))
         (lookup-node name table)))
 
 
@@ -298,10 +297,10 @@
 (defun module-alias (alias table)
   "Returns the `NODE-TABLE' of the module with alias ALIAS in TABLE."
 
-  (gethash alias (module-aliases table)))
+  (get alias (module-aliases table)))
 
 (defun (setf module-alias) (module alias table)
   "Adds ALIAS as an alias for MODULE in TABLE."
 
-  (setf (gethash alias (all-nodes table)) module)
-  (setf (gethash alias (module-aliases table)) module))
+  (setf (get alias (all-nodes table)) module)
+  (setf (get alias (module-aliases table)) module))

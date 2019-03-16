@@ -20,13 +20,11 @@
 
 (in-package :tridash)
 
-(define-constant +module-paths-var+
-    "TRIDASH_MODULE_PATHS"
-  :test #'string=
-  :documentation "Environment variable containing additional module search paths.")
+(defconstant +module-paths-var+ "TRIDASH_MODULE_PATHS"
+  "Environment variable containing additional module search paths.")
 
-(define-constant +paths-delimiter+ #\:
-  :documentation "Search path delimiter.")
+(defconstant +paths-delimiter+ #\:
+  "Search path delimiter.")
 
 (defvar *module-search-paths*
   '(#p"/usr/lib/tridash/modules/"
@@ -53,17 +51,17 @@
 
   (let ((*module-search-paths* (search-paths))
         (prog-info (yaml:parse build-file)))
-    (unless (and (hash-table-p prog-info) (= (hash-table-count prog-info) 1))
+    (unless (and (hash-table-p prog-info) (= (length prog-info) 1))
       (error "Build file should contain a map of 1 key-value pair."))
 
-    (let* ((prog-info (first (hash-table-values prog-info)))
-           (modules (build-sources build-file (gethash "sources" prog-info)))
-           (output-info (gethash "output" prog-info))
-           (out-path (cl-fad:merge-pathnames-as-file build-file (gethash "path" output-info))))
+    (let* ((prog-info (cdr (first prog-info)))
+           (node-table (build-sources build-file (get "sources" prog-info)))
+           (output-info (get "output" prog-info))
+           (out-path (cl-fad:merge-pathnames-as-file build-file (get "path" output-info))))
 
       (with-open-file (*standard-output* out-path :direction :output :if-exists :supersede)
-        (let ((backend (make-keyword (string-upcase (gethash "backend" output-info)))))
-          (compile-nodes backend modules output-info))))))
+        (let ((backend (make-keyword (string-upcase (get "backend" output-info)))))
+          (compile-nodes backend node-table output-info))))))
 
 (defun search-paths ()
   "Returns a list of the module search paths. This contains the search
@@ -72,12 +70,12 @@
 
   (append
    (aand (osicat:environment-variable +module-paths-var+)
-         (mapcar #'cl-fad:pathname-as-directory (split-sequence +paths-delimiter+ it)))
+         (map #'cl-fad:pathname-as-directory (split-sequence +paths-delimiter+ it)))
    *module-search-paths*))
 
 (defun build-sources (build-path sources)
   "Builds the node definitions out of the sources list
-   SOURCES. Returns the global module table. BUILD-PATH is the
+   SOURCES. Returns the flattened module table. BUILD-PATH is the
    `PATHNAME' to the build file."
 
   (handler-bind
@@ -95,7 +93,7 @@
         (match source
           ((type hash-table)
            (list
-            (cl-fad:merge-pathnames-as-file build-path (gethash "path" source))
+            (cl-fad:merge-pathnames-as-file build-path (get "path" source))
             source))
 
           (_
@@ -129,14 +127,14 @@
   "Searches for the module MODULE in the directory at PATH. If the
    module was found builds its source files and returns true."
 
-  (let ((module-path (cl-fad:merge-pathnames-as-file path (concatenate 'string (string module) ".yml"))))
+  (let ((module-path (cl-fad:merge-pathnames-as-file path (concatenate (string module) ".yml"))))
     (when (osicat:regular-file-exists-p module-path)
       (let ((module-info (yaml:parse module-path)))
         (unless (hash-table-p module-info)
           (error "Expected a map."))
 
-        (let ((sources (source-file-list module-path (gethash "sources" module-info))))
-          (mapc (rcurry #'build-source-file module-table) sources)))
+        (let ((sources (source-file-list module-path (get "sources" module-info))))
+          (foreach (rcurry #'build-source-file module-table) sources)))
       t)))
 
 

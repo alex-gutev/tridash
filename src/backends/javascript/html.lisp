@@ -39,7 +39,7 @@
      (plump:make-element
       (find-head-tag root-node)
       "script"
-      :attributes (alist-hash-table (acons "src" (mkstr *runtime-library-path*) nil) :test #'equalp)))))
+      :attributes (alist-hash-table (acons "src" (mkstr *runtime-library-path*) nil) :test #'cl:equalp)))))
 
 
 (defun find-head-tag (root-node)
@@ -55,7 +55,9 @@
 
 (defun slurp-runtime-library (path)
   "Returns the contents of the runtime library at path PATH."
+
   (read-file-into-string path))
+
 
 ;;; Link Generated Code
 
@@ -104,7 +106,7 @@
   "Currently does nothing other than a signal an error if there are
    any bindings which involve the component node."
 
-  (when (plusp (hash-table-count (contexts node)))
+  (unless (emptyp (contexts node))
     (error 'html-component-binding :name (name node))))
 
 (defmethod create-node ((node html-node))
@@ -114,10 +116,10 @@
   ;; Create base node definition first
   (call-next-method)
 
-  (when (gethash :input (contexts node))
+  (when (get :input (contexts node))
     (make-input-html-node node))
 
-  (when (gethash :object (contexts node))
+  (when (get :object (contexts node))
     (make-output-html-node node)))
 
 (defun make-input-html-node (node)
@@ -145,7 +147,7 @@
    attributes of the element."
 
   (let ((path (node-path node))
-        (context (gethash :object (contexts node))))
+        (context (get :object (contexts node))))
 
     (with-slots (value-function) context
       (append-code
@@ -158,7 +160,7 @@
         (js-lambda
          (list "value")
          (-> (compose (curry #'make-set-attribute node "value") #'first)
-             (mapcar (rest value-function)))))))))
+             (map (rest value-function)))))))))
 
 (defun make-get-element (path id)
   "Generates code which retrieves a reference to the HTML element with
@@ -195,17 +197,17 @@
 
 
 (defparameter *html-events*
-  (alist-hash-table
+  (alist-hash-map
    '((("input" "value") . "change")
      (("input" "checked") . "change")
      (("textarea" "value") . "change"))
-   :test #'equalp)
+   :test #'cl:equalp)
 
-  "Hash table containing the change event names of HTML tag
-   attributes. Each key is a list of two values: the tag name and the
-   attribute name, with the corresponding value being the change event
-   name. The hash-table uses the EQUALP test thus the tag names and
-   attributes can be specified as case-insensitive strings.")
+  "Map containing the change event names of HTML tag attributes. Each
+   key is a list of two values: the tag name and the attribute name,
+   with the corresponding value being the change event name. The
+   `HASH-MAP' uses the EQUALP test thus the tag names and attributes
+   can be specified as case-insensitive strings.")
 
 (defun make-event-listener (node attribute)
   "Generates code which attaches an event listener to the attribute
@@ -214,7 +216,7 @@
 
   (let ((path (node-path node)))
     (with-slots (tag-name) node
-      (awhen (gethash (list tag-name attribute) *html-events*)
+      (awhen (get (list tag-name attribute) *html-events*)
         (js-call (js-members path "html_element" "addEventListener")
                  (js-string it)
                  (js-lambda

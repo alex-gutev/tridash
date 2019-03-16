@@ -31,10 +31,9 @@
    currently unused. Returns the module table."
 
   (let ((modules (make-instance 'module-table)))
-    (mapc (rcurry #'build-source-file modules) files)
+    (foreach (rcurry #'build-source-file modules) files)
 
-    (finish-build-graph modules)
-    modules))
+    (finish-build-graph modules)))
 
 (defun build-source-file (file modules)
   "Builds the node definitions in the source file FILE. FILE is either
@@ -42,6 +41,6 @@
    the path to the file and the second element being an options
    hash-table."
 
-  (destructuring-bind (path &optional (options (make-hash-table :test #'equal))) (ensure-list file)
+  (destructuring-bind (path &optional (options (make-hash-map :test #'cl:equalp))) (ensure-list file)
     (change-module :init modules)
     (build-nodes-in-file path modules options)))

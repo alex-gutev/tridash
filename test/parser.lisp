@@ -19,7 +19,7 @@
 ;;;; Unit tests for parser
 
 (defpackage :tridash.test.parser
-  (:use :cl
+  (:use :generic-cl
         :alexandria
         :anaphora
         :cl-arrows
@@ -31,6 +31,11 @@
         :tridash.frontend
 
         :tridash.test.util)
+
+  (:shadowing-import-from :generic-cl
+                          :emptyp
+                          :multiply
+                          :accumulate)
 
   (:shadowing-import-from :prove :fail)
 
@@ -100,7 +105,7 @@
           '(!|fn|)
           '!|arg|))
 
-        (let ((ops (alist-hash-table
+        (let ((ops (alist-hash-map
                     `((,+bind-operator+ 10 :right)
                       (,(s "+") 20 :left)
                       (,(s "-") 20 :left)
@@ -154,12 +159,12 @@
           '(!\:
             (!|fn| !\a !\b)
             (list !\a !\b !\c !\d)))
-         (alist-hash-table
+         (alist-hash-map
           `((,(s ":") 10 :right)
             (:open-paren 200)))))
 
       (subtest "Literals"
-        (let ((ops (alist-hash-table
+        (let ((ops (alist-hash-map
                    `((,(s "+") 20 :left)
                      (,(s "-") 20 :left)
                      (,(s "*") 50 :right)

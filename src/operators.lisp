@@ -22,91 +22,76 @@
 
 ;;; Basic Operators
 
-(define-constant +bind-operator+ (id-symbol "->")
-  :documentation
+(defconstant +bind-operator+ (id-symbol "->")
   "Operator for establishing bindings between nodes.")
 
-(define-constant +def-operator+ (id-symbol ":")
-  :documentation
+(defconstant +def-operator+ (id-symbol ":")
   "Operator for defining meta-nodes.")
 
-(define-constant +op-operator+ (id-symbol ":op")
-  :documentation
+(defconstant +op-operator+ (id-symbol ":op")
   "Operator for marking nodes as infix operators.")
 
 
 ;;; Subnodes and Outer Nodes.
 
-(define-constant +outer-operator+ (id-symbol "..")
-  :documentation
+(defconstant +outer-operator+ (id-symbol "..")
   "Special operator for referencing nodes defined in an outer scope.")
 
-(define-constant +subnode-operator+ (id-symbol ".")
-  :documentation
+(defconstant +subnode-operator+ (id-symbol ".")
   "Special operator for accessing sub-nodes of a node.")
 
 
 ;;; Meta-nodes
 
-(define-constant +self-node+ (id-symbol "self")
-  :documentation
+(defconstant +self-node+ (id-symbol "self")
   "Special node which references the current meta-node.")
 
 
 ;;; Attributes
 
-(define-constant +attribute-operator+ (id-symbol ":attribute")
-  :documentation
+(defconstant +attribute-operator+ (id-symbol ":attribute")
   "Special operator for setting node attributes.")
 
 
 ;;; Conditionals
 
-(define-constant +case-operator+ (id-symbol "case")
-  :documentation
+(defconstant +case-operator+ (id-symbol "case")
   "Case conditional operator.")
 
 
 ;;; Modules
 
-(define-constant +module-operator+ (id-symbol ":module")
-  :documentation
+(defconstant +module-operator+ (id-symbol ":module")
   "Operator which sets the current module.")
 
-(define-constant +import-operator+ (id-symbol ":import")
-  :documentation
+(defconstant +import-operator+ (id-symbol ":import")
   "Operator for importing nodes, from another module, into the current
    module.")
 
-(define-constant +alias-operator+ (id-symbol ":alias")
-  :documentation
+(defconstant +alias-operator+ (id-symbol ":alias")
   "Operator for adding an alias for a module to the current module.")
 
-(define-constant +use-operator+ (id-symbol ":use")
-  :documentation
+(defconstant +use-operator+ (id-symbol ":use")
   "Operator for using a module, using its name as an alias, from the
    current module.")
 
-(define-constant +export-operator+ (id-symbol ":export")
-  :documentation
+(defconstant +export-operator+ (id-symbol ":export")
   "Operator for adding a node to the public nodes table of the current
    module.")
 
-(define-constant +in-module-operator+ (id-symbol ":in")
-  :documentation
+(defconstant +in-module-operator+ (id-symbol ":in")
   "Operator for referencing a node in another module which does not
    have an alias in the current module.")
 
 
 ;;; Externally-Defined Meta-Nodes
 
-(define-constant +extern-operator+ (id-symbol ":extern")
-  :documentation
+(defconstant +extern-operator+ (id-symbol ":extern")
   "Special operator for adding stubs for meta-nodes which are defined
    externally.")
 
 
-(define-constant +special-operators+
+(defconstant +special-operators+
     (list +bind-operator+
           +def-operator+
           +extern-operator+
@@ -121,14 +106,13 @@
           +in-module-operator+
           +list-operator+)
 
-  :test #'equal
-  :documentation "List of all special operators")
+  "List of all special operators")
 
 
 ;;; Infix Operators
 
-(defparameter +infix-operators+
-  (alist-hash-table
+(defconstant +infix-operators+
+  (alist-hash-map
    `((,+bind-operator+ 10 :right)
      (,+def-operator+ 5 :right)
      (:open-paren 900)

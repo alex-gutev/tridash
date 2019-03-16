@@ -24,9 +24,10 @@
   ((modules
     :accessor modules
     :initarg :modules
-    :initform (make-hash-table :test #'eq)
+    :initform (make-hash-map)
     :documentation
-    "Hash-table mapping module names to the modules' `NODE-TABLES'.")
+    "Module Map. Each key is a module identifier symbol and the
+     corresponding value is the module's `NODE-TABLE'.")
 
    (node-table
     :accessor node-table
@@ -45,7 +46,7 @@
 
   (with-slots (modules node-table) module-table
     (create-builtin-module module-table)
-    (setf (gethash :init modules) node-table)))
+    (setf (get :init modules) node-table)))
 
 (defun change-module (module &optional (frontend *global-module-table*))
   "Changes the global node table (stored in the NODE-TABLE slot of the
@@ -59,14 +60,14 @@
    MODULE is not present in the MODULES table of FRONTEND a new empty
    `NODE-TABLE' is created."
 
-  (ensure-gethash module (modules frontend) (make-instance 'node-table :name module)))
+  (ensure-get module (modules frontend) (make-instance 'node-table :name module)))
 
 (defun get-module (module &optional (modules *global-module-table*))
   "Returns the `NODE-TABLE' of MODULE. If there is module named MODULE
    in MODULES, signals a `NON-EXISTENT-MODULE' condition."
 
   (with-retry-restart
-    (or (gethash module (modules modules))
+    (or (get module (modules modules))
         (error 'non-existent-module :module-name module))))
 
 

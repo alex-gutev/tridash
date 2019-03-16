@@ -17,7 +17,7 @@
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 (defpackage :tridash.test.util
-  (:use :cl
+  (:use :generic-cl
         :tridash.parser
         :optima)
 
@@ -82,7 +82,7 @@
    is used."
 
   (labels ((!-sym-p (sym)
-             (when (char= #\! (char (symbol-name sym) 0))
+             (when (= #\! (char (symbol-name sym) 0))
                (id-symbol (subseq (symbol-name sym) 1))))
 
            (replace-!-syms (decl)
@@ -91,7 +91,7 @@
                 (or (!-sym-p decl) decl))
 
                (cons
-                (mapcar #'replace-!-syms decl))
+                (map #'replace-!-syms decl))
 
                (otherwise decl))))
     `(list ,@(replace-!-syms decls))))

@@ -19,7 +19,7 @@
 ;;;; JavaScript Backend Tests
 
 (defpackage :tridash.test.backend.js
-  (:use :cl
+  (:use :generic-cl
         :alexandria
         :anaphora
         :cl-arrows
@@ -34,6 +34,11 @@
         :tridash.backend.js.ast
 
         :tridash.test.util)
+
+  (:shadowing-import-from :generic-cl
+                          :emptyp
+                          :accumulate
+                          :multiply)
 
   (:shadowing-import-from :prove :fail)
 
@@ -200,10 +205,10 @@
 
     ((list '$ alias)
      (acond
-       ((gethash alias *ast-aliases*)
+       ((get alias *ast-aliases*)
         (ast= got it))
 
-       (t (setf (gethash alias *ast-aliases*) got)
+       (t (setf (get alias *ast-aliases*) got)
           t)))
 
     (_ (call-next-method))))
@@ -239,11 +244,11 @@
   "Evaluates the forms in BODY in an environment in which the
    backend's state has been initialized with mocked values."
 
-  `(let ((*node-ids* (make-hash-table :test #'eq))
-         (*node-link-indices* (make-hash-table :test #'eq))
-         (*meta-node-ids* (make-hash-table :test #'eq))
-         (*context-ids* (make-hash-table :test #'eq))
-         (*lazy-nodes* (make-hash-table :test #'eq))
+  `(let ((*node-ids* (make-hash-map))
+         (*node-link-indices* (make-hash-map))
+         (*meta-node-ids* (make-hash-map))
+         (*context-ids* (make-hash-map))
+         (*lazy-nodes* (make-hash-map))
          (*context-counter* 0)
          (*initial-values* nil))
      ,@body))
@@ -252,7 +257,7 @@
   "Evaluates the forms in BODY with the nodes in NODES set as lazy
    nodes."
 
-  `(let ((*lazy-nodes* (alist-hash-table (list ,@(mapcar #`(cons ,a1 t) nodes)) :test #'eq)))
+  `(let ((*lazy-nodes* (alist-hash-map (list ,@(mapcar #`(cons ,a1 t) nodes)))))
      ,@body))
 
 (defun mock-meta-nodes% (names)
@@ -260,7 +265,7 @@
 
   (flet ((make-meta-node (name)
            (make-instance 'external-meta-node :name name)))
-    (mapcar #'make-meta-node names)))
+    (map #'make-meta-node names)))
 
 (defmacro mock-meta-nodes ((&rest names) &body body)
   "Evaluates the forms in BODY with each symbol in NAMES bound to an
@@ -284,11 +289,11 @@
              ((or (cons 'async dep)
                   dep)
 
-              `(,dep (setf (gethash ',dep (operands ,g!context))
+              `(,dep (setf (get ',dep (operands ,g!context))
                                (node-link ',operand)))))))
 
     `(let ((,g!context (make-instance 'node-context)))
-       (let ,(mapcar #'make-binding operands)
+       (let ,(map #'make-binding operands)
          (setf (value-function ,g!context) ,value-function))
        ,g!context)))
 
@@ -300,7 +305,7 @@
 
   (flet ((make-binding (context)
            `(,(first context) (mock-context ,@(rest context)))))
-    `(let ,(mapcar #'make-binding contexts) ,@body)))
+    `(let ,(map #'make-binding contexts) ,@body)))
 
 
 ;;;; Test Value Function Utilities
@@ -322,7 +327,7 @@
 
     (let ((prove:*default-test-function* #'ast-list=)
           (*values-var* (first args))
-          (*ast-aliases* (make-hash-table :test #'eq)))
+          (*ast-aliases* (make-hash-map)))
       (is body fn))))
 
 (defmacro! test-compute-function (o!context &body statements)
@@ -363,7 +368,7 @@
    BODY contains the statements making up the body of the 'then'
    handler function."
 
-  `(promise% (list ,@(mapcar #'first args)) (list ,@(mapcar #'second args)) (list ,@body)))
+  `(promise% (list ,@(map #'first args)) (list ,@(map #'second args)) (list ,@body)))
 
 (defun promise% (exprs args body)
   "Creates a Promise.all expression resolving the expressions
@@ -844,11 +849,11 @@
    performed with *AST-ALIASES* bound to a new empty alias table."
 
   (let ((prove:*default-test-function* #'ast-list=)
-        (*ast-aliases* (make-hash-table :test #'eq)))
+        (*ast-aliases* (make-hash-map)))
     (is got expected)))
 
 (defun test-meta-node-function% (meta-node expected)
-  (let ((*ast-aliases* (make-hash-table :test #'eq)))
+  (let ((*ast-aliases* (make-hash-map)))
     (is (strip-redundant (create-meta-node meta-node)) expected :test #'ast-list=)))
 
 (defmacro test-meta-node-function (meta-node &body code)
@@ -880,7 +885,7 @@
           (,g!meta-node ,g!operands)
 
           (aprog1 (previous ,g!meta-node ,g!operands)
-            (cond ,@(mapcar #'make-test-call calls))))
+            (cond ,@(map #'make-test-call calls))))
        ,@body)))
 
 (defmacro test-async-meta-node (meta-node (&rest arguments))
@@ -894,7 +899,7 @@
   `(test-meta-node-function ,meta-node
      (js-function
       (meta-node-id ,meta-node)
-      (list ,@(mapcar #`($ ,a1) arguments)
+      (list ,@(map #`($ ,a1) arguments)
             (js-call "=" ($ promise) (js-new (js-member +tridash-namespace+ "ValuePromise")))
             ($ node-table))
 
@@ -905,7 +910,7 @@
        (js-call
         (js-member +tridash-namespace+ "set_values")
         (js-array
-         (list ,@(mapcar #`(js-array (list ($ _) ($ ,a1))) arguments))))
+         (list ,@(map #`(js-array (list ($ _) ($ ,a1))) arguments))))
 
        (js-return (js-member ($ promise) "promise"))))))
 
@@ -1097,7 +1102,7 @@
    NODE has a single context, otherwise there is no guarantee which
    context will be returned."
 
-  (first (hash-table-values (contexts node))))
+  (cdr (first (contexts node))))
 
 (defmacro test-lazy-nodes (&rest nodes)
   "Tests that each node in NODES is determined to be a lazy node. If
@@ -1116,10 +1121,10 @@
                   `(okf ,(test-node-context node) "Node ~a is a lazy node." (name ,node))))))
 
            (test-node-context (node)
-             `(gethash (default-context ,node) *lazy-nodes*)))
+             `(get (default-context ,node) *lazy-nodes*)))
 
     `(progn
-      ,@(mapcar #'make-node-test nodes))))
+      ,@(map #'make-node-test nodes))))
 
 (deftest lazy-node-analysis
   (subtest "Test Lazy Node Analysis"
@@ -1133,43 +1138,43 @@
           (build ":attribute(a - b, no-coalesce, 1)")
           (build ":attribute(a, input, 1)")
           (build ":attribute(b, input, 1)")
-          (finish-build)
 
-          (with-nodes ((a "a") (b "b") (out "out")
-                       (a<b ("<" "a" "b")) (b-a ("-" "b" "a")) (a-b ("-" "a" "b")))
-              modules
+          (let ((table (finish-build)))
+            (with-nodes ((a "a") (b "b") (out "out")
+                         (a<b ("<" "a" "b")) (b-a ("-" "b" "a")) (a-b ("-" "a" "b")))
+                table
 
-            (mock-backend-state
-              (get-lazy-nodes modules
-                (test-lazy-nodes b-a a-b (not a<b) (not out))
+              (mock-backend-state
+                (get-lazy-nodes table
+                  (test-lazy-nodes b-a a-b (not a<b) (not out))
 
-                (test-compute-function (default-context b-a)
-                  (js-return
-                   (js-call
-                    +thunk-class+
-                    (js-lambda
-                     nil
+                  (test-compute-function (default-context b-a)
+                    (js-return
+                     (js-call
+                      +thunk-class+
+                      (js-lambda
+                       nil
 
-                     (list
-                      (js-return (js-call "-" `(d ,b) `(d ,a))))))))
+                       (list
+                        (js-return (js-call "-" `(d ,b) `(d ,a))))))))
 
-                (test-compute-function (default-context a-b)
-                  (js-return
-                   (js-call
-                    +thunk-class+
-                    (js-lambda
-                     nil
+                  (test-compute-function (default-context a-b)
+                    (js-return
+                     (js-call
+                      +thunk-class+
+                      (js-lambda
+                       nil
 
-                     (list
-                      (js-return (js-call "-" `(d ,a) `(d ,b))))))))
+                       (list
+                        (js-return (js-call "-" `(d ,a) `(d ,b))))))))
 
-                (test-compute-function (default-context a<b)
-                  (js-return (js-call "<" `(d ,a) `(d ,b))))
+                  (test-compute-function (default-context a<b)
+                    (js-return (js-call "<" `(d ,a) `(d ,b))))
 
-                (test-compute-function (default-context out)
-                  (js-if `(d ,a<b)
-                         (js-return (js-call `(d ,b-a)))
-                         (js-return (js-call `(d ,a-b))))))))))
+                  (test-compute-function (default-context out)
+                    (js-if `(d ,a<b)
+                           (js-return (js-call `(d ,b-a)))
+                           (js-return (js-call `(d ,a-b)))))))))))
 
       (subtest "Not Lazy Nodes"
         (with-module-table modules
@@ -1181,39 +1186,39 @@
           (build ":attribute(a - b, no-coalesce, 1)")
           (build ":attribute(a, input, 1)")
           (build ":attribute(b, input, 1)")
-          (finish-build)
 
-          (with-nodes ((a "a") (b "b") (out1 "out1") (out2 "out2")
-                       (a<b ("<" "a" "b")) (b-a ("-" "b" "a")) (a-b ("-" "a" "b")))
-              modules
+          (let ((table (finish-build)))
+            (with-nodes ((a "a") (b "b") (out1 "out1") (out2 "out2")
+                         (a<b ("<" "a" "b")) (b-a ("-" "b" "a")) (a-b ("-" "a" "b")))
+                table
 
-            (mock-backend-state
-              (get-lazy-nodes modules
-                (test-lazy-nodes a-b (not b-a) (not a<b) (not out1) (not out2))
+              (mock-backend-state
+                (get-lazy-nodes table
+                  (test-lazy-nodes a-b (not b-a) (not a<b) (not out1) (not out2))
 
-                (test-compute-function (default-context b-a)
-                  (js-return (js-call "-" `(d ,b) `(d ,a))))
+                  (test-compute-function (default-context b-a)
+                    (js-return (js-call "-" `(d ,b) `(d ,a))))
 
-                (test-compute-function (default-context a-b)
-                  (js-return
-                   (js-call
-                    +thunk-class+
-                    (js-lambda
-                     nil
+                  (test-compute-function (default-context a-b)
+                    (js-return
+                     (js-call
+                      +thunk-class+
+                      (js-lambda
+                       nil
 
-                     (list
-                      (js-return (js-call "-" `(d ,a) `(d ,b))))))))
+                       (list
+                        (js-return (js-call "-" `(d ,a) `(d ,b))))))))
 
-                (test-compute-function (default-context a<b)
-                  (js-return (js-call "<" `(d ,a) `(d ,b))))
+                  (test-compute-function (default-context a<b)
+                    (js-return (js-call "<" `(d ,a) `(d ,b))))
 
-                (test-compute-function (default-context out1)
-                  (js-if `(d ,a<b)
-                         (js-return `(d ,b-a))
-                         (js-return (js-call `(d ,a-b)))))
+                  (test-compute-function (default-context out1)
+                    (js-if `(d ,a<b)
+                           (js-return `(d ,b-a))
+                           (js-return (js-call `(d ,a-b)))))
 
-                (test-compute-function (default-context out2)
-                  (js-return `(d ,b-a)))))))))
+                  (test-compute-function (default-context out2)
+                    (js-return `(d ,b-a))))))))))
 
     (subtest "Multiple Modules"
       (subtest "All Lazy Nodes"
@@ -1233,47 +1238,46 @@
           (build ":attribute(m.a < m.b, no-coalesce, 1)")
           (build ":attribute(m.b - m.a, no-coalesce, 1)")
           (build ":attribute(m.a - m.b, no-coalesce, 1)")
-          (finish-build)
 
-          (with-modules ((mod1 "mod1") (mod2 "mod2")) modules
-            (with-nodes ((a "a") (b "b")) mod1
-              (with-nodes ((a<b ("<" ("." "m" "a") ("." "m" "b")))
-                           (b-a ("-" ("." "m" "b") ("." "m" "a")))
-                           (a-b ("-" ("." "m" "a") ("." "m" "b")))
-                           (out "out"))
-                  mod2
+          (let ((table (finish-build)))
+            (with-nodes ((a "a") (b "b")
+                         (a<b ("<" ("." "m" "a") ("." "m" "b")))
+                         (b-a ("-" ("." "m" "b") ("." "m" "a")))
+                         (a-b ("-" ("." "m" "a") ("." "m" "b")))
+                         (out "out"))
+              table
 
-                (mock-backend-state
-                  (get-lazy-nodes modules
-                    (test-lazy-nodes b-a a-b (not a<b) (not out))
+              (mock-backend-state
+                (get-lazy-nodes table
+                  (test-lazy-nodes b-a a-b (not a<b) (not out))
 
-                    (test-compute-function (default-context b-a)
-                      (js-return
-                       (js-call
-                        +thunk-class+
-                        (js-lambda
-                         nil
+                  (test-compute-function (default-context b-a)
+                    (js-return
+                     (js-call
+                      +thunk-class+
+                      (js-lambda
+                       nil
 
-                         (list
-                          (js-return (js-call "-" `(d ,b) `(d ,a))))))))
+                       (list
+                        (js-return (js-call "-" `(d ,b) `(d ,a))))))))
 
-                    (test-compute-function (default-context a-b)
-                      (js-return
-                       (js-call
-                        +thunk-class+
-                        (js-lambda
-                         nil
+                  (test-compute-function (default-context a-b)
+                    (js-return
+                     (js-call
+                      +thunk-class+
+                      (js-lambda
+                       nil
 
-                         (list
-                          (js-return (js-call "-" `(d ,a) `(d ,b))))))))
+                       (list
+                        (js-return (js-call "-" `(d ,a) `(d ,b))))))))
 
-                    (test-compute-function (default-context a<b)
-                      (js-return (js-call "<" `(d ,a) `(d ,b))))
+                  (test-compute-function (default-context a<b)
+                    (js-return (js-call "<" `(d ,a) `(d ,b))))
 
-                    (test-compute-function (default-context out)
-                      (js-if `(d ,a<b)
-                             (js-return (js-call `(d ,b-a)))
-                             (js-return (js-call `(d ,a-b))))))))))))
+                  (test-compute-function (default-context out)
+                    (js-if `(d ,a<b)
+                           (js-return (js-call `(d ,b-a)))
+                           (js-return (js-call `(d ,a-b)))))))))))
 
       (subtest "Not Lazy Nodes"
         (with-module-table modules
@@ -1293,43 +1297,42 @@
           (build ":attribute(m.a < m.b, no-coalesce, 1)")
           (build ":attribute(m.b - m.a, no-coalesce, 1)")
           (build ":attribute(m.a - m.b, no-coalesce, 1)")
-          (finish-build)
 
-          (with-modules ((mod1 "mod1") (mod2 "mod2")) modules
-            (with-nodes ((a "a") (b "b") (out2 "out2")) mod1
-              (with-nodes ((a<b ("<" ("." "m" "a") ("." "m" "b")))
-                           (b-a ("-" ("." "m" "b") ("." "m" "a")))
-                           (a-b ("-" ("." "m" "a") ("." "m" "b")))
-                           (out1 "out1"))
-                  mod2
+          (let ((table (finish-build)))
+            (with-nodes ((a "a") (b "b") (out2 "out2")
+                         (a<b ("<" ("." "m" "a") ("." "m" "b")))
+                         (b-a ("-" ("." "m" "b") ("." "m" "a")))
+                         (a-b ("-" ("." "m" "a") ("." "m" "b")))
+                         (out1 "out1"))
+              table
 
-                (mock-backend-state
-                  (get-lazy-nodes modules
-                    (test-lazy-nodes b-a (not a-b) (not a<b) (not out1) (not out2))
+              (mock-backend-state
+                (get-lazy-nodes table
+                  (test-lazy-nodes b-a (not a-b) (not a<b) (not out1) (not out2))
 
-                    (test-compute-function (default-context b-a)
-                      (js-return
-                       (js-call
-                        +thunk-class+
-                        (js-lambda
-                         nil
+                  (test-compute-function (default-context b-a)
+                    (js-return
+                     (js-call
+                      +thunk-class+
+                      (js-lambda
+                       nil
 
-                         (list
-                          (js-return (js-call "-" `(d ,b) `(d ,a))))))))
+                       (list
+                        (js-return (js-call "-" `(d ,b) `(d ,a))))))))
 
-                    (test-compute-function (default-context a-b)
-                      (js-return (js-call "-" `(d ,a) `(d ,b))))
+                  (test-compute-function (default-context a-b)
+                    (js-return (js-call "-" `(d ,a) `(d ,b))))
 
-                    (test-compute-function (default-context a<b)
-                      (js-return (js-call "<" `(d ,a) `(d ,b))))
+                  (test-compute-function (default-context a<b)
+                    (js-return (js-call "<" `(d ,a) `(d ,b))))
 
-                    (test-compute-function (default-context out1)
-                      (js-if `(d ,a<b)
-                             (js-return (js-call `(d ,b-a)))
-                             (js-return `(d ,a-b))))
+                  (test-compute-function (default-context out1)
+                    (js-if `(d ,a<b)
+                           (js-return (js-call `(d ,b-a)))
+                           (js-return `(d ,a-b))))
 
-                    (test-compute-function (default-context out2)
-                      (js-return `(d ,a-b)))))))))))))
+                  (test-compute-function (default-context out2)
+                    (js-return `(d ,a-b))))))))))))
 
 (run-test 'lazy-node-analysis)
 

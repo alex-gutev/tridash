@@ -23,24 +23,24 @@
 
 (in-readtable cut-syntax)
 
-(defun coalesce-nodes (module-table)
+(defun coalesce-nodes (input-nodes)
   "Coalesces successive nodes, which only have a single observer, into
-   single nodes"
+   single nodes. INPUT-NODES is the set of all INPUT-NODES."
 
-  (let ((visited (make-hash-table :test #'eq)))
+  (let ((visited (make-hash-set)))
     (labels
         ((begin-coalesce (node)
            "Begins node coalescing starting from the node NODE. Clears
             the visited set."
 
-           (clrhash visited)
+           (clear visited)
            (coalesce-observers node))
 
          (coalesce-observers (node)
            "Performs node coalescing on the observer nodes of NODE."
 
-           (setf (gethash node visited) t)
-           (maphash-keys #'coalesce-node (observers node)))
+           (nadjoin node visited)
+           (foreach #'coalesce-node (map-keys (observers node))))
 
          (coalesce-node (node)
            "Coalesces the node NODE (into its observer node) if it
@@ -48,9 +48,8 @@
             performed on its observer nodes and redundant 2-way
             bindings are removed."
 
-           (unless (gethash node visited)
-             (setf (gethash node visited) t)
-
+           (unless (memberp node visited)
+             (nadjoin node visited)
              (coalesce-observers node)
 
              (unless (input-node? node)
@@ -58,8 +57,8 @@
                (eliminate-node node))))
 
          (remove-redundant-2-way-links (node)
-           (when (= (hash-table-count (contexts node)) 1)
-             (maphash-keys (curry #'remove-observer node) (dependencies node))))
+           (when (= (length (contexts node)) 1)
+             (foreach (curry #'remove-observer node) (map-keys (dependencies node)))))
 
 
          (eliminate-node (node)
@@ -71,21 +70,21 @@
             replaced with the value-function of NODE."
 
            (when (coalesce? node)
-             (merge-dependencies node (first (observer-list node)))
+             (merge-dependencies node (first (map-keys (observers node))))
 
              ;; Clear observer, dependency and context sets to prepare
              ;; the node for removal as it is now not reachable from
              ;; any input node
-             (clrhash (observers node))
-             (clrhash (dependencies node))
-             (clrhash (contexts node))))
+             (clear (observers node))
+             (clear (dependencies node))
+             (clear (contexts node))))
 
          (coalesce? (node)
            "Returns true if NODE can be coalesced."
 
            (and (may-coalesce? node)
-                (= (observers-count node) 1)
-                (<= (hash-table-count (contexts node)) 1)))
+                (= (length (observers node)) 1)
+                (<= (length (contexts node)) 1)))
 
          (merge-dependencies (node observer)
            "Merges the dependencies of NODE into the dependency set of
@@ -96,8 +95,8 @@
             this assumes that NODE only has a single value function."
 
            (with-slots (dependencies) observer
-             (let* ((context (first (hash-table-values (contexts node))))
-                    (link (gethash node dependencies))
+             (let* ((context (first (map-values (contexts node))))
+                    (link (get node dependencies))
                     (context-id (node-link-context link)))
 
                (with-slots (operands value-function) (context observer context-id)
@@ -105,40 +104,30 @@
                  (setf (node-link-node link) (value-function context))
 
                  ;; Remove NODE from DEPENDENCIES of OBSERVER
-                 (remhash node dependencies)
-                 (remhash node operands)
+                 (erase dependencies node)
+                 (erase operands node)
 
                  ;; Add all dependencies of NODE to dependencies of OBSERVER
-                 (dohash (dependency link (dependencies node))
+                 (doseq ((dependency . link) (dependencies node))
                    ;; Check if OBSERVER Already has DEPENDENCY as a dependency
-                   (when-let ((old-link (gethash dependency dependencies)))
-                     (unless (gethash dependency operands)
+                   (when-let ((old-link (get dependency dependencies)))
+                     (unless (get dependency operands)
                        (error 'ambiguous-context-error :node observer))
 
                      (setf (node-link-node old-link) link))
 
                    ;; Add DEPENDENCY to dependencies of OBSERVER
-                   (setf (gethash dependency dependencies) link)
-                   (setf (gethash dependency operands) link)
+                   (setf (get dependency dependencies) link)
+                   (setf (get dependency operands) link)
                    (setf (node-link-context link) context-id)
 
                    (with-slots (observers) dependency
                      ;; Remove NODE from observers of DEPENDENCY
-                     (remhash node observers)
+                     (erase observers node)
                      ;; Add OBSERVER to observers of DEPENDENCY
-                     (setf (gethash observer (observers dependency)) link)))))))
+                     (setf (get observer (observers dependency)) link))))))))
 
-
-         (coalesce-nodes-in-module (module)
-           (mapc #'begin-coalesce (input-nodes module))
-           (maphash-values #'coalesce-nodes-in-meta-node (meta-nodes module)))
-
-         (coalesce-nodes-in-meta-node (meta-node)
-           (with-slots (definition) meta-node
-             (when definition
-               (coalesce-nodes-in-module definition)))))
-
-      (maphash-values #'coalesce-nodes-in-module (modules module-table)))))
+      (foreach #'begin-coalesce input-nodes))))
 
 (defun may-coalesce? (node)
   "Returns true if NODE may be coalesced into another node. Returns
@@ -146,10 +135,10 @@
 
   (null (attribute :no-coalesce node)))
 
-(defun coalesce-node-links (module-table)
+(defun coalesce-node-links (nodes)
   "Replaces the `node-link' objects, within the value functions of
    NODE, which do not directly reference another node, with their
-   contents."
+   contents. NODES is the set of all nodes."
 
   (labels ((remove-node-links (fn)
              "Replaces all `node-link' objects (within the value
@@ -158,7 +147,7 @@
 
              (match fn
                ((list* meta-node operands)
-                (list* meta-node (mapcar #'remove-node-links operands)))
+                (list* meta-node (map #'remove-node-links operands)))
 
                ((node-link- (node (and fn (not (type node)) (not (type symbol)))))
                 (remove-node-links fn))
@@ -166,145 +155,94 @@
                (_ fn)))
 
            (coalesce-links-in-node (node)
-             (when (node? node)
-               (with-slots (contexts) node
-                 (dohash (nil context contexts)
-                   (with-slots (value-function) context
-                     (setf value-function (remove-node-links value-function)))))))
+             (with-slots (contexts) node
+               (doseq ((id . context) contexts)
+                 (declare (ignore id))
 
-           (coalesce-links-in-module (module)
-             (maphash-values #'coalesce-links-in-node (all-nodes module))
-             (maphash-values #'coalesce-links-in-meta-node (meta-nodes module)))
+                 (with-slots (value-function) context
+                   (setf value-function (remove-node-links value-function)))))))
 
-           (coalesce-links-in-meta-node (meta-node)
-             (with-slots (definition) meta-node
-               (when definition
-                 (coalesce-links-in-module definition)))))
-
-    (maphash-values #'coalesce-links-in-module (modules module-table))))
+    (foreach #'coalesce-links-in-node nodes)))
 
 
-(defun remove-unreachable-nodes (module-table)
-  "Removes unreachable nodes in each module in MODULE-TABLE. An
-   unreachable node is a node which is not reachable from any
-   input-node of any module.
+(defun remove-unreachable-nodes (input-nodes nodes)
+  "Removes all unreachable nodes from NODES. An unreachable node is a
+   node which is not reachable from any node in INPUT-NODES."
 
-   Unreachable nodes are also removed from the sub-graphs of each
-   meta-node in each module."
-
-  (let ((visited (make-hash-table :test #'eq)))
+  (let ((visited (make-hash-set)))
     (labels ((mark (node)
                (unless (visited? node)
-                 (setf (gethash node visited) t)
-                 (maphash-keys #'mark (observers node))))
+                 (nadjoin node visited)
+                 (foreach #'mark (map-keys (observers node)))))
 
-             (sweep (name node node-table)
+             (sweep (node)
                (unless (or (visited? node) (attribute :no-remove node))
-                 (remhash name (nodes node-table))
-                 (remhash name (all-nodes node-table))
+                 (erase nodes node)
 
-                 (awhen (some #'visited? (observer-list node))
+                 (awhen (some #'visited? (map-keys (observers node)))
                    (error 'dependency-not-reachable :dependency node :node it))))
 
              (visited? (node)
-               (and (gethash node visited)
-                    node))
+               (and (memberp node visited)
+                    node)))
 
-             (mark-in-module (node-table)
-               (mapc #'mark (input-nodes node-table)))
+      (foreach #'mark input-nodes)
+      (foreach #'sweep nodes))))
 
-             (sweep-in-module (node-table)
-               (maphash (rcurry #'sweep node-table) (nodes node-table)))
+(defun fold-constant-nodes (nodes)
+  "Removes all constant nodes, from the set NODES, and replaces links
+   to the nodes with the constant values. Constant nodes are nodes
+   which only have an :INIT context."
 
-             (mark-sweep-in-meta-nodes (node-table)
-               (maphash-values #'mark-sweep-in-meta-node (meta-nodes node-table)))
-
-             (mark-sweep-in-meta-node (meta-node)
-               (with-slots (definition) meta-node
-                 (when definition
-                   (mark-in-module definition)
-                   (sweep-in-module definition)
-
-                   (mark-sweep-in-meta-nodes definition)
-                   (maphash-values #'mark-sweep-in-meta-node (meta-nodes definition))))))
-
-      (with-slots (modules) module-table
-        (maphash-values #'mark-in-module modules)
-        (maphash-values #'sweep-in-module modules)
-
-        (maphash-values #'mark-sweep-in-meta-nodes modules)))))
-
-
-(defun fold-constant-nodes (module-table)
-  "Performs constant node folding on all nodes in each module in
-   MODULE-TABLE.
-
-   Removes all constant nodes and replaces links to the nodes with the
-   constant values. Constant nodes are nodes which only have an :INIT
-   context."
-
-  (labels ((value-nodes (graph)
-             (remove-if-not #'value-node? (hash-table-values (nodes graph))))
-
-           (value-node? (node)
+  (labels ((value-node? (node)
              (unless (input-node? node)
                (with-slots (contexts) node
-                 (and (= (hash-table-count contexts) 1)
-                      (-> (first (hash-table-values contexts))
+                 (and (= (length contexts) 1)
+                      (-> (cdr (first contexts))
                           (operands)
-                          (hash-table-count)
-                          (zerop))))))
+                          (emptyp))))))
 
            (fold-value (node)
              (when (value-node? node)
-               (let ((obs (observer-list node)))
+               (let ((obs (observers node)))
                  (-> (contexts node)
-                     (hash-table-values)
                      (first)
+                     (cdr)
                      (value-function)
                      (replace-dependency node))
 
-                 (clrhash (observers node))
-                 (mapc #'fold-value obs))))
+                 (foreach #'fold-value (map-keys obs))
+                 (clear (observers node)))))
 
            (replace-dependency (value node)
-             (iter
-               (for (obs link) in-hashtable (observers node))
-
-               (remhash node (dependencies obs))
+             (doseq ((obs . link) (observers node))
+               (erase (dependencies obs) node)
                (setf (node-link-node link) value)
 
                (let ((context (context obs (node-link-context link))))
-                 (remhash node (operands context)))))
+                 (erase (operands context) node)))))
 
-           (fold-constants-in-module (module)
-             (mapc #'fold-value (value-nodes module))
-             (maphash-values #'fold-constants-in-meta-node (meta-nodes module)))
-
-           (fold-constants-in-meta-node (meta-node)
-             (awhen (definition meta-node)
-               (fold-constants-in-module it))))
-
-    (maphash-values #'fold-constants-in-module (modules module-table))))
+    (foreach #'fold-value (remove-if-not #'value-node? nodes))))
 
 
-(defun check-structure (module-table)
-  "Checks the structure of each module ensuring there are no cycles
-   and no ambiguous contexts. If a cycle or ambiguous context is
-   detected, an error condition is signaled."
+(defun check-structure (input-nodes)
+  "Checks the structure of all nodes ensuring there are no cycles and
+   no ambiguous contexts. If a cycle or ambiguous context is detected,
+   an error condition is signaled. INPUT-NODES is the set of all input
+   nodes."
 
-  (let ((visited (make-hash-table :test #'eq)))
+  (let ((visited (make-hash-map)))
     (labels ((begin-walk (node)
                "Clears the visited set and begins the traversal at
                 NODE in the :INPUT context."
 
-               (clrhash visited)
+               (clear visited)
                (visit node (context node :input)))
 
              (visit (node context)
                "Visits node NODE in the context CONTEXT."
 
-               (aif (gethash node visited)
+               (aif (get node visited)
                     (check-context node context it)
                     (visit-observers node context)))
 
@@ -318,34 +256,23 @@
                    (temp?
                     (error 'node-cycle-error :node node))
 
-                   ((not (eq old-context new-context))
+                   ((/= old-context new-context)
                     (error 'ambiguous-context-error :node node)))))
 
              (visit-observers (node context)
                "Visits the observers of NODE in the context CONTEXT."
 
                ;; Mark Temporarily
-               (setf (gethash node visited) (list t context))
+               (setf (get node visited) (list t context))
 
                (with-slots (operands) context
-                 (iter
-                   (for (observer link) in-hashtable (observers node))
-                   (for context = (context observer (node-link-context link)))
-
-                   (when (not (in-hash? observer operands))
-                     (visit observer context))))
+                 (foreach #'visit-observer (remove-if (compose (rcurry #'memberp operands) #'car) (observers node))))
 
                ;; Mark Permanently
-               (setf (car (gethash node visited)) nil))
+               (setf (car (get node visited)) nil))
 
-             (check-module (module)
-               (mapc #'begin-walk (input-nodes module))
-               (maphash-values #'check-meta-node (meta-nodes module)))
+             (visit-observer (observer)
+               (destructuring-bind (observer . link) observer
+                 (visit observer (context observer (node-link-context link))))))
 
-             (check-meta-node (meta-node)
-               "Check the structure of the meta-node graph GRAPH."
-
-               (awhen (definition meta-node)
-                 (check-module it))))
-
-      (maphash-values #'check-module (modules module-table)))))
+      (foreach #'begin-walk input-nodes))))
