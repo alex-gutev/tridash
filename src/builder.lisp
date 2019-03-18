@@ -273,20 +273,15 @@
    the OPERATOR argument being the CAR of FUNCTOR and OPERANDS being
    the CDR of FUNCTOR."
 
-  (let ((*declaration-stack* (cons functor *declaration-stack*))
-        (*level* (if top-level 0 (1+ *level*))))
-
-    (destructuring-bind (operator . operands) functor
-      (process-functor operator operands table))))
+  (destructuring-bind (operator . operands) functor
+    (process-functor operator operands table)))
 
 (defmethod process-declaration ((name symbol) table &key top-level)
   "Creates a node with identifier NAME and adds it to table, if table
    does not already contain a node with that identifier. Returns the
    newly created, or existing, node."
 
-  (let* ((*declaration-stack* (cons name *declaration-stack*))
-         (*level* (if top-level 0 (1+ *level*)))
-         (node (ensure-node name table)))
+  (let* ((node (ensure-node name table)))
 
     (unless (or *return-meta-node* (not (meta-node? node)) (= node *meta-node*))
       (error 'node-type-error :node node :expected 'node))
@@ -298,6 +293,16 @@
 
         (add-outer-node node (attribute :module node) table)
         (values node table))))
+
+(defmethod process-declaration :around (decl table &key top-level)
+  "Processes the declaration with DECL added to the front of
+   *DECLARATION-STACK*, and *LEVEL* incremented by one."
+
+  (declare (ignore table))
+
+  (let ((*declaration-stack* (cons decl *declaration-stack*))
+        (*level* (if top-level 0 (1+ *level*))))
+    (call-next-method)))
 
 (defmethod process-declaration (literal table &key)
   "Method for literal values (everything which is not a symbol or list
