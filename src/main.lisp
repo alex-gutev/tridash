@@ -41,6 +41,8 @@
 
   (let ((*debugger-hook* #'debugger-hook))
     (multiple-value-bind (opts free-args) (opts:get-opts)
+      (declare (ignore opts))
+
       (if (< (length free-args) 1)
           (error "Usage: ~a [build configuration file]" (elt (opts:argv) 0))
           (build-app (pathname (elt free-args 0)))))))

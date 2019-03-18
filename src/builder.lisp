@@ -163,13 +163,13 @@
     (flet ((merge-nodes (node-set nodes)
              (nunion node-set (coerce (map-values nodes) 'hash-set)))
 
-           (flatten (fn key)
+           (merge-tables (fn key)
              (reduce fn modules :key key :initial-value (hash-set))))
 
       (make-instance 'flat-node-table
-                     :nodes (flatten #'merge-nodes #'nodes)
-                     :meta-nodes (flatten #'merge-nodes #'meta-nodes)
-                     :input-nodes (flatten #'union #'input-nodes)))))
+                     :nodes (merge-tables #'merge-nodes #'nodes)
+                     :meta-nodes (merge-tables #'merge-nodes #'meta-nodes)
+                     :input-nodes (merge-tables #'union #'input-nodes)))))
 
 (defun flatten-meta-node (definition)
   "Converts the `NODE-TABLE' DEFINITION, containing the body of the
