@@ -23,17 +23,15 @@
 
 ;;;; Compiler Interface
 
-(defun build-program (&key files)
+(defun build-program (&key files (modules *global-module-table*))
   "Builds the node definitions parsed from the files in FILES. Each
    element in FILES is either a path to a source file or a list of
    which the first element is a path and the remaining elements are
    options passed to the file builder. INPUTS and OUTPUTS are
    currently unused. Returns the module table."
 
-  (let ((modules (make-instance 'module-table)))
-    (foreach (rcurry #'build-source-file modules) files)
-
-    (finish-build-graph modules)))
+  (foreach (rcurry #'build-source-file modules) files)
+  (finish-build-graph modules))
 
 (defun build-source-file (file modules)
   "Builds the node definitions in the source file FILE. FILE is either

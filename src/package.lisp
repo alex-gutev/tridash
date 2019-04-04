@@ -175,6 +175,7 @@
    :module-table
    :modules
    :get-module
+   :*global-module-table*
 
    ;; Builder
    :build-parsed-nodes

@@ -155,7 +155,7 @@
         (list (make-get-element path (element-id node))))
 
        (js-call
-        '=
+        "="
         (js-member path "update_value")
         (js-lambda
          (list "value")
@@ -191,7 +191,7 @@
     (unless (equal (string attribute) "style")
       (let ((path (node-path node)))
         (js-call
-         '=
+         "="
          (apply #'js-members path "html_element" (append (ensure-list html-attribute) (list attribute)))
          (js-member object attribute))))))
 

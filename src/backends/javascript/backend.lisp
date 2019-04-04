@@ -140,7 +140,7 @@
           (bindings (make-code-array)))
 
       (generate-code table defs bindings)
-      (print-output-code (list defs bindings) options table))))
+      (print-output-code (list defs bindings) options))))
 
 (defun parse-boolean (thing)
   "Converts THING to a boolean value."
@@ -169,7 +169,7 @@
     ((cl:equalp "none")
      nil)))
 
-(defun print-output-code (code options module-table)
+(defun print-output-code (code options)
   "Prints the JavaScript code represented by the AST nodes in CODE to
    *STANDARD-OUTPUT*."
 
@@ -177,7 +177,7 @@
     (match type
       ((cl:equalp "html")
        (->>
-        (get-root-node main-ui module-table)
+        (get-root-node main-ui)
         (create-html-file
          (lexical-block (list code (make-html-set-initial-values *initial-values*))))))
 
@@ -187,11 +187,11 @@
             (lexical-block)
             (output-code))))))
 
-(defun get-root-node (node module-table)
+(defun get-root-node (node)
   "Gets the root HTML node specified by NODE."
 
   (multiple-value-bind (module node) (node-path->name node)
-    (->> (get-module module module-table)
+    (->> (get-module module *global-module-table*)
          (tridash.frontend::lookup-node node)
          (element-node))))
 
@@ -323,7 +323,7 @@
     ;; If the node has an INIT context, add its initial value to
     ;; *INITIAL-VALUES* and ensure it has an input context.
 
-    (awhen (get-init-context node)
+    (awhen (cdr (get-init-context node))
       (context node :input)
       (push (list path (value-function it)) *initial-values*))
 

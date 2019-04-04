@@ -36,7 +36,7 @@
     :documentation
     "The `NODE-TABLE' of the current module.")))
 
-(defvar *global-module-table* (make-instance 'module-table))
+(defvar *global-module-table*)
 
 
 (defmethod initialize-instance :after ((module-table module-table) &key &allow-other-keys)

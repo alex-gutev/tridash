@@ -57,6 +57,7 @@
       (error "Build file should contain a map of 1 key-value pair."))
 
     (let* ((prog-info (cdr (first prog-info)))
+           (*global-module-table* (make-instance 'module-table))
            (node-table (build-sources build-file (get "sources" prog-info)))
            (output-info (get "output" prog-info))
            (out-path (cl-fad:merge-pathnames-as-file build-file (get "path" output-info))))
@@ -129,7 +130,7 @@
   "Searches for the module MODULE in the directory at PATH. If the
    module was found builds its source files and returns true."
 
-  (let ((module-path (cl-fad:merge-pathnames-as-file path (concatenate (string module) ".yml"))))
+  (let ((module-path (cl-fad:merge-pathnames-as-file path (concatenate-to 'string (string module) ".yml"))))
     (when (osicat:regular-file-exists-p module-path)
       (let ((module-info (yaml:parse module-path)))
         (unless (hash-table-p module-info)
