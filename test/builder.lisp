@@ -48,7 +48,37 @@
                 :tridash-parse-error)
 
   (:import-from :tridash.frontend
-                :outer-nodes))
+                :outer-nodes)
+
+  (:export
+   :*flat-node-table*
+   :build-node
+   :ensure-node-table
+
+   :get-node
+   :test/get-node
+   :test-nodes
+
+   :test-not-node
+   :test-not-nodes
+
+   :test-binding
+   :test-simple-binding
+
+   :value-fn-equal
+   :object-fn-equal
+
+   :test-value-function
+   :test-node-function
+   :init-context
+
+   :test-error
+
+   :with-module-table
+   :with-nodes
+   :with-modules
+   :with-dependencies
+   :has-value-function))
 
 
 (in-package :tridash.test.builder)

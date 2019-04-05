@@ -113,7 +113,7 @@
   "Hash table mapping alias identifier to the aliased AST nodes.")
 
 
-(defmethod ast-list= (got expected)
+(defun ast-list= (got expected)
   "Returns true if every element of GOT is equal (by AST=) to the
    corresponding element of EXPECTED."
 

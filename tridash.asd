@@ -110,6 +110,12 @@
                  (:test-file "builder")
 
                  (:module
+                  "builders/html"
+
+                  :components
+                  ((:test-file "builder")))
+
+                 (:module
                   "backends/javascript"
 
                   :components
