@@ -126,9 +126,9 @@
     otherwise GOT is added to *HTML-NODE-ALIASES* under the key
     EXPECTED, and true is returned.")
 
-  (:method ((a string) b)
-    (if (= (char a 0) #\$)
-        (html-attr= (ensure-get a *html-node-aliases* b) b)
+  (:method (got (expected string))
+    (if (= (char expected 0) #\$)
+        (html-attr= (ensure-get expected *html-node-aliases* got) got)
         (call-next-method)))
 
   (:method (a b)
@@ -165,6 +165,13 @@
   (memberp char +white-space-chars+))
 
 
+(defun parse-html-file (path)
+  "Parse the HTML file at path PATH and removes all whitespace
+   text-nodes. Returns the root node of the HTML file."
+
+  (strip-empty-text-nodes (plump:parse path)))
+
+
 (plan nil)
 
 (deftest html-file-builder
@@ -190,7 +197,7 @@
          `(:member ,input-name ,(node-id "value"))))
 
       (is (strip-empty-text-nodes root-node)
-          (strip-empty-text-nodes (plump:parse #p"test/builders/html/input/test1.out.html"))
+          (parse-html-file #p"test/builders/html/input/test1.out.html")
           :test #'html=))))
 
 (finalize)
