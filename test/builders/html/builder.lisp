@@ -175,29 +175,73 @@
 (plan nil)
 
 (deftest html-file-builder
-  (with-module-table modules
-    (let ((root-node (build-html-file #p"test/builders/html/input/test1.html" modules)))
-      (with-nodes ((name "name")
-                   (input-name "input-name")
-                   (input-name.value ("." "input-name" "value")))
-          modules
+  (subtest "Simple HTML node bindings"
+    (with-module-table modules
+      (let ((root-node (build-html-file #p"test/builders/html/input/test1.html" modules)))
+        (with-nodes ((name "name")
+                     (input-name "input-name")
+                     (input-name.value ("." "input-name" "value")))
+            modules
 
-        (test-html-node input-name "input-name" "input" nil)
-        (test-html-node input-name.value "input-name" "input" "value")
+          (test-html-node input-name "input-name" "input" nil)
+          (test-html-node input-name.value "input-name" "input" "value")
 
-        (test-binding input-name.value name)
-        (test-binding name input-name.value)
+          (test-binding input-name.value name)
+          (test-binding name input-name.value)
 
-        (has-value-function
-         (input-name.value) input-name
-         `(:object (,(node-id "value") ,input-name.value)))
+          (has-value-function
+           (input-name.value) input-name
+           `(:object (,(node-id "value") ,input-name.value)))
 
-        (has-value-function
-         (input-name) input-name.value
-         `(:member ,input-name ,(node-id "value"))))
+          (has-value-function
+           (input-name) input-name.value
+           `(:member ,input-name ,(node-id "value"))))
 
-      (is (strip-empty-text-nodes root-node)
-          (parse-html-file #p"test/builders/html/input/test1.out.html")
-          :test #'html=))))
+        (is (strip-empty-text-nodes root-node)
+            (parse-html-file #p"test/builders/html/input/test1.out.html")
+            :test #'html=))))
+
+  (subtest "Automatic Creation of SPAN HTML nodes"
+    (with-module-table modules
+      (let ((root-node (build-html-file #p"test/builders/html/input/test2.html" modules)))
+        (with-nodes ((first "first") (last "last")
+
+                     (input-first "input-first")
+                     (input-first.value ("." "input-first" "value"))
+
+                     (input-last "input-last")
+                     (input-last.value ("." "input-last" "value")))
+            modules
+
+          (test-html-node input-first "input-first" "input" nil)
+          (test-html-node input-first.value "input-first" "input" "value")
+
+          (test-html-node input-last "input-last" "input" nil)
+          (test-html-node input-last.value "input-last" "input" "value")
+
+          (test-binding input-first.value first)
+          (test-binding input-last.value last)
+
+          (has-value-function
+           (input-first.value) input-first
+           `(:object (,(node-id "value") ,input-first.value)))
+
+          (has-value-function
+           (input-first) input-first.value
+           `(:member ,input-first ,(node-id "value")))
+
+          (has-value-function
+           (input-last.value) input-last
+           `(:object (,(node-id "value") ,input-last.value)))
+
+          (has-value-function
+           (input-last) input-last.value
+           `(:member ,input-last ,(node-id "value"))))
+
+        (is (strip-empty-text-nodes root-node)
+            (parse-html-file #p"test/builders/html/input/test2.out.html")
+            :test #'html=)))))
+
+(run-test 'html-file-builder)
 
 (finalize)
