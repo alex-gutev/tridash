@@ -230,77 +230,82 @@
 
   (has-value-function (element-node) node `(:member ,element-node ,(node-id attribute))))
 
+(defmacro! html-file-test ((module-table file) &body body)
+  "Builds the nodes in the HTML file FILE, into a module table which
+   bound to the symbol MODULE-TABLE, evaluates the forms in BODY.
+   Finally checks that the root-node returned by BUILD-HTML-FILE is
+   equivalent to the root-node of the parsed HTML file, which is at
+   the path FILE with the extension replaced by .OUT.HTML."
+
+  (flet ((out-file (path)
+           (with-accessors
+                 ((dir pathname-directory)
+                  (name pathname-name)
+                  (type pathname-type))
+               path
+             (make-pathname :directory dir
+                            :name (concatenate-to 'string name ".out")
+                            :type type))))
+    `(with-module-table ,module-table
+       (let ((,g!root-node (build-html-file ,file ,module-table)))
+         ,@body
+         (is (strip-empty-text-nodes ,g!root-node)
+             (parse-html-file ,(out-file file))
+             :test #'html=)))))
+
 (plan nil)
 
 (deftest html-file-builder
   (subtest "Simple HTML node bindings"
-    (with-module-table modules
-      (let ((root-node (build-html-file #p"test/builders/html/input/test1.html" modules)))
-        (with-nodes ((name "name"))
+    (html-file-test (modules #p"test/builders/html/input/test1.html")
+      (with-nodes ((name "name"))
+          modules
+        (with-html-nodes ((input-name "input-name" "input")
+                          (input-name.value ("." "input-name" "value") "input"))
             modules
 
-          (with-html-nodes ((input-name "input-name" "input")
-                            (input-name.value ("." "input-name" "value") "input"))
-              modules
+          (test-binding input-name.value name)
+          (test-binding name input-name.value)
 
-            (test-binding input-name.value name)
-            (test-binding name input-name.value)
-
-            (test-html-node-function input-name ("value" input-name.value))
-            (test-html-attribute-function input-name.value input-name "value"))
-
-          (is (strip-empty-text-nodes root-node)
-              (parse-html-file #p"test/builders/html/input/test1.out.html")
-              :test #'html=)))))
+          (test-html-node-function input-name ("value" input-name.value))
+          (test-html-attribute-function input-name.value input-name "value")))))
 
   (subtest "Automatic Creation of SPAN HTML nodes"
-    (with-module-table modules
-      (let ((root-node (build-html-file #p"test/builders/html/input/test2.html" modules)))
+    (html-file-test (modules #p"test/builders/html/input/test2.html")
+      (with-nodes ((first "first") (last "last")) modules
+        (with-html-nodes ((input-first "input-first" "input")
+                          (input-first.value ("." "input-first" "value") "input")
+                          (input-last "input-last" "input")
+                          (input-last.value ("." "input-last" "value") "input"))
+            modules
 
-        (with-nodes ((first "first") (last "last")) modules
-          (with-html-nodes ((input-first "input-first" "input")
-                            (input-first.value ("." "input-first" "value") "input")
-                            (input-last "input-last" "input")
-                            (input-last.value ("." "input-last" "value") "input"))
-              modules
+          (test-binding input-first.value first)
+          (test-binding input-last.value last)
 
-            (test-binding input-first.value first)
-            (test-binding input-last.value last)
+          (test-html-node-function input-first ("value" input-first.value))
+          (test-html-node-function input-last ("value" input-last.value))
 
-            (test-html-node-function input-first ("value" input-first.value))
-            (test-html-node-function input-last ("value" input-last.value))
-
-            (test-html-attribute-function input-first.value input-first "value")
-            (test-html-attribute-function input-last.value input-last "value")))
-
-        (is (strip-empty-text-nodes root-node)
-            (parse-html-file #p"test/builders/html/input/test2.out.html")
-            :test #'html=))))
+          (test-html-attribute-function input-first.value input-first "value")
+          (test-html-attribute-function input-last.value input-last "value")))))
 
   (subtest "Bindings in SCRIPT tags"
-    (with-module-table modules
-      (let ((root-node (build-html-file #p"test/builders/html/input/test3.html" modules)))
+    (html-file-test (modules #p"test/builders/html/input/test3.html")
+      (with-nodes ((name "name")) modules
+        (with-html-nodes ((input-name "input-name" "input")
+                          (input-name.value ("." "input-name" "value") "input")
 
-        (with-nodes ((name "name")) modules
-          (with-html-nodes ((input-name "input-name" "input")
-                            (input-name.value ("." "input-name" "value") "input")
+                          (heading "heading-name" "h1")
+                          (heading.content ("." "heading-name" "textContent") "h1"))
+            modules
 
-                            (heading "heading-name" "h1")
-                            (heading.content ("." "heading-name" "textContent") "h1"))
-              modules
+          (test-binding input-name.value name)
+          (test-binding name heading.content)
 
-            (test-binding input-name.value name)
-            (test-binding name heading.content)
+          (test-html-node-function input-name ("value" input-name.value))
+          (test-html-node-function heading ("textContent" heading.content))
 
-            (test-html-node-function input-name ("value" input-name.value))
-            (test-html-node-function heading ("textContent" heading.content))
-
-            (test-html-attribute-function input-name.value input-name "value")
-            (test-html-attribute-function heading.content heading "textContent")))
-
-        (is (strip-empty-text-nodes root-node)
-            (parse-html-file #p"test/builders/html/input/test3.out.html")
-            :test #'html=)))))
+          (test-html-attribute-function input-name.value input-name "value")
+          (test-html-attribute-function heading.content heading "textContent"))))))
 
 (run-test 'html-file-builder)
 
