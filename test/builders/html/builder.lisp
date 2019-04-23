@@ -275,6 +275,31 @@
 
         (is (strip-empty-text-nodes root-node)
             (parse-html-file #p"test/builders/html/input/test2.out.html")
+            :test #'html=))))
+
+  (subtest "Bindings in SCRIPT tags"
+    (with-module-table modules
+      (let ((root-node (build-html-file #p"test/builders/html/input/test3.html" modules)))
+
+        (with-nodes ((name "name")) modules
+          (with-html-nodes ((input-name "input-name" "input")
+                            (input-name.value ("." "input-name" "value") "input")
+
+                            (heading "heading-name" "h1")
+                            (heading.content ("." "heading-name" "textContent") "h1"))
+              modules
+
+            (test-binding input-name.value name)
+            (test-binding name heading.content)
+
+            (test-html-node-function input-name ("value" input-name.value))
+            (test-html-node-function heading ("textContent" heading.content))
+
+            (test-html-attribute-function input-name.value input-name "value")
+            (test-html-attribute-function heading.content heading "textContent")))
+
+        (is (strip-empty-text-nodes root-node)
+            (parse-html-file #p"test/builders/html/input/test3.out.html")
             :test #'html=)))))
 
 (run-test 'html-file-builder)
