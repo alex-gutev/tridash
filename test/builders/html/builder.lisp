@@ -53,6 +53,9 @@
 
 (in-package :tridash.test.builder.html)
 
+(in-readtable lol-syntax)
+
+
 (defvar *html-node-aliases* nil
   "Hash map storing aliases to html nodes, used by HTML-NODE=.")
 
@@ -63,9 +66,9 @@
   (subtest (format nil "Test HTML-NODE ~a" node)
     (with-slots (element-id tag-name html-attribute) node
       (is-type! node 'html-node "Is HTML-NODE")
-      (is element-id id "Element ID is ~a" id)
-      (is tag tag-name "Tag is ~a" tag)
-      (is attribute attribute "HTML attribute is ~a" attribute)
+      (isf element-id id "Element ID is ~a" id)
+      (isf tag tag-name "Tag is ~a" tag)
+      (isf attribute attribute "HTML attribute is ~a" attribute)
 
       (ok (attribute :no-coalesce node) "Has NO-COALESCE attribute"))))
 
@@ -172,71 +175,103 @@
   (strip-empty-text-nodes (plump:parse path)))
 
 
+(defmacro with-html-nodes ((&rest nodes) table &body body)
+  "Tests that each node in NODES is an `HTML-NODE', within the table
+   TABLE, and that it has the correct attributes.
+
+   Each element in NODES is a list of the form: (SYM ID TAG).
+
+   SYM is the symbol to which the node id be bound.
+
+   ID is either a string in which case it is interpreted as both the
+   node name and the ID of the HTML element and the HTML attribute is
+   assumed to be NIL. If it is a list with the first element being the
+   subnode operator '.', in which case the second element is
+   interpreted as the HTML id and the third is interpreted as the HTML
+   attribute.
+
+   TAG is the tag name of the HTML node.
+
+   BODY is a list of forms which are evaluated in an environment where
+   the nodes in NODES are bound to their corresponding symbols."
+
+  (flet ((make-node-binding (node)
+           (list (first node) (second node)))
+
+         (make-html-test (node)
+           (ematch node
+             ((list node
+                    (or (list "." id attribute)
+                        id)
+                    tag)
+              `(test-html-node ,node ,id ,tag ,attribute)))))
+
+    `(with-nodes ,(mapcar #'make-node-binding nodes) ,table
+       ,@(mapcar #'make-html-test nodes)
+       ,@body)))
+
+(defmacro test-html-node-function (node &rest attributes)
+  "Tests that the value function of the HTML element node NODE is an
+   :OBJECT function with key-value pairs ATTRIBUTES. Each element of
+   ATTRIBUTES is of the form (ATTRIBUTE NODE) where ATTRIBUTE is the
+   HTML attribute identifier (automatically converted to a symbol
+   identifier with NODE-ID) and NODE is the HTML attribute node."
+
+  `(has-value-function
+    ,(mapcar #'second attributes)
+    ,node
+    `(:object ,,@(mapcar #`(list ',(node-id (first a1)) ,(second a1)) attributes))
+    :test #'object-fn-equal))
+
+(defun test-html-attribute-function (node element-node attribute)
+  "Test that the value function of the HTML attribute NODE is a
+   :MEMBER expression for the key ATTRIBUTE (automatically converted
+   to a symbol identifier with NODE-ID) of the object node NODE."
+
+  (has-value-function (element-node) node `(:member ,element-node ,(node-id attribute))))
+
 (plan nil)
 
 (deftest html-file-builder
   (subtest "Simple HTML node bindings"
     (with-module-table modules
       (let ((root-node (build-html-file #p"test/builders/html/input/test1.html" modules)))
-        (with-nodes ((name "name")
-                     (input-name "input-name")
-                     (input-name.value ("." "input-name" "value")))
+        (with-nodes ((name "name"))
             modules
 
-          (test-html-node input-name "input-name" "input" nil)
-          (test-html-node input-name.value "input-name" "input" "value")
+          (with-html-nodes ((input-name "input-name" "input")
+                            (input-name.value ("." "input-name" "value") "input"))
+              modules
 
-          (test-binding input-name.value name)
-          (test-binding name input-name.value)
+            (test-binding input-name.value name)
+            (test-binding name input-name.value)
 
-          (has-value-function
-           (input-name.value) input-name
-           `(:object (,(node-id "value") ,input-name.value)))
+            (test-html-node-function input-name ("value" input-name.value))
+            (test-html-attribute-function input-name.value input-name "value"))
 
-          (has-value-function
-           (input-name) input-name.value
-           `(:member ,input-name ,(node-id "value"))))
-
-        (is (strip-empty-text-nodes root-node)
-            (parse-html-file #p"test/builders/html/input/test1.out.html")
-            :test #'html=))))
+          (is (strip-empty-text-nodes root-node)
+              (parse-html-file #p"test/builders/html/input/test1.out.html")
+              :test #'html=)))))
 
   (subtest "Automatic Creation of SPAN HTML nodes"
     (with-module-table modules
       (let ((root-node (build-html-file #p"test/builders/html/input/test2.html" modules)))
-        (with-nodes ((first "first") (last "last")
 
-                     (input-first "input-first")
-                     (input-first.value ("." "input-first" "value"))
+        (with-nodes ((first "first") (last "last")) modules
+          (with-html-nodes ((input-first "input-first" "input")
+                            (input-first.value ("." "input-first" "value") "input")
+                            (input-last "input-last" "input")
+                            (input-last.value ("." "input-last" "value") "input"))
+              modules
 
-                     (input-last "input-last")
-                     (input-last.value ("." "input-last" "value")))
-            modules
+            (test-binding input-first.value first)
+            (test-binding input-last.value last)
 
-          (test-html-node input-first "input-first" "input" nil)
-          (test-html-node input-first.value "input-first" "input" "value")
+            (test-html-node-function input-first ("value" input-first.value))
+            (test-html-node-function input-last ("value" input-last.value))
 
-          (test-html-node input-last "input-last" "input" nil)
-          (test-html-node input-last.value "input-last" "input" "value")
-
-          (test-binding input-first.value first)
-          (test-binding input-last.value last)
-
-          (has-value-function
-           (input-first.value) input-first
-           `(:object (,(node-id "value") ,input-first.value)))
-
-          (has-value-function
-           (input-first) input-first.value
-           `(:member ,input-first ,(node-id "value")))
-
-          (has-value-function
-           (input-last.value) input-last
-           `(:object (,(node-id "value") ,input-last.value)))
-
-          (has-value-function
-           (input-last) input-last.value
-           `(:member ,input-last ,(node-id "value"))))
+            (test-html-attribute-function input-first.value input-first "value")
+            (test-html-attribute-function input-last.value input-last "value")))
 
         (is (strip-empty-text-nodes root-node)
             (parse-html-file #p"test/builders/html/input/test2.out.html")
