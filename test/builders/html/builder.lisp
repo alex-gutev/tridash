@@ -305,7 +305,23 @@
           (test-html-node-function heading ("textContent" heading.content))
 
           (test-html-attribute-function input-name.value input-name "value")
-          (test-html-attribute-function heading.content heading "textContent"))))))
+          (test-html-attribute-function heading.content heading "textContent")))))
+
+  (subtest "Inline Functors"
+    (html-file-test (modules #p"test/builders/html/input/test4.html")
+      (with-nodes ((a ("int" "a")) (b ("int" "b")) (a+b ("+" "a" "b"))) modules
+        (with-html-nodes ((input-a.value ("." "input-a" "value") "input")
+                          (input-b.value ("." "input-b" "value") "input")
+                          (sum.value ("." "sum" "value") "input"))
+            modules
+
+          (test-binding input-a.value a)
+          (test-binding a input-a.value)
+
+          (test-binding input-b.value b)
+          (test-binding b input-b.value)
+
+          (test-binding a+b sum.value))))))
 
 (run-test 'html-file-builder)
 

@@ -66,6 +66,8 @@
    this counter is appended to a prefix in order to generate a unique
    identifier.")
 
+(defvar *html-file-path* nil
+  "Path to the HTML file currently being processed.")
 
 ;;;; Building HTML files
 
@@ -83,10 +85,10 @@
   (aprog1 (make-instance 'html-component-node :name name :element-node root-node)
     (setf (attribute :no-remove it) t)))
 
-(defun build-html-file (file *global-module-table*)
+(defun build-html-file (*html-file-path* *global-module-table*)
   "Extracts nodes from the HTML file at path FILE."
 
-  (with-open-file (stream file)
+  (with-open-file (stream *html-file-path*)
     (preprocess-html stream)))
 
 
@@ -359,7 +361,7 @@
 (defun process-source-file (path)
   "Processes the tridash source file at PATH."
 
-  (build-source-file path *global-module-table*))
+  (build-source-file (cl-fad:merge-pathnames-as-file *html-file-path* path) *global-module-table*))
 
 
 ;;; Parse Attributes and Text Content
