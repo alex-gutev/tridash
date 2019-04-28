@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Simple Inline Bindings</title>
+    <script language="tridash">
+      input-name.value -> name
+      name -> heading-name.textContent
+    </script>
+  </head>
+  <body>
+    <h1 id="heading-name"></h1>
+    <p>
+      <label>Enter name: <input id="input-name"/></label>
+    </p>
+  </body>
+</html>
