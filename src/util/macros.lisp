@@ -22,7 +22,7 @@
 
 
 (defun gensyms (syms &key (key #'identity))
-  (mapcar #L(gensym (symbol-name (funcall key %1))) syms))
+  (map #L(gensym (symbol-name (funcall key %1))) syms))
 
 (defmacro! let-if ((&rest bindings) condition &body body)
   "Allows variables to be initialized with different init-forms based
@@ -35,11 +35,11 @@
     `(let ((,g!test ,condition) ,@gensyms)
        (if ,g!test
            (progn
-             ,@(mapcar #2`(setf ,a1 ,(second a2)) gensyms bindings))
+             ,@(map #2`(setf ,a1 ,(second a2)) gensyms bindings))
            (progn
-             ,@(mapcar #2`(setf ,a1 ,(third a2)) gensyms bindings)))
+             ,@(map #2`(setf ,a1 ,(third a2)) gensyms bindings)))
        (let
-           ,(mapcar #2`(,(first a1) ,a2) bindings gensyms)
+           ,(map #2`(,(first a1) ,a2) bindings gensyms)
          ,@body))))
 
 (defmacro! let*-if ((&rest bindings) o!condition &body body)
@@ -48,21 +48,6 @@
           bindings
           :initial-value `(progn ,@body)
           :from-end t))
-
-(defmacro! dohash ((key value hash &optional result) &body body)
-  "Iterates over each element of HASH with the key bound to KEY and
-   the value bound to VALUE. BODY is evaluated on each iteration in an
-   implicit PROGN."
-
-  (let ((key (or key g!key))
-        (value (or value g!value)))
-    `(with-hash-table-iterator (,g!next ,hash)
-       (loop
-          (multiple-value-bind (,g!next-p ,key ,value) (,g!next)
-            (declare (ignorable ,key ,value))
-            (unless ,g!next-p
-              (return ,result))
-            ,@body)))))
 
 (defmacro! multiple-value-return ((&rest vars) expr &body body)
   "Returns all values which are the result of the evaluation of the
@@ -76,9 +61,9 @@
          (declare (ignore ,g!rest))
          ,@body))))
 
-(defmacro! with-hash-keys ((&rest keys) o!hashtable &body body)
-  "Creates symbol macros for accessing keys in the hash-table
-   HASHTABLE. Each element in KEYS is a list where the first element
+(defmacro! with-hash-keys ((&rest keys) o!map &body body)
+  "Creates symbol macros for accessing keys in the hash-map
+   MAP. Each element in KEYS is a list where the first element
    is the symbol of the symbol-macro to create and the second element
    is the key.
 
@@ -89,9 +74,9 @@
 
   (flet ((make-macro (key)
            (destructuring-bind (sym &optional (key sym)) (ensure-list key)
-             `(,sym (gethash ,key ,g!hashtable)))))
+             `(,sym (get ,key ,g!map)))))
     `(symbol-macrolet
-         ,(mapcar #'make-macro keys)
+         ,(map #'make-macro keys)
        ,@body)))
 
 (defmacro! with-retry-restart (&body forms)

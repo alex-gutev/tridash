@@ -78,7 +78,7 @@
   (let ((max-arg -1))
     (flet ((replace-arg (arg)
              (let ((sym (symbol-name arg)))
-               (if (char= (char sym 0) #\%)
+               (if (= (elt sym 0) #\%)
                    (aif (parse-int sym 1)
                         (setf max-arg (max max-arg it))))
                arg)))

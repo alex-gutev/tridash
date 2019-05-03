@@ -17,11 +17,16 @@
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 (defpackage :tridash.util
-  (:use :common-lisp
+  (:use :generic-cl
         :anaphora
         :iterate
         :named-readtables
         :optima)
+
+  (:shadowing-import-from :generic-cl
+                          :emptyp
+                          :accumulate
+                          :multiply)
 
   (:import-from :let-over-lambda
                 :symb

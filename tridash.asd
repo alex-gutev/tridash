@@ -29,8 +29,7 @@
                           :serial t
                           :components ((:file "package")
                                        (:file "cut")
-                                       (:file "macros")
-                                       (:file "misc")))
+                                       (:file "macros")))
                  (:file "package")
                  (:file "interface")
                  (:file "lexer")
