@@ -74,9 +74,20 @@
 (define-file-builder (html htm) (file modules options)
   (with-hash-keys ((node-name "node-name")) options
     (multiple-value-bind (module name) (node-path->name node-name)
-      (-<>> (build-html-file file modules)
-            (make-html-component-node name)
-            (add-node name <> (get-module module modules))))))
+      (let ((module (get-module module modules))
+            (comp-node (make-html-component-node name nil)))
+
+        (add-node name comp-node module)
+        (add-node +self-node+ comp-node module)
+
+        (unwind-protect
+             (progn
+               (setf (element-node comp-node)
+                     (build-html-file file modules))
+
+               (foreach #'build-meta-node-graphs (map-values (modules modules))))
+
+          (remove-node +self-node+ module))))))
 
 (defun make-html-component-node (name root-node)
   "Creates the HTML component node of the file. NAME is the name of
@@ -159,7 +170,7 @@
 (defun make-html-element-node (html-id tag module-table)
   "Builds the node referencing the HTML element with id HTML-ID."
 
-  (multiple-value-bind (node table) (build-node (id-symbol html-id) module-table)
+  (multiple-value-bind (node table) (build-node (html-node-id html-id) module-table)
     (node->html-node node table :tag-name tag :element-id html-id)))
 
 (defun html-attributes->html-nodes (node html-id tag-name table)
@@ -178,7 +189,7 @@
    element with id HTML-ID."
 
   (multiple-value-bind (node table)
-      (-> (list +subnode-operator+ (id-symbol html-id) (id-symbol attribute))
+      (-> (list +subnode-operator+ (html-node-id html-id) (id-symbol attribute))
           (build-node module-table))
 
     (make-attribute-reference node html-id tag attribute table)
@@ -195,6 +206,12 @@
                    :tag-name tag
                    :html-attribute (string attribute)
                    :element-id html-id))
+
+(defun html-node-id (id)
+  "Returns the name of the node corresponding to the HTML element with
+   id ID."
+
+  (list +subnode-operator+ +self-node+ (id-symbol id)))
 
 (defun node->html-node (node table &rest args &key element-id tag-name &allow-other-keys)
   "If NODE is an ordinary node changes its type to `HTML-NODE'"
@@ -233,6 +250,17 @@
   (multiple-value-return (subnode table) (call-next-method)
     (with-slots (tag-name element-id) object-node
       (make-attribute-reference subnode element-id tag-name key table))))
+
+(defmethod process-subnode ((comp-node html-component-node) object-decl key table)
+  "Process subnode method for `HTML-COMPONENT-NODE's. Simply creates a
+   node without giving it a member access functor."
+
+  (declare (ignore object-decl))
+
+  (-<> (name comp-node)
+       (list +subnode-operator+ <> key)
+       (ensure-node table)
+       (values table)))
 
 
 ;;; Process Text Nodes

@@ -42,7 +42,13 @@
                 :lol-syntax)
 
   (:import-from :tridash.frontend
-                :process-subnode)
+
+                :+self-node+
+                :ensure-node
+                :remove-node
+                :process-subnode
+
+                :build-meta-node-graphs)
 
   (:export
    ;; HTML-NODE

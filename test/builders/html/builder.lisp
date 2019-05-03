@@ -29,6 +29,7 @@
         :prove
         :named-readtables
 
+        :tridash.interface
         :tridash.parser
         :tridash.frontend
         :tridash.builder.html
@@ -175,7 +176,7 @@
   (strip-empty-text-nodes (plump:parse path)))
 
 
-(defmacro with-html-nodes ((&rest nodes) table &body body)
+(defmacro with-html-nodes ((&rest nodes) table &body body &environment env)
   "Tests that each node in NODES is an `HTML-NODE', within the table
    TABLE, and that it has the correct attributes.
 
@@ -188,23 +189,34 @@
    assumed to be NIL. If it is a list with the first element being the
    subnode operator '.', in which case the second element is
    interpreted as the HTML id and the third is interpreted as the HTML
-   attribute.
+   attribute. Each node id is treated as a member reference of the
+   node with identifier equal to the expansion of the symbol macro
+   HTML-COMPONENT-NODE-ID.
 
    TAG is the tag name of the HTML node.
 
    BODY is a list of forms which are evaluated in an environment where
    the nodes in NODES are bound to their corresponding symbols."
 
-  (flet ((make-node-binding (node)
-           (list (first node) (second node)))
+  (labels ((make-node-binding (node)
+             (list (first node)
+                   (get-node-name (second node))))
 
-         (make-html-test (node)
-           (ematch node
-             ((list node
-                    (or (list "." id attribute)
-                        id)
-                    tag)
-              `(test-html-node ,node ,id ,tag ,attribute)))))
+           (get-node-name (node)
+             (match node
+               ((list "." id attribute)
+                `("." ,(get-node-name id) ,attribute))
+
+               (name
+                `("." ,(macroexpand 'html-component-node-id env) ,name))))
+
+           (make-html-test (node)
+             (ematch node
+               ((list node
+                      (or (list "." id attribute)
+                          id)
+                      tag)
+                `(test-html-node ,node ,id ,tag ,attribute)))))
 
     `(with-nodes ,(mapcar #'make-node-binding nodes) ,table
        ,@(mapcar #'make-html-test nodes)
@@ -230,9 +242,23 @@
 
   (has-value-function (element-node) node `(:member ,element-node ,(node-id attribute))))
 
-(defmacro! html-file-test ((module-table file) &body body)
+(defvar *html-component-node* nil
+  "The identifier name of the HTML component node of the current
+   file.")
+
+(defmacro! html-file-test ((module-table name file &rest preload) &body body)
   "Builds the nodes in the HTML file FILE, into a module table which
-   bound to the symbol MODULE-TABLE, evaluates the forms in BODY.
+   is bound to the symbol MODULE-TABLE and evaluates the forms in
+   BODY.
+
+   NAME is the name of the `HTML-COMPONENT-NODE' which is created. The
+   symbol-macro HTML-COMPONENT-NODE-ID, which expands to NAME, is
+   established in the environment in which the forms in BODY are
+   evaluated.
+
+   PRELOAD is a list of paths of file to build prior to building
+   FILE.
+
    Finally checks that the root-node returned by BUILD-HTML-FILE is
    equivalent to the root-node of the parsed HTML file, which is at
    the path FILE with the extension replaced by .OUT.HTML."
@@ -246,18 +272,27 @@
              (make-pathname :directory dir
                             :name (concatenate-to 'string name ".out")
                             :type type))))
-    `(with-module-table ,module-table
-       (let ((,g!root-node (build-html-file ,file ,module-table)))
-         ,@body
-         (is (strip-empty-text-nodes ,g!root-node)
-             (parse-html-file ,(out-file file))
-             :test #'html=)))))
+
+    `(progn
+       (diag ,(format nil "Test file: ~a" file))
+
+       (with-module-table ,module-table
+         ,@(map #`(build-source-file ,a1 ,module-table) preload)
+         (build-source-file (list ,file (alist-hash-map '(("node-name" . ,name)))) ,module-table)
+         (symbol-macrolet ((html-component-node-id ,name))
+           (let ((,g!comp-node (test/get-node ',name ,module-table)))
+             (is-type! ,g!comp-node 'html-component-node)
+
+             ,@body
+             (is (strip-empty-text-nodes (element-node ,g!comp-node))
+                 (parse-html-file ,(out-file file))
+                 :test #'html=)))))))
 
 (plan nil)
 
 (deftest html-file-builder
   (subtest "Simple HTML node bindings"
-    (html-file-test (modules #p"test/builders/html/input/test1.html")
+    (html-file-test (modules "main" #p"test/builders/html/input/test1.html")
       (with-nodes ((name "name"))
           modules
         (with-html-nodes ((input-name "input-name" "input")
@@ -271,7 +306,7 @@
           (test-html-attribute-function input-name.value input-name "value")))))
 
   (subtest "Automatic Creation of SPAN HTML nodes"
-    (html-file-test (modules #p"test/builders/html/input/test2.html")
+    (html-file-test (modules "main" #p"test/builders/html/input/test2.html")
       (with-nodes ((first "first") (last "last")) modules
         (with-html-nodes ((input-first "input-first" "input")
                           (input-first.value ("." "input-first" "value") "input")
@@ -289,7 +324,7 @@
           (test-html-attribute-function input-last.value input-last "value")))))
 
   (subtest "Bindings in SCRIPT tags"
-    (html-file-test (modules #p"test/builders/html/input/test3.html")
+    (html-file-test (modules "main" #p"test/builders/html/input/test3.html")
       (with-nodes ((name "name")) modules
         (with-html-nodes ((input-name "input-name" "input")
                           (input-name.value ("." "input-name" "value") "input")
@@ -308,7 +343,7 @@
           (test-html-attribute-function heading.content heading "textContent")))))
 
   (subtest "Inline Functors"
-    (html-file-test (modules #p"test/builders/html/input/test4.html")
+    (html-file-test (modules "main" #p"test/builders/html/input/test4.html" "modules/core.trd")
       (with-nodes ((a ("int" "a")) (b ("int" "b")) (a+b ("+" "a" "b"))) modules
         (with-html-nodes ((input-a.value ("." "input-a" "value") "input")
                           (input-b.value ("." "input-b" "value") "input")

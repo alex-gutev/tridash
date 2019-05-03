@@ -225,20 +225,22 @@
    meta-node. OUTER-TABLE is the node table in which the meta-node
    definition is located."
 
-  (unless (external-meta-node? meta-node)
-    (let* ((table (make-inner-node-table outer-table))
-           (*meta-node* meta-node))
+  (with-slots (definition) meta-node
+    (unless (or (external-meta-node? meta-node)
+                (typep definition 'node-table))
+      (let* ((table (make-inner-node-table outer-table))
+             (*meta-node* meta-node))
 
-      ;; Add implicit self node
-      (add-node +self-node+ meta-node table)
+        ;; Add implicit self node
+        (add-node +self-node+ meta-node table)
 
-      (add-operand-nodes (operands meta-node) table)
+        (add-operand-nodes (operands meta-node) table)
 
-      (let* ((last-node (process-node-list (definition meta-node) table :top-level t)))
-        (make-meta-node-function meta-node last-node)
-        (build-meta-node-graphs table)
+        (let* ((last-node (process-node-list definition table :top-level t)))
+          (make-meta-node-function meta-node last-node)
+          (build-meta-node-graphs table)
 
-        (setf (definition meta-node) table)))))
+          (setf definition table))))))
 
 (defun add-operand-nodes (names table)
   "Creates a node for each element in NAMES, the element being the
@@ -266,7 +268,7 @@
        (error 'ambiguous-meta-node-context :node meta-node)))))
 
 
-;;;; Methods: Processing Declaration
+;;;; Methods: Processing Declarations
 
 (defmethod process-declaration ((functor list) table &key top-level)
   "Processes the functor declaration by calling PROCESS-FUNCTOR with
@@ -603,7 +605,8 @@
   "Creates a node which references a field of an object stored in
    another node."
 
-  (let* ((name (list +subnode-operator+ object-decl key))
+  ;; Use the actual name of the object node
+  (let* ((name (list +subnode-operator+ (name object-node) key))
          (subnode (ensure-node name table)))
     (make-source-subnode object-decl key subnode table)
 
