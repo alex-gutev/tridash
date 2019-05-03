@@ -1,7 +1,36 @@
 # Path to Common Lisp compiler
 LISP ?= sbcl
 
-build/tridashc:
+sources = tridash.asd \
+        src/package.lisp \
+        src/interface.lisp \
+        src/lexer.lisp \
+        src/parser.lisp \
+        src/operators.lisp \
+        src/node.lisp \
+        src/meta-node.lisp \
+        src/node-table.lisp \
+        src/modules.lisp \
+        src/conditions.lisp \
+        src/outer-nodes.lisp \
+        src/builder.lisp \
+        src/coalescer.lisp \
+        src/prog-builder.lisp \
+        src/main.lisp \
+        src/util/package.lisp \
+        src/util/cut.lisp \
+        src/util/macros.lisp \
+        src/builders/html/package.lisp \
+        src/builders/html/builder.lisp \
+        src/backends/javascript/package.lisp \
+        src/backends/javascript/ast.lisp \
+        src/backends/javascript/print.lisp \
+        src/backends/javascript/analyze.lisp \
+        src/backends/javascript/backend.lisp \
+        src/backends/javascript/functions.lisp \
+        src/backends/javascript/html.lisp
+
+build/tridashc: $(sources)
 	$(LISP) --load tridash.asd \
 		--eval '(ql:quickload :tridash)' \
 		--eval '(asdf:make :tridash)' \
