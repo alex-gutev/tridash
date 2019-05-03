@@ -1,6 +1,8 @@
 # Path to Common Lisp compiler
 LISP ?= sbcl
 
+all: build/tridashc
+
 sources = tridash.asd \
         src/package.lisp \
         src/interface.lisp \
@@ -36,8 +38,6 @@ build/tridashc: $(sources)
 		--eval '(asdf:make :tridash)' \
 		--eval '(quit)'
 
-
-all: build/tridashc
 
 clean:
 	rm build/tridashc
