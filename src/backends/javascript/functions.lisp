@@ -448,6 +448,9 @@
     ((type node-link)
      (values nil (funcall *get-input* fn)))
 
+    ((eq :fail)
+     (values (js-block (js-throw (js-new +end-update-class+))) nil))
+
     (_
      (values nil (make-literal fn)))))
 

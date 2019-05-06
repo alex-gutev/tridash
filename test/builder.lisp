@@ -397,7 +397,7 @@
 	  ((b :context b) (b->c :context b))
 	  c
 
-	  `(if ,b->c ,b ,(node-link :self))))))
+	  `(if ,b->c ,b :fail)))))
 
    (subtest "Functor Nodes"
      (with-module-table modules

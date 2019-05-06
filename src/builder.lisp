@@ -270,7 +270,7 @@
 
 ;;;; Methods: Processing Declarations
 
-(defmethod process-declaration ((functor list) table &key top-level)
+(defmethod process-declaration ((functor list) table &key)
   "Processes the functor declaration by calling PROCESS-FUNCTOR with
    the OPERATOR argument being the CAR of FUNCTOR and OPERANDS being
    the CDR of FUNCTOR."
@@ -278,7 +278,7 @@
   (destructuring-bind (operator . operands) functor
     (process-functor operator operands table)))
 
-(defmethod process-declaration ((name symbol) table &key top-level)
+(defmethod process-declaration ((name symbol) table &key)
   "Creates a node with identifier NAME and adds it to table, if table
    does not already contain a node with that identifier. Returns the
    newly created, or existing, node."
@@ -575,7 +575,7 @@
                   (cond-link (add-binding cond-node target :context *source-node* :add-function nil)))
 
              (setf (value-function (context target *source-node*))
-                   `(if ,cond-link ,value-link ,(node-link :self)))
+                   `(if ,cond-link ,value-link :fail))
 
              (values cond-node table))))))))
 

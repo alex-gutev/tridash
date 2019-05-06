@@ -153,15 +153,19 @@ Tridash.NodeContext.prototype.add_observer = function(context, index) {
  */
 Tridash.NodeContext.prototype.reserve = function(start, value, index, visited = {}) {
     if (!visited[this.context_id]) {
-        var promise = new Tridash.ValuePromise();
+        // Promise which is resolved when the remainder of the path
+        // has been reserved.
+        var reserved = new Tridash.ValuePromise();
 
-        promise.promise = promise.promise
+        // When the remainder of the path has been reserved, set value
+        // of operand.
+        reserved.promise = reserved.promise
             .then(() => value)
             .then((value) => this.operands[index] = value);
 
         var reserve = {
             context: this,
-            reserved: promise,
+            reserved: reserved,
             value: new Tridash.ValuePromise(),
             start: start.promise
         };
@@ -236,6 +240,7 @@ Tridash.Node.prototype.update = function() {
                 reserve.value.resolve(value);
                 this.update_value(value);
             })
+            .catch((e) => reserve.value.reject(e))
             .finally(this.update.bind(this));
     } else {
         this.running = false;
