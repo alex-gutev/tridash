@@ -863,7 +863,44 @@
             (test-not-nodes table "b" "c" "d")
 
             (with-nodes ((add "add") (a "a") (e "e")) table
-              (has-value-function (a) e (list add a a)))))))
+              (has-value-function (a) e (list add a a))))))
+
+      (subtest "Object Nodes"
+        (with-module-table modules
+          (build ":extern(parse, not)"
+                 "parse(in1) -> p"
+
+                 "not(p.fail) -> (p.value -> a)"
+                 "p.fail -> (in2 -> b)"
+
+                 ":attribute(in1, input, 1)"
+                 ":attribute(in2, input, 1)")
+
+          (let ((table (finish-build)))
+            (test-not-nodes table
+                            '("parse" "in1")
+                            '("." "p" "value")
+                            '("not" ("." "p" "fail"))
+                            '("->" ("." "p" "value") "a")
+                            '("->" "in2" "b"))
+
+            (with-nodes ((in1 "in1") (in2 "in2") (p "p")
+                         (p.fail ("." "p" "fail"))
+                         (a "a") (b "b")
+
+                         (parse "parse") (not "not"))
+                table
+
+              (has-value-function
+               (p p.fail) a
+               `(if (,not ,p.fail) (:member ,p ,(id-symbol "value")) :fail))
+
+              (has-value-function
+               (in2 p.fail) b
+               `(if ,p.fail ,in2 :fail))
+
+              (has-value-function (in1) p `(,parse ,in1))
+              (is (length (contexts p)) 1 "Node p has a single context."))))))
 
     (subtest "Removing Unreachable Nodes"
       (with-module-table modules

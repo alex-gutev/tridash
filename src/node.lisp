@@ -255,19 +255,41 @@
            ,@forms)))))
 
 
+;;; Removing Dependencies
+
 (defun remove-operand (node operand)
   "Removes the node OPERAND from the operands of CONTEXT. Returns true
    if the operand was removed, nil if the operand cannot be removed."
 
-  (with-accessors ((operand node-link-node) (context-id node-link-context)) operand
-    (with-slots (operands value-function) (context node context-id)
-      (when (= (length operands) 1)
-        (erase operands operand)
-        (setf value-function nil)
+  (with-accessors ((link-node node-link-node) (context-id node-link-context)) operand
+    (let ((context (context node context-id)))
+      (with-slots (operands value-function) context
+        (cond
+          ((= (length operands) 1)
+           (erase operands link-node)
+           (setf value-function nil)
 
-        (erase (contexts node) context-id)
+           (erase (contexts node) context-id)
+           t)
 
-        t))))
+          ((remove-operand-from-fn context value-function operand)
+           (when (emptyp (operands context))
+             (erase (contexts node) context-id))
+           t))))))
+
+(defun remove-operand-from-fn (context fn operand)
+  "Tries to remove the operand from the multi-operand context
+   CONTEXT. Returns true if the operand was removed, NIL if it cannot
+   be removed."
+
+  (with-accessors ((node node-link-node)) operand
+    (match fn
+      ((list* :object pairs)
+       (awhen (car (find operand pairs :key #'cadr))
+         (erase (operands context) node)
+         (setf node `(:member ,(node-link :self) ,it))
+
+         t)))))
 
 (defun remove-context (node context-id)
   "Removes the context with identifier CONTEXT-ID if it is redundant,
