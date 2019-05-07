@@ -55,7 +55,6 @@
         :anaphora
         :cl-arrows
         :iterate
-        :graylex
         :parse-number
         :optima
         :optima.ppcre
@@ -66,6 +65,9 @@
                           :emptyp
                           :accumulate
                           :multiply)
+
+  (:import-from :lol
+                :defmacro!)
 
   (:export
    :+list-operator+

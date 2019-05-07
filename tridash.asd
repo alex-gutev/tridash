@@ -61,8 +61,7 @@
                                        (:file "functions")
                                        (:file "html"))))))
 
-  :depends-on (:graylex
-               :anaphora
+  :depends-on (:anaphora
                :iterate
                :alexandria
                :cl-arrows
