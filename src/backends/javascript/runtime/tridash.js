@@ -407,3 +407,21 @@ Tridash.isReal = function(value) {
 Tridash.isString = function(value) {
     return typeof value === 'string';
 };
+
+Tridash.parseInt = function(value) {
+	var i = parseInt(value);
+
+	return {
+		value: i,
+		fail: isNaN(i)
+	};
+};
+
+Tridash.parseReal = function(value) {
+	var f = parseFloat(value);
+
+	return {
+		value: f,
+		fail: isNaN(f)
+	};
+};

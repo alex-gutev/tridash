@@ -63,8 +63,15 @@
 :extern(int?, real?, string?)
 
 
+# Number Parsing
+
+:extern(parse-int, parse-real)
+
+
 # Export Primitive Nodes
 
 :export(+, -, *, /, <, <=, >, >=, =, !=, and, or, not)
 :export(if, case)
 :export(int, real, string)
+
+:export(parse-int, parse-real)

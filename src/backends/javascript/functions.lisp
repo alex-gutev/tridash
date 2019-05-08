@@ -89,6 +89,9 @@
     (cons (id-symbol "number?") "Tridash.isReal")
     (cons (id-symbol "string?") "Tridash.isString")
 
+    (cons (id-symbol "parse-int") "Tridash.parseInt")
+    (cons (id-symbol "parse-real") "Tridash.parseReal")
+
     (cons (id-symbol "+") "+")
     (cons (id-symbol "-") "-")
     (cons (id-symbol "*") "*")
