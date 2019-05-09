@@ -469,6 +469,9 @@
     ((eq :fail)
      (values (js-block (js-throw (js-new +end-update-class+))) nil))
 
+    (nil
+     (values nil "null"))
+
     (_
      (values nil (make-literal fn)))))
 

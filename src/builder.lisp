@@ -306,6 +306,13 @@
         (*level* (if top-level 0 (1+ *level*))))
     (call-next-method)))
 
+(defmethod process-declaration ((n null) (table t) &key)
+  "Processes the NIL declaration. NIL declaration only originate from
+   processing done internally by the frontend and not from
+   user-written code."
+
+  nil)
+
 (defmethod process-declaration (literal table &key)
   "Method for literal values (everything which is not a symbol or list
    is considered a literal). The literal value is simply returned."
