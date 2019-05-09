@@ -236,7 +236,17 @@
    object value function A declares the same fields as the object
    value function B."
 
-  (set-equal a b :test #'value-fn-equal))
+  (multiple-value-match (values a b)
+    (((sub-function- expression) _)
+     (object-fn-equal expression b))
+
+    (((list* :object a) (list* :object b))
+
+     (flet ((pair-equal (pair)
+              (destructuring-bind (key value) pair
+                (aand (find key b :key #'car)
+                      (value-fn-equal value (second it))))))
+       (every #'pair-equal a)))))
 
 
 (defun test-value-function (node context fn &key (test #'value-fn-equal))
@@ -979,7 +989,41 @@
 
               (with-nodes ((in "in")) m1
                 (with-nodes ((+ "+") (c "c") (output "output")) m2
-                  (has-value-function (in c) output `(,+ (,+ ,in ,in) ,c)))))))))))
+                  (has-value-function (in c) output `(,+ (,+ ,in ,in) ,c)))))))))
+
+    (subtest "Common Sub Expressions"
+      (with-module-table modules
+        (build ":extern(parse, NaN?)"
+
+               "parse(in) -> p"
+               "p -> self.value"
+               "NaN?(p) -> self.fail"
+               "self -> out"
+
+               ":attribute(in, input, 1)")
+
+        (let ((table (finish-build)))
+          (test-not-nodes table
+                          '("parse" "in")
+                          "p"
+                          '("NaN?" "p")
+                          "self"
+                          '("." "self" "value")
+                          '("." "self" "fail"))
+
+          (with-nodes ((in "in") (out "out")
+                       (parse "parse") (nan? "NaN?"))
+              table
+
+            (has-value-function
+             (in) out
+             `(:object
+               (,(id-symbol "fail")
+                 (,nan? ,(sub-function `(,parse ,in) :count 2)))
+
+               (,(id-symbol "value")
+                 ,(sub-function `(,parse ,in) :count 2)))
+             :test #'object-fn-equal)))))))
 
 (run-test 'coalescer)
 

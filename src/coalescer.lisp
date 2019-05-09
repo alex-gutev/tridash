@@ -24,7 +24,7 @@
 (in-readtable cut-syntax)
 
 (defstruct
-    (sub-function (:constructor sub-function (expression)))
+    (sub-function (:constructor sub-function (expression &key count)))
 
   "A sub-function is an expression which forms part of the
    value-function of a node. This struct is used to mark expressions
@@ -65,7 +65,9 @@
 
              (unless (input-node? node)
                (remove-redundant-2-way-links node)
-               (eliminate-node node))))
+               (eliminate-node node))
+
+             (erase visited node)))
 
          (remove-redundant-2-way-links (node)
            (when (= (length (contexts node)) 1)
