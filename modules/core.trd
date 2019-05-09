@@ -6,9 +6,9 @@
 :module(core)
 :import(builtin)
 
-## Operators
+### Operators
 
-# Basic Operators
+## Basic Operators
 
 :op(->, 10, right)
 :op(:, 5, right)
@@ -16,7 +16,7 @@
 :op(., 1000, left)
 
 
-# Arithmetic Operators
+## Arithmetic Operators
 
 :op(+, 100, left)
 :op(-, 100, left)
@@ -25,7 +25,7 @@
 :op(/, 200, left)
 
 
-# Comparison Operators
+## Comparison Operators
 
 :op(<, 50)
 :op(<=, 50)
@@ -35,22 +35,30 @@
 :op(!=, 50)
 
 
-# Logical Operators
+## Logical Operators
 
 :op(and, 25)
 :op(or, 20)
 
 
-# Create stubs for all primitive operators
+### Metanode stubs for primitive operators
+
+## Arithmetic and logical operators
 
 :extern(+, -, *, /, <, <=, >, >=, =, !=, and, or, not)
 
-:extern(if)
-
 :attribute(not, target-node, not)
 
+:export(+, -, *, /, <, <=, >, >=, =, !=, and, or, not)
 
-# Type Conversions
+
+## Conditions
+
+:extern(if)
+:export(if, case)
+
+
+## Type Conversions
 
 :extern(int, real, string)
 
@@ -58,20 +66,33 @@
 :attribute(real, target-node, real)
 :attribute(string, target-node, string)
 
-# Type Checks
+:export(int, real, string)
+
+
+## Type Checks
 
 :extern(int?, real?, string?)
+:extern(inf?, NaN?)
+
+:export(int?, real?, string?, inf?, NaN?)
 
 
-# Number Parsing
+### Standard Library
 
-:extern(parse-int, parse-real)
+## Number Parsing
 
+parse-int(x) : {
+   int(x) -> i
 
-# Export Primitive Nodes
+   i -> self.value
+   NaN?(i) -> self.fail
+}
 
-:export(+, -, *, /, <, <=, >, >=, =, !=, and, or, not)
-:export(if, case)
-:export(int, real, string)
+parse-real(x) : {
+   real(x) -> r
+
+   r -> self.value
+   NaN?(r) -> self.fail
+}
 
 :export(parse-int, parse-real)

@@ -408,20 +408,10 @@ Tridash.isString = function(value) {
     return typeof value === 'string';
 };
 
-Tridash.parseInt = function(value) {
-	var i = parseInt(value);
-
-	return {
-		value: i,
-		fail: isNaN(i)
-	};
+Tridash.isInf = function(value) {
+    return !isFinite(value);
 };
 
-Tridash.parseReal = function(value) {
-	var f = parseFloat(value);
-
-	return {
-		value: f,
-		fail: isNaN(f)
-	};
+Tridash.isNaN = function(value) {
+    return isNaN(value);
 };
