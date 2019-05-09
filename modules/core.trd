@@ -81,12 +81,30 @@
 
 ## Number Parsing
 
+# Attempts to parse an integer from `x`
+#
+# x: Value from which the integer is parsed.
+#
+# Evaluates to an object with two subnodes:
+#
+# value: The parsed integer value, or NaN if parsing failed.
+# fail: True on failure, false on success.
+
 parse-int(x) : {
    int(x) -> i
 
    i -> self.value
    NaN?(i) -> self.fail
 }
+
+# Attempts to parse a real value from `x`
+#
+# x: Value from which the real is parsed.
+#
+# Evaluates to an object with two subnodes:
+#
+# value: The parsed real value, or NaN if parsing failed.
+# fail: True on failure, false on success.
 
 parse-real(x) : {
    real(x) -> r
@@ -99,6 +117,12 @@ parse-real(x) : {
 
 
 ## Logical Operators
+
+# Evaluates to `value` if `cond` is true, otherwise evaluates to a
+# null value.
+#
+# cond: The condition.
+# value: The value to evaluate to if `cond` is true.
 
 |-(cond, value) : case(cond : value)
 
