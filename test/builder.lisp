@@ -220,6 +220,15 @@
      (and (eq node-a node-b)
 	  (eq context-a context-b)))
 
+    (((sub-function- (expression expr-a) (count count-a))
+      (sub-function- (expression expr-b) (count count-b)))
+
+     (and (value-fn-equal expr-a expr-b)
+          (= count-a count-b)))
+
+    (((sub-function- (expression expr-a)) b)
+     (value-fn-equal expr-a b))
+
     ((_ _) (= a b))))
 
 (defun object-fn-equal (a b)
@@ -287,14 +296,15 @@
    an argument, into the module-table VAR. FINISH-BUILD calls
    FINISH-BUILD-GRAPH on the module-table VAR."
 
-  `(let ((,var (make-instance 'module-table))
-         (*flat-node-table* nil))
+  `(let* ((,var (make-instance 'module-table))
+          (*global-module-table* ,var)
+          (*flat-node-table* nil))
      (flet ((build (&rest ,g!strings)
               (foreach (rcurry #'build-nodes ,var) ,g!strings))
 
             (finish-build (&optional (,g!module-table ,var))
               (setf *flat-node-table* (finish-build-graph ,g!module-table))))
-      ,@body)))
+       ,@body)))
 
 (defmacro with-nodes ((&rest nodes) modules &body body)
   "Binds the nodes to variables. Each element of NODES is of the

@@ -88,6 +88,9 @@
                ((type node-link)
                 (eq link fn))
 
+               ((sub-function- expression)
+                (has-node link expression))
+
                ((list*
                  (or 'if
                      (guard (external-meta-node name)

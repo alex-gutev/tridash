@@ -23,6 +23,17 @@
 
 (in-readtable cut-syntax)
 
+(defstruct
+    (sub-function (:constructor sub-function (expression)))
+
+  "A sub-function is an expression which forms part of the
+   value-function of a node. This struct is used to mark expressions
+   which are used in more than one place. COUNT is the number of times
+   EXPRESSION is used."
+
+  expression
+  (count 1))
+
 (defun coalesce-nodes (input-nodes)
   "Coalesces successive nodes, which only have a single observer, into
    single nodes. INPUT-NODES is the set of all INPUT-NODES."
@@ -149,8 +160,26 @@
                ((list* meta-node operands)
                 (list* meta-node (map #'remove-node-links operands)))
 
-               ((node-link- (node (and fn (not (type node)) (not (type symbol)))))
-                (remove-node-links fn))
+               ;; Node-links containing other node-links.
+               ((node-link- (node (and link (type node-link))))
+                (remove-node-links link))
+
+               ;; Node-links containing an expression which is not a
+               ;; node, symbol or sub-function.
+               ((node-link- (node (and expr
+                                       (not (type node))
+                                       (not (type symbol))
+                                       (not (type sub-function)))))
+                ;; Replace linked-node with a sub-function which wraps
+                ;; the expression.
+                (setf (node-link-node fn)
+                      (sub-function (remove-node-links expr))))
+
+               ;; Node-links containing sub-functions.
+               ((node-link- (node (and fn (type sub-function))))
+                ;; Increment the usage count.
+                (incf (sub-function-count fn))
+                fn)
 
                (_ fn)))
 

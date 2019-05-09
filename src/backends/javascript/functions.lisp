@@ -383,13 +383,19 @@
   "Variable identifier counter. Appended as a suffix to variables
    introduced in a function.")
 
+(defvar *sub-functions* nil
+  "Set of sub-function expressions for which code has already been
+  generated. The mapped value is an expression (a variable name) with
+  which the value of the expression can be accessed.")
+
 (defun make-function-body (function *get-input*)
   "Generates the body of the value computation function
    FUNCTION. *GET-INPUT* is a function which should return an
    expression that references the value of the dependency
    corresponding to the `NODE-LINK' object passed as an argument."
 
-  (let ((*var-counter* 0))
+  (let ((*var-counter* 0)
+        (*sub-functions* (make-hash-map)))
     (make-statements function)))
 
 (defun make-statements (fn)
@@ -448,6 +454,15 @@
     ((list* operator operands)
      (make-operator-expression operator operands))
 
+    ((sub-function- expression count)
+     (if (> count 1)
+         (aif (get fn *sub-functions*)
+              (values nil it)
+              (multiple-value-return (blk expr) (make-sub-function expression)
+                (declare (ignore blk))
+                (setf (get fn *sub-functions*) expr)))
+         (make-expression expression)))
+
     ((type node-link)
      (values nil (funcall *get-input* fn)))
 
@@ -456,6 +471,22 @@
 
     (_
      (values nil (make-literal fn)))))
+
+(defun make-sub-function (fn)
+  "Generates code which computes the value of the sub-function
+   expression and stores it in a variable, which is returned as the
+   expression (second return value)."
+
+  (let ((var (var-name)))
+    (multiple-value-bind (blk expr) (make-expression fn :return-variable var :tailp nil)
+      (values
+       (cond
+         ((or (null expr) (= expr var))
+          (js-block (js-var var) blk))
+
+         (t
+          (js-block blk (js-var var expr))))
+       var))))
 
 
 ;;;; Literal Values

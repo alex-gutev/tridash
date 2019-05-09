@@ -136,6 +136,11 @@
    :node-link-p
    :self
 
+   :sub-function
+   :sub-function-p
+   :sub-function-expression
+   :sub-function-count
+
    ;; Utility Functions
    :observer-list
    :dependency-list
