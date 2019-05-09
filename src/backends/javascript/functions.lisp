@@ -217,7 +217,7 @@
                "Returns an expression accessing the operand node named
                 by OPERAND."
 
-               (node-path (get operand (nodes definition))))
+               (node-path (find operand (nodes definition) :key #'name)))
 
              (operand-node-var (operand)
                "Returns a JS array with two elements: the operand node
