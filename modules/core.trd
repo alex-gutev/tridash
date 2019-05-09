@@ -96,3 +96,12 @@ parse-real(x) : {
 }
 
 :export(parse-int, parse-real)
+
+
+## Logical Operators
+
+|-(cond, value) : case(cond : value)
+
+:op(|-, 25, right)
+
+:export(|-)
