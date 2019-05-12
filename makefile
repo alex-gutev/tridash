@@ -1,7 +1,11 @@
 # Path to Common Lisp compiler
 LISP ?= sbcl
 
-all: build/tridashc
+PREFIX ?= /usr/local
+BINDIR ?= $(PREFIX)/bin
+DATADIR ?= $(PREFIX)/share
+
+all: tridashc
 
 sources = tridash.asd \
         src/package.lisp \
@@ -32,7 +36,7 @@ sources = tridash.asd \
         src/backends/javascript/functions.lisp \
         src/backends/javascript/html.lisp
 
-build/tridashc: $(sources)
+tridashc: $(sources)
 	$(LISP) --load tridash.asd \
 		--eval '(ql:quickload :tridash)' \
 		--eval '(asdf:make :tridash)' \
@@ -40,16 +44,21 @@ build/tridashc: $(sources)
 
 
 clean:
-	rm build/tridashc
+	rm -f tridashc
 
 install: all
-	cp build/tridashc /usr/local/bin
-	mkdir -p /usr/local/lib/tridash/backends/javascript
-	cp -R modules /usr/local/lib/tridash/modules
-	cp src/backends/javascript/runtime/tridash.js /usr/local/lib/tridash/backends/javascript
+	install -d $(DESTDIR)$(BINDIR)
+	install -m 755 tridashc $(DESTDIR)$(BINDIR)
+
+	install -d $(DESTDIR)$(DATADIR)/tridash/modules
+	install -m 644 modules/* $(DESTDIR)$(DATADIR)/tridash/modules
+
+	install -d $(DESTDIR)$(DATADIR)/tridash/backends/javascript
+	install -m 644 src/backends/javascript/runtime/tridash.js $(DESTDIR)$(DATADIR)/tridash/backends/javascript
+
 
 uninstall:
-	rm /usr/local/bin/tridashc
-	rm -rf /usr/local/lib/tridash
+	rm -f $(DESTDIR)$(BINDIR)/tridashc
+	rm -rf $(DESTDIR)$(DATADIR)/tridash
 
 .PHONY: all clean install uninstall

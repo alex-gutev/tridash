@@ -85,7 +85,7 @@
   :in-order-to ((asdf:test-op (asdf:test-op :tridash.test)))
 
   :build-operation "program-op"
-  :build-pathname "build/tridashc"
+  :build-pathname "tridashc"
   :entry-point "TRIDASH::MAIN")
 
 (asdf:defsystem #:tridash.test
