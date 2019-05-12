@@ -243,8 +243,10 @@
         :anaphora
         :cl-arrows
         :optima
+        :optima.ppcre
         :iterate
         :split-sequence
+        :cl-ppcre
 
         :tridash.util
         :tridash.parser
