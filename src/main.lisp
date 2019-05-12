@@ -69,7 +69,7 @@
    :arg-parser #'parse-option)
 
   (:name :type
-   :description "Compilation output type (backend). If not provided, the type is guessed from the output file name."
+   :description "Compilation target (backend). If not provided, the target is guessed from the output file name."
    :short #\t
    :long "output-type"
    :meta-var "type"
@@ -111,7 +111,20 @@
   (opts:describe
    :prefix "Tridash Compiler"
    :usage-of "tridashc"
-   :args "[SOURCES]")
+   :args "[SOURCES]"
+   :suffix
+   "Additional options for processing each source file may be
+specified. The special ':' argument indicates that the following
+argument is a comma-separated list of options for processing the
+source file in the preceding argument.
+
+The options are in the form of key-value pairs 'key=value'. The
+key/value should be enclosed in quotes if it contains either '=' or
+','. Note two pairs of quotes may be needed due to the first pair
+being interpreted by the shell.
+
+Example: tridashc ui.trd : node-name=ui")
+
   (opts:exit 1))
 
 
