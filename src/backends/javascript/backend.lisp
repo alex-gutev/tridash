@@ -81,7 +81,7 @@
   "Flag: If true debug information, such as the names of the nodes is
    included in the generated code.")
 
-(defvar *runtime-library-path* "/usr/local/lib/tridash/backends/javascript/tridash.js"
+(defvar *runtime-library-path* "/usr/local/share/tridash/backends/javascript/tridash.js"
   "Path to the runtime library.")
 
 (defvar *runtime-link-type* 'static
@@ -94,6 +94,12 @@
    *RUNTIME-LIBRARY-PATH*, is inserted via a script tag.
 
    NIL - No linkage.")
+
+
+(defun set-data-dir (data-dir)
+  "Set DATA-DIR as the path to the runtime library."
+
+  (setf *runtime-library-path* (cl-fad:merge-pathnames-as-file (pathname data-dir) "tridash/backends/javascript/tridash.js")))
 
 
 ;;;; Code Array

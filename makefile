@@ -39,6 +39,8 @@ sources = tridash.asd \
 tridashc: $(sources)
 	$(LISP) --load tridash.asd \
 		--eval '(ql:quickload :tridash)' \
+		--eval '(tridash::add-data-dir "${DATADIR}/")' \
+		--eval '(tridash.backend.js::set-data-dir "${DATADIR}/")' \
 		--eval '(asdf:make :tridash)' \
 		--eval '(quit)'
 

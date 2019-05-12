@@ -27,8 +27,8 @@
   "Search path delimiter.")
 
 (defvar *module-search-paths*
-  '(#p"/usr/lib/tridash/modules/"
-    #p"/usr/local/lib/tridash/modules/"
+  '(#p"/usr/local/share/tridash/modules/"
+    #p"/usr/share/tridash/modules/"
     #p"~/.tridash/modules/")
 
   "List of paths to search for module build files.")
@@ -278,6 +278,13 @@ Example: tridashc ui.trd : node-name=ui")
    (aand (osicat:environment-variable +module-paths-var+)
          (map #'cl-fad:pathname-as-directory (split-sequence +paths-delimiter+ it)))
    *module-search-paths*))
+
+(defun add-data-dir (data-dir)
+  "Add the directory DATA-DIR to the front of the module search paths
+   list."
+
+  (let ((dir (cl-fad:merge-pathnames-as-directory (pathname data-dir) "tridash/modules/")))
+    (pushnew dir *module-search-paths*)))
 
 (defun build-sources (sources)
   "Builds the node definitions from the source files in the list
