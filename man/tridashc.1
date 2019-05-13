@@ -3,14 +3,30 @@
 tridashc - Tridash Compiler
 
 .SH SYNOPSIS
-.BI "tridashc [-h|--help] [-b|--build-config " build-config-path "] [-o|--output-file " out-path "] "
-.BI "[-p|--output-option K=V] [-t|--output-type " type "] [" sources "]"
+.TP 10
+.B tridashc
+.BI "[-o|--output-file " out-path "] [-p|--output-option K=V]"
+.br
+.BI "[-t|--output-type " type "] [" sources "]"
+
+.TP 10
+.B tridashc
+.BI "[-b|--build-config " build-config-path "]"
+
+.TP 10
+.B tridashc
+.BI "[-h|--help]"
 
 .SH DESCRIPTION
 
 .PP
 .RI "The tridashc program compiles the source files, listed in " sources ","
 .RI "generating the output file at location " out-path "."
+The following example demonstrates the basic usage:
+
+.B tridashc source1.trd source2.trd -o out.js
+
+.RI "This compiles the source files " source1.trd " and " source2.trd ", generating the output file " out.js "."
 
 .PP
 A ':' argument indicates that the next argument is a comma-separated
@@ -23,8 +39,7 @@ whitespace, ',' or '=' it should be enclosed in quotes. Two pairs of
 quotes may be required due to shell escaping.
 
 .PP
-The following is an example of the invocation of the compiler with
-source processing options:
+The following example demonstrates source processing options:
 
 .B tridashc source1.html : node-name = ui source2.trd -o out.js
 
