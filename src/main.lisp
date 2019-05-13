@@ -102,7 +102,7 @@
 
       (let ((out-path (get :out-file opts)))
         (build-app (parse-sources free-args) out-path
-                   :backend (or (get :type opts) (guess-out-type out-path))
+                   :backend (out-type (get :type opts) out-path)
                    :out-options (get-output-options opts))))))
 
 (defun print-help ()
@@ -214,6 +214,13 @@ Example: tridashc ui.trd : node-name=ui")
   (or (get (pathname-type out-path) +out-type-extensions+)
       (error "Cannot determine output type from \"~a\"" out-path)))
 
+(defun out-type (type path)
+  "Returns the keyword identifying the backend. If TYPE is NIL the
+   backend is determined from the output file pathname (PATH)."
+
+  (if type
+      (make-keyword (string-upcase type))
+      (guess-out-type path)))
 
 ;;; Building from build config file
 
@@ -234,7 +241,7 @@ Example: tridashc ui.trd : node-name=ui")
       (build-app (source-file-list build-file (get "sources" prog-info))
                  out-path
                  :out-options output-info
-                 :backend (make-keyword (string-upcase (get "backend" output-info)))))))
+                 :backend (out-type (get "backend" output-info) out-path)))))
 
 (defun source-file-list (build-path sources)
   "Converts the sources list SOURCES from the format specified in the
