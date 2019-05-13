@@ -4,8 +4,9 @@ LISP ?= sbcl
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 DATADIR ?= $(PREFIX)/share
+MANDIR ?= $(DATADIR)/man
 
-all: tridashc
+all: tridashc man/tridashc.1.gz
 
 sources = tridash.asd \
         src/package.lisp \
@@ -44,6 +45,8 @@ tridashc: $(sources)
 		--eval '(asdf:make :tridash)' \
 		--eval '(quit)'
 
+man/tridashc.1.gz:
+	gzip -k man/tridashc.1
 
 clean:
 	rm -f tridashc
@@ -58,9 +61,13 @@ install: all
 	install -d $(DESTDIR)$(DATADIR)/tridash/backends/javascript
 	install -m 644 src/backends/javascript/runtime/tridash.js $(DESTDIR)$(DATADIR)/tridash/backends/javascript
 
+	install -d $(DESTDIR)$(MANDIR)/man1
+	install -m 644 man/tridashc.1.gz $(DESTDIR)$(MANDIR)/man1
+
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/tridashc
 	rm -rf $(DESTDIR)$(DATADIR)/tridash
+	rm -f $(DESTDIR)$(MANDIR)/man1/tridashc.1
 
 .PHONY: all clean install uninstall

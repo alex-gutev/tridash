@@ -1,0 +1,110 @@
+.TH tridashc 1 "13 May 2019" "version 0.3"
+.SH NAME
+tridashc - Tridash Compiler
+
+.SH SYNOPSIS
+.BI "tridashc [-h|--help] [-b|--build-config " build-config-path "] [-o|--output-file " out-path "] "
+.BI "[-p|--output-option K=V] [-t|--output-type " type "] [" sources "]"
+
+.SH DESCRIPTION
+
+.PP
+.RI "The tridashc program compiles the source files, listed in " sources ","
+.RI "generating the output file at location " out-path "."
+
+.PP
+A ':' argument indicates that the next argument is a comma-separated
+list of processing options for the source file in the preceding
+argument.
+.RB "The options are of the form " "OPTION=VALUE" " where " OPTION " is the option and " VALUE " is the option's value."
+Each option-value pair must be separated by a single ',' without any
+whitespace in between the ',' or '='. If an option's value contains
+whitespace, ',' or '=' it should be enclosed in quotes. Two pairs of
+quotes may be required due to shell escaping.
+
+.PP
+The following is an example of the invocation of the compiler with
+source processing options:
+
+.B tridashc source1.html : node-name = ui source2.trd -o out.js
+
+.RB "This indicates that the " source1.html " file is processed with the " node-name " option set to " ui "."
+
+.RB "Currently only the " node-name " is recognized, which only makes sense when compiling HTML files."
+This option sets the name of the HTML component node, with which, the
+HTML contents of the file can be referenced later.
+
+.SH OPTIONS
+
+.TP
+.B "-h, --help"
+Print a summary of the usage and options.
+
+.TP
+.BI "-b, --build-config " path
+Build using the options in the build configuration given as an
+argument. All other command-line options are ignored if this option is
+given.
+
+.TP
+.BI "-o, --output-file " path
+.RB "Output file path. This option is required unless the " -b " option is provided."
+
+.TP
+.BI "-t, --output-type " type
+Specifies the compilation target (the compiler backend). If this
+option is not provided it is determined from the name of the output
+file provided in the
+.BR "-o" " option."
+
+.RB "Currently only the " javascript " target is available."
+
+.TP
+.BI "-p, --output-option " option = value
+.RI "Specify an option for the generation of the output file where " option " is the option"
+.RI "and " value " is the value."
+.RB "A " -p " option has to be provided for each option".
+
+The recognized options vary with the compilation target.
+.RB "The following options are recognized for the " javascript " target:"
+
+. Options List
+.RS
+
+.TP
+.B type
+The output type.
+
+.RB "If this option is set to the value " html
+an HTML file is generated, with the runtime library and the generated
+JavaScript code embedded within script tags. If this option is
+omitted, the output file only contains the raw generated JavaScript code.
+.RB "Along with this option the " main-ui " option must be provided."
+
+.TP
+.B main-ui
+This option specifies the name of the HTML component node, the
+contents of which will be inserted in the output HTML file.
+
+To use the contents of an HTML source file, the node name provided in
+.RB "this option must be the same as the name given in the " node-name
+source processing option of the source file.
+
+.TP
+.B indented
+If this option is provided and set to a true value, e.g. 1, readable,
+as in containing line breaks and properly indented, JavaScript code is
+generated.
+
+.TP
+.B debug-info
+If this option is provided and set to a true value, e.g. 1, the
+generated code will contain debug information. Currently this only
+contains the names of the nodes.
+
+.RE
+
+.SH AUTHOR
+
+Alexander Gutev
+.RI < alex.gutev@gmail.com >
