@@ -57,10 +57,11 @@
    function is called, a single declaration is parsed from the input
    stream. Returns nil when EOF is reached."
 
-  (let ((lex (make-lexer stream)))
+  (let* ((lex (make-lexer stream)))
     (lambda (*operator-nodes*)
-      (when (has-input? lex)
-        (parse-delimited-node lex)))))
+      (let ((*lexer* lex))
+        (when (has-input? lex)
+          (parse-delimited-node lex))))))
 
 
 (defun has-input? (lex)
@@ -198,7 +199,7 @@
 (defmethod parse-node (type lexeme (lex t))
   "Method for invalid tokens, signals an error."
 
-  (error 'tridash-parse-error
+  (error 'declaration-parse-error
          :expected '(or :id :integer :real :string :open-paren :open-brace)
          :token (cons type lexeme)
          :rule 'node-operand))
@@ -253,7 +254,7 @@
                   (= type :comma))
 
                  (otherwise
-                  (error 'tridash-parse-error
+                  (error 'declaration-parse-error
                          :expected '(or :comma :close-paren)
                          :token (cons type lxm)
                          :rule 'functor-operands)))))
@@ -286,7 +287,7 @@
        (until (= type delimiter))
 
        (when (null type)
-         (error 'tridash-parse-error
+         (error 'declaration-parse-error
                 :expected delimiter
                 :token nil
                 :rule 'node-list))
@@ -300,7 +301,7 @@
 
   (multiple-value-bind (type lxm) (next-token lex)
     (unless (= type :close-paren)
-      (error 'tridash-parse-error
+      (error 'declaration-parse-error
              :expected :close-paren
              :token (cons type lxm)
              :rule 'bracketed-node))))
@@ -319,7 +320,7 @@
              (info (get op *operator-nodes*)))
 
         (unless info
-          (error 'tridash-parse-error
+          (error 'declaration-parse-error
                  :rule 'operator
                  :token (cons type lexeme)
                  :expected '(or infix-operator terminate)))
@@ -338,7 +339,7 @@
        (next-token lex))
 
       ((/= type *list-delimiter*)
-       (error 'tridash-parse-error
+       (error 'declaration-parse-error
               :expected :terminate
               :token (cons type lxm)
               :rule 'terminator)))))
@@ -347,7 +348,7 @@
 
 ;;;; Parse Error Conditions
 
-(define-condition tridash-parse-error (error)
+(define-condition declaration-parse-error (tridash-parse-error)
   ((rule :initarg :rule
          :reader rule
          :documentation
@@ -366,7 +367,7 @@
   (:documentation
    "Parse error condition."))
 
-(defmethod error-description ((e tridash-parse-error))
+(defmethod print-object ((e declaration-parse-error) stream)
   (flet ((expected-string (expected)
            (match expected
              ((list* 'or tokens)
@@ -376,12 +377,10 @@
 
     (with-accessors ((rule rule)
                      (expected token-expected)
-                     (read token-read)) e
+                     (read token-read))
+        e
 
-      (format nil "Error parsing ~a: Expected ~a, found ~a ~a."
+      (format stream "Error parsing ~a: Expected ~a, found ~a ~a."
               rule
               (expected-string expected)
               (car read) (cdr read)))))
-
-(defmethod print-object ((err tridash-parse-error) stream)
-  (princ (error-description err) stream))

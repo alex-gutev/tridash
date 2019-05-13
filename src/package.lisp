@@ -71,6 +71,7 @@
 
   (:export
    :+list-operator+
+   :*current-source-file*
 
    :make-parser
    :add-operator

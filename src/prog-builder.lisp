@@ -41,4 +41,5 @@
 
   (destructuring-bind (path &optional (options (make-hash-map :test #'cl:equalp))) (ensure-list file)
     (change-module :init modules)
-    (build-nodes-in-file path modules options)))
+    (let ((*current-source-file* path))
+      (build-nodes-in-file path modules options))))

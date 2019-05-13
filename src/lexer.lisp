@@ -22,6 +22,13 @@
   "Flag for whether newlines should be treated as :TERMINATE tokens
    or :SKIP tokens.")
 
+(defvar *lexer* nil
+  "Lexer for the current source file.")
+
+(defvar *current-source-file* nil
+  "Path to the current source file.")
+
+
 (defstruct
     (lexer
       (:constructor make-lexer (stream)))
@@ -36,17 +43,30 @@
 
   token)
 
-(define-condition invalid-token (error)
+(define-condition tridash-parse-error (error)
+  ((source-path
+    :initarg :source-path
+    :initform *current-source-file*
+    :reader source-path
+    :documentation
+    "Path to the source file.")
+
+   (location
+    :initarg :location
+    :initform (lexer-position *lexer*)
+    :reader location
+    :documentation
+    "Location (LINE . COLUMN) within the source file at which the
+     error occurred."))
+
+  (:documentation
+   "Base condition class representing parse errors."))
+
+(define-condition invalid-token (tridash-parse-error)
   ((lexeme :initarg :lexeme
           :reader lexeme
           :documentation
-          "The invalid token string")
-
-   (location :initarg :location
-             :reader location
-             :documentation
-             "Location within the file (LINE . COLUMN) at which the
-              invalid token was found."))
+          "The invalid token string"))
 
   (:documentation
    "Invalid token error condition."))
@@ -316,10 +336,11 @@
             (peek-char nil stream nil nil)
             (read-char stream nil nil))
 
-      (destructuring-bind (line . column) position
-        (if (linebreakp it)
-            (setf position (cons (1+ line) 0))
-            (setf position (cons line (1+ column))))))))
+      (unless peek
+        (destructuring-bind (line . column) position
+          (if (linebreakp it)
+              (setf position (cons (1+ line) 0))
+              (setf position (cons line (1+ column)))))))))
 
 
 ;;; Character Predicates
@@ -352,7 +373,15 @@
 
 ;;; Print Object Methods
 
+(defmethod print-object :around ((e tridash-parse-error) stream)
+  (with-slots (source-path location) e
+    (destructuring-bind (line . column) location
+      (format stream "~&Parse error in ~a at ~a:~a: ~a~%"
+              source-path
+              line
+              column
+              (call-next-method e nil)))))
+
 (defmethod print-object ((e invalid-token) stream)
-  (with-slots (lexeme location) e
-    (format stream "~&Parse Error: Invalid Token: '~a' at position ~a:~a~%"
-            lexeme (car location) (cdr location))))
+  (with-slots (lexeme) e
+    (format stream "Invalid Token: `~a`." lexeme)))

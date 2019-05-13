@@ -45,7 +45,7 @@
                 :lol-syntax)
 
   (:import-from :tridash.parser
-                :tridash-parse-error)
+                :declaration-parse-error)
 
   (:import-from :tridash.frontend
                 :outer-nodes)
@@ -680,11 +680,11 @@
        (subtest "Errors"
          (subtest "Module Semantics"
            (is-error (build ":module(mod2); +(j,k)") 'non-existent-node)
-           (is-error (build ":module(mod2); j + k") 'tridash-parse-error)
+           (is-error (build ":module(mod2); j + k") 'declaration-parse-error)
            (is-error (build ":module(mod2); my-mod.z") 'non-existent-node)
 
            (is-error (build ":module(mod3); +(j,k)") 'non-existent-node)
-           (is-error (build ":module(mod3); j + k") 'tridash-parse-error)
+           (is-error (build ":module(mod3); j + k") 'declaration-parse-error)
            (is-error (build ":module(mod3); m.z") 'non-existent-node)
 
            (is-error (build ":module(mod4); my-mod.+(a,b)") 'non-existent-node)

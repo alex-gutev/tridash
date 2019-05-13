@@ -40,7 +40,7 @@
   (:shadowing-import-from :prove :fail)
 
   (:import-from :tridash.parser
-                :tridash-parse-error)
+                :declaration-parse-error)
 
   (:import-from :tridash.frontend
                 :+infix-operators+))
@@ -75,7 +75,7 @@
   (with-input-from-string (in string)
     (let ((parser (make-parser in)))
       (diag (format nil "Test String: ~s" string))
-      (is-error (funcall parser operators) 'tridash-parse-error))))
+      (is-error (funcall parser operators) 'declaration-parse-error))))
 
 (subtest "Test Parser"
   (flet ((s (string)
