@@ -45,11 +45,12 @@ tridashc: $(sources)
 		--eval '(asdf:make :tridash)' \
 		--eval '(quit)'
 
-man/tridashc.1.gz:
-	gzip -k man/tridashc.1
+man/tridashc.1.gz: man/tridashc.1
+	gzip -fk man/tridashc.1
 
 clean:
 	rm -f tridashc
+	rm -f man/tridashc.1.gz
 
 install: all
 	install -d $(DESTDIR)$(BINDIR)
