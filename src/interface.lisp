@@ -116,4 +116,4 @@
    "Error condition: No file builder for a source file."))
 
 (defmethod print-object ((e unknown-file-type) stream)
-  (format stream "~&Error: Don't know how to process file with extension: ~a.~%" (extension e)))
+  (format stream "Error: Don't know how to process file with extension: ~a." (extension e)))

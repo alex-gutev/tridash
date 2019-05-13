@@ -376,11 +376,11 @@
 (defmethod print-object :around ((e tridash-parse-error) stream)
   (with-slots (source-path location) e
     (destructuring-bind (line . column) location
-      (format stream "~&Parse error in ~a at ~a:~a: ~a~%"
+      (format stream "Parse error in ~a at ~a:~a: "
               source-path
               line
-              column
-              (call-next-method e nil)))))
+              column)
+      (call-next-method))))
 
 (defmethod print-object ((e invalid-token) stream)
   (with-slots (lexeme) e

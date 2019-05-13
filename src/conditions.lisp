@@ -48,7 +48,8 @@
    "Base condition class for semantic errors."))
 
 (defmethod print-object :around ((err semantic-error) stream)
-  (format stream "~&Semantic Error: ~a~%" (call-next-method err nil)))
+  (format stream "Semantic Error: ")
+  (call-next-method))
 
 
 ;;;; Basic Node Lookup Errors
