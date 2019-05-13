@@ -55,15 +55,11 @@ HTML contents of the file can be referenced later.
 .B "-h, --help"
 Print a summary of the usage and options.
 
-.TP
-.BI "-b, --build-config " path
-Build using the options in the build configuration given as an
-argument. All other command-line options are ignored if this option is
-given.
 
 .TP
 .BI "-o, --output-file " path
 .RB "Output file path. This option is required unless the " -b " option is provided."
+
 
 .TP
 .BI "-t, --output-type " type
@@ -73,6 +69,7 @@ file provided in the
 .BR "-o" " option."
 
 .RB "Currently only the " javascript " target is available."
+
 
 .TP
 .BI "-p, --output-option " option = value
@@ -86,17 +83,15 @@ The recognized options vary with the compilation target.
 . Options List
 .RS
 
-.TP
+.TP 9
 .B type
-The output type.
-
 .RB "If this option is set to the value " html
 an HTML file is generated, with the runtime library and the generated
 JavaScript code embedded within script tags. If this option is
 omitted, the output file only contains the raw generated JavaScript code.
 .RB "Along with this option the " main-ui " option must be provided."
 
-.TP
+.TP 9
 .B main-ui
 This option specifies the name of the HTML component node, the
 contents of which will be inserted in the output HTML file.
@@ -118,6 +113,50 @@ generated code will contain debug information. Currently this only
 contains the names of the nodes.
 
 .RE
+
+
+.TP
+.BI "-b, --build-config " path
+Build using the options in the build configuration file given as an
+argument. All other command-line options are ignored if this option is
+given.
+
+The build configuration file is a YAML formatted which contains the
+list of sources and build options. At the outermost level the file
+should contain a dictionary with two keys: "sources" and "output".
+
+The value of the "sources" entry is a list of the source files which
+are to be compiled. Each element of the list is either a string
+containing the path to the file, or a dictionary in which the path to
+the file is stored under the "path" key and the remaining key-value
+pairs are additional processing options.
+
+The value of the "output" entry is a dictionary containing the options
+relating to the output of the compilation. The dictionary may contain
+the following keys:
+
+. List of keys in output dictionary
+
+.RS
+.TP 9
+.B path
+The path to the output file, as a string. This is a required entry.
+
+.TP 9
+.B backend
+The target of the compilation (compiler backend). If this entry is
+not provided, the target is determined from the output file name.
+
+.RE
+
+. Use .IP to move block back to previous .TP position
+
+.IP
+Additional target-specific options may be specified. This is
+equivalent to specifying the options on the command-line using the
+.B -p
+option.
+
 
 .SH AUTHOR
 
