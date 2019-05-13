@@ -81,9 +81,14 @@
   "Creates the builtin module."
 
   (let ((builtin (ensure-module (id-symbol "builtin") modules)))
-    (let ((case-node (add-external-meta-node (id-symbol "case") builtin)))
+    (let ((case-node (add-external-meta-node (id-symbol "case") builtin))
+          (?->-node (add-external-meta-node (id-symbol "?->") builtin)))
+
       (setf (attribute :macro-function case-node) #'case-macro-function)
-      (export-node (id-symbol "case") builtin))))
+      (export-node (id-symbol "case") builtin)
+
+      (setf (attribute :macro-function ?->-node) #'?->-macro-function)
+      (export-node (id-symbol "?->") builtin))))
 
 (defun case-macro-function (operator operands table)
   "Case macro function. Transforms the case expression into a series
@@ -102,3 +107,26 @@
       (process-declaration
        (reduce #'make-if operands :from-end t :initial-value nil)
        table))))
+
+(defun ?->-macro-function (operator operands table)
+  "Macro function of the ?-> operator."
+
+  (match operands
+    ((list src target)
+
+     (process-declaration
+      `(,+bind-operator+
+        ((,+in-module-operator+ ,(id-symbol "core") ,(id-symbol "not"))
+         (,+subnode-operator+ ,src ,(id-symbol "fail")))
+
+        (,+bind-operator+
+         (,+subnode-operator+ ,src ,(id-symbol "value"))
+         ,target))
+      table
+
+      :top-level t))
+
+    (_ (error 'invalid-arguments-error
+              :expected '(node node)
+              :operator operator
+              :arguments operands))))

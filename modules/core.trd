@@ -41,6 +41,12 @@
 :op(or, 20)
 
 
+## Error handling
+
+:op(?->, 10, right)
+:export(?->)
+
+
 ### Metanode stubs for primitive operators
 
 ## Arithmetic and logical operators
