@@ -99,8 +99,8 @@
    "Error condition: A binding involving an html component node was
     established, which is not yet supported."))
 
-(defmethod error-description ((e html-component-node))
-  (format nil "Binding involving html component node ~a is not yet supported." (name e)))
+(defmethod print-object ((e html-component-node) stream)
+  (format stream "Binding involving html component node ~a is not yet supported." (name e)))
 
 (defmethod create-node ((node html-component-node))
   "Currently does nothing other than a signal an error if there are

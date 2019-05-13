@@ -42,8 +42,7 @@
    :compile-nodes
 
    ;; Errors
-   :unknown-file-type
-   :error-description)
+   :unknown-file-type)
 
   (:documentation
    "Package containing the interface to the frontend, backends and

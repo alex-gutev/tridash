@@ -103,13 +103,6 @@
     hash-table of backend specific options."))
 
 
-;;;; Error Reporting Interface
-
-(defgeneric error-description (e)
-  (:documentation
-   "Returns a string explaining the error E."))
-
-
 ;;;; Errors
 
 (define-condition unknown-file-type (error)
@@ -122,8 +115,5 @@
   (:documentation
    "Error condition: No file builder for a source file."))
 
-(defmethod error-description ((e unknown-file-type))
-  (format nil "Don't know how to process file with extension: ~a." (extension e)))
-
 (defmethod print-object ((e unknown-file-type) stream)
-  (format stream "Error: ~a" (error-description e)))
+  (format stream "~&Error: Don't know how to process file with extension: ~a.~%" (extension e)))

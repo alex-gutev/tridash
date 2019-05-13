@@ -47,8 +47,8 @@
   (:documentation
    "Base condition class for semantic errors."))
 
-(defmethod print-object ((err semantic-error) stream)
-  (format stream "Semantic Error: ~a" (error-description err)))
+(defmethod print-object :around ((err semantic-error) stream)
+  (format stream "~&Semantic Error: ~a~%" (call-next-method err nil)))
 
 
 ;;;; Basic Node Lookup Errors
@@ -67,9 +67,9 @@
     found is different from the type of the node that was expected in
     the context."))
 
-(defmethod error-description ((err node-type-error))
+(defmethod print-object ((err node-type-error) stream)
   (with-accessors ((node node)) err
-    (format nil "~a is a ~a, expected a ~a."
+    (format stream "~a is a ~a, expected a ~a."
             (name node) (node-type node) (expected-type err))))
 
 
@@ -89,8 +89,8 @@
    "Error condition: the node NAME was not found in the module's node
     table."))
 
-(defmethod error-description ((err non-existent-node))
-  (format nil "No node ~a in module ~a." (node err) (module-name err)))
+(defmethod print-object ((err non-existent-node) stream)
+  (format stream "No node ~a in module ~a." (node err) (module-name err)))
 
 
 ;;;; Name Collision Errors
@@ -109,8 +109,8 @@
    "Error condition: Adding a node to a table which already contains a
     node with that name."))
 
-(defmethod error-description ((err node-exists-error))
-  (format nil "Module ~a already contains a node ~a."
+(defmethod print-object ((err node-exists-error) stream)
+  (format stream "Module ~a already contains a node ~a."
           (name (node-table err)) (node err)))
 
 
@@ -119,9 +119,9 @@
    "Error condition: Meta-node name already names a node which is not
     a meta-node."))
 
-(defmethod error-description ((err meta-node-name-collision))
+(defmethod print-object ((err meta-node-name-collision) stream)
   (with-accessors ((node node) (node-table node-table)) err
-    (format nil "Cannot create meta-node ~a in module ~a, as ~0@* ~a already names a node which is not a meta-node."
+    (format stream "Cannot create meta-node ~a in module ~a, as ~0@* ~a already names a node which is not a meta-node."
             node (name node-table))))
 
 
@@ -129,8 +129,8 @@
   (:documentation
    "Error condition: Meta-node names a special operator."))
 
-(defmethod error-description ((e special-operator-name-error))
-  (format nil "Cannot redefine special operator ~a." (node e)))
+(defmethod print-object ((e special-operator-name-error) stream)
+  (format stream "Cannot redefine special operator ~a." (node e)))
 
 
 ;;;; Module Errors
@@ -143,8 +143,8 @@
   (:documentation
    "Error condition: Referencing a non-existent module."))
 
-(defmethod error-description ((err non-existent-module))
-  (format nil "No module named ~a." (module-name err)))
+(defmethod print-object ((err non-existent-module) stream)
+  (format stream "No module named ~a." (module-name err)))
 
 
 (define-condition alias-clash-error (node-exists-error)
@@ -157,8 +157,8 @@
   (:documentation
    "Error condition: module alias already names a node in the node-table."))
 
-(defmethod error-description ((err alias-clash-error))
-  (format nil "Cannot add alias ~a for module ~a as it already names a node in module ~a."
+(defmethod print-object ((err alias-clash-error) stream)
+  (format stream "Cannot add alias ~a for module ~a as it already names a node in module ~a."
           (node err) (module-name err) (name (node-table err))))
 
 
@@ -166,8 +166,8 @@
   (:documentation
    "Error condition: alias is already an alias for another module."))
 
-(defmethod error-description ((err alias-taken-error))
-  (format nil "Cannot add alias ~a for module ~a as it is already an alias for another module, in module ~a."
+(defmethod print-object ((err alias-taken-error) stream)
+  (format stream "Cannot add alias ~a for module ~a as it is already an alias for another module, in module ~a."
           (node err) (module-name err) (name (node-table err))))
 
 
@@ -181,8 +181,8 @@
    "Error condition: A node is being imported in a module, which
     already contains a different node with the same name."))
 
-(defmethod error-description ((e import-node-error))
-  (format nil "Importing node ~a from module ~a into module ~a. There is already a node with the same name."
+(defmethod print-object ((e import-node-error) stream)
+  (format stream "Importing node ~a from module ~a into module ~a. There is already a node with the same name."
           (name e) (module-name e) (name (node-table e))))
 
 
@@ -205,8 +205,8 @@
   (:documentation
    "Error condition: Invalid arguments passed to a special operator."))
 
-(defmethod error-description ((e invalid-arguments-error))
-  (format nil "Invalid arguments ~a to ~a. Expected arguments of the form ~a."
+(defmethod print-object ((e invalid-arguments-error) stream)
+  (format stream "Invalid arguments ~a to ~a. Expected arguments of the form ~a."
           (arguments e) (operator e) (expected e)))
 
 
@@ -227,8 +227,8 @@
           :documentation
           "The actual value.")))
 
-(defmethod error-description ((e invalid-value-error))
-  (format nil "Invalid value ~a for ~a. Must be one of: ~{~a~#[~; or ~:;, ~]~}."
+(defmethod print-object ((e invalid-value-error) stream)
+  (format stream "Invalid value ~a for ~a. Must be one of: ~{~a~#[~; or ~:;, ~]~}."
           (value e) (thing e) (allowed e)))
 
 
@@ -237,8 +237,8 @@
    "Error condition: Outer node reference operator used at
     top-level."))
 
-(defmethod error-description ((e global-outer-reference-error))
-  "Cannot reference outer nodes from global scope.")
+(defmethod print-object ((e global-outer-reference-error) stream)
+  (format stream "Cannot reference outer nodes from global scope."))
 
 
 (define-condition special-operator-operand (semantic-error)
@@ -251,8 +251,8 @@
    "Error condition: A special operator, which can only appear at
     top-level, appeared as an operand."))
 
-(defmethod error-description ((e special-operator-operand))
-  (format nil "~a declarations may only appear at top-level." (operator e)))
+(defmethod print-object ((e special-operator-operand) stream)
+  (format stream "~a declarations may only appear at top-level." (operator e)))
 
 
 ;;;; Node Binding Errors
@@ -267,8 +267,8 @@
    "Condition for when a node is the target node of a binding, however
     it cannot appear as the target."))
 
-(defmethod error-description ((err target-node-error))
-  (format nil "~a cannot appear as the target of a binding." (node err)))
+(defmethod print-object ((err target-node-error) stream)
+  (format stream "~a cannot appear as the target of a binding." (node err)))
 
 
 ;;;; Graph Structure Errors
@@ -283,8 +283,8 @@
    "Error condition for when a single path activates multiple contexts
     of a single node."))
 
-(defmethod error-description ((err ambiguous-context-error))
-  (format nil "Node ~a has multiple contexts activated by a single common ancestor."
+(defmethod print-object ((err ambiguous-context-error) stream)
+  (format stream "Node ~a has multiple contexts activated by a single common ancestor."
           (name (node err))))
 
 
@@ -293,8 +293,8 @@
    "Error condition: Meta-node has more than a single context and thus
     the value function of the meta-node is ambiguous."))
 
-(defmethod error-description ((e ambiguous-meta-node-context))
-  (format nil "The value function of meta-node ~a is ambiguous as it has multiple contexts."
+(defmethod print-object ((e ambiguous-meta-node-context) stream)
+  (format stream "The value function of meta-node ~a is ambiguous as it has multiple contexts."
           (name (node e))))
 
 
@@ -306,8 +306,8 @@
   (:documentation
    "Error condition: A cycle in the graph was detected."))
 
-(defmethod error-description ((e node-cycle-error))
-  (format nil "Cycle detected in node ~a" (name (node e))))
+(defmethod print-object ((e node-cycle-error) stream)
+  (format stream "Cycle detected in node ~a" (name (node e))))
 
 
 (define-condition dependency-not-reachable (semantic-error)
@@ -325,6 +325,6 @@
    "Error condition: A dependency of a node is not reachable from any
     input node."))
 
-(defmethod error-description ((e dependency-not-reachable))
-  (format nil "Dependency ~a of ~a is not reachable from any input node."
+(defmethod print-object ((e dependency-not-reachable) stream)
+  (format stream "Dependency ~a of ~a is not reachable from any input node."
           (name (dependency e)) (name (node e))))
