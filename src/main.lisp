@@ -39,7 +39,7 @@
 
   (aif (position #\= str)
        (cons (subseq str 0 it) (subseq str (1+ it)))
-       (error "Option must be of the form OPTION=VALUE")))
+       (error "Error parsing option: Option must be of the form OPTION=VALUE")))
 
 (opts:define-opts
   (:name :help
@@ -166,7 +166,7 @@ Example: tridashc ui.trd : node-name=ui")
                 (parse-quoted-string value))
 
                ((ppcre "^[\"'].*[^\"']$")
-                (error "Missing closing quote ~a" value))
+                (error "Error parsing options list: Missing closing quote ~a." value))
 
                (_ value)))
 
@@ -212,7 +212,7 @@ Example: tridashc ui.trd : node-name=ui")
    type cannot be determined, signals an error."
 
   (or (get (pathname-type out-path) +out-type-extensions+)
-      (error "Cannot determine output type from \"~a\"" out-path)))
+      (error "Error: Cannot determine output type from \"~a\"" out-path)))
 
 (defun out-type (type path)
   "Returns the keyword identifying the backend. If TYPE is NIL the
@@ -229,19 +229,28 @@ Example: tridashc ui.trd : node-name=ui")
    in the YAML build config file at path BUILD-FILE."
 
   (let ((*module-search-paths* (search-paths))
-        (prog-info (yaml:parse build-file)))
+        (build-opts (yaml:parse build-file)))
 
-    (unless (and (hash-table-p prog-info) (= (length prog-info) 1))
-      (error "Build file should contain a map of 1 key-value pair."))
+    (unless (hash-table-p build-opts)
+      (error "Error: Build file should contain a map at top-level with the keys 'sources' and 'output'."))
 
-    (let* ((prog-info (cdr (first prog-info)))
-           (output-info (get "output" prog-info))
-           (out-path (cl-fad:merge-pathnames-as-file build-file (get "path" output-info))))
+    (let* ((sources (get "sources" build-opts))
+           (output (get "output" build-opts)))
 
-      (build-app (source-file-list build-file (get "sources" prog-info))
-                 out-path
-                 :out-options output-info
-                 :backend (out-type (get "backend" output-info) out-path)))))
+      (unless (and sources (listp sources))
+        (error "Error in build config file: 'sources' is not a list."))
+
+      (unless (and output (hash-table-p output))
+        (error "Error in build config file: 'output' is not a map."))
+
+      (let ((out-path (get "path" output)))
+        (unless (stringp out-path)
+          (error "Error: No output file path specified in build config file. Specify output path under the 'path' key in the 'output' map."))
+
+        (build-app (source-file-list build-file (get "sources" build-opts))
+                   (cl-fad:merge-pathnames-as-file build-file out-path)
+                   :out-options output
+                   :backend (out-type (get "backend" output) out-path))))))
 
 (defun source-file-list (build-path sources)
   "Converts the sources list SOURCES from the format specified in the
