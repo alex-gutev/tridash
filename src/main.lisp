@@ -155,7 +155,6 @@ Example: tridashc ui.trd : node-name=ui")
                  (next source)))
 
               (_
-               (pprint rest)
                (pathname source))))))
 
 (defun parse-map (opts)
