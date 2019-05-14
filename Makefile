@@ -51,6 +51,7 @@ man/tridashc.1.gz: man/tridashc.1
 clean:
 	rm -f tridashc
 	rm -f man/tridashc.1.gz
+	rm -f tridash.tar.gz
 
 install: all
 	install -d $(DESTDIR)$(BINDIR)
@@ -71,4 +72,22 @@ uninstall:
 	rm -rf $(DESTDIR)$(DATADIR)/tridash
 	rm -f $(DESTDIR)$(MANDIR)/man1/tridashc.1
 
-.PHONY: all clean install uninstall
+
+distfiles = $(sources) \
+	src/backends/javascript/runtime/tridash.js \
+	modules/core.trd \
+	modules/core.yml \
+	man/tridashc.1 \
+	tridashc \
+	Makefile \
+	README.md \
+	LICENSE.md \
+	install.sh \
+	uninstall.sh
+
+tridash.tar.gz: $(distfiles)
+	tar -czf tridash.tar.gz $(distfiles)
+
+dist: tridash.tar.gz
+
+.PHONY: all clean install uninstall dist
