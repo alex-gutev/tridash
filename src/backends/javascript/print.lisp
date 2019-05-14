@@ -280,7 +280,7 @@
   (print-token "continue"))
 
 (defmethod print-ast ((throw js-throw) &key)
-  (print-token "throw")
+  (print-token "throw" :space t)
   (print-ast (js-throw-expression throw)))
 
 
