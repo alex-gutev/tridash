@@ -618,7 +618,32 @@
 
            (test-node-function person person-fn person-fn first last)
            (test-member-fn person.first "first" person)
-           (test-simple-binding person.first name :context person.first)))))
+           (test-simple-binding person.first name :context person.first)))
+
+       (with-module-table modules
+         (build ":module(mod1)"
+                "x -> a.first"
+
+                ":module(mod2)"
+                ":use(mod1)"
+                "y -> mod1.a.second")
+
+         (with-modules ((mod1 "mod1") (mod2 "mod2")) modules
+           (with-nodes ((a "a")
+                        (x "x")
+                        (a.first ("." "a" "first"))
+                        (a.second ("." "a" "second")))
+               mod1
+
+             (with-nodes ((y "y")) mod2
+               (test-object-fn a (list "first" a.first) (list "second" a.second))
+               (test-member-fn a.first "first" a)
+               (test-member-fn a.second "second" a)
+
+               (test-simple-binding x a.first :context x)
+               (test-simple-binding y a.second :context y)
+               ))
+           ))))
 
    (subtest "Modules"
      (with-module-table modules
@@ -1751,7 +1776,37 @@
                                 `(,addy (,+ ,x ,a) ,y))
 
                 (has-value-function (in2 y) out2 `(,addy ,in2 ,y))
-                (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y))))))))
+                (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y))))))
+
+          (subtest "Test subnodes of outer nodes."
+           (with-module-table modules
+             (build-source-file "./modules/core.trd" modules)
+
+             (build ":module(m1)"
+                    ":import(core)"
+
+                    "addx(a) : { :use(m2); a + m2.dict.x }"
+
+                    ":module(m2)"
+                    ":import(core)"
+                    ":use(m1)"
+
+                    "in1 -> dict.x"
+                    "m1.addx(in2) -> out1"
+                    "dict.x -> out2"
+
+                    ":attribute(in1, input, 1)"
+                    ":attribute(in2, input, 1)")
+
+             (let ((table (finish-build)))
+               (with-nodes ((+ "+") (addx "addx")
+                            (in1 "in1") (in2 "in2")
+                            (dict "dict") (dict.x ("." "dict" "x"))
+                            (out1 "out1") (out2 "out2"))
+                   table
+
+                 (test-meta-node addx ((a "a") (x (outer dict.x))) `(,+ ,a ,x))
+                 (has-value-function (in2 dict.x) out1 `(,addx ,in2 ,dict.x))))))))
 
       (subtest "Outer-Node References from Mutually Recursive Functions"
         (subtest "Single Module"

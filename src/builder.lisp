@@ -225,7 +225,7 @@
    meta-node. OUTER-TABLE is the node table in which the meta-node
    definition is located."
 
-  (with-slots (definition) meta-node
+  (with-slots (name definition) meta-node
     (unless (or (external-meta-node? meta-node)
                 (typep definition 'node-table))
       (let* ((table (make-inner-node-table outer-table))
@@ -233,6 +233,7 @@
 
         ;; Add implicit self node
         (add-node +self-node+ meta-node table)
+        (add-node name meta-node table)
 
         (add-operand-nodes (operands meta-node) table)
 
@@ -296,15 +297,28 @@
         (add-outer-node node (attribute :module node) table)
         (values node table))))
 
-(defmethod process-declaration :around (decl table &key top-level)
+(defmethod process-declaration :around (decl table &key top-level (add-outer t))
   "Processes the declaration with DECL added to the front of
-   *DECLARATION-STACK*, and *LEVEL* incremented by one."
+   *DECLARATION-STACK*, and *LEVEL* incremented by one.
 
-  (declare (ignore table))
+   If :ADD-OUTER is true (the default), *META-NODE* is not NIL and the
+   node return by calling the next PROCESS-DECLARATION method is not
+   in the same node table as TABLE, it is added to the outer node
+   references of *META-NODE*."
 
   (let ((*declaration-stack* (cons decl *declaration-stack*))
         (*level* (if top-level 0 (1+ *level*))))
-    (call-next-method)))
+
+    (multiple-value-bind (node node-table) (call-next-method)
+      ;; If inside a meta-node and node referenced is from an outer
+      ;; node-table, add it to the outer-nodes set of the meta-node.
+      (if (and add-outer
+               *meta-node*
+               (/= node-table table)
+               (node? node)
+               (not (meta-node? node)))
+          (add-outer-node node node-table table)
+          (values node node-table)))))
 
 (defmethod process-declaration ((n null) (table t) &key)
   "Processes the NIL declaration. NIL declaration only originate from
@@ -601,7 +615,8 @@
       operands
 
     ((list node key)
-     (process-subnode (process-declaration node table) node key table))))
+     (multiple-value-bind (object-node object-table) (process-declaration node table :add-outer nil)
+       (process-subnode object-node (name object-node) key object-table)))))
 
 
 (defgeneric process-subnode (object-node object-decl key table)
@@ -650,12 +665,8 @@
 (defmethod process-subnode ((module node-table) object-decl key table)
   "Returns the node with identifier KEY in the module MODULE."
 
-  (declare (ignore object-decl))
-
-  (let ((node (lookup-node key module)))
-    (if (and *meta-node* (node? node) (not (meta-node? node)))
-        (add-outer-node node module table)
-        (values node module))))
+  (declare (ignore object-decl table))
+  (lookup-node key module))
 
 
 ;;; Meta-Node instances
@@ -745,24 +756,13 @@
 
 (defun process-operands (operands table &optional *source-node*)
   "Creates the operand nodes and adds them to table if they are not
-   already in table. Returns the list of `node' objects as the first
-   value and the table, in which a node object was found or created,
-   with the greatest depth."
+   already in table. Returns the list of `node' objects in the first
+   value and the table in the second."
 
   (let ((*create-nodes* t))
-    (iter
-      (with op-table = (node-table *global-module-table*))
-      (for operand in operands)
-
-      (multiple-value-bind (node node-table)
-          (process-declaration operand table)
-
-        (collect node into nodes)
-
-        (when (and node-table (> (depth node-table) (depth op-table)))
-          (setf op-table node-table)))
-
-      (finally (return (values nodes op-table))))))
+    (values
+     (map (rcurry #'process-declaration table) operands)
+     table)))
 
 (defun bind-operands (node operands &key context)
   "Establishes bindings between the operands (OPERANDS) and the
