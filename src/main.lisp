@@ -73,7 +73,7 @@
    :short #\t
    :long "output-type"
    :meta-var "type"
-   :arg-parser #'make-keyword))
+   :arg-parser (compose #'make-keyword #'string-upcase)))
 
 (defmacro when-option ((options opt) &body body)
   `(awhen (getf ,options ,opt)
