@@ -71,7 +71,7 @@
   (:name :type
    :description "Compilation target (backend). If not provided, the target is guessed from the output file name."
    :short #\t
-   :long "output-type"
+   :long "output-target"
    :meta-var "type"
    :arg-parser (compose #'make-keyword #'string-upcase)))
 

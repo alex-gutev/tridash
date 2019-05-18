@@ -7,7 +7,7 @@ tridashc - Tridash Compiler
 .B tridashc
 .BI "[-o|--output-file " out-path "] [-p|--output-option K=V]"
 .br
-.BI "[-t|--output-type " type "] [" sources "]"
+.BI "[-t|--output-target " type "] [" sources "]"
 
 .TP 10
 .B tridashc
@@ -62,7 +62,7 @@ Print a summary of the usage and options.
 
 
 .TP
-.BI "-t, --output-type " type
+.BI "-t, --output-target " type
 Specifies the compilation target (the compiler backend). If this
 option is not provided it is determined from the name of the output
 file provided in the
