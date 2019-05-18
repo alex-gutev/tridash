@@ -124,6 +124,11 @@
 
   (setf (get (string attribute) (attributes node)) value))
 
+(defun home-module (node)
+  "Returns the module in which NODE was originally declared."
+
+  (get :module (attributes node)))
+
 
 ;;;; Bindings
 

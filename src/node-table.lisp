@@ -198,11 +198,11 @@
     (node-table 'module)
     (otherwise 'literal)))
 
-(defun home-module? (node table)
+(defun in-home-module? (node table)
   "Returns true if NODE was declared in the module TABLE, false if it
    was imported into it."
 
-  (eq (attribute :module node) table))
+  (eq (home-module node) table))
 
 
 ;;;; Adding nodes
@@ -214,7 +214,7 @@
     (when (memberp name all-nodes)
       (error 'node-exists-error :node name :node-table table))
 
-    (setf (attribute :module node) table)
+    (setf (get :module (attributes node)) table)
 
     (setf (get name all-nodes) node)
     (setf (get name nodes) node)))

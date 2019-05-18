@@ -1,7 +1,7 @@
 ;;;; builder.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018  Alexander Gutev
+;;;; Copyright (C) 2018-2019  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -91,18 +91,23 @@
   (:documentation
    "Processes the declaration, creates the node(s) specified by the
     declaration and adds them to TABLE. Returns the node created, if
-    any, and the table in which it is contained.
+    any.
 
     If the :TOP-LEVEL keyword argument is provided and is T, the
     declaration is processed as though it appears at top-level
     otherwise it is processed as though it appears at the level
-     (1+ *LEVEL*)."))
+    (1+ *LEVEL*).
+
+    If :ADD-OUTER is true (the default), *META-NODE* is not NIL and
+    the node return by calling the next PROCESS-DECLARATION method is
+    not in the same node table as TABLE, it is added to the outer node
+    references of *META-NODE*."))
 
 (defgeneric process-functor (operator operands table)
   (:documentation
    "Processes the declaration functor, creates the node(s) specified
     by the declaration and adds them to TABLE. Returns the node
-    created, if any, and the table in which it is contained."))
+    created, if any."))
 
 
 ;;;; Build Graph
@@ -177,7 +182,7 @@
 
   (with-slots (nodes meta-nodes input-nodes) definition
     (make-instance 'flat-node-table
-                   :nodes (coerce (map-values nodes) 'hash-set)
+                   :nodes (coerce (remove-if-not (rcurry #'in-home-module? definition) (map-values nodes)) 'hash-set)
                    :meta-nodes (coerce (map-values meta-nodes) 'hash-set)
                    :input-nodes input-nodes)))
 
@@ -289,36 +294,26 @@
     (unless (or *return-meta-node* (not (meta-node? node)) (= node *meta-node*))
       (error 'node-type-error :node node :expected 'node))
 
-    (if (and *meta-node*
-             (node? node)
-             (not (meta-node? node))
-             (not (home-module? node table)))
-
-        (add-outer-node node (attribute :module node) table)
-        (values node table))))
+    node))
 
 (defmethod process-declaration :around (decl table &key top-level (add-outer t))
   "Processes the declaration with DECL added to the front of
-   *DECLARATION-STACK*, and *LEVEL* incremented by one.
-
-   If :ADD-OUTER is true (the default), *META-NODE* is not NIL and the
-   node return by calling the next PROCESS-DECLARATION method is not
-   in the same node table as TABLE, it is added to the outer node
-   references of *META-NODE*."
+   *DECLARATION-STACK*, and *LEVEL* incremented by one."
 
   (let ((*declaration-stack* (cons decl *declaration-stack*))
         (*level* (if top-level 0 (1+ *level*))))
 
-    (multiple-value-bind (node node-table) (call-next-method)
+    (let* ((node (call-next-method)))
+
       ;; If inside a meta-node and node referenced is from an outer
       ;; node-table, add it to the outer-nodes set of the meta-node.
       (if (and add-outer
                *meta-node*
-               (/= node-table table)
                (node? node)
-               (not (meta-node? node)))
-          (add-outer-node node node-table table)
-          (values node node-table)))))
+               (not (meta-node? node))
+               (not (in-home-module? node table)))
+          (add-outer-node node (home-module node) table)
+          node))))
 
 (defmethod process-declaration ((n null) (table t) &key)
   "Processes the NIL declaration. NIL declaration only originate from
@@ -473,7 +468,7 @@
       args
 
     ((list (guard module (symbolp module)) node)
-     (process-subnode (get-module module *global-module-table*) module node table))))
+     (process-subnode (get-module module) node))))
 
 
 ;;; Definitions
@@ -521,14 +516,13 @@
               (*create-nodes* nil)
               (attribute (string attribute)))
 
-         (multiple-value-bind (node table)
-             (process-declaration node table)
+         (let ((node (process-declaration node table)))
 
            (unless (node? node)
              (error 'node-type-error :expected 'node :node node))
 
            (when (cl:equalp attribute "input")
-             (add-input node table))
+             (add-input node (home-module node)))
 
            (setf (attribute attribute node) value)))))))
 
@@ -546,9 +540,9 @@
   (loop
      for (decl . rest) on nodes
      ;; At top-level if not last node or list node is at top-level
-     for (node node-table) = (multiple-value-list (process-declaration decl table :top-level (or rest top-level)))
+     for node = (process-declaration decl table :top-level (or rest top-level))
      finally
-       (return (values node node-table))))
+       (return node)))
 
 
 ;;; Outer nodes
@@ -562,10 +556,7 @@
         args
 
       ((list name)
-       (multiple-value-bind (outer-node outer-table)
-           (lookup-node name outer-table)
-
-         (add-outer-node outer-node outer-table table))))))
+       (lookup-node name outer-table)))))
 
 (defun add-outer-node (outer-node outer-table table)
   "Adds a reference to NODE, which is located in an outer node-table (OUTER-TABLE),
@@ -598,7 +589,7 @@
              (setf (value-function (context target *source-node*))
                    `(if ,cond-link ,value-link :fail))
 
-             (values cond-node table))))))))
+             cond-node)))))))
 
 
 ;;; Subnodes
@@ -615,20 +606,22 @@
       operands
 
     ((list node key)
-     (multiple-value-bind (object-node object-table) (process-declaration node table :add-outer nil)
-       (process-subnode object-node (name object-node) key object-table)))))
+     (let ((object-node (process-declaration node table :add-outer nil)))
+       (process-subnode object-node key)))))
 
 
-(defgeneric process-subnode (object-node object-decl key table)
+(defgeneric process-subnode (object-node key)
   (:documentation
    "Generic function for processing subnode expressions."))
 
-(defmethod process-subnode ((object-node node) object-decl key table)
+(defmethod process-subnode ((object-node node) key)
   "Creates a node which references a field of an object stored in
    another node."
 
   ;; Use the actual name of the object node
-  (let* ((name (list +subnode-operator+ (name object-node) key))
+  (let* ((object-decl (name object-node))
+         (table (home-module object-node))
+         (name (list +subnode-operator+ object-decl key))
          (subnode (ensure-node name table)))
     (make-source-subnode object-decl key subnode table)
 
@@ -636,7 +629,7 @@
         (make-target-subnode object-decl key subnode table)
       (target-node-error ()))
 
-    (values subnode table)))
+    subnode))
 
 
 (defun make-source-subnode (node key subnode table)
@@ -662,11 +655,10 @@
           (link)
         (push (list key link) (cdr (value-function (context object-node :object))))))))
 
-(defmethod process-subnode ((module node-table) object-decl key table)
-  "Returns the node with identifier KEY in the module MODULE."
+(defmethod process-subnode ((module node-table) node)
+  "Returns the node with identifier NODE in the module MODULE."
 
-  (declare (ignore object-decl table))
-  (lookup-node key module))
+  (lookup-node node module))
 
 
 ;;; Meta-Node instances
@@ -680,12 +672,12 @@
       (process-meta-node-decl operator operands table)))
 
 (defun process-meta-node-decl (meta-node operator operands table)
-  "Processes a node functor node declaration where the operator is the
+  "Processes a functor node declaration where the operator is the
    meta-node META-NODE. If the meta-node has a macro-function it is
    evaluated and the resulting node is returned, otherwise an instance
    of the meta-node is created."
 
-  (aif (attribute :macro-function meta-node)
+  (aif (node-macro-function meta-node)
        (funcall it operator operands table)
        (make-meta-node-instance meta-node operator operands table)))
 
@@ -705,7 +697,7 @@
    TABLE. If TABLE already contains such a node it is returned."
 
   (with-accessors ((target-meta-node target-meta-node)) meta-node
-    (multiple-value-bind (instance operand-nodes table)
+    (multiple-value-bind (instance operand-nodes)
         (create-instance-node meta-node operator operands table)
       (add-meta-node-value-function instance meta-node operand-nodes)
 
@@ -717,7 +709,7 @@
               (add-meta-node-value-function operand meta-node (list instance) :context instance))
           (target-node-error ())))
 
-      (values instance table))))
+      instance)))
 
 (defun create-instance-node (meta-node operator operands table)
   "Creates a meta-node instance node. The node is created with
@@ -734,7 +726,7 @@
       (when (and *meta-node* (/= meta-node *meta-node*))
         (nadjoin meta-node (meta-node-references *meta-node*)))
 
-      (values (ensure-node name table t) operands table))))
+      (values (ensure-node name table t) operands))))
 
 (defun add-meta-node-value-function (instance meta-node operands &key (context meta-node))
   "Creates the value function of the meta-node instance INSTANCE,

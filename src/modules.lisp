@@ -84,10 +84,10 @@
     (let ((case-node (add-external-meta-node (id-symbol "case") builtin))
           (?->-node (add-external-meta-node (id-symbol "?->") builtin)))
 
-      (setf (attribute :macro-function case-node) #'case-macro-function)
+      (setf (node-macro-function case-node) #'case-macro-function)
       (export-node (id-symbol "case") builtin)
 
-      (setf (attribute :macro-function ?->-node) #'?->-macro-function)
+      (setf (node-macro-function ?->-node) #'?->-macro-function)
       (export-node (id-symbol "?->") builtin))))
 
 (defun case-macro-function (operator operands table)

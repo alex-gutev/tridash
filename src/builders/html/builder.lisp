@@ -170,10 +170,10 @@
 (defun make-html-element-node (html-id tag module-table)
   "Builds the node referencing the HTML element with id HTML-ID."
 
-  (multiple-value-bind (node table) (build-node (html-node-id html-id) module-table)
-    (node->html-node node table :tag-name tag :element-id html-id)))
+  (-> (build-node (html-node-id html-id) module-table)
+      (node->html-node :tag-name tag :element-id html-id)))
 
-(defun html-attributes->html-nodes (node html-id tag-name table)
+(defun html-attributes->html-nodes (node html-id tag-name)
   "If NODE is not an HTML-NODE and has an :OBJECT context, convert all
    the context's operand nodes to HTML attribute nodes, for the HTML
    element with id HTML-ID and tag-name TAG-NAME."
@@ -182,27 +182,26 @@
     (when-let ((context (get :object (contexts node))))
       (iter
         (for (attribute link) in (rest (value-function context)))
-        (make-attribute-reference (node-link-node link) html-id tag-name attribute table)))))
+        (make-attribute-reference (node-link-node link) html-id tag-name attribute)))))
 
 (defun make-html-attribute-node (html-id tag attribute module-table)
   "Builds the subnode referencing the attribute ATTRIBUTE of the HTML
    element with id HTML-ID."
 
-  (multiple-value-bind (node table)
-      (-> (list +subnode-operator+ (html-node-id html-id) (id-symbol attribute))
-          (build-node module-table))
+  (let ((node (-> (list +subnode-operator+ (html-node-id html-id) (id-symbol attribute))
+                  (build-node module-table))))
 
-    (make-attribute-reference node html-id tag attribute table)
+    (make-attribute-reference node html-id tag attribute)
     node))
 
-(defun make-attribute-reference (node html-id tag attribute table)
+(defun make-attribute-reference (node html-id tag attribute)
   "Changes the type of NODE to an HTML-NODE, which references an
    attribute of a particular HTML element. HTML-ID is the id of the
    element, TAG is the tag-name and ATTRIBUTE is the attribute."
 
-  (add-input node table)
+  (add-input node (home-module node))
 
-  (node->html-node node table
+  (node->html-node node
                    :tag-name tag
                    :html-attribute (string attribute)
                    :element-id html-id))
@@ -213,13 +212,13 @@
 
   (list +subnode-operator+ +self-node+ (id-symbol id)))
 
-(defun node->html-node (node table &rest args &key element-id tag-name &allow-other-keys)
+(defun node->html-node (node &rest args &key element-id tag-name &allow-other-keys)
   "If NODE is an ordinary node changes its type to `HTML-NODE'"
 
   (setf (attribute :no-coalesce node) t)
 
   (unless (typep node 'html-node)
-    (html-attributes->html-nodes node element-id tag-name table)
+    (html-attributes->html-nodes node element-id tag-name)
     (apply #'change-class node 'html-node args)))
 
 (defun bind-html-node (html-node decl module-table)
@@ -242,25 +241,22 @@
       (target-node-error ()))))
 
 
-(defmethod process-subnode ((object-node html-node) object-decl key table)
+(defmethod process-subnode ((object-node html-node) key)
   "Convert the subnode node into an HTML attribute node."
 
-  (declare (ignore object-decl table))
-
-  (multiple-value-return (subnode table) (call-next-method)
+  (let* ((subnode (call-next-method)))
     (with-slots (tag-name element-id) object-node
-      (make-attribute-reference subnode element-id tag-name key table))))
+      (make-attribute-reference subnode element-id tag-name key))
 
-(defmethod process-subnode ((comp-node html-component-node) object-decl key table)
+    subnode))
+
+(defmethod process-subnode ((comp-node html-component-node) key)
   "Process subnode method for `HTML-COMPONENT-NODE's. Simply creates a
    node without giving it a member access functor."
 
-  (declare (ignore object-decl))
-
   (-<> (name comp-node)
        (list +subnode-operator+ <> key)
-       (ensure-node table)
-       (values table)))
+       (ensure-node (home-module comp-node))))
 
 
 ;;; Process Text Nodes

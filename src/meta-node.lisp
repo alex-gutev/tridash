@@ -85,6 +85,17 @@
     (awhen (definition meta-node)
       (funcall fn it))))
 
+(defun node-macro-function (meta-node)
+  "Returns the meta-nodes macro function if it is a macro."
+
+  (get :macro-function (attributes meta-node)))
+
+(defun (setf node-macro-function) (fn meta-node)
+  "Sets the macro function of a meta-node. This essentially makes
+   META-NODE a macro."
+
+  (setf (get :macro-function (attributes meta-node)) fn))
+
 
 ;;; Predicates
 

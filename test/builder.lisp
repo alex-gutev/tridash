@@ -1791,22 +1791,29 @@
                     ":import(core)"
                     ":use(m1)"
 
-                    "in1 -> dict.x"
                     "m1.addx(in2) -> out1"
                     "dict.x -> out2"
 
-                    ":attribute(in1, input, 1)"
-                    ":attribute(in2, input, 1)")
+                    ":attribute(in2, input, 1)"
+
+                    ":module(m3)"
+                    ":import(m2, dict)"
+
+                    "in1 -> dict.x"
+                    ":attribute(in1, input, 1)")
 
              (let ((table (finish-build)))
                (with-nodes ((+ "+") (addx "addx")
                             (in1 "in1") (in2 "in2")
                             (dict "dict") (dict.x ("." "dict" "x"))
-                            (out1 "out1") (out2 "out2"))
+                            (out1 "out1"))
                    table
 
                  (test-meta-node addx ((a "a") (x (outer dict.x))) `(,+ ,a ,x))
-                 (has-value-function (in2 dict.x) out1 `(,addx ,in2 ,dict.x))))))))
+
+                 (has-value-function (in2 dict.x) out1 `(,addx ,in2 ,dict.x))
+                 (has-value-function (dict.x) dict `(:object (,(id-symbol "x") ,dict.x)))
+                 (test-simple-binding in1 dict.x)))))))
 
       (subtest "Outer-Node References from Mutually Recursive Functions"
         (subtest "Single Module"

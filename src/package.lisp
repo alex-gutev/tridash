@@ -182,6 +182,7 @@
    :module-table
    :modules
    :get-module
+   :home-module
    :*global-module-table*
 
    ;; Builder
