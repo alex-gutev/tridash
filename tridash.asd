@@ -75,9 +75,8 @@
                :cl-ppcre
                :ppath
                :parse-number
-               :cl-yaml
+	       :cl-yaclyaml
                :cl-fad
-               :osicat
                :unix-opts
 
                :generic-cl)

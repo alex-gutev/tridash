@@ -229,7 +229,7 @@ Example: tridashc ui.trd : node-name=ui")
    in the YAML build config file at path BUILD-FILE."
 
   (let ((*module-search-paths* (search-paths))
-        (build-opts (yaml:parse build-file)))
+        (build-opts (cl-yy:yaml-load-file build-file)))
 
     (unless (hash-table-p build-opts)
       (error "Error: Build file should contain a map at top-level with the keys 'sources' and 'output'."))
@@ -290,7 +290,7 @@ Example: tridashc ui.trd : node-name=ui")
    the environment variable."
 
   (append
-   (aand (osicat:environment-variable +module-paths-var+)
+   (aand (uiop:getenv +module-paths-var+)
          (map #'cl-fad:pathname-as-directory (split-sequence +paths-delimiter+ it)))
    *module-search-paths*))
 
@@ -338,8 +338,8 @@ Example: tridashc ui.trd : node-name=ui")
    module was found builds its source files and returns true."
 
   (let ((module-path (cl-fad:merge-pathnames-as-file path (concatenate-to 'string (string module) ".yml"))))
-    (when (osicat:regular-file-exists-p module-path)
-      (let ((module-info (yaml:parse module-path)))
+    (when (uiop:probe-file* module-path)
+      (let ((module-info (cl-yy:yaml-load-file module-path)))
         (unless (hash-table-p module-info)
           (error "Expected a map."))
 
