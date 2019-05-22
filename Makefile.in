@@ -1,0 +1,113 @@
+# Path to Common Lisp compiler
+LISP ?= @LISP@
+
+prefix ?= @prefix@
+exec_prefix ?= @exec_prefix@
+bindir ?= @bindir@
+
+datarootdir ?= @datarootdir@
+datadir ?= @datadir@
+mandir ?= @mandir@
+
+pkgdatadir = @datadir@/@PACKAGE@
+
+PACKAGE_TARNAME ?= @PACKAGE_TARNAME@
+PACKAGE_VERSION ?= @PACKAGE_VERSION@
+
+dist_tarfile = $(PACKAGE_TARNAME)-$(PACKAGE_VERSION).tar.gz
+bindist_tarfile = $(PACKAGE_TARNAME)_bin-$(PACKAGE_VERSION).tar.gz
+
+# Add source directory to search path for out of source builds
+
+srcdir = @srcdir@
+VPATH = $(srcdir)
+
+all: tridashc man/tridashc.1.gz
+
+sources = tridash.asd \
+        src/package.lisp \
+        src/interface.lisp \
+        src/lexer.lisp \
+        src/parser.lisp \
+        src/operators.lisp \
+        src/node.lisp \
+        src/meta-node.lisp \
+        src/node-table.lisp \
+        src/modules.lisp \
+        src/conditions.lisp \
+        src/outer-nodes.lisp \
+        src/builder.lisp \
+        src/coalescer.lisp \
+        src/prog-builder.lisp \
+        src/main.lisp \
+        src/util/package.lisp \
+        src/util/cut.lisp \
+        src/util/macros.lisp \
+        src/builders/html/package.lisp \
+        src/builders/html/builder.lisp \
+        src/backends/javascript/package.lisp \
+        src/backends/javascript/ast.lisp \
+        src/backends/javascript/print.lisp \
+        src/backends/javascript/analyze.lisp \
+        src/backends/javascript/backend.lisp \
+        src/backends/javascript/functions.lisp \
+        src/backends/javascript/html.lisp
+
+build.lisp: build.lisp.in
+	@SED@ -e 's|@datadir[@]|$(pkgdatadir)|g' $< > $@
+
+tridashc: build.lisp $(sources)
+	$(LISP) --load $(srcdir)/tridash.asd --load $<
+
+man/tridashc.1.gz: man/tridashc.1
+	mkdir -p man
+	gzip -c $< > $@
+
+clean:
+	rm -f tridashc
+	rm -f man/tridashc.1.gz
+	rm -f tridash.tar.gz
+	rm -f build.lisp
+
+install: all
+	install -d $(DESTDIR)$(bindir)
+	install -m 755 tridashc $(DESTDIR)$(bindir)
+
+	install -d $(DESTDIR)$(pkgdatadir)/modules
+	install -m 644 $(srcdir)/modules/* $(DESTDIR)$(pkgdatadir)/modules
+
+	install -d $(DESTDIR)$(pkgdatadir)/backends/javascript
+	install -m 644 $(srcdir)/src/backends/javascript/runtime/tridash.js $(DESTDIR)$(pkgdatadir)/backends/javascript
+
+	install -d $(DESTDIR)$(mandir)/man1
+	install -m 644 man/tridashc.1.gz $(DESTDIR)$(mandir)/man1
+
+
+uninstall:
+	rm -f $(DESTDIR)$(bindir)/tridashc
+	rm -rf $(DESTDIR)$(pkgdatadir)
+	rm -f $(DESTDIR)$(mandir)/man1/tridashc.1
+
+
+distfiles = $(sources) \
+	src/backends/javascript/runtime/tridash.js \
+	modules/core.trd \
+	modules/core.yml \
+	man/tridashc.1 \
+	configure \
+	Makefile.in \
+	README.md \
+	LICENSE.md \
+	install.sh \
+	uninstall.sh
+
+$(dist_tarfile): $(distfiles)
+	tar -czf $@ -C $(srcdir) $(distfiles)
+
+$(bindist_tarfile): $(distfiles) tridashc
+	tar -czf $@ tridashc Makefile -C $(srcdir) $(distfiles)
+
+dist: $(dist_tarfile)
+bindist: $(bindist_tarfile)
+
+.PHONY: all clean install uninstall dist bindist

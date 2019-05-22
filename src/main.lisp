@@ -294,13 +294,6 @@ Example: tridashc ui.trd : node-name=ui")
          (map #'cl-fad:pathname-as-directory (split-sequence +paths-delimiter+ it)))
    *module-search-paths*))
 
-(defun add-data-dir (data-dir)
-  "Add the directory DATA-DIR to the front of the module search paths
-   list."
-
-  (let ((dir (cl-fad:merge-pathnames-as-directory (pathname data-dir) "tridash/modules/")))
-    (pushnew dir *module-search-paths*)))
-
 (defun build-sources (sources)
   "Builds the node definitions from the source files in the list
    SOURCES. Returns the flattened module table."

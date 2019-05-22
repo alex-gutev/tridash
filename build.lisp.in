@@ -1,0 +1,26 @@
+;;;; -*- mode: lisp; -*-
+;;;;
+;;;; build.lisp
+;;;;
+;;;; Tridashc build script
+
+(ql:quickload :tridash)
+
+(let* ((datadir #p"@datadir@")
+       (system (asdf:find-system :tridash)))
+
+  ;; Change build path to current directory
+  (setf (asdf::component-build-pathname system)
+        (uiop:merge-pathnames* (uiop:getcwd) (asdf::component-build-pathname system)))
+
+
+  ;; Add DATADIR to the front of the module search paths
+  (pushnew (cl-fad:merge-pathnames-as-directory datadir "tridash/modules/")
+           tridash::*module-search-paths*)
+
+  ;; Set path to JavaScript runtime library
+  (setf tridash.backend.js::*runtime-library-path*
+        (cl-fad:merge-pathnames-as-file datadir "tridash/backends/javascript/tridash.js"))
+
+  (asdf:make :tridash)
+  (quit))

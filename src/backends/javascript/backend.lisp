@@ -96,12 +96,6 @@
    NIL - No linkage.")
 
 
-(defun set-data-dir (data-dir)
-  "Set DATA-DIR as the path to the runtime library."
-
-  (setf *runtime-library-path* (cl-fad:merge-pathnames-as-file (pathname data-dir) "tridash/backends/javascript/tridash.js")))
-
-
 ;;;; Code Array
 
 (defvar *output-code* nil
