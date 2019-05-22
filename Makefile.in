@@ -69,6 +69,11 @@ clean:
 	rm -f $(dist_tarfile)
 	rm -f $(bindist_tarfile)
 
+distclean: clean
+	rm -f Makefile
+	rm -f config.log
+	rm -f config.status
+
 install: all
 	install -d $(DESTDIR)$(bindir)
 	install -m 755 tridashc $(DESTDIR)$(bindir)
@@ -110,4 +115,4 @@ $(bindist_tarfile): $(distfiles) tridashc
 dist: $(dist_tarfile)
 bindist: $(bindist_tarfile)
 
-.PHONY: all clean install uninstall dist bindist
+.PHONY: all clean distclean install uninstall dist bindist
