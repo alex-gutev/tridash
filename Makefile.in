@@ -22,7 +22,7 @@ bindist_tarfile = $(PACKAGE_TARNAME)_bin-$(PACKAGE_VERSION).tar.gz
 srcdir = @srcdir@
 VPATH = $(srcdir)
 
-all: tridashc man/tridashc.1.gz
+all: tridashc tridashc.1.gz
 
 sources = tridash.asd \
         src/package.lisp \
@@ -59,15 +59,15 @@ build.lisp: build.lisp.in
 tridashc: build.lisp $(sources)
 	$(LISP) --load $(srcdir)/tridash.asd --load $<
 
-man/tridashc.1.gz: man/tridashc.1
-	mkdir -p man
+tridashc.1.gz: man/tridashc.1
 	gzip -c $< > $@
 
 clean:
-	rm -f tridashc
-	rm -f man/tridashc.1.gz
-	rm -f tridash.tar.gz
 	rm -f build.lisp
+	rm -f tridashc
+	rm -f tridashc.1.gz
+	rm -f $(dist_tarfile)
+	rm -f $(bindist_tarfile)
 
 install: all
 	install -d $(DESTDIR)$(bindir)
@@ -80,7 +80,7 @@ install: all
 	install -m 644 $(srcdir)/src/backends/javascript/runtime/tridash.js $(DESTDIR)$(pkgdatadir)/backends/javascript
 
 	install -d $(DESTDIR)$(mandir)/man1
-	install -m 644 man/tridashc.1.gz $(DESTDIR)$(mandir)/man1
+	install -m 644 tridashc.1.gz $(DESTDIR)$(mandir)/man1
 
 
 uninstall:
