@@ -77,6 +77,10 @@
 
 ;;; Code Generation Flags
 
+(defconstant +runtime-path-var+ "TRIDASH_JS_RUNTIME"
+  "Environment variable containing the path to the JavaScript Runtime
+   Library.")
+
 (defvar *debug-info-p* nil
   "Flag: If true debug information, such as the names of the nodes is
    included in the generated code.")
@@ -126,7 +130,7 @@
 
   (let ((*print-indented* (parse-boolean (get "indented" options)))
         (*debug-info-p* (parse-boolean (get "debug-info" options)))
-        (*runtime-library-path* (or (get "runtime-path" options) *runtime-library-path*))
+        (*runtime-library-path* (runtime-path options))
         (*runtime-link-type* (parse-linkage-type (get "runtime-linkage" options))))
 
     (let ((*node-ids* (make-hash-map))
@@ -141,6 +145,18 @@
 
       (generate-code table defs bindings)
       (print-output-code (list defs bindings) options))))
+
+(defun runtime-path (options)
+  "Returns the path to the runtime library. First OPTIONS is checked
+   for whether it contains a runtime-path key. If not the runtime path
+   environment variable is checked whether it is set. Finally if
+   neither OPTIONS contains the path nor the environment variable is
+   set, the current value of *RUNTIME-LIBRARY-PATH* is returned."
+
+  (or (get "runtime-path" options)
+      (uiop:getenvp +runtime-path-var+)
+      *runtime-library-path*))
+
 
 (defun parse-boolean (thing)
   "Converts THING to a boolean value."
