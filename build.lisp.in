@@ -6,12 +6,12 @@
 
 (ql:quickload :tridash)
 
-(let* ((datadir #p"@datadir@")
+(let* ((datadir #p"@datadir@/")
        (system (asdf:find-system :tridash)))
 
   ;; Change build path to current directory
   (setf (asdf::component-build-pathname system)
-        (uiop:merge-pathnames* (uiop:getcwd) (asdf::component-build-pathname system)))
+        (cl-fad:merge-pathnames-as-file (uiop:getcwd) (asdf::component-build-pathname system)))
 
 
   ;; Add DATADIR to the front of the module search paths
