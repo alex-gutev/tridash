@@ -102,7 +102,9 @@ distfiles = $(sources) \
 	configure \
 	Makefile.in \
 	README.md \
-	LICENSE.md
+	LICENSE.md \
+	install.sh \
+	uninstall.sh
 
 $(dist_tarfile): $(distfiles)
 	tar -czf $@ -C $(srcdir) $(distfiles)
