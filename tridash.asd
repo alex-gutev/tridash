@@ -65,7 +65,6 @@
                :iterate
                :alexandria
                :cl-arrows
-               :collectors
                :split-sequence
                :named-readtables
                :let-over-lambda
