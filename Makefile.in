@@ -22,6 +22,9 @@ bindist_tarfile = $(PACKAGE_TARNAME)_bin-$(PACKAGE_VERSION).tar.gz
 srcdir = @srcdir@
 VPATH = $(srcdir)
 
+
+## Build Targets
+
 all: tridashc tridashc.1.gz
 
 sources = tridash.asd \
@@ -62,6 +65,9 @@ tridashc: build.lisp $(sources)
 tridashc.1.gz: man/tridashc.1
 	gzip -c $< > $@
 
+
+## Clean Targets
+
 clean:
 	rm -f build.lisp
 	rm -f tridashc
@@ -73,6 +79,9 @@ distclean: clean
 	rm -f Makefile
 	rm -f config.log
 	rm -f config.status
+
+
+## Installation Targets
 
 install: all
 	install -d $(DESTDIR)$(bindir)
@@ -94,6 +103,8 @@ uninstall:
 	rm -f $(DESTDIR)$(mandir)/man1/tridashc.1
 
 
+## Distribution Tarballs
+
 distfiles = $(sources) \
 	src/backends/javascript/runtime/tridash.js \
 	modules/core.trd \
@@ -113,6 +124,8 @@ $(bindist_tarfile): $(distfiles) install.sh uninstall.sh tridashc tridashc.1.gz
 dist: $(dist_tarfile)
 bindist: $(bindist_tarfile)
 
+
+## Testing
 
 test_sources = test/util.lisp \
 	test/lexer.lisp \
