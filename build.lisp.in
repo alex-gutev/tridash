@@ -15,12 +15,12 @@
 
 
   ;; Add DATADIR to the front of the module search paths
-  (pushnew (cl-fad:merge-pathnames-as-directory datadir "tridash/modules/")
+  (pushnew (cl-fad:merge-pathnames-as-directory datadir "modules")
            tridash::*module-search-paths*)
 
   ;; Set path to JavaScript runtime library
   (setf tridash.backend.js::*runtime-library-path*
-        (cl-fad:merge-pathnames-as-file datadir "tridash/backends/javascript/tridash.js"))
+        (cl-fad:merge-pathnames-as-file datadir "backends/javascript/tridash.js"))
 
   (asdf:make :tridash)
   (quit))
