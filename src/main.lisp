@@ -290,7 +290,7 @@ Example: tridashc ui.trd : node-name=ui")
    the environment variable."
 
   (append
-   (aand (uiop:getenv +module-paths-var+)
+   (aand (uiop:getenvp +module-paths-var+)
          (map #'cl-fad:pathname-as-directory (split-sequence +paths-delimiter+ it)))
    *module-search-paths*))
 
