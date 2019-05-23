@@ -113,4 +113,19 @@ $(bindist_tarfile): $(distfiles) tridashc
 dist: $(dist_tarfile)
 bindist: $(bindist_tarfile)
 
-.PHONY: all clean distclean install uninstall dist bindist
+
+test_sources = test/util.lisp \
+	test/lexer.lisp \
+	test/parser.lisp \
+	test/builder.lisp \
+	test/builders/html/builder.lisp \
+	test/backends/javascript/backend.lisp
+
+check: $(sources) $(test_sources)
+	cd $(srcdir); \
+	$(LISP) --load tridash.asd \
+		--eval "(ql:quickload :tridash)" \
+		--eval "(asdf:test-system :tridash)" \
+		--eval "(quit)"
+
+.PHONY: all clean distclean install uninstall dist bindist check
