@@ -15,7 +15,8 @@ Installation
 Binary Distribution
 -------------------
 
-_These instructions are for distributions containing a prebuilt binary_
+_These instructions are only for distributions containing a prebuilt
+binary_
 
 Run the `install.sh` script. This will install the Tridash compiler
 and related files to the `/usr/local` prefix. If this requires root
