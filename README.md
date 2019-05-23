@@ -23,6 +23,11 @@ privileges, the script will have to be run with the `sudo` command:
 
 `sudo ./install.sh`
 
+To uninstall run the `uninstall.sh` script.
+
+_These scripts are simply convenience wrappers over `make install` and
+`make uninstall`._
+
 Building from source
 --------------------
 
@@ -36,27 +41,33 @@ Building from source
 ### Building:
 
 These build instructions are for Linux and UNIX like systems. To build
-on Windows using the following instructions,
-[Cygwin](https://www.cygwin.com) or [MinGW](http://www.mingw.org) has
-to be installed.
+on Windows, using the following instructions,
+[Cygwin](https://www.cygwin.com) or [MinGW](http://www.mingw.org) is
+required.
+
+1. Run `./configure` in the source directory.
+
+   _For an out-of-source build, e.g. in a `build` directory, navigate
+   to the build directory and run `../configure`._
+
+   This command configures the build for installation at the
+   `/usr/local` prefix. You can specify a different prefix with the
+   prefix option, e.g:
+
+   `./configure --prefix=/usr`
+
+   The common lisp compiler can be set with the `LISP=<compiler>`
+   option. By default the script searches for `sbcl`.
+
+   Run `./configure --help` for a listing of all configuration
+   options.
 
 1. Run `make` in the current directory.
 
-   To install at a different prefix, other than `/usr/local` run:
-
-   `make PREFIX=<prefix>`
-
-   The prefix has to be specified at build time as the core module and
-   runtime library paths are embedded in the executable.
-
-   _To compile with a different Common Lisp compiler, or if `sbcl` is
-   not in your `PATH`, set the `LISP` environment variable to the
-   Common Lisp compiler._
-
 2. Run `sudo make install`.
 
-   The prefix has to be specified, `sudo make PREFIX=<prefix>
-   install`, in this step as well, if the compiler is to be installed
-   at a prefix other than `/use/local`.
+   _If root privileges are not required for installation `sudo` can be omitted._
 
-   _The `DESTDIR` variable is supported._
+   _The `DESTDIR` variable is supported for staged installs._
+
+To uninstall run `sudo make uninstall` from the same directory.

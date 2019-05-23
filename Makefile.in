@@ -102,15 +102,13 @@ distfiles = $(sources) \
 	configure \
 	Makefile.in \
 	README.md \
-	LICENSE.md \
-	install.sh \
-	uninstall.sh
+	LICENSE.md
 
 $(dist_tarfile): $(distfiles)
 	tar -czf $@ -C $(srcdir) $(distfiles)
 
-$(bindist_tarfile): $(distfiles) tridashc
-	tar -czf $@ tridashc Makefile -C $(srcdir) $(distfiles)
+$(bindist_tarfile): $(distfiles) install.sh uninstall.sh tridashc tridashc.1.gz
+	tar -czf $@ tridashc tridashc.1.gz Makefile -C $(srcdir) $(distfiles) install.sh uninstall.sh
 
 dist: $(dist_tarfile)
 bindist: $(bindist_tarfile)
