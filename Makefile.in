@@ -15,7 +15,7 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 
 dist_tarfile = $(PACKAGE_TARNAME)-$(PACKAGE_VERSION).tar.gz
-bindist_tarfile = $(PACKAGE_TARNAME)_bin-$(PACKAGE_VERSION).tar.gz
+bindist_tarfile = $(PACKAGE_TARNAME)-$(PACKAGE_VERSION)-bin.tar.gz
 
 # Add source directory to search path for out of source builds
 
