@@ -23,7 +23,7 @@
 (defconstant +module-paths-var+ "TRIDASH_MODULE_PATHS"
   "Environment variable containing additional module search paths.")
 
-(defconstant +paths-delimiter+ #\:
+(defconstant +paths-delimiter+ #\;
   "Search path delimiter.")
 
 (defvar *module-search-paths*
