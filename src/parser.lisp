@@ -172,8 +172,50 @@
 (defmethod parse-node ((type (eql :string)) lexeme (lex t))
   "Parses a string literal."
 
-  (let ((*read-eval* nil))
-    (read-from-string lexeme)))
+  (parse-string lexeme))
+
+(defun parse-string (str)
+  "Parse a string literal (enclosed in quotes), possibly with escape
+   sequences."
+
+  (with-output-to-string (*standard-output*)
+    (with-input-from-string (*standard-input* str)
+      (labels
+          ((parse-escape (c)
+             (write-char
+              (case c
+                (#\n #\Linefeed)
+                (#\r #\Return)
+                (#\t #\Tab)
+                (#\u (parse-unicode))
+                (otherwise c))))
+
+           (parse-unicode ()
+             (let ((code 0))
+               (loop
+                  for c = (peek-char)
+                  for d = (digit-char-p c 16)
+                  while d
+                  do
+                    (setf code (+ (* code 16) d))
+                    (read-char)
+
+                  finally
+                    (when (= c #\h)
+                      (read-char)))
+
+               (code-char code))))
+
+        (read-char)                     ; Discard opening quote
+
+        (loop
+           for c = (read-char)
+           while (/= c #\")
+           do
+             (case c
+               (#\\ (parse-escape (read-char)))
+               (otherwise
+                (write-char c))))))))
 
 (defmethod parse-node ((type (eql :id)) lexeme (lex t))
   "Parses either an atom node or a functor node, if the token
@@ -230,6 +272,7 @@
 
   (intern (string name) :tridash.symbols))
 
+
 (defun operand-list? (lex precedence)
   "Returns true if the next token is the start of the operand list of
    a functor (:OPEN-PAREN). PRECEDENCE is the current minimum operator
@@ -271,7 +314,6 @@
     (let ((*line-term* nil))
       (unless (end-list?)
         (parse-operands)))))
-
 
 (defun parse-node-list (delimiter lex)
   "Parses and accumulates nodes into a list until a token with type
@@ -343,7 +385,6 @@
               :expected :terminate
               :token (cons type lxm)
               :rule 'terminator)))))
-
 
 
 ;;;; Parse Error Conditions
