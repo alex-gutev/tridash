@@ -113,7 +113,7 @@ distfiles = $(sources) \
 	configure \
 	Makefile.in \
 	README.md \
-	LICENSE.md
+	LICENSE.txt
 
 $(dist_tarfile): $(distfiles)
 	tar -czf $@ -C $(srcdir) $(distfiles)
