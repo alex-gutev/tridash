@@ -292,7 +292,35 @@
   (print-token thing))
 
 (defmethod print-ast ((thing js-string) &key)
-  (print-token (format nil "~s" (js-string-string thing))))
+  (print-token (quoted-js-string thing)))
+
+(defmethod quoted-js-string ((str js-string))
+  "Returns a quoted representation of the JavaScript string STR."
+
+  (with-output-to-string (stream)
+    (write-char #\" stream)
+
+    (doseq (chr (js-string-string str))
+      (case chr
+        (#\"
+         (write-sequence "\\\"" stream))
+
+        (#\Linefeed
+         (write-sequence "\\n" stream))
+
+        (#\Return
+         (write-sequence "\\r" stream))
+
+        (#\Tab
+         (write-sequence "\\t" stream))
+
+        (#\\
+         (write-sequence "\\\\" stream))
+
+        (otherwise
+         (write-char chr stream))))
+
+    (write-char #\" stream)))
 
 
 ;;; Semicolons and bracketing
