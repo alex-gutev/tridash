@@ -219,7 +219,8 @@
 
   (when initial-values
     (make-onloaded-method
-     (list (make-set-initial-values initial-values)))))
+     (let ((*sub-functions* (make-hash-map)))
+       (list (make-set-initial-values initial-values))))))
 
 (defun make-set-initial-values (initial-values)
   "Generates code which sets the initial values of the nodes and
