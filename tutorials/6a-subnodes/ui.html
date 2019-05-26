@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Budget App</title>
+        <script language="tridash">
+          :import(core)
+
+	  # Utility Meta-nodes
+
+          lerp(a, b, alpha) : a + alpha * (b - a)
+
+          clamp(x, min, max) :
+             case (
+                 x < min : min,
+                 x > max : max,
+                 x
+             )
+
+          make-color(h, s, l) :
+            "hsl(" + h + "," + s + "%," + l + "%)"
+
+
+          food + electricity + water -> total
+
+          validate(x): {
+              parse-int(x) -> parse-x
+              parse-x.value -> self.value
+              parse-x.fail or parse-x.value < 0 -> self.fail
+          }
+
+
+
+	  # Application Logic
+
+          food + electricity + water -> total
+
+          clamp((total + 1) / (budget + 1), 0, 1) -> scale
+
+          make-color(
+             lerp(0, 120, 1 - scale),
+             90,
+             45
+          ) -> color
+
+          color -> self.input-total.style.color
+          color -> self.message.style.color
+
+
+          # Parsing Input
+
+          validate(in-budget) -> parse-budget
+          validate(in-food) -> parse-food
+          validate(in-electricity) -> parse-electricity
+          validate(in-water) -> parse-water
+
+          parse-budget ?-> budget
+          parse-food ?-> food
+          parse-electricity ?-> electricity
+          parse-water ?-> water
+
+
+          # Error Handling
+
+          "Please enter a valid number >= 0" -> error-message
+
+          parse-budget.fail |- error-message -> error-budget
+          parse-food.fail |- error-message -> error-food
+          parse-water.fail |- error-message -> error-water
+          parse-electricity.fail |- error-message -> error-electricity
+
+
+          # Initial Values
+
+          0 -> in-budget
+          0 -> in-food
+          0 -> in-water
+          0 -> in-electricity
+        </script>
+    </head>
+    <body>
+      <h1>Budget</h1>
+      <p><label>Budget: <input value="<% in-budget %>" /></label> <% error-budget %></p>
+      <h2>Expenses:</h2>
+      <p><label>Food: <input value="<% in-food %>" /> <% error-food %></label></p>
+      <p><label>Electricity: <input value="<% in-electricity %>" /> <% error-electricity %></label></p>
+      <p><label>Water: <input value="<% in-water %>" /></label> <% error-water %></p>
+      <p><label><strong>Total:</strong> <input id="input-total" value="<% total %>" readonly></label></p>
+      <hr>
+      <p id="message">
+        <%
+           case(
+	     total < budget : "Within budget.",
+             "Budget exceeded!!!"
+           )
+        %>
+      </p>
+    </body>
+</html>

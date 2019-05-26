@@ -6,7 +6,8 @@ SUBDIRS = 1a-hello-node \
 	4a-functions \
 	5a-error-handling \
 	5b-error-handling \
-	5c-initial-values
+	5c-initial-values \
+	6a-subnodes
 
 ALLFILES = $(SUBDIRS:%=%.all)
 CLEANFILES = $(SUBDIRS:%=%.clean)
