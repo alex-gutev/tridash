@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Budget App</title>
+        <script language="tridash">
+          :import(core)
+
+          food + electricity + water -> total
+
+          case(
+            total < budget : "green",
+            "red"
+          ) -> color
+
+          color -> self.input-total.style.color
+          color -> self.message.style.color
+        </script>
+    </head>
+    <body>
+      <h1>Budget</h1>
+      <p><label>Budget: <input value="<% real(budget) %>" /></label></p>
+      <h2>Expenses:</h2>
+      <p><label>Food: <input value="<% real(food) %>" /></label></p>
+      <p><label>Electricity: <input value="<% real(electricity) %>" /></label></p>
+      <p><label>Water: <input value="<% real(water) %>" /></label></p>
+      <p><label><strong>Total:</strong> <input id="input-total" value="<% total %>" readonly></label></p>
+      <hr>
+      <p id="message">
+        <%
+           case(
+	     total < budget : "Within budget.",
+             "Budget exceeded!!!"
+           )
+        %>
+      </p>
+    </body>
+</html>

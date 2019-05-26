@@ -1,0 +1,9 @@
+sources:
+  - path: ui.html
+    node-name: ui
+
+output:
+  path: app.html
+  backend: javascript
+  type: html
+  main-ui: ui

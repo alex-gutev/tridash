@@ -1,0 +1,10 @@
+sources:
+  - path: ui.html
+    node-name: ui
+
+output:
+  path: app.html
+  type: html
+  main-ui: ui
+  indented: 1
+  debug-info: 1

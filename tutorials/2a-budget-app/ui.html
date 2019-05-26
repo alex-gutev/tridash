@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Budget App</title>
+        <script language="tridash">
+          :import(core)
+
+          food + electricity + water -> total
+        </script>
+    </head>
+    <body>
+      <h1>Budget App</h1>
+      <p><label>Food: <input value="<% real(food) %>" /></label></p>
+      <p><label>Electricity: <input value="<% real(electricity) %>" /></label></p>
+      <p><label>Water: <input value="<% real(water) %>" /></label></p>
+      <p><label><strong>Total:</strong> <input value="<% total %>" readonly></label></p>
+    </body>
+</html>
