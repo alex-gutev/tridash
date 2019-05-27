@@ -16,7 +16,7 @@
                  x
              )
 
-          make-color(h, s, l) :
+          make-hsl(h, s, l) :
             "hsl(" + h + "," + s + "%," + l + "%)"
 
 
@@ -26,8 +26,8 @@
 
           clamp((total + 1) / (budget + 1), 0, 1) -> scale
 
-          make-color(
-             lerp(0, 120, 1 - scale),
+          make-hsl(
+             lerp(120, 0, scale),
              90,
              45
           ) -> color
