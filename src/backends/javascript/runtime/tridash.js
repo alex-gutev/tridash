@@ -129,76 +129,115 @@ Tridash.NodeContext.create = function(node, num_operands, context_id) {
 };
 
 /**
+ * Creates an input context for node @a node.
+ *
+ * @param node The node to which the context belongs.
+ * @param context_id Global context identifier.
+ *
+ * @return The node context.
+ */
+Tridash.NodeContext.create_input = function(node, context_id) {
+    var context = Tridash.NodeContext.create(node, 0, context_id);
+
+    context.compute_value = (value) => {
+        return context.compute([value]);
+    };
+
+    return context;
+};
+
+/**
  * Adds a new observer to the context.
  *
  * @param context The observer node's context.
  * @param index Index within the operands array of @a context.
  */
 Tridash.NodeContext.prototype.add_observer = function(context, index) {
-    this.observers.push([context, index]);
+    this.observers.push(context);
+    context.operands[index] = this.node;
 };
 
 /**
- * Reserves a path through the node (of the context).
+ * Creates a Reserve object.
  *
- * @param start A promise which is resolved when the entire path has
- *    been determined.
+ * @param context The context through which to reserve a path.
  *
- * @param value A promise for the operand node's value.
+ * @param start Promise which is resolved when the context's
+ *   dependency has computed its value.
+ */
+Tridash.Reserve = function(context, start) {
+    /**
+     * The context.
+     */
+    this.context = context;
+
+    /**
+     * Promise indicating when the node may begin computing its value,
+     * however not necessarily all its dependency nodes have computed
+     * their values.
+     */
+    this.start = start;
+
+    /**
+     * Promise which is resolved once all dependency nodes have
+     * computed their value, thus the context can definitely begin
+     * computing its value.
+     */
+    this.all_deps = start;
+
+    /**
+     * Promise which should be resolved once the node has computed its
+     * value.
+     */
+    this.next = new Tridash.ValuePromise();
+};
+
+/**
+ * Adds a new dependency to the reserve object, for which the node
+ * waits prior to computing its value.
  *
- * @param index Index, within the context's operands array, of the
- *    operand.
+ * @param start Promise which is resolved once the dependency's value
+ *   has been computed.
+ */
+Tridash.Reserve.prototype.add_dep = function(start) {
+    this.all_deps = this.all_deps.then(() => start);
+};
+
+/**
+ * Reserves a path through the node (in the context).
+ *
+ * @param start Promise which once resolved, the node's dependency has
+ *   computed its value.
  *
  * @param visited Visited set.
  */
-Tridash.NodeContext.prototype.reserve = function(start, value, index, visited = {}) {
+Tridash.NodeContext.prototype.reserve = function(start, visited = {}) {
     if (!visited[this.context_id]) {
-        // Promise which is resolved when the remainder of the path
-        // has been reserved.
-        var reserved = new Tridash.ValuePromise();
-
-        // When the remainder of the path has been reserved, set value
-        // of operand.
-        reserved.promise = reserved.promise
-            .then(() => value)
-            .then((value) => this.operands[index] = value);
-
-        var reserve = {
-            context: this,
-            reserved: reserved,
-            value: new Tridash.ValuePromise(),
-            start: start.promise
-        };
+        var reserve = new Tridash.Reserve(this, start);
 
         visited[this.context_id] = reserve;
 
-        this.reserveObservers(start, reserve.value.promise, visited);
+        this.reserveObservers(reserve.next.promise, visited);
 
         this.node.reserve_queue.enqueue(reserve);
         this.node.add_update();
     }
     else {
-        var reserved = visited[this.context_id].reserved;
-
-        reserved.promise = reserved.promise
-            .then(() => value)
-            .then((value) => this.operands[index] = value);
+        visited[this.context_id].add_dep(start);
     }
 };
 
 /**
- * Reserves a path from a node, with this context, to the observer
+ * Reserves a path from a node, in this context, to the observer
  * nodes.
  *
- * @param start Promise which is resolved when the entire path has
- *    been determined.
- *
- * @param value Promise for the value of the node of this context.
+ * @param start Promise which is resolved when the dependency node has
+ *   computed its value.
  *
  * @param visited Visited set.
  */
-Tridash.NodeContext.prototype.reserveObservers = function(start, value, visited) {
-    this.observers.forEach(([obs, index]) => obs.reserve(start, value, index, visited));
+Tridash.NodeContext.prototype.reserveObservers = function(start, visited) {
+    this.observers.forEach((obs) => obs.reserve(start, visited));
 };
 
 /**
@@ -208,9 +247,8 @@ Tridash.NodeContext.prototype.reserveObservers = function(start, value, visited)
  * @return The new value of the node.
  */
 Tridash.NodeContext.prototype.compute_value = function() {
-    return this.compute(this.operands);
+    return this.compute(this.operands.map((n) => n.value));
 };
-
 
 
 /* Update Loop */
@@ -231,16 +269,17 @@ Tridash.Node.prototype.update = function() {
     var reserve = this.reserve_queue.dequeue();
 
     if (reserve) {
-        var {context, reserved, start} = reserve;
-        reserved.resolve(true);
+        var {context, start, next} = reserve;
 
-        start.then(() => reserved.promise)
-            .then(() => context.compute_value())
+        start.then(() => reserve.all_deps)
+            .then((value) => context.compute_value(value))
             .then((value) => {
-                reserve.value.resolve(value);
+                this.value = value;
+
+                next.resolve(value);
                 this.update_value(value);
             })
-            .catch((e) => reserve.value.reject(e))
+            .catch((e) => next.reject(e))
             .finally(this.update.bind(this));
     } else {
         this.running = false;
@@ -282,8 +321,8 @@ Tridash.Node.prototype.add_watch = function(fn) {
 Tridash.Node.prototype.set_value = function(value) {
     var start = new Tridash.ValuePromise();
 
-    this.contexts["input"].reserve(start, value, 0);
-    start.resolve(true);
+    this.contexts["input"].reserve(start.promise);
+    start.resolve(value);
 };
 
 /**
@@ -299,7 +338,7 @@ Tridash.set_values = function(node_values) {
     var visited = {};
 
     node_values.forEach(([node, value]) => {
-        node.contexts["input"].reserve(start, value, 0, visited);
+        node.contexts["input"].reserve(start.promise.then(() => value), visited);
     });
 
     start.resolve(true);

@@ -374,18 +374,32 @@
       (let ((node-path (node-path node))
             (context-path (context-path node id)))
 
-        (with-slots (operands) context
-          (append-code
-           (lexical-block
-            (js-var "context"
-                    (js-call (js-member +node-context-class+ "create")
-                             node-path (length operands) (global-context-id)))
+        (append-code
+         (lexical-block
+          (js-var "context" (make-context-expression node-path id context))
 
-            (awhen (create-compute-function context)
-              (js-call "=" (js-member "context" "compute") it))
+          (awhen (create-compute-function context)
+            (js-call "=" (js-member "context" "compute") it))
 
-            (js-call "=" context-path "context"))))))))
+          (js-call "=" context-path "context")))))))
 
+
+(defun make-context-expression (node-path id context)
+  "Creates an expression which creates a new context for the context
+   CONTEXT with id ID of the node which is referenced by the
+   expression NODE-PATH."
+
+  (case id
+    (:input
+     (js-call (js-member +node-context-class+ "create_input")
+              node-path
+              (global-context-id)))
+
+    (otherwise
+     (js-call (js-member +node-context-class+ "create")
+              node-path
+              (length (operands context))
+              (global-context-id)))))
 
 (defun establish-dependency-indices (context)
   "Establishes the indices of the operands of the `NODE-CONTEXT'
