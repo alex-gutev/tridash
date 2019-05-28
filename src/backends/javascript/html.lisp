@@ -198,32 +198,39 @@
 
 (defparameter *html-events*
   (alist-hash-map
-   '((("input" "value") . "change")
-     (("input" "checked") . "change")
-     (("textarea" "value") . "change"))
+   '((("input" "value") "change" "input")
+     (("input" "checked") "change" "input")
+     (("textarea" "value") "change" "input"))
    :test #'cl:equalp)
 
   "Map containing the change event names of HTML tag attributes. Each
-   key is a list of two values: the tag name and the attribute name,
-   with the corresponding value being the change event name. The
-   `HASH-MAP' uses the EQUALP test thus the tag names and attributes
-   can be specified as case-insensitive strings.")
+   key is a list of two elements: the tag name and the attribute name,
+   with the corresponding value being a list of two elements: the
+   ordinary event name and the urgent event name. The `HASH-MAP' uses
+   the EQUALP test thus the tag names and attributes can be specified
+   as case-insensitive strings.")
 
 (defun make-event-listener (node attribute)
   "Generates code which attaches an event listener to the attribute
    ATTRIBUTE of the HTML element (stored in the html_element field of
    NODE), which updates the value of NODE."
 
-  (let ((path (node-path node)))
-    (with-slots (tag-name) node
-      (awhen (get (list tag-name attribute) *html-events*)
-        (js-call (js-members path "html_element" "addEventListener")
-                 (js-string it)
-                 (js-lambda
-                  nil
-                  (list
-                   (js-call "="
-                            (js-member path "value")
-                            (js-member "this" attribute))
-                   (js-call (js-member path "set_value")
-                            (js-member path "value")))))))))
+  (flet ((get-event-name (tag attribute)
+           (let ((events (get (list tag attribute) *html-events*)))
+             (if (attribute :urgent node)
+                 (second events)
+                 (first events)))))
+
+    (let ((path (node-path node)))
+      (with-slots (tag-name) node
+        (awhen (get-event-name tag-name attribute)
+          (js-call (js-members path "html_element" "addEventListener")
+                   (js-string it)
+                   (js-lambda
+                    nil
+                    (list
+                     (js-call "="
+                              (js-member path "value")
+                              (js-member "this" attribute))
+                     (js-call (js-member path "set_value")
+                              (js-member path "value"))))))))))
