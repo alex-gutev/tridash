@@ -68,8 +68,8 @@
     (with-slots (element-id tag-name html-attribute) node
       (is-type! node 'html-node "Is HTML-NODE")
       (isf element-id id "Element ID is ~a" id)
-      (isf tag tag-name "Tag is ~a" tag)
-      (isf attribute attribute "HTML attribute is ~a" attribute)
+      (isf tag-name tag "Tag is ~a" tag)
+      (isf html-attribute attribute "HTML attribute is ~a" attribute)
 
       (ok (attribute :no-coalesce node) "Has NO-COALESCE attribute"))))
 
@@ -287,6 +287,7 @@
              (is (strip-empty-text-nodes (element-node ,g!comp-node))
                  (parse-html-file ,(out-file file))
                  :test #'html=)))))))
+
 
 (plan nil)
 
