@@ -324,7 +324,7 @@
           (test-html-attribute-function input-first.value input-first "value")
           (test-html-attribute-function input-last.value input-last "value")))))
 
-  (subtest "Bindings in SCRIPT tags"
+  (subtest "Bindings in Tridash code tags"
     (html-file-test (modules "main" #p"test/builders/html/input/test3.html")
       (with-nodes ((name "name")) modules
         (with-html-nodes ((input-name "input-name" "input")
@@ -357,7 +357,53 @@
           (test-binding input-b.value b)
           (test-binding b input-b.value)
 
-          (test-binding a+b sum.value))))))
+          (test-binding a+b sum.value)))))
+
+  (subtest "Multiple Inline Declarations"
+    (html-file-test (modules "main" #p"test/builders/html/input/test5.html" "modules/core.trd")
+      (with-nodes ((a ("int" "a")) (b ("int" "b"))
+                   (a+b ("+" "a" "b")) (sum "sum"))
+          modules
+
+        (with-html-nodes ((input-a.value ("." "input-a" "value") "input")
+                          (input-b.value ("." "input-b" "value") "input")
+                          (sum.value ("." "sum" "value") "input"))
+            modules
+
+          (test-binding input-a.value a)
+          (test-binding a input-a.value)
+
+          (test-binding input-b.value b)
+          (test-binding b input-b.value)
+
+          (test-binding a+b sum)
+
+          (test-binding sum sum.value)))))
+
+  (subtest "Multiple Inline Declarations in SPAN elements"
+    (html-file-test (modules "main" #p"test/builders/html/input/test6.html" "modules/core.trd")
+      (with-nodes ((a ("int" "a")) (b ("int" "b"))
+                   (a+b ("+" "a" "b")) (sum "sum"))
+          modules
+
+        (with-html-nodes ((input-a.value ("." "input-a" "value") "input")
+                          (input-b.value ("." "input-b" "value") "input"))
+            modules
+
+          (test-binding input-a.value a)
+          (test-binding a input-a.value)
+
+          (test-binding input-b.value b)
+          (test-binding b input-b.value)
+
+          (test-binding a+b sum)
+
+          (subtest "Test Sum <SPAN> node"
+            (let ((obs (first (map-keys (observers sum)))))
+              (with-slots (tag-name html-attribute) obs
+                (is-type! obs 'html-node "Is HTML-NODE")
+                (is tag-name "span" "Tag is SPAN")
+                (is html-attribute "textContent" "Bound to attribute textContent")))))))))
 
 (run-test 'html-file-builder)
 
