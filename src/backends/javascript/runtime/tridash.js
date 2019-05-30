@@ -40,8 +40,7 @@ Tridash.nodes = {};
 /**
  * Runtime Node.
  *
- * Stores the node link information (dependencies, observers, wait
- * sets), and the node's runtime state.
+ * Stores the runtime state of a node.
  */
 Tridash.Node = function() {
     /**
@@ -91,20 +90,12 @@ Tridash.NodeContext = function(node, context_id) {
     this.compute = ([a]) => a;
 
     /**
-     * Array of the values of the operands to the value computation
-     * function.
-     *
-     * Each operand node stores its value directly at a particular
-     * index within this array.
+     * Array of the operand nodes.
      */
     this.operands = [];
 
     /**
-     * Array of observers.
-     *
-     * Each element is an array of two elements: the first element is
-     * the node context of the observer node, the second element is
-     * the index within the observer context's 'operands' array.
+     * Array of observer node contexts.
      */
     this.observers = [];
 };
@@ -186,10 +177,26 @@ Tridash.Reserve = function(context, start) {
     this.all_deps = start;
 
     /**
-     * Promise which should be resolved once the node has computed its
-     * value.
+     * Promise which should be resolved by the node once it has
+     * computed its value.
      */
     this.next = new Tridash.ValuePromise();
+
+
+    /**
+     * Promise indicating when the path through the node has been
+     * reserved.
+     *
+     * This promise should be reserved when the node has dequeued this
+     * reserve object from the queue.
+     */
+    this.path = new Tridash.ValuePromise();
+
+    /**
+     * Promise which is resolved when the path through all of the
+     * context's observer nodes has been reserved.
+     */
+    this.observers = null;
 };
 
 /**
@@ -217,13 +224,18 @@ Tridash.NodeContext.prototype.reserve = function(start, visited = {}) {
 
         visited[this.context_id] = reserve;
 
-        this.reserveObservers(reserve.next.promise, visited);
+        reserve.observers = this.reserveObservers(reserve.next.promise, visited);
 
         this.node.reserve_queue.enqueue(reserve);
         this.node.add_update();
+
+        return reserve.path.promise;
     }
     else {
-        visited[this.context_id].add_dep(start);
+        reserve = visited[this.context_id];
+
+        reserve.add_dep(start);
+        return reserve.path.promise;
     }
 };
 
@@ -237,7 +249,7 @@ Tridash.NodeContext.prototype.reserve = function(start, visited = {}) {
  * @param visited Visited set.
  */
 Tridash.NodeContext.prototype.reserveObservers = function(start, visited) {
-    this.observers.forEach((obs) => obs.reserve(start, visited));
+    return Promise.all(this.observers.map((obs) => obs.reserve(start, visited)));
 };
 
 /**
@@ -269,9 +281,12 @@ Tridash.Node.prototype.update = function() {
     var reserve = this.reserve_queue.dequeue();
 
     if (reserve) {
-        var {context, start, next} = reserve;
+        var {context, start, observers, next} = reserve;
 
-        start.then(() => reserve.all_deps)
+        reserve.path.resolve(true);
+
+        observers.then(() => start)
+            .then(() => reserve.all_deps)
             .then((value) => context.compute_value(value))
             .then((value) => {
                 this.value = value;
