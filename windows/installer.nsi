@@ -5,8 +5,8 @@
 !define DESCRIPTION "Compiler for the Tridash Programming language"
 
 !define VERSIONMAJOR 0
-!define VERSIONMINOR 3
-!define VERSIONBUILD 4
+!define VERSIONMINOR 4
+!define VERSIONBUILD 0
 
 !define HELPURL "https://github.com/alex-gutev/tridash/wiki"
 !define UPDATEURL "https://github.com/alex-gutev/tridash/releases/latest"
