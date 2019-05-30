@@ -49,7 +49,8 @@
                  (:module "builders/html"
                           :serial t
                           :components ((:file "package")
-                                       (:file "builder")))
+                                       (:file "builder")
+                                       (:file "script-parser")))
 
                  (:module "backends/javascript"
                           :serial t
@@ -77,6 +78,7 @@
 	       :cl-yaclyaml
                :cl-fad
                :unix-opts
+               :trivial-gray-streams
 
                :generic-cl)
 

@@ -25,6 +25,7 @@
         :optima
         :cl-ppcre
         :named-readtables
+        :trivial-gray-streams
 
         :tridash.util
         :tridash.parser
@@ -40,6 +41,11 @@
                 :mkstr
                 :symb
                 :lol-syntax)
+
+  (:import-from :tridash.parser
+                :lexer
+                :make-lexer
+                :next-token)
 
   (:import-from :tridash.frontend
 

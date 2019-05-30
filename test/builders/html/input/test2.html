@@ -4,11 +4,11 @@
     <title>Simple Inline Bindings</title>
   </head>
   <body>
-    <h1><% first %></h1>
+    <h1><?@ first ?></h1>
     <p>
-      <label>Enter first name: <input id="input-first" value="<% first %>"/></label>
-      <label>Enter surname: <input id="input-last" value="<% last %>"/></label>
+      <label>Enter first name: <input id="input-first" value="<?@ first ?>"/></label>
+      <label>Enter surname: <input id="input-last" value="<?@ last ?>"/></label>
     </p>
-    <p>Hello: <% first %> <% last %></p>
+    <p>Hello: <?@ first ?> <?@ last ?></p>
   </body>
 </html>

@@ -1,7 +1,7 @@
 ;;;; builder.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018  Alexander Gutev
+;;;; Copyright (C) 2018-2019  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -110,7 +110,8 @@
    objects built to the current module in
    *GLOBAL-MODULE-TABLE*. Returns the root node."
 
-  (walk-html-node (plump:parse stream)))
+  (aprog1 (plump:parse stream)
+    (plump:traverse it #'walk-html-node)))
 
 
 ;;;; Process HTML Nodes
@@ -122,39 +123,31 @@
   "Flag: True if the node currently being walked has sibling nodes.")
 
 
-(defgeneric walk-html-node (node &key &allow-other-keys)
-  (:documentation
-   "Traverse the HTML node NODE. Node declarations appearing within
-    the HTML node are extracted and parsed from which `NODE' objects
-    are built and added to the current module in
-    *GLOBAL-MODULE-TABLE*. A new HTML node is returned with the node
-    declarations removed from each attribute."))
-
-
 ;;; Process HTML elements
 
-(defmethod walk-html-node ((element plump:element) &key)
-  "Extracts node declarations from each attribute of the element."
+(defgeneric walk-html-node (element)
+  (:documentation
+   "Extracts node declarations from each attribute of the element.")
 
-  (let* ((element (plump:clone-node element nil))
-         (attributes (plump:attributes element)))
+  (:method ((element plump:element))
+    (let ((attributes (plump:attributes element)))
 
-    (let ((tag (plump:tag-name element)))
-      (doseq ((key . value) attributes)
-        (acond
-          ((extract-tridash-node value)
-           (let ((html-id (html-element-id element)))
-             (make-html-element-node html-id tag *global-module-table*)
+      (let ((tag (plump:tag-name element)))
+        (doseq ((key . value) attributes)
+          (acond
+            ((extract-tridash-node value)
+             (let ((html-id (html-element-id element)))
+               (make-html-element-node html-id tag *global-module-table*)
 
-             (-> (make-html-attribute-node html-id tag key *global-module-table*)
-                 (bind-html-node it *global-module-table*)))
+               (-> (make-html-attribute-node html-id tag key *global-module-table*)
+                   (bind-html-node it *global-module-table*)))
 
-           (erase attributes key))
+             (erase attributes key))
 
-          ((plump:attribute element "id")
-           (make-html-element-node it tag *global-module-table*)))))
+            ((plump:attribute element "id")
+             (make-html-element-node it tag *global-module-table*)))))))
 
-    (call-next-method element :clone nil)))
+  (:method ((element t))))
 
 (defun generate-id (&optional (prefix "__id"))
   "Generates a unique HTML identifier by concatenating PREFIX with the
@@ -259,133 +252,12 @@
        (ensure-node (home-module comp-node))))
 
 
-;;; Process Text Nodes
-
-(defmethod walk-html-node ((node plump:text-node) &key)
-  "Extracts node declarations from the text contained in the text
-   node. If the node contains node declarations a new empty text node
-   is created and returned, otherwise NODE is returned as is."
-
-  (with-accessors ((text plump:text)) node
-    (labels ((make-node (node)
-               "Creates the HTML node corresponding to the tridash
-                node declaration NODE, the node is automatically added
-                to *PARENT-HTML-NODE*. If NODE is a string a text-node
-                with the string as its contents is created. Otherwise
-                a span element is created."
-
-               (typecase node
-                 (string
-                  (plump:make-text-node *parent-html-node* node))
-
-                 (otherwise
-                  (aprog1 (plump:make-element *parent-html-node* "span")
-                    (make-element-node it node)))))
-
-             (make-element-node (element node)
-               "Creates a Tridash node corresponding to the HTML
-                element ELEMENT and binds it to the node with
-                declaration NODE."
-
-               (let ((tag-name (plump:tag-name element))
-                     (html-id (html-element-id element)))
-                 (make-html-element-node html-id tag-name *global-module-table*)
-
-                 (-> (make-html-attribute-node html-id tag-name "textContent" *global-module-table*)
-                     (bind-html-node node *global-module-table*)))))
-
-      (when (plump:element-p *parent-html-node*)
-        (let ((nodes (extract-nodes text)))
-          (cond
-            ((and (not *siblings-p*) (= (length nodes) 1))
-             (make-element-node *parent-html-node* (elt nodes 0))
-             nil)
-
-            ((> (length nodes) 1)
-             (foreach #'make-node nodes))
-
-            (t node)))))))
-
 (defun html-element-id (element)
   "Returns the ID of the HTML element ELEMENT. If ELEMENT does not
    have an ID a unique ID is generated, using GENERATE-ID, and is set
    as the ID of ELEMENT."
 
   (ensure-get "id" (plump:attributes element) (generate-id)))
-
-
-;;; Process Child Nodes
-
-(defmethod walk-html-node ((node plump:nesting-node) &key (clone t))
-  "Walks each child of NODE, by WALK-HTML-NODE and returns a new node
-   which is a clone of NODE, if CLONE is true, with each child
-   replaced by the new child node returned from WALK-HTML-NODE. If
-   WALK-HTML-NODE returns NIL for a particular child, it is removed
-   from the child nodes array. If CLONE is NIL, NODE is not cloned and
-   its child array is modified directly."
-
-  (let* ((node (if clone (plump:clone-node node nil) node))
-         (children (plump:children node))
-         (*parent-html-node* node)
-         (*siblings-p* (> (length children) 1)))
-
-    (setf (plump:children node) (plump:make-child-array))
-
-    (iter (for child in-vector children)
-          (awhen (walk-html-node child)
-            (plump:append-child node it)))
-
-    node))
-
-(defmethod walk-html-node ((node plump:root) &key)
-  (call-next-method (make-instance 'plump:root :children (plump:children node)) :clone nil))
-
-(defmethod walk-html-node (node &key)
-  node)
-
-
-;;; Process Script Tags
-
-(defmethod walk-html-node ((element plump:fulltext-element) &key)
-  "Traverses full text elements such as script and style tags. If the
-   element is a script tag with the language attribute equal to
-   'tridash' the text content of the script tag is parsed as tridash
-   code, and NIL is returned. Otherwise ELEMENT is returned as is."
-
-  (let ((children (plump:children element)))
-    (cond
-      ((and (tridash-script? element)
-            (not (emptyp children)))
-
-       (aif (plump:attribute element "src")
-            (process-source-file it)
-            (process-script (elt children 0)))
-
-       nil)
-
-      (t element))))
-
-(defun tridash-script? (element)
-  "Returns true if ELEMENT is a script tag containing tridash node
-   declarations."
-
-  (when (string-equal (plump:tag-name element) "script")
-    (aand (plump:attribute element "language")
-          (string-equal it "tridash"))))
-
-(defun process-script (text-node)
-  "Parses the text content of a script tag as tridash code, and adds
-   the node definitions to *GLOBAL-MODULE-TABLE*. TEXT-NODE is the
-   text-node child of the script tag."
-
-  (let ((text (plump:text text-node)))
-    (with-input-from-string (in text)
-      (build-parsed-nodes (make-parser in) *global-module-table*))))
-
-(defun process-source-file (path)
-  "Processes the tridash source file at PATH."
-
-  (build-source-file (cl-fad:merge-pathnames-as-file *html-file-path* path) *global-module-table*))
 
 
 ;;; Parse Attributes and Text Content
@@ -413,14 +285,13 @@
 
   (flet ((parse-node (start end)
            (with-input-from-string (in string :start start :end end)
-             (let ((parser (make-parser in)))
-               (funcall parser (operator-nodes (node-table *global-module-table*)))))))
+             (parse-build-nodes (make-parser in)))))
 
     (let ((string-start 0)
           (strings (make-array 0 :adjustable t :fill-pointer t)))
 
       (do-scans
-          (start end reg-starts reg-ends (create-scanner #"<%(.*?)%>"# :single-line-mode t) string)
+          (start end reg-starts reg-ends (create-scanner #"<\?@(.*?)\?>"# :single-line-mode t) string)
 
         (when (plusp (- start string-start))
           (vector-push-extend (subseq string string-start start) strings))
@@ -433,3 +304,15 @@
         (vector-push-extend (subseq string string-start) strings))
 
       strings)))
+
+(defun parse-build-nodes (parser &optional (table *global-module-table*))
+  "Builds the node declarations parsed using PARSER, and adds them to
+   TABLE. Returns the last node declaration parsed."
+
+  (let (last)
+    (build-parsed-nodes
+     (lambda (operators)
+       (aand (funcall parser operators)
+             (setf last it)))
+     table)
+    last))

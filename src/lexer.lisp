@@ -265,16 +265,20 @@
    (id-char-p . :id)))
 
 
-(defun next-token (lex &key peek (line-term *line-term*))
-  "Returns the next token as two values: the first value is a keyword
-   symbol identifying the token, the second value is the lexeme making
-   up the token. If the end of stream is reached NIL is returned. If
-   PEEK is true the next token is returned however is not removed from
-   the lexer's buffer. If a :LINE-TERM argument is supplied and is
-   true a :TERNIMATE token is returned when a newline is read, if it
-   is false newlines are treated as skip tokens and hence not
-   returned. If a :LINE-TERM argument is not provided it defaults to
-   the value of *LINE-TERM*."
+(defgeneric next-token (lexer &key &allow-other-keys)
+  (:documentation
+   "Returns the next token as two values: the first value is a keyword
+    symbol identifying the token, the second value is the lexeme
+    making up the token. If the end of stream is reached NIL is
+    returned. If PEEK is true the next token is returned however is
+    not removed from the lexer's buffer. If a :LINE-TERM argument is
+    supplied and is true a :TERNIMATE token is returned when a newline
+    is read, if it is false newlines are treated as skip tokens and
+    hence not returned. If a :LINE-TERM argument is not provided it
+    defaults to the value of *LINE-TERM*."))
+
+(defmethod next-token ((lex lexer) &key peek (line-term *line-term*))
+  "NEXT-TOKEN method for the LEXER class."
 
   (labels ((next-token ()
              "Returns the next token and updates the value of the

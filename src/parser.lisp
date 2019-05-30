@@ -1,7 +1,7 @@
 ;;;; parser.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018  Alexander Gutev
+;;;; Copyright (C) 2018-2019  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -52,16 +52,29 @@
 ;;; to be registered for use by the remaining declarations in the
 ;;; source file.
 
-(defun make-parser (stream)
-  "Returns a function of one argument, the operator nodes map When the
-   function is called, a single declaration is parsed from the input
-   stream. Returns nil when EOF is reached."
+(defgeneric make-parser (in)
+  (:documentation
+   "Creates a parser for the input IN, which is either a `STREAM' or a
+    lexer object.
 
-  (let* ((lex (make-lexer stream)))
-    (lambda (*operator-nodes*)
-      (let ((*lexer* lex))
-        (when (has-input? lex)
-          (parse-delimited-node lex))))))
+    Returns a function of one argument, the operator nodes map When
+    the function is called, a single declaration is parsed from the
+    input stream. Returns nil when EOF is reached."))
+
+(defmethod make-parser ((stream stream))
+  "Creates a parser with a `LEXER' object created for the input stream
+   STREAM."
+
+  (make-parser (make-lexer stream)))
+
+(defmethod make-parser (lexer)
+  "Creates a parser for the tokens read from a lexer object. LEXER
+   must be an object for which there is a NEXT-TOKEN method."
+
+  (lambda (*operator-nodes*)
+    (let ((*lexer* lexer))
+      (when (has-input? lexer)
+        (parse-delimited-node lexer)))))
 
 
 (defun has-input? (lex)
