@@ -217,7 +217,7 @@
 
   (flet ((get-event-name (tag attribute)
            (let ((events (get (list tag attribute) *html-events*)))
-             (if (attribute :urgent node)
+             (if (bool-value (attribute :urgent node))
                  (second events)
                  (first events)))))
 

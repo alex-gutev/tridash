@@ -128,6 +128,7 @@
    :node?
    :value?
    :input-node?
+   :bool-value
 
    ;; Node-link
    :node-link

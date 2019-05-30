@@ -129,6 +129,11 @@
 
   (get :module (attributes node)))
 
+(defun bool-value (value)
+  "Converts value to a boolean. 0 and NIL are treated as boolean
+   false, everything else is treated as boolean true."
+
+  (not (memberp value '(0 nil))))
 
 ;;;; Bindings
 
