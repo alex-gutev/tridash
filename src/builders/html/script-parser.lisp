@@ -53,17 +53,21 @@
   "Reads the next token in the inline Tridash code. Returns NIL (EOF)
    if the next token begins with '?>'."
 
-  (with-accessors ((end? inline-lexer-end)) lex
-    (unless end?
-      (multiple-value-bind (type lexeme) (call-next-method)
-        (cond
-          ((/= (mismatch "?>" lexeme) 0)
-           (plump:unread-n (- (length lexeme) 2))
-           (setf end? t)
-           nil)
+  (flet ((end-script? (lexeme)
+           (let ((i (mismatch "?>" lexeme)))
+             (or (null i) (= i 2)))))
 
-          (t
-           (values type lexeme)))))))
+    (with-accessors ((end? inline-lexer-end)) lex
+      (unless end?
+        (multiple-value-bind (type lexeme) (call-next-method)
+          (cond
+            ((end-script? lexeme)
+             (plump:unread-n (- (length lexeme) 2))
+             (setf end? t)
+             nil)
+
+            (t
+             (values type lexeme))))))))
 
 
 ;;;; Parsing Tridash code tags
