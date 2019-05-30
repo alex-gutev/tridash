@@ -1,0 +1,18 @@
+This a modifed version of the Plump HTML parsing library by Nicolas
+Hafner <shinmera@tymoon.eu>. See https://github.com/Shinmera/plump.
+
+This version, modified by Alexander Gutev <alex.gutev@gmail.com>,
+contains a few modifications which make it integrate better with the
+Tridash compiler.
+
+Namely:
+
+  - The condition handlers which catch lexing and parsing errors, and
+    message print a message to *standard-output* have been removed.
+
+Additionally this version does not contain the docstrings.
+
+This modified version of the Plump HTML parsing library is released
+under the same license as the original, see LICENSE for more
+information. This LICENSE applies only to the Plump library itself and
+not the Tridash programming language as a whole.

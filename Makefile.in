@@ -27,6 +27,15 @@ VPATH = $(srcdir)
 
 all: tridashc tridashc.1.gz
 
+plump_sources = plump/dom.lisp \
+	plump/entities.lisp \
+	plump/lexer.lisp \
+	plump/package.lisp \
+	plump/parser.lisp \
+	plump/processing.lisp \
+	plump/special-tags.lisp \
+	plump/tag-dispatcher.lisp
+
 sources = tridash.asd \
         src/package.lisp \
         src/interface.lisp \
@@ -54,7 +63,8 @@ sources = tridash.asd \
         src/backends/javascript/analyze.lisp \
         src/backends/javascript/backend.lisp \
         src/backends/javascript/functions.lisp \
-        src/backends/javascript/html.lisp
+        src/backends/javascript/html.lisp \
+	$(plump_sources)
 
 build.lisp: build.lisp.in
 	@SED@ -e 's|@datadir[@]|$(pkgdatadir)|g' $< > $@
@@ -106,6 +116,8 @@ uninstall:
 ## Distribution Tarballs
 
 distfiles = $(sources) \
+	plump/README \
+	plump/LICENSE \
 	src/backends/javascript/runtime/tridash.js \
 	modules/core.trd \
 	modules/core.yml \

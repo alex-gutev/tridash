@@ -20,8 +20,20 @@
   :description "Tridash Programming Language"
   :author "Alexander Gutev"
   :license "GPL v3"
-  :serial t
   :components ((:module
+                "plump"
+
+                :components
+                ((:file "package")
+                 (:file "entities")
+                 (:file "lexer")
+                 (:file "tag-dispatcher")
+                 (:file "dom")
+                 (:file "parser")
+                 (:file "processing")
+                 (:file "special-tags")))
+
+               (:module
                 "src"
 
                 :components
@@ -71,7 +83,6 @@
                :let-over-lambda
                :optima
                :optima.ppcre
-               :plump
                :cl-ppcre
                :ppath
                :parse-number
@@ -80,7 +91,10 @@
                :unix-opts
                :trivial-gray-streams
 
-               :generic-cl)
+               :generic-cl
+
+               ;; Plump dependencies
+               :array-utils)
 
   :in-order-to ((asdf:test-op (asdf:test-op :tridash.test)))
 
