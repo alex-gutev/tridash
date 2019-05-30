@@ -513,7 +513,7 @@
              value)
 
        (let* ((*return-meta-node* t)
-              (*create-nodes* nil)
+              (*create-nodes* t)
               (attribute (string attribute)))
 
          (let ((node (process-declaration node table)))

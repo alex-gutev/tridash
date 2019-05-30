@@ -489,7 +489,6 @@
          (test-error "node; :attribute(node, attribute)" 'invalid-arguments-error)
          (test-error "node; :attribute(node, 1, 2)" 'invalid-arguments-error)
          (test-error ":attribute(1, attribute, value)" 'invalid-arguments-error)
-         (test-error ":attribute(non-existent-node, public-name, \"node\")" 'non-existent-node)
 
          (test-top-level-only ":attribute(node, input, 1)" "node"))))
 
