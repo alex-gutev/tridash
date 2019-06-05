@@ -389,147 +389,170 @@
 
 ;;;; Tests
 
-(deftest node-functions
-  (subtest "Test Node Value Function Code Generation"
-    (subtest "Function Calls"
+(subtest "Node Value Function Code Generation"
+  (subtest "Function Calls"
+    (mock-backend-state
+      (mock-meta-nodes (f)
+        (mock-contexts
+            ((context (a b) `(,f ,a ,b)))
+
+          (test-compute-function context
+            (js-return (js-call f (d a) (d b)))))))
+
+    (subtest "Lazy Dependencies"
+      (mock-backend-state
+        (mock-meta-nodes (f)
+          (mock-contexts
+              ((context ((async . a) b) `(,f ,a ,b)))
+
+            (test-compute-function context
+              (js-return
+               (js-call
+                (js-member
+
+                 (js-call
+                  (js-member "Promise" "all")
+                  (js-array (list (js-call (d a)))))
+
+                 "then")
+
+                (js-lambda
+                 (list (js-array (list ($ a))))
+                 (list
+                  (js-return (js-call f ($ a) (d b))))))))))))
+
+    (subtest "Lazy Nodes"
       (mock-backend-state
         (mock-meta-nodes (f)
           (mock-contexts
               ((context (a b) `(,f ,a ,b)))
 
+            (with-lazy-nodes (context)
+              (test-compute-function context
+                (js-return
+                 (js-call
+                  +thunk-class+
+                  (js-lambda
+                   nil
+                   (list
+                    (js-return (js-call f (d a) (d b))))))))))))))
+
+  (subtest "Conditionals"
+    (subtest "Simple If Statements"
+      (mock-backend-state
+        (mock-meta-nodes (< -)
+          (mock-contexts
+              ((context (a b) `(if (,< ,a ,b) (,- ,b ,a) (,- ,a ,b))))
+
             (test-compute-function context
-              (js-return (js-call f (d a) (d b)))))))
+              (js-if (js-call < (d a) (d b))
+                     (js-return (js-call - (d b) (d a)))
+                     (js-return (js-call - (d a) (d b))))))))
 
       (subtest "Lazy Dependencies"
         (mock-backend-state
-          (mock-meta-nodes (f)
+          (mock-meta-nodes (< -)
             (mock-contexts
-                ((context ((async . a) b) `(,f ,a ,b)))
+                ((context ((async . a) (async . b)) `(if (,< ,a ,b) (,- ,b ,a) (,- ,a ,b))))
 
               (test-compute-function context
                 (js-return
                  (js-call
                   (js-member
-
-                   (js-call
-                    (js-member "Promise" "all")
-                    (js-array (list (js-call (d a)))))
-
+                   (promise (((js-call (d a)) ($ a1))
+                             ((js-call (d b)) ($ b1)))
+                     (js-return (js-call < ($ a1) ($ b1))))
                    "then")
 
                   (js-lambda
-                   (list (js-array (list ($ a))))
+                   (list ($ a<b))
                    (list
-                    (js-return (js-call f ($ a) (d b))))))))))))
+                    (js-if ($ a<b)
+                           (js-return
+                            (promise (((js-call (d b)) ($ b2))
+                                      ((js-call (d a)) ($ a2)))
+                              (js-return (js-call - ($ b2) ($ a2)))))
 
-      (subtest "Lazy Nodes"
+                           (js-return
+                            (promise (((js-call (d a)) ($ a3))
+                                      ((js-call (d b)) ($ b3)))
+                              (js-return (js-call - ($ a3) ($ b3))))))))))))))))
+
+    (subtest "Nested If Statements"
+      (subtest "Function Call Arguments"
         (mock-backend-state
-          (mock-meta-nodes (f)
+          (mock-meta-nodes (f < +)
             (mock-contexts
-                ((context (a b) `(,f ,a ,b)))
-
-              (with-lazy-nodes (context)
-                (test-compute-function context
-                  (js-return
-                   (js-call
-                    +thunk-class+
-                    (js-lambda
-                     nil
-                     (list
-                      (js-return (js-call f (d a) (d b))))))))))))))
-
-    (subtest "Conditionals"
-      (subtest "Simple If Statements"
-        (mock-backend-state
-          (mock-meta-nodes (< -)
-            (mock-contexts
-                ((context (a b) `(if (,< ,a ,b) (,- ,b ,a) (,- ,a ,b))))
+                ((context (a b c d)
+                          `(,f (if (,< ,a 3) (,+ ,b ,c) ,d) ,a)))
 
               (test-compute-function context
-                (js-if (js-call < (d a) (d b))
-                       (js-return (js-call - (d b) (d a)))
-                       (js-return (js-call - (d a) (d b))))))))
+                (js-var ($ arg1))
+                (js-if (js-call < (d a) 3)
+                       (js-call "=" ($ arg1) (js-call + (d b) (d c)))
+                       (js-call "=" ($ arg1) (d d)))
+
+                (js-return (js-call f ($ arg1) (d a)))))))
 
         (subtest "Lazy Dependencies"
           (mock-backend-state
-            (mock-meta-nodes (< -)
-              (mock-contexts
-                  ((context ((async . a) (async . b)) `(if (,< ,a ,b) (,- ,b ,a) (,- ,a ,b))))
-
-                (test-compute-function context
-                  (js-return
-                   (js-call
-                    (js-member
-                     (promise (((js-call (d a)) ($ a1))
-                               ((js-call (d b)) ($ b1)))
-                       (js-return (js-call < ($ a1) ($ b1))))
-                     "then")
-
-                    (js-lambda
-                     (list ($ a<b))
-                     (list
-                      (js-if ($ a<b)
-                             (js-return
-                              (promise (((js-call (d b)) ($ b2))
-                                        ((js-call (d a)) ($ a2)))
-                                (js-return (js-call - ($ b2) ($ a2)))))
-
-                             (js-return
-                              (promise (((js-call (d a)) ($ a3))
-                                        ((js-call (d b)) ($ b3)))
-                                (js-return (js-call - ($ a3) ($ b3))))))))))))))))
-
-      (subtest "Nested If Statements"
-        (subtest "Function Call Arguments"
-          (mock-backend-state
             (mock-meta-nodes (f < +)
               (mock-contexts
-                  ((context (a b c d)
+                  ((context ((async . a) b c (async . d))
                             `(,f (if (,< ,a 3) (,+ ,b ,c) ,d) ,a)))
 
                 (test-compute-function context
-                  (js-var ($ arg1))
-                  (js-if (js-call < (d a) 3)
-                         (js-call "=" ($ arg1) (js-call + (d b) (d c)))
-                         (js-call "=" ($ arg1) (d d)))
+                  (-<>
+                   (js-call
+                    (js-member
+                     (promise (((js-call (d a)) ($ a1)))
+                       (js-return (js-call < ($ a1) 3)))
 
-                  (js-return (js-call f ($ arg1) (d a)))))))
+                     "then")
 
-          (subtest "Lazy Dependencies"
-            (mock-backend-state
-              (mock-meta-nodes (f < +)
-                (mock-contexts
-                    ((context ((async . a) b c (async . d))
-                              `(,f (if (,< ,a 3) (,+ ,b ,c) ,d) ,a)))
+                    (js-lambda
+                     '(($ cond))
 
-                  (test-compute-function context
-                    (-<>
-                     (js-call
-                      (js-member
-                       (promise (((js-call (d a)) ($ a1)))
-                         (js-return (js-call < ($ a1) 3)))
+                     (list
+                      (js-if ($ cond)
+                             (js-return (js-call + (d b) (d c)))
+                             (js-return (js-call (d d)))))))
 
-                       "then")
+                   (<> ($ arg1))
+                   (<> ((js-call (d a)) ($ a2)))
+                   (promise <>
+                     (js-return (js-call f ($ arg1) ($ a2))))
+                   (js-return))))))))
 
-                      (js-lambda
-                       '(($ cond))
+      (subtest "Nested in If Condition"
+        (mock-backend-state
+          (mock-meta-nodes (< +)
+            (mock-contexts
+                ((context (a b c d e)
+                          `(if ,a
+                               (if (if (,< ,b ,c) ,b ,c)
+                                   (,+ ,b ,c)
+                                   ,d)
+                               ,e)))
 
-                       (list
+              (test-compute-function context
+                (js-if (d a)
+                       (js-block
+                        (js-var ($ cond))
+                        (js-if (js-call < (d b) (d c))
+                               (js-call "=" ($ arg) (d b))
+                               (js-call "=" ($ arg) (d c)))
+
                         (js-if ($ cond)
                                (js-return (js-call + (d b) (d c)))
-                               (js-return (js-call (d d)))))))
+                               (js-return (d d))))
+                       (js-return (d e)))))))
 
-                     (<> ($ arg1))
-                     (<> ((js-call (d a)) ($ a2)))
-                     (promise <>
-                       (js-return (js-call f ($ arg1) ($ a2))))
-                     (js-return))))))))
-
-        (subtest "Nested in If Condition"
+        (subtest "Lazy Dependencies"
           (mock-backend-state
             (mock-meta-nodes (< +)
               (mock-contexts
-                  ((context (a b c d e)
+                  ((context (a (async . b) c (async . d) e)
                             `(if ,a
                                  (if (if (,< ,b ,c) ,b ,c)
                                      (,+ ,b ,c)
@@ -537,311 +560,285 @@
                                  ,e)))
 
                 (test-compute-function context
-                  (js-if (d a)
-                         (js-block
-                          (js-var ($ cond))
-                          (js-if (js-call < (d b) (d c))
-                                 (js-call "=" ($ arg) (d b))
-                                 (js-call "=" ($ arg) (d c)))
+                  (js-if
+                   (d a)
 
-                          (js-if ($ cond)
-                                 (js-return (js-call + (d b) (d c)))
-                                 (js-return (d d))))
-                         (js-return (d e)))))))
+                   (-<>
+                    (js-call
+                     (js-member
+                      (promise (((js-call (d b)) ($ b1)))
+                        (js-return (js-call < ($ b1) (d c))))
+                      "then")
 
-          (subtest "Lazy Dependencies"
-            (mock-backend-state
-              (mock-meta-nodes (< +)
-                (mock-contexts
-                    ((context (a (async . b) c (async . d) e)
-                              `(if ,a
-                                   (if (if (,< ,b ,c) ,b ,c)
-                                       (,+ ,b ,c)
-                                       ,d)
-                                   ,e)))
+                     (js-lambda '(($ cond1))
+                                (list
+                                 (js-if ($ cond1)
+                                        (js-return (js-call (d b)))
+                                        (js-return (d c))))))
 
-                  (test-compute-function context
-                    (js-if
-                     (d a)
+                    (js-member "then")
 
-                     (-<>
-                      (js-call
-                       (js-member
-                        (promise (((js-call (d b)) ($ b1)))
-                          (js-return (js-call < ($ b1) (d c))))
-                        "then")
+                    (js-call
+                     (js-lambda
+                      '(($ cond2))
 
-                       (js-lambda '(($ cond1))
-                                  (list
-                                   (js-if ($ cond1)
-                                          (js-return (js-call (d b)))
-                                          (js-return (d c))))))
+                      (list
+                       (js-if ($ cond2)
+                              (js-return
+                               (promise (((js-call (d b)) ($ b2)))
+                                 (js-return (js-call + ($ b2) (d c)))))
+                              (js-return (js-call (d d)))))))
 
-                      (js-member "then")
+                    (js-return))
 
-                      (js-call
-                       (js-lambda
-                        '(($ cond2))
+                   (js-return (d e))))))))))
 
-                        (list
-                         (js-if ($ cond2)
-                                (js-return
-                                 (promise (((js-call (d b)) ($ b2)))
-                                   (js-return (js-call + ($ b2) (d c)))))
-                                (js-return (js-call (d d)))))))
+    (subtest "Old Value References"
+      (mock-backend-state
+        (mock-contexts
+            ((context (a cond)
+                      `(if ,cond ,a ,(node-link :self))))
 
-                      (js-return))
+          (test-compute-function context
+            (js-var ($ old-value) (js-member "this" "value"))
+            (js-if (d cond)
+                   (js-return (d a))
+                   (js-return ($ old-value))))))
 
-                     (js-return (d e))))))))))
-
-      (subtest "Old Value References"
+      (subtest "Lazy Node"
         (mock-backend-state
           (mock-contexts
               ((context (a cond)
                         `(if ,cond ,a ,(node-link :self))))
 
-            (test-compute-function context
-              (js-var ($ old-value) (js-member "this" "value"))
-              (js-if (d cond)
-                     (js-return (d a))
-                     (js-return ($ old-value))))))
+            (with-lazy-nodes (context)
+              (test-compute-function context
+                (js-var ($ old-value) (js-member "this" "value"))
+                (js-return
+                 (js-call
+                  +thunk-class+
 
-        (subtest "Lazy Node"
-          (mock-backend-state
+                  (js-lambda
+                   nil
+
+                   (list
+                    (js-if (d cond)
+                           (js-return (d a))
+                           (js-return (js-call ($ old-value)))))))))))))))
+
+  (subtest "Objects"
+    (subtest "Object Creation"
+      (subtest "Simple Field Value Expressions"
+        (mock-backend-state
+          (mock-meta-nodes (+ -)
             (mock-contexts
-                ((context (a cond)
-                          `(if ,cond ,a ,(node-link :self))))
+                ((context (x y) `(:object (|sum| (,+ ,x ,y))
+                                          (|difference| (,- ,x ,y))
+                                          (|x| ,x)
+                                          (|y| ,y))))
 
-              (with-lazy-nodes (context)
-                (test-compute-function context
-                  (js-var ($ old-value) (js-member "this" "value"))
-                  (js-return
-                   (js-call
-                    +thunk-class+
+              (test-compute-function context
+                (js-return
+                 (js-object
+                  (list
+                   (list (js-string "sum") (js-call + (d x) (d y)))
+                   (list (js-string "difference") (js-call - (d x) (d y)))
+                   (list (js-string "x") (d x))
+                   (list (js-string "y") (d y)))))))))
 
-                    (js-lambda
-                     nil
-
-                     (list
-                      (js-if (d cond)
-                             (js-return (d a))
-                             (js-return (js-call ($ old-value)))))))))))))))
-
-    (subtest "Objects"
-      (subtest "Object Creation"
-        (subtest "Simple Field Value Expressions"
+        (subtest "Lazy Dependencies"
           (mock-backend-state
             (mock-meta-nodes (+ -)
               (mock-contexts
-                  ((context (x y) `(:object (|sum| (,+ ,x ,y))
-                                            (|difference| (,- ,x ,y))
-                                            (|x| ,x)
-                                            (|y| ,y))))
+                  ((context ((async . x) y) `(:object (|sum| (,+ ,x ,y))
+                                                      (|difference| (,- ,x ,y))
+                                                      (|x| ,x)
+                                                      (|y| ,y))))
 
                 (test-compute-function context
                   (js-return
-                   (js-object
-                    (list
-                     (list (js-string "sum") (js-call + (d x) (d y)))
-                     (list (js-string "difference") (js-call - (d x) (d y)))
-                     (list (js-string "x") (d x))
-                     (list (js-string "y") (d y)))))))))
+                   (promise
+                       (((promise (((js-call (d x)) ($ x1)))
+                           (js-return (js-call + ($ x1) (d y))))
+                         ($ sum))
 
-          (subtest "Lazy Dependencies"
-            (mock-backend-state
-              (mock-meta-nodes (+ -)
-                (mock-contexts
-                    ((context ((async . x) y) `(:object (|sum| (,+ ,x ,y))
-                                                        (|difference| (,- ,x ,y))
-                                                        (|x| ,x)
-                                                        (|y| ,y))))
+                        ((promise (((js-call (d x)) ($ x2)))
+                           (js-return (js-call - ($ x2) (d y))))
+                         ($ diff))
 
-                  (test-compute-function context
-                    (js-return
-                     (promise
-                         (((promise (((js-call (d x)) ($ x1)))
-                             (js-return (js-call + ($ x1) (d y))))
-                           ($ sum))
+                        ((js-call (d x)) ($ x3)))
 
-                          ((promise (((js-call (d x)) ($ x2)))
-                             (js-return (js-call - ($ x2) (d y))))
-                           ($ diff))
+                     (js-return
+                      (js-object
+                       (list
+                        (list (js-string "sum") ($ sum))
+                        (list (js-string "difference") ($ diff))
+                        (list (js-string "x") ($ x3))
+                        (list (js-string "y") (d y)))))))))))))
 
-                          ((js-call (d x)) ($ x3)))
+      (subtest "If Expressions in Field Values"
+        (mock-backend-state
+          (mock-meta-nodes (<)
+            (mock-contexts
+                ((context (x y) `(:object (|min| (if (,< ,x ,y) ,x ,y))
+                                          (|max| (if (,< ,y ,x) ,x ,y)))))
 
-                       (js-return
-                        (js-object
-                         (list
-                          (list (js-string "sum") ($ sum))
-                          (list (js-string "difference") ($ diff))
-                          (list (js-string "x") ($ x3))
-                          (list (js-string "y") (d y)))))))))))))
+              (test-compute-function context
+                (js-var ($ min))
+                (js-if (js-call < (d x) (d y))
+                       (js-call "=" ($ min) (d x))
+                       (js-call "=" ($ min) (d y)))
 
-        (subtest "If Expressions in Field Values"
+                (js-var ($ max))
+                (js-if (js-call < (d y) (d x))
+                       (js-call "=" ($ max) (d x))
+                       (js-call "=" ($ max) (d y)))
+                (js-return
+                 (js-object
+                  (list
+                   (list (js-string "min") ($ min))
+                   (list (js-string "max") ($ max)))))))))
+
+        (subtest "Lazy Dependencies"
           (mock-backend-state
             (mock-meta-nodes (<)
               (mock-contexts
-                  ((context (x y) `(:object (|min| (if (,< ,x ,y) ,x ,y))
-                                            (|max| (if (,< ,y ,x) ,x ,y)))))
-
-                (test-compute-function context
-                  (js-var ($ min))
-                  (js-if (js-call < (d x) (d y))
-                         (js-call "=" ($ min) (d x))
-                         (js-call "=" ($ min) (d y)))
-
-                  (js-var ($ max))
-                  (js-if (js-call < (d y) (d x))
-                         (js-call "=" ($ max) (d x))
-                         (js-call "=" ($ max) (d y)))
-                  (js-return
-                   (js-object
-                    (list
-                     (list (js-string "min") ($ min))
-                     (list (js-string "max") ($ max)))))))))
-
-          (subtest "Lazy Dependencies"
-            (mock-backend-state
-              (mock-meta-nodes (<)
-                (mock-contexts
-                    ((context ((async . x) y) `(:object (|min| (if (,< ,x ,y) ,x ,y))
-                                                        (|max| (if (,< ,y ,x) ,x ,y)))))
-
-                  (test-compute-function context
-                    (js-return
-                     (-<>
-                      (((js-call
-                         (js-member
-                          (promise (((js-call (d x)) ($ x1)))
-                            (js-return (js-call < ($ x1) (d y))))
-                          "then")
-
-                         (js-lambda
-                          '(($ cond-min))
-
-                          (list
-                           (js-if ($ cond-min)
-                                  (js-return (js-call (d x)))
-                                  (js-return (d y))))))
-                        ($ min))
-
-                       ((js-call
-                         (js-member
-                          (promise (((js-call (d x)) ($ x2)))
-                            (js-return (js-call < (d y) ($ x2))))
-                          "then")
-
-                         (js-lambda
-                          '(($ cond-max))
-
-                          (list
-                           (js-if ($ cond-max)
-                                  (js-return (js-call (d x)))
-                                  (js-return (d y))))))
-                        ($ max)))
-
-                      (promise <>
-                        (js-return
-                         (js-object
-                          (list
-                           (list (js-string "min") ($ min))
-                           (list (js-string "max") ($ max)))))))))))))))
-
-      (subtest "Member Access"
-        (subtest "Direct Member Access"
-          (mock-backend-state
-            (mock-meta-nodes (f)
-              (mock-contexts
-                  ((context (object) `(,f (:member ,object |field|))))
+                  ((context ((async . x) y) `(:object (|min| (if (,< ,x ,y) ,x ,y))
+                                                      (|max| (if (,< ,y ,x) ,x ,y)))))
 
                 (test-compute-function context
                   (js-return
-                   (js-call f (js-element (d object) (js-string "field"))))))))
+                   (-<>
+                    (((js-call
+                       (js-member
+                        (promise (((js-call (d x)) ($ x1)))
+                          (js-return (js-call < ($ x1) (d y))))
+                        "then")
 
-          (subtest "Lazy Dependencies"
-            (mock-backend-state
-              (mock-meta-nodes (f)
-                (mock-contexts
-                    ((context ((async . object)) `(,f (:member ,object |field|))))
+                       (js-lambda
+                        '(($ cond-min))
 
-                  (test-compute-function context
-                    (js-return
-                     (promise
-                         (((js-call
-                            (js-member (js-call (d object)) "then")
+                        (list
+                         (js-if ($ cond-min)
+                                (js-return (js-call (d x)))
+                                (js-return (d y))))))
+                      ($ min))
 
-                            (js-lambda
-                             '(($ object))
+                     ((js-call
+                       (js-member
+                        (promise (((js-call (d x)) ($ x2)))
+                          (js-return (js-call < (d y) ($ x2))))
+                        "then")
 
-                             (list
-                              (js-return (js-element ($ object) (js-string "field"))))))
+                       (js-lambda
+                        '(($ cond-max))
 
-                           ($ value)))
-                       (js-return (js-call f ($ value)))))))))))
+                        (list
+                         (js-if ($ cond-max)
+                                (js-return (js-call (d x)))
+                                (js-return (d y))))))
+                      ($ max)))
 
-        (subtest "Expression Member Access"
+                    (promise <>
+                      (js-return
+                       (js-object
+                        (list
+                         (list (js-string "min") ($ min))
+                         (list (js-string "max") ($ max)))))))))))))))
+
+    (subtest "Member Access"
+      (subtest "Direct Member Access"
+        (mock-backend-state
+          (mock-meta-nodes (f)
+            (mock-contexts
+                ((context (object) `(,f (:member ,object |field|))))
+
+              (test-compute-function context
+                (js-return
+                 (js-call f (js-element (d object) (js-string "field"))))))))
+
+        (subtest "Lazy Dependencies"
           (mock-backend-state
             (mock-meta-nodes (f)
               (mock-contexts
-                  ((context (a) `(:member (,f ,a) \x)))
+                  ((context ((async . object)) `(,f (:member ,object |field|))))
 
                 (test-compute-function context
-                  (js-return (js-element (js-call f (d a)) (js-string "x")))))))
+                  (js-return
+                   (promise
+                       (((js-call
+                          (js-member (js-call (d object)) "then")
 
-          (subtest "Lazy Dependencies"
-            (mock-backend-state
-              (mock-meta-nodes (f)
-                (mock-contexts
-                    ((context ((async . a)) `(:member (,f ,a) \x)))
+                          (js-lambda
+                           '(($ object))
 
-                  (test-compute-function context
-                    (js-return
-                     (js-call
-                      (js-member
-                       (promise (((js-call (d a)) ($ a)))
-                         (js-return (js-call f ($ a))))
-                       "then")
+                           (list
+                            (js-return (js-element ($ object) (js-string "field"))))))
 
-                      (js-lambda
-                       '(($ object))
+                         ($ value)))
+                     (js-return (js-call f ($ value)))))))))))
 
-                       (list
-                        (js-return (js-element ($ object) (js-string "x")))))))))))))
+      (subtest "Expression Member Access"
+        (mock-backend-state
+          (mock-meta-nodes (f)
+            (mock-contexts
+                ((context (a) `(:member (,f ,a) \x)))
 
-        (subtest "Member Access of If Expression"
+              (test-compute-function context
+                (js-return (js-element (js-call f (d a)) (js-string "x")))))))
+
+        (subtest "Lazy Dependencies"
+          (mock-backend-state
+            (mock-meta-nodes (f)
+              (mock-contexts
+                  ((context ((async . a)) `(:member (,f ,a) \x)))
+
+                (test-compute-function context
+                  (js-return
+                   (js-call
+                    (js-member
+                     (promise (((js-call (d a)) ($ a)))
+                       (js-return (js-call f ($ a))))
+                     "then")
+
+                    (js-lambda
+                     '(($ object))
+
+                     (list
+                      (js-return (js-element ($ object) (js-string "x")))))))))))))
+
+      (subtest "Member Access of If Expression"
+        (mock-backend-state
+          (mock-contexts
+              ((context (cond a b) `(:member (if ,cond ,a ,b) \z)))
+
+            (test-compute-function context
+              (js-var ($ object))
+              (js-if (d cond)
+                     (js-call "=" ($ object) (d a))
+                     (js-call "=" ($ object) (d b)))
+
+              (js-return (js-element ($ object) (js-string "z"))))))
+
+        (subtest "Lazy Dependencies"
           (mock-backend-state
             (mock-contexts
-                ((context (cond a b) `(:member (if ,cond ,a ,b) \z)))
+                ((context (cond a (async . b)) `(:member (if ,cond ,a ,b) \z)))
 
               (test-compute-function context
                 (js-var ($ object))
                 (js-if (d cond)
                        (js-call "=" ($ object) (d a))
-                       (js-call "=" ($ object) (d b)))
+                       (js-call "=" ($ object) (js-call (d b))))
 
-                (js-return (js-element ($ object) (js-string "z"))))))
+                (js-return
+                 (js-call
+                  (js-member
+                   (js-call (js-member "Promise" "resolve") ($ object))
+                   "then")
 
-          (subtest "Lazy Dependencies"
-            (mock-backend-state
-              (mock-contexts
-                  ((context (cond a (async . b)) `(:member (if ,cond ,a ,b) \z)))
-
-                (test-compute-function context
-                  (js-var ($ object))
-                  (js-if (d cond)
-                         (js-call "=" ($ object) (d a))
-                         (js-call "=" ($ object) (js-call (d b))))
-
-                  (js-return
-                   (js-call
-                    (js-member
-                     (js-call (js-member "Promise" "resolve") ($ object))
-                     "then")
-
-                    (js-lambda '(($ arg))
-                               (list (js-return (js-element ($ arg) (js-string "z"))))))))))))))))
-
-(run-test 'node-functions)
+                  (js-lambda '(($ arg))
+                             (list (js-return (js-element ($ arg) (js-string "z")))))))))))))))
 
 
 (defun test-function% (got expected)
@@ -914,180 +911,178 @@
 
        (js-return (js-member ($ promise) "promise"))))))
 
-(deftest meta-node-functions
-  (subtest "Test Meta-Node Function Code Generation"
-    (subtest "Single Function Meta-Nodes"
-      (subtest "Simple Function"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build "add(x, y) : x + y")
-          (finish-build)
 
-          (with-nodes ((add "add")) modules
-            (mock-backend-state
-              (test-meta-node-function add
-                (js-function
-                 (meta-node-id add)
-                 '(($ x) ($ y))
+(subtest "Meta-Node Function Code Generation"
+  (subtest "Single Function Meta-Nodes"
+    (subtest "Simple Function"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build "add(x, y) : x + y")
+        (finish-build)
 
-                 (list
-                  (js-return (js-call "+" ($ x) ($ y))))))))))
+        (with-nodes ((add "add")) modules
+          (mock-backend-state
+            (test-meta-node-function add
+              (js-function
+               (meta-node-id add)
+               '(($ x) ($ y))
 
-      (subtest "Recursive Meta-Nodes"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build "fact(n) : case(n < 1 : 1, n * fact(n - 1))")
-          (finish-build)
+               (list
+                (js-return (js-call "+" ($ x) ($ y))))))))))
 
-          (with-nodes ((fact "fact")) modules
+    (subtest "Recursive Meta-Nodes"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build "fact(n) : case(n < 1 : 1, n * fact(n - 1))")
+        (finish-build)
+
+        (with-nodes ((fact "fact")) modules
+          (mock-backend-state
+            (test-meta-node-function fact
+              (js-function
+               (meta-node-id fact)
+               '(($ n))
+
+               (list
+                (js-if (js-call "<" ($ n) 1)
+                       (js-return 1)
+                       (js-return (js-call "*" ($ n) (js-call fact (js-call "-" ($ n) 1))))))))))))
+
+    (subtest "Tail Recursive Meta-Nodes"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build "fact(n) : { iter(n, acc) : case(n < 1 : acc, iter(n - 1, n * acc)); iter(n, 1) }")
+        (finish-build)
+
+        (with-nodes ((fact "fact")) modules
+          (with-nodes ((iter "iter")) (definition fact)
             (mock-backend-state
               (test-meta-node-function fact
                 (js-function
                  (meta-node-id fact)
-                 '(($ n))
+                 '(($ n1))
 
                  (list
-                  (js-if (js-call "<" ($ n) 1)
-                         (js-return 1)
-                         (js-return (js-call "*" ($ n) (js-call fact (js-call "-" ($ n) 1))))))))))))
-
-      (subtest "Tail Recursive Meta-Nodes"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build "fact(n) : { iter(n, acc) : case(n < 1 : acc, iter(n - 1, n * acc)); iter(n, 1) }")
-          (finish-build)
-
-          (with-nodes ((fact "fact")) modules
-            (with-nodes ((iter "iter")) (definition fact)
-              (mock-backend-state
-                (test-meta-node-function fact
                   (js-function
-                   (meta-node-id fact)
-                   '(($ n1))
+                   (meta-node-id iter)
+                   '(($ n2) ($ acc))
 
                    (list
-                    (js-function
-                     (meta-node-id iter)
-                     '(($ n2) ($ acc))
+                    (js-while
+                     "true"
+                     (js-if (js-call "<" ($ n2) 1)
+                            (js-return ($ acc))
+                            (js-block
+                             (js-call "="
+                                      (js-array '(($ n2) ($ acc)))
+                                      (js-array (list (js-call "-" ($ n2) 1) (js-call "*" ($ n2) ($ acc)))))
+                             (js-continue))))))
 
-                     (list
-                      (js-while
-                       "true"
-                       (js-if (js-call "<" ($ n2) 1)
-                              (js-return ($ acc))
-                              (js-block
-                               (js-call "="
-                                        (js-array '(($ n2) ($ acc)))
-                                        (js-array (list (js-call "-" ($ n2) 1) (js-call "*" ($ n2) ($ acc)))))
-                               (js-continue))))))
+                  (js-return (js-call iter ($ n1) 1))))))))))
 
-                    (js-return (js-call iter ($ n1) 1))))))))))
+    (subtest "Mutually Recursive Meta-Nodes"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build "fib(n) : case(n > 1 : fib1(n) + fib2(n), 1)")
+        (build "fib1(n) : fib(n - 1)")
+        (build "fib2(n) : fib(n - 2)")
+        (finish-build)
 
-      (subtest "Mutually Recursive Meta-Nodes"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build "fib(n) : case(n > 1 : fib1(n) + fib2(n), 1)")
-          (build "fib1(n) : fib(n - 1)")
-          (build "fib2(n) : fib(n - 2)")
-          (finish-build)
+        (with-nodes ((fib "fib") (fib1 "fib1") (fib2 "fib2")) modules
+          (mock-backend-state
+            (test-meta-node-function fib
+              (js-function
+               (meta-node-id fib)
+               '(($ n))
 
-          (with-nodes ((fib "fib") (fib1 "fib1") (fib2 "fib2")) modules
-            (mock-backend-state
-              (test-meta-node-function fib
-                (js-function
-                 (meta-node-id fib)
-                 '(($ n))
+               (list
+                (js-if (js-call ">" ($ n) 1)
+                       (js-return
+                        (js-call "+" (js-call fib1 ($ n)) (js-call fib2 ($ n))))
+                       (js-return 1)))))
 
-                 (list
-                  (js-if (js-call ">" ($ n) 1)
-                         (js-return
-                          (js-call "+" (js-call fib1 ($ n)) (js-call fib2 ($ n))))
-                         (js-return 1)))))
+            (test-meta-node-function fib1
+              (js-function
+               (meta-node-id fib1)
+               '(($ n))
 
-              (test-meta-node-function fib1
-                (js-function
-                 (meta-node-id fib1)
-                 '(($ n))
+               (list
+                (js-return (js-call fib (js-call "-" ($ n) 1))))))
 
-                 (list
-                  (js-return (js-call fib (js-call "-" ($ n) 1))))))
+            (test-meta-node-function fib2
+              (js-function
+               (meta-node-id fib2)
+               '(($ n))
 
-              (test-meta-node-function fib2
-                (js-function
-                 (meta-node-id fib2)
-                 '(($ n))
+               (list
+                (js-return (js-call fib (js-call "-" ($ n) 2)))))))))))
 
-                 (list
-                  (js-return (js-call fib (js-call "-" ($ n) 2)))))))))))
+  (subtest "Asynchronous Meta-Nodes"
+    (subtest "Tail-Recursive Meta-Nodes"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build "fact(n) : case(n < 1 : 1, n * fact(n - 1))")
+        (build ":attribute(fact, async, 1)")
 
-    (subtest "Asynchronous Meta-Nodes"
-      (subtest "Tail-Recursive Meta-Nodes"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build "fact(n) : case(n < 1 : 1, n * fact(n - 1))")
-          (build ":attribute(fact, async, 1)")
+        (finish-build)
 
-          (finish-build)
+        (with-nodes ((fact "fact")) modules
+          (mock-backend-state
+            (test-meta-node-calls
+                ((fact
+                  (cons 'async (js-call fact (js-call "-" ($ n2) 1)))))
 
-          (with-nodes ((fact "fact")) modules
-            (mock-backend-state
-              (test-meta-node-calls
-                  ((fact
-                    (cons 'async (js-call fact (js-call "-" ($ n2) 1)))))
+              (test-async-meta-node fact (n)))))))
 
-                (test-async-meta-node fact (n)))))))
+    (subtest "Tail-Recursive Meta-Nodes"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build "fact(n, acc) : case(n < 1 : 1, fact(n - 1, n * acc))")
+        (build ":attribute(fact, async, 1)")
 
-      (subtest "Tail-Recursive Meta-Nodes"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build "fact(n, acc) : case(n < 1 : 1, fact(n - 1, n * acc))")
-          (build ":attribute(fact, async, 1)")
+        (finish-build)
 
-          (finish-build)
+        (with-nodes ((fact "fact")) modules
+          (mock-backend-state
+            (test-meta-node-calls
+                ((fact
+                  (js-block
+                   (js-call fact (js-call "-" ($ n2) 1) (js-call "*" ($ n2) ($ acc2)) ($ promise) ($ node-table))
+                   (js-throw (js-new +end-update-class+)))))
 
-          (with-nodes ((fact "fact")) modules
-            (mock-backend-state
-              (test-meta-node-calls
-                  ((fact
-                    (js-block
-                     (js-call fact (js-call "-" ($ n2) 1) (js-call "*" ($ n2) ($ acc2)) ($ promise) ($ node-table))
-                     (js-throw (js-new +end-update-class+)))))
+              (test-async-meta-node fact (n acc)))))))
 
-                (test-async-meta-node fact (n acc)))))))
+    (subtest "Mutually Recursive Meta-Nodes"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build "fib(n) : case(n > 1 : fib1(n) + fib2(n), 1)")
+        (build "fib1(n) : fib(n - 1)")
+        (build "fib2(n) : fib(n - 2)")
+        (build ":attribute(fib, async, 1)")
+        (build ":attribute(fib1, async, 1)")
+        (build ":attribute(fib2, async, 1)")
 
-      (subtest "Mutually Recursive Meta-Nodes"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build "fib(n) : case(n > 1 : fib1(n) + fib2(n), 1)")
-          (build "fib1(n) : fib(n - 1)")
-          (build "fib2(n) : fib(n - 2)")
-          (build ":attribute(fib, async, 1)")
-          (build ":attribute(fib1, async, 1)")
-          (build ":attribute(fib2, async, 1)")
+        (finish-build)
 
-          (finish-build)
+        (with-nodes ((fib "fib") (fib1 "fib1") (fib2 "fib2")) modules
+          (mock-backend-state
+            (test-meta-node-calls
+                ((fib1
+                  (cons 'async (js-call fib1 ($ n1))))
 
-          (with-nodes ((fib "fib") (fib1 "fib1") (fib2 "fib2")) modules
-            (mock-backend-state
-              (test-meta-node-calls
-                  ((fib1
-                    (cons 'async (js-call fib1 ($ n1))))
+                 (fib2
+                  (cons 'async (js-call fib2 ($ n2)))))
 
-                   (fib2
-                    (cons 'async (js-call fib2 ($ n2)))))
+              (test-async-meta-node fib (n)))
 
-                (test-async-meta-node fib (n)))
+            (test-meta-node-calls
+                ((fib
+                  (js-block
+                   (js-call fib ($ arg) ($ promise))
+                   (js-throw (js-new +end-update-class+)))))
 
-              (test-meta-node-calls
-                  ((fib
-                    (js-block
-                     (js-call fib ($ arg) ($ promise))
-                     (js-throw (js-new +end-update-class+)))))
-
-                (test-async-meta-node fib1 (n))
-                (test-async-meta-node fib2 (n))))))))))
-
-(run-test 'meta-node-functions)
+              (test-async-meta-node fib1 (n))
+              (test-async-meta-node fib2 (n)))))))))
 
 
 (defmacro get-lazy-nodes (module-table &body body)
@@ -1126,214 +1121,212 @@
     `(progn
       ,@(map #'make-node-test nodes))))
 
-(deftest lazy-node-analysis
-  (subtest "Test Lazy Node Analysis"
-    (subtest "Single Module"
-      (subtest "All Lazy Nodes"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build "case(a < b : b - a, a - b) -> out")
-          (build ":attribute(a < b, no-coalesce, 1)")
-          (build ":attribute(b - a, no-coalesce, 1)")
-          (build ":attribute(a - b, no-coalesce, 1)")
-          (build ":attribute(a, input, 1)")
-          (build ":attribute(b, input, 1)")
 
-          (let ((table (finish-build)))
-            (with-nodes ((a "a") (b "b") (out "out")
-                         (a<b ("<" "a" "b")) (b-a ("-" "b" "a")) (a-b ("-" "a" "b")))
-                table
+(subtest "Lazy Node Analysis"
+  (subtest "Single Module"
+    (subtest "All Lazy Nodes"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build "case(a < b : b - a, a - b) -> out")
+        (build ":attribute(a < b, no-coalesce, 1)")
+        (build ":attribute(b - a, no-coalesce, 1)")
+        (build ":attribute(a - b, no-coalesce, 1)")
+        (build ":attribute(a, input, 1)")
+        (build ":attribute(b, input, 1)")
 
-              (mock-backend-state
-                (get-lazy-nodes table
-                  (test-lazy-nodes b-a a-b (not a<b) (not out))
-
-                  (test-compute-function (default-context b-a)
-                    (js-return
-                     (js-call
-                      +thunk-class+
-                      (js-lambda
-                       nil
-
-                       (list
-                        (js-return (js-call "-" `(d ,b) `(d ,a))))))))
-
-                  (test-compute-function (default-context a-b)
-                    (js-return
-                     (js-call
-                      +thunk-class+
-                      (js-lambda
-                       nil
-
-                       (list
-                        (js-return (js-call "-" `(d ,a) `(d ,b))))))))
-
-                  (test-compute-function (default-context a<b)
-                    (js-return (js-call "<" `(d ,a) `(d ,b))))
-
-                  (test-compute-function (default-context out)
-                    (js-if `(d ,a<b)
-                           (js-return (js-call `(d ,b-a)))
-                           (js-return (js-call `(d ,a-b)))))))))))
-
-      (subtest "Not Lazy Nodes"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build "case(a < b : b - a, a - b) -> out1")
-          (build "b - a -> out2")
-          (build ":attribute(a < b, no-coalesce, 1)")
-          (build ":attribute(b - a, no-coalesce, 1)")
-          (build ":attribute(a - b, no-coalesce, 1)")
-          (build ":attribute(a, input, 1)")
-          (build ":attribute(b, input, 1)")
-
-          (let ((table (finish-build)))
-            (with-nodes ((a "a") (b "b") (out1 "out1") (out2 "out2")
-                         (a<b ("<" "a" "b")) (b-a ("-" "b" "a")) (a-b ("-" "a" "b")))
-                table
-
-              (mock-backend-state
-                (get-lazy-nodes table
-                  (test-lazy-nodes a-b (not b-a) (not a<b) (not out1) (not out2))
-
-                  (test-compute-function (default-context b-a)
-                    (js-return (js-call "-" `(d ,b) `(d ,a))))
-
-                  (test-compute-function (default-context a-b)
-                    (js-return
-                     (js-call
-                      +thunk-class+
-                      (js-lambda
-                       nil
-
-                       (list
-                        (js-return (js-call "-" `(d ,a) `(d ,b))))))))
-
-                  (test-compute-function (default-context a<b)
-                    (js-return (js-call "<" `(d ,a) `(d ,b))))
-
-                  (test-compute-function (default-context out1)
-                    (js-if `(d ,a<b)
-                           (js-return `(d ,b-a))
-                           (js-return (js-call `(d ,a-b)))))
-
-                  (test-compute-function (default-context out2)
-                    (js-return `(d ,b-a))))))))))
-
-    (subtest "Multiple Modules"
-      (subtest "All Lazy Nodes"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-
-          (build ":module(mod1)")
-          (build "a; b")
-          (build ":attribute(a, input, 1)")
-          (build ":attribute(b, input, 2)")
-
-          (build ":module(mod2)")
-          (build ":import(core)")
-          (build ":alias(mod1, m)")
-          (build "case(m.a < m.b : m.b - m.a, m.a - m.b) -> out")
-
-          (build ":attribute(m.a < m.b, no-coalesce, 1)")
-          (build ":attribute(m.b - m.a, no-coalesce, 1)")
-          (build ":attribute(m.a - m.b, no-coalesce, 1)")
-
-          (let ((table (finish-build)))
-            (with-nodes ((a "a") (b "b")
-                         (a<b ("<" ("." "m" "a") ("." "m" "b")))
-                         (b-a ("-" ("." "m" "b") ("." "m" "a")))
-                         (a-b ("-" ("." "m" "a") ("." "m" "b")))
-                         (out "out"))
+        (let ((table (finish-build)))
+          (with-nodes ((a "a") (b "b") (out "out")
+                       (a<b ("<" "a" "b")) (b-a ("-" "b" "a")) (a-b ("-" "a" "b")))
               table
 
-              (mock-backend-state
-                (get-lazy-nodes table
-                  (test-lazy-nodes b-a a-b (not a<b) (not out))
+            (mock-backend-state
+              (get-lazy-nodes table
+                (test-lazy-nodes b-a a-b (not a<b) (not out))
 
-                  (test-compute-function (default-context b-a)
-                    (js-return
-                     (js-call
-                      +thunk-class+
-                      (js-lambda
-                       nil
+                (test-compute-function (default-context b-a)
+                  (js-return
+                   (js-call
+                    +thunk-class+
+                    (js-lambda
+                     nil
 
-                       (list
-                        (js-return (js-call "-" `(d ,b) `(d ,a))))))))
+                     (list
+                      (js-return (js-call "-" `(d ,b) `(d ,a))))))))
 
-                  (test-compute-function (default-context a-b)
-                    (js-return
-                     (js-call
-                      +thunk-class+
-                      (js-lambda
-                       nil
+                (test-compute-function (default-context a-b)
+                  (js-return
+                   (js-call
+                    +thunk-class+
+                    (js-lambda
+                     nil
 
-                       (list
-                        (js-return (js-call "-" `(d ,a) `(d ,b))))))))
+                     (list
+                      (js-return (js-call "-" `(d ,a) `(d ,b))))))))
 
-                  (test-compute-function (default-context a<b)
-                    (js-return (js-call "<" `(d ,a) `(d ,b))))
+                (test-compute-function (default-context a<b)
+                  (js-return (js-call "<" `(d ,a) `(d ,b))))
 
-                  (test-compute-function (default-context out)
-                    (js-if `(d ,a<b)
-                           (js-return (js-call `(d ,b-a)))
-                           (js-return (js-call `(d ,a-b)))))))))))
+                (test-compute-function (default-context out)
+                  (js-if `(d ,a<b)
+                         (js-return (js-call `(d ,b-a)))
+                         (js-return (js-call `(d ,a-b)))))))))))
 
-      (subtest "Not Lazy Nodes"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
+    (subtest "Not Lazy Nodes"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build "case(a < b : b - a, a - b) -> out1")
+        (build "b - a -> out2")
+        (build ":attribute(a < b, no-coalesce, 1)")
+        (build ":attribute(b - a, no-coalesce, 1)")
+        (build ":attribute(a - b, no-coalesce, 1)")
+        (build ":attribute(a, input, 1)")
+        (build ":attribute(b, input, 1)")
 
-          (build ":module(mod1)")
-          (build "a; b; out2")
-          (build ":attribute(a, input, 1)")
-          (build ":attribute(b, input, 2)")
-
-          (build ":module(mod2)")
-          (build ":import(core)")
-          (build ":alias(mod1, m)")
-          (build "case(m.a < m.b : m.b - m.a, m.a - m.b) -> out1")
-          (build "m.a - m.b -> m.out2")
-
-          (build ":attribute(m.a < m.b, no-coalesce, 1)")
-          (build ":attribute(m.b - m.a, no-coalesce, 1)")
-          (build ":attribute(m.a - m.b, no-coalesce, 1)")
-
-          (let ((table (finish-build)))
-            (with-nodes ((a "a") (b "b") (out2 "out2")
-                         (a<b ("<" ("." "m" "a") ("." "m" "b")))
-                         (b-a ("-" ("." "m" "b") ("." "m" "a")))
-                         (a-b ("-" ("." "m" "a") ("." "m" "b")))
-                         (out1 "out1"))
+        (let ((table (finish-build)))
+          (with-nodes ((a "a") (b "b") (out1 "out1") (out2 "out2")
+                       (a<b ("<" "a" "b")) (b-a ("-" "b" "a")) (a-b ("-" "a" "b")))
               table
 
-              (mock-backend-state
-                (get-lazy-nodes table
-                  (test-lazy-nodes b-a (not a-b) (not a<b) (not out1) (not out2))
+            (mock-backend-state
+              (get-lazy-nodes table
+                (test-lazy-nodes a-b (not b-a) (not a<b) (not out1) (not out2))
 
-                  (test-compute-function (default-context b-a)
-                    (js-return
-                     (js-call
-                      +thunk-class+
-                      (js-lambda
-                       nil
+                (test-compute-function (default-context b-a)
+                  (js-return (js-call "-" `(d ,b) `(d ,a))))
 
-                       (list
-                        (js-return (js-call "-" `(d ,b) `(d ,a))))))))
+                (test-compute-function (default-context a-b)
+                  (js-return
+                   (js-call
+                    +thunk-class+
+                    (js-lambda
+                     nil
 
-                  (test-compute-function (default-context a-b)
-                    (js-return (js-call "-" `(d ,a) `(d ,b))))
+                     (list
+                      (js-return (js-call "-" `(d ,a) `(d ,b))))))))
 
-                  (test-compute-function (default-context a<b)
-                    (js-return (js-call "<" `(d ,a) `(d ,b))))
+                (test-compute-function (default-context a<b)
+                  (js-return (js-call "<" `(d ,a) `(d ,b))))
 
-                  (test-compute-function (default-context out1)
-                    (js-if `(d ,a<b)
-                           (js-return (js-call `(d ,b-a)))
-                           (js-return `(d ,a-b))))
+                (test-compute-function (default-context out1)
+                  (js-if `(d ,a<b)
+                         (js-return `(d ,b-a))
+                         (js-return (js-call `(d ,a-b)))))
 
-                  (test-compute-function (default-context out2)
-                    (js-return `(d ,a-b))))))))))))
+                (test-compute-function (default-context out2)
+                  (js-return `(d ,b-a))))))))))
 
-(run-test 'lazy-node-analysis)
+  (subtest "Multiple Modules"
+    (subtest "All Lazy Nodes"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+
+        (build ":module(mod1)")
+        (build "a; b")
+        (build ":attribute(a, input, 1)")
+        (build ":attribute(b, input, 2)")
+
+        (build ":module(mod2)")
+        (build ":import(core)")
+        (build ":alias(mod1, m)")
+        (build "case(m.a < m.b : m.b - m.a, m.a - m.b) -> out")
+
+        (build ":attribute(m.a < m.b, no-coalesce, 1)")
+        (build ":attribute(m.b - m.a, no-coalesce, 1)")
+        (build ":attribute(m.a - m.b, no-coalesce, 1)")
+
+        (let ((table (finish-build)))
+          (with-nodes ((a "a") (b "b")
+                       (a<b ("<" ("." "m" "a") ("." "m" "b")))
+                       (b-a ("-" ("." "m" "b") ("." "m" "a")))
+                       (a-b ("-" ("." "m" "a") ("." "m" "b")))
+                       (out "out"))
+              table
+
+            (mock-backend-state
+              (get-lazy-nodes table
+                (test-lazy-nodes b-a a-b (not a<b) (not out))
+
+                (test-compute-function (default-context b-a)
+                  (js-return
+                   (js-call
+                    +thunk-class+
+                    (js-lambda
+                     nil
+
+                     (list
+                      (js-return (js-call "-" `(d ,b) `(d ,a))))))))
+
+                (test-compute-function (default-context a-b)
+                  (js-return
+                   (js-call
+                    +thunk-class+
+                    (js-lambda
+                     nil
+
+                     (list
+                      (js-return (js-call "-" `(d ,a) `(d ,b))))))))
+
+                (test-compute-function (default-context a<b)
+                  (js-return (js-call "<" `(d ,a) `(d ,b))))
+
+                (test-compute-function (default-context out)
+                  (js-if `(d ,a<b)
+                         (js-return (js-call `(d ,b-a)))
+                         (js-return (js-call `(d ,a-b)))))))))))
+
+    (subtest "Not Lazy Nodes"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+
+        (build ":module(mod1)")
+        (build "a; b; out2")
+        (build ":attribute(a, input, 1)")
+        (build ":attribute(b, input, 2)")
+
+        (build ":module(mod2)")
+        (build ":import(core)")
+        (build ":alias(mod1, m)")
+        (build "case(m.a < m.b : m.b - m.a, m.a - m.b) -> out1")
+        (build "m.a - m.b -> m.out2")
+
+        (build ":attribute(m.a < m.b, no-coalesce, 1)")
+        (build ":attribute(m.b - m.a, no-coalesce, 1)")
+        (build ":attribute(m.a - m.b, no-coalesce, 1)")
+
+        (let ((table (finish-build)))
+          (with-nodes ((a "a") (b "b") (out2 "out2")
+                       (a<b ("<" ("." "m" "a") ("." "m" "b")))
+                       (b-a ("-" ("." "m" "b") ("." "m" "a")))
+                       (a-b ("-" ("." "m" "a") ("." "m" "b")))
+                       (out1 "out1"))
+              table
+
+            (mock-backend-state
+              (get-lazy-nodes table
+                (test-lazy-nodes b-a (not a-b) (not a<b) (not out1) (not out2))
+
+                (test-compute-function (default-context b-a)
+                  (js-return
+                   (js-call
+                    +thunk-class+
+                    (js-lambda
+                     nil
+
+                     (list
+                      (js-return (js-call "-" `(d ,b) `(d ,a))))))))
+
+                (test-compute-function (default-context a-b)
+                  (js-return (js-call "-" `(d ,a) `(d ,b))))
+
+                (test-compute-function (default-context a<b)
+                  (js-return (js-call "<" `(d ,a) `(d ,b))))
+
+                (test-compute-function (default-context out1)
+                  (js-if `(d ,a<b)
+                         (js-return (js-call `(d ,b-a)))
+                         (js-return `(d ,a-b))))
+
+                (test-compute-function (default-context out2)
+                  (js-return `(d ,a-b)))))))))))
 
 (finalize)

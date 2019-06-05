@@ -77,153 +77,152 @@
       (diag (format nil "Test String: ~s" string))
       (is-error (funcall parser operators) 'declaration-parse-error))))
 
-(subtest "Test Parser"
-  (flet ((s (string)
-           (id-symbol string)))
+(flet ((s (string)
+         (id-symbol string)))
 
-    (let ((*package* (find-package :tridash.symbols)))
-      (subtest "Node Expressions"
-        (test-parser
-         #?"node1; node2\nnode3"
-         (decls '!|node1| '!|node2| '!|node3|))
+  (let ((*package* (find-package :tridash.symbols)))
+    (subtest "Node Expressions"
+      (test-parser
+       #?"node1; node2\nnode3"
+       (decls '!|node1| '!|node2| '!|node3|))
 
+      (test-parser
+       #?"fn(arg1, arg2)\narg"
+       (decls
+        '(!|fn| !|arg1| !|arg2|)
+        '!|arg|))
+
+      (test-parser
+       #?"fn(arg1)\narg"
+       (decls
+        '(!|fn| !|arg1|)
+        '!|arg|))
+
+      (test-parser
+       #?"fn()\narg"
+       (decls
+        '(!|fn|)
+        '!|arg|))
+
+      (let ((ops (alist-hash-map
+                  `((,+bind-operator+ 10 :right)
+                    (,(s "+") 20 :left)
+                    (,(s "-") 20 :left)
+                    (,(s "*") 50 :right)
+                    (,(s "/") 50 :left)
+                    (:open-paren 200)
+                    (,+subnode-operator+ 500 :left)))))
         (test-parser
-         #?"fn(arg1, arg2)\narg"
+         #?"mod.fn(arg1, arg2) + fn2(arg) -\n node1 * node2"
          (decls
-          '(!|fn| !|arg1| !|arg2|)
-          '!|arg|))
+          '(!-
+            (!+
+             ((!\. !|mod| !|fn|) !|arg1| !|arg2|)
+             (!|fn2| !|arg|))
+            (!* !|node1| !|node2|)))
+         ops)
 
         (test-parser
-         #?"fn(arg1)\narg"
+         #?"a + b * \nc - e / d"
          (decls
-          '(!|fn| !|arg1|)
-          '!|arg|))
+          '(!-
+            (!+ !\a (!* !\b !\c))
+            (!/ !\e !\d)))
+         ops)
 
         (test-parser
-         #?"fn()\narg"
+         #?"(a + b\n) * (c - e / d)"
          (decls
-          '(!|fn|)
-          '!|arg|))
+          '(!*
+            (!+ !\a !\b)
+            (!- !\c (!/ !\e !\d))))
+         ops)
 
+        (test-parser
+         #?"a - b - \nc - d"
+         (decls
+          '(!-
+            (!- (!- !\a !\b) !\c)
+            !\d))
+         ops)
+
+        (test-parser
+         #?"a -> b -> \n c -> d\n"
+         (decls
+          '(!-> !\a (!-> !\b (!-> !\c !\d)))))))
+
+    (subtest "Node Lists"
+      (test-parser
+       #?"fn(a, b) : {a;b\nc\n\nd}"
+       (decls
+        '(!\:
+          (!|fn| !\a !\b)
+          (list !\a !\b !\c !\d)))
+       (alist-hash-map
+        `((,(s ":") 10 :right)
+          (:open-paren 200)))))
+
+    (subtest "Literals"
+      (subtest "Mixed Literals (Integers, Reals and Strings)"
         (let ((ops (alist-hash-map
-                    `((,+bind-operator+ 10 :right)
-                      (,(s "+") 20 :left)
+                    `((,(s "+") 20 :left)
                       (,(s "-") 20 :left)
                       (,(s "*") 50 :right)
                       (,(s "/") 50 :left)
-                      (:open-paren 200)
-                      (,+subnode-operator+ 500 :left)))))
-          (test-parser
-           #?"mod.fn(arg1, arg2) + fn2(arg) -\n node1 * node2"
-           (decls
-            '(!-
-              (!+
-               ((!\. !|mod| !|fn|) !|arg1| !|arg2|)
-               (!|fn2| !|arg|))
-              (!* !|node1| !|node2|)))
-           ops)
+                      (:open-paren 200)))))
 
           (test-parser
-           #?"a + b * \nc - e / d"
+           #?"a + 1 + 2.3 -\"hello\" "
            (decls
-            '(!-
-              (!+ !\a (!* !\b !\c))
-              (!/ !\e !\d)))
-           ops)
+            '(!- (!+ (!+ !\a 1) 2.3) "hello"))
+           ops)))
+
+      (subtest "String Literals"
+        (subtest "Test Line Feed, Carriage Return and Tab Escapes"
+          (test-parser
+           " \"Hello\\n\\tWorld\" "
+           (list #?"Hello\n\tWorld"))
 
           (test-parser
-           #?"(a + b\n) * (c - e / d)"
-           (decls
-            '(!*
-              (!+ !\a !\b)
-              (!- !\c (!/ !\e !\d))))
-           ops)
+           " \"Hello\\r\\nWorld\" "
+           (list #?"Hello\r\nWorld")))
+
+        (subtest "Test Escaped Quotes and backslashes"
+          (test-parser
+           " \"He\\\\she said \\\"Hello World\\\"\" "
+           (list #?"He\\she said \"Hello World\"")))
+
+        (subtest "Unicode Escape Sequences"
+          (test-parser
+           " \"x\\u2265h5\" "
+           (list #?"x\x{2265}5"))
 
           (test-parser
-           #?"a - b - \nc - d"
-           (decls
-            '(!-
-              (!- (!- !\a !\b) !\c)
-              !\d))
-           ops)
+           " \"x \\u2265 5\" "
+           (list #?"x \x{2265} 5")))))))
 
-          (test-parser
-           #?"a -> b -> \n c -> d\n"
-           (decls
-            '(!-> !\a (!-> !\b (!-> !\c !\d)))))))
+(subtest "Parse Errors"
+  (parse-error-p "a + b")
+  (parse-error-p "a +")
+  (parse-error-p "a ->")
+  (parse-error-p #?"a.\n")
+  (parse-error-p #?"a.;")
 
-      (subtest "Node Lists"
-        (test-parser
-         #?"fn(a, b) : {a;b\nc\n\nd}"
-         (decls
-          '(!\:
-            (!|fn| !\a !\b)
-            (list !\a !\b !\c !\d)))
-         (alist-hash-map
-          `((,(s ":") 10 :right)
-            (:open-paren 200)))))
+  (parse-error-p "fn(a,b")
+  (parse-error-p "fn(a,b,)")
+  (parse-error-p "fn(a,b))")
 
-      (subtest "Literals"
-        (subtest "Mixed Literals (Integers, Reals and Strings)"
-          (let ((ops (alist-hash-map
-                      `((,(s "+") 20 :left)
-                        (,(s "-") 20 :left)
-                        (,(s "*") 50 :right)
-                        (,(s "/") 50 :left)
-                        (:open-paren 200)))))
+  (parse-error-p "(a -> b")
+  (parse-error-p "a -> b)")
+  (parse-error-p "(a -> b))")
+  (parse-error-p "((a -> b)")
+  (parse-error-p "(a , b)")
+  (parse-error-p "{a b}")
 
-            (test-parser
-             #?"a + 1 + 2.3 -\"hello\" "
-             (decls
-              '(!- (!+ (!+ !\a 1) 2.3) "hello"))
-             ops)))
-
-        (subtest "String Literals"
-          (subtest "Test Line Feed, Carriage Return and Tab Escapes"
-            (test-parser
-             " \"Hello\\n\\tWorld\" "
-             (list #?"Hello\n\tWorld"))
-
-            (test-parser
-             " \"Hello\\r\\nWorld\" "
-             (list #?"Hello\r\nWorld")))
-
-          (subtest "Test Escaped Quotes and backslashes"
-            (test-parser
-             " \"He\\\\she said \\\"Hello World\\\"\" "
-             (list #?"He\\she said \"Hello World\"")))
-
-          (subtest "Unicode Escape Sequences"
-            (test-parser
-             " \"x\\u2265h5\" "
-             (list #?"x\x{2265}5"))
-
-            (test-parser
-             " \"x \\u2265 5\" "
-             (list #?"x \x{2265} 5"))))))
-
-    (subtest "Parse Errors"
-      (parse-error-p "a + b")
-      (parse-error-p "a +")
-      (parse-error-p "a ->")
-      (parse-error-p #?"a.\n")
-      (parse-error-p #?"a.;")
-
-      (parse-error-p "fn(a,b")
-      (parse-error-p "fn(a,b,)")
-      (parse-error-p "fn(a,b))")
-
-      (parse-error-p "(a -> b")
-      (parse-error-p "a -> b)")
-      (parse-error-p "(a -> b))")
-      (parse-error-p "((a -> b)")
-      (parse-error-p "(a , b)")
-      (parse-error-p "{a b}")
-
-      (parse-error-p #?"{a -> b; c\nd")
-      (parse-error-p #?"a -> b}")
-      (parse-error-p #?"{a -> b; c\nd}}")
-      (parse-error-p #?"{{a -> b;c\nd}"))))
+  (parse-error-p #?"{a -> b; c\nd")
+  (parse-error-p #?"a -> b}")
+  (parse-error-p #?"{a -> b; c\nd}}")
+  (parse-error-p #?"{{a -> b;c\nd}"))
 
 
 (finalize)

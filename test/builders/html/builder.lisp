@@ -290,75 +290,75 @@
 
 (plan nil)
 
-(deftest html-file-builder
-  (subtest "Simple HTML node bindings"
-    (html-file-test (modules "main" #p"test/builders/html/input/test1.html")
-      (with-nodes ((name "name"))
+(subtest "Simple HTML node bindings"
+  (html-file-test (modules "main" #p"test/builders/html/input/test1.html")
+    (with-nodes ((name "name"))
+        modules
+      (with-html-nodes ((input-name "input-name" "input")
+                        (input-name.value ("." "input-name" "value") "input"))
           modules
-        (with-html-nodes ((input-name "input-name" "input")
-                          (input-name.value ("." "input-name" "value") "input"))
-            modules
 
-          (test-binding input-name.value name)
-          (test-binding name input-name.value)
+        (test-binding input-name.value name)
+        (test-binding name input-name.value)
 
-          (test-html-node-function input-name ("value" input-name.value))
-          (test-html-attribute-function input-name.value input-name "value")))))
+        (test-html-node-function input-name ("value" input-name.value))
+        (test-html-attribute-function input-name.value input-name "value")))))
 
-  (subtest "Automatic Creation of SPAN HTML nodes"
-    (html-file-test (modules "main" #p"test/builders/html/input/test2.html")
-      (with-nodes ((first "first") (last "last")) modules
-        (with-html-nodes ((input-first "input-first" "input")
-                          (input-first.value ("." "input-first" "value") "input")
-                          (input-last "input-last" "input")
-                          (input-last.value ("." "input-last" "value") "input"))
-            modules
+(subtest "Automatic Creation of SPAN HTML nodes"
+  (html-file-test (modules "main" #p"test/builders/html/input/test2.html")
+    (with-nodes ((first "first") (last "last")) modules
+      (with-html-nodes ((input-first "input-first" "input")
+                        (input-first.value ("." "input-first" "value") "input")
+                        (input-last "input-last" "input")
+                        (input-last.value ("." "input-last" "value") "input"))
+          modules
 
-          (test-binding input-first.value first)
-          (test-binding input-last.value last)
+        (test-binding input-first.value first)
+        (test-binding input-last.value last)
 
-          (test-html-node-function input-first ("value" input-first.value))
-          (test-html-node-function input-last ("value" input-last.value))
+        (test-html-node-function input-first ("value" input-first.value))
+        (test-html-node-function input-last ("value" input-last.value))
 
-          (test-html-attribute-function input-first.value input-first "value")
-          (test-html-attribute-function input-last.value input-last "value")))))
+        (test-html-attribute-function input-first.value input-first "value")
+        (test-html-attribute-function input-last.value input-last "value")))))
 
-  (subtest "Bindings in Tridash code tags"
-    (html-file-test (modules "main" #p"test/builders/html/input/test3.html")
-      (with-nodes ((name "name")) modules
-        (with-html-nodes ((input-name "input-name" "input")
-                          (input-name.value ("." "input-name" "value") "input")
+(subtest "Bindings in Tridash code tags"
+  (html-file-test (modules "main" #p"test/builders/html/input/test3.html")
+    (with-nodes ((name "name")) modules
+      (with-html-nodes ((input-name "input-name" "input")
+                        (input-name.value ("." "input-name" "value") "input")
 
-                          (heading "heading-name" "h1")
-                          (heading.content ("." "heading-name" "textContent") "h1"))
-            modules
+                        (heading "heading-name" "h1")
+                        (heading.content ("." "heading-name" "textContent") "h1"))
+          modules
 
-          (test-binding input-name.value name)
-          (test-binding name heading.content)
+        (test-binding input-name.value name)
+        (test-binding name heading.content)
 
-          (test-html-node-function input-name ("value" input-name.value))
-          (test-html-node-function heading ("textContent" heading.content))
+        (test-html-node-function input-name ("value" input-name.value))
+        (test-html-node-function heading ("textContent" heading.content))
 
-          (test-html-attribute-function input-name.value input-name "value")
-          (test-html-attribute-function heading.content heading "textContent")))))
+        (test-html-attribute-function input-name.value input-name "value")
+        (test-html-attribute-function heading.content heading "textContent")))))
 
-  (subtest "Inline Functors"
-    (html-file-test (modules "main" #p"test/builders/html/input/test4.html" "modules/core.trd")
-      (with-nodes ((a ("int" "a")) (b ("int" "b")) (a+b ("+" "a" "b"))) modules
-        (with-html-nodes ((input-a.value ("." "input-a" "value") "input")
-                          (input-b.value ("." "input-b" "value") "input")
-                          (sum.value ("." "sum" "value") "input"))
-            modules
+(subtest "Inline Functors"
+  (html-file-test (modules "main" #p"test/builders/html/input/test4.html" "modules/core.trd")
+    (with-nodes ((a ("int" "a")) (b ("int" "b")) (a+b ("+" "a" "b"))) modules
+      (with-html-nodes ((input-a.value ("." "input-a" "value") "input")
+                        (input-b.value ("." "input-b" "value") "input")
+                        (sum.value ("." "sum" "value") "input"))
+          modules
 
-          (test-binding input-a.value a)
-          (test-binding a input-a.value)
+        (test-binding input-a.value a)
+        (test-binding a input-a.value)
 
-          (test-binding input-b.value b)
-          (test-binding b input-b.value)
+        (test-binding input-b.value b)
+        (test-binding b input-b.value)
 
-          (test-binding a+b sum.value)))))
+        (test-binding a+b sum.value)))))
 
-  (subtest "Multiple Inline Declarations"
+(subtest "Multiple Inline Declarations"
+  (subtest "In Attributes"
     (html-file-test (modules "main" #p"test/builders/html/input/test5.html" "modules/core.trd")
       (with-nodes ((a ("int" "a")) (b ("int" "b"))
                    (a+b ("+" "a" "b")) (sum "sum"))
@@ -379,7 +379,7 @@
 
           (test-binding sum sum.value)))))
 
-  (subtest "Multiple Inline Declarations in SPAN elements"
+  (subtest "In SPAN elements"
     (html-file-test (modules "main" #p"test/builders/html/input/test6.html" "modules/core.trd")
       (with-nodes ((a ("int" "a")) (b ("int" "b"))
                    (a+b ("+" "a" "b")) (sum "sum"))
@@ -403,7 +403,5 @@
                 (is-type! obs 'html-node "Is HTML-NODE")
                 (is tag-name "span" "Tag is SPAN")
                 (is html-attribute "textContent" "Bound to attribute textContent")))))))))
-
-(run-test 'html-file-builder)
 
 (finalize)
