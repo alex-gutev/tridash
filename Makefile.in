@@ -109,7 +109,7 @@ install: all install-dirs
 uninstall:
 	rm -f $(DESTDIR)$(bindir)/tridashc
 	rm -rf $(DESTDIR)$(pkgdatadir)
-	rm -f $(DESTDIR)$(mandir)/man1/tridashc.1
+	rm -f $(DESTDIR)$(mandir)/man1/tridashc.1.gz
 
 
 ## Distribution Tarballs
