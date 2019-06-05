@@ -96,13 +96,13 @@
                ;; Plump dependencies
                :array-utils)
 
-  :in-order-to ((asdf:test-op (asdf:test-op :tridash.test)))
+  :in-order-to ((asdf:test-op (asdf:test-op :tridash/test)))
 
   :build-operation "program-op"
   :build-pathname "tridashc"
   :entry-point "TRIDASH::MAIN")
 
-(asdf:defsystem #:tridash.test
+(asdf:defsystem #:tridash/test
   :description "Units tests for the Tridash."
   :author "Alexander Gutev"
   :license "GPL v3"
@@ -134,4 +134,4 @@
                   ((:test-file "backend"))))))
 
   :perform (asdf:test-op :after (op c)
-                         (funcall (intern #.(string :run) :prove) c)))
+                         (funcall (intern #.(string :run) :prove) c :reporter :fiveam)))

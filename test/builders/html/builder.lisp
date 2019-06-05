@@ -74,6 +74,11 @@
       (ok (attribute :no-coalesce node) "Has NO-COALESCE attribute"))))
 
 
+(defgeneric html-node= (got expected)
+  (:documentation
+   "Returns true if the HTML node GOT is equivalent to the HTML node
+    EXPECTED."))
+
 (defun html= (got expected)
   "Returns true if the HTML output with root-node GOT is equivalent to
    the expected output EXPECTED."
@@ -81,10 +86,24 @@
   (let ((*html-node-aliases* (make-hash-map)))
     (html-node= got expected)))
 
-(defgeneric html-node= (got expected)
+(defgeneric html-attr= (got expected)
   (:documentation
-   "Returns true if the HTML node GOT is equivalent to the HTML node
-    EXPECTED."))
+   "Returns true if the attribute value GOT is equal to the attribute
+    value EXPECTED.
+
+    If EXPECTED is a string beginning with '$' it signifies an
+    alias. If an aliased node already exists in *HTML-NODE-ALIASES*
+    the value of GOT is compared to the value of the aliased node
+    otherwise GOT is added to *HTML-NODE-ALIASES* under the key
+    EXPECTED, and true is returned.")
+
+  (:method (got (expected string))
+    (if (= (char expected 0) #\$)
+        (html-attr= (ensure-get expected *html-node-aliases* got) got)
+        (call-next-method)))
+
+  (:method (a b)
+    (= a b)))
 
 (defmethod html-node= ((got plump:element) (expected plump:element))
   "Returns true if the HTML node GOT has the same tag-name, each
@@ -119,24 +138,15 @@
   (= a b))
 
 
-(defgeneric html-attr= (got expected)
-  (:documentation
-   "Returns true if the attribute value GOT is equal to the attribute
-    value EXPECTED.
+(defconstant +white-space-chars+
+  '(#\Space #\Newline #\Backspace #\Tab #\Linefeed #\Page #\Return #\Rubout)
 
-    If EXPECTED is a string beginning with '$' it signifies an
-    alias. If an aliased node already exists in *HTML-NODE-ALIASES*
-    the value of GOT is compared to the value of the aliased node
-    otherwise GOT is added to *HTML-NODE-ALIASES* under the key
-    EXPECTED, and true is returned.")
+  "Set of whitespace characters.")
 
-  (:method (got (expected string))
-    (if (= (char expected 0) #\$)
-        (html-attr= (ensure-get expected *html-node-aliases* got) got)
-        (call-next-method)))
+(defun space-char-p (char)
+  "Returns true if CHAR is a space character."
 
-  (:method (a b)
-    (= a b)))
+  (memberp char +white-space-chars+))
 
 
 (defgeneric strip-empty-text-nodes (node)
@@ -156,17 +166,6 @@
 
 (defmethod strip-empty-text-nodes (node)
   node)
-
-
-(defconstant +white-space-chars+
-  '(#\Space #\Newline #\Backspace #\Tab #\Linefeed #\Page #\Return #\Rubout)
-
-  "Set of whitespace characters.")
-
-(defun space-char-p (char)
-  "Returns true if CHAR is a space character."
-
-  (memberp char +white-space-chars+))
 
 
 (defun parse-html-file (path)

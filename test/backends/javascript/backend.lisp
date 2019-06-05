@@ -113,15 +113,15 @@
   "Hash table mapping alias identifier to the aliased AST nodes.")
 
 
+(defgeneric ast= (got expected)
+  (:documentation
+   "Returns true if the AST node GOT is equivalent to the AST node expected."))
+
 (defun ast-list= (got expected)
   "Returns true if every element of GOT is equal (by AST=) to the
    corresponding element of EXPECTED."
 
   (every #'ast= got expected))
-
-(defgeneric ast= (got expected)
-  (:documentation
-   "Returns true if the AST node GOT is equivalent to the AST node expected."))
 
 (defmethod ast= ((got js-call) (expected js-call))
   (and (ast= (js-call-operator got) (js-call-operator expected))

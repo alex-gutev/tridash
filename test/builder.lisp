@@ -93,6 +93,11 @@
 (defvar *flat-node-table*)
 
 
+;;;; Prevent undefined function warnings
+
+(declaim (ftype function test-value-function))
+
+
 ;;;; Building From Strings
 
 (defun build-nodes (string modules)
