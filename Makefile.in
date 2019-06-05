@@ -93,17 +93,16 @@ distclean: clean
 
 ## Installation Targets
 
-install: all
+install-dirs:
 	install -d $(DESTDIR)$(bindir)
-	install -m 755 tridashc $(DESTDIR)$(bindir)
-
 	install -d $(DESTDIR)$(pkgdatadir)/modules
-	install -m 644 $(srcdir)/modules/* $(DESTDIR)$(pkgdatadir)/modules
-
 	install -d $(DESTDIR)$(pkgdatadir)/backends/javascript
-	install -m 644 $(srcdir)/src/backends/javascript/runtime/tridash.js $(DESTDIR)$(pkgdatadir)/backends/javascript
-
 	install -d $(DESTDIR)$(mandir)/man1
+
+install: all install-dirs
+	install -m 755 tridashc $(DESTDIR)$(bindir)
+	install -m 644 $(srcdir)/modules/* $(DESTDIR)$(pkgdatadir)/modules
+	install -m 644 $(srcdir)/src/backends/javascript/runtime/tridash.js $(DESTDIR)$(pkgdatadir)/backends/javascript
 	install -m 644 tridashc.1.gz $(DESTDIR)$(mandir)/man1
 
 
@@ -151,4 +150,4 @@ check: $(sources) $(test_sources)
 	cd $(srcdir); \
 	$(LISP) --load tridash.asd --load test/script.lisp
 
-.PHONY: all clean distclean install uninstall dist bindist check
+.PHONY: all clean distclean install install-dirs uninstall dist bindist check
