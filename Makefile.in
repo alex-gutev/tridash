@@ -139,7 +139,8 @@ bindist: $(bindist_tarfile)
 
 ## Testing
 
-test_sources = test/util.lisp \
+test_sources = test/script.lisp \
+	test/util.lisp \
 	test/lexer.lisp \
 	test/parser.lisp \
 	test/builder.lisp \
@@ -148,9 +149,6 @@ test_sources = test/util.lisp \
 
 check: $(sources) $(test_sources)
 	cd $(srcdir); \
-	$(LISP) --load tridash.asd \
-		--eval "(ql:quickload :tridash)" \
-		--eval "(asdf:test-system :tridash)" \
-		--eval "(quit)"
+	$(LISP) --load tridash.asd --load test/script.lisp
 
 .PHONY: all clean distclean install uninstall dist bindist check
