@@ -1,5 +1,10 @@
-# Path to Common Lisp compiler
+## Path to compiler and tools
+
 LISP = @LISP@
+SED = @SED@
+ASCIIDOC = @ASCIIDOC@
+
+## Directories
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -25,7 +30,7 @@ VPATH = $(srcdir)
 
 ## Build Targets
 
-all: tridashc tridashc.1.gz
+all: tridashc tridashc.1
 
 plump_sources = plump/dom.lisp \
 	plump/entities.lisp \
@@ -67,13 +72,16 @@ sources = tridash.asd \
 	$(plump_sources)
 
 build.lisp: build.lisp.in
-	@SED@ -e 's|@datadir[@]|$(pkgdatadir)|g' $< > $@
+	$(SED) -e 's|@datadir[@]|$(pkgdatadir)|g' $< > $@
 
 tridashc: build.lisp $(sources)
 	$(LISP) --load $(srcdir)/tridash.asd --load $<
 
-tridashc.1.gz: man/tridashc.1
-	gzip -c $< > $@
+
+## Documentation
+
+tridashc.1: doc/tridashc.adoc
+	$(ASCIIDOC) -b manpage -o $@ $<
 
 
 ## Clean Targets
@@ -81,7 +89,6 @@ tridashc.1.gz: man/tridashc.1
 clean:
 	rm -f build.lisp
 	rm -f tridashc
-	rm -f tridashc.1.gz
 	rm -f $(dist_tarfile)
 	rm -f $(bindist_tarfile)
 
@@ -90,10 +97,13 @@ distclean: clean
 	rm -f config.log
 	rm -f config.status
 
+maintainer-clean: distclean
+	rm -f tridashc.1
+
 
 ## Installation Targets
 
-install-dirs:
+installdirs:
 	install -d $(DESTDIR)$(bindir)
 	install -d $(DESTDIR)$(pkgdatadir)/modules
 	install -d $(DESTDIR)$(pkgdatadir)/backends/javascript
@@ -103,7 +113,8 @@ install: all install-dirs
 	install -m 755 tridashc $(DESTDIR)$(bindir)
 	install -m 644 $(srcdir)/modules/* $(DESTDIR)$(pkgdatadir)/modules
 	install -m 644 $(srcdir)/src/backends/javascript/runtime/tridash.js $(DESTDIR)$(pkgdatadir)/backends/javascript
-	install -m 644 tridashc.1.gz $(DESTDIR)$(mandir)/man1
+	install -m 644 tridashc.1 $(DESTDIR)$(mandir)/man1
+	gzip -f $(DESTDIR)$(mandir)/man1/tridashc.1
 
 
 uninstall:
@@ -120,7 +131,8 @@ distfiles = $(sources) \
 	src/backends/javascript/runtime/tridash.js \
 	modules/core.trd \
 	modules/core.yml \
-	man/tridashc.1 \
+	doc/tridash.adoc \
+	tridashc.1 \
 	configure \
 	Makefile.in \
 	README.md \
@@ -129,8 +141,8 @@ distfiles = $(sources) \
 $(dist_tarfile): $(distfiles)
 	tar -czf $@ -C $(srcdir) $(distfiles)
 
-$(bindist_tarfile): $(distfiles) install.sh uninstall.sh tridashc tridashc.1.gz
-	tar -czf $@ tridashc tridashc.1.gz Makefile -C $(srcdir) $(distfiles) install.sh uninstall.sh
+$(bindist_tarfile): $(distfiles) install.sh uninstall.sh tridashc
+	tar -czf $@ tridashc Makefile -C $(srcdir) $(distfiles) install.sh uninstall.sh
 
 dist: $(dist_tarfile)
 bindist: $(bindist_tarfile)
@@ -149,5 +161,6 @@ test_sources = test/script.lisp \
 check: $(sources) $(test_sources)
 	cd $(srcdir); \
 	$(LISP) --load tridash.asd --load test/script.lisp
+
 
 .PHONY: all clean distclean install install-dirs uninstall dist bindist check

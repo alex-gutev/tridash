@@ -8,6 +8,9 @@ dnl Common Lisp Compiler
 AC_PATH_PROG(LISP, sbcl)
 AC_ARG_VAR(LISP, [Common Lisp compiler])
 
+AC_PATH_PROGS(ASCIIDOC, [asciidoctor asciidoc])
+AC_ARG_VAR(ASCIIDOC, [Path to AsciiDoc/Asciidoctor processor])
+
 AC_SUBST([PACKAGE], AC_PACKAGE_TARNAME)
 
 dnl Other Tools

@@ -1,0 +1,131 @@
+= tridashc(1)
+:doctype: manpage
+:manmanual: tridashc -- Tridash Compiler
+:mansource: Tridash
+:man-linkstyle: pass:[blue R < >]
+
+== Name
+
+tridashc - Tridash Compiler
+
+== Synopsis
+
+*tridashc* [*-o|--output-file* _out-path_] [*-p|--output-option* _K_=_V_]
+ [*-t|--output-target* _type_] [_sources_]
+
+*tridashc* [*-b|--build-config* _build-config-path_]
+
+*tridashc* [*-h|--help*]
+
+
+== Description
+
+The tridashc program compiles the source files, listed in _sources_,
+generating the output file at location _out-path_.
+
+The following example demonstrates the basic usage:
+
+*tridashc source1.trd source2.trd -o out.js*
+
+This compiles the source files *source1.trd* and *source2.trd*
+generating the output file *out.js*.
+
+A +':'+ argument indicates that the next argument is a comma-separated
+list of processing options for the source file in the preceding
+argument.
+
+The options are of the form _option_=_value_ where _option_ is the
+option and _value_ is the option's value.  Each option-value pair must
+be separated by a single ',' without any whitespace in between the ','
+or '='. If an option value contains whitespace, ',' or '=' it should
+be enclosed in quotes. Two pairs of quotes may be required due to
+shell escaping.
+
+The following example demonstrates source processing options:
+
+*tridashc source1.html : node-name = ui source2.trd -o out.js*
+
+This indicates that the *source1.html* file is processed with the
+*node-name* option set to *ui*.
+
+Currently only the *node-name* option is recognized, which only makes
+sense when compiling HTML files. This option sets the name of the HTML
+component node, with which, the HTML contents of the file can be
+referenced later.
+
+== Options
+
+*-h, --help*:: Print a summary of the usage and options.
+
+*-o, --output-file* _path_:: Output file path. This option is required
+unless the *-b* option is provided.
+
+*-t, --output-target* _type_:: Specifies the compilation target (the
+compiler backend). If this option is not provided it is determined
+from the name of the output file provided in the *-o* option.
++
+Currently only a *javascript* target is available.
+
+*-p, --output-option* _option_ = _value_:: Specify an option for the
+generation of the output file where _option_ is the option and _value_
+is the option value. A *-p* option has to be provided for each option.
++
+The recognized options vary with the compilation target. The following
+options are recognized for the *javascript* target:
++
+*type*:::: If this option is set to the value *html* an HTML file is
+generated, with the runtime library and the generated JavaScript code
+embedded within script tags. If this option is omitted, the output
+file only contains the raw generated JavaScript code. Along with this
+option the *main-ui* option must be provided
+
+*main-ui*:::: This option specifies the name of the HTML component node,
+the contents of which will be inserted in the output HTML file.
++
+To use the contents of an HTML source file, the node name provided in
+this option must be the same as the name given in the *node-name*
+source processing option of the HTML source file.
+
+*indented*:::: If this option is provided and set to a true value,
+e.g. 1, the generated JavaScript code is formatted to be human
+readable, meaning it is properly indented and contains line breaks.
+
+*debug-info*:::: If this option is provided and set to a true value,
+e.g. 1, debug information will be included in the generated
+code. Currently this information includes the node identifiers.
+
+*-b, build-config* _path_::
+Build using the options in the build configuration file given as an
+argument. All other command-line options are ignored if this option is
+given.
++
+The build configuration file contains the list of sources and build
+options in YAML format. At the outermost level the file should contain
+a dictionary with two keys: *sources* and *output*.
++
+The value of the *sources* entry is a list of the source files which
+are to be compiled. Each element of the list is either a string
+containing the path to the file, or a dictionary in which the path to
+the file is stored under the "path" key with the remaining key-value
+pairs interpreted as additional processing options.
++
+The value of the *output* entry is a dictionary containing the options
+relating to the compilation output. The dictionary may contain the
+following keys:
++
+--
+*path*:: The path to the output file, as a string. This is a required
+entry.
+
+*backend*:: The target of the compilation (compiler backend). If this
+entry is not provided, the target is determined from the output file
+name.
+--
++
+Additional target-specific options may be specified. This is
+equivalent to specifying the options on the command-line with the *-p*
+option.
+
+== Author
+
+Alexander Gutev <alex.gutev@gmail.com>
