@@ -1,4 +1,5 @@
 = tridashc(1)
+:docdate: 05 June 2019
 :doctype: manpage
 :manmanual: tridashc -- Tridash Compiler
 :mansource: Tridash
