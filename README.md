@@ -15,8 +15,7 @@ Installation
 Binary Distribution
 -------------------
 
-_These instructions are only for distributions containing a prebuilt
-binary_
+_These instructions are only for prebuilt binary distributions._
 
 Run the `install.sh` script. This will install the Tridash compiler
 and related files to the `/usr/local` prefix. If this requires root
@@ -26,8 +25,6 @@ privileges, the script will have to be run with the `sudo` command:
 
 To uninstall run the `uninstall.sh` script.
 
-_These scripts are simply convenience wrappers over `make install` and
-`make uninstall`._
 
 Building from source
 --------------------
