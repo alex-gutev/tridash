@@ -203,37 +203,46 @@
   (is-tokens "100.98" '((:real "100.98")))
 
   (is-tokens
-   "12d34 12D34 5e78 56E78 99l01 9L1 7s8 75S90"
+   "12d34 12d-34 0f12 0f-12 5e78 5e-78 99l01 99l-01 99l+2"
    '((:real "12d34")
-     (:real "12D34")
+     (:real "12d-34")
+     (:real "0f12")
+     (:real "0f-12")
      (:real "5e78")
-     (:real "56E78")
+     (:real "5e-78")
      (:real "99l01")
-     (:real "9L1")
-     (:real "7s8")
-     (:real "75S90")))
+     (:real "99l-01")
+     (:real "99l+2")))
 
   (is-tokens
-   "1.2d34 1.2D34 0.5e78 5.6E78 9.9l01 0.9L1 0.7s8 7.5S90"
+   "1.2d34 1.2d-34 0.5e78 0.5e-78 5.6e78 5.6e-78 0.1f2 0.1f-2 9.9l01 9.9l-01 0.9l1 0.9l+1"
    '((:real "1.2d34")
-     (:real "1.2D34")
+     (:real "1.2d-34")
      (:real "0.5e78")
-     (:real "5.6E78")
+     (:real "0.5e-78")
+     (:real "5.6e78")
+     (:real "5.6e-78")
+     (:real "0.1f2")
+     (:real "0.1f-2")
      (:real "9.9l01")
-     (:real "0.9L1")
-     (:real "0.7s8")
-     (:real "7.5S90")))
+     (:real "9.9l-01")
+     (:real "0.9l1")
+     (:real "0.9l+1")))
 
   (is-tokens
-   "12dd34 12D34d 5e7e8 56E7e8 99l0D1 9L1l 7x8 75S90s"
+   "12dd34 12d34d 5e7e8 56e7e8 99l0d1 9l1l 7x8"
    '((:id "12dd34")
-     (:id "12D34d")
+     (:id "12d34d")
      (:id "5e7e8")
-     (:id "56E7e8")
-     (:id "99l0D1")
-     (:id "9L1l")
-     (:id "7x8")
-     (:id "75S90s"))))
+     (:id "56e7e8")
+     (:id "99l0d1")
+     (:id "9l1l")
+     (:id "7x8")))
+
+  (is-lexer-error "1.2e100.3")
+  (is-lexer-error "1.2+3.4")
+  (is-lexer-error "1.2.3")
+  (is-lexer-error "2.4e10+5"))
 
 (subtest "Strings"
   (is-tokens " \"Hello World\" " '((:string "\"Hello World\"")))

@@ -233,12 +233,12 @@
 
   (:integer
    (digitp . :integer)
-   ((or #\d #\D #\e #\E #\f #\F #\l #\L #\s #\S) . :exponent)
+   ((or #\e #\f #\d #\l) . :integer-exponent-start)
    (id-char-p . :id)
    (#\. . :real))
 
-  ((:exponent . :id)
-   (digitp . :integer-exponent)
+  ((:integer-exponent-start . :id)
+   ((or digitp #\+ #\-) . :integer-exponent)
    (id-char-p . :id))
 
   ((:integer-exponent . :real)
@@ -249,7 +249,11 @@
 
   (:real
    (digitp . :real)
-   ((or #\d #\D #\e #\E #\f #\F #\l #\L #\s #\S) . :real-exponent)
+   ((or #\e #\f #\d #\l) . :real-exponent-start)
+   ((or id-char-p #\.) . :invalid))
+
+  ((:real-exponent-start . :real)
+   ((or digitp #\+ #\-) . :real-exponent)
    ((or id-char-p #\.) . :invalid))
 
   ((:real-exponent . :real)
