@@ -9,3 +9,5 @@ Complete reference manual for version 0.4 of the Tridash programming
 language.
 
 include::syntax.adoc[]
+
+include::core-libs.adoc[]

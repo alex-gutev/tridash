@@ -1,0 +1,382 @@
+== Standard Library ==
+
+=== Core Module ===
+
+The `core` module contains the basic language primitives, such as the
+arithmetic and comparison operators.
+
+==== Arithmetic ====
+
+.Meta-Node: `+(x, y)`
+--
+Evaluates to the sum of `x` and `y`.
+
+Registered as an infix operator with precedence *100* and *left*
+associativity.
+--
+
+
+.Meta-Node: `-(x, y)`
+--
+Evaluates to the difference of `x` and `y`.
+
+Registered as an infix operator with precedence *100* and *left*
+associativity.
+--
+
+.Meta-Node: `*(x, y)`
+--
+Evaluates to the product of `x` and `y`.
+
+Registered as an infix operator with precedence *200* and *left*
+associativity.
+--
+
+.Meta-Node: `/(x, y)`
+--
+Evaluates to the quotient of `x` and `y`.
+
+Registered as an infix operator with precedence *200* and *left*
+associativity.
+--
+
+==== Comparison ====
+
+.Meta-Node: `<(x, y)`
+--
+Evaluates to true if `x` is less than `y`.
+
+Registered as an infix operator with precedence *50* and *left*
+associativity.
+--
+
+.Meta-Node: `<=(x, y)`
+--
+Evaluates to true if `x` is less than or equal to `y`.
+
+Registered as an infix operator with precedence *50* and *left*
+associativity.
+--
+
+.Meta-Node: `>(x, y)`
+--
+Evaluates to true if `x` is greater than `y`.
+
+Registered as an infix operator with precedence *50* and *left*
+associativity.
+--
+
+.Meta-Node: `>=(x, y)`
+--
+Evaluates to true if `x` is greater than or equal to `y`.
+
+Registered as an infix operator with precedence *50* and *left*
+associativity.
+--
+
+.Meta-Node: `=(a, b)`
+--
+Evaluates to true if `a` is equal to `b`.
+
+Registered as an infix operator with precedence *50* and *left*
+associativity.
+--
+
+.Meta-Node: `!=(a, b)`
+--
+Evaluates to true if `a` is not equal to `b`.
+
+Registered as an infix operator with precedence *50* and *left*
+associativity.
+--
+
+
+==== Logical Operators ====
+
+.Meta-Node: `and(x, y)`
+--
+Evaluates to true if both `x` and `y` evaluate to a true value.
+
+Registered as an infix operator with precedence *25* and *left*
+associativity.
+--
+
+.Meta-Node: `or(x, y)`
+--
+Evaluates to true if either `x` or `y` evaluate to a true value.
+
+Registered as an infix operator with precedence *20* and *left*
+associativity.
+--
+
+.Meta-Node: `|-(x, y)`
+--
+Evaluates to `x` if `x` is a true value otherwise evaluates to `y`.
+
+Registered as an infix operator with precedence *25* and *right*
+associativity.
+--
+
+
+.Meta-Node: `not(x)`
+--
+Evaluates to true if `x` evaluates to false.
+
+The `target-node` attribute is set to `not` thus the following:
+
+--------------------------------------------------
+y -> not(x)
+--------------------------------------------------
+
+is equivalent to:
+
+--------------------------------------------------
+not(y) -> x
+--------------------------------------------------
+--
+
+.Meta-Node: `if(condition, true-value, false-value)`
+--
+
+Evaluates to `true-value` if `condition` is true otherwise evaluates
+to `false-value`.
+
+`false-value` is optional in which case the meta-node evaluates to
+`null`.
+--
+
+.Macro-Node: `case(clause*)`
+--
+
+--------------------------------------------------
+<clause> = <condition> : <value>
+--------------------------------------------------
+
+Macro-node which expands to nested `if` expressions.
+
+Each argument is a `clause` is of the form `condition : value`. The `case` meta-node
+evaluates to the `value` corresponding to the first clause of which
+the `condition` evaluates to true. The final clause may also simply be
+of the form `value`, in which case it becomes the default value, to
+which the `case` meta-node evaluates to, if the `condition`'s of all
+clauses evaluate to false.
+
+.Example
+--------------------------------------------------
+case(
+    a < b : a,
+    b >= a : b
+)
+
+# Is equivalent to:
+
+if(a < b, a, if(b > a, b))
+--------------------------------------------------
+
+.Example with default value
+--------------------------------------------------
+case(
+    a < b : -1,
+    b > a : 1,
+    0
+)
+
+# Is equivalent to:
+
+if(a < b, -1, if(b > a, 1, 0))
+--------------------------------------------------
+--
+
+==== Types ====
+
+[[meta-node-int]]
+.Meta-Node: `int(x)`
+--
+
+Converts `x` to an *integer* value.
+
+    - If `x` is an *integer*, evaluates to `x`.
+    - If `x` is a *real*, evaluates to `x` with the fractional part
+      truncated.
+    - If `x` is a *string*, attempts to parse an integer from
+      `x`. Evaluates to the parsed value if successful otherwise
+      evaluates to a *NaN* value, see <<_nan_,NaN?>>.
+
+The `target-node` attribute is set to `int` thus the following:
+
+--------------------------------------------------
+y -> int(x)
+--------------------------------------------------
+
+is equivalent to:
+
+--------------------------------------------------
+int(y) -> x
+--------------------------------------------------
+--
+
+[[meta-node-real]]
+.Meta-Node: `real(x)`
+--
+
+Converts `x` to a *real* number value.
+
+    - If `x` is an *integer* or *real* evaluates to the numeric value
+      of `x`.
+    - If `x` is a *string*, attempts to parse a real number from
+      `x`. Evaluates to the parsed value if successful otherwise
+      evaluates to a *NaN* value, see <<meta-node-isnan,NaN?>>.
+
+The `target-node` attribute is set to `real` thus the following:
+
+--------------------------------------------------
+y -> real(x)
+--------------------------------------------------
+
+is equivalent to:
+
+--------------------------------------------------
+real(y) -> x
+--------------------------------------------------
+--
+
+.Meta-Node: `string(x)`
+--
+
+Converts `x` to a *string*.
+
+The `target-node` attribute is set to `string` thus the following:
+
+--------------------------------------------------
+y -> string(x)
+--------------------------------------------------
+
+is equivalent to:
+
+--------------------------------------------------
+string(y) -> x
+--------------------------------------------------
+--
+
+.Meta-Node: `string(x)`
+--
+
+Converts `x` to a *string*.
+
+The `target-node` attribute is set to `string` thus the following:
+
+--------------------------------------------------
+y -> string(x)
+--------------------------------------------------
+
+is equivalent to:
+
+--------------------------------------------------
+string(y) -> x
+--------------------------------------------------
+--
+
+.Meta-Node: `int?(x)`
+--
+
+Evaluates to true if `x` is an *integer*.
+--
+
+.Meta-Node: `real?(x)`
+--
+
+Evaluates to true if `x` is a *real*.
+--
+
+.Meta-Node: `string?(x)`
+--
+
+Evaluates to true if `x` is a *string*.
+--
+
+.Meta-Node: `inf?(x)`
+--
+
+Evaluates to true if `x` is either positive or negative infinity.
+--
+
+[[meta-node-isnan]]
+.Meta-Node: `NaN?(x)`
+--
+
+Evaluates to true if `x` is a *NaN* value.
+--
+
+==== Parsing Numbers ====
+
+.Meta-Node: `parse-int(x)`
+--
+
+Parses an *integer* from `x`. The rules are the same as for
+<<meta-node-int,int>>.
+
+Evaluates to a dictionary with two subnodes:
+
+    `value`:: Stores the parsed integer value if successful.
+    `fail`:: True if parsing failed, false if parsing was successful.
+--
+
+.Meta-Node: `parse-real(x)`
+--
+
+Parses a *real* number from `x`. The rules are the same as for
+<<meta-node-real,real>>.
+
+Evaluates to a dictionary with two subnodes:
+
+    `value`:: Stores the parsed *real* value if successful.
+    `fail`:: True if parsing failed, false if parsing was successful.
+--
+
+
+==== Macros ====
+
+.Macro Node: `?->(x, y)`
+--
+
+Establishes the binding `x.value -> y` conditioned on
+`not(x.fail)`. The use of this macro is to conditionally bind the
+result of an operation `x` to `y` if the operation did not fail.
+
+Registered as an infix operator with precedence *10* and *right*
+associativity.
+
+.Example
+--------------------------------------------------
+parse-int(x) ?-> y
+
+# is equivalent to
+
+not(parse-int(x).fail) -> (parse-int(x).value -> y)
+--------------------------------------------------
+--
+
+==== Operator Table ====
+
+[cols="<,>,>", options="header"]
+|====================
+| Operator | Precedence | Associativity
+
+| `.`       | 1000       | left
+| `*`       | 200        | left
+| `/`       | 200        | left
+| `+`       | 100        | left
+| `-`       | 100        | left
+| `<`       | 50         | left
+| `<=`      | 50         | left
+| `>`       | 50         | left
+| `>=`      | 50         | left
+| `=`       | 50         | left
+| `!=`      | 50         | left
+| `and`     | 25         | left
+| `\|-`      | 25         | right
+| `or`      | 20         | left
+| `->`      | 10         | right
+| `?->`     | 10         | right
+| `:`       | 5          | right
+|====================
