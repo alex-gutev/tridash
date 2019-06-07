@@ -1,0 +1,246 @@
+== Syntax ==
+
+Syntactically a Tridash program consists of a sequence of *node*
+declarations, which are divided into three types: *atom* nodes,
+*functor* nodes and *literal* nodes.
+
+
+.Basic Grammar
+--------------------------------------------------
+<node> = <functor> | <identifier> | <literal>
+<node> = '(' <node> ')'
+
+<functor> = <prefix-functor> | <infix-functor>
+<prefix-functor> = <node> '(' [<node> {',' <node>}*] ')'
+<infix-functor> = <node>' '<identifier>' '<node>
+
+<literal> = <number> | <string>
+<number> = <integer> | <real>
+--------------------------------------------------
+
+[NOTE]
+.Grammar Notation
+==================================================
+The grammar notation used in this manual adheres to the following
+conventions:
+
+    - Named syntactical entities are indicated by enclosing the name
+      in angle brackets `<...>`.
+
+    - `=` designates that the syntactical entity on the left is
+      defined by the rules on the right. Multiple definitions of the
+      same syntactical entity indicate disjunction of the rules in
+      each definition.
+
+    - `|` indicates disjunction in a single definition.
+
+    - Literal tokens are enclosed in single quotes `'...'`.
+
+    - `..` indicates ranges, e.g. `'0'..'9'` designates the digit
+      characters in the range `0` to `9`: `0`, `1`, `2`, `3`, `4`,
+      `5`, `6`, `7,` `8,` `9`.
+
+    - Rules enclosed in square brackets `[...]` are optional.
+
+    - Multiple rules enclosed in braces `{...}` are grouped into a single rule.
+
+    - `*` indicates zero or more repetitions of the preceding rule.
+
+    - `+` indicates one or more repetitions of the preceding rule.
+==================================================
+
+=== Atom Nodes ===
+
+An *atom* node consists of a single node identifier. Node identifiers
+may consist of any sequence of characters excluding whitespace, line
+breaks, and the following special characters: `(`, `)`, `{`, `}`, `"`,
+`,`, `.`, `#`. Node identifiers must consist of at least one non-digit
+character, otherwise they are interpreted as numbers.
+
+The following are all examples of valid node identifiers:
+
+    - `name`
+    - `full-name`
+    - `node1`
+    - `1node`
+
+The following are not valid node identifiers:
+
+    - `123`
+    - `a.b`
+    - `j#2`
+    - `1e7` -- As the `e` indicates a real-number in scientific
+      notation. See <<_numbers,Numbers>>.
+
+
+=== Functors ===
+
+A functor node is an expression consisting of an operator node applied
+to zero or more argument nodes. Syntactically the operator node is
+written first followed by the comma-separated list of argument nodes
+in parenthesis `(...)`.
+
+.Examples
+--------------------------------------------------
+op(arg)
+func(arg1, arg2)
+m.fn()
+--------------------------------------------------
+
+In the special case of an operator applied to two arguments, the
+operator may be placed in infix position, that is between the two
+argument nodes. The operator may only be an *atom* node and must be
+registered as an infix operator.
+
+IMPORTANT: Spaces between the operator and its operands are required,
+in order to distinguish the operator from the operands. This is due to
+the large number of allowed characters in node identifiers.
+
+Functor expressions written in infix and prefix form are equivalent,
+thus the following infix functor expression:
+
+--------------------------------------------------
+a + b
+--------------------------------------------------
+
+is equivalent to the following prefix functor expression (_either
+expression may be written in source code_):
+
+--------------------------------------------------
++(a, b)
+--------------------------------------------------
+
+Each node registered as an infix operator has, associated with it, a
+precedence and associativity. The precedence is a number that controls
+the priority with which the operator consumes its arguments. Operators
+with a higher precedence consume arguments before operators with a
+lower precedence.
+
+--------------------------------------------------
+a + b * c
+--------------------------------------------------
+
+The `*` operator has a greater precedence than the `+` operator, thus
+it consumes its arguments first, consuming the `b` and `c` arguments.
+
+The `+` operator has a lower precedence thus it consumes its arguments
+after `*`. The arguments available to it are `a` and `*(b, c)`.
+
+As a result the infix functor expression is parsed to the following:
+
+--------------------------------------------------
+*(+(a, b), c)
+--------------------------------------------------
+
+Use parenthesis to control which arguments are grouped with which
+operators. Thus for an infix expression to be parsed to the above, `a
++ b` must be surrounded in parenthesis:
+
+--------------------------------------------------
+(a + b) * c
+--------------------------------------------------
+
+=== Literals ===
+
+Literal nodes include numbers and strings.
+
+==== Numbers ====
+
+There are two types of numbers: **integer**s and real-valued numbers,
+referred to as **real**s, which are represented as floating-point
+numbers.
+
+Integers consist of a sequence of digits in the range +0--9+,
+optionally preceded by the integer's sign. A preceding `-` indicates a
+negative number. A preceding `+` indicates a positive integer, which
+is the default if the sign is omitted.
+
+.Integer Syntax
+--------------------------------------------------
+<integer> = ['+'|'-']('0'..'9')+
+--------------------------------------------------
+
+There are numerous syntaxes for real-valued numbers. The most basic is
+the decimal syntax which comprises an *integer* followed by the
+decimal dot `.` character and a sequence of digits in the range
+`0--9`.
+
+.Decimal Real Syntax
+--------------------------------------------------
+<real> = <decimal> | <magnitude-exponent>
+
+<decimal> = <integer>'.'('0'..'9')+
+--------------------------------------------------
+
+NOTE: The decimal `.` must be preceded and followed by at-least one
+digit character. Thus `.5` and `1.` are not valid *real* literals,
+`0.5` and `1.0` has to be written instead.
+
+The exponent syntax allows a real-number to be specified in scientific
+notation as a magnitude latexmath:[$m$] and exponent latexmath:[$n$] pair
+latexmath:[$m\times10^n$]. The exponent syntax comprises a real in
+decimal syntax or an integer, followed by the character `e`, `f`, `d`,
+or `l` which indicates the precision of the real-number, followed by
+the exponent as an integer.
+
+.Exponent Syntax
+--------------------------------------------------
+<magnitude-exponent> = (<decimal>|<integer)[e|f|d|l]<integer>
+--------------------------------------------------
+
+`e` and `f` indicate single precision floats, `d` indicates double
+precision floats and `l` indicates long precision floats.
+
+
+==== Strings ====
+
+Literal strings consist of a sequence of characters enclosed in double
+quotes `"..."`.
+
+.String Syntax
+--------------------------------------------------
+<string> = '"'<unicode char>*'"'
+--------------------------------------------------
+
+where `<unicode char>` can be any unicode character.
+
+A literal `"` character can appear inside a string if it is preceded
+by the backslash escape character `\`.
+
+.Example
+--------------------------------------------------
+"John said \"Hello\""
+--------------------------------------------------
+
+Certain escape sequence, consisting of a `\` followed by a character,
+are shorthands for special characters, allowing the character to
+appear in the parsed string without having to write the actual
+character in the string literal.
+
+.Escape Sequnces
+[options="header"]
+|====================
+| Sequence | Character | Character Code (Hex)
+
+| `\n` | Line Feed (LF) / New Line | `0A`
+| `\r` | Carriage Return (CR) | `0D`
+| `\t` | Tab | `09`
+| `\u{<code>}` | Unicode Character | `<code>`
+|====================
+
+The `\u{<code>}` escape sequence is replaced with the unicode
+character with code (in hexadecimal) `<code>`. There must be an
+opening brace `{` following `\u` otherwise the escape sequence is
+treated as an ordinary literal character escape, in which `\u` is
+replaced with `u`. Currently the closing brace is optional `}`, as
+only the characters up to the first character that is not a
+hexadecimal digit are considered part of the character code. However,
+it is good practice to insert the closing brace as it clearly delimits
+which characters are to be interpreted as the character code and which
+characters are literal characters.
+
+The `\n`, `\r` and `\t` escape sequences can alternatively be
+written as `\u{A}`, `\u{D}` and `\u{9}` respectively.
+
+CAUTION: In a future release, omitting either the opening or closing
+brace may result in a parse error.
