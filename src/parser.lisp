@@ -200,7 +200,13 @@
                 (#\n #\Linefeed)
                 (#\r #\Return)
                 (#\t #\Tab)
-                (#\u (parse-unicode))
+                (#\u
+                 (cond
+                   ((= (peek-char) #\})
+                    (read-char)
+                    (parse-unicode))
+
+                   (t #\u)))
                 (otherwise c))))
 
            (parse-unicode ()
@@ -214,7 +220,7 @@
                     (read-char)
 
                   finally
-                    (when (= c #\h)
+                    (when (= c #\})
                       (read-char)))
 
                (code-char code))))

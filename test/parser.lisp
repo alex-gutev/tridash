@@ -194,12 +194,20 @@
 
         (subtest "Unicode Escape Sequences"
           (test-parser
-           " \"x\\u2265h5\" "
+           " \"x\\u{2265}5\" "
            (list #?"x\x{2265}5"))
 
           (test-parser
-           " \"x \\u2265 5\" "
-           (list #?"x \x{2265} 5")))))))
+           " \"x \\u{2265 5\" "
+           (list #?"x \x{2265} 5"))
+
+          (test-parser
+           " \"x \\ux1\" "
+           (list #?"x ux1"))
+
+          (test-parser
+           " \"x \\u10\" "
+           (list #?"x u10")))))))
 
 (subtest "Parse Errors"
   (parse-error-p "a + b")
