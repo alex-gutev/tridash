@@ -23,4 +23,4 @@
         (cl-fad:merge-pathnames-as-file datadir "backends/javascript/tridash.js"))
 
   (asdf:make :tridash)
-  (quit))
+  (uiop:quit))
