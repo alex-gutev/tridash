@@ -83,11 +83,16 @@ A binding between two nodes is declared with the special bind operator
 a -> b
 --------------------------------------------------
 
-The above, declares `b` as an observer of `a` and likewise `a` a
+The above declares `b` an observer of `a` and likewise `a` a
 dependency of `b`. The result is that a change in the value of `a`
 will trigger a change in the value of `b`. This is an example of a
 simple binding, since the value of `b` is simply set to the value of
 `a`.
+
+NOTE: In an explicit binding declaration the dependency, i.e. the
+left-hand side of the `->` operator is referred to as the source node,
+and the observer, i.e. the right-hand side, is referred to as the
+target node.
 
 NOTE: The bind operator is also registered as an infix operator with
 precedence *10* and *right* associativity.
