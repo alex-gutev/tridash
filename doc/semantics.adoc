@@ -410,6 +410,324 @@ listing of some attributes an a summary of their effect:
 
 == Meta-Nodes ==
 
+A meta-node is a function, of one or more arguments, which evaluates
+to a value. Meta-nodes are nodes, themselves, however no runtime node
+is created for meta-nodes.
+
+NOTE: Functor nodes with the meta-node as the operator are referred to
+as instances of the meta-node.
+
+TIP: Meta-nodes are referred to as meta-nodes, since they are nodes
+which describe how to compute the value of other nodes, referred to as
+their instances. Meta-nodes may also be macros, this is the case for
+the builtin `?->` and `case` meta-nodes in the `core` module, however at
+present there is no functionality for user-defined macros.
+
+=== Defining Meta-Nodes ===
+
+Meta-nodes are defined using the special `:` definition operator which
+has the following syntax:
+
+.Definition Operator Syntax
+--------------------------------------------------
+name(arg1, arg2, ...) : {
+    declarations*
+}
+--------------------------------------------------
+
+The left-hand side of the `:` operator contains the meta-node
+identifier, `name`, followed by the comma-separated list of arguments
+in parenthesis. Each item, at position _n_, of the argument list is
+the identifier of the local node to which the _n_^th^ argument is
+bound.
+
+The body consists of a sequence of ordinary node declarations enclosed
+in braces `{ ... }`. The braces are simply a way of grouping multiple
+declarations into a single declaration. If braces appear as an operand
+in a functor, it is as if they are replaced by the last declaration in
+the list, and the remaining declarations are extracted to the
+top-level. If the body of the meta-node contains just a single
+declaration, the braces may be omitted.
+
+Functor expressions with the meta-node as an operator evaluate to the
+value of the last node in the body.
+
+.Example
+--------------------------------------------------
+# Evaluates to 1 + `n`
+1+(n) : n + 1
+--------------------------------------------------
+
+.Factorial Example
+--------------------------------------------------
+# Computes the factorial of `n`
+
+factorial(n) : {
+    case (
+         n > 1 : n * factorial(n - 1)
+         1
+    )
+}
+--------------------------------------------------
+
+The following example demonstrates that the body can contain any valid
+node declaration:
+
+.Fibonacci Example
+--------------------------------------------------
+fib(n) : {
+    fib(n - 1) -> fib1
+    fib(n - 2) -> fib2
+
+    case (
+        n <= 1 : 1,
+        fib1 + fib2
+    )
+}
+--------------------------------------------------
+
+IMPORTANT: Meta-nodes must be defined before they are used in the same
+scope as the scope in which the meta-node declaration occurs. That is,
+a declaration involving the meta-node `f` as an operator must occur
+after the definition of `f`. A meta-node `f` can, however, be used in
+the body of another meta-node `g`, even if its definition precedes
+`f`, i.e. mutual recursion is possible.
+
+==== Local Nodes ====
+
+Nodes created within the body of a meta-node are local to the
+meta-node. Local nodes can only be referenced from within the
+meta-node's body even if they have the same identifiers as nodes
+declared in the global scope.
+
+IMPORTANT: A local node is always created on the first reference
+inside the meta-node's body even if a global with the same identifier
+has already been declared. Global nodes can be referenced using the
+outer `..` operator.
+
+Meta-nodes referenced from within the body, i.e. in a functor
+expression of which the meta-node is an operator, always refer to the
+meta-node defined at global scope unless a meta-node, with the same
+identifier, is defined inside the body.
+
+.Example: Local Nodes
+--------------------------------------------------
+a + b -> x
+
+addx(n) : {
+    # Refers to x that is local to the body
+    # Not the x at global scope.
+    n + x
+}
+--------------------------------------------------
+
+.Example: Meta-Nodes
+--------------------------------------------------
+1-(n) : n - 1
+
+factorial(n) :
+    case (
+        # The 1- refers to the global 1- meta-node
+        n > 1 : n * factorial(1-(n)),
+        1
+    )
+--------------------------------------------------
+
+
+==== Nested Meta-Nodes ====
+
+The body of a meta-node can contain other meta-node definitions nested
+inside it. These meta-nodes are local to the body, and can only be
+used inside it, even if the same meta-node identifier is used in an
+expression outside the body. If a meta-node with the same identifier
+is already defined at global scope, the nested meta-node shadows it in
+the scope of the body. This means that references to the meta-node
+within the body refer to the nested meta-node and not the global node.
+
+.Example: Factorial with Nested Tail-Recursive Helper Meta-Node
+--------------------------------------------------
+factorial(n) : {
+    # `iter` is local to `factorial`
+    iter(n, acc) : {
+        case (
+            n > 1 : iter(n - 1, n * acc),
+            acc
+        )
+    }
+
+    iter(n, 1)
+}
+--------------------------------------------------
+
+=== Recursive Meta-Nodes ===
+
+Meta-nodes may be recursive and mutually recursive, i.e. when a
+meta-node `f` contains an instance of another meta-node `g` in its
+definition, and `g` contains an instance of `f` in its definition.
+
+In the case of tail-recursive meta-nodes, a meta-node in contains an
+instance of itself in tail position, the meta-node function is
+guaranteed to consume constant `O(1)` space, regardless of the number
+of recursive calls.
+
+A meta-node instance is considered to be in tail position if it
+satisfies one of the following:
+
+    - Is the last expression in the meta-node definition.
+    - Is an `if-true` or `if-false` argument of the `if` meta-node,
+      from the `core` module, which is itself in tail position.
+    - Is an argument of a `and` or `or` meta-node, from the `core`
+      module, which is itself in tail position.
+
+All instances appearing in tail-position or appearing as the
+`if-true`, `if-false` arguments to the `if` meta-node, from the `core`
+module,
+
+NOTE: Tail Call Elimination for all instances of a given meta-node,
+can be achieved by setting the `async` attribute of the meta-node to
+true. However this feature is still highly experimental and not
+properly tested.
+
+=== Outer Node References ===
+
+The value of a node, declared in the global scope, can be referenced
+from within a meta-node with the outer node reference operator
+`..`. This is a special operator which takes a node identifier as an
+argument and searches for a node with that identifier, in each
+enclosing scope, starting with the scope in which the meta-node is
+defined. The first node found is referenced.
+
+CAUTION: If no node with that identifier is found in any enclosing
+scope, a compilation error is signalled.
+
+NOTE: It is not necessary for the node to have been declared prior to
+the meta-node definition, as meta-node definitions are only processed
+after all declarations in the source file have been
+processed. However, in general the node should be declared in the same
+source file.
+
+.Example
+--------------------------------------------------
+x
+
+# ..(x) references the global x
+addx(n): n + ..(x)
+--------------------------------------------------
+
+Referenced outer nodes are treated of as additional implicit or hidden
+arguments, that are added to each instance of the meta-node. The
+result of this is that any change in the referenced nodes, will
+trigger a value update in each instance of the meta-node.
+
+The previous example can be thought of as:
+
+--------------------------------------------------
+# Not valid syntax.
+
+# Simply used to illustrate that outer node references are equivalent
+# to additional arguments.
+
+addx(n, ..(x)) : n + ..(x)
+--------------------------------------------------
+
+Thus the value of `x` is appended to the argument list of all
+instances of `addx`, e.g. `addx(node)` is equivalent to `addx(node,
+x)`.
+
+Meta-nodes reference all outer nodes referenced by the meta-nodes
+which are used in their body. In the previous example, if a meta-node
+makes use of `addx`, it will also reference the node `x` declared in
+the global scope.
+
+IMPORTANT: Whilst the value of an outer-node can be referenced from
+within the body of a meta-node, bindings involving the node cannot be
+established, from within the body of the meta-node.
+
+=== External Meta-Nodes ===
+
+External meta-nodes are meta-nodes without a definition. They are used
+to call functions defined externally from within Tridash code. The
+special `:extern` declaration creates a meta-node without a definition.
+
+.Syntax
+--------------------------------------------------
+:extern(id)
+--------------------------------------------------
+
+`id` is the identifier of the meta-node to create.
+
+An external definition for the meta-node has to be provided, and
+linked with the generated code. In the JavaScript backend, instances
+of the meta-node are compiled to a call to the JavaScript function
+with the same name as the node identifier. If the `public-name`
+attribute of the meta-node is set, a call to the JavaScript function
+with the value of the attribute is generated instead.
+
+=== Instances as Targets ===
+
+By default, a meta-node instance appearing as the target of a binding,
+that is on the right hand side of the `->` operator, will result in a
+compilation error. You may have noticed, however, that some meta-nodes
+in the <<_core_module, `core`>> module, can also appear as the targets
+of the binding, particularly <<meta-node-int, `int`>>,
+<<meta-node-real, `real`>> and <<meta-node-not, `not`>>. This is
+achieved by setting the `target-node` attribute.
+
+The `target-node` attribute stores the identifier of the meta-node,
+which is applied on the value of the meta-node instance, in order to
+compute the value of the arguments. When the `target-node` attribute
+is set, a binding is established between the meta-node instance, as
+the dependency, and each argument node, as the observer. The function
+of the binding context is set to the meta-node with the identifier
+stored in the `target-node` attribute.
+
+NOTE: Currently the `target-node` attribute is only useful for single
+argument nodes as no information about the position of the argument is
+passed to the meta-node.
+
+As an example consider a meta-node `f` with the `target-node`
+attribute set to `g`. A declaration of the form:
+
+--------------------------------------------------
+x -> f(arg)
+--------------------------------------------------
+
+results in the following binding being established:
+
+--------------------------------------------------
+g(f(arg)) -> arg
+--------------------------------------------------
+
+This is useful for creating _invertable_ meta-nodes where instead of
+computing a result given the values of the argument nodes, the values
+of the argument nodes can be computed given the result. This is
+achieved by binding to the meta-node instance, with the `target-node`
+attribute set to the _inverse_ function.
+
+The <<meta-node-not, `not`>> meta-node from the `core` module has its
+`target-node` attribute set to `not`. Thus the binding `x -> not(y)`,
+will result in the value of `y` being set to the value `not(x)`, on
+changes in the value of `x`.
+
+CAUTION: In order for the bindings to the argument nodes, to be
+established, the `:attribute` declaration which sets the `target-node`
+attribute must occur before the first instance of the
+meta-node, however after the meta-node is defined.
+
+[TIP]
+==================================================
+Attributes are set on meta-nodes in the same way as they are set for
+ordinary nodes. To set the `target-node` attribute of a meta-node `f`
+to `g`, use the following declaration:
+
+--------------------------------------------------
+:attribute(f, target-node, g)
+--------------------------------------------------
+==================================================
+
+
+== Modules ==
+
 == Optimizations ==
 
 === Coalescing ===

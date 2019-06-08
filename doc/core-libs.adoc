@@ -118,6 +118,7 @@ associativity.
 --
 
 
+[[meta-node-not]]
 .Meta-Node: `not(x)`
 --
 Evaluates to true if `x` evaluates to false.
