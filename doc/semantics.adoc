@@ -281,7 +281,7 @@ node's value.
 
 .Example
 --------------------------------------------------
-# A two-way binding is established between `a` and `c`
+# A two-way binding is established between `a` and `b`
 a -> b
 b -> a
 
