@@ -1,0 +1,415 @@
+== Nodes ==
+
+Semantically a Tridash program is composed of a set of stateful
+components called nodes, with the node's state consisting of its
+value.
+
+Each node has a set of _dependency_ nodes. A change in the state of at
+least one of the dependency nodes causes the node to recompute its own
+value. The node is said to be an _observer_ of its dependency nodes,
+as it actively observers and response to changes in their
+state. Similarly, each node has a set of _observer_ nodes which it
+notifies whenever its own value changes.
+
+This _dependency_ -- _observer_ relation is referred to as a binding.
+
+.Glossary
+--
+dependency:: A node `a` is said to be a _dependency_ of node `b` if a
+change in the value of `a` triggers a change in the value of `b`.
+
+observer:: A node `a` is said to be an _observer_ of node `b` if a
+change in the value of `b` triggers a change in the value of `a`.
+
+binding:: A _binding_ is a relation between two nodes `a` and `b`, in
+which one node `a` is a _dependency_ of the other `b`, and likewise
+the other node `b` is its _observer_.
+
+ancestor:: A node `a` is said to be an _ancestor_ of a node `b` if `a`
+is a _dependency_ of `b` or it is an _ancestor_ of a _dependency_ of `b`.
+--
+
+=== Declaring Nodes ===
+
+Nodes are created on the first reference, that is when their
+identifier appears in source code. This could either be a declaration
+consisting of the identifier itself or a functor node declaration of
+which the node is an argument.
+
+.Examples
+--------------------------------------------------
+# Results in the creation of node `name`
+name
+
+# Results in the creation of nodes `a`, `b`
+a -> b
+
+# Results in the creation of nodes `x`, `y` and `f(x, y)`
+f(x, y)
+--------------------------------------------------
+
+This allows for a relaxed ordering of declarations. A node's
+definition need not be complete in order for it to be referenced as an
+argument.
+
+Notice that in the last example, above, a node `f(x, y)` was
+created. This node corresponds to the functor node declaration, thus
+functors, with the exception of a few special declarations, are nodes
+themselves. From now on a functor node declaration refers only to
+syntactic functor declarations in which the operator refers to a
+function. Declarations in which the operator does not refer to a
+function are referred to as special declarations.
+
+NOTE: Operators which correspond to functions, such as `f` in the
+example above are referred to as meta-nodes and the functor
+declaration as an instance of the meta-node. See <<_meta_nodes,
+Meta-Nodes>>.
+
+NOTE: Nodes are also created corresponding to functors written in
+infix form, e.g. for the functor `a + b`, the node `+(a, b)` is
+created.
+
+A node was not created corresponding to the `a -> b`. This is the bind
+declaration which is treated rather specially. The `->` is not a
+meta-node, that is it does not compute a value, but a special
+operator.
+
+=== Declaring Bindings ===
+
+A binding between two nodes is declared with the special bind operator
+`->`.
+
+--------------------------------------------------
+a -> b
+--------------------------------------------------
+
+The above, declares `b` as an observer of `a` and likewise `a` a
+dependency of `b`. The result is that a change in the value of `a`
+will trigger a change in the value of `b`. This is an example of a
+simple binding, since the value of `b` is simply set to the value of
+`a`.
+
+NOTE: The bind operator is also registered as an infix operator with
+precedence *10* and *right* associativity.
+
+TIP: The `->` operator is in the form of an arrow which indicates the
+direction of data-flow, from the node on the left to the node on the
+right.
+
+Functional bindings involve a function of 1 or more argument
+nodes. Function bindings are created implicitly in functor node
+declarations, with each argument node added as a dependency of the
+functor node. A change the value of at least one argument node results
+in the value of the functor being updated to the result of
+reevaluating the expression with the new values of the argument nodes.
+
+.Example
+--------------------------------------------------
+a + b
+--------------------------------------------------
+
+In the example, above, a functor node `+(a, b)` was created with the
+arguments `a` and `b` implicitly added as dependencies of `+(a, b)`. A
+change in either `a` or `b` will result in the value of `+(a, b)`
+being recomputed.
+
+
+=== Propagation of Changes ===
+
+As emphasized in the previous sections, changes in the value of a node
+are propagated to its observer nodes. The new value is propagated to
+each of the observers simultaneously. Each observer then proceeds to
+recompute its own value in parallel with the other observers.
+
+.Example
+--------------------------------------------------
+a -> b
+a + n -> c
+a + 1 -> d
+--------------------------------------------------
+
+Node `a` has three observers: `b`, `+(a, n)`, `+(a, 1)`. Each of `b`,
+`+(a, n)` and `+(a, 1)` receives the new value of `a` and immediately
+begins computing its new value. There is no strict sequential ordering
+of the value updating of the observer nodes, the following orderings
+are all possible:
+
+    - `b`, `+(a, n)`, `+(a, 1)`
+    - `+(a, n)`, `b`, `+(a, 1)`
+    - `+(a, 1)`, `+(a, n)`, `b`
+
+Other orderings, including interleaved orderings, are also possible or
+it may be that the values of all the observers are updated in
+parallel.
+
+It is important to note the semantics when nodes share a common
+observer and the change in value of each node is triggered by a common
+ancestor node of each node. A node is said to be _dirtied_ if either
+its value has changed, or at least one of its dependency nodes has
+been _dirtied_. If a node is dirtied, all its observers are dirtied,
+and likewise their observers are dirtied and so on. A node with
+multiple dependencies will only recompute its value when it receives a
+value change notification from each of its dirtied dependency
+nodes. Thus there is no intermediate value where the node's value is
+recomputed before all the dependency nodes have recomputed their
+values.
+
+IMPORTANT: This is only the case when the changes in each of the
+dependency nodes are triggered by a change in a common ancestor
+node. These semantics do no apply when the changes in the dependency
+nodes are not triggered by a change in a common ancestor node but by
+multiple simultaneous changes in an ancestor of each dependency,
+unless the changes in each ancestor are the setting of the initial
+values, in which case it is treated as though they have been triggered
+by a single common ancestor. See <<_literal_bindings, Literal
+Bindings>>.
+
+.Example
+--------------------------------------------------
+a -> b
+a + 1 -> c
+
+b + c -> out
+--------------------------------------------------
+
+In the example, above, `a` is a common ancestor of both dependency
+nodes `b` and `c` of node `+(b, c)`. A change in `a` will _dirty_
+nodes `a`, `b`, `+(a, 1)`, `c`, `+(b, c)` and `out`. The value of
+`+(b, c)` will only be recomputed when the values of both `b` and `c`
+have been recomputed.
+
+If `b` and `c` did not have the common ancestor `a`, the value of
+`+(b, c)` would be computed on each change in value of either `b` or
+`c`, regardless of whether the changes in values of `a` and `b` are
+triggered simultaneously or not.
+
+=== Contexts ===
+
+The function which computes a node's value is controlled by its
+context at the moment in time. The node context stores information
+about the function, with which, the node's value is computed and which
+of the dependency nodes are operands to the function.
+
+Contexts are created whenever a binding between two nodes is
+established.
+
+The most simple value function is the passthrough, created when a
+simple binding between two nodes is established, in which the node's
+value is simply set to the value of its dependency node.
+
+.Passthrough Example
+--------------------------------------------------
+# `b` is set to the value of `a` whenever it changes
+
+a -> b.
+--------------------------------------------------
+
+Contexts with more complex functions, of more than one operand, are
+created whenever a functor node, in which the operator is a
+_meta-node_, is declared. A context is created, with the operator as
+the context function and the arguments as the context operands.
+
+.Functor Node Example
+--------------------------------------------------
+# A functor node `+(a, b)` is created with a `+` context.
+# `a` and `b` are added to the operands of the plus context.
+
+a + b
+--------------------------------------------------
+
+A node can have more than one context. A context is _activated_
+whenever the value of one of its operand nodes changes.
+
+.Multiple Context Example
+--------------------------------------------------
+a -> x
+b -> x
+c -> x
+--------------------------------------------------
+
+When the value of `a` changes, the `a` context of `x` is activated and
+the value of `x` is set to the value of `a`. Similarly when `b` or
+`c`'s value changes, the `b` or `c` context is activated,
+respectively, and `x`'s value is set to the value of `b` or `c`,
+respectively.
+
+[IMPORTANT]
+==================================================
+It is an error for two or more contexts of a single to be activated at
+the same time. This occurs when either both contexts have a common
+operand or an operand from one context shares a common ancestor with
+an operand from the other context.
+
+.Example 1
+--------------------------------------------------
+# Node `a` is a dependency of `b`
+# Node `a` is a dependency of `+(a, c)`
+# Both `b` and `+(a, c)` are dependencies of `x`
+
+a -> b
+b -> x
+
+a + c -> x
+--------------------------------------------------
+
+In the example, above, node `a` is a dependency node of `b` which is
+an operand of the `b` context of `x`. However, node `a` is also a
+dependency of node `+(a, c)` (`a + c`), which is an operand of the
+`+(a, c)` context of `x`. A change in the value of `a` would trigger a
+change in the value of both `b` and `+(a, c)` thus it is ambiguous to
+which value `b` should be set, the value of `b` or the value of `+(a,
+c)`.
+
+Structure checking is performed at compile-time, thus the above
+example, and all such scenarios, would result in a compilation error
+along the lines: `Semantic Error: Node x has multiple contexts
+activated by a single common ancestor`.
+==================================================
+
+==== Two-Way Bindings ====
+
+A dependency of a node may also be an observer of the same node. This
+allows for a two-way binding in which data may flow from either
+direction. In this case only the observer nodes which are not also
+operands of the node's current context are notified of a change in the
+node's value.
+
+.Example
+--------------------------------------------------
+# A two-way binding is established between `a` and `c`
+a -> b
+b -> a
+
+a -> c
+
+d -> a
+--------------------------------------------------
+
+In the above example a change both `b` and `c`, which are observers of
+`a`, will be notified of a change in the value of `a` triggered by a
+change in the value of `d`. This will trigger a change in the value of
+`b` however `a` will not be notified of this change as the change was
+triggered by `a`, itself.
+
+In the case of a change in the value of `a` triggered by a change in
+the value of `b`, only the observer `c` of `a` will be notified of the
+change.
+
+[IMPORTANT]
+==================================================
+Cycles, other than two-way bindings between a pair of nodes, will
+result in a compilation error.
+
+.Example
+--------------------------------------------------
+a + 1 -> b
+b -> a
+--------------------------------------------------
+==================================================
+
+
+==== Literal Bindings ====
+
+A binding in which the dependency is a literal value, is interpreted
+as setting the initial value of a node. A special `init` context is
+created, which has no operands and simply the literal value as its
+function.
+
+Initial values are set on the launch of the application, and are
+treated as an ordinary value change from the value `null` to the
+initial value. The initial active context of the node is the `init`
+context.
+
+.Examples
+--------------------------------------------------
+0 -> counter
+"hello" -> message
+10.5 -> threshold
+--------------------------------------------------
+
+IMPORTANT: The setting of the initial values of each node in the
+graph, is treated as having been triggered by a single common ancestor
+node. See <<_propagation_of_changes, Propagation of Changes>> for the
+implications of this.
+
+=== Input Nodes ===
+
+Input nodes are the nodes which receive the application input, which
+could be the value entered in a text field of the user interface (UI),
+data received from the network, etc. Input nodes do not have any
+dependencies and have a special `input` context, which does not have a
+value computation function. Instead the value of the node is meant to
+be set explicitly through some external event.
+
+Input nodes have to be explicitly designated as such by setting the
+`input` attribute to true. (see <<_attributes,Attributes>> for more
+information about node attributes).
+
+.Example: Setting Input Attribute
+--------------------------------------------------
+a -> b
+
+# Designate `a` as an input node
+:attribute(a, input, 1)
+--------------------------------------------------
+
+CAUTION: A compilation error is signalled if a node has a dependency
+that is not reachable from any input node, however has at least one
+dependency that is reachable from an input node. The error is not
+signalled if all of the node's dependencies are unreachable from all
+the input nodes.
+
+=== Attributes ===
+
+Attributes are arbitrary key value pairs associated with a node, which
+control various compilation options of the node. These are set using
+the special `:attribute` declaration. The `:attribute` declaration is
+special in that it has a special syntax where not all its arguments
+are interpreted as nodes.
+
+The first argument is the node of which to set the attribute, the
+second value is the attribute key (not interpreted as a node) and the
+last attribute is the value, which must be a literal value. `
+
+:attribute` declarations may only appear at top-level and may not
+appear in binding declarations or as arguments in functor nodes.
+
+.Attribute Declaration Syntax
+--------------------------------------------------
+:attribute(node, attribute, value)
+--------------------------------------------------
+
+NOTE: The `attribute` key need not be a string, it may simply be an
+identifier as it is not interpreted as a node.
+
+IMPORTANT: As mentioned previously the `value` must be a literal value
+and may not reference the value of a node, since attributes do not
+form part of the runtime node's state.
+
+The `input` attribute has already been introduced. The following is a
+listing of some attributes an a summary of their effect:
+
+    `input`:: When set to true, designates a node as an input
+    node. See <<_input_nodes,Input Nodes>>.
+    `no-coalesce`:: When set to true, prevents the node from being
+    coalesced into other nodes. See <<_coalescing, Coalescing>>.
+    `no-remove`:: When set to true, prevents the node from being
+    removed.
+    `public-name`:: The name with which the runtime node can be
+    referenced from non-Tridash code.
+    `target-node`:: Sets the name of a meta-node to use as the value
+    function, in the contexts, other than the context of the meta-node
+    itself, of a meta-node instance.
+
+.Examples
+--------------------------------------------------
+:attribute(a, input, 1)
+:attribute(a, public-name, "app-input")
+--------------------------------------------------
+
+
+== Meta-Nodes ==
+
+== Optimizations ==
+
+=== Coalescing ===

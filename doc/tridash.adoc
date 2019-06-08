@@ -10,4 +10,6 @@ language.
 
 include::syntax.adoc[]
 
+include::semantics.adoc[]
+
 include::core-libs.adoc[]
