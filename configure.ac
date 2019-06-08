@@ -10,8 +10,8 @@ AC_ARG_VAR(LISP, [Common Lisp compiler])
 
 dnl Other Tools
 
-AC_PATH_PROGS(ASCIIDOC, [asciidoctor asciidoc])
-AC_ARG_VAR(ASCIIDOC, [Path to AsciiDoc/Asciidoctor processor])
+AC_PATH_PROG(A2X, [a2x])
+AC_ARG_VAR(A2X, [Path to a2x (AsciiDoc converter) program])
 
 AC_PROG_SED
 

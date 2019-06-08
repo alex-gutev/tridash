@@ -1,13 +1,15 @@
 = tridashc(1)
-:docdate: 05 June 2019
+Alexander Gutev <alex.gutev@gmail.com>
 :doctype: manpage
-:manmanual: tridashc -- Tridash Compiler
+:revdate: 08 June 2019
+:manmanual: Tridash Compiler
 :mansource: Tridash
+:compat-mode: 1
 :man-linkstyle: pass:[blue R < >]
 
 == Name
 
-tridashc - Tridash Compiler
+tridashc - Compile Tridash source files
 
 == Synopsis
 
@@ -31,14 +33,14 @@ The following example demonstrates the basic usage:
 This compiles the source files *source1.trd* and *source2.trd*
 generating the output file *out.js*.
 
-A +':'+ argument indicates that the next argument is a comma-separated
+A *:* argument indicates that the next argument is a comma-separated
 list of processing options for the source file in the preceding
 argument.
 
 The options are of the form _option_=_value_ where _option_ is the
 option and _value_ is the option's value.  Each option-value pair must
-be separated by a single ',' without any whitespace in between the ','
-or '='. If an option value contains whitespace, ',' or '=' it should
+be separated by a single *,* without any whitespace in between the *,*
+or *=*. If an option value contains whitespace, *,* or *=* it should
 be enclosed in quotes. Two pairs of quotes may be required due to
 shell escaping.
 
@@ -69,7 +71,8 @@ Currently only a *javascript* target is available.
 
 *-p, --output-option* _option_ = _value_:: Specify an option for the
 generation of the output file where _option_ is the option and _value_
-is the option value. A *-p* option has to be provided for each option.
+is the option value. A separate *-p* option has to be provided for
+each option.
 +
 The recognized options vary with the compilation target. The following
 options are recognized for the *javascript* target:
@@ -107,7 +110,7 @@ a dictionary with two keys: *sources* and *output*.
 The value of the *sources* entry is a list of the source files which
 are to be compiled. Each element of the list is either a string
 containing the path to the file, or a dictionary in which the path to
-the file is stored under the "path" key with the remaining key-value
+the file is stored under the *path* key with the remaining key-value
 pairs interpreted as additional processing options.
 +
 The value of the *output* entry is a dictionary containing the options
@@ -126,7 +129,3 @@ name.
 Additional target-specific options may be specified. This is
 equivalent to specifying the options on the command-line with the *-p*
 option.
-
-== Author
-
-Alexander Gutev <alex.gutev@gmail.com>

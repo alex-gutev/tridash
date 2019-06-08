@@ -2,7 +2,7 @@
 
 LISP = @LISP@
 SED = @SED@
-ASCIIDOC = @ASCIIDOC@
+A2X = @A2X@
 
 ## Directories
 
@@ -80,8 +80,8 @@ tridashc: build.lisp $(sources)
 
 man: doc/tridashc.1
 
-doc/tridashc.1: doc/tridashc.adoc
-	$(ASCIIDOC) -b manpage -o $@ $<
+doc/tridashc.1: doc/tridashc.1.adoc
+	$(A2X) --doctype manpage --format manpage --destination-dir doc $<
 
 
 ## Clean Targets
