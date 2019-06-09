@@ -27,6 +27,10 @@ the other node `b` is its _observer_.
 
 ancestor:: A node `a` is said to be an _ancestor_ of a node `b` if `a`
 is a _dependency_ of `b` or it is an _ancestor_ of a _dependency_ of `b`.
+
+successor:: A node `a` is said to be a _successor_ of a node `b` if
+`a` is an _observer_ of `b` or it is a successor of an _observer_ of
+`b`.
 --
 
 === Declaring Nodes ===
@@ -339,6 +343,26 @@ IMPORTANT: The setting of the initial values of each node in the
 graph, is treated as having been triggered by a single common ancestor
 node. See <<_propagation_of_changes, Propagation of Changes>> for the
 implications of this.
+
+=== Conditionally Active Bindings ===
+
+A binding declaration `a -> b` can, itself, be treated as a node, to which an
+explicit binding can be established with the binding node as the
+target.
+
+--------------------------------------------------
+c -> (a -> b)
+--------------------------------------------------
+
+The result of this declaration is that the binding `a -> b` is only
+active if `c` evaluates to a true value. If `c` evaluates to false, it
+can be considered that there is no binding between `a` and `b` or that
+the binding is _inactive_. The implication of the binding, `a -> b`,
+being _inactive_ is that no changes in values are propagated from `a`
+to `b`, i.e. changes in the value of `a`, will not trigger value
+changes in `b` or any of its successor nodes.
+
+
 
 === Input Nodes ===
 
