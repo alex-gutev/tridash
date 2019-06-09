@@ -901,3 +901,301 @@ to `g`, use the following declaration:
 
 
 == Modules ==
+
+Modules provide a means of avoiding name collisions between nodes. A
+module is a namespace which contains all global nodes, including
+`meta-nodes`, created in it. A node with identifier `x` in a module
+`m1` is distinct from a node with the same identifier `x` in another
+module `m2`.
+
+=== Creating Modules ===
+
+Each new node, that is created as a result of processing a declaration
+in the source file, is added to the current module. Initially the
+current module is a nameless `init` module until it is changed
+explicitly.
+
+The current module is changed with the special `:module` operator,
+which takes the identifier of the module as its only argument. If
+there no such module a new module is created.
+
+.Example
+--------------------------------------------------
+# Change to module with identifier `mod1`
+:module(mod1)
+
+# Nodes `a` and `b` added to `mod1`
+a -> b
+
+# Change to module with identifier `mod2`
+:module(mod2)
+
+# Nodes `a` and `b` added to `mod2`
+# Distinct nodes from nodes `a` and `b` in `mod1`
+a -> b
+--------------------------------------------------
+
+NOTE: Module identifiers reside in a different namespace from node
+identifiers, thus there is no risk of collision between a node and
+module with the same identifier, unless a node for the module is added
+to the module containing the node.
+
+NOTE: Modules reside in a single global, flat namespace. Hierarchical
+relations between modules have to be 'faked' with a separator such as
+`/`, e.g. `module/submodule`.
+
+=== Referencing Nodes in Different Modules ===
+
+There are two ways to reference a node in a module different other
+than the current module. One way is to create a 'pseudo-node' for the
+module in the current module, with which nodes in the module can be
+referenced as subnodes of the module's 'pseudo-node'.
+
+==== Module Pseudo-Nodes ====
+
+The special `:use` operator creates pseudo-nodes for the modules
+passed as arguments. The pseudo-nodes are created with the same
+identifiers as the modules.
+
+NOTE: Module pseudo-nodes are referred to as such, since syntactically
+they appear the same as any other node, however the value of a module
+pseudo-node cannot be referenced not can bindings involving it be
+established.
+
+.Syntax
+--------------------------------------------------
+:use(mod1, mod2, ...)
+--------------------------------------------------
+
+CAUTION: An error is signalled if a node with the same identifier as
+the module already exists in the current module.
+
+Nodes from the 'used' modules can then be referenced as subnodes of
+the modules.
+
+.Example
+--------------------------------------------------
+:module(mod1)
+
+a -> b
+
+:module(mod2)
+:use(mod1)
+
+# Reference node `b` from module `mod1`
+mod1.b -> b
+x -> mod1.b
+--------------------------------------------------
+
+Meta-nodes from a different module can be also be used, by referencing
+the subnode of the module pseudo-node.
+
+.Example
+--------------------------------------------------
+:module(mod1)
+
+add(x, y) : x + y
+
+:module(mod2)
+:use(mod1)
+
+# Use the `add` meta-node from module `mod1`
+mod1.add(a, b) -> c
+--------------------------------------------------
+
+TIP: Nodes referenced from other modules, can appear both as
+dependencies or observers of bindings.
+
+IMPORTANT: Referencing a subnode of a module pseudo-node does not
+result in the automatic creation of a node in that module. The result
+is a compilation error, if the node does not already exist in the
+module.
+
+A pseudo-node with a different identifier, from the identifier of the
+module, can be created using the special `:alias` operator. This is
+useful for when the module identifier is too long to type out
+repeatedly, or there is already a node, in the current module, with
+the same identifier.
+
+the `:alias` operator takes two arguments, the identifier of the
+module and the name of the pseudo-node to create in the current
+module:
+
+--------------------------------------------------
+:alias(module-name, pseudo-node-name)
+--------------------------------------------------
+
+The above examples can be rewritten using `:alias` declarations:
+
+.Example
+--------------------------------------------------
+:module(mod1)
+
+a -> b
+
+:module(mod2)
+:alias(mod1, m1)
+
+# Reference node `b` from module `mod1`
+m1.b -> b
+x -> m1.b
+--------------------------------------------------
+
+.Example
+--------------------------------------------------
+:module(mod1)
+
+add(x, y) : x + y
+
+:module(mod2)
+:alias(mod1, m1)
+
+# Use the `add` meta-node from module `mod1`
+m1.add(a, b) -> c
+--------------------------------------------------
+
+==== Importing Nodes ====
+
+The second approach to referencing a node, residing in another module,
+is to add it directly to the current module. With this approach there
+is no need to reference the node as a subnode of a module
+pseudo-node. This is referred to as 'importing' the node and is
+achieved using the `:import` operator.
+
+The `:import` operator adds the identifiers of nodes, residing in
+another module, to the current module. The result is that the node can
+be referenced directly by its identifier, as though it were declared
+in the current module.
+
+The `:import` operator has two forms:
+
+    - A short form that 'imports' all the nodes 'exported' from
+      another module. Takes the module identifier as its only
+      argument.
+    - A short form that can be used to 'import' specific nodes. The
+      first argument is the module identifier, the following arguments
+      are the identifiers of the nodes to 'import'
+
+.Syntax
+--------------------------------------------------
+# Short form: Import all nodes from `module`
+:import(module)
+
+# Long form: Import only the nodes listed in the arguments after the
+# module identifier.
+:import(module, node1, node2, ...)
+--------------------------------------------------
+
+.Example: Long form
+--------------------------------------------------
+:module(mod1)
+
+a -> b
+
+:module(mod2)
+# Import node `b` from `mod1`
+:import(mod1, b)
+
+# Node `b` is the same `b` as in `mod1`
+b -> a
+x -> b
+--------------------------------------------------
+
+The short form only imports those nodes which are explicitly
+'exported' from the module. Nodes are explicitly exported from the
+current module with the `:export` operator which simply takes the
+identifiers of the nodes to 'export' as arguments.
+
+.Syntax
+--------------------------------------------------
+:export(node1, node2, ...)
+--------------------------------------------------
+
+Each `:export` declaration adds (does not replace) the nodes in the
+arguments to the exported nodes of the current module.
+
+.Example: `:export` and short form `:import`
+--------------------------------------------------
+:module(mod1)
+
+a -> b
+
+# Export node `b`
+:export(b)
+
+:module(mod2)
+# Import all nodes exported from `mod1`
+:import(mod1, b)
+
+# Node `b` is the same `b` as in `mod1`
+b -> a
+x -> b
+--------------------------------------------------
+
+.Meta-node Example: `:export` and short form `:import`
+--------------------------------------------------
+:module(mod1)
+
+add(x, y) : x + y
+
+:export(add)
+
+:module(mod2)
+:import(mod1)
+
+# Use the `add` meta-node from module `mod1`
+add(a, b) -> c
+--------------------------------------------------
+
+A side effect of `:import` is that if an imported node, whether
+imported by the long or short form of `:import`, is registered as an
+infix operator in the module, from which it is being imported, it's
+entry in the module's operator table is copied over to the current
+module. This allows the operator to be placed in infix position, in
+the current module.
+
+==== Direct References ====
+
+It may be necessary to reference a node in another module without
+creating a pseudo-node, for its module, in the current module and
+without importing it in the current module. The special `:in` operator
+directly reference a node in another module by the module and node
+identifiers.
+
+.Syntax
+--------------------------------------------------
+:in(module-id, node-id)
+--------------------------------------------------
+
+The first argument is the identifier of the module containing the
+node, and the second argument is the identifier of the node, to
+reference within the module.
+
+IMPORTANT: `module-id` is the identifier of the module itself, and not
+the identifier of a module pseudo-node.
+
+.Example: `:in` Operator
+--------------------------------------------------
+:module(mod1)
+
+a -> b
+
+:module(mod2)
+
+# Reference node `b` in `mod1` directly
+:in(mod1, b) -> a
+x -> :in(mod1, b)
+--------------------------------------------------
+
+.Example: `:in` Operator
+--------------------------------------------------
+:module(mod1)
+
+add(x, y) : x + y
+
+:module(mod2)
+
+# Use the `add` meta-node from module `mod1`
+(:in(mod1, add))(a, b) -> c
+--------------------------------------------------
+
