@@ -901,7 +901,3 @@ to `g`, use the following declaration:
 
 
 == Modules ==
-
-== Optimizations ==
-
-=== Coalescing ===

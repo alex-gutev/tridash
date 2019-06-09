@@ -13,3 +13,5 @@ include::syntax.adoc[]
 include::semantics.adoc[]
 
 include::core-libs.adoc[]
+
+include::optimization.adoc[]
