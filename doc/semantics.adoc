@@ -355,14 +355,37 @@ c -> (a -> b)
 --------------------------------------------------
 
 The result of this declaration is that the binding `a -> b` is only
-active if `c` evaluates to a true value. If `c` evaluates to false, it
-can be considered that there is no binding between `a` and `b` or that
-the binding is _inactive_. The implication of the binding, `a -> b`,
-being _inactive_ is that no changes in values are propagated from `a`
-to `b`, i.e. changes in the value of `a`, will not trigger value
-changes in `b` or any of its successor nodes.
+active if the condition node `c` evaluates to a true value. If `c`
+evaluates to false, it can be considered that there is no binding
+between `a` and `b` or that the binding is _inactive_. The implication
+of the binding, `a -> b`, being _inactive_ is that no changes in
+values are propagated from `a` to `b`, i.e. changes in the value of
+`a`, will not trigger value changes in `b` or any of its successor
+nodes.
 
+A binding declaration, with a binding node as the target, changes the
+function of the context of the binding to cease the current
+propagation of values if the value of the condition node is false. The
+binding node `a -> b` (`->(a, b))` in prefix notation), is added as a
+dependency of `b` and as an operand of the context corresponding to
+the binding `a -> b`. The binding node is itself an observer of `c`
+with a simple passthrough function. This allows you to reference the
+'status' of the binding by referencing the binding node, `a -> b`.
 
+.Example: Simple Validation
+--------------------------------------------------
+# Validate that `i` has a value > 0
+# Propagate value of `i` to `j`
+
+i > 0 -> (i -> j)
+
+# Perform some computation with `j` which is guaranteed to only be
+# updated to the value of `i` if it is > 0.
+...
+--------------------------------------------------
+
+TIP: The bind `->` operator has 'right' associativity, thus the
+parenthesis in `c -> (a -> b)` can be omitted: `c -> a -> b`.
 
 === Input Nodes ===
 
