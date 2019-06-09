@@ -415,6 +415,55 @@ listing of some attributes an a summary of their effect:
 :attribute(a, public-name, "app-input")
 --------------------------------------------------
 
+=== Subnodes ===
+
+Subnodes are nodes which reference a value, with a particular key, out
+of a dictionary of values stored in another node, referred to as the
+`parent` node.
+
+Subnodes are referenced using the special `.` operator, which is also
+an infix operator. The `parent` node appears on the left-hand side and
+the key on the right-hand side. The key is not treated as a raw
+identifier, instead the identifier appearing on the right-hand side is
+treated as the raw key identifier.
+
+.Syntax
+--------------------------------------------------
+<parent node>.<key identifier>
+--------------------------------------------------
+
+TIP: The `.` operator is lexically special in that spaces are not
+required to separate it from its operand.
+
+NOTE: The `.` infix operator has precedence *1000* and *left*
+associativity.
+
+.Example
+--------------------------------------------------
+person.first-name + person.last-name -> full-name
+--------------------------------------------------
+
+There are two subnode references: the first references the
+`first-name` subnode of the parent node `person` and the second
+references the `last-name` subnode of `person`.
+
+An implicit two-way binding is established between the subnode and
+parent node. The binding in the direction +parent -> subnode+ has a
+value function which extracts the subnode key from the dictionary
+stored in `parent`. The binding in the reverse direction, +subnode ->
+parent+, has a function which creates a dictionary with an entry which
+has the subnode key as the key and the value of `subnode` as the
+value. This allows a dictionary to be created in the `parent` node by
+establishing an explicit binding with `subnode` as the
+target. Multiple such bindings, with different subnodes of `parent`,
+will result in a dictionary being created with an entry for each
+subnode.
+
+.Example: Creating Dictionaries
+--------------------------------------------------
+"John" -> person.first-name
+"Smith" -> person.last-name
+--------------------------------------------------
 
 == Meta-Nodes ==
 
@@ -599,6 +648,18 @@ example, may have been declared as follows:
 case (n > 1 : next, 1) -> factorial
 --------------------------------------------------
 ==================================================
+
+The `self` node is particularly useful for creating a dictionary of
+values to which the meta-node evaluates to, see <<_subnodes,
+Subnodes>>:
+
+.Example: Creating Dictionaries
+--------------------------------------------------
+Person(first, last): {
+    first -> self.first-name
+    last -> self.last-name
+}
+--------------------------------------------------
 
 ==== Nested Meta-Nodes ====
 
