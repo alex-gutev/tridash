@@ -36,6 +36,9 @@ identifier appears in source code. This could either be a declaration
 consisting of the identifier itself or a functor node declaration of
 which the node is an argument.
 
+IMPORTANT: The `self` identifier is reserved as an alias for other
+nodes, see <<_meta_nodes, Meta-Nodes>>
+
 .Examples
 --------------------------------------------------
 # Results in the creation of node `name`
@@ -417,16 +420,25 @@ listing of some attributes an a summary of their effect:
 
 A meta-node is a function, of one or more arguments, which evaluates
 to a value. Meta-nodes are nodes, themselves, however no runtime node
-is created for meta-nodes.
+is created for meta-nodes. For the most part you can treat meta-nodes
+as ordinary nodes, e.g. you can set attributes on meta-nodes using the
+same `:attribute` declaration. However, as of yet you cannot reference
+the value of a meta-node. Referencing the value of a meta-node will
+result in a compilation error.
+
+Meta-node identifiers reside in the same namespace as that of ordinary
+nodes, that is you cannot have both an ordinary node and meta-node
+with identifier `f`. If there is a meta-node `f`, the declaration `f`
+references the meta-node.
 
 NOTE: Functor nodes with the meta-node as the operator are referred to
 as instances of the meta-node.
 
 TIP: Meta-nodes are referred to as meta-nodes, since they are nodes
 which describe how to compute the value of other nodes, referred to as
-their instances. Meta-nodes may also be macros, this is the case for
-the builtin `?->` and `case` meta-nodes in the `core` module, however at
-present there is no functionality for user-defined macros.
+their instances. Meta-nodes may also be macros, such as the builtin
+`?->` and `case` meta-nodes in the `core` module. However, at present
+there is no functionality for defining macros in Tridash code.
 
 === Defining Meta-Nodes ===
 
@@ -445,6 +457,10 @@ identifier, `name`, followed by the comma-separated list of arguments
 in parenthesis. Each item, at position _n_, of the argument list is
 the identifier of the local node to which the _n_^th^ argument is
 bound.
+
+CAUTION: Identifiers beginning with `:` are reserved for special
+operators. A meta-node cannot have the same identifier as a special
+operator, including the bind `->` and outer `..` operators.
 
 The body consists of a sequence of ordinary node declarations enclosed
 in braces `{ ... }`. The braces are simply a way of grouping multiple
@@ -538,6 +554,51 @@ factorial(n) :
     )
 --------------------------------------------------
 
+==== Self Node ====
+
+The special `self` node is a local node which is as an alias for the
+meta-node. This node can be used to set the value, to which the
+meta-node evaluates to, using explicit bindings.
+
+Inside the body of a meta-node it is permissible to establish an
+explicit binding with the meta-node as an observer. When an explicit
+binding to the meta-node is established, the meta-node no longer
+evaluates to the value of the last node in its body.
+
+CAUTION: Whilst an explicit binding with the meta-node as an observer
+can be established, the meta-node cannot be a dependency of any node
+in its body.
+
+IMPORTANT: A meta-node may not have more than a single context, see
+<<_contexts, Contexts>>, as it is ambiguous which context's value
+function to use as the meta-node function.
+
+NOTE: In the absence of an explicit binding to the meta-node, the last
+declaration in its body is implicitly bound to the meta-node.
+
+.Example
+--------------------------------------------------
+factorial(n) : {
+    case (n > 1 : next, 1) -> self
+    n * factorial(n - 1) -> next
+}
+--------------------------------------------------
+
+In the example, above, the value of the `factorial` meta-node is set
+by an explicit binding to the `self` node (in the second line). The
+meta-node no longer evaluates to the value of the last node in the
+declaration list.
+
+[NOTE]
+==================================================
+`self` is merely an alias for the meta-node, in which the declaration
+occurs. The binding to self, in the second line of the previous
+example, may have been declared as follows:
+
+--------------------------------------------------
+case (n > 1 : next, 1) -> factorial
+--------------------------------------------------
+==================================================
 
 ==== Nested Meta-Nodes ====
 
