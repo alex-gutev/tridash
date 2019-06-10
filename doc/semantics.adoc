@@ -1199,3 +1199,81 @@ add(x, y) : x + y
 (:in(mod1, add))(a, b) -> c
 --------------------------------------------------
 
+
+=== Operator Table ===
+
+Each module may register a number of node identifiers as infix
+operators. This means that those identifiers may appear in infix
+position in declarations parsed while the module is the current
+module. The module's 'operator table' stores the identifier,
+precedence and associativity of each infix operator. _See <<__functors,
+Functors>> for more information about infix operators, operator
+precedence and associativity_.
+
+Initially all modules are created with the following infix operator
+table (_containing entries for the special operators_):
+
+[cols="<,>,>", options="header"]
+|====================
+| Operator | Precedence | Associativity
+
+| `.`       | 1000       | left
+| <function application> | 900 |
+| `->`      | 10         | right
+| `:`       | 5          | right
+|====================
+
+==== Registering Infix Operators ====
+
+New infix operators can be registered using the special `:op`
+declaration. This declaration modifies the operator table of the
+current module.
+
+.Syntax
+--------------------------------------------------
+:op(identifier, precedence [, left | right])
+--------------------------------------------------
+
+The first argument is the node identifier to register as an infix
+operator. The second argument is the precedence as an integer
+value. The third argument specifies the associativity. This is either
+the identifier `left` or `right` for 'left' or 'right'
+associativity. If the third argument is omitted, 'left' associativity
+is assumed.
+
+NOTE: The identifier does not have to name a node or meta-node that
+exists at the time the `:op` declaration is processed. The table only
+stores the identifier for syntactic transformations, no information
+about the actual node is stored.
+
+An `:op` declaration adds an entry to the current module's operator
+table if it does not already contain an entry for the identifier. If
+the table already contains an entry for the identifier, the the
+'precedence' and 'associativity' values of the existing entry are
+replaced with those given in the arguments to the `:op` declaration.
+
+TIP: The 'precedence' and 'associativity' of all the special operators
+can be changed, with the exception of 'function application'.
+
+When a node is imported into the current module and there is an entry,
+for the node's identifier, in the operator table of the module, from
+which the node is being imported, the entry is copied over into the
+current module's operator table, replacing any existing entries for the
+identifier if any.
+
+NOTE: Whilst it is possible to change the 'precedence' and
+'associativity' of the builtin operators, their entries cannot be
+imported into other modules as they are 'special' operators which do
+not correspond to any node.
+
+.Example: `+` infix operator from `core` module
+--------------------------------------------------
+# Register `+` as infix operator
+:op(+, 100, left)
+
+# Now `+` can appear in infix position
+a + b
+
+# It can also still appear in prefix position
++(a, b)
+--------------------------------------------------
