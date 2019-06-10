@@ -560,10 +560,8 @@ operator, including the bind `->` and outer `..` operators.
 
 The body consists of a sequence of ordinary node declarations enclosed
 in braces `{ ... }`. The braces are simply a way of grouping multiple
-declarations into a single declaration. If braces appear as an operand
-in a functor, it is as if they are replaced by the last declaration in
-the list, and the remaining declarations are extracted to the
-top-level. If the body of the meta-node contains just a single
+declarations into a single declaration, _See <<_node_lists, Node
+Lists>>_. If the body of the meta-node contains just a single
 declaration, the braces may be omitted.
 
 Functor expressions with the meta-node as an operator evaluate to the
@@ -603,12 +601,15 @@ fib(n) : {
 }
 --------------------------------------------------
 
-IMPORTANT: Meta-nodes must be defined before they are used in the same
-scope as the scope in which the meta-node declaration occurs. That is,
-a declaration involving the meta-node `f` as an operator must occur
-after the definition of `f`. A meta-node `f` can, however, be used in
-the body of another meta-node `g`, even if its definition precedes
-`f`, i.e. mutual recursion is possible.
+IMPORTANT: Meta-nodes must be defined before they can occur as
+operators in functors.
+
+IMPORTANT: Meta-node bodies are only processed after all global (or
+the scope in which the meta-node declaration occurs) declarations in
+the same file have been processed. This allows a meta-node `g` to
+appear as the operator in a functor within the body of another
+meta-node `f` even if the definition of `g` appears after the
+definition of `f`. Effectively this allows for mutual recursion.
 
 ==== Local Nodes ====
 
