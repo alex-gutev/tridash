@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Simple Inline Bindings</title>
+    <?
+     :module(mod)
+     :import(core)
+
+     compute-result(a) : {
+         add-b(x) : {
+             :use(mod)
+             x + mod.self.input-b.value
+         }
+         add-b(a)
+     }
+
+     compute-result(self.input-a.value) -> result
+     :attribute(result, no-coalesce, 1)
+    ?>
+  </head>
+  <body>
+    <p><label>a: <input id="input-a"/></label></p>
+    <p><label>b: <input id="input-b"/></label></p>
+    <p><label>Result: <?@ result ?></label></p>
+  </body>
+</html>

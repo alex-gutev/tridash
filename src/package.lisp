@@ -183,6 +183,7 @@
    :module-table
    :modules
    :get-module
+   :ensure-module
    :home-module
    :*global-module-table*
 

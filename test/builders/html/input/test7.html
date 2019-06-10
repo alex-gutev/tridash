@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Simple Inline Bindings</title>
+    <?
+     :import(core)
+     compute-result(a) : a + ..(self).input-b.value
+
+     compute-result(self.input-a.value) -> result
+     :attribute(result, no-coalesce, 1)
+    ?>
+  </head>
+  <body>
+    <p><label>a: <input id="input-a"/></label></p>
+    <p><label>b: <input id="input-b"/></label></p>
+    <p><label>Result: <?@ result ?></label></p>
+  </body>
+</html>

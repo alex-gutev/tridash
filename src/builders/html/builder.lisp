@@ -74,7 +74,7 @@
 (define-file-builder (html htm) (file modules options)
   (with-hash-keys ((node-name "node-name")) options
     (multiple-value-bind (module name) (node-path->name node-name)
-      (let ((module (get-module module modules))
+      (let ((module (ensure-module module modules))
             (comp-node (make-html-component-node name nil)))
 
         (add-node name comp-node module)

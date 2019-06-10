@@ -272,20 +272,31 @@
                             :name (concatenate-to 'string name ".out")
                             :type type))))
 
-    `(progn
-       (diag ,(format nil "Test file: ~a" file))
+    (match name
+      ((or (list module name)
+           name)
 
-       (with-module-table ,module-table
-         ,@(map #`(build-source-file ,a1 ,module-table) preload)
-         (build-source-file (list ,file (alist-hash-map '(("node-name" . ,name)))) ,module-table)
-         (symbol-macrolet ((html-component-node-id ,name))
-           (let ((,g!comp-node (test/get-node ',name ,module-table)))
-             (is-type! ,g!comp-node 'html-component-node)
+       `(progn
+          (diag ,(format nil "Test file: ~a" file))
 
-             ,@body
-             (is (strip-empty-text-nodes (element-node ,g!comp-node))
-                 (parse-html-file ,(out-file file))
-                 :test #'html=)))))))
+          (with-module-table ,module-table
+            ,@(map #`(build-source-file ,a1 ,module-table) preload)
+
+            (-<>> ,(if module (format nil "~a.~a" module name) name)
+                  (cons "node-name")
+                  list
+                  alist-hash-map
+                  (list ,file)
+                  (build-source-file <> ,module-table))
+
+            (symbol-macrolet ((html-component-node-id ,name))
+              (let ((,g!comp-node (test/get-node ',name ,module-table)))
+                (is-type! ,g!comp-node 'html-component-node)
+
+                ,@body
+                (is (strip-empty-text-nodes (element-node ,g!comp-node))
+                    (parse-html-file ,(out-file file))
+                    :test #'html=)))))))))
 
 
 (plan nil)
@@ -403,5 +414,26 @@
                 (is-type! obs 'html-node "Is HTML-NODE")
                 (is tag-name "span" "Tag is SPAN")
                 (is html-attribute "textContent" "Bound to attribute textContent")))))))))
+
+(subtest "Self-Node Reference from Meta-Nodes"
+  (html-file-test (modules "main" #p"test/builders/html/input/test7.html" "modules/core.trd")
+    (let ((modules (finish-build-graph modules)))
+      (with-nodes ((result "result")) modules
+        (with-html-nodes ((input-a.value ("." "input-a" "value") "input")
+                          (input-b.value ("." "input-b" "value") "input"))
+            modules
+
+          (test-binding input-a.value result)
+          (test-binding input-b.value result)))))
+
+  (html-file-test (modules ("mod" "main") #p"test/builders/html/input/test8.html" "modules/core.trd")
+    (let ((modules (finish-build-graph modules)))
+      (with-nodes ((result "result")) modules
+        (with-html-nodes ((input-a.value ("." "input-a" "value") "input")
+                          (input-b.value ("." "input-b" "value") "input"))
+            modules
+
+          (test-binding input-a.value result)
+          (test-binding input-b.value result))))))
 
 (finalize)
