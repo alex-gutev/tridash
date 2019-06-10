@@ -2,11 +2,16 @@
 
 Syntactically a Tridash program consists of a sequence of *node*
 declarations, which are divided into three types: *atom* nodes,
-*functor* nodes and *literal* nodes.
+*functor* nodes and *literal* nodes. Declarations are separated by
+either a semicolon `;` character or a line break.
 
+Anything occurring between a `#` character and the end of the line is
+treated as a comment and is discarded.
 
 .Basic Grammar
 --------------------------------------------------
+<declaration> = <node>(';' | <line break> | <end of file>)
+
 <node> = <functor> | <identifier> | <literal>
 <node> = '(' <node> ')'
 
@@ -87,6 +92,10 @@ func(arg1, arg2)
 m.fn()
 --------------------------------------------------
 
+IMPORTANT: A line break occurring before the closing parenthesis `)`
+is not treated as a declaration separator. Instead the following line
+is treated as a continuation of the current line.
+
 In the special case of an operator applied to two arguments, the
 operator may be placed in infix position, that is between the two
 argument nodes. The operator may only be an *atom* node and must be
@@ -95,6 +104,12 @@ registered as an infix operator.
 IMPORTANT: Spaces between the operator and its operands are required,
 in order to distinguish the operator from the operands. This is due to
 the large number of allowed characters in node identifiers.
+
+IMPORTANT: A line break occurring between the infix operator and its
+right argument is not treated as a declaration separator. However a
+line break between the left argument and infix operator is treated as
+terminating the declaration consisting of the left argument. The
+following line is then treated as a separate declaration.
 
 Functor expressions written in infix and prefix form are equivalent,
 thus the following infix functor expression:
@@ -139,6 +154,24 @@ operators. Thus for an infix expression to be parsed to the above, `a
 --------------------------------------------------
 (a + b) * c
 --------------------------------------------------
+
+=== Node Lists ===
+
+Multiple node declarations can be syntactically grouped into a single
+node using the `{` and `}` delimiters. All declarations between the
+delimiters are processed and accumulated into a special 'node list'
+syntactic entity. In most contexts the node list is treated as being
+equivalent to the last node declaration before the closing brace `}`,
+however special operators and macros may process node lists in a
+different manner.
+
+.Node Lists
+--------------------------------------------------
+<node> = <node list>
+<node list> = '{' <declaration>* '}'
+--------------------------------------------------
+
+IMPORTANT: The end of file may not occur before the closing brace '}'.
 
 === Literals ===
 
