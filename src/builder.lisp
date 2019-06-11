@@ -582,7 +582,7 @@
               (value-link (add-binding *source-node* target)))
 
          (unless (top-level?)
-           (let* ((name (cons operator operands))
+           (let* ((name (cons operator (operand-names (list *source-node* target) table)))
                   (cond-node (ensure-node name table))
                   (cond-link (add-binding cond-node target :context *source-node* :add-function nil)))
 
@@ -719,8 +719,8 @@
    values: the instance node, the operand nodes and the table to which
    the instance was added."
 
-  (let ((name (cons operator operands)))
-    (multiple-value-bind (operands table) (process-operands operands table)
+  (multiple-value-bind (operands table) (process-operands operands table)
+    (let ((name (cons operator (operand-names operands table))))
 
       ;; Add META-NODE to the meta node references of *META-NODE*
       (when (and *meta-node* (/= meta-node *meta-node*))
@@ -755,6 +755,21 @@
     (values
      (map (rcurry #'process-declaration table) operands)
      table)))
+
+(defun operand-names (operands module)
+  "Return the names of the operand nodes as they should appear in the
+   arguments to a functor node in module MODULE."
+
+  (flet ((make-name (node)
+           (match node
+             ((type node)
+              (let ((home (home-module node)))
+                (if (eq home module)
+                    (name node)
+                    (list +in-module-operator+ (name home) (name node)))))
+
+             (_ node))))
+    (map #'make-name operands)))
 
 (defun bind-operands (node operands &key context)
   "Establishes bindings between the operands (OPERANDS) and the

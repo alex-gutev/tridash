@@ -1236,9 +1236,9 @@
 
         (let ((table (finish-build)))
           (with-nodes ((a "a") (b "b")
-                       (a<b ("<" ("." "m" "a") ("." "m" "b")))
-                       (b-a ("-" ("." "m" "b") ("." "m" "a")))
-                       (a-b ("-" ("." "m" "a") ("." "m" "b")))
+                       (a<b ("<" (":in" "mod1" "a") (":in" "mod1" "b")))
+                       (b-a ("-" (":in" "mod1" "b") (":in" "mod1" "a")))
+                       (a-b ("-" (":in" "mod1" "a") (":in" "mod1" "b")))
                        (out "out"))
               table
 
@@ -1295,9 +1295,9 @@
 
         (let ((table (finish-build)))
           (with-nodes ((a "a") (b "b") (out2 "out2")
-                       (a<b ("<" ("." "m" "a") ("." "m" "b")))
-                       (b-a ("-" ("." "m" "b") ("." "m" "a")))
-                       (a-b ("-" ("." "m" "a") ("." "m" "b")))
+                       (a<b ("<" (":in" "mod1" "a") (":in" "mod1" "b")))
+                       (b-a ("-" (":in" "mod1" "b") (":in" "mod1" "a")))
+                       (a-b ("-" (":in" "mod1" "a") (":in" "mod1" "b")))
                        (out1 "out1"))
               table
 

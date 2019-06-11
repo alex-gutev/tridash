@@ -690,7 +690,7 @@
             (build ":module(mod5); :import(my-mod); a + b")
 
             (with-modules ((mod5 "mod5")) modules
-              (with-nodes ((a "a") (b "b") (a+b ("+" "a" "b"))) mod5
+              (with-nodes ((a "a") (b "b") (a+b ("+" (":in" "my-mod" "a") "b"))) mod5
                 (test-node-function a+b + + a b)
 
                 (is a my-mod.a :test #'eq)
@@ -703,7 +703,23 @@
               (with-nodes ((b "b") (a+b ((":in" "my-mod" "+") (":in" "my-mod" "a") "b"))) mod6
                 (test-node-function a+b + + my-mod.a b)
 
-                (isnt b my-mod.b :test #'eq))))))
+                (isnt b my-mod.b :test #'eq))))
+
+          (subtest "Cross-Module Conditionally Active Bindings"
+            (build ":module(mod7); :import(my-mod, a, b); a -> (b -> c)")
+
+            (with-modules ((mod7 "mod7")) modules
+              (with-nodes ((a "a") (b "b") (c "c")
+                           (b->c ("->" (":in" "my-mod" "b") "c"))
+                           )
+                  mod7
+                (test-simple-binding a b->c :context a)
+
+	        (has-value-function
+	         ((b :context b) (b->c :context b))
+	         c
+
+	         `(if ,b->c ,b :fail)))))))
 
       (subtest "Errors"
         (subtest "Module Semantics"
