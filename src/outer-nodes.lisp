@@ -1,7 +1,7 @@
 ;;;; outer-nodes.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018  Alexander Gutev
+;;;; Copyright (C) 2018-2019  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -20,81 +20,50 @@
 
 (in-package :tridash.frontend)
 
+(defun outer-node-references (meta-node &optional (visited (make-hash-set)))
+  "Augments the set of outer-nodes, referenced from within META-NODE,
+   with the set of outer-nodes, referenced by each meta-node used
+   within the definition of META-NODE. Also augments the outer node
+   references of the meta-node's nested in it. The first return value
+   is the new set of outer nodes and the second return value is true
+   if the set is complete otherwise it is NIL."
 
-(defun find-outer-node-references (node-table)
-  "Determines the outer nodes referenced by all meta-nodes, and their
-   sub meta-nodes, in NODE-TABLE. The OUTER-NODES slot, of each
-   meta-node, is populated after calling this function."
+  (nadjoin meta-node visited)
 
-  (let (visited)
-    (declare (special visited))
-    (labels ((get-outer-node-references (meta-node)
-               "Determines the outer-nodes which are referenced within
-                the definition of META-NODE."
+  (with-slots (definition outer-nodes meta-node-references) meta-node
+    (flet ((add-outer-nodes (refs)
+             "Adds the outer-node references REFS to the outer-nodes
+              set of META-NODE. Excludes outer-nodes which are defined
+              within a sub-table of the definition of META-NODE."
 
-               (let ((visited (make-hash-set)))
-                 (declare (special visited))
-                 (outer-node-references meta-node)))
+             (doseq ((node . ref) refs)
+               (let ((table (car ref)))
+                 (unless (>= (depth table) (depth definition))
+                   (ensure-get node outer-nodes (cons table (outer-node-name meta-node)))))))
 
-             (outer-node-references (meta-node)
-               "Augments the set of outer-nodes, referenced from
-                within META-NODE, with the set of outer-nodes,
-                referenced by each meta-node used within the
-                definition of META-NODE, which are not in the visited
-                SET. The first return value is the new set of outer
-                nodes and the second return value is true if the set
-                is complete otherwise it is NIL."
+           (visited? (meta-node)
+             (memberp meta-node visited)))
 
-               (nadjoin meta-node visited)
+      (doseq (meta-node-ref meta-node-references)
+        (unless (visited? meta-node-ref)
+          (multiple-value-bind (refs complete?)
+              (outer-node-references meta-node-ref visited)
 
-               (with-slots (outer-nodes meta-node-references) meta-node
-                 (doseq (meta-node-ref meta-node-references)
-                   (unless (visited? meta-node-ref)
-                     (multiple-value-bind (refs complete?)
-                         (outer-node-references meta-node-ref)
+            (add-outer-nodes refs)
+            (when complete?
+              (erase meta-node-references meta-node-ref)))))
 
-                       (add-outer-nodes meta-node refs)
-                       (when complete?
-                         (erase meta-node-references meta-node-ref)))))
+      (when definition
+        (foreach #'outer-node-references (map-values (meta-nodes definition))))
 
-                 (values outer-nodes (emptyp meta-node-references))))
+      (values outer-nodes (emptyp meta-node-references)))))
 
-             (add-outer-nodes (meta-node refs)
-               "Adds the outer-node references REFS to the outer-nodes
-                set of META-NODE. Excludes outer-nodes which are
-                defined within a sub-table of the definition of
-                META-NODE."
+(defun add-outer-node-operands (meta-node)
+  "Appends the outer nodes referenced by META-NODE to the operands
+   list of META-NODE and updates all instances to pass the values of
+   the nodes as arguments."
 
-               (with-slots (definition outer-nodes) meta-node
-                 (doseq ((node . ref) refs)
-                   (let ((table (car ref)))
-                     (unless (>= (depth table) (depth definition))
-                       (ensure-get node outer-nodes (cons table (outer-node-name meta-node))))))))
-
-             (visited? (meta-node)
-               (memberp meta-node visited)))
-
-      (foreach #'get-outer-node-references (map-values (meta-nodes node-table)))
-      (foreach (process-meta-node #'find-outer-node-references) (map-values (meta-nodes node-table))))))
-
-(defun add-outer-node-operands (meta-nodes)
-  "To each meta-node in META-NODES: appends the outer nodes referenced
-   by it to the OPERANDS list and updates all instances of the
-   meta-node to pass the values of the referenced nodes as arguments."
-
-  (labels ((add-outer-node-operands (meta-node)
-             "Appends the outer nodes referenced by META-NODE to the
-              OPERANDS list of META-NODE and updates all instances to
-              pass the values of the nodes as arguments."
-
-             (with-slots (outer-nodes operands definition) meta-node
-               (let ((names (mapcar #'cdr (map-values outer-nodes))))
-                 (appendf operands names)
-                 (add-operand-nodes names definition))
-
-               (update-instances meta-node (map-keys outer-nodes))))
-
-           (update-instances (meta-node nodes)
+  (labels ((update-instances (nodes)
              "Updates each instance of META-NODE to pass the values of
               each node in NODES as additional arguments."
 
@@ -137,6 +106,12 @@
                     nodes))
                  nodes)))
 
-    (foreach #'add-outer-node-operands meta-nodes))
+    (with-slots (outer-nodes operands definition) meta-node
+      (let ((names (map #'cdr (map-values outer-nodes))))
+        (appendf operands names)
+        (add-operand-nodes names definition))
 
-  (foreach (process-meta-node (compose #'add-outer-node-operands #'map-values #'meta-nodes)) meta-nodes))
+      (update-instances (map-keys outer-nodes))
+
+      (when definition
+        (foreach #'add-outer-node-operands (map-values (meta-nodes definition)))))))

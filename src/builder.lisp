@@ -153,8 +153,8 @@
       (foreach #'build-meta-node-graphs (map-values modules))
 
       ;; Determine outer node references
-      (foreach #'find-outer-node-references (map-values modules))
-      (add-outer-node-operands (meta-nodes node-table))
+      (foreach #'outer-node-references (meta-nodes node-table))
+      (foreach #'add-outer-node-operands (meta-nodes node-table))
 
       (finish-build node-table)
 
