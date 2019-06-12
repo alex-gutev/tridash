@@ -302,24 +302,22 @@
 
     node))
 
-(defmethod process-declaration :around (decl table &key top-level (add-outer t))
+(defmethod process-declaration :around (decl table &key top-level (add-outer t) ((:level *level*) (if top-level 0 (1+ *level*))))
   "Processes the declaration with DECL added to the front of
    *DECLARATION-STACK*, and *LEVEL* incremented by one."
 
   (let ((*declaration-stack* (cons decl *declaration-stack*))
-        (*level* (if top-level 0 (1+ *level*))))
+        (node (call-next-method)))
 
-    (let* ((node (call-next-method)))
-
-      ;; If inside a meta-node and node referenced is from an outer
-      ;; node-table, add it to the outer-nodes set of the meta-node.
-      (if (and add-outer
-               *meta-node*
-               (node? node)
-               (not (meta-node? node))
-               (not (in-home-module? node table)))
-          (add-outer-node node (home-module node) table)
-          node))))
+    ;; If inside a meta-node and node referenced is from an outer
+    ;; node-table, add it to the outer-nodes set of the meta-node.
+    (if (and add-outer
+             *meta-node*
+             (node? node)
+             (not (meta-node? node))
+             (not (in-home-module? node table)))
+        (add-outer-node node (home-module node) table)
+        node)))
 
 (defmethod process-declaration ((n null) (table t) &key)
   "Processes the NIL declaration. NIL declaration only originate from
@@ -527,10 +525,24 @@
            (unless (node? node)
              (error 'node-type-error :expected 'node :node node))
 
-           (when (cl:equalp attribute "input")
-             (add-input node (home-module node)))
+           (process-attribute node (id-symbol (string-upcase attribute)) value)
 
            (setf (attribute attribute node) value)))))))
+
+(defgeneric process-attribute (node attribute value)
+  (:documentation
+   "Applies special processing on setting the attribute ATTRIBUTE, of
+    NODE, to VALUE.")
+
+  (:method ((node t) (attribute t) (value t))
+    "Pass-through method, does nothing."
+    nil))
+
+(defmethod process-attribute (node (attribute (eql (id-symbol "INPUT"))) value)
+  "Adds NODE to the input-nodes list of its home module."
+
+  (when (bool-value value)
+    (add-input node (home-module node))))
 
 
 ;;; Node lists
