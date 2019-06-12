@@ -917,6 +917,7 @@
     (subtest "Simple Function"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)")
         (build "add(x, y) : x + y")
         (finish-build)
 
@@ -933,6 +934,7 @@
     (subtest "Recursive Meta-Nodes"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)")
         (build "fact(n) : case(n < 1 : 1, n * fact(n - 1))")
         (finish-build)
 
@@ -951,6 +953,7 @@
     (subtest "Tail Recursive Meta-Nodes"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)")
         (build "fact(n) : { iter(n, acc) : case(n < 1 : acc, iter(n - 1, n * acc)); iter(n, 1) }")
         (finish-build)
 
@@ -983,6 +986,7 @@
     (subtest "Mutually Recursive Meta-Nodes"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)")
         (build "fib(n) : case(n > 1 : fib1(n) + fib2(n), 1)")
         (build "fib1(n) : fib(n - 1)")
         (build "fib2(n) : fib(n - 2)")
@@ -1021,6 +1025,7 @@
     (subtest "Tail-Recursive Meta-Nodes"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)")
         (build "fact(n) : case(n < 1 : 1, n * fact(n - 1))")
         (build ":attribute(fact, async, 1)")
 
@@ -1037,6 +1042,7 @@
     (subtest "Tail-Recursive Meta-Nodes"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)")
         (build "fact(n, acc) : case(n < 1 : 1, fact(n - 1, n * acc))")
         (build ":attribute(fact, async, 1)")
 
@@ -1055,6 +1061,7 @@
     (subtest "Mutually Recursive Meta-Nodes"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)")
         (build "fib(n) : case(n > 1 : fib1(n) + fib2(n), 1)")
         (build "fib1(n) : fib(n - 1)")
         (build "fib2(n) : fib(n - 2)")
@@ -1127,6 +1134,7 @@
     (subtest "All Lazy Nodes"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)")
         (build "case(a < b : b - a, a - b) -> out")
         (build ":attribute(a < b, no-coalesce, 1)")
         (build ":attribute(b - a, no-coalesce, 1)")
@@ -1136,7 +1144,7 @@
 
         (let ((table (finish-build)))
           (with-nodes ((a "a") (b "b") (out "out")
-                       (a<b ("<" "a" "b")) (b-a ("-" "b" "a")) (a-b ("-" "a" "b")))
+                       (a<b ((":in" "core" "<") "a" "b")) (b-a ((":in" "core" "-") "b" "a")) (a-b ((":in" "core" "-") "a" "b")))
               table
 
             (mock-backend-state
@@ -1174,6 +1182,7 @@
     (subtest "Not Lazy Nodes"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)")
         (build "case(a < b : b - a, a - b) -> out1")
         (build "b - a -> out2")
         (build ":attribute(a < b, no-coalesce, 1)")
@@ -1184,7 +1193,9 @@
 
         (let ((table (finish-build)))
           (with-nodes ((a "a") (b "b") (out1 "out1") (out2 "out2")
-                       (a<b ("<" "a" "b")) (b-a ("-" "b" "a")) (a-b ("-" "a" "b")))
+                       (a<b ((":in" "core" "<") "a" "b"))
+                       (b-a ((":in" "core" "-") "b" "a"))
+                       (a-b ((":in" "core" "-") "a" "b")))
               table
 
             (mock-backend-state
@@ -1220,25 +1231,25 @@
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
 
-        (build ":module(mod1)")
-        (build "a; b")
-        (build ":attribute(a, input, 1)")
-        (build ":attribute(b, input, 2)")
+        (build ":module(mod1)"
+               "a; b"
+               ":attribute(a, input, 1)"
+               ":attribute(b, input, 2)")
 
-        (build ":module(mod2)")
-        (build ":import(core)")
-        (build ":alias(mod1, m)")
-        (build "case(m.a < m.b : m.b - m.a, m.a - m.b) -> out")
+        (build ":module(mod2)"
+               ":import(core)"
+               ":alias(mod1, m)"
+               "case(m.a < m.b : m.b - m.a, m.a - m.b) -> out"
 
-        (build ":attribute(m.a < m.b, no-coalesce, 1)")
-        (build ":attribute(m.b - m.a, no-coalesce, 1)")
-        (build ":attribute(m.a - m.b, no-coalesce, 1)")
+               ":attribute(m.a < m.b, no-coalesce, 1)"
+               ":attribute(m.b - m.a, no-coalesce, 1)"
+               ":attribute(m.a - m.b, no-coalesce, 1)")
 
         (let ((table (finish-build)))
           (with-nodes ((a "a") (b "b")
-                       (a<b ("<" (":in" "mod1" "a") (":in" "mod1" "b")))
-                       (b-a ("-" (":in" "mod1" "b") (":in" "mod1" "a")))
-                       (a-b ("-" (":in" "mod1" "a") (":in" "mod1" "b")))
+                       (a<b ((":in" "core" "<") (":in" "mod1" "a") (":in" "mod1" "b")))
+                       (b-a ((":in" "core" "-") (":in" "mod1" "b") (":in" "mod1" "a")))
+                       (a-b ((":in" "core" "-") (":in" "mod1" "a") (":in" "mod1" "b")))
                        (out "out"))
               table
 
@@ -1278,26 +1289,26 @@
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
 
-        (build ":module(mod1)")
-        (build "a; b; out2")
-        (build ":attribute(a, input, 1)")
-        (build ":attribute(b, input, 2)")
+        (build ":module(mod1)"
+               "a; b; out2"
+               ":attribute(a, input, 1)"
+               ":attribute(b, input, 2)")
 
-        (build ":module(mod2)")
-        (build ":import(core)")
-        (build ":alias(mod1, m)")
-        (build "case(m.a < m.b : m.b - m.a, m.a - m.b) -> out1")
-        (build "m.a - m.b -> m.out2")
+        (build ":module(mod2)"
+               ":import(core)"
+               ":alias(mod1, m)"
+               "case(m.a < m.b : m.b - m.a, m.a - m.b) -> out1"
+               "m.a - m.b -> m.out2"
 
-        (build ":attribute(m.a < m.b, no-coalesce, 1)")
-        (build ":attribute(m.b - m.a, no-coalesce, 1)")
-        (build ":attribute(m.a - m.b, no-coalesce, 1)")
+               ":attribute(m.a < m.b, no-coalesce, 1)"
+               ":attribute(m.b - m.a, no-coalesce, 1)"
+               ":attribute(m.a - m.b, no-coalesce, 1)")
 
         (let ((table (finish-build)))
           (with-nodes ((a "a") (b "b") (out2 "out2")
-                       (a<b ("<" (":in" "mod1" "a") (":in" "mod1" "b")))
-                       (b-a ("-" (":in" "mod1" "b") (":in" "mod1" "a")))
-                       (a-b ("-" (":in" "mod1" "a") (":in" "mod1" "b")))
+                       (a<b ((":in" "core" "<") (":in" "mod1" "a") (":in" "mod1" "b")))
+                       (b-a ((":in" "core" "-") (":in" "mod1" "b") (":in" "mod1" "a")))
+                       (a-b ((":in" "core" "-") (":in" "mod1" "a") (":in" "mod1" "b")))
                        (out1 "out1"))
               table
 

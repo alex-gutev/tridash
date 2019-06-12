@@ -48,7 +48,8 @@
                 :declaration-parse-error)
 
   (:import-from :tridash.frontend
-                :outer-nodes)
+                :outer-nodes
+                :change-module)
 
   (:export
    :*flat-node-table*
@@ -131,7 +132,7 @@
         (find name (meta-nodes table) :key #'name)))
 
   (:method (name (modules module-table))
-    (get-node name (node-table modules)))
+    (some (curry #'get-node name) (map-values (modules modules))))
 
   (:method (name (table node-table))
     (get name (all-nodes table)))
@@ -315,6 +316,7 @@
           (*global-module-table* ,var)
           (*flat-node-table* nil))
      (flet ((build (&rest ,g!strings)
+              (change-module :init *global-module-table*)
               (foreach (rcurry #'build-nodes ,var) ,g!strings))
 
             (finish-build (&optional (,g!module-table ,var))
@@ -426,16 +428,16 @@
   (subtest "Functor Nodes"
     (with-module-table modules
       (build-source-file #p"./modules/core.trd" modules)
-      (build "a + b -> output; int(x) -> z")
+      (build ":import(core); a + b -> output; int(x) -> z")
 
       (with-nodes ((+ "+") (a "a") (b "b")
-                   (a+b ("+" "a" "b")) (output "output"))
+                   (a+b ((":in" "core" "+") "a" "b")) (output "output"))
           modules
 
         (test-simple-binding a+b output :context a+b)
         (test-node-function a+b + + a b))
 
-      (with-nodes ((int "int") (x "x") (z "z") (int-x ("int" "x"))) modules
+      (with-nodes ((int "int") (x "x") (z "z") (int-x ((":in" "core" "int") "x"))) modules
         (test-simple-binding int-x z :context int-x)
 
         (test-node-function int-x int int x)
@@ -500,7 +502,7 @@
     (subtest "Meta-Node Definitions"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
-        (build "add(x,y) : x + y; add(a,b)")
+        (build ":import(core); add(x,y) : x + y; add(a,b)")
 
         (with-nodes ((add "add") (a "a") (b "b") (add-ab ("add" "a" "b"))) modules
           (is-type add 'meta-node)
@@ -644,9 +646,7 @@
               (test-member-fn a.second "second" a)
 
               (test-simple-binding x a.first :context x)
-              (test-simple-binding y a.second :context y)
-              ))
-          ))))
+              (test-simple-binding y a.second :context y)))))))
 
   (subtest "Modules"
     (with-module-table modules
@@ -664,62 +664,88 @@
             (build ":module(mod2); :use(my-mod); my-mod.a -> a; my-mod.+(n,m)")
 
             (with-modules ((mod2 "mod2")) modules
-              (with-nodes ((a "a") (n "n") (m "m") (n+m (("." "my-mod" "+") "n" "m"))) mod2
-                (test-simple-binding my-mod.a a :context my-mod.a)
-                (test-node-function n+m + + n m))))
+              (with-nodes ((a "a") (n "n") (m "m"))
+                  mod2
+
+                (with-nodes ((n+m ((":in" "my-mod" "+") (":in" "mod2" "n") (":in" "mod2" "m"))))
+                    init
+                  (test-simple-binding my-mod.a a :context my-mod.a)
+                  (test-node-function n+m + + n m)))))
 
           (subtest "Test :alias operator"
             (build ":module(mod3); :alias(my-mod, m); m.a -> a; m.+(j,k)")
 
             (with-modules ((mod3 "mod3")) modules
-              (with-nodes ((a "a") (j "j") (k "k") (j+k (("." "m" "+") "j" "k"))) mod3
-                (test-simple-binding my-mod.a a :context my-mod.a)
-                (test-node-function j+k + + j k))))
+              (with-nodes ((a "a") (j "j") (k "k"))
+                  mod3
+
+                (with-nodes ((j+k ((":in" "my-mod" "+") (":in" "mod3" "j") (":in" "mod3" "k"))))
+                    init
+
+                  (test-simple-binding my-mod.a a :context my-mod.a)
+                  (test-node-function j+k + + j k)))))
 
           (subtest "Test :import operator with arguments"
             (build ":module(mod4); :import(my-mod, +); a + b")
 
             (with-modules ((mod4 "mod4")) modules
-              (with-nodes ((a "a") (b "b") (a+b ("+" "a" "b"))) mod4
-                (test-node-function a+b + + a b)
+              (with-nodes ((a "a") (b "b"))
+                  mod4
 
-                (isnt a my-mod.a :test #'eq)
-                (isnt b my-mod.b :test #'eq))))
+                (with-nodes ((a+b ((":in" "my-mod" "+") (":in" "mod4" "a") (":in" "mod4" "b"))))
+                    init
+
+                  (test-node-function a+b + + a b)
+
+                  (isnt a my-mod.a :test #'eq)
+                  (isnt b my-mod.b :test #'eq)))))
 
           (subtest "Test :import operator without arguments"
             (build ":module(mod5); :import(my-mod); a + b")
 
             (with-modules ((mod5 "mod5")) modules
-              (with-nodes ((a "a") (b "b") (a+b ("+" (":in" "my-mod" "a") "b"))) mod5
-                (test-node-function a+b + + a b)
+              (with-nodes ((a "a") (b "b"))
+                  mod5
 
-                (is a my-mod.a :test #'eq)
-                (isnt b my-mod.b :test #'eq))))
+                (with-nodes ((a+b ((":in" "my-mod" "+") (":in" "my-mod" "a") (":in" "mod5" "b"))))
+                    init
+
+                  (test-node-function a+b + + a b)
+
+                  (is a my-mod.a :test #'eq)
+                  (isnt b my-mod.b :test #'eq)))))
 
           (subtest "Test :in operator"
             (build ":module(mod6); :in(my-mod,+)(:in(my-mod, a), b)")
 
             (with-modules ((mod6 "mod6")) modules
-              (with-nodes ((b "b") (a+b ((":in" "my-mod" "+") (":in" "my-mod" "a") "b"))) mod6
-                (test-node-function a+b + + my-mod.a b)
+              (with-nodes ((b "b"))
+                  mod6
 
-                (isnt b my-mod.b :test #'eq))))
+                (with-nodes ((a+b ((":in" "my-mod" "+") (":in" "my-mod" "a") (":in" "mod6" "b"))))
+                    init
+
+                  (test-node-function a+b + + my-mod.a b)
+
+                  (isnt b my-mod.b :test #'eq)))))
 
           (subtest "Cross-Module Conditionally Active Bindings"
             (build ":module(mod7); :import(my-mod, a, b); a -> (b -> c)")
 
             (with-modules ((mod7 "mod7")) modules
-              (with-nodes ((a "a") (b "b") (c "c")
-                           (b->c ("->" (":in" "my-mod" "b") "c"))
-                           )
+              (with-nodes ((a "a") (b "b") (c "c"))
                   mod7
-                (test-simple-binding a b->c :context a)
 
-	        (has-value-function
-	         ((b :context b) (b->c :context b))
-	         c
+                (with-nodes ((b->c ("->" (":in" "my-mod" "b") (":in" "mod7" "c"))))
+                    init
 
-	         `(if ,b->c ,b :fail)))))))
+                  (test-simple-binding a b->c :context a)
+
+	          (has-value-function
+	           ((b :context b) (b->c :context b))
+	           c
+
+	           `(if ,b->c ,b :fail))))))))
 
       (subtest "Errors"
         (subtest "Module Semantics"
@@ -1024,8 +1050,12 @@
 
         (let ((table (finish-build)))
           (with-modules ((m1 "m1") (m2 "m2")) modules
-            (test-not-nodes table
-                            "a" "b" '("+" ("+" ("." "m1" "a") ("." "m1" "b")) "c"))
+            (test-not-nodes
+             table
+             "a" "b"
+             '((":in" "m2" "+")
+               ((":in" "m2" "+") (":in" "m1" "a") (":in" "m1" "b"))
+               (":in" "m2" "c")))
 
             (with-nodes ((in "in")) m1
               (with-nodes ((+ "+") (c "c") (output "output")) m2
@@ -1500,7 +1530,7 @@
         (let ((table (finish-build)))
           (with-nodes ((add "add") (fn "1+")) table
             (test-meta-node fn ((n "n")) `(,add ,n 1))
-            (test-not-nodes (definition fn) '("add" "n" 1)))))))
+            (test-not-nodes (definition fn) '((":in" "m1" "add") "n" 1)))))))
 
   ;; The following tests also test that node-coalescing and constant
   ;; folding work within meta-node definitions.
@@ -1533,14 +1563,12 @@
           (with-nodes ((if "if") (- "-") (* "*") (< "<") (fact "fact")) table
             (test-meta-node fact ((n "n")) `(,if (,< ,n 2) 1 (,* ,n (,fact (,- ,n 1)))))
             (test-not-nodes (definition fact)
-                            "m" "k" '("-" "m" 1) "next"
+                            "m" "k" '((":in" "core" "-") "m" 1) "next"
                             "two" "limit"
-                            '#1=("<" "k" "limit")
+                            '#1=((":in" "core" "<") "k" "limit")
                             '#2=("fact" "next")
-                            '#3=("*" "k" #2#)
-                            '("case"
-                              (":" #1# 1)
-                              #3#))))))
+                            '#3=((":in" "core" "*") "k" #2#)
+                            '((":in" "core" "if") #1# 1 #3#))))))
 
     (subtest "Tail Recursion with Nested Functions"
       (with-module-table modules
@@ -1584,12 +1612,10 @@
               (test-not-nodes (definition iter)
                               "m" "k" '("-" "m" 1) "next"
                               "two" "limit"
-                              '#10=("<" "k" "limit")
-                              '#11=("*" "k" "acc")
+                              '#10=((":in" "core" "<") "k" "limit")
+                              '#11=((":in" "core" "*") "k" "acc")
                               '#12=("iter" "next" #11#)
-                              '("case"
-                                (":" #10# "acc")
-                                #12#)))))))
+                              '((":in" "core" "if") #10# "acc" #12#)))))))
 
     (subtest "Mutually Recursive Functions"
       (subtest "Single Module"
@@ -1621,19 +1647,19 @@
               (test-meta-node fib2 ((n "n")) `(,fib (,- ,n 2)))
 
               (test-not-nodes (definition fib)
-                              '#20=(">" "n" "1")
-                              '#21=("fib1" "n")
-                              '#22=("fib2" "n")
-                              '#23=("+" #21# #22#)
-                              '("case" (":" #20# #23#) 1))
+                              '#20=((":in" "core" ">") "n" "1")
+                              '#21=((":in" :init "fib1") "n")
+                              '#22=((":in" :init "fib2") "n")
+                              '#23=((":in" "core" "+") #21# #22#)
+                              '((":in" "core" "if") #20# #23# 1))
 
               (test-not-nodes (definition fib1)
-                              '#30=("-" "n" "1")
-                              '#31=("fib" #30#))
+                              '#30=((":in" "core" "-") "n" "1")
+                              '#31=((":in" :init "fib") #30#))
 
               (test-not-nodes (definition fib2)
-                              '#40=("-" "n" "2")
-                              '#41=("fib" #40#))
+                              '#40=((":in" "core" "-") "n" "2")
+                              '#41=((":in" :init "fib") #40#))
 
               (has-value-function (in) out `(,fib ,in))))))
 
@@ -1673,19 +1699,19 @@
               (test-meta-node fib2 ((n "n")) `(,fib (,- ,n 2)))
 
               (test-not-nodes (definition fib)
-                              '#50=(">" "n" "1")
-                              '#51=("fib1" "n")
-                              '#52=(("." "m1" "fib2") "n")
-                              '#53=("+" #51# #52#)
-                              '("case" (":" #50# #53#) 1))
+                              '#50=((":in" "core" ">") "n" "1")
+                              '#51=((":in" "m1" "fib1") "n")
+                              '#52=((":in" "m1" "fib2") "n")
+                              '#53=((":in" "core" "+") #51# #52#)
+                              '((":in" "core" "if") #50# #53# 1))
 
               (test-not-nodes (definition fib1)
-                              '#60=("-" "n" "1")
-                              '#61=(("." "m2" "fib") #60#))
+                              '#60=((":in" "core" "-") "n" "1")
+                              '#61=((":in" "m2" "fib") #60#))
 
               (test-not-nodes (definition fib2)
-                              '#70=("-" "n" "2")
-                              '#71=(("." "m2" "fib") #70#))
+                              '#70=((":in" "core" "-") "n" "2")
+                              '#71=((":in" "m2" "fib") #70#))
 
               (has-value-function (in) out `(,fib ,in))))))))
 

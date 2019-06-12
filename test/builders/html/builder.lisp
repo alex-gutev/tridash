@@ -354,7 +354,7 @@
 
 (subtest "Inline Functors"
   (html-file-test (modules "main" #p"test/builders/html/input/test4.html" "modules/core.trd")
-    (with-nodes ((a ("int" "a")) (b ("int" "b")) (a+b ("+" "a" "b"))) modules
+    (with-nodes ((a ((":in" "core" "int") "a")) (b ((":in" "core" "int") "b")) (a+b ((":in" "core" "+") "a" "b"))) modules
       (with-html-nodes ((input-a.value ("." "input-a" "value") "input")
                         (input-b.value ("." "input-b" "value") "input")
                         (sum.value ("." "sum" "value") "input"))
@@ -371,8 +371,8 @@
 (subtest "Multiple Inline Declarations"
   (subtest "In Attributes"
     (html-file-test (modules "main" #p"test/builders/html/input/test5.html" "modules/core.trd")
-      (with-nodes ((a ("int" "a")) (b ("int" "b"))
-                   (a+b ("+" "a" "b")) (sum "sum"))
+      (with-nodes ((a ((":in" "core" "int") "a")) (b ((":in" "core" "int") "b"))
+                   (a+b ((":in" "core" "+") "a" "b")) (sum "sum"))
           modules
 
         (with-html-nodes ((input-a.value ("." "input-a" "value") "input")
@@ -392,8 +392,8 @@
 
   (subtest "In SPAN elements"
     (html-file-test (modules "main" #p"test/builders/html/input/test6.html" "modules/core.trd")
-      (with-nodes ((a ("int" "a")) (b ("int" "b"))
-                   (a+b ("+" "a" "b")) (sum "sum"))
+      (with-nodes ((a ((":in" "core" "int") "a")) (b ((":in" "core" "int") "b"))
+                   (a+b ((":in" "core" "+") "a" "b")) (sum "sum"))
           modules
 
         (with-html-nodes ((input-a.value ("." "input-a" "value") "input")

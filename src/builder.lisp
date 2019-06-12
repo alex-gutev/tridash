@@ -37,6 +37,9 @@
    binding, this variable is bound to the source node of the binding,
    otherwise is NIL.")
 
+(defparameter *functor-module* nil
+  "The module in which functor nodes are created.")
+
 
 (defclass flat-node-table ()
   ((nodes
@@ -84,6 +87,7 @@
    top level."
 
   (zerop *level*))
+
 
 ;;;; Declaration Processing Interface
 
@@ -134,7 +138,8 @@
    it to the `NODE-TABLE' of the current module in the `MODULE-TABLE'
    given in the second argument."
 
-  (let ((*declaration-stack* nil)
+  (let ((*functor-module* (ensure-module :init *global-module-table*))
+        (*declaration-stack* nil)
         (*source-node* nil))
     (process-declaration node (node-table *global-module-table*) :top-level t)))
 
@@ -234,7 +239,8 @@
     (unless (or (external-meta-node? meta-node)
                 (typep definition 'node-table))
       (let* ((table (make-inner-node-table outer-table))
-             (*meta-node* meta-node))
+             (*meta-node* meta-node)
+             (*functor-module* table))
 
         ;; Add implicit self node
         (add-node +self-node+ meta-node table)
@@ -582,8 +588,8 @@
               (value-link (add-binding *source-node* target)))
 
          (unless (top-level?)
-           (let* ((name (cons operator (operand-names (list *source-node* target) table)))
-                  (cond-node (ensure-node name table))
+           (let* ((name (canonicalize-functor operator (list *source-node* target)))
+                  (cond-node (ensure-node name *functor-module*))
                   (cond-link (add-binding cond-node target :context *source-node* :add-function nil)))
 
              (setf (value-function (context target *source-node*))
@@ -682,23 +688,23 @@
        (make-meta-node-instance meta-node operator operands table)))
 
 (defun make-meta-node-instance (meta-node operator operands table)
-  "Creates a node which invokes the meta-node META-NODE with operands
-   OPERANDS, and adds it to TABLE."
+  "Creates a functor node which invokes the meta-node META-NODE with
+   operands OPERANDS, and adds it to *FUNCTOR-MODULE*"
 
   (when (and *source-node* (null (target-meta-node meta-node)))
     (error 'target-node-error :node (cons operator operands)))
 
-  (add-meta-node-instance meta-node operator operands table))
+  (add-meta-node-instance meta-node operands table))
 
 
-(defun add-meta-node-instance (meta-node operator operands table)
+(defun add-meta-node-instance (meta-node operands table)
   "Creates a node with a VALUE-FUNCTION function that invokes the
    meta-node META-NODE with operands OPERANDS, and adds it to
-   TABLE. If TABLE already contains such a node it is returned."
+   *FUNCTOR-MODULE*. If such a node already exists it is returned."
 
   (with-accessors ((target-meta-node target-meta-node)) meta-node
     (multiple-value-bind (instance operand-nodes)
-        (create-instance-node meta-node operator operands table)
+        (create-instance-node meta-node operands table)
       (add-meta-node-value-function instance meta-node operand-nodes)
 
       (when target-meta-node
@@ -711,22 +717,22 @@
 
       instance)))
 
-(defun create-instance-node (meta-node operator operands table)
-  "Creates a meta-node instance node. The node is created with
-   name (CONS OPERATOR OPERANDS) and added to TABLE. Additionally
-   processes the operand node declarations in OPERANDS. Does not
-   create the value function of the instance node. Returns three
-   values: the instance node, the operand nodes and the table to which
-   the instance was added."
+(defun create-instance-node (meta-node operands table)
+  "Creates a meta-node instance node and adds it to
+  *FUNCTOR-MODULE*. Additionally processes the operand node
+  declarations in OPERANDS, occurring in module TABLE.  Returns two
+  values: the instance node and the operand nodes.
 
-  (multiple-value-bind (operands table) (process-operands operands table)
-    (let ((name (cons operator (operand-names operands table))))
+  NOTE: Does not create the value function of the instance node."
 
-      ;; Add META-NODE to the meta node references of *META-NODE*
-      (when (and *meta-node* (/= meta-node *meta-node*))
-        (nadjoin meta-node (meta-node-references *meta-node*)))
+  (let* ((operands (process-operands operands table))
+         (name (canonicalize-functor meta-node operands)))
 
-      (values (ensure-node name table t) operands))))
+    ;; Add META-NODE to the meta node references of *META-NODE*
+    (when (and *meta-node* (/= meta-node *meta-node*))
+      (nadjoin meta-node (meta-node-references *meta-node*)))
+
+    (values (ensure-node name *functor-module* t) operands)))
 
 (defun add-meta-node-value-function (instance meta-node operands &key (context meta-node))
   "Creates the value function of the meta-node instance INSTANCE,
@@ -756,21 +762,6 @@
      (map (rcurry #'process-declaration table) operands)
      table)))
 
-(defun operand-names (operands module)
-  "Return the names of the operand nodes as they should appear in the
-   arguments to a functor node in module MODULE."
-
-  (flet ((make-name (node)
-           (match node
-             ((type node)
-              (let ((home (home-module node)))
-                (if (eq home module)
-                    (name node)
-                    (list +in-module-operator+ (name home) (name node)))))
-
-             (_ node))))
-    (map #'make-name operands)))
-
 (defun bind-operands (node operands &key context)
   "Establishes bindings between the operands (OPERANDS) and the
    meta-node instance (NODE)."
@@ -780,3 +771,26 @@
                operand
                (add-binding operand node :context context :add-function nil))))
   (map #'bind-operand operands)))
+
+
+;;; Node Name Canonicalization
+
+(defun canonicalize-functor (operator operands)
+  "Returns a canonicalized declaration with which the
+   functor (OPERATOR OPERANDS) can be referenced, from
+   *FUNCTOR-MODULE*."
+
+  (map #'canonicalize-node (cons operator operands)))
+
+(defun canonicalize-node (node)
+  "Returns a canonicalized declaration with which NODE can be
+   referenced, from *FUNCTOR-MODULE*."
+
+  (match node
+    ((type node)
+     (let* ((home (home-module node)))
+       (if (or (outer-table home) (= home *functor-module*))
+           (name node)
+           (list +in-module-operator+ (name home) (name node)))))
+
+    (_ node)))
