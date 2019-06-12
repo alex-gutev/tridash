@@ -54,6 +54,7 @@
                  (:file "conditions")
                  (:file "outer-nodes")
                  (:file "builder")
+                 (:file "macros")
                  (:file "coalescer")
                  (:file "prog-builder")
                  (:file "main")

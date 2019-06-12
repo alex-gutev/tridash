@@ -406,6 +406,26 @@
               :rule 'terminator)))))
 
 
+;;;; Utility Functions
+
+(defun symbol-mapping (tridash-symbol &optional (cl-symbol (intern tridash-symbol)))
+  "Creates a mapping from a Tridash symbol to a Common Lisp
+   symbol. Returns a CONS with the CAR being the Tridash symbol with
+   name TRIDASH-SYMBOL, created by ID-SYMBOL, and the CDR being
+   CL-SYMBOL, which defaults to a symbol with name TRIDASH-SYMBOL
+   interned in the current package."
+
+  (cons (id-symbol tridash-symbol) cl-symbol))
+
+(defun symbol-mappings (&rest mappings)
+  "Creates a mapping from Tridash symbols to Common Lisp
+   symbols. Returns a list with each element of MAPPINGS replaced by
+   the result of applying SYMBOL-MAPPING on the element. If an element
+   is not a list it is converted to a list of one element."
+
+  (map (compose (curry #'apply #'symbol-mapping) #'ensure-list) mappings))
+
+
 ;;;; Parse Error Conditions
 
 (define-condition declaration-parse-error (tridash-parse-error)

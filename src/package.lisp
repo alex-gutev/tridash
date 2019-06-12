@@ -76,7 +76,10 @@
    :add-operator
 
    :node-path->name
-   :id-symbol)
+   :id-symbol
+
+   :symbol-mapping
+   :symbol-mappings)
 
   (:documentation
    "Package containing the parser and lexer."))
