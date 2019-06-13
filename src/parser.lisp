@@ -408,7 +408,7 @@
 
 ;;;; Utility Functions
 
-(defun symbol-mapping (tridash-symbol &optional (cl-symbol (intern tridash-symbol)))
+(defun symbol-mapping (tridash-symbol &optional (cl-symbol (intern (string-upcase tridash-symbol))))
   "Creates a mapping from a Tridash symbol to a Common Lisp
    symbol. Returns a CONS with the CAR being the Tridash symbol with
    name TRIDASH-SYMBOL, created by ID-SYMBOL, and the CDR being

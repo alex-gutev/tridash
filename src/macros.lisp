@@ -121,19 +121,9 @@
   (alist-hash-map
    (symbol-mappings
     "if"
-    "+"
-    "-"
-    "*"
-    "/"
-    "<"
-    "<="
-    ">"
-    ">="
-    "="
-    '("!=" '/=)
-    "and"
-    "or"
-    "not"
+    "+" "-" "*" "/"
+    "<" "<=" ">" ">=" "=" '("!=" '/=)
+    "and" "or" "not"
     '("int?" integerp)
     '("real?" floatp)
     '("string?" stringp)))
