@@ -171,3 +171,13 @@
    CALL-TRIDASH-META-NODE CL function expression."
 
   `(call-tridash-meta-node ,meta-node (list ,@(map #'tridash->cl operands))))
+
+
+;;;; Macro-Writing
+
+(defmethod process-functor ((operator (eql +quote-operator+)) args table)
+  "Returns the raw argument unprocessed."
+
+  (match-syntax (operator any) args
+    ((list thing)
+     thing)))

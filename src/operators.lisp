@@ -31,6 +31,9 @@
 (defconstant +op-operator+ (id-symbol ":op")
   "Operator for marking nodes as infix operators.")
 
+(defconstant +quote-operator+ (id-symbol ":quote")
+  "Operator for suppressing processing of declarations.")
+
 
 ;;; Subnodes and Outer Nodes.
 
@@ -92,19 +95,21 @@
 
 
 (defconstant +special-operators+
-    (list +bind-operator+
-          +def-operator+
-          +extern-operator+
-          +op-operator+
-          +outer-operator+
-          +subnode-operator+
-          +attribute-operator+
-          +module-operator+
-          +import-operator+
-          +use-operator+
-          +export-operator+
-          +in-module-operator+
-          +list-operator+)
+  (list +bind-operator+
+        +def-operator+
+        +extern-operator+
+        +op-operator+
+        +outer-operator+
+        +subnode-operator+
+        +attribute-operator+
+        +module-operator+
+        +import-operator+
+        +use-operator+
+        +export-operator+
+        +in-module-operator+
+        +list-operator+
+
+        +quote-operator+)
 
   "List of all special operators")
 
