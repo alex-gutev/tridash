@@ -838,7 +838,39 @@
                    "then")
 
                   (js-lambda '(($ arg))
-                             (list (js-return (js-element ($ arg) (js-string "z")))))))))))))))
+                             (list (js-return (js-element ($ arg) (js-string "z"))))))))))))))
+
+  (subtest "Conditional Bindings"
+    (subtest "Saving Previous Value"
+      (mock-backend-state
+        (mock-meta-nodes (<)
+          (mock-contexts
+              ((context (a) (sub-function `(if (,< ,a 0) ,a :fail) :save t)))
+
+            (test-compute-function context
+              (js-var ($ 1))
+              (js-if (js-call < (d a) 0)
+                     (js-call "=" ($ 1) (d a))
+                     (-<> (js-member "this" "saved_values")
+                          (js-element 0)
+                          (js-call "=" ($ 1) <>)))
+
+              (-<> (js-member "this" "saved_values")
+                   (js-element 0)
+                   (js-call "=" <> ($ 1)))
+
+              (js-return ($ 1)))))))
+
+    (subtest "Throwing EndUpdate Exception"
+      (mock-backend-state
+        (mock-meta-nodes (<)
+          (mock-contexts
+              ((context (a) (sub-function `(if (,< ,a 0) ,a :fail))))
+
+            (test-compute-function context
+              (js-if (js-call < (d a) 0)
+                     (js-return (d a))
+                     (js-throw (js-new "Tridash.EndUpdate"))))))))))
 
 
 (defun test-function% (got expected)
