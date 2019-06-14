@@ -212,7 +212,20 @@ Tridash.Reserve = function(context, start) {
  *   has been computed.
  */
 Tridash.Reserve.prototype.add_dep = function(start) {
-    this.all_deps = this.all_deps.then(() => start);
+    // Save promise for previous dependencies
+    var prev = this.all_deps;
+
+    // Add finally handler which resolves to the promise of the
+    // current dependency regardless of whether the promises of the
+    // previous dependencies were resolved or rejected.
+
+    // Add a final catch handler which resolves to the promise of the
+    // previous dependency if the promise of the current dependency is
+    // rejected.
+
+    this.all_deps =
+        this.all_deps.finally(() => start)
+        .catch(() => prev);
 };
 
 /**
