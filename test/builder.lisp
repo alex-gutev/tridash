@@ -226,11 +226,12 @@
      (and (eq node-a node-b)
 	  (eq context-a context-b)))
 
-    (((sub-function- (expression expr-a) (count count-a))
-      (sub-function- (expression expr-b) (count count-b)))
+    (((sub-function- (expression expr-a) (count count-a) (save save-a))
+      (sub-function- (expression expr-b) (count count-b) (save save-b)))
 
      (and (value-fn-equal expr-a expr-b)
-          (= count-a count-b)))
+          (= count-a count-b)
+          (if save-a save-b (not save-b))))
 
     (((sub-function- (expression expr-a)) b)
      (value-fn-equal expr-a b))
@@ -1093,7 +1094,36 @@
 
              (,(id-symbol "value")
                ,(sub-function `(,parse ,in) :count 2)))
-           :test #'object-fn-equal))))))
+           :test #'object-fn-equal))))
+
+    (with-module-table modules
+      (build ":extern(add, even?)"
+
+             "add(a, b) -> c"
+             "even?(add(a, 1)) -> (add(a, 1) -> b)"
+
+             "add(c, d) -> out"
+
+             ":attribute(a, input, 1)"
+             ":attribute(d, input, 1)")
+
+      (let ((table (finish-build)))
+        (test-not-nodes table
+                        '("add" "a" 1)
+                        '("add" "a" "b")
+                        "b"
+                        "c"
+                        '("even?" ("add" "a" 1))
+                        '("->" ("add" "a" 1) "b")
+                        '("add" "c" "d"))
+
+        (with-nodes ((a "a") (d "d") (out "out")
+                     (add "add") (even? "even?"))
+            table
+
+          (has-value-function
+           (a d) out
+           `(,add (,add ,a ,(sub-function `(if (,even? (,add ,a ,1)) (,add ,a 1) :fail) :save t)) ,d)))))))
 
 (subtest "Constant Folding"
   (subtest "Literal Constant Values"
