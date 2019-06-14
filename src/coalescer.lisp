@@ -24,7 +24,7 @@
 (in-readtable cut-syntax)
 
 (defstruct
-    (sub-function (:constructor sub-function (expression &key count)))
+    (sub-function (:constructor sub-function (expression &key count save)))
 
   "A sub-function is an expression which forms part of the
    value-function of a node. This struct is used to mark expressions
@@ -32,7 +32,9 @@
    EXPRESSION is used."
 
   expression
-  (count 1))
+  (count 1)
+
+  (save nil))
 
 (defun coalesce-nodes (input-nodes)
   "Coalesces successive nodes, which only have a single observer, into
@@ -172,10 +174,12 @@
                                        (not (type node))
                                        (not (type symbol))
                                        (not (type sub-function)))))
-                ;; Replace linked-node with a sub-function which wraps
-                ;; the expression.
-                (setf (node-link-node fn)
-                      (sub-function (remove-node-links expr))))
+
+                (let ((expr (remove-node-links expr)))
+                  ;; Replace linked-node with a sub-function which wraps
+                  ;; the expression.
+                  (setf (node-link-node fn)
+                        (sub-function expr :save (should-save? expr)))))
 
                ;; Node-links containing sub-functions.
                ((node-link- (node (and fn (type sub-function))))
@@ -184,6 +188,17 @@
                 fn)
 
                (_ fn)))
+
+           (should-save? (expr)
+             "Checks whether the value of the expression should be
+              saved, for future value updates."
+
+             (match expr
+               (:fail
+                t)
+
+               ((list* _ operands)
+                (some #'should-save? operands))))
 
            (coalesce-links-in-node (node)
              (with-slots (contexts) node

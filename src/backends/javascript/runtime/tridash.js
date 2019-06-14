@@ -98,6 +98,11 @@ Tridash.NodeContext = function(node, context_id) {
      * Array of observer node contexts.
      */
     this.observers = [];
+
+    /**
+     * Array storing saved previous values.
+     */
+    this.saved_values = [];
 };
 
 /**

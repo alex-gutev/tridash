@@ -144,6 +144,7 @@
    :sub-function-p
    :sub-function-expression
    :sub-function-count
+   :sub-function-save
 
    ;; Utility Functions
    :observer-list

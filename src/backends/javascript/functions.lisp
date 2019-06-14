@@ -385,8 +385,12 @@
 
 (defvar *sub-functions* nil
   "Set of sub-function expressions for which code has already been
-  generated. The mapped value is an expression (a variable name) with
-  which the value of the expression can be accessed.")
+   generated. The mapped value is an expression (a variable name) with
+   which the value of the expression can be accessed.")
+
+(defvar *current-sub-function-index* nil
+  "Index of the sub-function currently being compiled.")
+
 
 (defun make-function-body (function *get-input*)
   "Generates the body of the value computation function
@@ -454,20 +458,19 @@
     ((list* operator operands)
      (make-operator-expression operator operands))
 
-    ((sub-function- expression count)
-     (if (> count 1)
-         (aif (get fn *sub-functions*)
-              (values nil it)
-              (multiple-value-return (blk expr) (make-sub-function expression)
-                (declare (ignore blk))
-                (setf (get fn *sub-functions*) expr)))
+    ((sub-function- expression count save)
+     (if (or save (> count 1))
+         (make-sub-function fn)
          (make-expression expression)))
 
     ((type node-link)
      (values nil (funcall *get-input* fn)))
 
     ((eq :fail)
-     (values (js-block (js-throw (js-new +end-update-class+))) nil))
+     ;; Check whether inside subfunction
+     (if *current-sub-function-index*
+         (values nil (get-saved-value *current-sub-function-index*))
+         (values (js-block (js-throw (js-new +end-update-class+))) nil)))
 
     (nil
      (values nil "null"))
@@ -476,20 +479,55 @@
      (values nil (make-literal fn)))))
 
 (defun make-sub-function (fn)
+  "Generates code which computes the value of the sub-function FN and
+   stores the resulting expression in *SUB-FUNCTIONS*. If code for the
+   sub-function has already been generated, the variable, to which the
+   result of the sub-function is assigned, is returned."
+
+  (with-accessors ((expression sub-function-expression)
+                   (save sub-function-save))
+      fn
+
+    (aif (get fn *sub-functions*)
+         (values nil (car it))
+
+         (let* ((index (length *sub-functions*))
+                (*current-sub-function-index* index))
+
+           (multiple-value-return (blk expr)
+               (make-sub-function-expr expression
+                                       :save save
+                                       :index (length *sub-functions*))
+             (declare (ignore blk))
+             (setf (get fn *sub-functions*) (cons expr (length *sub-functions*))))))))
+
+(defun make-sub-function-expr (fn &key save index)
   "Generates code which computes the value of the sub-function
    expression and stores it in a variable, which is returned as the
    expression (second return value)."
 
   (let ((var (var-name)))
-    (multiple-value-bind (blk expr) (make-expression fn :return-variable var :tailp nil)
-      (values
-       (cond
-         ((or (null expr) (= expr var))
-          (js-block (js-var var) blk))
+    (flet ((make-block (&rest statements)
+             (js-block
+              statements
+              (when save
+                (js-call "=" (get-saved-value index) var)))))
 
-         (t
-          (js-block blk (js-var var expr))))
-       var))))
+      (multiple-value-bind (blk expr) (make-expression fn :return-variable var :tailp nil)
+        (values
+         (cond
+           ((or (null expr) (= expr var))
+            (make-block (js-var var) blk))
+
+           (t
+            (make-block blk (js-var var expr))))
+         var)))))
+
+(defun get-saved-value (index)
+  "Returns an expression which references the saved previous value of
+   the sub-function with index INDEX."
+
+  (js-element (js-member "this" "saved_values") index))
 
 
 ;;;; Literal Values
