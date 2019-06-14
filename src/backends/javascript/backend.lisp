@@ -425,12 +425,13 @@
 (defun create-meta-node (meta-node)
   "Generates the meta-node function of META-NODE."
 
-  (when (not (external-meta-node? meta-node))
-    (case (meta-node-type meta-node)
-      (sync
-       (create-function-meta-node meta-node))
-      (async
-       (create-async-meta-node meta-node)))))
+  (let ((*current-node* meta-node))
+    (when (not (external-meta-node? meta-node))
+      (case (meta-node-type meta-node)
+        (sync
+         (create-function-meta-node meta-node))
+        (async
+         (create-async-meta-node meta-node))))))
 
 
 (defun async-meta-node? (meta-node)

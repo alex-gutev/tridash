@@ -467,10 +467,16 @@
      (values nil (funcall *get-input* fn)))
 
     ((eq :fail)
-     ;; Check whether inside subfunction
-     (if *current-sub-function-index*
-         (values nil (get-saved-value *current-sub-function-index*))
-         (values (js-block (js-throw (js-new +end-update-class+))) nil)))
+     (cond
+       ((in-meta-node?)
+        (values nil "null"))
+
+       ;; Check whether inside subfunction
+       (*current-sub-function-index*
+        (values nil (get-saved-value *current-sub-function-index*)))
+
+       (t
+        (values (js-block (js-throw (js-new +end-update-class+))) nil))))
 
     (nil
      (values nil "null"))
@@ -510,7 +516,7 @@
     (flet ((make-block (&rest statements)
              (js-block
               statements
-              (when save
+              (when (and (not (in-meta-node?)) save)
                 (js-call "=" (get-saved-value index) var)))))
 
       (multiple-value-bind (blk expr) (make-expression fn :return-variable var :tailp nil)
@@ -522,6 +528,12 @@
            (t
             (make-block blk (js-var var expr))))
          var)))))
+
+
+(defun in-meta-node? ()
+  "Returns true if currently compiling a meta-node function."
+
+  (meta-node? *current-node*))
 
 (defun get-saved-value (index)
   "Returns an expression which references the saved previous value of

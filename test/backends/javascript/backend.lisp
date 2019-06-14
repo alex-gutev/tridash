@@ -1051,7 +1051,26 @@
                '(($ n))
 
                (list
-                (js-return (js-call fib (js-call "-" ($ n) 2)))))))))))
+                (js-return (js-call fib (js-call "-" ($ n) 2))))))))))
+
+    (subtest ":FAIL Expressions"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)")
+        (build "validate(x) : x > 0 -> (x -> self)")
+        (finish-build)
+
+        (with-nodes ((validate "validate")) modules
+          (mock-backend-state
+            (test-meta-node-function validate
+              (js-function
+               (meta-node-id validate)
+               '(($ x))
+
+               (list
+                (js-if (js-call ">" ($ x) 0)
+                       (js-return ($ x))
+                       (js-return "null"))))))))))
 
   (subtest "Asynchronous Meta-Nodes"
     (subtest "Tail-Recursive Meta-Nodes"
