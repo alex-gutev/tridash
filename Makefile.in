@@ -81,7 +81,7 @@ tridashc: build.lisp $(sources)
 man: doc/tridashc.1
 
 doc/tridashc.1: doc/tridashc.1.adoc
-	$(A2X) --doctype manpage --format manpage --no-xmllint --destination-dir doc $<
+	- $(A2X) --doctype manpage --format manpage --no-xmllint --destination-dir doc $<
 
 
 ## Clean Targets
@@ -107,12 +107,21 @@ installdirs:
 	install -d $(DESTDIR)$(pkgdatadir)/backends/javascript
 	install -d $(DESTDIR)$(mandir)/man1
 
-install: all installdirs
+install-bin:
 	install -m 755 tridashc $(DESTDIR)$(bindir)
-	install -m 644 $(srcdir)/modules/* $(DESTDIR)$(pkgdatadir)/modules
+
+install-modules:
+	install -m 644 $(srcdir)/modules/core.trd $(srcdir)/modules/core.yml \
+		$(DESTDIR)$(pkgdatadir)/modules
+
+install-data: install-modules
 	install -m 644 $(srcdir)/src/backends/javascript/runtime/tridash.js $(DESTDIR)$(pkgdatadir)/backends/javascript
-	install -m 644 doc/tridashc.1 $(DESTDIR)$(mandir)/man1
-	gzip -f $(DESTDIR)$(mandir)/man1/tridashc.1
+
+install-man:
+	- install -m 644 doc/tridashc.1 $(DESTDIR)$(mandir)/man1
+	- gzip -f $(DESTDIR)$(mandir)/man1/tridashc.1
+
+install: all installdirs install-bin install-data install-man
 
 
 uninstall:
@@ -128,4 +137,6 @@ check:
 	$(LISP) --load tridash.asd --load test/script.lisp
 
 
-.PHONY: all man clean distclean maintainer-clean install installdirs uninstall check
+.PHONY: all man clean distclean maintainer-clean \
+	install installdirs install-bin install-modules install-data install-man \
+	uninstall check
