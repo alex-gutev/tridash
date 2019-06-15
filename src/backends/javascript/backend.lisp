@@ -219,7 +219,7 @@
 
   (when initial-values
     (make-onloaded-method
-     (let ((*sub-functions* (make-hash-map)))
+     (let ((*expression-groups* (make-hash-map)))
        (list (make-set-initial-values initial-values))))))
 
 (defun make-set-initial-values (initial-values)

@@ -387,6 +387,16 @@
    (js-lambda (list (js-array args)) body)))
 
 
+(defun functor (meta-node &rest arguments)
+  "Create a `FUNCTOR-EXPRESSION' with META-NODE applied to ARGUMENTS."
+
+  (functor-expression meta-node arguments))
+
+(defmacro object (&rest entries)
+  "Create an `OBJECT-EXPRESSION' with entries ENTRIES."
+
+  `(object-expression (list ,@(map #`(list ',(id-symbol (first a1)) ,(second a1)) entries))))
+
 ;;;; Tests
 
 (subtest "Node Value Function Code Generation"
@@ -394,7 +404,7 @@
     (mock-backend-state
       (mock-meta-nodes (f)
         (mock-contexts
-            ((context (a b) `(,f ,a ,b)))
+            ((context (a b) (functor f a b)))
 
           (test-compute-function context
             (js-return (js-call f (d a) (d b)))))))
@@ -403,7 +413,7 @@
       (mock-backend-state
         (mock-meta-nodes (f)
           (mock-contexts
-              ((context ((async . a) b) `(,f ,a ,b)))
+              ((context ((async . a) b) (functor f a b)))
 
             (test-compute-function context
               (js-return
@@ -425,7 +435,7 @@
       (mock-backend-state
         (mock-meta-nodes (f)
           (mock-contexts
-              ((context (a b) `(,f ,a ,b)))
+              ((context (a b) (functor f a b)))
 
             (with-lazy-nodes (context)
               (test-compute-function context
@@ -442,7 +452,10 @@
       (mock-backend-state
         (mock-meta-nodes (< -)
           (mock-contexts
-              ((context (a b) `(if (,< ,a ,b) (,- ,b ,a) (,- ,a ,b))))
+              ((context (a b)
+                        (if-expression (functor < a b)
+                                       (functor - b a)
+                                       (functor - a b))))
 
             (test-compute-function context
               (js-if (js-call < (d a) (d b))
@@ -453,7 +466,10 @@
         (mock-backend-state
           (mock-meta-nodes (< -)
             (mock-contexts
-                ((context ((async . a) (async . b)) `(if (,< ,a ,b) (,- ,b ,a) (,- ,a ,b))))
+                ((context ((async . a) (async . b))
+                          (if-expression (functor < a b)
+                                         (functor - b a)
+                                         (functor - a b))))
 
               (test-compute-function context
                 (js-return
@@ -484,7 +500,10 @@
           (mock-meta-nodes (f < +)
             (mock-contexts
                 ((context (a b c d)
-                          `(,f (if (,< ,a 3) (,+ ,b ,c) ,d) ,a)))
+                          (-<> (if-expression (functor < a 3)
+                                              (functor + b c)
+                                              d)
+                               (functor f <> a))))
 
               (test-compute-function context
                 (js-var ($ arg1))
@@ -499,7 +518,10 @@
             (mock-meta-nodes (f < +)
               (mock-contexts
                   ((context ((async . a) b c (async . d))
-                            `(,f (if (,< ,a 3) (,+ ,b ,c) ,d) ,a)))
+                            (-<> (if-expression (functor < a 3)
+                                                (functor + b c)
+                                                d)
+                                 (functor f <> a))))
 
                 (test-compute-function context
                   (-<>
@@ -529,11 +551,9 @@
           (mock-meta-nodes (< +)
             (mock-contexts
                 ((context (a b c d e)
-                          `(if ,a
-                               (if (if (,< ,b ,c) ,b ,c)
-                                   (,+ ,b ,c)
-                                   ,d)
-                               ,e)))
+                          (-<> (if-expression (functor < b c) b c)
+                               (if-expression (functor + b c) d)
+                               (if-expression a <> e))))
 
               (test-compute-function context
                 (js-if (d a)
@@ -553,11 +573,9 @@
             (mock-meta-nodes (< +)
               (mock-contexts
                   ((context (a (async . b) c (async . d) e)
-                            `(if ,a
-                                 (if (if (,< ,b ,c) ,b ,c)
-                                     (,+ ,b ,c)
-                                     ,d)
-                                 ,e)))
+                            (-<> (if-expression (functor < b c) b c)
+                                 (if-expression (functor + b c) d)
+                                 (if-expression a <> e))))
 
                 (test-compute-function context
                   (js-if
@@ -597,7 +615,7 @@
       (mock-backend-state
         (mock-contexts
             ((context (a cond)
-                      `(if ,cond ,a ,(node-link :self))))
+                      (if-expression cond a :self)))
 
           (test-compute-function context
             (js-var ($ old-value) (js-member "this" "value"))
@@ -609,7 +627,7 @@
         (mock-backend-state
           (mock-contexts
               ((context (a cond)
-                        `(if ,cond ,a ,(node-link :self))))
+                        (if-expression cond a :self)))
 
             (with-lazy-nodes (context)
               (test-compute-function context
@@ -632,10 +650,10 @@
         (mock-backend-state
           (mock-meta-nodes (+ -)
             (mock-contexts
-                ((context (x y) `(:object (|sum| (,+ ,x ,y))
-                                          (|difference| (,- ,x ,y))
-                                          (|x| ,x)
-                                          (|y| ,y))))
+                ((context (x y) (object ("sum" (functor + x y))
+                                        ("difference" (functor - x y))
+                                        ("x" x)
+                                        ("y" y))))
 
               (test-compute-function context
                 (js-return
@@ -650,10 +668,10 @@
           (mock-backend-state
             (mock-meta-nodes (+ -)
               (mock-contexts
-                  ((context ((async . x) y) `(:object (|sum| (,+ ,x ,y))
-                                                      (|difference| (,- ,x ,y))
-                                                      (|x| ,x)
-                                                      (|y| ,y))))
+                  ((context ((async . x) y) (object ("sum" (functor + x y))
+                                                    ("difference" (functor - x y))
+                                                    ("x" x)
+                                                    ("y" y))))
 
                 (test-compute-function context
                   (js-return
@@ -680,8 +698,8 @@
         (mock-backend-state
           (mock-meta-nodes (<)
             (mock-contexts
-                ((context (x y) `(:object (|min| (if (,< ,x ,y) ,x ,y))
-                                          (|max| (if (,< ,y ,x) ,x ,y)))))
+                ((context (x y) (object ("min" (if-expression (functor < x y) x y))
+                                        ("max" (if-expression (functor < y x) x y)))))
 
               (test-compute-function context
                 (js-var ($ min))
@@ -703,8 +721,8 @@
           (mock-backend-state
             (mock-meta-nodes (<)
               (mock-contexts
-                  ((context ((async . x) y) `(:object (|min| (if (,< ,x ,y) ,x ,y))
-                                                      (|max| (if (,< ,y ,x) ,x ,y)))))
+                  ((context ((async . x) y) (object ("min" (if-expression (functor < x y) x y))
+                                                    ("max" (if-expression (functor < y x) x y)))))
 
                 (test-compute-function context
                   (js-return
@@ -751,7 +769,7 @@
         (mock-backend-state
           (mock-meta-nodes (f)
             (mock-contexts
-                ((context (object) `(,f (:member ,object |field|))))
+                ((context (object) (functor f (member-expression object '|field|))))
 
               (test-compute-function context
                 (js-return
@@ -761,7 +779,7 @@
           (mock-backend-state
             (mock-meta-nodes (f)
               (mock-contexts
-                  ((context ((async . object)) `(,f (:member ,object |field|))))
+                  ((context ((async . object)) (functor f (member-expression object '|field|))))
 
                 (test-compute-function context
                   (js-return
@@ -782,7 +800,7 @@
         (mock-backend-state
           (mock-meta-nodes (f)
             (mock-contexts
-                ((context (a) `(:member (,f ,a) \x)))
+                ((context (a) (member-expression (functor f a) '\x)))
 
               (test-compute-function context
                 (js-return (js-element (js-call f (d a)) (js-string "x")))))))
@@ -791,7 +809,7 @@
           (mock-backend-state
             (mock-meta-nodes (f)
               (mock-contexts
-                  ((context ((async . a)) `(:member (,f ,a) \x)))
+                  ((context ((async . a)) (member-expression (functor f a) '\x)))
 
                 (test-compute-function context
                   (js-return
@@ -810,7 +828,7 @@
       (subtest "Member Access of If Expression"
         (mock-backend-state
           (mock-contexts
-              ((context (cond a b) `(:member (if ,cond ,a ,b) \z)))
+              ((context (cond a b) (member-expression (if-expression cond a b) '\z)))
 
             (test-compute-function context
               (js-var ($ object))
@@ -823,7 +841,7 @@
         (subtest "Lazy Dependencies"
           (mock-backend-state
             (mock-contexts
-                ((context (cond a (async . b)) `(:member (if ,cond ,a ,b) \z)))
+                ((context (cond a (async . b)) (member-expression (if-expression cond a b) '\z)))
 
               (test-compute-function context
                 (js-var ($ object))
@@ -845,7 +863,9 @@
       (mock-backend-state
         (mock-meta-nodes (<)
           (mock-contexts
-              ((context (a) (sub-function `(if (,< ,a 0) ,a :fail) :save t)))
+              ((context (a) (expression-group
+                             (if-expression (functor < a 0) a (fail-expression))
+                             :save t)))
 
             (test-compute-function context
               (js-var ($ 1))
@@ -865,7 +885,8 @@
       (mock-backend-state
         (mock-meta-nodes (<)
           (mock-contexts
-              ((context (a) (sub-function `(if (,< ,a 0) ,a :fail))))
+              ((context (a) (expression-group
+                             (if-expression (functor < a 0) a (fail-expression)))))
 
             (test-compute-function context
               (js-if (js-call < (d a) 0)

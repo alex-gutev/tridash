@@ -47,6 +47,7 @@
                  (:file "lexer")
                  (:file "parser")
                  (:file "operators")
+                 (:file "expressions")
                  (:file "node")
                  (:file "meta-node")
                  (:file "node-table")

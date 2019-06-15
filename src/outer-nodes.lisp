@@ -85,8 +85,11 @@
               identifier CONTEXT-ID, and appends them to the context's
               value function."
 
-             (appendf (value-function (context node context-id))
-                      (bind-operands node operands :context context-id)))
+             (appendf
+              (->> (context node context-id)
+                   value-function
+                   functor-expression-arguments)
+              (bind-operands node operands :context context-id)))
 
            (operand-nodes (nodes meta-node)
              "Returns the nodes local to META-NODE which reference the

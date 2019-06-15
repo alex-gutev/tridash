@@ -174,7 +174,7 @@
   (unless (typep node 'html-node)
     (when-let ((context (get :object (contexts node))))
       (iter
-        (for (attribute link) in (rest (value-function context)))
+        (for (attribute link) in (object-expression-entries (value-function context)))
         (make-attribute-reference (node-link-node link) html-id tag-name attribute)))))
 
 (defun make-html-attribute-node (html-id tag attribute module-table)

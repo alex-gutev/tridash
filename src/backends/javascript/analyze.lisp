@@ -74,37 +74,36 @@
                (remove-if (compose (rcurry #'memberp operands) #'car) (observers node))))
 
            (unconditional-binding? (link observer)
-             "Returns true if the value of the node with link LINK
-                is used unconditionally in the value function of
-                OBSERVER."
+             "Returns true if the value of the node with link LINK is
+              used unconditionally in the value function of OBSERVER."
 
-             (->> (value-function (context observer (node-link-context link)))
+             (->> link
+                  node-link-context
+                  (context observer)
+                  value-function
                   (has-node link)))
 
-           (has-node (link fn)
+           (has-node (link expression)
              "Returns true if DEPENDENCY is used unconditionally in FN."
 
-             (match fn
-               ((type node-link)
-                (eq link fn))
+             (walk-expression
+              (lambda (expression)
+                (match expression
+                  ((type node-link)
+                   (return-from has-node (= link expression)))
 
-               ((sub-function- expression)
-                (has-node link expression))
+                  ((if-expression- condition)
+                   (return-from has-node (has-node link condition)))
 
-               ((list*
-                 (or 'if
-                     (guard (external-meta-node name)
-                            (eq name (id-symbol "if"))))
-                 cond _)
-                (has-node link cond))
+                  ((functor-expression-
+                    (meta-node (guard (external-meta-node name)
+                                      (member name '("and" "or" "if" :key #'id-symbol))))
+                    arguments)
 
-               ((list* (guard (external-meta-node name)
-                              (member name '("and" "or") :key #'id-symbol))
-                       first _)
-                (has-node link first))
+                   (return-from has-node (has-node link (first arguments))))
 
-               ((list* _ operands)
-                (some (curry #'has-node link) operands)))))
+                  (_ t)))
+              expression)))
 
     (foreach #'lazy-node? (nodes table))
     lazy-nodes))

@@ -23,18 +23,10 @@
 
 (in-readtable cut-syntax)
 
-(defstruct
-    (sub-function (:constructor sub-function (expression &key count save)))
 
-  "A sub-function is an expression which forms part of the
-   value-function of a node. This struct is used to mark expressions
-   which are used in more than one place. COUNT is the number of times
-   EXPRESSION is used."
+;;;; Coalescing
 
-  expression
-  (count 1)
-
-  (save nil))
+;;; Coalescing Nodes
 
 (defun coalesce-nodes (input-nodes)
   "Coalesces successive nodes, which only have a single observer, into
@@ -124,6 +116,7 @@
 
                  ;; Add all dependencies of NODE to dependencies of OBSERVER
                  (doseq ((dependency . link) (dependencies node))
+
                    ;; Check if OBSERVER already has DEPENDENCY as a dependency
                    (when-let ((old-link (get dependency dependencies)))
                      (merge-contexts observer context-id (node-link-context old-link))
@@ -166,13 +159,14 @@
                (erase (contexts node) id2))))
 
          (merge-context-functions (context1 context2)
-           "Returns a function which is a :CATCH expression with the
+           "Returns a function which is a `CATCH-EXPRESSION' with the
             function of CONTEXT1 as the main expression and the
             function of CONTEXT2 as the expression which is evaluated
             when the main expression fails."
 
-           `(:catch ,(value-function context1)
-              ,(value-function context2))))
+           (catch-expression
+            (value-function context1)
+            (value-function context2))))
 
       (foreach #'begin-coalesce input-nodes))))
 
@@ -182,66 +176,70 @@
 
   (null (attribute :no-coalesce node)))
 
+
+;;; Coalescing Node Links
+
 (defun coalesce-node-links (nodes)
   "Replaces the `node-link' objects, within the value functions of
    NODE, which do not directly reference another node, with their
    contents. NODES is the set of all nodes."
 
-  (labels ((remove-node-links (fn)
-             "Replaces all `node-link' objects (within the value
-              function FN), which do not directly reference another
-              node, with their contents."
+  (flet ((coalesce-links-in-node (node)
+           (with-slots (contexts) node
+             (doseq ((id . context) contexts)
+               (declare (ignore id))
 
-             (match fn
-               ((list* meta-node operands)
-                (list* meta-node (map #'remove-node-links operands)))
-
-               ;; Node-links containing other node-links.
-               ((node-link- (node (and link (type node-link))))
-                (remove-node-links link))
-
-               ;; Node-links containing an expression which is not a
-               ;; node, symbol or sub-function.
-               ((node-link- (node (and expr
-                                       (not (type node))
-                                       (not (type symbol))
-                                       (not (type sub-function)))))
-
-                (let ((expr (remove-node-links expr)))
-                  ;; Replace linked-node with a sub-function which wraps
-                  ;; the expression.
-                  (setf (node-link-node fn)
-                        (sub-function expr :save (should-save? expr)))))
-
-               ;; Node-links containing sub-functions.
-               ((node-link- (node (and fn (type sub-function))))
-                ;; Increment the usage count.
-                (incf (sub-function-count fn))
-                fn)
-
-               (_ fn)))
-
-           (should-save? (expr)
-             "Checks whether the value of the expression should be
-              saved, for future value updates."
-
-             (match expr
-               (:fail
-                t)
-
-               ((list* _ operands)
-                (some #'should-save? operands))))
-
-           (coalesce-links-in-node (node)
-             (with-slots (contexts) node
-               (doseq ((id . context) contexts)
-                 (declare (ignore id))
-
-                 (with-slots (value-function) context
-                   (setf value-function (remove-node-links value-function)))))))
+               (with-slots (value-function) context
+                 (setf value-function (coalesce-links-in-function value-function)))))))
 
     (foreach #'coalesce-links-in-node nodes)))
 
+
+(defun coalesce-links-in-function (fn)
+  "Coalesces `NODE-LINK's in the function expression FN."
+
+  (map-expression! #'coalesce-links-in-expression fn))
+
+(defgeneric coalesce-links-in-expression (expression)
+  (:documentation
+   "Coalesces node links in the individual expression EXPRESSION."))
+
+(defmethod coalesce-links-in-expression ((link node-link))
+  (flet ((should-save? (expr)
+           "Checks whether the value of the expression should be
+            saved, for future value updates."
+
+           (walk-expression
+            (lambda (expression)
+              (match expression
+                ((type fail-expression)
+                 (return-from should-save? t))
+
+                ((not (type expression-group))
+                 t)))
+            expr)))
+
+    (with-accessors ((node node-link-node)) link
+      (match node
+        ((type node-link)
+         (coalesce-links-in-function node))
+
+        ((type expression-group)
+         (incf (expression-group-count node))
+         node)
+
+        ((not (type node))
+         (let ((expr (coalesce-links-in-function node)))
+           (->> (expression-group expr :save (should-save? expr))
+                (setf node))))
+
+        (_ link)))))
+
+(defmethod coalesce-links-in-expression ((expression t))
+  nil)
+
+
+;;;; Constant Folding and Removing Redundant Nodes
 
 (defun remove-unreachable-nodes (input-nodes nodes)
   "Removes all unreachable nodes from NODES. An unreachable node is a
@@ -276,17 +274,19 @@
              (unless (input-node? node)
                (with-slots (contexts) node
                  (and (= (length contexts) 1)
-                      (-> (cdr (first contexts))
-                          (operands)
-                          (emptyp))))))
+                      (-> contexts
+                          first
+                          cdr
+                          operands
+                          emptyp)))))
 
            (fold-value (node)
              (when (value-node? node)
                (let ((obs (observers node)))
                  (-> (contexts node)
-                     (first)
-                     (cdr)
-                     (value-function)
+                     first
+                     cdr
+                     value-function
                      (replace-dependency node))
 
                  (foreach #'fold-value (map-keys obs))
@@ -302,6 +302,8 @@
 
     (foreach #'fold-value (remove-if-not #'value-node? nodes))))
 
+
+;;;; Structure Checking
 
 (defun check-structure (input-nodes)
   "Checks the structure of all nodes ensuring there are no cycles and
@@ -332,10 +334,7 @@
                (destructuring-bind (temp? old-context) marker
                  (cond
                    (temp?
-                    (error 'node-cycle-error :node node))
-
-                   ((/= old-context new-context)
-                    (error 'ambiguous-context-error :node node)))))
+                    (error 'node-cycle-error :node node)))))
 
              (visit-observers (node context)
                "Visits the observers of NODE in the context CONTEXT."

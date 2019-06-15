@@ -134,18 +134,50 @@
    :input-node?
    :bool-value
 
-   ;; Node-link
+   ;; Intermediate Expressions
    :node-link
    :node-link-node
    :node-link-context
    :node-link-p
    :self
 
-   :sub-function
-   :sub-function-p
-   :sub-function-expression
-   :sub-function-count
-   :sub-function-save
+   :functor-expression
+   :functor-expression-p
+   :functor-expression-meta-node
+   :functor-expression-arguments
+
+   :if-expression
+   :if-expression-p
+   :if-expression-condition
+   :if-expression-then
+   :if-expression-else
+
+   :object-expression
+   :object-expression-p
+   :object-expression-entries
+
+   :member-expression
+   :member-expression-p
+   :member-expression-object
+   :member-expression-key
+
+   :catch-expression
+   :catch-expression-p
+   :catch-expression-main
+   :catch-expression-catch
+
+   :fail-expression
+   :fail-expression-p
+   :fail-expression-type
+
+   :expression-group
+   :expression-group-p
+   :expression-group-expression
+   :expression-group-count
+   :expression-group-save
+
+   :walk-expression
+   :transform-expression
 
    ;; Utility Functions
    :observer-list

@@ -143,19 +143,6 @@
 
 ;;;; Bindings
 
-(defstruct (node-link (:constructor node-link (node &key context)))
-  "NODE-LINK objects are used to refer to nodes indirectly. This
-   allows nodes to be replaced with other nodes and have all
-   references to the node be automatically updated.
-
-   NODE is the dependency NODE.
-
-   CONTEXT is the context identifier of which NODE is an operand."
-
-  node
-  context)
-
-
 ;;; Adding Bindings
 
 (defmacro! ensure-binding ((source target &rest options) (link-var) &body body)
@@ -295,19 +282,24 @@
              (erase (contexts node) context-id))
            t))))))
 
-(defun remove-operand-from-fn (context fn operand)
-  "Tries to remove the operand from the multi-operand context
-   CONTEXT. Returns true if the operand was removed, NIL if it cannot
-   be removed."
+(defgeneric remove-operand-from-fn (context fn operand)
+  (:documentation
+   "Tries to remove the operand from the multi-operand context
+    CONTEXT. Returns true if the operand was removed, NIL if it cannot
+    be removed.")
 
+  (:method ((context t) (fn t) (operand t))
+    nil))
+
+(defmethod remove-operand-from-fn (context (fn object-expression) operand)
   (with-accessors ((node node-link-node)) operand
-    (match fn
-      ((list* :object pairs)
-       (awhen (car (find operand pairs :key #'cadr))
-         (erase (operands context) node)
-         (setf node `(:member ,(node-link :self) ,it))
+    (with-accessors ((entries object-expression-entries)) fn
+      (awhen (first (find operand entries :key #'second))
+        (erase (operands context) node)
+        (setf node (member-expression :self it))
 
-         t)))))
+        t))))
+
 
 (defun remove-context (node context-id)
   "Removes the context with identifier CONTEXT-ID if it is redundant,

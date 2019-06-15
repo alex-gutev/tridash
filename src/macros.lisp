@@ -108,7 +108,7 @@
     ((list* operator operands)
      (tridash-functor->cl operator operands))
 
-    ((sub-function- expression)
+    ((expression-group- expression)
      (tridash->cl expression))
 
     ((node-link node)

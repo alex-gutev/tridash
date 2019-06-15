@@ -120,9 +120,7 @@
     (node-table thing)))
 
 
-;;;; Test Functions
-
-;;; Test for the existence of nodes
+;;;; Test for the existence of nodes
 
 (defgeneric get-node (name node-table)
   (:documentation "Retrieves the node with name NAME from NODE-TABLE.")
@@ -167,7 +165,7 @@
   (foreach (curry #'test-not-node node-table) ids))
 
 
-;;; Test Bindings
+;;;; Test Bindings
 
 (defun test-binding (src target &key (context nil context-sp))
   "Tests that a binding between node SRC and TARGET has been
@@ -209,52 +207,83 @@
     (test-value-function target (node-link-context link) link)))
 
 
-;;; Test Value Functions
+;;;; Test Value Functions
 
-(defun value-fn-equal (a b)
-  "Value function equality comparison. Returns true if the value
-   function A is equivalent to the value function B."
 
-  (multiple-value-match (values a b)
-    (((cons a as) (cons b bs))
-     (and (value-fn-equal a b)
-	  (value-fn-equal as bs)))
+(defgeneric value-fn-equal (a b))
 
-    (((node-link- (node node-a) (context context-a))
-      (node-link- (node node-b) (context context-b)))
+(defmethod value-fn-equal ((a node-link) (b node-link))
+  (eq a b))
 
-     (and (eq node-a node-b)
-	  (eq context-a context-b)))
+(defmethod value-fn-equal ((a functor-expression) (b list))
+  (match* (a b)
+    (((functor-expression- (meta-node op-a) (arguments args-a))
+      (list* op-b args-b))
 
-    (((sub-function- (expression expr-a) (count count-a) (save save-a))
-      (sub-function- (expression expr-b) (count count-b) (save save-b)))
+     (and (value-fn-equal op-a op-b)
+          (= (length args-a) (length args-b))
+          (every #'value-fn-equal args-a args-b)))))
+
+(defmethod value-fn-equal ((a if-expression) (b list))
+  (match* (a b)
+    (((if-expression- (condition cond-a) (then then-a) (else else-a))
+      (list 'if cond-b then-b else-b))
+
+     (and
+      (value-fn-equal cond-a cond-b)
+      (value-fn-equal then-a then-b)
+      (value-fn-equal else-a else-b)))))
+
+(defmethod value-fn-equal ((a object-expression) (b list))
+  (match* (a b)
+    (((object-expression- (entries entries-a))
+      (list* :object entries-b))
+
+     (flet ((has-field (field)
+              (destructuring-bind (key value) field
+                (aand (find key entries-a :key #'first)
+                      (value-fn-equal (second it) value)))))
+
+       (and (= (length entries-a) (length entries-b))
+            (every #'has-field entries-b))))))
+
+(defmethod value-fn-equal ((a member-expression) (b list))
+  (match* (a b)
+    (((member-expression- (object object-a) (key key-a))
+      (list :member object-b key-b))
+
+     (and (= key-a key-b)
+          (value-fn-equal object-a object-b)))))
+
+(defmethod value-fn-equal ((a catch-expression) (b list))
+  (match* (a b)
+    (((catch-expression- (main main-a) (catch catch-a))
+      (list :catch main-b catch-b))
+
+     (and (value-fn-equal main-a main-b)
+          (value-fn-equal catch-a catch-b)))))
+
+(defmethod value-fn-equal ((a fail-expression) (b list))
+  (match* (a b)
+    (((fail-expression- (type type-a))
+      (or (list :fail type-b)
+          (list :fail)))
+     (value-fn-equal type-a type-b))))
+
+(defmethod value-fn-equal ((a expression-group) (b expression-group))
+  (match* (a b)
+    (((expression-group- (expression expr-a) (count count-a) (save save-a))
+      (expression-group- (expression expr-b) (count count-b) (save save-b)))
 
      (and (value-fn-equal expr-a expr-b)
           (= count-a count-b)
-          (if save-a save-b (not save-b))))
+          (if save-a save-b (not save-b))))))
 
-    (((sub-function- (expression expr-a)) b)
-     (value-fn-equal expr-a b))
+(defmethod value-fn-equal ((a expression-group) b)
+  (value-fn-equal (expression-group-expression a) b))
 
-    ((_ _) (= a b))))
-
-(defun object-fn-equal (a b)
-  "Object value function equality comparison. Returns true if the
-   object value function A declares the same fields as the object
-   value function B."
-
-  (multiple-value-match (values a b)
-    (((sub-function- expression) _)
-     (object-fn-equal expression b))
-
-    (((list* :object a) (list* :object b))
-
-     (flet ((pair-equal (pair)
-              (destructuring-bind (key value) pair
-                (aand (find key b :key #'car)
-                      (value-fn-equal value (second it))))))
-       (every #'pair-equal a)))))
-
+(defmethod value-fn-equal (a b)
+  (= a b))
 
 (defun test-value-function (node context fn &key (test #'value-fn-equal))
   "Tests that the context CONTEXT of node NODE has value function FN."
@@ -424,7 +453,7 @@
 	 ((b :context b) (b->c :context b))
 	 c
 
-	 `(if ,b->c ,b :fail)))))
+	 `(if ,b->c ,b (:fail))))))
 
   (subtest "Functor Nodes"
     (with-module-table modules
@@ -585,7 +614,7 @@
     (labels ((test-object-fn (node &rest fields)
                (-<>
                 (list* :object (map (curry #'make-field node) fields))
-                (test-value-function node :object <> :test (rcurry #'set-equal :test #'value-fn-equal))))
+                (test-value-function node :object <>)))
 
              (make-field (node field)
                (destructuring-bind (field dep) field
@@ -746,7 +775,7 @@
 	           ((b :context b) (b->c :context b))
 	           c
 
-	           `(if ,b->c ,b :fail))))))))
+	           `(if ,b->c ,b (:fail)))))))))
 
       (subtest "Errors"
         (subtest "Module Semantics"
@@ -980,11 +1009,11 @@
 
             (has-value-function
              (p p.fail) a
-             `(if (,not ,p.fail) (:member ,p ,(id-symbol "value")) :fail))
+             `(if (,not ,p.fail) (:member ,p ,(id-symbol "value")) (:fail)))
 
             (has-value-function
              (in2 p.fail) b
-             `(if ,p.fail ,in2 :fail))
+             `(if ,p.fail ,in2 (:fail)))
 
             (has-value-function (in1) p `(,parse ,in1))
             (is (length (contexts p)) 1 "Node p has a single context."))))))
@@ -1090,11 +1119,10 @@
            (in) out
            `(:object
              (,(id-symbol "fail")
-               (,nan? ,(sub-function `(,parse ,in) :count 2)))
+               (,nan? ,(expression-group `(,parse ,in) :count 2)))
 
              (,(id-symbol "value")
-               ,(sub-function `(,parse ,in) :count 2)))
-           :test #'object-fn-equal))))
+               ,(expression-group `(,parse ,in) :count 2)))))))
 
     (with-module-table modules
       (build ":extern(add, even?)"
@@ -1123,7 +1151,7 @@
 
           (has-value-function
            (a d) out
-           `(,add (,add ,a ,(sub-function `(if (,even? (,add ,a ,1)) (,add ,a 1) :fail) :save t)) ,d)))))))
+           `(,add (,add ,a ,(expression-group `(if (,even? (,add ,a ,1)) (,add ,a 1) (:fail)) :save t)) ,d)))))))
 
 (subtest "Constant Folding"
   (subtest "Literal Constant Values"
@@ -1379,92 +1407,7 @@
 
                  ":attribute(b, input, 1)")
 
-          (is-error (finish-build) 'node-cycle-error)))))
-
-  (subtest "Ambiguous Context Checks"
-    (subtest "Simple Bindings"
-      (with-module-table modules
-        (build "a -> d"
-               "a -> b; b -> c; c -> d"
-               "d -> e"
-
-               ":attribute(a, input, 1)")
-
-        (is-error (finish-build) 'ambiguous-context-error))
-
-      (subtest "Cross-Module Bindings"
-        (with-module-table modules
-          (build ":module(m1)"
-                 "a -> d"
-                 ":attribute(a, input, 1)"
-
-                 ":module(m2)"
-                 ":use(m1)"
-
-                 "m1.a -> b; b -> c; c -> m1.d"
-                 "m1.d -> e")
-
-          (is-error (finish-build) 'ambiguous-context-error))
-
-        ;; Switch module names to test possibly different module
-        ;; order.
-        (with-module-table modules
-          (build ":module(m2)"
-                 "a -> d"
-                 ":attribute(a, input, 1)"
-
-                 ":module(m1)"
-                 ":use(m2)"
-
-                 "m2.a -> b; b -> c; c -> m2.d"
-                 "m2.d -> e")
-
-          (is-error (finish-build) 'ambiguous-context-error))))
-
-    (subtest "Functional Bindings"
-      (with-module-table modules
-        (build ":extern(add)"
-               "add(a, b) -> d"
-               "a -> c; c -> d"
-               ":attribute(a, input, 1)"
-               ":attribute(b, input, 1)")
-
-        (is-error (finish-build) 'ambiguous-context-error))
-
-      (subtest "Cross-Module Bindings"
-        (with-module-table modules
-          (build ":module(m1)"
-                 "a; b;"
-                 ":attribute(a, input, 1)"
-                 ":attribute(b, input, 1)"
-
-                 ":module(m2)"
-                 ":use(m1)"
-                 ":extern(add)"
-
-                 "add(m1.a, m1.b) -> d"
-                 "m1.a -> c; c -> d"
-                 "d -> e")
-
-          (is-error (finish-build) 'ambiguous-context-error))
-
-        ;; Switch module names to test possibly different module
-        ;; order.
-        (with-module-table modules
-          (build ":module(m2)"
-                 "a; b;"
-                 ":attribute(a, input, 1)"
-                 ":attribute(b, input, 1)"
-
-                 ":module(m1)"
-                 ":use(m2)"
-                 ":extern(add)"
-
-                 "add(m2.a, m2.b) -> d"
-                 "m2.a -> c; c -> d"
-                 "d -> e")
-
-          (is-error (finish-build) 'ambiguous-context-error))))))
+          (is-error (finish-build) 'node-cycle-error))))))
 
 
 (defmacro! test-meta-node (o!meta-node (&rest operands) function &rest test-args)
@@ -1756,8 +1699,7 @@
         (with-nodes ((person "Person")) table
           (test-meta-node person ((name "name") (surname "surname"))
                           `(:object (,(id-symbol "first") ,name)
-                                    (,(id-symbol "last") ,surname))
-                          :test #'object-fn-equal)))))
+                                    (,(id-symbol "last") ,surname)))))))
 
   (subtest "Outer-Node References"
     (subtest "Simple Outer-Node References"
@@ -2074,18 +2016,6 @@
     (subtest "Ambiguous Context Checks"
       (subtest "Simple Bindings"
         (with-module-table modules
-          (build "f(a) : {
-                      a -> d
-                      a -> b
-                      b -> c
-                      c -> d
-                      d -> e
-                      e
-                    }")
-
-          (is-error (finish-build) 'ambiguous-context-error))
-
-        (with-module-table modules
           (build "f(a, b) : {
                       a -> self
                       b -> self
@@ -2094,17 +2024,6 @@
           (is-error (finish-build) 'ambiguous-context-error)))
 
       (subtest "Functional Bindings"
-        (with-module-table modules
-          (build ":extern(add)"
-
-                 "f(a, b) : {
-                      add(a, b) -> d
-                      a -> c; c -> d
-                      d
-                    }")
-
-          (is-error (finish-build) 'ambiguous-context-error))
-
         (with-module-table modules
           (build ":extern(add)"
 

@@ -231,8 +231,7 @@
   `(has-value-function
     ,(mapcar #'second attributes)
     ,node
-    `(:object ,,@(mapcar #`(list ',(node-id (first a1)) ,(second a1)) attributes))
-    :test #'object-fn-equal))
+    `(:object ,,@(mapcar #`(list ',(node-id (first a1)) ,(second a1)) attributes))))
 
 (defun test-html-attribute-function (node element-node attribute)
   "Test that the value function of the HTML attribute NODE is a

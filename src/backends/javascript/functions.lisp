@@ -330,14 +330,15 @@
   (symbol-macrolet ((values-var "values"))
     (let ((uses-old-value nil))
       (labels ((get-input (link)
-                 (if (= (node-link-node link) :self)
-                     (prog1
-                         (if (lazy-node? context)
-                             (js-call "old_value")
-                             "old_value")
-                       (setf uses-old-value t))
+                 (match link
+                   ((eql :self)
+                    (setf uses-old-value t)
 
-                     (make-link-expression context link values-var)))
+                    (if (lazy-node? context)
+                        (js-call "old_value")
+                        "old_value"))
+
+                   (_ (make-link-expression context link values-var))))
 
                (make-body (fn)
                  (alet (make-function-body fn #'get-input)
@@ -383,13 +384,13 @@
   "Variable identifier counter. Appended as a suffix to variables
    introduced in a function.")
 
-(defvar *sub-functions* nil
-  "Set of sub-function expressions for which code has already been
+(defvar *expression-groups* nil
+  "Set of expression-group expressions for which code has already been
    generated. The mapped value is an expression (a variable name) with
    which the value of the expression can be accessed.")
 
-(defvar *current-sub-function-index* nil
-  "Index of the sub-function currently being compiled.")
+(defvar *current-expression-group-index* nil
+  "Index of the expression-group currently being compiled.")
 
 
 (defun make-function-body (function *get-input*)
@@ -399,7 +400,7 @@
    corresponding to the `NODE-LINK' object passed as an argument."
 
   (let ((*var-counter* 0)
-        (*sub-functions* (make-hash-map)))
+        (*expression-groups* (make-hash-map)))
     (make-statements function)))
 
 (defun make-statements (fn)
@@ -440,139 +441,74 @@
 
        async?))))
 
-(defun make-expression (fn &key ((:return-variable *return-variable*) *return-variable*) ((:tailp *in-tail-position*) *in-tail-position*))
-  "Generates the code for a single expression
-   FN. :RETURN-VARIABLE (bound to *RETURN-VARIABLE*) is the name of
-   the variable in which the result should be stored (NIL if it should
-   be returned directly). :TAILP (bound to *IN-TAIL-POSITION*) is a
-   flag for whether FN occurs in tail position.
 
-   Returns two values: a block, which computes the result and an
-   expression for referencing that value. If FN is compiled to a
-   single expression, the first return value is NIL and the second
-   value is the expression. If :RETURN-VARIABLE is NIL and FN is not
-   compiled to a single expression, the second return value is NIL as
-   the block returned in the first value contains a return statement."
+;;;; Compiling Intermediate Expressions
 
-  (match fn
-    ((list* operator operands)
-     (make-operator-expression operator operands))
-
-    ((sub-function- expression count save)
-     (if (or save (> count 1))
-         (make-sub-function fn)
-         (make-expression expression)))
-
-    ((type node-link)
-     (values nil (funcall *get-input* fn)))
-
-    ((eq :fail)
-     (cond
-       ((in-meta-node?)
-        (values nil "null"))
-
-       ;; Check whether inside subfunction
-       (*current-sub-function-index*
-        (values nil (get-saved-value *current-sub-function-index*)))
-
-       (t
-        (values (js-block (js-throw (js-new +end-update-class+))) nil))))
-
-    (nil
-     (values nil "null"))
-
-    (_
-     (values nil (make-literal fn)))))
-
-(defun make-sub-function (fn)
-  "Generates code which computes the value of the sub-function FN and
-   stores the resulting expression in *SUB-FUNCTIONS*. If code for the
-   sub-function has already been generated, the variable, to which the
-   result of the sub-function is assigned, is returned."
-
-  (with-accessors ((expression sub-function-expression)
-                   (save sub-function-save))
-      fn
-
-    (aif (get fn *sub-functions*)
-         (values nil (car it))
-
-         (let* ((index (length *sub-functions*))
-                (*current-sub-function-index* index))
-
-           (multiple-value-return (blk expr)
-               (make-sub-function-expr expression
-                                       :save save
-                                       :index (length *sub-functions*))
-             (declare (ignore blk))
-             (setf (get fn *sub-functions*) (cons expr (length *sub-functions*))))))))
-
-(defun make-sub-function-expr (fn &key save index)
-  "Generates code which computes the value of the sub-function
-   expression and stores it in a variable, which is returned as the
-   expression (second return value)."
-
-  (let ((var (var-name)))
-    (flet ((make-block (&rest statements)
-             (js-block
-              statements
-              (when (and (not (in-meta-node?)) save)
-                (js-call "=" (get-saved-value index) var)))))
-
-      (multiple-value-bind (blk expr) (make-expression fn :return-variable var :tailp nil)
-        (values
-         (cond
-           ((or (null expr) (= expr var))
-            (make-block (js-var var) blk))
-
-           (t
-            (make-block blk (js-var var expr))))
-         var)))))
-
-
-(defun in-meta-node? ()
-  "Returns true if currently compiling a meta-node function."
-
-  (meta-node? *current-node*))
-
-(defun get-saved-value (index)
-  "Returns an expression which references the saved previous value of
-   the sub-function with index INDEX."
-
-  (js-element (js-member "this" "saved_values") index))
-
-
-;;;; Literal Values
-
-(defgeneric make-literal (literal)
+(defgeneric make-expression (expression &key &allow-other-keys)
   (:documentation
-   "Generates a JS expression for the literal value LITERAL.")
+   "Generates code for a single intermediate expression.
 
-  (:method (literal)
-    literal)
+    :RETURN-VARIABLE (defaults to *RETURN-VARIABLE*) is the name of
+    the variable in which the result should be stored (NIL if it
+    should be returned directly).
 
-  (:method ((literal string))
-    (js-string literal)))
+    :TAILP (defaults to *IN-TAIL-POSITION) is a flag which is true if
+    EXPRESSION occurs in tail position.
+
+    Returns two values: a block, which computes the result and an
+    expression for referencing that value. If EXPRESSION is compiled
+    to a single expression, the first return value is NIL and the
+    second value is the expression. If :RETURN-VARIABLE is NIL and FN
+    is not compiled to a single expression, the second return value is
+    NIL as the block returned in the first value contains a return
+    statement."))
+
+(defmethod make-expression :around ((expression t) &key ((:return-variable *return-variable*) *return-variable*) ((:tailp *in-tail-position*) *in-tail-position*))
+  (call-next-method))
 
 
-;;;; Special Operator Expressions
+;;; Node References
 
-(defgeneric make-operator-expression (operator operands)
-  (:documentation
-   "Generates the code for the value expression with operator OPERATOR
-    and operands OPERANDS. Returns two values: a block which computes
-    the value of the expression (NIL if the expression can be compiled
-    to a single JS expression) and an expression for referencing the
-    value computed by the expression."))
+(defmethod make-expression ((link node-link) &key)
+  (values nil (funcall *get-input* link)))
+
+(defmethod make-expression ((self (eql :self)) &key)
+  (values nil (funcall *get-input* self)))
 
 
-;;; Conditions
+;;; Meta-Node Functor Expressions
 
-(defmethod make-operator-expression ((operator (eql 'if)) operands)
+(defmethod make-expression ((expression functor-expression) &key)
+  (with-accessors ((meta-node functor-expression-meta-node)
+                   (arguments functor-expression-arguments))
+      expression
+
+    (match meta-node
+      ((external-meta-node (name (eql (id-symbol "if"))))
+       (make-expression
+        (if-expression (first arguments) (second arguments) (third arguments))))
+
+      (_
+       (make-operands
+        arguments
+        (lambda (expressions)
+          (let ((call (make-meta-node-call meta-node expressions)))
+            (if (value-expression? call)
+                (values nil call)
+                (values call nil)))))))))
+
+
+;;; If Expressions
+
+(defmethod make-expression ((if if-expression) &key)
   "Generates an IF block for a conditional expression with condition
    COND, if-true expression THEN and else expression ELSE."
 
-  (destructuring-bind (cond then else) operands
+  (with-accessors ((cond if-expression-condition)
+                   (then if-expression-then)
+                   (else if-expression-else))
+      if
+
     (let ((cond-var (var-name)))
       (multiple-value-bind (cond-block cond-expr)
           (make-expression cond :return-variable cond-var :tailp nil)
@@ -602,12 +538,27 @@
                   (block-expression (or then-async? else-async?))))))))))))
 
 
-;;; Catch
+;;; Fail and Catch Expressions
 
-(defmethod make-operator-expression ((operator (eql :catch)) operands)
+(defmethod make-expression ((fail fail-expression) &key)
+  (cond
+    ((in-meta-node?)
+     (values nil "null"))
+
+    ;; Check whether inside subfunction
+    (*current-expression-group-index*
+     (values nil (get-saved-value *current-expression-group-index*)))
+
+    (t
+     (values (js-block (js-throw (js-new +end-update-class+))) nil))))
+
+(defmethod make-expression ((catch catch-expression) &key)
   "Generates a TRY-CATCH block for :CATCH expressions."
 
-  (destructuring-bind (try catch) operands
+  (with-accessors ((try catch-expression-main)
+                   (catch catch-expression-catch))
+      catch
+
     (multiple-value-bind (try try-async?) (make-statements try)
       (multiple-value-bind (catch catch-async?) (make-statements catch)
         (values
@@ -626,27 +577,31 @@
       *return-variable*))
 
 
-;;; Objects
+;;; Object Expressions
 
-(defmethod make-operator-expression ((operator (eql :object)) operands)
+(defmethod make-expression ((object object-expression) &key)
   "Generates an expression which returns an object containing each
    field-value pair in OPERANDS."
 
-  (let ((keys (map #'first operands))
-        (values (map #'second operands)))
+  (with-accessors ((entries object-expression-entries)) object
+    (let ((keys (map #'first entries))
+          (values (map #'second entries)))
 
-    (make-operands
-     values
-     (lambda (values)
-       (values
-        nil
-        (js-object (map #'list (map #'js-string keys) values)))))))
+      (make-operands
+       values
+       (lambda (values)
+         (values
+          nil
+          (js-object (map #'list (map #'js-string keys) values))))))))
 
-(defmethod make-operator-expression ((operator (eql :member)) operands)
+(defmethod make-expression ((member member-expression) &key)
   "Generates an expression which returns the value of a particular
    subnode (field) of an object node."
 
-  (destructuring-bind (object member) operands
+  (with-accessors ((object member-expression-object)
+                   (member member-expression-key))
+      member
+
     (let ((object-var (var-name)))
       (multiple-value-bind (object-block object-expr)
           (make-expression object :return-variable object-var :tailp nil)
@@ -663,38 +618,88 @@
              (values nil (js-element object (js-string member))))))))))
 
 
-;;; Meta-Node Expressions
+;;; Expression Groups
 
-(defconstant +special-operators+
-  (alist-hash-map
-   (list (cons (id-symbol "if") 'if)))
+(defmethod make-expression ((group expression-group) &key)
+  (with-accessors ((expression expression-group-expression)
+                   (count expression-group-count)
+                   (save expression-group-save))
+      group
 
-  "Map mapping names of externally defined meta-nodes to special
-   operator symbols for which there is a MAKE-OPERATOR-EXPRESSION
-   method.")
+    (if (or save (> count 1))
+        (make-expression-group group)
+        (make-expression expression))))
 
-(defmethod make-operator-expression ((meta-node external-meta-node) operands)
-  "Generates code which invokes the externally defined meta-node
-   META-NODE with operands OPERANDS. If the meta-node represents a
-   special operator in *SPECIAL-OPERATORS* the appropriate
-   MAKE-OPERATOR-EXPRESSION method is called otherwise the meta-node
-   is treated as an ordinary function."
+(defun make-expression-group (group)
+  "Generates code which computes the value of the expression-group GROUP and
+   stores the resulting expression in *EXPRESSION-GROUPS*. If code for the
+   expression-group has already been generated, the variable, to which the
+   result of the expression-group is assigned, is returned."
 
-  (aif (get (name meta-node) +special-operators+)
-       (make-operator-expression it operands)
-       (call-next-method)))
+  (with-accessors ((expression expression-group-expression)
+                   (save expression-group-save))
+      group
+
+    (aif (get group *expression-groups*)
+         (values nil (car it))
+
+         (let* ((index (length *expression-groups*))
+                (*current-expression-group-index* index))
+
+           (multiple-value-return (blk expr)
+               (make-expression-group-expr expression
+                                       :save save
+                                       :index (length *expression-groups*))
+             (declare (ignore blk))
+             (setf (get group *expression-groups*) (cons expr (length *expression-groups*))))))))
+
+(defun make-expression-group-expr (expr &key save index)
+  "Generates code which computes the value of the expression-group
+   expression and stores it in a variable, which is returned as the
+   expression (second return value)."
+
+  (let ((var (var-name)))
+    (flet ((make-block (&rest statements)
+             (js-block
+              statements
+              (when (and (not (in-meta-node?)) save)
+                (js-call "=" (get-saved-value index) var)))))
+
+      (multiple-value-bind (blk expr) (make-expression expr :return-variable var :tailp nil)
+        (values
+         (cond
+           ((or (null expr) (= expr var))
+            (make-block (js-var var) blk))
+
+           (t
+            (make-block blk (js-var var expr))))
+         var)))))
+
+(defun in-meta-node? ()
+  "Returns true if currently compiling a meta-node function."
+
+  (meta-node? *current-node*))
+
+(defun get-saved-value (index)
+  "Returns an expression which references the saved previous value of
+   the expression-group with index INDEX."
+
+  (js-element (js-member "this" "saved_values") index))
 
 
-(defmethod make-operator-expression (meta-node operands)
-  "Generates code which invokes META-NODE with OPERANDS."
+;;; Literal Values
 
-  (make-operands
-   operands
-   (lambda (expressions)
-     (let ((call (make-meta-node-call meta-node expressions)))
-       (if (value-expression? call)
-           (values nil call)
-           (values call nil))))))
+(defmethod make-expression ((string string) &key)
+  (values nil (js-string string)))
+
+(defmethod make-expression (literal &key)
+  (values nil literal))
+
+(defmethod make-expression ((null null) &key)
+  (values nil "null"))
+
+
+;;;; Arguments
 
 (defun make-operands (operands body-fn)
   "Generates code which computes the value of each operand. BODY-FN is
@@ -793,7 +798,6 @@
      (when (or statements1 statements2)
        (js-block statements1 statements2))
      expression)))
-
 
 (defun make-body-block (body-fn arg)
   "Generates the body of a promise handler function. The body contains

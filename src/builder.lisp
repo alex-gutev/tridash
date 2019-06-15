@@ -468,6 +468,8 @@
   "Looks up a node in another module, which does not have an alias in
    the current module."
 
+  (declare (ignore table))
+
   (match-syntax (+in-module-operator+ identifier node)
       args
 
@@ -605,7 +607,7 @@
                   (cond-link (add-binding cond-node target :context *source-node* :add-function nil)))
 
              (setf (value-function (context target *source-node*))
-                   `(if ,cond-link ,value-link :fail))
+                   (if-expression cond-link value-link (fail-expression)))
 
              cond-node)))))))
 
@@ -657,7 +659,8 @@
 
   (let ((node (at-source (process-declaration node table))))
     (create-context (subnode node)
-      (setf value-function (list :member (bind node) key)))))
+      (->> (member-expression (bind node) key)
+           (setf value-function)))))
 
 (defun make-target-subnode (node key subnode table)
   "Binds the subnode to the object node and updates the value function
@@ -667,11 +670,15 @@
   (with-source-node subnode
     (let ((object-node (process-declaration node table)))
       (create-context (object-node :object)
-        (setf value-function (list :object)))
+        (setf value-function (object-expression)))
 
       (ensure-binding (subnode object-node :context :object :add-function nil)
           (link)
-        (push (list key link) (cdr (value-function (context object-node :object))))))))
+
+        (->> (context object-node :object)
+             value-function
+             object-expression-entries
+             (push (list key link)))))))
 
 (defmethod process-subnode ((module node-table) node)
   "Returns the node with identifier NODE in the module MODULE."
@@ -753,7 +760,10 @@
 
   (create-context (instance context)
     (add-to-instances instance meta-node context)
-    (setf value-function (cons meta-node (bind-operands instance operands :context context)))))
+
+    (->> (bind-operands instance operands :context context)
+         (functor-expression meta-node)
+         (setf value-function))))
 
 (defun add-to-instances (instance meta-node context)
   "Adds the meta-node instance INSTANCE, at context CONTEXT, to the
