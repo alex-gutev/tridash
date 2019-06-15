@@ -133,6 +133,17 @@
 
   (js-call (js-lambda nil statements)))
 
+
+;;; Try-Catch
+
+(defstruct (js-catch
+             (:constructor js-catch (try catch)))
+  "Try-Catch Statement"
+
+  try
+  catch)
+
+
 ;;; Statements
 
 (defstruct (js-return

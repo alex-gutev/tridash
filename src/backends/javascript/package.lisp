@@ -85,6 +85,11 @@
    :lexical-block
    :make-lexical-block
 
+   :js-catch
+   :js-catch-p
+   :js-catch-try
+   :js-catch-catch
+
    :js-return
    :js-return-p
    :js-return-value

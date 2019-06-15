@@ -599,10 +599,31 @@
                           (make-js-block then-block)
                           (make-js-block else-block)))
 
-                  (if (and *return-variable* (or then-async? else-async?))
-                      (cons 'async
-                            (js-call (js-member "Promise" "resolve") *return-variable*))
-                      *return-variable*)))))))))))
+                  (block-expression (or then-async? else-async?))))))))))))
+
+
+;;; Catch
+
+(defmethod make-operator-expression ((operator (eql :catch)) operands)
+  "Generates a TRY-CATCH block for :CATCH expressions."
+
+  (destructuring-bind (try catch) operands
+    (multiple-value-bind (try try-async?) (make-statements try)
+      (multiple-value-bind (catch catch-async?) (make-statements catch)
+        (values
+         (js-block
+          (js-catch try catch))
+
+         (block-expression (or try-async? catch-async?)))))))
+
+(defun block-expression (async?)
+  "Generates the expression for referencing the value computed by a JS
+   block, such as an IF or TRY-CATCH block."
+
+  (if (and *return-variable* async?)
+      (->> (js-call (js-member "Promise" "resolve") *return-variable*)
+           (cons 'async))
+      *return-variable*))
 
 
 ;;; Objects
