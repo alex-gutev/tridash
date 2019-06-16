@@ -473,6 +473,46 @@
         (test-node-function int-x int int x)
         (test-node-function x int-x int int-x))))
 
+  (subtest "Multiple Contexts"
+    (with-module-table modules
+      (build-source-file #p"./modules/core.trd" modules)
+      (build ":import(core);"
+             "a < 3 -> ((a + b) -> output)"
+             "a < 4 -> ((a - b) -> output)"
+             "b -> output")
+
+      (with-nodes ((b "b") (output "output")
+
+                   (cond1 ("->" ((":in" "core" "+") "a" "b") "output"))
+                   (cond2 ("->" ((":in" "core" "-") "a" "b") "output"))
+
+                   (a+b ((":in" "core" "+") "a" "b"))
+                   (a-b ((":in" "core" "-") "a" "b")))
+          modules
+
+        (has-value-function
+         ((cond1 :context a+b) (a+b :context a+b))
+         output
+
+         `(if ,cond1 ,a+b (:fail)))
+
+        (isf (order (get a+b (contexts output))) 0
+             "Context Order")
+
+        (has-value-function
+         ((cond2 :context a-b) (a-b :context a-b))
+         output
+
+         `(if ,cond2 ,a-b (:fail)))
+
+        (isf (order (get a-b (contexts output))) 1
+             "Context Order")
+
+        (test-simple-binding b output :context b)
+
+        (isf (order (get b (contexts output))) 2
+             "Context Order"))))
+
   (subtest "Special Operators"
     (subtest ":op Operator - Registering Infix Operators"
       (flet ((test-op (id operators prec assoc)
@@ -1021,7 +1061,7 @@
   (subtest "Removing Unreachable Nodes"
     (with-module-table modules
       (build "a -> b; b -> c;"
-             "e -> f"                 ; Unreachable Nodes
+             "e -> f"                   ; Unreachable Nodes
              ":attribute(a, input, 1)")
 
       (let ((table (finish-build)))
@@ -1042,7 +1082,7 @@
       (with-module-table modules
         (build ":extern(add)"
                "a -> b; add(b, d) -> output"
-               "c -> d"               ; Unreachable Nodes
+               "c -> d"                 ; Unreachable Nodes
                ":attribute(a, input, 1)")
 
         (is-error (finish-build) 'dependency-not-reachable))))
@@ -1151,7 +1191,100 @@
 
           (has-value-function
            (a d) out
-           `(,add (,add ,a ,(expression-group `(if (,even? (,add ,a ,1)) (,add ,a 1) (:fail)) :save t)) ,d)))))))
+           `(,add (,add ,a ,(expression-group `(if (,even? (,add ,a ,1)) (,add ,a 1) (:fail)) :save t)) ,d))))))
+
+  (subtest "Multiple Contexts"
+    (subtest "Common Operands"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core);"
+               "a < 3 -> ((a + b) -> output)"
+               "b -> output"
+
+               ":attribute(a, input, 1)"
+               ":attribute(b, input, 1)")
+
+        (let ((table (finish-build)))
+          (with-nodes ((+ "+") (< "<")
+                       (a "a") (b "b") (output "output"))
+              table
+
+            (has-value-function
+             (a b)
+             output
+
+             `(:catch
+                  (if (,< ,a 3) (,+ ,a ,b) (:fail))
+                ,b))
+
+            (-> output
+                contexts
+                first
+                cdr
+                order
+                (isf 0 "Merged Context Order"))))))
+
+    (subtest "Single Common Ancestor"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core);"
+               "a < 3 -> ((a + b) -> c)"
+               "c -> output"
+               "b -> output"
+
+               ":attribute(a, input, 1)"
+               ":attribute(b, input, 1)")
+
+        (let ((table (finish-build)))
+          (with-nodes ((+ "+") (< "<")
+                       (a "a") (b "b") (output "output"))
+              table
+
+            (has-value-function
+             (a b)
+             output
+
+             `(:catch
+                  (if (,< ,a 3) (,+ ,a ,b) (:fail))
+                ,b))
+
+            (-> output
+                contexts
+                first
+                cdr
+                order
+                (isf 0 "Merged Context Order"))))))
+
+    (subtest "Test Creation Order"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core);"
+               "a + b -> output"
+               "b -> output"
+               "a < 3 -> ((a + b) -> output)"
+
+               ":attribute(a, input, 1)"
+               ":attribute(b, input, 1)")
+
+        (let ((table (finish-build)))
+          (with-nodes ((+ "+") (< "<")
+                       (a "a") (b "b") (output "output"))
+              table
+
+            (has-value-function
+             (a b)
+             output
+
+             `(:catch
+                  (if (,< ,a 3) (,+ ,a ,b) (:fail))
+                ,b))
+
+            (-> output
+                contexts
+                first
+                cdr
+                order
+                (isf 0 "Merged Context Order"))))))))
 
 (subtest "Constant Folding"
   (subtest "Literal Constant Values"
