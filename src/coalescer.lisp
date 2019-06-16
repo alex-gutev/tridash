@@ -164,9 +164,13 @@
             function of CONTEXT2 as the expression which is evaluated
             when the main expression fails."
 
+           ;; Wrap both context functions in `NODE-LINK' objects in
+           ;; order for them to be wrapped in `EXPRESSION-GROUP'
+           ;; objects.
+
            (catch-expression
-            (value-function context1)
-            (value-function context2))))
+            (node-link (value-function context1))
+            (node-link (value-function context2)))))
 
       (foreach #'begin-coalesce input-nodes))))
 
@@ -200,6 +204,9 @@
    "Coalesces node links in the expression EXPRESSION."))
 
 (defmethod coalesce-links-in-expression ((link node-link) &key (save t))
+  "If LINK points to an expression, instead of a NODE, returns an
+   `EXPRESSION-GROUP' containing the referenced expression."
+
   (labels ((should-save? (expr)
              "Checks whether the value of the expression should be
               saved, for future value updates."
@@ -232,6 +239,15 @@
                 (setf node))))
 
         (_ link)))))
+
+(defmethod coalesce-links-in-expression ((catch catch-expression) &key (save t))
+  "Coalesces `NODE-LINK's in both the main and catch expression,
+   however only the values of the catch expression are saved if
+   necessary."
+
+  (catch-expression
+   (coalesce-links-in-expression (catch-expression-main catch) :save nil)
+   (coalesce-links-in-expression (catch-expression-catch catch) :save save)))
 
 (defmethod coalesce-links-in-expression ((expression t) &key (save t))
   (map-expression! (rcurry #'coalesce-links-in-expression :save save) expression))

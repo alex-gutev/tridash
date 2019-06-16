@@ -1214,8 +1214,44 @@
              output
 
              `(:catch
-                  (if (,< ,a 3) (,+ ,a ,b) (:fail))
+                  ,(expression-group
+                    `(if (,< ,a 3) (,+ ,a ,b) (:fail))
+                    :save nil)
                 ,b))
+
+            (-> output
+                contexts
+                first
+                cdr
+                order
+                (isf 0 "Merged Context Order"))))))
+
+    (subtest "Common Operand without Default"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core);"
+               "a < 3 -> ((a + b) -> output)"
+               "b < 4 -> (b -> output)"
+
+               ":attribute(a, input, 1)"
+               ":attribute(b, input, 1)")
+
+        (let ((table (finish-build)))
+          (with-nodes ((+ "+") (< "<")
+                       (a "a") (b "b") (output "output"))
+              table
+
+            (has-value-function
+             (a b)
+             output
+
+             `(:catch
+                  ,(expression-group
+                    `(if (,< ,a 3) (,+ ,a ,b) (:fail))
+                    :save nil)
+                ,(expression-group
+                  `(if (,< ,b 4) ,b (:fail))
+                  :save t)))
 
             (-> output
                 contexts
@@ -1245,8 +1281,45 @@
              output
 
              `(:catch
-                  (if (,< ,a 3) (,+ ,a ,b) (:fail))
+                  ,(expression-group
+                    `(if (,< ,a 3) (,+ ,a ,b) (:fail))
+                    :save nil)
                 ,b))
+
+            (-> output
+                contexts
+                first
+                cdr
+                order
+                (isf 0 "Merged Context Order"))))))
+
+    (subtest "Single Common Ancestor without Default"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core);"
+               "a < 3 -> ((a + b) -> c)"
+               "c -> output"
+               "b < 4 -> (b -> output)"
+
+               ":attribute(a, input, 1)"
+               ":attribute(b, input, 1)")
+
+        (let ((table (finish-build)))
+          (with-nodes ((+ "+") (< "<")
+                       (a "a") (b "b") (output "output"))
+              table
+
+            (has-value-function
+             (a b)
+             output
+
+             `(:catch
+                  ,(expression-group
+                    `(if (,< ,a 3) (,+ ,a ,b) (:fail))
+                    :save nil)
+                ,(expression-group
+                  `(if (,< ,b 4) ,b (:fail))
+                  :save t)))
 
             (-> output
                 contexts
