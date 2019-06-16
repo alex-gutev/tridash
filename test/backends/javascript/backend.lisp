@@ -174,6 +174,10 @@
 (defmethod ast= ((got js-block) (expected js-block))
   (ast-list= (js-block-statements got) (js-block-statements expected)))
 
+(defmethod ast= ((got js-catch) (expected js-catch))
+  (and (ast-list= (js-catch-try got) (js-catch-try expected))
+       (ast-list= (js-catch-catch got) (js-catch-catch expected))))
+
 
 (defmethod ast= ((got js-var) (expected js-var))
   (and (ast= (js-var-var got) (js-var-var expected))
@@ -891,7 +895,36 @@
             (test-compute-function context
               (js-if (js-call < (d a) 0)
                      (js-return (d a))
-                     (js-throw (js-new "Tridash.EndUpdate"))))))))))
+                     (js-throw (js-new "Tridash.EndUpdate")))))))))
+
+  (subtest "Catch Expressions"
+    (mock-backend-state
+      (mock-meta-nodes (< + -)
+        (mock-contexts
+            ((context (a b) (catch-expression
+                             (expression-group
+                              (if-expression (functor < a b)
+                                             (functor + a b)
+                                             (fail-expression))
+                              :save nil)
+
+                             (expression-group
+                              (functor - a b)
+                              :save t))))
+
+          (test-compute-function context
+            (js-catch
+             (list
+              (js-if (js-call < (d a) (d b))
+                     (js-return (js-call + (d a) (d b)))
+                     (js-throw (js-new "Tridash.EndUpdate"))))
+
+             (list
+              (js-var ($ 1) (js-call - (d a) (d b)))
+
+              (-<> (js-member "this" "saved_values")
+                   (js-element 0)
+                   (js-call "=" <> ($ 1)))))))))))
 
 
 (defun test-function% (got expected)

@@ -545,7 +545,7 @@
     ((in-meta-node?)
      (values nil "null"))
 
-    ;; Check whether inside subfunction
+    ;; Check whether inside expression group
     (*current-expression-group-index*
      (values nil (get-saved-value *current-expression-group-index*)))
 
@@ -964,6 +964,11 @@
    (js-function-name function)
    (mapcar #'strip-redundant (js-function-arguments function))
    (strip-redundant (js-function-statements function))))
+
+(defmethod strip-redundant ((catch js-catch) &key)
+  (js-catch
+   (strip-redundant (js-catch-try catch))
+   (strip-redundant (js-catch-catch catch))))
 
 
 ;;; Statements
