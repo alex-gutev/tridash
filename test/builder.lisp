@@ -1895,17 +1895,38 @@
               (has-value-function (in) out `(,fib ,in))))))))
 
   (subtest "Self-Node References"
-    (with-module-table modules
-      (build "Person(name, surname) : {
+    (subtest "Single Context"
+      (with-module-table modules
+        (build "Person(name, surname) : {
                   name -> self.first
                   surname -> self.last
                 }")
 
-      (let ((table (finish-build)))
-        (with-nodes ((person "Person")) table
-          (test-meta-node person ((name "name") (surname "surname"))
-                          `(:object (,(id-symbol "first") ,name)
-                                    (,(id-symbol "last") ,surname)))))))
+        (let ((table (finish-build)))
+          (with-nodes ((person "Person")) table
+            (test-meta-node person ((name "name") (surname "surname"))
+                            `(:object (,(id-symbol "first") ,name)
+                                      (,(id-symbol "last") ,surname)))))))
+
+    (subtest "Multiple Contexts"
+      (with-module-table modules
+        (build-source-file "./modules/core.trd" modules)
+        (build ":import(core)"
+               "fn(x) : { x < 3 -> (x + 1 -> self); x + 2 -> self }")
+
+        (let ((table (finish-build)))
+          (with-nodes ((fn "fn") (< "<") (+ "+")) table
+            (->>
+             `(:catch
+                  ,(expression-group
+                    `(if (,< ,x 3)
+                         (,+ ,x 1)
+                         (:fail))
+                    :save nil)
+                ,(expression-group
+                  `(,+ ,x 2)
+                  :save nil))
+             (test-meta-node fn ((x "x")))))))))
 
   (subtest "Outer-Node References"
     (subtest "Simple Outer-Node References"
@@ -2217,29 +2238,7 @@
                       d -> a
                     }")
 
-          (is-error (finish-build) 'node-cycle-error))))
-
-    (subtest "Ambiguous Context Checks"
-      (subtest "Simple Bindings"
-        (with-module-table modules
-          (build "f(a, b) : {
-                      a -> self
-                      b -> self
-                    }")
-
-          (is-error (finish-build) 'ambiguous-context-error)))
-
-      (subtest "Functional Bindings"
-        (with-module-table modules
-          (build ":extern(add)"
-
-                 "f(a, b) : {
-                      a -> self
-                      b -> self
-                      add(a, b) -> self
-                    }")
-
-          (is-error (finish-build) 'ambiguous-context-error))))))
+          (is-error (finish-build) 'node-cycle-error))))))
 
 
 (finalize)

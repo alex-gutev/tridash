@@ -274,31 +274,6 @@
 
 ;;;; Graph Structure Errors
 
-(define-condition ambiguous-context-error (semantic-error)
-  ((node :initarg :node
-         :reader node
-         :documentation
-         "The node with ambiguous contexts"))
-
-  (:documentation
-   "Error condition for when a single path activates multiple contexts
-    of a single node."))
-
-(defmethod print-object ((err ambiguous-context-error) stream)
-  (format stream "Node ~a has multiple contexts activated by a single common ancestor."
-          (name (node err))))
-
-
-(define-condition ambiguous-meta-node-context (ambiguous-context-error) ()
-  (:documentation
-   "Error condition: Meta-node has more than a single context and thus
-    the value function of the meta-node is ambiguous."))
-
-(defmethod print-object ((e ambiguous-meta-node-context) stream)
-  (format stream "The value function of meta-node ~a is ambiguous as it has multiple contexts."
-          (name (node e))))
-
-
 (define-condition node-cycle-error (semantic-error)
   ((node :initarg :node
          :reader node

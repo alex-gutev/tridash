@@ -220,8 +220,15 @@
 
   (with-slots (definition) meta-node
     (awhen definition
+      (merge-meta-node-contexts meta-node)
       (finish-build (setf definition (flatten-meta-node definition))))))
 
+(defun merge-meta-node-contexts (meta-node)
+  "Merges all contexts of the meta-node into a single context."
+
+  (with-slots (operands contexts) meta-node
+    (let ((id (car (first contexts))))
+      (foreach (curry #'merge-contexts meta-node id) (map-keys contexts)))))
 
 ;;;; Build Meta-Nodes
 
@@ -272,12 +279,8 @@
    the last-node in the meta-node's definition."
 
   (with-slots (output-nodes contexts) meta-node
-    (cond
-      ((and last-node (emptyp contexts))
-       (add-binding last-node meta-node :context nil))
-
-      ((> (length contexts) 1)
-       (error 'ambiguous-meta-node-context :node meta-node)))))
+    (when (and last-node (emptyp contexts))
+      (add-binding last-node meta-node :context nil))))
 
 
 ;;;; Methods: Processing Declarations

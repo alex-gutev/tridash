@@ -131,34 +131,16 @@
                      ;; Remove NODE from observers of DEPENDENCY
                      (erase observers node)
                      ;; Add OBSERVER to observers of DEPENDENCY
-                     (setf (get observer (observers dependency)) link)))))))
+                     (setf (get observer (observers dependency)) link))))))))
 
-         (merge-contexts (node id1 id2)
-           "Merges the context with id ID2 into the context with ID1,
-            if they are not the same context."
+      (foreach #'begin-coalesce input-nodes))))
 
-           (unless (= id1 id2)
-             (let ((context1 (context node id1))
-                   (context2 (context node id2)))
 
-               (with-slots (operands) context1
-                 (doseq ((operand . link) (operands context2))
-                   (setf (node-link-context link) id1)
-                   (ensure-get operand operands link)))
+(defun merge-contexts (node id1 id2)
+  "Merges the context with id ID2 into the context with ID1,
+   if they are not the same context."
 
-               (cond
-                 ((< (order context1) (order context2))
-                  (setf (value-function context1)
-                        (merge-context-functions context1 context2)))
-
-                 (t
-                  (setf (order context1) (order context2))
-                  (setf (value-function context1)
-                        (merge-context-functions context2 context1))))
-
-               (erase (contexts node) id2))))
-
-         (merge-context-functions (context1 context2)
+  (flet ((merge-context-functions (context1 context2)
            "Returns a function which is a `CATCH-EXPRESSION' with the
             function of CONTEXT1 as the main expression and the
             function of CONTEXT2 as the expression which is evaluated
@@ -172,7 +154,26 @@
             (node-link (value-function context1))
             (node-link (value-function context2)))))
 
-      (foreach #'begin-coalesce input-nodes))))
+    (unless (= id1 id2)
+      (let ((context1 (context node id1))
+            (context2 (context node id2)))
+
+        (with-slots (operands) context1
+          (doseq ((operand . link) (operands context2))
+            (setf (node-link-context link) id1)
+            (ensure-get operand operands link)))
+
+        (cond
+          ((< (order context1) (order context2))
+           (setf (value-function context1)
+                 (merge-context-functions context1 context2)))
+
+          (t
+           (setf (order context1) (order context2))
+           (setf (value-function context1)
+                 (merge-context-functions context2 context1))))
+
+        (erase (contexts node) id2)))))
 
 (defun may-coalesce? (node)
   "Returns true if NODE may be coalesced into another node. Returns
