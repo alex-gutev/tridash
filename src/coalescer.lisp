@@ -28,6 +28,26 @@
 
 ;;; Coalescing Nodes
 
+(defun coalesce-all (table)
+  "Perform all coalescing steps on the `FLAT-NODE-TABLE' TABLE:
+   coalesce nodes, coalesce contexts, remove unreachable nodes and
+   coalesce `NODE-LINK' objects."
+
+  (with-slots (nodes input-nodes) table
+    ;; Coalesce successive nodes with a single observer
+    (coalesce-nodes input-nodes)
+
+    ;; Check for cycles and coalesce multiple contexts activated by a
+    ;; common ancestor node.
+    (check-structure input-nodes)
+
+    ;; Remove nodes not reachable from any input node.
+    (remove-unreachable-nodes input-nodes nodes)
+
+    ;; Replace node linkes which no longer point to actual nodes with
+    ;; expression groups.
+    (coalesce-node-links nodes)))
+
 (defun coalesce-nodes (input-nodes)
   "Coalesces successive nodes, which only have a single observer, into
    single nodes. INPUT-NODES is the set of all INPUT-NODES."
@@ -134,7 +154,6 @@
                      (setf (get observer (observers dependency)) link))))))))
 
       (foreach #'begin-coalesce input-nodes))))
-
 
 (defun merge-contexts (node id1 id2)
   "Merges the context with id ID2 into the context with ID1,
@@ -322,9 +341,10 @@
 
 (defun check-structure (input-nodes)
   "Checks the structure of all nodes ensuring there are no cycles and
-   no ambiguous contexts. If a cycle or ambiguous context is detected,
-   an error condition is signaled. INPUT-NODES is the set of all input
-   nodes."
+   coalesces multiple contexts activated by a single common ancestor
+   node. If a cycle is detected, an error condition is signaled.
+
+   INPUT-NODES is the set of all input nodes."
 
   (let ((visited (make-hash-map)))
     (labels ((begin-walk (node)
@@ -332,7 +352,7 @@
                 NODE in the :INPUT context."
 
                (clear visited)
-               (visit node (context node :input)))
+               (visit node :input))
 
              (visit (node context)
                "Visits node NODE in the context CONTEXT."
@@ -343,13 +363,15 @@
 
              (check-context (node new-context marker)
                "Checks that if node is visited for a second time, it
-                is not part of a cycle and it is visited in the same
-                context."
+                is not part of a cycle and coalesce contexts."
 
                (destructuring-bind (temp? old-context) marker
                  (cond
                    (temp?
-                    (error 'node-cycle-error :node node)))))
+                    (error 'node-cycle-error :node node))
+
+                   ((/= old-context new-context)
+                    (merge-contexts node old-context new-context)))))
 
              (visit-observers (node context)
                "Visits the observers of NODE in the context CONTEXT."
@@ -357,7 +379,7 @@
                ;; Mark Temporarily
                (setf (get node visited) (list t context))
 
-               (with-slots (operands) context
+               (with-slots (operands) (context node context)
                  (foreach #'visit-observer (remove-if (compose (rcurry #'memberp operands) #'car) (observers node))))
 
                ;; Mark Permanently
@@ -365,6 +387,6 @@
 
              (visit-observer (observer)
                (destructuring-bind (observer . link) observer
-                 (visit observer (context observer (node-link-context link))))))
+                 (visit observer (node-link-context link)))))
 
       (foreach #'begin-walk input-nodes))))

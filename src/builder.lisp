@@ -200,15 +200,8 @@
     ;; Fold constant nodes
     (fold-constant-nodes nodes)
 
-    ;; Coalesce nodes
-    (coalesce-nodes input-nodes)
-    (coalesce-node-links nodes)
-
-    ;; Remove unreachable nodes
-    (remove-unreachable-nodes input-nodes nodes)
-
-    ;; Check for cycles and ambiguous contexts
-    (check-structure input-nodes)
+    ;; Coalesce Nodes
+    (coalesce-all node-table)
 
     ;; Finish Building Meta-Node Subgraphs
     (foreach #'finish-build-meta-node (meta-nodes node-table))))

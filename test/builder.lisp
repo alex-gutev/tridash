@@ -1226,6 +1226,41 @@
                 order
                 (isf 0 "Merged Context Order"))))))
 
+    (subtest "Common Operands without Coalescing"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core);"
+               "a + b -> c"
+               "a < 3 -> (c -> output)"
+               "b -> output"
+
+               ":attribute(a, input, 1)"
+               ":attribute(b, input, 1)"
+               ":attribute(c, no-coalesce, 1)")
+
+        (let ((table (finish-build)))
+          (with-nodes ((< "<")
+                       (a "a") (b "b") (c "c")
+                       (output "output"))
+              table
+
+            (has-value-function
+             (a b c)
+             output
+
+             `(:catch
+                  ,(expression-group
+                    `(if (,< ,a 3) ,c (:fail))
+                    :save nil)
+                ,b))
+
+            (-> output
+                contexts
+                first
+                cdr
+                order
+                (isf 0 "Merged Context Order"))))))
+
     (subtest "Common Operand without Default"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
