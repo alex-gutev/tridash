@@ -160,7 +160,7 @@
         (js-lambda
          (list "value")
          (-> (compose (curry #'make-set-attribute node "value") #'first)
-             (map (rest value-function)))))))))
+             (map (object-expression-entries value-function)))))))))
 
 (defun make-get-element (path id)
   "Generates code which retrieves a reference to the HTML element with
