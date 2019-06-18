@@ -35,6 +35,13 @@
   "Operator for suppressing processing of declarations.")
 
 
+;;; Contexts
+
+(defconstant +context-operator+ (id-symbol ":context")
+  "Operator for explicitly specifying the context to which bindings
+   are established.")
+
+
 ;;; Subnodes and Outer Nodes.
 
 (defconstant +outer-operator+ (id-symbol "..")
@@ -96,6 +103,8 @@
 
 (defconstant +special-operators+
   (list +bind-operator+
+        +context-operator+
+
         +def-operator+
         +extern-operator+
         +op-operator+

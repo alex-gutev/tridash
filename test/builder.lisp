@@ -209,11 +209,22 @@
 
 ;;;; Test Value Functions
 
+(defvar *strict-test* t
+  "If set to true the expression comparison is strict meaning the
+   expected expression has to match the actual expression exactly,
+   with the exception that the actual expression may have
+   `EXPRESSION-GROUP's not specified in the expected expression. If
+   set to NIL certain rules will be relaxed, such as expressions may
+   be contained inside `NODE-LINK' objects.")
 
 (defgeneric value-fn-equal (a b))
 
 (defmethod value-fn-equal ((a node-link) (b node-link))
   (eq a b))
+
+(defmethod value-fn-equal ((a node-link) b)
+  (unless *strict-test*
+    (value-fn-equal (node-link-node a) b)))
 
 (defmethod value-fn-equal ((a functor-expression) (b list))
   (match* (a b)
@@ -449,11 +460,12 @@
       (with-nodes ((a "a") (b "b") (c "c") (b->c ("->" "b" "c"))) modules
         (test-simple-binding a b->c :context a)
 
-	(has-value-function
-	 ((b :context b) (b->c :context b))
-	 c
+        (let ((*strict-test* nil))
+	  (has-value-function
+	   ((b :context b) (b->c :context b))
+	   c
 
-	 `(if ,b->c ,b (:fail))))))
+	   `(if ,b->c ,b (:fail)))))))
 
   (subtest "Functor Nodes"
     (with-module-table modules
@@ -473,13 +485,13 @@
         (test-node-function int-x int int x)
         (test-node-function x int-x int int-x))))
 
-  (subtest "Multiple Contexts"
+  (subtest "Explicit Contexts"
     (with-module-table modules
       (build-source-file #p"./modules/core.trd" modules)
       (build ":import(core);"
-             "a < 3 -> ((a + b) -> output)"
-             "a < 4 -> ((a - b) -> output)"
-             "b -> output")
+             "a < 3 -> ((a + b) -> :context(output, ctx))"
+             "a < 4 -> ((a - b) -> :context(output, ctx))"
+             "b -> :context(output, ctx)")
 
       (with-nodes ((b "b") (output "output")
 
@@ -490,28 +502,21 @@
                    (a-b ((":in" "core" "-") "a" "b")))
           modules
 
-        (has-value-function
-         ((cond1 :context a+b) (a+b :context a+b))
-         output
+        (let ((ctx (id-symbol "ctx"))
+              (*strict-test* nil))
 
-         `(if ,cond1 ,a+b (:fail)))
+          (has-value-function
+           ((cond1 :context ctx) (a+b :context ctx)
+            (cond2 :context ctx) (a-b :context ctx)
+            (b :context ctx))
 
-        (isf (order (get a+b (contexts output))) 0
-             "Context Order")
+           output
 
-        (has-value-function
-         ((cond2 :context a-b) (a-b :context a-b))
-         output
-
-         `(if ,cond2 ,a-b (:fail)))
-
-        (isf (order (get a-b (contexts output))) 1
-             "Context Order")
-
-        (test-simple-binding b output :context b)
-
-        (isf (order (get b (contexts output))) 2
-             "Context Order"))))
+           `(:catch
+                (:catch
+                    (if ,cond1 ,a+b (:fail))
+                  (if ,cond2 ,a-b (:fail)))
+              ,b))))))
 
   (subtest "Special Operators"
     (subtest ":op Operator - Registering Infix Operators"
@@ -811,11 +816,12 @@
 
                   (test-simple-binding a b->c :context a)
 
-	          (has-value-function
-	           ((b :context b) (b->c :context b))
-	           c
+                  (let ((*strict-test* nil))
+	            (has-value-function
+	             ((b :context b) (b->c :context b))
+	             c
 
-	           `(if ,b->c ,b (:fail)))))))))
+	             `(if ,b->c ,b (:fail))))))))))
 
       (subtest "Errors"
         (subtest "Module Semantics"
@@ -1198,8 +1204,8 @@
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
         (build ":import(core);"
-               "a < 3 -> ((a + b) -> output)"
-               "b -> output"
+               "a < 3 -> ((a + b) -> :context(output, ctx))"
+               "b -> :context(output, ctx)"
 
                ":attribute(a, input, 1)"
                ":attribute(b, input, 1)")
@@ -1217,22 +1223,15 @@
                   ,(expression-group
                     `(if (,< ,a 3) (,+ ,a ,b) (:fail))
                     :save nil)
-                ,b))
-
-            (-> output
-                contexts
-                first
-                cdr
-                order
-                (isf 0 "Merged Context Order"))))))
+                ,b))))))
 
     (subtest "Common Operands without Coalescing"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
         (build ":import(core);"
                "a + b -> c"
-               "a < 3 -> (c -> output)"
-               "b -> output"
+               "a < 3 -> (c -> :context(output, ctx1))"
+               "b -> :context(output, ctx1)"
 
                ":attribute(a, input, 1)"
                ":attribute(b, input, 1)"
@@ -1252,21 +1251,14 @@
                   ,(expression-group
                     `(if (,< ,a 3) ,c (:fail))
                     :save nil)
-                ,b))
-
-            (-> output
-                contexts
-                first
-                cdr
-                order
-                (isf 0 "Merged Context Order"))))))
+                ,b))))))
 
     (subtest "Common Operand without Default"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
         (build ":import(core);"
-               "a < 3 -> ((a + b) -> output)"
-               "b < 4 -> (b -> output)"
+               "a < 3 -> ((a + b) -> :context(output, c))"
+               "b < 4 -> (b -> :context(output, c))"
 
                ":attribute(a, input, 1)"
                ":attribute(b, input, 1)")
@@ -1286,22 +1278,15 @@
                     :save nil)
                 ,(expression-group
                   `(if (,< ,b 4) ,b (:fail))
-                  :save t)))
-
-            (-> output
-                contexts
-                first
-                cdr
-                order
-                (isf 0 "Merged Context Order"))))))
+                  :save t)))))))
 
     (subtest "Single Common Ancestor"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
         (build ":import(core);"
                "a < 3 -> ((a + b) -> c)"
-               "c -> output"
-               "b -> output"
+               "c -> :context(output, ctx)"
+               "b -> :context(output, ctx)"
 
                ":attribute(a, input, 1)"
                ":attribute(b, input, 1)")
@@ -1319,22 +1304,15 @@
                   ,(expression-group
                     `(if (,< ,a 3) (,+ ,a ,b) (:fail))
                     :save nil)
-                ,b))
-
-            (-> output
-                contexts
-                first
-                cdr
-                order
-                (isf 0 "Merged Context Order"))))))
+                ,b))))))
 
     (subtest "Single Common Ancestor without Default"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
         (build ":import(core);"
                "a < 3 -> ((a + b) -> c)"
-               "c -> output"
-               "b < 4 -> (b -> output)"
+               "c -> :context(output, ctx)"
+               "b < 4 -> (b -> :context(output, ctx))"
 
                ":attribute(a, input, 1)"
                ":attribute(b, input, 1)")
@@ -1354,22 +1332,15 @@
                     :save nil)
                 ,(expression-group
                   `(if (,< ,b 4) ,b (:fail))
-                  :save t)))
-
-            (-> output
-                contexts
-                first
-                cdr
-                order
-                (isf 0 "Merged Context Order"))))))
+                  :save t)))))))
 
     (subtest "Test Creation Order"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
         (build ":import(core);"
-               "a + b -> output"
-               "b -> output"
-               "a < 3 -> ((a + b) -> output)"
+               "a + b -> :context(output, c1)"
+               "b -> :context(output, c1)"
+               "a < 3 -> ((a + b) -> :context(output, c1))"
 
                ":attribute(a, input, 1)"
                ":attribute(b, input, 1)")
@@ -1385,14 +1356,7 @@
 
              `(:catch
                   (if (,< ,a 3) (,+ ,a ,b) (:fail))
-                ,b))
-
-            (-> output
-                contexts
-                first
-                cdr
-                order
-                (isf 0 "Merged Context Order"))))))))
+                ,b))))))))
 
 (subtest "Constant Folding"
   (subtest "Literal Constant Values"
@@ -1947,7 +1911,7 @@
       (with-module-table modules
         (build-source-file "./modules/core.trd" modules)
         (build ":import(core)"
-               "fn(x) : { x < 3 -> (x + 1 -> self); x + 2 -> self }")
+               "fn(x) : { x < 3 -> (x + 1 -> :context(self, c)); x + 2 -> :context(self, c) }")
 
         (let ((table (finish-build)))
           (with-nodes ((fn "fn") (< "<") (+ "+")) table

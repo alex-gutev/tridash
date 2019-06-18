@@ -626,7 +626,7 @@
                    (save expression-group-save))
       group
 
-    (if (or save (> count 1))
+    (if (or (> count 1) (and (not (in-meta-node?)) save))
         (make-expression-group group)
         (make-expression expression))))
 

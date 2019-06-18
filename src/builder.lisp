@@ -599,13 +599,32 @@
 
          (unless (top-level?)
            (let* ((name (canonicalize-functor operator (list *source-node* target)))
-                  (cond-node (ensure-node name *functor-module*))
-                  (cond-link (add-binding cond-node target :context *source-node* :add-function nil)))
+                  (cond-node (ensure-node name *functor-module*)))
 
-             (setf (value-function (context target *source-node*))
-                   (if-expression cond-link value-link (fail-expression)))
+             (ensure-binding (cond-node target :context *source-node* :add-function nil)
+                 (cond-link)
+
+               (replace-dependency-link
+                target value-link
+                (lambda (value-link)
+                  (if-expression cond-link value-link (fail-expression)))))
 
              cond-node)))))))
+
+(defmethod process-functor ((operator (eql +context-operator+)) operands table)
+  "Creates a `CONTEXT-NODE' proxy for the NODE given in the first
+   argument and the context with identifier given in the second
+   argument."
+
+  (match-syntax (+context-operator+ node id)
+      operands
+
+    ((list node context-id)
+     (let ((node (process-declaration node table :level *level*)))
+       (if *source-node*
+           (-> (make-instance 'context-node :context-id context-id :node node)
+               (values table))
+           node)))))
 
 
 ;;; Subnodes
@@ -810,5 +829,8 @@
        (if (or (outer-table home) (= home *functor-module*))
            (name node)
            (list +in-module-operator+ (name home) (name node)))))
+
+    ((context-node node)
+     (canonicalize-node node))
 
     (_ node)))

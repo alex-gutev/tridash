@@ -91,6 +91,21 @@
    "Node context. A node context stores information about the node's
     value is computed at a particular moment (context)."))
 
+(defclass context-node ()
+  ((node
+    :initarg :node
+    :accessor node
+    :documentation "The node")
+
+   (context-id
+    :initarg :context-id
+    :accessor context-id
+    :documentation "The identifier of the node's context."))
+
+  (:documentation
+   "Proxy object which 'acts' as the node in the NODE slot however all
+    bindings established to NODE are established in the context with
+    the identifier stored in the CONTEXT-ID slot."))
 
 ;;;; Hash Function
 
@@ -180,14 +195,18 @@
           (setf (value-function (context target :init)) source)))))
 
 
-(defun add-dependency (dependency node &key context add-function)
-  "Adds DEPENDENCY as a dependency node of NODE. CONTEXT is the
-   context identifier, of which, DEPENDENCY is an operand. If
-   ADD-FUNCTION is true, the value function of the context is set to
-   the node link of DEPENDENCY. Returns the `node-link' object of the
-   dependency, as the first return value, and true, as the second
-   value, if DEPENDENCY was already in the dependency set of NODE."
+;;; Adding Dependencies
 
+(defgeneric add-dependency (dependency node &key context add-function)
+  (:documentation
+   "Adds DEPENDENCY as a dependency node of NODE. CONTEXT is the
+    context identifier, of which, DEPENDENCY is an operand. If
+    ADD-FUNCTION is true, the value function of the context is set to
+    the node link of DEPENDENCY. Returns the `node-link' object of the
+    dependency, as the first return value, and true, as the second
+    value, if DEPENDENCY was already in the dependency set of NODE."))
+
+(defmethod add-dependency (dependency node &key context add-function)
   (with-slots (dependencies) node
     (multiple-value-return (link in-hash?)
         (ensure-get dependency dependencies (node-link dependency :context context))
@@ -197,12 +216,78 @@
           (setf (get dependency operands) link)
           (when add-function (setf value-function link)))))))
 
-(defun add-observer (observer node link)
-  "Adds OBSERVER as an observer node of NODE. LINK is the `node-link'
-   object corresponding to the dependency NODE within the DEPENDENCIES
-   hash-table of OBSERVER."
+(defmethod add-dependency (dependency (proxy context-node) &key context add-function)
+  "Adds the dependency to the node stored in the NODE slot of PROXY, in
+   the context with the ID given by the CONTEXT-ID slot of PROXY."
 
+  (declare (ignore context))
+
+  (with-slots (node context-id) proxy
+    (multiple-value-return (link existed?)
+        (add-dependency dependency node
+                        :context context-id
+                        :add-function nil)
+
+      (with-slots (value-function) (context node context-id)
+        (when (and (not existed?) add-function)
+          (setf value-function
+                (if value-function
+                    (catch-expression value-function link)
+                    link)))))))
+
+
+;;; Adding Observers
+
+(defgeneric add-observer (observer node link)
+  (:documentation
+   "Adds OBSERVER as an observer node of NODE. LINK is the `node-link'
+    object corresponding to the dependency NODE within the
+    DEPENDENCIES hash-table of OBSERVER."))
+
+(defmethod add-observer (observer node link)
   (setf (get observer (observers node)) link))
+
+(defmethod add-observer (observer (proxy context-node) link)
+  (add-observer observer (node proxy) link))
+
+(defmethod add-observer ((observer context-node) node link)
+  (add-observer (node observer) node link))
+
+
+;;; Replacing `NODE-LINK's with Expressions
+
+(defgeneric replace-dependency-link (node link fn)
+  (:documentation
+   "Replaces the `NODE-LINK' object LINK, in the value function of
+    NODE, with the expression returned by applying the function FN on
+    the new `NODE-LINK' object created for the dependency node.
+
+    The entries in the dependency set of NODE and the observer set of
+    the dependency are updated to the new `NODE-LINK' objects."))
+
+(defmethod replace-dependency-link (node link fn)
+  (with-accessors ((link-node node-link-node)
+                   (context node-link-context))
+      link
+
+    (let ((new-link (node-link link-node :context context)))
+      (-<>> (dependencies node)
+            (get link-node)
+            (setf <> new-link))
+
+      (-<>> (context node context)
+            operands
+            (get link-node)
+            (setf <> new-link))
+
+      (-<>> (observers link-node)
+            (get node)
+            (setf <> new-link))
+
+      (setf link-node (funcall fn new-link)))))
+
+(defmethod replace-dependency-link ((node context-node) link fn)
+  (replace-dependency-link (node node) link fn))
 
 
 ;;; Removing Bindings
