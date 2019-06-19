@@ -191,14 +191,14 @@ nodes `a`, `b`, `+(a, 1)`, `c`, `+(b, c)` and `out`. The value of
 have been recomputed.
 
 If `b` and `c` did not have the common ancestor `a`, the value of
-`+(b, c)` would be computed on each change in value of either `b` or
-`c`, regardless of whether the changes in values of `a` and `b` are
+`+(b, c)` would be computed on each change in the value of either `b`
+or `c`, regardless of whether the changes in values of `a` and `b` are
 triggered simultaneously or not.
 
 === Contexts ===
 
-The function which computes a node's value is controlled by its
-context at the moment in time. The node context stores information
+The function which computes a node's value is controlled by the node's
+context at that moment in time. The node context stores information
 about the function, with which, the node's value is computed and which
 of the dependency nodes are operands to the function.
 
@@ -344,6 +344,56 @@ graph, is treated as having been triggered by a single common ancestor
 node. See <<_propagation_of_changes, Propagation of Changes>> for the
 implications of this.
 
+==== Explicit Contexts ====
+
+The context to white a binding is established can be set explicitly
+with the special `:context` operator.
+
+.Syntax
+--------------------------------------------------
+:context(node, context-id)
+--------------------------------------------------
+
+The effect of this declaration, when it appears as the target of a
+binding, is that the binding to `node` will be established in the
+context with identifier `context-id`. The identifier can be a single
+symbol or a functor.
+
+.Example
+--------------------------------------------------
+# Context `my-context` of b has a passthrough value function to the
+# value of the dependency `a`.
+
+a -> :context(b, my-context)
+--------------------------------------------------
+
+When a `:context` declaration appears in source position it is
+equivalent to an ordinary reference to the `node`.
+
+Multiple bindings to the same explicit context can be established. The
+function of the context becomes the value of the first dependency
+which does not 'fail' to evaluate to a value. _A node may fail to
+evaluate to a value if a conditional binding is inactive, see
+<<_conditionally_active_bindings, Conditionally Active Bindings>>._
+
+
+.Example
+--------------------------------------------------
+a -> :context(node, ctx)
+b -> :context(node, ctx)
+c -> :context(node, ctx)
+--------------------------------------------------
+
+`node` evaluates to:
+
+    - The value of `a` if `a` evaluates to a value.
+    - The value of `b` if `a` fails to evaluate to a value.
+    - The value of `c` if both `a` and `b` fail to evaluate to a value.
+
+If `a`, `b` and `c` all fail to evaluate to a value, `node` fails to
+evaluate to a value.
+
+
 === Conditionally Active Bindings ===
 
 A binding declaration `a -> b` can, itself, be treated as a node, to which an
@@ -386,6 +436,33 @@ i > 0 -> (i -> j)
 
 TIP: The bind `->` operator has 'right' associativity, thus the
 parenthesis in `c -> (a -> b)` can be omitted: `c -> a -> b`.
+
+
+Conditional bindings to an explicit context can also be established,
+see <<_explicit_contexts, Explicit Contexts>>. If either either of the
+conditions are false, i.e. the bindings are inactive, it is treated as
+though the dependency node has failed to evaluate to a value. The
+context's function then evaluates to the next dependency which does
+not fail to evaluate to a value.
+
+.Example: Conditional Bindings and Explicit Contexts
+--------------------------------------------------
+cond1 -> (a -> :context(node, ctx))
+cond2 -> (b -> :context(node, ctx))
+c -> :context(node, ctx)
+--------------------------------------------------
+
+    - If `cond1` evaluates to false, it is treated as though `a` has
+      fails to evaluate to a value.
+    - If `cond2` evaluates to false, it is treated as though `b` has
+      fails to evaluate to a value.
+
+The net result is that `node` evaluates to:
+
+    - `a` if `cond1` evaluates to true.
+    - `b` if `cond2` evaluates to true.
+    - `c` if neither `cond1` not `cond2` evaluate to true, or both `a`
+      and `b` fail to evaluate to a value.
 
 === Input Nodes ===
 
