@@ -139,7 +139,9 @@
 
                    ;; Check if OBSERVER already has DEPENDENCY as a dependency
                    (when-let ((old-link (get dependency dependencies)))
-                     (merge-contexts observer context-id (node-link-context old-link))
+                     (unless (get dependency operands)
+                       (error 'ambiguous-context-error :node observer))
+
                      (setf (node-link-node old-link) link))
 
                    ;; Add DEPENDENCY to dependencies of OBSERVER
@@ -154,45 +156,6 @@
                      (setf (get observer (observers dependency)) link))))))))
 
       (foreach #'begin-coalesce input-nodes))))
-
-(defun merge-contexts (node id1 id2)
-  "Merges the context with id ID2 into the context with ID1,
-   if they are not the same context."
-
-  (flet ((merge-context-functions (context1 context2)
-           "Returns a function which is a `CATCH-EXPRESSION' with the
-            function of CONTEXT1 as the main expression and the
-            function of CONTEXT2 as the expression which is evaluated
-            when the main expression fails."
-
-           ;; Wrap both context functions in `NODE-LINK' objects in
-           ;; order for them to be wrapped in `EXPRESSION-GROUP'
-           ;; objects.
-
-           (catch-expression
-            (node-link (value-function context1))
-            (node-link (value-function context2)))))
-
-    (unless (= id1 id2)
-      (let ((context1 (context node id1))
-            (context2 (context node id2)))
-
-        (with-slots (operands) context1
-          (doseq ((operand . link) (operands context2))
-            (setf (node-link-context link) id1)
-            (ensure-get operand operands link)))
-
-        (cond
-          ((< (order context1) (order context2))
-           (setf (value-function context1)
-                 (merge-context-functions context1 context2)))
-
-          (t
-           (setf (order context1) (order context2))
-           (setf (value-function context1)
-                 (merge-context-functions context2 context1))))
-
-        (erase (contexts node) id2)))))
 
 (defun may-coalesce? (node)
   "Returns true if NODE may be coalesced into another node. Returns
@@ -341,10 +304,9 @@
 
 (defun check-structure (input-nodes)
   "Checks the structure of all nodes ensuring there are no cycles and
-   coalesces multiple contexts activated by a single common ancestor
-   node. If a cycle is detected, an error condition is signaled.
-
-   INPUT-NODES is the set of all input nodes."
+   no ambiguous contexts. If a cycle or ambiguous context is detected,
+   an error condition is signaled. INPUT-NODES is the set of all input
+   nodes."
 
   (let ((visited (make-hash-map)))
     (labels ((begin-walk (node)
@@ -352,7 +314,7 @@
                 NODE in the :INPUT context."
 
                (clear visited)
-               (visit node :input))
+               (visit node (context node :input)))
 
              (visit (node context)
                "Visits node NODE in the context CONTEXT."
@@ -363,7 +325,8 @@
 
              (check-context (node new-context marker)
                "Checks that if node is visited for a second time, it
-                is not part of a cycle and coalesce contexts."
+                is not part of a cycle and it is visited in the same
+                context."
 
                (destructuring-bind (temp? old-context) marker
                  (cond
@@ -371,7 +334,7 @@
                     (error 'node-cycle-error :node node))
 
                    ((/= old-context new-context)
-                    (merge-contexts node old-context new-context)))))
+                    (error 'ambiguous-context-error :node node)))))
 
              (visit-observers (node context)
                "Visits the observers of NODE in the context CONTEXT."
@@ -379,7 +342,7 @@
                ;; Mark Temporarily
                (setf (get node visited) (list t context))
 
-               (with-slots (operands) (context node context)
+               (with-slots (operands) context
                  (foreach #'visit-observer (remove-if (compose (rcurry #'memberp operands) #'car) (observers node))))
 
                ;; Mark Permanently
@@ -387,6 +350,6 @@
 
              (visit-observer (observer)
                (destructuring-bind (observer . link) observer
-                 (visit observer (node-link-context link)))))
+                 (visit observer (context observer (node-link-context link))))))
 
       (foreach #'begin-walk input-nodes))))

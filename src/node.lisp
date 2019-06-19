@@ -79,13 +79,7 @@
     :initform nil
     :accessor value-function
     :documentation
-    "The context's value function.")
-
-   (order
-    :initarg :order
-    :accessor order
-    :documentation
-    "The order of the context among the node's contexts."))
+    "The context's value function."))
 
   (:documentation
    "Node context. A node context stores information about the node's
@@ -314,9 +308,7 @@
   "Returns the context of NODE with identifier CONTEXT-ID. If node
    does have such a context, a new context is created."
 
-  (with-slots (contexts) node
-    (ensure-get context-id contexts
-               (make-instance 'node-context :order (length contexts)))))
+  (ensure-get context-id (contexts node) (make-instance 'node-context)))
 
 (defun (setf context) (value node context-id)
   "Sets the context, of NODE, with identifier CONTEXT-ID to VALUE."

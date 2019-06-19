@@ -125,7 +125,6 @@
    :node-context
    :operands
    :value-function
-   :order
    :context
 
    ;; Predicates

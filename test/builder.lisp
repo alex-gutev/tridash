@@ -1612,7 +1612,92 @@
 
                  ":attribute(b, input, 1)")
 
-          (is-error (finish-build) 'node-cycle-error))))))
+          (is-error (finish-build) 'node-cycle-error)))))
+
+  (subtest "Ambiguous Context Checks"
+    (subtest "Simple Bindings"
+      (with-module-table modules
+        (build "a -> d"
+               "a -> b; b -> c; c -> d"
+               "d -> e"
+
+               ":attribute(a, input, 1)")
+
+        (is-error (finish-build) 'ambiguous-context-error))
+
+      (subtest "Cross-Module Bindings"
+        (with-module-table modules
+          (build ":module(m1)"
+                 "a -> d"
+                 ":attribute(a, input, 1)"
+
+                 ":module(m2)"
+                 ":use(m1)"
+
+                 "m1.a -> b; b -> c; c -> m1.d"
+                 "m1.d -> e")
+
+          (is-error (finish-build) 'ambiguous-context-error))
+
+        ;; Switch module names to test possibly different module
+        ;; order.
+        (with-module-table modules
+          (build ":module(m2)"
+                 "a -> d"
+                 ":attribute(a, input, 1)"
+
+                 ":module(m1)"
+                 ":use(m2)"
+
+                 "m2.a -> b; b -> c; c -> m2.d"
+                 "m2.d -> e")
+
+          (is-error (finish-build) 'ambiguous-context-error))))
+
+    (subtest "Functional Bindings"
+      (with-module-table modules
+        (build ":extern(add)"
+               "add(a, b) -> d"
+               "a -> c; c -> d"
+               ":attribute(a, input, 1)"
+               ":attribute(b, input, 1)")
+
+        (is-error (finish-build) 'ambiguous-context-error))
+
+      (subtest "Cross-Module Bindings"
+        (with-module-table modules
+          (build ":module(m1)"
+                 "a; b;"
+                 ":attribute(a, input, 1)"
+                 ":attribute(b, input, 1)"
+
+                 ":module(m2)"
+                 ":use(m1)"
+                 ":extern(add)"
+
+                 "add(m1.a, m1.b) -> d"
+                 "m1.a -> c; c -> d"
+                 "d -> e")
+
+          (is-error (finish-build) 'ambiguous-context-error))
+
+        ;; Switch module names to test possibly different module
+        ;; order.
+        (with-module-table modules
+          (build ":module(m2)"
+                 "a; b;"
+                 ":attribute(a, input, 1)"
+                 ":attribute(b, input, 1)"
+
+                 ":module(m1)"
+                 ":use(m2)"
+                 ":extern(add)"
+
+                 "add(m2.a, m2.b) -> d"
+                 "m2.a -> c; c -> d"
+                 "d -> e")
+
+          (is-error (finish-build) 'ambiguous-context-error))))))
 
 
 (defmacro! test-meta-node (o!meta-node (&rest operands) function &rest test-args)
@@ -2237,7 +2322,52 @@
                       d -> a
                     }")
 
-          (is-error (finish-build) 'node-cycle-error))))))
+          (is-error (finish-build) 'node-cycle-error))))
+
+    (subtest "Ambiguous Context Checks"
+      (subtest "Simple Bindings"
+        (with-module-table modules
+          (build "f(a) : {
+                      a -> d
+                      a -> b
+                      b -> c
+                      c -> d
+                      d -> e
+                      e
+                    }")
+
+          (is-error (finish-build) 'ambiguous-context-error))
+
+        (with-module-table modules
+          (build "f(a, b) : {
+                      a -> self
+                      b -> self
+                    }")
+
+          (is-error (finish-build) 'ambiguous-context-error)))
+
+      (subtest "Functional Bindings"
+        (with-module-table modules
+          (build ":extern(add)"
+
+                 "f(a, b) : {
+                      add(a, b) -> d
+                      a -> c; c -> d
+                      d
+                    }")
+
+          (is-error (finish-build) 'ambiguous-context-error))
+
+        (with-module-table modules
+          (build ":extern(add)"
+
+                 "f(a, b) : {
+                      a -> self
+                      b -> self
+                      add(a, b) -> self
+                    }")
+
+          (is-error (finish-build) 'ambiguous-context-error))))))
 
 
 (finalize)
