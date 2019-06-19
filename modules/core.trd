@@ -83,6 +83,14 @@
 :export(int?, real?, string?, inf?, NaN?)
 
 
+## Lists
+
+:extern(cons)
+:extern(list)
+
+:export(cons, list)
+
+
 ### Standard Library
 
 ## Number Parsing

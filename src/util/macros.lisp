@@ -79,6 +79,21 @@
          ,(map #'make-macro keys)
        ,@body)))
 
+(defmacro with-struct-slots (conc-name (&rest slots) object &body body)
+  "Same as WITH-SLOTS however for structures defined by
+   DEFSTRUCT. CONC-NAME is the symbol, passed to the CONC-NAME option
+   to DEFSTRUCT, which is prepended to each symbol in SLOTS to
+   generate the name of the accessor function for the slot."
+
+  (flet ((make-binding (slot)
+           (ematch slot
+             ((or (list var slot)
+                  (and (type symbol) var slot))
+              (list var (symb conc-name slot))))))
+
+    `(with-accessors ,(map #'make-binding slots) ,object
+       ,@body)))
+
 (defmacro! with-retry-restart (&body forms)
   "Evaluates FORMS with the RETRY restart established, if no error is
    raised returns the value of the last form in FORMS. If the retry

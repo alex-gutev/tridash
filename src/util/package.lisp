@@ -49,21 +49,13 @@
    :dohash
    :multiple-value-return
    :with-hash-keys
+   :with-struct-slots
 
    :with-retry-restart
    :retry
 
    ;; Optima Patterns
-   :optional
-
-   ;; Functions
-   :same-length?
-   :adjoin-hash
-   :in-hash?
-   :merge-hash
-   :union-hash
-   :partition
-   :hash-table-keys-values)
+   :optional)
 
   (:documentation
    "A collection of utility functions and macros."))

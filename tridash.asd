@@ -122,6 +122,7 @@
                  (:test-file "lexer")
                  (:test-file "parser")
                  (:test-file "builder")
+                 (:test-file "macros")
 
                  (:module
                   "builders/html"

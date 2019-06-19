@@ -20,9 +20,15 @@
 
 (in-package :tridash.frontend)
 
+(in-readtable lol-syntax)
+
+
 (defvar *operand-vars* nil
   "The operands list of the meta-node currently being compiled to
    CL.")
+
+(defvar *current-meta-node* nil
+  "The meta-node currently being compiled to CL.")
 
 
 ;;;; Macro Attributes
@@ -86,35 +92,29 @@
 
 ;;;; Compiling Tridash Expressions to CL
 
+(defconstant +tridash-recur-tag+ 'recur
+  "TAGBODY tag for tail-recursive self calls.")
+
 (defun tridash->cl-function (meta-node)
   "Returns a CL LAMBDA expression which is compiled from META-NODE."
 
-  (let ((*operand-vars* (make-hash-map)))
+  (let ((*current-meta-node* meta-node)
+        (*operand-vars* (make-hash-map)))
+
     (flet ((add-operand (operand)
              (ensure-get operand *operand-vars* (gensym (mkstr operand)))))
 
       `(lambda ,(map #'add-operand (operands meta-node))
-         ,(->
-           (contexts meta-node)
-           map-values
-           first
-           value-function
-           tridash->cl)))))
-
-(defun tridash->cl (expr)
-  "Compiles the Tridash expression EXPR to a CL expression."
-
-  (match expr
-    ((list* operator operands)
-     (tridash-functor->cl operator operands))
-
-    ((expression-group- expression)
-     (tridash->cl expression))
-
-    ((node-link node)
-     (ensure-get (name node) *operand-vars* (gensym (mkstr (name node)))))
-
-    (_ expr)))
+         (block nil
+           (tagbody
+              ,+tridash-recur-tag+
+              (return
+                ,(->
+                  (contexts meta-node)
+                  map-values
+                  first
+                  value-function
+                  (tridash->cl :tail-position-p t)))))))))
 
 
 (defconstant +tridash-cl-functions+
@@ -122,61 +122,154 @@
    (symbol-mappings
     "if"
     "+" "-" "*" "/"
-    "<" "<=" ">" ">=" "=" '("!=" '/=)
+    "<" "<=" ">" ">=" "=" '("!=" /=)
     "and" "or" "not"
     '("int?" integerp)
     '("real?" floatp)
-    '("string?" stringp)))
+    '("string?" stringp)
+
+    "cons" "list"))
 
   "Map mapping Tridash meta-node identifiers to the corresponding CL
    function identifiers.")
 
-(defgeneric tridash-functor->cl (operator operands)
+(defconstant +fail-catch-tag+ 'evaluate-fail
+  "The CATCH tag symbol for `CATCH-EXPRESSIONS' which are compiled to
+   CL CATCH expressions.")
+
+
+(defgeneric tridash->cl (expression &key &allow-other-keys)
   (:documentation
-   "Compiles the Tridash functor expression (OPERATOR OPERANDS) to a
-    CL expression."))
+   "Compiles the Tridash expression EXPR to a CL expression. If the
+    :TAIL-POSITION-P argument is provided and is true, then EXPRESSION
+    appears in tail position."))
 
-(defmethod tridash-functor->cl ((operator (eql 'if)) operands)
-  (cons 'if operands))
+(defmethod tridash->cl ((link node-link) &key)
+  "Returns the variable corresponding to the linked node by looking up
+   the node's identifier in *OPERAND-VARS*"
 
-(defmethod tridash-functor->cl ((operator (eql :object)) operands)
-  "Compiles the :OBJECT expression to a CL expression that creates a
-   `HASH-MAP'."
+  (with-slots (name) (node-link-node link)
+    (ensure-get name *operand-vars* (gensym (mkstr name)))))
+
+
+(defmethod tridash->cl ((functor functor-expression) &key tail-position-p)
+  "If the operator of the functor is an `EXTERNAL-META-NODE',
+   generates a CL expression which calls the corresponding CL
+   function, found by looking up the name of the meta-node in
+   +TRIDASH-CL-FUNCTIONS+. If there is no corresponding CL function an
+   error condition is signalled.
+
+   If the operator is a `META-NODE', generates a
+   CALL-TRIDASH-META-NODE expression."
+
+  (with-struct-slots functor-expression- (meta-node arguments)
+      functor
+
+    (ematch meta-node
+      ((external-meta-node name)
+       (aif (get name +tridash-cl-functions+)
+            (call-external-meta-node it arguments :tail-position-p tail-position-p)
+            (error "External meta-node ~a not supported." meta-node)))
+
+      ((guard (and (type meta-node) (eq *current-meta-node*))
+              tail-position-p)
+       (make-tail-call arguments))
+
+      ((type meta-node)
+       `(call-tridash-meta-node ,meta-node (list ,@(map #'tridash->cl arguments)))))))
+
+(defun call-external-meta-node (name arguments &key tail-position-p)
+  "Generates a CL function expression with operator NAME and ARGUMENTS
+   being the TRIDASH expressions which are the
+   arguments. TAIL-POSITION-P should be true if the expression appears
+   in tail position."
+
+  (case name
+    (if
+     (destructuring-bind (cond then &optional else) arguments
+       `(if ,(tridash->cl cond)
+            ,(tridash->cl then :tail-position-p tail-position-p)
+            ,(tridash->cl else :tail-position-p tail-position-p))))
+
+    ((and or)
+     `(,name ,@(map #'tridash->cl (butlast arguments))
+             ,(tridash->cl (last arguments) :tail-position-p tail-position-p)))
+
+    (otherwise
+     (list* name (map #'tridash->cl arguments)))))
+
+(defun make-tail-call (arguments)
+  "Generates a tail self call with arguments ARGUMENTS."
+
+  `(progn
+     (psetf ,@(mappend #2`(,(get a1 *operand-vars*) ,(tridash->cl a2))
+                       (operands *current-meta-node*) arguments))
+     (go ,+tridash-recur-tag+)))
+
+
+
+(defmethod tridash->cl ((if if-expression) &key tail-position-p)
+  (with-struct-slots if-expression- (condition then else)
+      if
+
+    `(if ,(tridash->cl condition)
+         ,(tridash->cl then :tail-position-p tail-position-p)
+         ,(tridash->cl else :tail-position-p tail-position-p))))
+
+(defmethod tridash->cl ((object object-expression) &key)
+  "Generates a CL expression that creates a `HASH-MAP'."
 
   (flet ((make-entry (pair)
            (destructuring-bind (key value) pair
              `(cons ',key ,(tridash->cl value)))))
-    `(alist-hash-map (list ,@(map #'make-entry operands)))))
 
-(defmethod tridash-functor->cl ((operator (eql :member)) operands)
-  "Compiles the :MEMBER expression to a GET function expression."
+    `(alist-hash-map (list ,@(map #'make-entry (object-expression-entries object))))))
 
-  (destructuring-bind (object member) operands
-    `(get ',member ,(tridash->cl object))))
+(defmethod tridash->cl ((member member-expression) &key)
+  "Generates a GET CL function expression."
 
-(defmethod tridash-functor->cl ((meta-node external-meta-node) operands)
-  "Generates code which invokes the externally defined meta-node
-   META-NODE with operands OPERANDS. If the meta-node represents a
-   special operator in *SPECIAL-OPERATORS* the appropriate
-   TRIDASH-FUNCTOR->CL method is called otherwise the meta-node
-   is treated as an ordinary function."
+  (with-struct-slots member-expression- (object key)
+      member
 
+    `(get ',key ,(tridash->cl object))))
 
-  (aif (get (name meta-node) +tridash-cl-functions+)
-       (list* it (map #' tridash->cl operands))
-       (error "External meta-node ~a not supported." meta-node)))
+(defmethod tridash->cl ((catch catch-expression) &key tail-position-p)
+  "Generates a CL CATCH expression with the tag symbol given by
+   +FAIL-CATCH-TAG+. If the CATCH expression returns the catch tag
+   identifier, the expression in the `CATCH' slot is evaluate."
 
-(defmethod tridash-functor->cl (meta-node operands)
-  "Compiles the meta-node functor expression to a
-   CALL-TRIDASH-META-NODE CL function expression."
+  (with-struct-slots catch-expression- (main catch)
+      catch
 
-  `(call-tridash-meta-node ,meta-node (list ,@(map #'tridash->cl operands))))
+    (with-gensyms (result)
+      `(let ((,result (catch ',+fail-catch-tag+ ,(tridash->cl main))))
+         (if (eq ,result ',+fail-catch-tag+)
+             ,(tridash->cl catch :tail-position-p tail-position-p)
+             ,result)))))
+
+(defmethod tridash->cl ((fail fail-expression) &key)
+  "Generates a CL THROW expression which throws the value of
+   +FAIL-CATCH-TAG+."
+
+  `(throw ',+fail-catch-tag+ ',+fail-catch-tag+))
+
+(defmethod tridash->cl ((group expression-group) &key tail-position-p)
+  (tridash->cl (expression-group-expression group) :tail-position-p tail-position-p))
+
+(defmethod tridash->cl (literal &key)
+  (match literal
+    ((or (type number) (type string))
+     literal)
+
+    (_ `',literal)))
 
 
 ;;;; Macro-Writing
 
 (defmethod process-functor ((operator (eql +quote-operator+)) args table)
   "Returns the raw argument unprocessed."
+
+  (declare (ignore table))
 
   (match-syntax (operator any) args
     ((list thing)

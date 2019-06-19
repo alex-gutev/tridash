@@ -76,6 +76,7 @@
    :test-error
 
    :with-module-table
+   :build
    :with-nodes
    :with-modules
    :with-dependencies
