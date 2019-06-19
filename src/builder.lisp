@@ -638,7 +638,7 @@
       operands
 
     ((list node key)
-     (let ((object-node (process-declaration node table :add-outer nil)))
+     (let ((object-node (at-source (process-declaration node table :add-outer nil))))
        (process-subnode object-node key)))))
 
 

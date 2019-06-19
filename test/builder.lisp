@@ -486,37 +486,102 @@
         (test-node-function x int-x int int-x))))
 
   (subtest "Explicit Contexts"
-    (with-module-table modules
-      (build-source-file #p"./modules/core.trd" modules)
-      (build ":import(core);"
-             "a < 3 -> ((a + b) -> :context(output, ctx))"
-             "a < 4 -> ((a - b) -> :context(output, ctx))"
-             "b -> :context(output, ctx)")
+    (subtest "In Target of Binding"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core);"
+               "a < 3 -> ((a + b) -> :context(output, ctx))"
+               "a < 4 -> ((a - b) -> :context(output, ctx))"
+               "b -> :context(output, ctx)")
 
-      (with-nodes ((b "b") (output "output")
+        (with-nodes ((b "b") (output "output")
 
-                   (cond1 ("->" ((":in" "core" "+") "a" "b") "output"))
-                   (cond2 ("->" ((":in" "core" "-") "a" "b") "output"))
+                     (cond1 ("->" ((":in" "core" "+") "a" "b") "output"))
+                     (cond2 ("->" ((":in" "core" "-") "a" "b") "output"))
 
-                   (a+b ((":in" "core" "+") "a" "b"))
-                   (a-b ((":in" "core" "-") "a" "b")))
-          modules
+                     (a+b ((":in" "core" "+") "a" "b"))
+                     (a-b ((":in" "core" "-") "a" "b")))
+            modules
 
-        (let ((ctx (id-symbol "ctx"))
-              (*strict-test* nil))
+          (let ((ctx (id-symbol "ctx"))
+                (*strict-test* nil))
+
+            (has-value-function
+             ((cond1 :context ctx) (a+b :context ctx)
+              (cond2 :context ctx) (a-b :context ctx)
+              (b :context ctx))
+
+             output
+
+             `(:catch
+                  (:catch
+                      (if ,cond1 ,a+b (:fail))
+                    (if ,cond2 ,a-b (:fail)))
+                ,b))))))
+
+    (subtest "In Source of Binding"
+      ;; Test that the :context operator has no effect in source
+      ;; position.
+
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)"
+               ":context(a, ctx) -> b"
+               ":context(b, z) + c -> output")
+
+        (with-nodes ((a "a") (b "b") (c "c") (output "output")
+                     (b+c ((":in" "core" "+") "b" "c"))
+                     (+ "+"))
+            modules
+
+          (test-simple-binding a b :context a)
+          (test-simple-binding b+c output :context b+c)
+
+          (test-node-function b+c + + b c))))
+
+    (subtest "Subnodes"
+      ;; The :context operator has no effect when a subnode is
+      ;; referenced, as the subnode implicitly creates an :OBJECT
+      ;; context.
+
+      (with-module-table modules
+        (build ":context(a, c1).field -> out")
+
+        (with-nodes ((a "a") (out "out")
+                     (a.field ("." "a" "field")))
+            modules
+
+          (test-simple-binding a.field out)
+
+          (has-value-function (a) a.field `(:member ,a ,(id-symbol "field")))
 
           (has-value-function
-           ((cond1 :context ctx) (a+b :context ctx)
-            (cond2 :context ctx) (a-b :context ctx)
-            (b :context ctx))
+           ((a.field :context :object))
+           a
 
-           output
+           `(:object (,(id-symbol "field") ,a.field))))))
 
-           `(:catch
-                (:catch
-                    (if ,cond1 ,a+b (:fail))
-                  (if ,cond2 ,a-b (:fail)))
-              ,b))))))
+    (subtest "Subnode Targets"
+      ;; The :context operator has no effect when a subnode is
+      ;; referenced, as the subnode implicitly creates an :OBJECT
+      ;; context.
+
+      (with-module-table modules
+        (build "in -> :context(a, c1).field")
+
+        (with-nodes ((in "in") (a "a")
+                     (a.field ("." "a" "field")))
+            modules
+
+          (test-simple-binding in a.field)
+
+          (has-value-function (a) a.field `(:member ,a ,(id-symbol "field")))
+
+          (has-value-function
+           ((a.field :context :object))
+           a
+
+           `(:object (,(id-symbol "field") ,a.field)))))))
 
   (subtest "Special Operators"
     (subtest ":op Operator - Registering Infix Operators"
@@ -1199,19 +1264,20 @@
            (a d) out
            `(,add (,add ,a ,(expression-group `(if (,even? (,add ,a ,1)) (,add ,a 1) (:fail)) :save t)) ,d))))))
 
-  (subtest "Multiple Contexts"
+  (subtest "Explicit Context"
     (subtest "Common Operands"
       (with-module-table modules
         (build-source-file #p"./modules/core.trd" modules)
         (build ":import(core);"
                "a < 3 -> ((a + b) -> :context(output, ctx))"
+               "a > 4 -> ((a - b) -> :context(output, ctx))"
                "b -> :context(output, ctx)"
 
                ":attribute(a, input, 1)"
                ":attribute(b, input, 1)")
 
         (let ((table (finish-build)))
-          (with-nodes ((+ "+") (< "<")
+          (with-nodes ((+ "+") (- "-") (< "<") (> ">")
                        (a "a") (b "b") (output "output"))
               table
 
@@ -1220,9 +1286,13 @@
              output
 
              `(:catch
-                  ,(expression-group
-                    `(if (,< ,a 3) (,+ ,a ,b) (:fail))
-                    :save nil)
+                  (:catch
+                      ,(expression-group
+                        `(if (,< ,a 3) (,+ ,a ,b) (:fail))
+                        :save nil)
+                    ,(expression-group
+                      `(if (,> ,a 4) (,- ,a ,b) (:fail))
+                      :save nil))
                 ,b))))))
 
     (subtest "Common Operands without Coalescing"
