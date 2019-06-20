@@ -33,14 +33,15 @@
 
 ;;;; Macro Attributes
 
-(defmethod process-attribute (node (attribute (eql (id-symbol "MACRO"))) value)
+(defmethod process-attribute (node (attribute (eql (id-symbol "MACRO"))) value (table t))
   "Sets the internal :MACRO-FUNCTION attribute to a function that
    compiles the META-NODE to a CL function, calls it and calls
    PROCESS-DECLARATION on the result."
 
   (when (bool-value value)
     (setf (node-macro-function node)
-          (make-macro-function node))))
+          (make-macro-function node))
+    nil))
 
 
 ;;;; Macro Function

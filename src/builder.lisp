@@ -520,24 +520,26 @@
            (unless (node? node)
              (error 'node-type-error :expected 'node :node node))
 
-           (process-attribute node (id-symbol (string-upcase attribute)) value)
+           (setf (attribute attribute node)
+                 (or (process-attribute node (id-symbol (string-upcase attribute)) value table)
+                     value))))))))
 
-           (setf (attribute attribute node) value)))))))
-
-(defgeneric process-attribute (node attribute value)
+(defgeneric process-attribute (node attribute value table)
   (:documentation
    "Applies special processing on setting the attribute ATTRIBUTE, of
-    NODE, to VALUE.")
+    NODE, to VALUE. If the return value is non-NIL the attribute is
+    set to that value")
 
-  (:method ((node t) (attribute t) (value t))
+  (:method ((node t) (attribute t) (value t) (table t))
     "Pass-through method, does nothing."
     nil))
 
-(defmethod process-attribute (node (attribute (eql (id-symbol "INPUT"))) value)
+(defmethod process-attribute (node (attribute (eql (id-symbol "INPUT"))) value (table t))
   "Adds NODE to the input-nodes list of its home module."
 
   (when (bool-value value)
-    (add-input node (home-module node))))
+    (add-input node (home-module node)))
+  nil)
 
 
 ;;; Node lists
@@ -741,9 +743,8 @@
       (when target-meta-node
         (handler-case
             (iter
-              (with meta-node = (lookup-meta-node target-meta-node table))
               (for operand in (process-operands operands table instance))
-              (add-meta-node-value-function operand meta-node (list instance) :context instance))
+              (add-meta-node-value-function operand target-meta-node (list instance) :context instance))
           (target-node-error ())))
 
       instance)))
@@ -782,6 +783,10 @@
    list of instances of META-NODE."
 
   (push (list instance context *meta-node*) (instances meta-node)))
+
+
+(defmethod process-attribute ((node t) (attribute (eql (id-symbol "TARGET-NODE"))) value table)
+  (lookup-meta-node value table))
 
 
 ;;; Binding Operands
