@@ -241,7 +241,7 @@
 
         (add-operand-nodes (operands meta-node) table)
 
-        (let* ((last-node (process-node-list definition table :top-level t)))
+        (let* ((last-node (at-source (process-node-list definition table :top-level t))))
           (make-meta-node-function meta-node last-node)
           (build-meta-node-graphs table)
 
