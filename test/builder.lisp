@@ -486,6 +486,77 @@
         (test-node-function int-x int int x)
         (test-node-function x int-x int int-x))))
 
+  (subtest "Functors in Target Position"
+    (subtest "No Target Node"
+      (test-error ":extern(add); a -> add(b, c)" 'target-node-error))
+
+    (subtest "With Target Node"
+      (with-module-table modules
+        (build ":extern(add)"
+               ":extern(reverse-add)"
+
+               ":attribute(add, target-node, reverse-add)"
+               "input -> add(a, b)")
+
+        (with-nodes ((add "add") (reverse-add "reverse-add")
+                     (input "input") (a "a") (b "b")
+                     (add-a-b ("add" "a" "b")))
+            modules
+
+          (test-node-function add-a-b add add a b)
+
+          (test-node-function a add-a-b reverse-add add-a-b)
+          (test-node-function b add-a-b reverse-add add-a-b)
+
+          (test-simple-binding input add-a-b))))
+
+    (subtest "With Target Node Cross Module"
+      (with-module-table modules
+        (build ":module(m1)"
+               ":extern(add)"
+               ":extern(reverse-add)"
+               ":attribute(add, target-node, reverse-add)"
+
+               ":module(m2)"
+               ":import(m1, add)"
+
+               "input -> add(a, b)")
+
+        (with-nodes ((add "add") (reverse-add "reverse-add")
+                     (input "input") (a "a") (b "b")
+                     (add-a-b ((":in" "m1" "add") (":in" "m2" "a") (":in" "m2" "b"))))
+            modules
+
+          (test-node-function add-a-b add add a b)
+
+          (test-node-function a add-a-b reverse-add add-a-b)
+          (test-node-function b add-a-b reverse-add add-a-b)
+
+          (test-simple-binding input add-a-b))))
+
+    (subtest "With Target Node and Functor Arguments"
+      (with-module-table modules
+        (build ":extern(add)"
+               ":extern(f)"
+               ":extern(reverse-add)"
+
+               ":attribute(add, target-node, reverse-add)"
+               "input -> add(f(a), b)")
+
+        (with-nodes ((add "add") (f "f")
+                     (input "input") (a "a") (b "b")
+                     (f-a ("f" "a"))
+                     (add-a-b ("add" ("f" "a") "b")))
+            modules
+
+          (test-node-function add-a-b add add f-a b)
+          (test-simple-binding input add-a-b)
+
+          (test-node-function f-a f f a)
+
+          (is (length (contexts f-a)) 1)
+          (is (length (contexts b)) 0)))))
+
   (subtest "Explicit Contexts"
     (subtest "In Target of Binding"
       (with-module-table modules
