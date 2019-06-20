@@ -183,6 +183,9 @@
 
   (attribute :target-node meta-node))
 
+(defun target-transform-node (meta-node)
+  (attribute :target-transform meta-node))
+
 
 ;;; Operand Type Symbols
 

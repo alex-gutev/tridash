@@ -764,10 +764,21 @@
   "Creates a functor node which invokes the meta-node META-NODE with
    operands OPERANDS, and adds it to *FUNCTOR-MODULE*"
 
-  (when (and *source-node* (null (target-meta-node meta-node)))
-    (error 'target-node-error :node (cons operator operands)))
+  (acond
+    ((aand *source-node* (target-transform-node meta-node))
+     (let ((source (process-declaration (gensym) module)))
+       (transform-target-meta-node
+        it
+        source
+        (cons (canonicalize-node meta-node) operands)
+        module)
+       source))
 
-  (add-meta-node-instance meta-node operands module))
+    ((and *source-node* (null (target-meta-node meta-node)))
+     (error 'target-node-error :node (cons operator operands)))
+
+    (t
+     (add-meta-node-instance meta-node operands module))))
 
 
 (defun add-meta-node-instance (meta-node operands module)
@@ -873,6 +884,15 @@
 
 (defmethod process-attribute ((node t) (attribute (eql (id-symbol "TARGET-NODE"))) value module)
   (process-operator-node value module))
+
+
+;;; Meta-Nodes appearing as targets of a binding
+
+(defun transform-target-meta-node (transform source decl module)
+  (process-declaration
+   (resolve (call-tridash-meta-node transform (list source decl)))
+   module
+   :top-level t))
 
 
 ;;; Binding Operands

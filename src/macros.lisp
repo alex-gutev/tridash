@@ -43,6 +43,9 @@
           (make-macro-function node))
     value))
 
+(defmethod process-attribute ((node t) (attribute (eql (id-symbol "TARGET-TRANSFORM"))) value module)
+  (process-operator-node value module))
+
 
 ;;;; Macro Function
 

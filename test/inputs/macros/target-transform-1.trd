@@ -1,0 +1,11 @@
+:import(core, int, list, head, tail)
+
+to-int(x) : int(x)
+
+make-target-to-int(source, expression) :
+    list(:quote(->), list(:quote(int), source), head(tail(expression)))
+
+:attribute(to-int, target-transform, make-target-to-int)
+
+in -> to-int(out)
+:attribute(in, input, 1)

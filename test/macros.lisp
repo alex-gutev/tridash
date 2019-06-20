@@ -918,4 +918,29 @@
         (has-value-function (a b) a!-b `(,if ,a ,b nil))
         (test-simple-binding a!-b out)))))
 
+(subtest "Target Node Transforms"
+  (subtest "Single Argument"
+    (with-module-table modules
+      (build-core-module)
+      (build-source-file #p"./test/inputs/macros/target-transform-1.trd" modules)
+
+      (with-nodes ((in "in")
+                   (out "out")
+                   (int "int"))
+
+          (finish-build)
+
+        (has-value-function (in) out `(,int ,in)))))
+
+  (subtest "Multiple Arguments"
+    (with-module-table modules
+      (build-core-module)
+      (build-source-file #p"./test/inputs/macros/target-transform-2.trd" modules)
+
+      (with-nodes ((in "in") (a "a") (b "b")
+                   (- "-"))
+          (finish-build)
+
+        (has-value-function (in a) b `(,- ,in ,a))))))
+
 (finalize)
