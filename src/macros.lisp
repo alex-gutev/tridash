@@ -233,13 +233,13 @@
 
     `(get ',key ,(tridash->cl object))))
 
-(defmethod tridash->cl ((catch catch-expression) &key tail-position-p)
+(defmethod tridash->cl ((expr catch-expression) &key tail-position-p)
   "Generates a CL CATCH expression with the tag symbol given by
    +FAIL-CATCH-TAG+. If the CATCH expression returns the catch tag
    identifier, the expression in the `CATCH' slot is evaluate."
 
   (with-struct-slots catch-expression- (main catch)
-      catch
+      expr
 
     (with-gensyms (result)
       `(let ((,result (catch ',+fail-catch-tag+ ,(tridash->cl main))))

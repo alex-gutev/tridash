@@ -169,8 +169,7 @@
 
   (:method (fn (group expression-group))
     (with-accessors ((expression expression-group-expression)) group
-      (setf (expression-group-expression fn)
-            (funcall fn expression))))
+      (setf expression (funcall fn expression))))
 
   (:method ((fn t) expr)
     expr))

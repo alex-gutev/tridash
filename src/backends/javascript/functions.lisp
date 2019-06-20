@@ -384,11 +384,6 @@
   "Variable identifier counter. Appended as a suffix to variables
    introduced in a function.")
 
-(defvar *expression-groups* nil
-  "Set of expression-group expressions for which code has already been
-   generated. The mapped value is an expression (a variable name) with
-   which the value of the expression can be accessed.")
-
 (defvar *current-expression-group-index* nil
   "Index of the expression-group currently being compiled.")
 
@@ -552,12 +547,12 @@
     (t
      (values (js-block (js-throw (js-new +end-update-class+))) nil))))
 
-(defmethod make-expression ((catch catch-expression) &key)
+(defmethod make-expression ((expr catch-expression) &key)
   "Generates a TRY-CATCH block for :CATCH expressions."
 
   (with-accessors ((try catch-expression-main)
                    (catch catch-expression-catch))
-      catch
+      expr
 
     (multiple-value-bind (try try-async?) (make-statements try)
       (multiple-value-bind (catch catch-async?) (make-statements catch)
@@ -594,13 +589,13 @@
           nil
           (js-object (map #'list (map #'js-string keys) values))))))))
 
-(defmethod make-expression ((member member-expression) &key)
+(defmethod make-expression ((expr member-expression) &key)
   "Generates an expression which returns the value of a particular
    subnode (field) of an object node."
 
   (with-accessors ((object member-expression-object)
                    (member member-expression-key))
-      member
+      expr
 
     (let ((object-var (var-name)))
       (multiple-value-bind (object-block object-expr)

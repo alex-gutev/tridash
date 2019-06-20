@@ -74,6 +74,11 @@
 (defvar *current-node* nil
   "The node whose definition code is currently being generated.")
 
+(defvar *expression-groups* nil
+  "Set of expression-group expressions for which code has already been
+   generated. The mapped value is an expression (a variable name) with
+   which the value of the expression can be accessed.")
+
 
 ;;; Code Generation Flags
 

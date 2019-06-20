@@ -305,7 +305,7 @@
 (defmethod print-ast ((thing js-string) &key)
   (print-token (quoted-js-string thing)))
 
-(defmethod quoted-js-string ((str js-string))
+(defun quoted-js-string (str)
   "Returns a quoted representation of the JavaScript string STR."
 
   (with-output-to-string (stream)
