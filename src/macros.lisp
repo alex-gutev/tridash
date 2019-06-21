@@ -124,7 +124,11 @@
     "if"
     "+" "-" "*" "/"
     "<" "<=" ">" ">=" "=" '("!=" /=)
-    "and" "or" "not"
+
+    '("and" tridash-and)
+    '("or" tridash-or)
+    '("not" tridash-not)
+
     '("int?" integerp)
     '("real?" floatp)
     '("string?" stringp)
@@ -188,11 +192,9 @@
   (case name
     (if
      (destructuring-bind (cond then &optional else) arguments
-       `(if ,(tridash->cl cond)
-            ,(tridash->cl then :tail-position-p tail-position-p)
-            ,(tridash->cl else :tail-position-p tail-position-p))))
+       (tridash->cl (if-expression cond then else) :tail-position-p tail-position-p)))
 
-    ((and or)
+    ((tridash-and tridash-or)
      `(,name ,@(map #'tridash->cl (butlast arguments))
              ,(tridash->cl (last arguments) :tail-position-p tail-position-p)))
 
@@ -213,7 +215,7 @@
   (with-struct-slots if-expression- (condition then else)
       if
 
-    `(if ,(tridash->cl condition)
+    `(if (bool-value ,(tridash->cl condition))
          ,(tridash->cl then :tail-position-p tail-position-p)
          ,(tridash->cl else :tail-position-p tail-position-p))))
 
@@ -275,3 +277,15 @@
   (match-syntax (operator any) args
     ((list thing)
      thing)))
+
+
+;;;; Builtin Functions
+
+(defmacro tridash-and (&rest args)
+  `(and ,@(map #`(bool-value ,a1) args)))
+
+(defmacro tridash-or (&rest args)
+  `(or ,@(map #`(bool-value ,a1) args)))
+
+(defun tridash-not (x)
+  (unless (bool-value x) 1))

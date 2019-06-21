@@ -48,7 +48,11 @@
   (:import-from :tridash.frontend
                 :tridash->cl-function
                 :+fail-catch-tag+
-                :call-tridash-meta-node))
+                :call-tridash-meta-node
+
+                :tridash-and
+                :tridash-or
+                :tridash-not))
 
 (in-package :tridash.test.macros)
 
@@ -137,7 +141,7 @@
        (functor if (functor < a b) (functor - b a) (functor - a b))
 
        ($a $b)
-       '(if (< $a $b) (- $b $a) (- $a $b)))))
+       '(if (bool-value (< $a $b)) (- $b $a) (- $a $b)))))
 
   (subtest "If Expressions"
     (with-external-meta-nodes ("<" "-")
@@ -147,7 +151,7 @@
        (if-expression (functor < a b) (functor - b a) (functor - a b))
 
        ($a $b)
-       '(if (< $a $b) (- $b $a) (- $a $b)))))
+       '(if (bool-value (< $a $b)) (- $b $a) (- $a $b)))))
 
   (subtest "Object Expressions"
     (with-external-meta-nodes ("+" "-")
@@ -227,7 +231,7 @@
        (functor and "hello" 1 2.3 'symbol)
 
        ()
-       '(and "hello" 1 2.3 'symbol))))
+       '(tridash-and "hello" 1 2.3 'symbol))))
 
   (subtest "Primitive Functions"
     (with-external-meta-nodes
@@ -267,9 +271,9 @@
            (functor != x y)))
 
          ($x $y)
-         '(not
-           (or
-            (and (< $x $y) (= $y $x))
+         '(tridash-not
+           (tridash-or
+            (tridash-and (< $x $y) (= $y $x))
             (<= $x 10)
             (> 1 $y)
             (>= 8 $y)
@@ -287,7 +291,7 @@
           (functor string? z))
 
          ($x $y $z)
-         '(or
+         '(tridash-or
            (integerp $x)
            (floatp $y)
            (stringp $z))))))
@@ -303,7 +307,7 @@
                         (functor self (functor - n 1) (functor * n acc)))
 
          ($n $acc)
-         '(if (< $n 2)
+         '(if (bool-value (< $n 2))
            $acc
            (progn
              (psetf $n (- $n 1)
@@ -321,7 +325,7 @@
                   (functor self (functor - n 1) (functor * n acc)))
 
          ($n $acc)
-         '(if (< $n 2)
+         '(if (bool-value (< $n 2))
            $acc
            (progn
              (psetf $n (- $n 1)
@@ -340,7 +344,7 @@
                    (functor self (functor - n 1) (functor * n acc))))
 
          ($n $acc)
-         '(if (< $n 2)
+         '(if (bool-value (< $n 2))
            $acc
            (progn
              (psetf $n (- $n 1)
@@ -356,7 +360,7 @@
            (functor or (functor = n 0) (functor self (functor - n 1)))
 
            ($n)
-           '(or (= $n 0)
+           '(tridash-or (= $n 0)
              (progn
                (psetf $n (- $n 1))
                (go $recur)))))
@@ -368,7 +372,7 @@
            (functor and (functor = n 0) (functor self (functor - n 1)))
 
            ($n)
-           '(and (= $n 0)
+           '(tridash-and (= $n 0)
              (progn
                (psetf $n (- $n 1))
                (go $recur)))))))
@@ -410,7 +414,7 @@
          (if-expression (functor self n) 1 2)
 
          ($n)
-         `(if (call-tridash-meta-node ,self (list $n)) 1 2)))
+         `(if (bool-value (call-tridash-meta-node ,self (list $n))) 1 2)))
 
       (subtest "If Functor Condition"
         (with-external-meta-nodes ("if")
@@ -420,7 +424,7 @@
            (functor if (functor self n) 1 2)
 
            ($n)
-           `(if (call-tridash-meta-node ,self (list $n)) 1 2))))
+           `(if (bool-value (call-tridash-meta-node ,self (list $n))) 1 2))))
 
       (subtest "And Functor Argument"
         (with-external-meta-nodes ("and")
@@ -430,7 +434,7 @@
            (functor and (functor self n) 1)
 
            ($n)
-           `(and (call-tridash-meta-node ,self (list $n)) 1))))
+           `(tridash-and (call-tridash-meta-node ,self (list $n)) 1))))
 
       (subtest "Or Functor Argument"
         (with-external-meta-nodes ("or")
@@ -440,7 +444,7 @@
            (functor or (functor self n) 1)
 
            ($n)
-           `(or (call-tridash-meta-node ,self (list $n)) 1))))
+           `(tridash-or (call-tridash-meta-node ,self (list $n)) 1))))
 
       (subtest "Object Expression"
         (test-compile-meta-node
@@ -483,6 +487,41 @@
         (is (call-tridash-meta-node min '(10 2)) 2)
         (is (call-tridash-meta-node min '(-5.3 7.6)) -5.3)
         (is (call-tridash-meta-node min '(1 1)) 1))))
+
+  (subtest "Boolean Expressions"
+    (subtest "If Expressions"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)"
+               "f(cond, x) : if(cond, x, 0)")
+
+        (with-nodes ((f "f")) modules
+          (is (call-tridash-meta-node f '(1 10)) 10)
+          (is (call-tridash-meta-node f '(0 5)) 0))))
+
+    (subtest "And Expressions"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)"
+               "f(cond, x) : cond and x")
+
+        (with-nodes ((f "f")) modules
+          (ok (call-tridash-meta-node f '(1 10)))
+          (is (call-tridash-meta-node f '(0 5)) nil)
+          (is (call-tridash-meta-node f '(5 0)) nil)
+          (is (call-tridash-meta-node f '(0 0)) nil))))
+
+    (subtest "Or Expressions"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)"
+               "f(cond, x) : cond or x")
+
+        (with-nodes ((f "f")) modules
+          (ok (call-tridash-meta-node f '(1 10)))
+          (ok (call-tridash-meta-node f '(0 5)))
+          (ok (call-tridash-meta-node f '(5 0)))
+          (is (call-tridash-meta-node f '(0 0)) nil)))))
 
   (subtest "Multiple Nodes with CATCH-FAIL Expressions"
     (with-module-table modules
