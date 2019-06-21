@@ -65,7 +65,7 @@
    COMPILE-META-NODE-FUNCTION."
 
   (apply
-   (or (attribute 'cl-function meta-node)
+   (or (meta-node-cl-function meta-node)
        (compile-meta-node-function meta-node))
    args))
 
