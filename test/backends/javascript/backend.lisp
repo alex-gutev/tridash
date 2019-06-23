@@ -924,7 +924,40 @@
 
               (-<> (js-member "this" "saved_values")
                    (js-element 0)
-                   (js-call "=" <> ($ 1)))))))))))
+                   (js-call "=" <> ($ 1))))))))))
+
+  (subtest "Meta-Node References"
+    (subtest "Without Outer Nodes"
+     (mock-backend-state
+       (mock-meta-nodes (map f)
+         (mock-contexts
+             ((context (a)
+                       (functor map (meta-node-ref f) a)))
+
+           (test-compute-function context
+             (js-return (js-call map f (d a))))))))
+
+    (subtest "With Outer Nodes"
+     (mock-backend-state
+       (mock-meta-nodes (map f)
+         (mock-contexts
+             ((context (a b)
+                       (functor map (meta-node-ref f :outer-nodes (list b)) a)))
+
+           (test-compute-function context
+             (js-return
+              (js-call
+               map
+
+               (-<> (js-call "Array.prototype.slice.call" "arguments")
+                    (js-member "concat")
+                    (js-call (js-array (list (d b))))
+                    (js-call (js-member f "apply") <>)
+                    (js-return)
+                    list
+                    (js-lambda nil <>))
+
+               (d a))))))))))
 
 
 (defun test-function% (got expected)

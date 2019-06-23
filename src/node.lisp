@@ -174,19 +174,38 @@
    the first value, and true, as the second value, if the binding had
    previously been established."
 
-  (if (node? source)
+  (let ((source (reference-operand source target context)))
 
-      (multiple-value-return (link in-hash?)
-          (add-dependency source target
-                          :context context
-                          :add-function add-function)
+    (if (node? source)
 
-        (unless in-hash?
-          (add-observer target source link)))
+        (multiple-value-return (link in-hash?)
+            (add-dependency source target
+                            :context context
+                            :add-function add-function)
 
-      (prog1 source
-        (when add-function
-          (setf (value-function (context target :init)) source)))))
+          (unless in-hash?
+            (add-observer target source link)))
+
+        (prog1 source
+          (when add-function
+            (setf (value-function (context target :init)) source))))))
+
+(defun reference-operand (operand node context)
+  "References the operand OPERAND from NODE in context CONTEXT. If
+   OPERAND is a meta-node, adds NODE to the meta-node's instances and
+   returns a `META-NODE-REF' expression."
+
+  (typecase operand
+    (meta-node
+     (aprog1 (meta-node-ref operand)
+       (add-to-instances node operand context it)))
+
+    (node-table
+     ;;TODO: Signal error
+     )
+
+    (otherwise
+     operand)))
 
 
 ;;; Adding Dependencies

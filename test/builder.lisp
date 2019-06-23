@@ -47,6 +47,9 @@
   (:import-from :tridash.parser
                 :declaration-parse-error)
 
+  (:import-from :tridash.util
+                :with-struct-slots)
+
   (:import-from :tridash.frontend
                 :outer-nodes
                 :change-module)
@@ -81,7 +84,6 @@
    :with-modules
    :with-dependencies
    :has-value-function))
-
 
 (in-package :tridash.test.builder)
 
@@ -232,9 +234,32 @@
     (((functor-expression- (meta-node op-a) (arguments args-a))
       (list* op-b args-b))
 
-     (and (value-fn-equal op-a op-b)
-          (= (length args-a) (length args-b))
-          (every #'value-fn-equal args-a args-b)))))
+     (labels ((position-in-args (x)
+                "Get position of X in operands list of meta-node OP-B."
+
+                (or
+                 (match x
+                   ((list 'outer arg _)
+                    (-<>> op-b
+                          outer-nodes
+                          (get arg)
+                          cdr
+                          (position <> (operands op-b)))))
+                 0))
+
+              (extract-expression (x)
+                "Extract the actual expression which is to be compared."
+
+                (match x
+                  ((list 'outer _ expr)
+                   expr)
+                  (_ x))))
+
+       (and (value-fn-equal op-a op-b)
+            (= (length args-a) (length args-b))
+            (->> (stable-sort args-b :key #'position-in-args)
+                 (map #'extract-expression)
+                 (every #'value-fn-equal args-a)))))))
 
 (defmethod value-fn-equal ((a if-expression) (b list))
   (match* (a b)
@@ -247,17 +272,18 @@
       (value-fn-equal else-a else-b)))))
 
 (defmethod value-fn-equal ((a object-expression) (b list))
-  (match* (a b)
-    (((object-expression- (entries entries-a))
-      (list* :object entries-b))
+  (flet ((field= (a b)
+           (and (= (first a) (first b))
+                (value-fn-equal (second a) (second b)))))
 
-     (flet ((has-field (field)
-              (destructuring-bind (key value) field
-                (aand (find key entries-a :key #'first)
-                      (value-fn-equal (second it) value)))))
+    (match* (a b)
+      (((object-expression- (entries entries-a))
+        (list* :object entries-b))
 
        (and (= (length entries-a) (length entries-b))
-            (every #'has-field entries-b))))))
+            (every #'field=
+                   (sort entries-a :key (compose #'symbol-name #'first))
+                   (sort entries-b :key (compose #'symbol-name #'first))))))))
 
 (defmethod value-fn-equal ((a member-expression) (b list))
   (match* (a b)
@@ -293,6 +319,33 @@
 
 (defmethod value-fn-equal ((a expression-group) b)
   (value-fn-equal (expression-group-expression a) b))
+
+(defmethod value-fn-equal ((a meta-node-ref) (b meta-node-ref))
+  (with-struct-slots meta-node-ref- ((node-a node) (outer-nodes-a outer-nodes)) a
+    (with-struct-slots meta-node-ref- ((node-b node) (outer-nodes-b outer-nodes)) b
+      (labels ((position-in-args (x)
+                 "Get position of X in arguments list of NODE-B."
+
+                 (or
+                  (match x
+                    ((list 'outer arg _)
+                     (position (cdr (get arg (outer-nodes node-b))) (operands node-b))))
+                  0))
+
+               (extract-expression (x)
+                 "Extract the actual expression which is to be compared."
+
+                 (match x
+                   ((list 'outer _ expr)
+                    expr)
+                   (_ x))))
+
+        (and (= node-a node-b)
+             (= (length outer-nodes-a) (length outer-nodes-b))
+
+             (->> (stable-sort outer-nodes-b :key #'position-in-args)
+                  (map #'extract-expression)
+                  (every #'value-fn-equal outer-nodes-a)))))))
 
 (defmethod value-fn-equal (a b)
   (= a b))
@@ -766,10 +819,7 @@
             (with-nodes ((f "f")) modules
               (is-type f 'meta-node)
               (is (operands f) (decls '!\x '!\y))
-              (is (definition f) (decls '(!+ !\x !\y))))
-
-            ;; Test name collisions with atom nodes
-            (is-error (build "f") 'semantic-error "f")))))
+              (is (definition f) (decls '(!+ !\x !\y))))))))
 
     (subtest "External Meta-Node Definitions"
       (with-module-table modules
@@ -791,6 +841,25 @@
 
       (subtest "Errors"
         (test-top-level-only ":extern(y)"))))
+
+  (subtest "Referencing Meta-Nodes as Values"
+    (with-module-table modules
+      (build ":extern(map)"
+             ":extern(add)"
+             "map(add, input) -> output")
+
+      (with-nodes ((map "map") (add "add")
+                   (input "input") (output "output")
+                   (map-input ("map" "add" "input")))
+          modules
+
+        (has-value-function
+         (input)
+         map-input
+
+         `(,map ,(meta-node-ref add) ,input))
+
+        (test-simple-binding map-input output))))
 
   (subtest "Subnodes"
     (labels ((test-object-fn (node &rest fields)
@@ -2436,6 +2505,162 @@
                        (,+ ,in-start ,acc))))
 
               (has-value-function (in start) out (make-function-call count (list in) (list start)))))))))
+
+  (subtest "Outer Meta-Node References"
+    (subtest "Referencing Meta-Nodes Without Outer Nodes"
+      (with-module-table modules
+        (build ":extern(map); :extern(add)"
+               "1+(x) : add(x,1)"
+               "1+-all(list) : map(..(1+), list)"
+
+               "1+-all(in) -> out"
+               ":attribute(in, input, 1)")
+
+        (let ((table (finish-build)))
+          (with-nodes ((1+ "1+") (1+-all "1+-all") (map "map")
+                       (in "in") (out "out"))
+              table
+
+            (test-meta-node
+             1+-all
+             ((list "list"))
+
+             `(,map ,(meta-node-ref 1+) ,list))
+
+            (has-value-function (in) out `(,1+-all ,in))))))
+
+    (subtest "Referencing Meta-Nodes With Outer Nodes"
+      (with-module-table modules
+        (build ":extern(map); :extern(add)"
+               "x+(n) : add(n, ..(x))"
+               "x+-all(list) : map(..(x+), list)"
+
+               "x+-all(in) -> out"
+
+               ":attribute(in, input, 1)"
+               ":attribute(x, input, 1)")
+
+        (let ((table (finish-build)))
+          (with-nodes ((x+ "x+") (x+-all "x+-all") (map "map") (add "add")
+                       (x "x") (in "in") (out "out"))
+              table
+
+            (test-meta-node x+ ((n "n") (x (outer x))) `(,add ,n ,x))
+
+            (test-meta-node
+             x+-all
+             ((list "list") (x (outer x)))
+
+             `(,map ,(meta-node-ref x+ :outer-nodes (list x)) ,list))
+
+            (has-value-function (in x) out `(,x+-all ,in ,x))))))
+
+    (subtest "Referencing Meta-Nodes With Outer Nodes From Nested Meta-Nodes"
+      (subtest "Case 1"
+        (with-module-table modules
+          (build ":extern(map); :extern(add)"
+                 "x+(n) : add(n, ..(x))"
+                 "x+-all(list) : { add-x(n) : x+(n); map(add-x, list) }"
+
+                 "x+-all(in) -> out"
+
+                 ":attribute(in, input, 1)"
+                 ":attribute(x, input, 1)")
+
+          (let ((table (finish-build)))
+            (with-nodes ((x+ "x+") (x+-all "x+-all") (map "map") (add "add")
+                         (x "x") (in "in") (out "out"))
+                table
+
+              (test-meta-node x+ ((n "n") (x (outer x))) `(,add ,n ,x))
+
+              (with-nodes ((add-x "add-x"))
+                  (definition x+-all)
+
+                (test-meta-node add-x ((n "n") (x (outer x))) `(,x+ ,n ,x))
+
+                (test-meta-node
+                 x+-all
+                 ((list "list") (x (outer x)))
+
+                 `(,map ,(meta-node-ref add-x :outer-nodes (list x)) ,list)))
+
+              (has-value-function (in x) out `(,x+-all ,in ,x))))))
+
+      (subtest "Case 2"
+        (with-module-table modules
+          (build ":extern(map); :extern(add)"
+                 "x+(n) : add(n, ..(x))"
+                 "x+-all(list) : { add-x(n) : map(..(x+), n); add-x(list);  }"
+
+                 "x+-all(in) -> out"
+
+                 ":attribute(in, input, 1)"
+                 ":attribute(x, input, 1)")
+
+          (let ((table (finish-build)))
+            (with-nodes ((x+ "x+") (x+-all "x+-all") (map "map") (add "add")
+                         (x "x") (in "in") (out "out"))
+                table
+
+              (test-meta-node x+ ((n "n") (x (outer x))) `(,add ,n ,x))
+
+              (with-nodes ((add-x "add-x"))
+                  (definition x+-all)
+
+                (test-meta-node
+                 add-x
+                 ((n "n") (x (outer x)))
+
+                 `(,map ,(meta-node-ref x+ :outer-nodes (list x)) ,n))
+
+                (test-meta-node
+                 x+-all
+                 ((list "list") (x (outer x)))
+
+                 `(,add-x ,list ,x)))
+
+              (has-value-function (in x) out `(,x+-all ,in ,x)))))))
+
+    (subtest "Cyclic Meta-Node References"
+      (with-module-table modules
+        (build ":extern(map); :extern(add)"
+	       "add-x(xs) : map(..(add-y), xs, ..(x))"
+	       "add-y(xs) : map(..(add-x), xs, ..(y))"
+
+	       "add-x(in) -> output"
+
+	       ":attribute(in, input, 1)"
+	       ":attribute(x, input, 1)"
+	       ":attribute(y, input, 1)")
+
+        (let ((table (finish-build modules)))
+          (with-nodes ((map "map") (add-x "add-x") (add-y "add-y")
+		       (x "x") (y "y") (in "in") (output "output"))
+	      table
+
+            (test-meta-node
+	     add-x
+	     ((xs "xs") (xin (outer x)) (yin (outer y)))
+
+             (-<>> `((outer ,y ,yin) (outer ,x ,xin))
+                   (meta-node-ref add-y :outer-nodes)
+                   (list map <> xs xin)))
+
+            (test-meta-node
+	     add-y
+	     ((xs "xs") (xin (outer x)) (yin (outer y)))
+
+             (-<>> `((outer ,x ,xin) (outer ,y ,yin))
+                   (meta-node-ref add-x :outer-nodes)
+                   (list map <> xs yin)))
+
+	    (let ((x-out x) (y-out y))
+	      (has-value-function
+	       (in x y)
+	       output
+
+	       `(,add-x ,in (outer ,x-out ,x) (outer ,y-out ,y)))))))))
 
   (subtest "Structure Checking"
     (subtest "Cycle Checks"

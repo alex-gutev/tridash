@@ -214,7 +214,8 @@
     (when (memberp name all-nodes)
       (error 'node-exists-error :node name :node-table table))
 
-    (setf (get :module (attributes node)) table)
+    (unless (get :module (attributes node))
+      (setf (get :module (attributes node)) table))
 
     (setf (get name all-nodes) node)
     (setf (get name nodes) node)))
@@ -230,7 +231,8 @@
       ((aand (get name all-nodes) (not (meta-node? it)))
        (error 'meta-node-name-collision :node name :node-table table)))
 
-    (setf (get :module (attributes node)) table)
+    (unless (get :module (attributes node))
+      (setf (get :module (attributes node)) table))
 
     (setf (get name all-nodes) node)
     (setf (get name meta-nodes) node)))

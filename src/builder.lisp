@@ -211,9 +211,12 @@
    definition of META-NODE. The DEFINITION of META-NODE is converted
    to a `FLAT-NODE-TABLE'."
 
-  (with-slots (definition) meta-node
+  (with-slots (name definition) meta-node
     (awhen definition
-      (finish-build (setf definition (flatten-meta-node definition))))))
+      (setf definition (flatten-meta-node definition))
+
+      (nadjoin meta-node (nodes definition))
+      (finish-build definition))))
 
 
 ;;;; Build Meta-Nodes
@@ -232,20 +235,18 @@
     (unless (or (external-meta-node? meta-node)
                 (typep definition 'node-table))
       (let* ((table (make-inner-node-table outer-table))
+             (value-node (make-self-node meta-node table))
              (*meta-node* meta-node)
              (*functor-module* table))
 
-        ;; Add implicit self node
-        (add-node +self-node+ meta-node table)
         (add-node name meta-node table)
-
         (add-operand-nodes (operands meta-node) table)
 
         (let* ((last-node (at-source (process-node-list definition table :top-level t))))
-          (make-meta-node-function meta-node last-node)
-          (build-meta-node-graphs table)
+          (make-meta-node-function meta-node value-node last-node)
+          (setf definition table)
 
-          (setf definition table))))))
+          (build-meta-node-graphs table))))))
 
 (defun add-operand-nodes (names table)
   "Creates a node for each element in NAMES, the element being the
@@ -260,14 +261,22 @@
 
       (add-input (ensure-node name table) table))))
 
-(defun make-meta-node-function (meta-node last-node)
-  "Creates the value function of the meta-node META-NODE. LAST-NODE is
-   the last-node in the meta-node's definition."
+(defun make-self-node (meta-node table)
+  "Create the self which represents the value of META-NODE. TABLE is
+   the `NODE-TABLE' into which the meta-node's definition is built.."
 
-  (with-slots (output-nodes contexts) meta-node
+  (aprog1 (ensure-node +self-node+ table t)
+    (add-binding it meta-node :add-function t)))
+
+(defun make-meta-node-function (meta-node value-node last-node)
+  "Creates the value function of the meta-node META-NODE. VALUE-NODE
+   is the automatically added self node. LAST-NODE is the last-node in
+   the meta-node's definition."
+
+  (with-slots (output-nodes contexts) value-node
     (cond
       ((and last-node (emptyp contexts))
-       (add-binding last-node meta-node :context nil))
+       (add-binding last-node value-node :context nil))
 
       ((> (length contexts) 1)
        (error 'ambiguous-meta-node-context :node meta-node)))))
@@ -288,12 +297,8 @@
    does not already contain a node with that identifier. Returns the
    newly created, or existing, node."
 
-  (let* ((node (ensure-node name table)))
-
-    (unless (or *return-meta-node* (not (meta-node? node)) (= node *meta-node*))
-      (error 'node-type-error :node node :expected 'node))
-
-    node))
+  ;;TODO: Signal error if meta-node and in target position
+  (ensure-node name table))
 
 (defmethod process-declaration :around (decl table &key top-level (add-outer t) ((:level *level*) (if top-level 0 (1+ *level*))))
   "Processes the declaration with DECL added to the front of
@@ -301,6 +306,13 @@
 
   (let ((*declaration-stack* (cons decl *declaration-stack*))
         (node (call-next-method)))
+
+    ;; Add META-NODE to the meta node references of *META-NODE*
+    (when (and
+           (meta-node? node)
+           *meta-node*
+           (/= node *meta-node*))
+      (nadjoin node (meta-node-references *meta-node*)))
 
     ;; If inside a meta-node and node referenced is from an outer
     ;; node-table, add it to the outer-nodes set of the meta-node.
@@ -760,10 +772,6 @@
   (let* ((operands (process-operands operands table))
          (name (canonicalize-functor meta-node operands)))
 
-    ;; Add META-NODE to the meta node references of *META-NODE*
-    (when (and *meta-node* (/= meta-node *meta-node*))
-      (nadjoin meta-node (meta-node-references *meta-node*)))
-
     (values (ensure-node name *functor-module* t) operands)))
 
 (defun add-meta-node-value-function (instance meta-node operands &key (context meta-node))
@@ -772,17 +780,19 @@
    to INSTANCE and added as operands to the context CONTEXT."
 
   (create-context (instance context)
-    (add-to-instances instance meta-node context)
-
     (->> (bind-operands instance operands :context context)
          (functor-expression meta-node)
-         (setf value-function))))
+         (setf value-function))
 
-(defun add-to-instances (instance meta-node context)
+    (add-to-instances instance meta-node context value-function)))
+
+(defun add-to-instances (instance meta-node context expression)
   "Adds the meta-node instance INSTANCE, at context CONTEXT, to the
-   list of instances of META-NODE."
+   list of instances of META-NODE. EXPRESSION is the expression in
+   which META-NODE is referenced."
 
-  (push (list instance context *meta-node*) (instances meta-node)))
+  (push (list instance context *meta-node* expression)
+        (instances meta-node)))
 
 
 (defmethod process-attribute ((node t) (attribute (eql (id-symbol "TARGET-NODE"))) value table)
@@ -806,10 +816,12 @@
    meta-node instance (NODE)."
 
   (flet ((bind-operand (operand)
-           (if (value? operand)
-               operand
-               (add-binding operand node :context context :add-function nil))))
-  (map #'bind-operand operands)))
+           (atypecase (reference-operand operand node context)
+             (node
+              (add-binding operand node :context context :add-function nil))
+
+             (otherwise it))))
+    (map #'bind-operand operands)))
 
 
 ;;; Node Name Canonicalization

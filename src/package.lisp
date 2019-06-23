@@ -175,6 +175,11 @@
    :expression-group-count
    :expression-group-save
 
+   :meta-node-ref
+   :meta-node-ref-p
+   :meta-node-ref-node
+   :meta-node-ref-outer-nodes
+
    :walk-expression
    :transform-expression
 

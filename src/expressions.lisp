@@ -83,6 +83,14 @@
 
   (save nil))
 
+(defstruct (meta-node-ref (:constructor meta-node-ref (node &key outer-nodes)))
+  "Represents a meta-node reference. NODE is the `META-NODE' object
+   and OUTER-NODES is the list of outer nodes referenced by the
+   meta-node which are append to it."
+
+  node
+  outer-nodes)
+
 
 (defgeneric walk-expression (fn expression)
   (:documentation
@@ -119,6 +127,9 @@
 
   (:method (fn (group expression-group))
     (walk-expression fn (expression-group-expression group)))
+
+  (:method (fn (ref meta-node-ref))
+    (foreach (curry #'walk-expression fn) (meta-node-ref-outer-nodes ref)))
 
   (:method ((fn t) (expr t))
     nil))
@@ -170,6 +181,13 @@
   (:method (fn (group expression-group))
     (with-accessors ((expression expression-group-expression)) group
       (setf expression (funcall fn expression))))
+
+  (:method (fn (ref meta-node-ref))
+    (meta-node-ref
+     (meta-node-ref-node ref)
+
+     :outer-nodes
+     (map (curry #'map-expression! fn) (meta-node-ref-outer-nodes ref))))
 
   (:method ((fn t) expr)
     expr))

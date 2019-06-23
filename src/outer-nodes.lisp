@@ -77,19 +77,28 @@
               reference NODES are bound to INSTANCE instead of NODES
               themselves."
 
-             (destructuring-bind (node context meta-node) instance
-               (update-context node context (operand-nodes nodes meta-node))))
+             (destructuring-bind (node context meta-node expression) instance
+               (update-context node context expression (operand-nodes nodes meta-node))))
 
-           (update-context (node context-id operands)
+           (update-context (node context-id expression operands)
              "Adds OPERANDS as operands to the context, of NODE, with
               identifier CONTEXT-ID, and appends them to the context's
               value function."
 
-             (appendf
-              (->> (context node context-id)
-                   value-function
-                   functor-expression-arguments)
-              (bind-operands node operands :context context-id)))
+             (->>
+              (bind-operands node operands :context context-id)
+              (update-expression expression)))
+
+           (update-expression (expression operands)
+             "Adds the outer node operands OPERANDS to the expression
+              EXPRESSION."
+
+             (ematch expression
+               ((functor-expression- (arguments (place arguments)))
+                (appendf arguments operands))
+
+               ((meta-node-ref- (outer-nodes (place outer-nodes)))
+                (appendf outer-nodes operands))))
 
            (operand-nodes (nodes meta-node)
              "Returns the nodes local to META-NODE which reference the

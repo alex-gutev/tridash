@@ -682,6 +682,32 @@
   (js-element (js-member "this" "saved_values") index))
 
 
+;;; Meta-Node References
+
+(defmethod make-expression ((ref meta-node-ref) &key)
+  "Generates an expression which returns a function that invokes the
+   meta-node referenced by REF."
+
+  (with-struct-slots meta-node-ref- (node outer-nodes)
+      ref
+
+    (if outer-nodes
+        (make-operands
+         outer-nodes
+         (lambda (expressions)
+           (values
+            nil
+            (-<> (js-call "Array.prototype.slice.call" "arguments")
+                 (js-member "concat")
+                 (js-call (js-array expressions))
+                 (js-call (js-member (meta-node-id node) "apply") <>)
+                 (js-return)
+                 list
+                 (js-lambda nil <>)))))
+
+        (values nil (meta-node-id node)))))
+
+
 ;;; Literal Values
 
 (defmethod make-expression ((string string) &key)
