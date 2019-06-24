@@ -781,7 +781,10 @@
 
   (create-context (instance context)
     (->> (bind-operands instance operands :context context)
-         (functor-expression meta-node)
+         (functor-expression
+          (if (meta-node? meta-node)
+              meta-node
+              (add-binding meta-node instance :context context :add-function nil)))
          (setf value-function))
 
     (add-to-instances instance meta-node context value-function)))
@@ -791,8 +794,9 @@
    list of instances of META-NODE. EXPRESSION is the expression in
    which META-NODE is referenced."
 
-  (push (list instance context *meta-node* expression)
-        (instances meta-node)))
+  (when (meta-node? meta-node)
+    (push (list instance context *meta-node* expression)
+          (instances meta-node))))
 
 
 (defmethod process-attribute ((node t) (attribute (eql (id-symbol "TARGET-NODE"))) value table)

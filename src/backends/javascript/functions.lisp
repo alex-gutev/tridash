@@ -483,14 +483,21 @@
        (make-expression
         (if-expression (first arguments) (second arguments) (third arguments))))
 
-      (_
+      ((type meta-node)
        (make-operands
         arguments
         (lambda (expressions)
           (let ((call (make-meta-node-call meta-node expressions)))
             (if (value-expression? call)
                 (values nil call)
-                (values call nil)))))))))
+                (values call nil))))))
+
+      (_
+       (make-operands
+        (cons meta-node arguments)
+        (lambda (expressions)
+          (destructuring-bind (fn &rest args) expressions
+            (values nil (cons 'async (make-js-call fn args))))))))))
 
 
 ;;; If Expressions

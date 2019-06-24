@@ -537,7 +537,26 @@
         (test-simple-binding int-x z :context int-x)
 
         (test-node-function int-x int int x)
-        (test-node-function x int-x int int-x))))
+        (test-node-function x int-x int int-x)))
+
+    (subtest "Node Operators"
+      (with-module-table modules
+        (build "in1 -> fn"
+               "fn(in2) -> output")
+
+        (with-nodes ((in1 "in1") (in2 "in2")
+                     (fn "fn") (output "output")
+                     (fn-in2 ("fn" "in2")))
+            modules
+
+          (test-simple-binding in1 fn)
+          (test-simple-binding fn-in2 output)
+
+          (has-value-function
+           (fn in2)
+           fn-in2
+
+           `(,fn ,in2))))))
 
   (subtest "Functors in Target Position"
     (subtest "No Target Node"

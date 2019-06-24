@@ -183,7 +183,7 @@
   (let ((*create-nodes* nil)
         (*return-meta-node* t))
     (aprog1 (process-declaration meta-node table)
-      (unless (meta-node? it)
+      (unless (node? it)
         (error 'node-type-error :node it :expected 'meta-node)))))
 
 (defun node-type (node)

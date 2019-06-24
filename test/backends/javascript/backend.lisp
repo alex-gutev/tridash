@@ -957,7 +957,27 @@
                     list
                     (js-lambda nil <>))
 
-               (d a))))))))))
+               (d a)))))))))
+
+  (subtest "Invoking Nodes as Meta-Nodes"
+    (subtest "As Return Value"
+      (mock-backend-state
+        (mock-contexts
+            ((context (f x) (functor f x)))
+
+          (test-compute-function context
+            (js-return (js-call (d f) (d x)))))))
+
+    (subtest "As Operand"
+      (mock-backend-state
+        (mock-meta-nodes (func)
+          (mock-contexts
+              ((context (f x y) (functor func (functor f x) y)))
+
+            (test-compute-function context
+              (js-return
+               (promise (((js-call (d f) (d x)) ($ fx)))
+                 (js-return (js-call func ($ fx) (d y))))))))))))
 
 
 (defun test-function% (got expected)
