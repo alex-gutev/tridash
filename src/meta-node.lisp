@@ -56,13 +56,11 @@
      containing the nodes in the meta-node's body.")
 
    (instances
-    :initform nil
+    :initform (make-hash-set)
     :accessor instances
     :documentation
-    "List of instances of the meta-node. Each element is of the
-     form (CONS NODE META-NODE) where NODE is the instance NODE itself
-     and META-NODE is the META-NODE in which it appears, NIL if it is
-     at global scope."))
+    "Set of the meta-node's instances, stored in `INSTANCE'
+     objects."))
 
   (:documentation
    "Stores the definition of a meta-node."))
@@ -72,6 +70,43 @@
 
   (:documentation
    "Node stub for a meta-node which is defined externally."))
+
+
+;;; Instances
+
+(defstruct (instance (:constructor instance (node context meta-node expression)))
+  "Stores information about a meta-node instance.
+
+   NODE and CONTEXT are the node, and corresponding context, in which
+   the instance is contained.
+
+   META-NODE is the meta-node in which NODE is contained. NIL if NODE
+   is at global scope.
+
+   EXPRESSION is the expression with the CONTEXT's value function that
+   contains the meta-node."
+
+  node context meta-node expression)
+
+(defmethod equalp ((a instance) (b instance))
+  (and (= (instance-node a) (instance-node b))
+       (= (instance-context a) (instance-context b))
+       (= (instance-meta-node a) (instance-meta-node b))
+       (eq (instance-expression a) (instance-expression b))))
+
+(defmethod hash ((inst instance))
+  (with-struct-slots instance- (node meta-node context expression)
+      inst
+
+    (-> (hash node)
+        (* 31)
+        (+ (hash context))
+        (* 31)
+        (+ (hash meta-node))
+        (* 31)
+        (+ (hash expression))
+        (* 31)
+        (mod most-positive-fixnum))))
 
 
 ;;; Utilities

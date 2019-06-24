@@ -241,8 +241,11 @@
    :declaration-stack
    :module-table
 
-   :node-type-error
-   :expected-type
+   :not-node-error
+   :module-node-reference-error
+
+   :non-node-operator-error
+   :operator
 
    :non-existent-node
    :module-name
@@ -270,7 +273,10 @@
    :global-outer-reference-error
    :special-operator-operand
 
+   :meta-node-target-error
+   :module-node-target-error
    :target-node-error
+
    :ambiguous-context-error
    :ambiguous-meta-node-context
    :node-cycle-error

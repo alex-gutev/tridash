@@ -522,22 +522,23 @@
 	   `(if ,b->c ,b (:fail)))))))
 
   (subtest "Functor Nodes"
-    (with-module-table modules
-      (build-source-file #p"./modules/core.trd" modules)
-      (build ":import(core); a + b -> output; int(x) -> z")
+    (subtest "Meta-Node Operators"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core); a + b -> output; int(x) -> z")
 
-      (with-nodes ((+ "+") (a "a") (b "b")
-                   (a+b ((":in" "core" "+") "a" "b")) (output "output"))
-          modules
+        (with-nodes ((+ "+") (a "a") (b "b")
+                     (a+b ((":in" "core" "+") "a" "b")) (output "output"))
+            modules
 
-        (test-simple-binding a+b output :context a+b)
-        (test-node-function a+b + + a b))
+          (test-simple-binding a+b output :context a+b)
+          (test-node-function a+b + + a b))
 
-      (with-nodes ((int "int") (x "x") (z "z") (int-x ((":in" "core" "int") "x"))) modules
-        (test-simple-binding int-x z :context int-x)
+        (with-nodes ((int "int") (x "x") (z "z") (int-x ((":in" "core" "int") "x"))) modules
+          (test-simple-binding int-x z :context int-x)
 
-        (test-node-function int-x int int x)
-        (test-node-function x int-x int int-x)))
+          (test-node-function int-x int int x)
+          (test-node-function x int-x int int-x))))
 
     (subtest "Node Operators"
       (with-module-table modules
@@ -556,7 +557,12 @@
            (fn in2)
            fn-in2
 
-           `(,fn ,in2))))))
+           `(,fn ,in2)))))
+
+    (subtest "Non-Node Operators"
+      (test-error "1(x, y)" 'non-node-operator-error)
+      (test-error " \"hello\"(1, x, 2) " 'non-node-operator-error)
+      (test-error "z(x, y)" 'non-existent-node)))
 
   (subtest "Functors in Target Position"
     (subtest "No Target Node"
@@ -862,23 +868,49 @@
         (test-top-level-only ":extern(y)"))))
 
   (subtest "Referencing Meta-Nodes as Values"
-    (with-module-table modules
-      (build ":extern(map)"
-             ":extern(add)"
-             "map(add, input) -> output")
+    (subtest "As Operands"
+      (with-module-table modules
+        (build ":extern(map)"
+               ":extern(add)"
+               "map(add, input) -> output")
 
-      (with-nodes ((map "map") (add "add")
-                   (input "input") (output "output")
-                   (map-input ("map" "add" "input")))
-          modules
+        (with-nodes ((map "map") (add "add")
+                     (input "input") (output "output")
+                     (map-input ("map" "add" "input")))
+            modules
 
-        (has-value-function
-         (input)
-         map-input
+          (has-value-function
+           (input)
+           map-input
 
-         `(,map ,(meta-node-ref add) ,input))
+           `(,map ,(meta-node-ref add) ,input))
 
-        (test-simple-binding map-input output))))
+          (test-simple-binding map-input output))))
+
+    (subtest "As Source of Binding"
+      (with-module-table modules
+        (build ":extern(map)"
+               ":extern(add)"
+               "add -> fn"
+               "map(fn, input) -> output")
+
+        (with-nodes ((map "map") (add "add") (fn "fn")
+                     (input "input") (output "output")
+                     (map-input ("map" "fn" "input")))
+            modules
+
+          (test-value-function fn (init-context fn) (meta-node-ref add))
+
+          (has-value-function
+           (input fn)
+           map-input
+
+           `(,map ,fn ,input))
+
+          (test-simple-binding map-input output))))
+
+    (subtest "As Target of Binding"
+      (test-error ":extern(add); x -> add" 'meta-node-target-error)))
 
   (subtest "Subnodes"
     (labels ((test-object-fn (node &rest fields)
@@ -1106,7 +1138,12 @@
           (test-error ":in()" 'invalid-arguments-error)
           (test-error ":in(x)" 'invalid-arguments-error)
           (test-error ":module(m1); x; :module(m2); :in(m1, x, y)" 'invalid-arguments-error)
-          (test-error ":in(1, x)" 'invalid-arguments-error))))))
+          (test-error ":in(1, x)" 'invalid-arguments-error))
+
+        (subtest "Referencing Module Pseudo Nodes"
+          (test-error ":module(m1); :module(m2); :use(m1); :extern(add); add(m1, x)" 'module-node-reference-error)
+          (test-error ":module(m1); :module(m2); :use(m1); m1 -> x" 'module-node-reference-error)
+          (test-error ":module(m1); :module(m2); :use(m1); x -> m1" 'module-node-target-error))))))
 
 (subtest "Node Coalescer"
   (subtest "Simple Nodes"
@@ -2525,7 +2562,7 @@
 
               (has-value-function (in start) out (make-function-call count (list in) (list start)))))))))
 
-  (subtest "Outer Meta-Node References"
+  (subtest "Meta-Node References"
     (subtest "Referencing Meta-Nodes Without Outer Nodes"
       (with-module-table modules
         (build ":extern(map); :extern(add)"
@@ -2679,7 +2716,47 @@
 	       (in x y)
 	       output
 
-	       `(,add-x ,in (outer ,x-out ,x) (outer ,y-out ,y)))))))))
+	       `(,add-x ,in (outer ,x-out ,x) (outer ,y-out ,y))))))))
+
+    (subtest "As Source of Binding"
+      (subtest "Without Outer Nodes"
+        (with-module-table modules
+          (build ":extern(add)"
+                 ":extern(map)"
+
+                 "add-x(n) : add(n, 1)"
+
+                 "add-x -> fn"
+                 "map(fn, in) -> out"
+
+                 ":attribute(in, input, 1)")
+
+          (let ((table (finish-build modules)))
+            (with-nodes ((add-x "add-x") (map "map")
+                         (in "in") (out "out"))
+                table
+
+              (has-value-function (in) out `(,map ,(meta-node-ref add-x) ,in))))))
+
+      (subtest "With Outer Nodes"
+        (with-module-table modules
+          (build ":extern(add)"
+                 ":extern(map)"
+
+                 "add-x(n) : add(n, ..(x))"
+
+                 "add-x -> fn"
+                 "map(fn, in) -> out"
+
+                 ":attribute(in, input, 1)"
+                 ":attribute(x, input, 1)")
+
+          (let ((table (finish-build modules)))
+            (with-nodes ((add-x "add-x") (map "map")
+                         (x "x") (in "in") (out "out"))
+                table
+
+              (has-value-function (in x) out `(,map ,(meta-node-ref add-x :outer-nodes (list x)) ,in))))))))
 
   (subtest "Structure Checking"
     (subtest "Cycle Checks"

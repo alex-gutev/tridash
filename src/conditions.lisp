@@ -52,26 +52,44 @@
   (call-next-method))
 
 
-;;;; Basic Node Lookup Errors
+;;;; Node Reference Errors
 
-(define-condition node-type-error (semantic-error)
+(define-condition not-node-error (semantic-error)
   ((node :initarg :node
          :reader node
-         :documentation "The node.")
-
-   (expected-type :initarg :expected
-                  :reader expected-type
-                  :documentation "The expected node type"))
+         :documentation
+         "The node declaration."))
 
   (:documentation
-   "Incorrect node type condition. Signaled when the type of node
-    found is different from the type of the node that was expected in
-    the context."))
+   "Error condition: A node was expected however the object provided
+    is not a node."))
 
-(defmethod print-object ((err node-type-error) stream)
-  (with-accessors ((node node)) err
-    (format stream "~a is a ~a, expected a ~a."
-            (name node) (node-type node) (expected-type err))))
+(defmethod print-object ((e not-node-error) stream)
+  (format stream "`~a` is not a node." (node e)))
+
+
+(define-condition module-node-reference-error (semantic-error)
+  ((node :initarg :node
+         :reader node
+         :documentation "The referenced node declaration"))
+
+  (:documentation
+   "Error condition: The value of a module pseudo-node was referenced."))
+
+(defmethod print-object ((e module-node-reference-error) stream)
+  (format stream "Cannot reference the value of module pseudo-node `~a`." (node e)))
+
+
+(define-condition non-node-operator-error (semantic-error)
+  ((operator :initarg :operator
+             :reader operator
+             :documentation "The operator of the functor expression."))
+
+  (:documentation
+   "Error condition: The operator of a functor is not a node."))
+
+(defmethod print-object ((e non-node-operator-error) stream)
+  (format stream "`~a` cannot appear as an operator as it is not a node." (operator e)))
 
 
 (define-condition non-existent-node (semantic-error)
@@ -257,6 +275,32 @@
 
 
 ;;;; Node Binding Errors
+
+(define-condition meta-node-target-error (semantic-error)
+  ((meta-node :initarg :meta-node
+              :reader meta-node
+              :documentation
+              "The meta-node which appears as the target."))
+
+  (:documentation
+   "Error condition: A meta-node appears as the target of a binding."))
+
+(defmethod print-object ((e meta-node-target-error) stream)
+  (format stream "Meta-node `~a` may not appear as the target of a binding."
+          (meta-node e)))
+
+(define-condition module-node-target-error (semantic-error)
+  ((node :initarg :node
+         :reader node
+         :documentation
+         "The module node which appears as the target of a binding"))
+
+  (:documentation
+   "Error condition: Module pseudo-node appears as the target of a binding."))
+
+(defmethod print-object ((e module-node-target-error) stream)
+  (format stream "Module pseudo-node `~a` cannot appear as the target of a binding." (node e)))
+
 
 (define-condition target-node-error (semantic-error)
   ((node :initarg :node

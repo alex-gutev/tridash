@@ -77,7 +77,7 @@
               reference NODES are bound to INSTANCE instead of NODES
               themselves."
 
-             (destructuring-bind (node context meta-node expression) instance
+             (with-struct-slots instance- (node context meta-node expression) instance
                (update-context node context expression (operand-nodes nodes meta-node))))
 
            (update-context (node context-id expression operands)

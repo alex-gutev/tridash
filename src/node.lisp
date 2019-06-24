@@ -175,37 +175,28 @@
    previously been established."
 
   (let ((source (reference-operand source target context)))
+    (when (typep target 'node-table)
+      (error 'module-node-target-error :node target))
 
-    (if (node? source)
+    (typecase source
+      (node
+       (multiple-value-return (link in-hash?)
+           (add-dependency source target
+                           :context context
+                           :add-function add-function)
 
-        (multiple-value-return (link in-hash?)
-            (add-dependency source target
-                            :context context
-                            :add-function add-function)
+         (unless in-hash?
+           (add-observer target source link))))
 
-          (unless in-hash?
-            (add-observer target source link)))
+      (meta-node-ref
+       (prog1 source
+         (when add-function
+           (setf (value-function (context target context)) source))))
 
-        (prog1 source
-          (when add-function
-            (setf (value-function (context target :init)) source))))))
-
-(defun reference-operand (operand node context)
-  "References the operand OPERAND from NODE in context CONTEXT. If
-   OPERAND is a meta-node, adds NODE to the meta-node's instances and
-   returns a `META-NODE-REF' expression."
-
-  (typecase operand
-    (meta-node
-     (aprog1 (meta-node-ref operand)
-       (add-to-instances node operand context it)))
-
-    (node-table
-     ;;TODO: Signal error
-     )
-
-    (otherwise
-     operand)))
+      (otherwise
+       (prog1 source
+         (when add-function
+           (setf (value-function (context target :init)) source)))))))
 
 
 ;;; Adding Dependencies

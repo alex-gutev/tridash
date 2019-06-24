@@ -170,21 +170,16 @@
          (values it table)
          (lookup-node name next-table))))
 
-(defun lookup-meta-node (meta-node table)
-  "Searches for a meta-node by processing the declaration (using
-   PROCESS-DECLARATION) with *CREATE-NODES* set to nil, that is no
-   immediate nodes are created if the node is not found. If
-   PROCESS-DECLARATION returns a meta-node it is returned. If
-   PROCESS-DECLARATION returns a node which is not a meta-node a
-   `NODE-TYPE-ERROR' condition is signaled. If no node is found but
-   META-NODE names a primitive operator (in *PRIMITIVE-OPS*) it is
-   returned."
+(defun lookup-meta-node (operator table)
+  "Looks up the operator node OPERATOR in table TABLE. Signals an
+   error if OPERATOR is not a node."
 
   (let ((*create-nodes* nil)
         (*return-meta-node* t))
-    (aprog1 (process-declaration meta-node table)
-      (unless (node? it)
-        (error 'node-type-error :node it :expected 'meta-node)))))
+    (at-source
+      (aprog1 (process-declaration operator table)
+        (unless (node? it)
+          (error 'non-node-operator-error :operator it))))))
 
 (defun node-type (node)
   "Returns a symbol identifying the type of NODE. META-NODE is
@@ -203,6 +198,22 @@
    was imported into it."
 
   (eq (home-module node) table))
+
+(defun reference-operand (operand node context)
+  "References the operand OPERAND from NODE in context CONTEXT. If
+   OPERAND is a meta-node, adds NODE to the meta-node's instances and
+   returns a `META-NODE-REF' expression."
+
+  (typecase operand
+    (meta-node
+     (aprog1 (meta-node-ref operand)
+       (add-to-instances node operand context it)))
+
+    (node-table
+     (error 'module-node-reference-error :node operand))
+
+    (otherwise
+     operand)))
 
 
 ;;;; Adding nodes

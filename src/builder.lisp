@@ -307,6 +307,9 @@
   (let ((*declaration-stack* (cons decl *declaration-stack*))
         (node (call-next-method)))
 
+    (when (and *source-node* (meta-node? node))
+      (error 'meta-node-target-error :meta-node node))
+
     ;; Add META-NODE to the meta node references of *META-NODE*
     (when (and
            (meta-node? node)
@@ -530,7 +533,7 @@
          (let ((node (process-declaration node table)))
 
            (unless (node? node)
-             (error 'node-type-error :expected 'node :node node))
+             (error 'not-node-error :node (first args)))
 
            (setf (attribute attribute node)
                  (or (process-attribute node (id-symbol (string-upcase attribute)) value table)
@@ -795,8 +798,8 @@
    which META-NODE is referenced."
 
   (when (meta-node? meta-node)
-    (push (list instance context *meta-node* expression)
-          (instances meta-node))))
+    (nadjoin (instance instance context *meta-node* expression)
+             (instances meta-node))))
 
 
 (defmethod process-attribute ((node t) (attribute (eql (id-symbol "TARGET-NODE"))) value table)
