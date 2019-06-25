@@ -223,6 +223,98 @@
          ($a)
          `(call-tridash-meta-node ,meta-node (list (- $a)))))))
 
+  (subtest "Higher-Order Meta-Nodes"
+    (subtest "External Meta-Node"
+      (with-external-meta-nodes ("not")
+        (let ((apply (make-instance 'meta-node :name 'apply)))
+          (test-compile-meta-node
+
+           (x)
+           (functor apply (meta-node-ref not) x)
+
+           ($x)
+           `(call-tridash-meta-node ,apply (list #'tridash-not $x))))))
+
+    (subtest "If Meta-Node"
+      (with-external-meta-nodes ("if")
+        (let ((apply (make-instance 'meta-node :name 'apply)))
+          (test-compile-meta-node
+
+           (x y z)
+           (functor apply (meta-node-ref if) x y z)
+
+           ($x $y $z)
+           `(call-tridash-meta-node
+             ,apply
+
+             (list
+              (lambda ($cond $then &optional $else)
+                (if $cond $then $else))
+
+              $x $y $z))))))
+
+    (subtest "And Meta-Node"
+      (with-external-meta-nodes ("and")
+        (let ((apply (make-instance 'meta-node :name 'apply)))
+          (test-compile-meta-node
+
+           (x y)
+           (functor apply (meta-node-ref and) x y)
+
+           ($x $y)
+           `(call-tridash-meta-node
+             ,apply
+
+             (list
+              (lambda (&rest $args)
+                (every #'bool-value $args))
+
+              $x $y))))))
+
+    (subtest "Or Meta-Node"
+      (with-external-meta-nodes ("or")
+        (let ((apply (make-instance 'meta-node :name 'apply)))
+          (test-compile-meta-node
+
+           (x y)
+           (functor apply (meta-node-ref or) x y)
+
+           ($x $y)
+           `(call-tridash-meta-node
+             ,apply
+
+             (list
+              (lambda (&rest $args)
+                (some #'bool-value $args))
+
+              $x $y))))))
+
+    (subtest "Tridash Meta-Node"
+      (let ((apply (make-instance 'meta-node :name 'apply))
+            (f (make-instance 'meta-node :name 'f)))
+
+        (test-compile-meta-node
+
+         (x)
+         (functor apply (meta-node-ref f) x)
+
+         ($x)
+         `(call-tridash-meta-node
+           ,apply
+           (list
+            (lambda (&rest $args)
+              (call-tridash-meta-node ,f $args))
+            $x)))))
+
+    (subtest "Invoking Nodes"
+      (test-compile-meta-node
+
+       (f x)
+       (functor f x)
+
+       ($f $x)
+       `(funcall $f $x))))
+
   (subtest "Literals"
     (with-external-meta-nodes ("and")
       (test-compile-meta-node
@@ -569,7 +661,38 @@
       (with-nodes ((f "f")) modules
         (is (call-tridash-meta-node f '(1 5)) 0)
         (is (call-tridash-meta-node f '(10 4)) 45)
-        (is (call-tridash-meta-node f '(4 10)) 33)))))
+        (is (call-tridash-meta-node f '(4 10)) 33))))
+
+  (subtest "Higher Order Meta-Nodes"
+    (with-module-table modules
+      (build-source-file #p"./modules/core.trd" modules)
+      (build ":import(core)"
+             "apply(f, x) : f(x)"
+             "1+(n) : n + 1"
+
+             "f(a) : apply(..(not), a)"
+             "g(a) : apply(..(1+), a)")
+
+      (with-nodes ((f "f") (g "g")) modules
+        (is (call-tridash-meta-node f '(0)) 1)
+        (is (call-tridash-meta-node f '(1)) 0)
+
+        (is (call-tridash-meta-node g '(1)) 2)
+        (is (call-tridash-meta-node g '(3)) 4)))
+
+    (subtest "Errors"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)"
+               "apply(f, x) : f(x)"
+
+               "x+(n) : n + ..(x)"
+               "x"
+
+               "f(a) : apply(..(x+), a)")
+
+        (with-nodes ((f "f")) modules
+          (is-error (call-tridash-meta-node f '(1)) 'error))))))
 
 (subtest "Actual Macros"
   (subtest "Compile-Time Computations"

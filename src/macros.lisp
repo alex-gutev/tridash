@@ -170,18 +170,21 @@
   (with-struct-slots functor-expression- (meta-node arguments)
       functor
 
-    (ematch meta-node
+    (match meta-node
       ((external-meta-node name)
        (aif (get name +tridash-cl-functions+)
             (call-external-meta-node it arguments :tail-position-p tail-position-p)
-            (error "External meta-node ~a not supported." meta-node)))
+            (error "External meta-node ~a not supported." name)))
 
       ((guard (and (type meta-node) (eq *current-meta-node*))
               tail-position-p)
        (make-tail-call arguments))
 
       ((type meta-node)
-       `(call-tridash-meta-node ,meta-node (list ,@(map #'tridash->cl arguments)))))))
+       `(call-tridash-meta-node ,meta-node (list ,@(map #'tridash->cl arguments))))
+
+      (_
+       `(funcall ,(tridash->cl meta-node) ,@(map #'tridash->cl arguments))))))
 
 (defun call-external-meta-node (name arguments &key tail-position-p)
   "Generates a CL function expression with operator NAME and ARGUMENTS
@@ -259,6 +262,41 @@
 (defmethod tridash->cl ((group expression-group) &key tail-position-p)
   (tridash->cl (expression-group-expression group) :tail-position-p tail-position-p))
 
+
+(defmethod tridash->cl ((ref meta-node-ref) &key)
+  (with-struct-slots meta-node-ref- (node outer-nodes)
+      ref
+
+    (when outer-nodes
+      (error "Cannot reference outer-nodes in CL backend."))
+
+    (match node
+      ((external-meta-node name)
+       (aif (get name +tridash-cl-functions+)
+            (make-external-meta-node-ref it)
+            (error "External meta-node ~a not supported." name)))
+
+      ((type meta-node)
+       (with-gensyms (args)
+         `(lambda (&rest ,args)
+            (call-tridash-meta-node ,node ,args)))))))
+
+(defun make-external-meta-node-ref (name)
+  (case name
+    (if
+     (with-gensyms (cond then else)
+       `(lambda (,cond ,then &optional ,else)
+          (if ,cond ,then ,else))))
+
+    ((tridash-and tridash-or)
+     (with-gensyms (args)
+       `(lambda (&rest ,args)
+          (,(if (= name 'tridash-and) 'every 'some) #'bool-value ,args))))
+
+    (otherwise
+     `#',name)))
+
+
 (defmethod tridash->cl (literal &key)
   (match literal
     ((or (type number) (type string))
@@ -288,4 +326,4 @@
   `(or ,@(map #`(bool-value ,a1) args)))
 
 (defun tridash-not (x)
-  (unless (bool-value x) 1))
+  (if (bool-value x) 0 1))
