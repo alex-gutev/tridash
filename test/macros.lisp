@@ -647,8 +647,7 @@
       (with-nodes ((fact "fact")) modules
         (is (call-tridash-meta-node fact '(3)) 6)
         (is (call-tridash-meta-node fact '(5)) 120)
-        (is (call-tridash-meta-node fact '(0)) 1)))
-    ())
+        (is (call-tridash-meta-node fact '(0)) 1))))
 
   (subtest "Calling Other Meta-Nodes"
     (with-module-table modules

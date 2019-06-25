@@ -170,17 +170,6 @@
          (values it table)
          (lookup-node name next-table))))
 
-(defun lookup-meta-node (operator table)
-  "Looks up the operator node OPERATOR in table TABLE. Signals an
-   error if OPERATOR is not a node."
-
-  (let ((*create-nodes* nil)
-        (*return-meta-node* t))
-    (at-source
-      (aprog1 (process-declaration operator table)
-        (unless (node? it)
-          (error 'non-node-operator-error :operator it))))))
-
 (defun node-type (node)
   "Returns a symbol identifying the type of NODE. META-NODE is
    returned if NODE is a meta-node. NODE is returned if NODE is an

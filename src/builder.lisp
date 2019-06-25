@@ -212,7 +212,7 @@
    to a `FLAT-NODE-TABLE'."
 
   (with-slots (name definition) meta-node
-    (awhen definition
+    (when (typep definition 'node-table)
       (setf definition (flatten-meta-node definition))
 
       (nadjoin meta-node (nodes definition))
@@ -233,7 +233,8 @@
 
   (with-slots (name definition) meta-node
     (unless (or (external-meta-node? meta-node)
-                (typep definition 'node-table))
+                (typep definition 'node-table)
+                (typep definition 'flat-node-table))
       (let* ((table (make-inner-node-table outer-table))
              (value-node (make-self-node meta-node table))
              (*meta-node* meta-node)
@@ -724,6 +725,18 @@
 
   (-> (lookup-meta-node operator table)
       (process-meta-node-decl operator operands table)))
+
+(defun lookup-meta-node (operator table)
+  "Looks up the operator node OPERATOR in table TABLE. Signals an
+   error if OPERATOR is not a node."
+
+  (let ((*create-nodes* nil)
+        (*return-meta-node* t))
+    (at-source
+      (aprog1 (process-declaration operator table)
+        (unless (node? it)
+          (error 'non-node-operator-error :operator it))))))
+
 
 (defun process-meta-node-decl (meta-node operator operands table)
   "Processes a functor node declaration where the operator is the
