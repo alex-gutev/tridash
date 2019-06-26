@@ -298,7 +298,6 @@
    does not already contain a node with that identifier. Returns the
    newly created, or existing, node."
 
-  ;;TODO: Signal error if meta-node and in target position
   (ensure-node name table))
 
 (defmethod process-declaration :around (decl table &key top-level (add-outer t) ((:level *level*) (if top-level 0 (1+ *level*))))
