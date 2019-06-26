@@ -34,12 +34,12 @@
     (flet ((add-outer-nodes (refs)
              "Adds the outer-node references REFS to the outer-nodes
               set of META-NODE. Excludes outer-nodes which are defined
-              within a sub-table of the definition of META-NODE."
+              within a sub-module of the definition of META-NODE."
 
              (doseq ((node . ref) refs)
-               (let ((table (car ref)))
-                 (unless (>= (depth table) (depth definition))
-                   (ensure-get node outer-nodes (cons table (outer-node-name meta-node)))))))
+               (let ((module (car ref)))
+                 (unless (>= (depth module) (depth definition))
+                   (ensure-get node outer-nodes (cons module (outer-node-name meta-node)))))))
 
            (visited? (meta-node)
              (memberp meta-node visited)))
@@ -54,7 +54,7 @@
               (erase meta-node-references meta-node-ref)))))
 
       (when definition
-        (foreach #'outer-node-references (map-values (meta-nodes definition))))
+        (foreach #'outer-node-references (meta-nodes definition)))
 
       (values outer-nodes (emptyp meta-node-references)))))
 
@@ -126,4 +126,4 @@
       (update-instances (map-keys outer-nodes))
 
       (when definition
-        (foreach #'add-outer-node-operands (map-values (meta-nodes definition)))))))
+        (foreach #'add-outer-node-operands (meta-nodes definition))))))

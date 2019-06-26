@@ -175,7 +175,7 @@
    previously been established."
 
   (let ((source (reference-operand source target context)))
-    (when (typep target 'node-table)
+    (when (typep target 'module)
       (error 'module-node-target-error :node target))
 
     (typecase source

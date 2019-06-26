@@ -85,7 +85,7 @@
                (setf (element-node comp-node)
                      (build-html-file file modules))
 
-               (foreach #'build-meta-node-graphs (map-values (modules modules))))
+               (foreach (compose #'build-meta-nodes #'meta-nodes) (map-values (modules modules))))
 
           (remove-node +self-node+ module))))))
 
@@ -115,15 +115,6 @@
 
 
 ;;;; Process HTML Nodes
-
-(defvar *parent-html-node* nil
-  "The parent node of the HTML node being traversed.")
-
-(defvar *siblings-p* nil
-  "Flag: True if the node currently being walked has sibling nodes.")
-
-
-;;; Process HTML elements
 
 (defgeneric walk-html-node (element)
   (:documentation
@@ -305,7 +296,7 @@
 
       strings)))
 
-(defun parse-build-nodes (parser &optional (table *global-module-table*))
+(defun parse-build-nodes (parser &optional (modules *global-module-table*))
   "Builds the node declarations parsed using PARSER, and adds them to
    TABLE. Returns the last node declaration parsed."
 
@@ -314,5 +305,5 @@
      (lambda (operators)
        (aand (funcall parser operators)
              (setf last it)))
-     table)
+     modules)
     last))

@@ -203,16 +203,14 @@
    ;; Operators
    :+bind-operator+
 
-   ;; Node-table
-   :node-table
+   ;; module
+   :module
    :flat-node-table
 
-   :outer-table
+   :outer-module
    :depth
    :nodes
    :meta-nodes
-   :module-aliases
-   :all-nodes
    :public-nodes
    :operator-nodes
    :input-nodes
@@ -223,6 +221,7 @@
    ;; Module Table
    :module-table
    :modules
+   :current-module
    :get-module
    :ensure-module
    :home-module

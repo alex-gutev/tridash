@@ -54,7 +54,7 @@
                 :remove-node
                 :process-subnode
 
-                :build-meta-node-graphs)
+                :build-meta-nodes)
 
   (:export
    ;; HTML-NODE

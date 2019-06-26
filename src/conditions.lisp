@@ -120,17 +120,17 @@
          :documentation
          "Name of the node being added.")
 
-   (node-table :initarg :node-table
-               :reader node-table
+   (module :initarg :module
+               :reader module
                :documentation
-               "Node-table in which the node was being added."))
+               "module in which the node was being added."))
   (:documentation
    "Error condition: Adding a node to a table which already contains a
     node with that name."))
 
 (defmethod print-object ((err node-exists-error) stream)
   (format stream "Module ~a already contains a node ~a."
-          (name (node-table err)) (node err)))
+          (name (module err)) (node err)))
 
 
 (define-condition meta-node-name-collision (node-exists-error) ()
@@ -139,9 +139,9 @@
     a meta-node."))
 
 (defmethod print-object ((err meta-node-name-collision) stream)
-  (with-accessors ((node node) (node-table node-table)) err
+  (with-accessors ((node node) (module module)) err
     (format stream "Cannot create meta-node ~a in module ~a, as ~0@* ~a already names a node which is not a meta-node."
-            node (name node-table))))
+            node (name module))))
 
 
 (define-condition special-operator-name-error (meta-node-name-collision) ()
@@ -174,11 +174,11 @@
                  added."))
 
   (:documentation
-   "Error condition: module alias already names a node in the node-table."))
+   "Error condition: module alias already names a node in the module."))
 
 (defmethod print-object ((err alias-clash-error) stream)
   (format stream "Cannot add alias ~a for module ~a as it already names a node in module ~a."
-          (node err) (module-name err) (name (node-table err))))
+          (node err) (module-name err) (name (module err))))
 
 
 (define-condition alias-taken-error (alias-clash-error) ()
@@ -187,14 +187,14 @@
 
 (defmethod print-object ((err alias-taken-error) stream)
   (format stream "Cannot add alias ~a for module ~a as it is already an alias for another module, in module ~a."
-          (node err) (module-name err) (name (node-table err))))
+          (node err) (module-name err) (name (module err))))
 
 
 (define-condition import-node-error (node-exists-error)
-  ((module-name :initarg :module
-                :reader module-name
-                :documentation
-                "Name of the module from which the node is being imported."))
+  ((source :initarg :module
+           :reader source
+           :documentation
+           "Name of the module from which the node is being imported."))
 
   (:documentation
    "Error condition: A node is being imported in a module, which
@@ -202,7 +202,7 @@
 
 (defmethod print-object ((e import-node-error) stream)
   (format stream "Importing node ~a from module ~a into module ~a. There is already a node with the same name."
-          (name e) (module-name e) (name (node-table e))))
+          (name e) (source e) (name (module e))))
 
 
 ;;;; Special Node/Operator Errors

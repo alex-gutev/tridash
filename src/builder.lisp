@@ -21,6 +21,8 @@
 
 (in-package :tridash.frontend)
 
+(in-readtable cut-syntax)
+
 
 ;;;; Builder State
 
@@ -28,16 +30,16 @@
   "The nesting level of the declaration currently being processed. 0
    indicates the top-level.")
 
-(defparameter *meta-node* nil
-  "The meta-node whose subgraph is currently being built. NIL when the
-   global graph is being built.")
+(defvar *meta-node* nil
+  "The meta-node which is currently being built. NIL when the global
+   module is being built.")
 
-(defparameter *source-node* nil
+(defvar *source-node* nil
   "If the node currently being processed appears as the target of a
    binding, this variable is bound to the source node of the binding,
-   otherwise is NIL.")
+   otherwise it is NIL.")
 
-(defparameter *functor-module* nil
+(defvar *functor-module* nil
   "The module in which functor nodes are created.")
 
 
@@ -46,23 +48,23 @@
     :accessor nodes
     :initarg :nodes
     :documentation
-    "Set of nodes. Does not include meta-nodes.")
+    "Set of all `NODE's, excluding `META-NODE's.")
 
    (meta-nodes
     :accessor meta-nodes
     :initarg :meta-nodes
     :documentation
-    "Set of meta-nodes.")
+    "Set of all `META-NODE's.")
 
    (input-nodes
     :accessor input-nodes
     :initarg :input-nodes
     :documentation
-    "Set of input nodes."))
+    "Set of all input nodes."))
 
   (:documentation
-   "Contains all nodes in all modules, without separation between
-    modules."))
+   "Set of all nodes in all modules, with `NODE's and `META-NODE's in
+    separate sets. Does not contain pseudo-nodes."))
 
 
 ;;;; Utility Functions and Macros
@@ -91,10 +93,10 @@
 
 ;;;; Declaration Processing Interface
 
-(defgeneric process-declaration (decl table &key &allow-other-keys)
+(defgeneric process-declaration (decl module &key &allow-other-keys)
   (:documentation
    "Processes the declaration, creates the node(s) specified by the
-    declaration and adds them to TABLE. Returns the node created, if
+    declaration and adds them to MODULE. Returns the node created, if
     any.
 
     If the :TOP-LEVEL keyword argument is provided and is T, the
@@ -104,17 +106,17 @@
 
     If :ADD-OUTER is true (the default), *META-NODE* is not NIL and
     the node return by calling the next PROCESS-DECLARATION method is
-    not in the same node table as TABLE, it is added to the outer node
-    references of *META-NODE*."))
+    not in MODULE it is added to the outer node references of
+    *META-NODE*."))
 
-(defgeneric process-functor (operator operands table)
+(defgeneric process-functor (operator operands module)
   (:documentation
-   "Processes the declaration functor, creates the node(s) specified
-    by the declaration and adds them to TABLE. Returns the node
-    created, if any."))
+   "Processes a functor node declaration. Creates the node(s)
+    specified by the declaration and adds them to MODULE. Returns the
+    node created, if any."))
 
 
-;;;; Build Graph
+;;;; Build Entire Graph
 
 (define-file-builder trd (path module-table)
   (with-open-file (in path)
@@ -122,26 +124,26 @@
 
 (defun build-parsed-nodes (parser &optional (*global-module-table* *global-module-table*))
   "Builds the `NODE' objects from the node declarations returned by
-   successively calling PARSER and adds them to the `NODE-TABLE' of
-   the current module in the `MODULE-TABLE' given in the second
-   argument. This function does not build meta-node definitions."
+   successively calling PARSER and adds them to the CURRENT-MODULE of
+   the `MODULE-TABLE' given in the second argument. This function does
+   not build meta-node definitions."
 
-  (with-slots (node-table) *global-module-table*
+  (with-slots (current-module) *global-module-table*
     (loop
-       for decl = (funcall parser (operator-nodes node-table))
+       for decl = (funcall parser (operator-nodes current-module))
        while decl
        do
          (build-node decl))))
 
 (defun build-node (node &optional (*global-module-table* *global-module-table*))
-  "Builds the `NODE' object from the node declarations NODE and adds
-   it to the `NODE-TABLE' of the current module in the `MODULE-TABLE'
-   given in the second argument."
+  "Builds the `NODE' object from the node declaration NODE and adds it
+   to the CURRENT-MODULE of the `MODULE-TABLE' given in the second
+   argument."
 
   (let ((*functor-module* (ensure-module :init *global-module-table*))
         (*declaration-stack* nil)
         (*source-node* nil))
-    (process-declaration node (node-table *global-module-table*) :top-level t)))
+    (process-declaration node (current-module *global-module-table*) :top-level t)))
 
 (defun finish-build-graph (&optional (*global-module-table* *global-module-table*))
   "Performs the final build steps which include building the
@@ -153,10 +155,10 @@
    Returns a `FLAT-NODE-TABLE' containing all nodes and meta-nodes."
 
   (with-slots (modules) *global-module-table*
-    (let ((node-table (flatten-modules modules)))
-      ;; Build meta-node definitions
-      (foreach #'build-meta-node-graphs (map-values modules))
+    ;; Build meta-node definitions
+    (foreach (compose #'build-meta-nodes #'meta-nodes) (map-values modules))
 
+    (let ((node-table (flatten-modules (map-values modules))))
       ;; Determine outer node references
       (foreach #'outer-node-references (meta-nodes node-table))
       (foreach #'add-outer-node-operands (meta-nodes node-table))
@@ -165,36 +167,58 @@
 
       node-table)))
 
-(defun flatten-modules (module-table)
-  "Returns a `FLAT-NODE-TABLE' containing all nodes and meta-nodes in
-   each module in MODULE-TABLE."
+(defun flatten-modules (modules)
+  "Returns a `FLAT-NODE-TABLE' containing all nodes in all modules in
+   MODULES."
 
-  (let ((modules (map-values module-table)))
-    (flet ((merge-nodes (node-set nodes)
-             (nunion node-set (coerce (map-values nodes) 'hash-set)))
+  (let ((nodes (make-hash-set))
+        (meta-nodes (make-hash-set))
+        (input-nodes (make-hash-set)))
 
-           (merge-tables (fn key)
-             (reduce fn modules :key key :initial-value (hash-set))))
+    (labels ((merge-module (module)
+               (partition-nodes (map-values (nodes module)) nodes meta-nodes)
+               (nunion input-nodes (input-nodes module))))
+
+      (foreach #'merge-module modules)
 
       (make-instance 'flat-node-table
-                     :nodes (merge-tables #'merge-nodes #'nodes)
-                     :meta-nodes (merge-tables #'merge-nodes #'meta-nodes)
-                     :input-nodes (merge-tables #'union #'input-nodes)))))
+                     :nodes nodes
+                     :meta-nodes meta-nodes
+                     :input-nodes input-nodes))))
 
 (defun flatten-meta-node (definition)
-  "Converts the `NODE-TABLE' DEFINITION, containing the body of the
-   meta-node's definition, into a single `FLAT-NODE-TABLE'."
+  "Returns a `FLAT-NODE-TABLE' containing all and only the nodes which
+   were initially declared in the module DEFINITION."
 
-  (with-slots (nodes meta-nodes input-nodes) definition
+  (let ((nodes (make-hash-set))
+        (meta-nodes (make-hash-set)))
+
+    (-> (remove-if-not (rcurry #'in-home-module? definition) (map-values (nodes definition)))
+        (partition-nodes nodes meta-nodes))
+
     (make-instance 'flat-node-table
-                   :nodes (coerce (remove-if-not (rcurry #'in-home-module? definition) (map-values nodes)) 'hash-set)
-                   :meta-nodes (coerce (map-values meta-nodes) 'hash-set)
-                   :input-nodes input-nodes)))
+                   :nodes nodes
+                   :meta-nodes meta-nodes
+                   :input-nodes (input-nodes definition))))
+
+(defun partition-nodes (nodes node-set meta-node-set)
+  "Partitions NODES into `NODE's and `META-NODE's. `NODE's are added
+   to NODE-SET and `META-NODE's are added to META-NODE-SET."
+
+  (flet ((merge-node (node)
+           (typecase node
+             (meta-node
+              (nadjoin node meta-node-set))
+
+             (node
+              (nadjoin node node-set)))))
+
+    (foreach #'merge-node nodes)))
 
 (defun finish-build (node-table)
   "Performs node coalescing, removal of unreachable nodes, constant
    folding and structure checking. NODE-TABLE is the `FLAT-NODE-TABLE'
-   containing all nodes and meta-nodes."
+   containing all nodes in all modules."
 
   (with-slots (nodes input-nodes) node-table
     ;; Fold constant nodes
@@ -212,7 +236,7 @@
    to a `FLAT-NODE-TABLE'."
 
   (with-slots (name definition) meta-node
-    (when (typep definition 'node-table)
+    (when (typep definition 'module)
       (setf definition (flatten-meta-node definition))
 
       (nadjoin meta-node (nodes definition))
@@ -221,52 +245,50 @@
 
 ;;;; Build Meta-Nodes
 
-(defun build-meta-node-graphs (table)
-  "Builds the body of each meta-node, in the node table TABLE."
+(defun build-meta-nodes (meta-nodes)
+  "Builds the definitions of the meta-nodes in META-NODES."
 
-  (foreach (rcurry #'build-meta-node-graph table) (map-values (meta-nodes table))))
+  (foreach #'build-meta-node meta-nodes))
 
-(defun build-meta-node-graph (meta-node outer-table)
-  "Builds the graph corresponding to the body of the node
-   meta-node. OUTER-TABLE is the node table in which the meta-node
-   definition is located."
+(defun build-meta-node (meta-node)
+  "Builds the definition of META-NODE, from the declarations contained
+   in its DEFINITION slot. The value of DEFINITION is replaced with
+   the `MODULE' object containing the nodes in the definition."
 
   (with-slots (name definition) meta-node
+    ;; Check that META-NODE is not an `EXTERNAL-META-NODE' and that it
+    ;; has not been built already
     (unless (or (external-meta-node? meta-node)
-                (typep definition 'node-table)
+                (typep definition 'module)
                 (typep definition 'flat-node-table))
-      (let* ((table (make-inner-node-table outer-table))
-             (value-node (make-self-node meta-node table))
+
+      (let* ((module (make-inner-module (home-module meta-node)))
+             (value-node (make-self-node meta-node module))
              (*meta-node* meta-node)
-             (*functor-module* table))
+             (*functor-module* module))
 
-        (add-node name meta-node table)
-        (add-operand-nodes (operands meta-node) table)
+        (add-operand-nodes (operands meta-node) module)
 
-        (let* ((last-node (at-source (process-node-list definition table :top-level t))))
+        (let* ((*create-nodes* nil)
+               (last-node (at-source (process-node-list definition module :top-level t))))
           (make-meta-node-function meta-node value-node last-node)
-          (setf definition table)
+          (setf definition module)
 
-          (build-meta-node-graphs table))))))
+          (build-meta-nodes (meta-nodes definition)))))))
 
-(defun add-operand-nodes (names table)
+(defun add-operand-nodes (names module)
   "Creates a node for each element in NAMES, the element being the
-   node name, and adds the nodes to TABLE. The nodes are marked as
-   input nodes of TABLE"
+   node name, and adds the nodes to MODULE The nodes are added to the
+   input nodes of MODULE."
 
-  (with-slots (all-nodes) table
-    (dolist (name names)
-      (case (node-type (get name all-nodes))
-        ((meta-node module)
-         (erase all-nodes name)))
+  (dolist (name names)
+    (add-input (ensure-node name module t) module)))
 
-      (add-input (ensure-node name table) table))))
+(defun make-self-node (meta-node module)
+  "Create the self which represents the value of META-NODE. MODULE is
+   the `MODULE' containing the meta-node's definition."
 
-(defun make-self-node (meta-node table)
-  "Create the self which represents the value of META-NODE. TABLE is
-   the `NODE-TABLE' into which the meta-node's definition is built.."
-
-  (aprog1 (ensure-node +self-node+ table t)
+  (aprog1 (ensure-node +self-node+ module t)
     (add-binding it meta-node :add-function t)))
 
 (defun make-meta-node-function (meta-node value-node last-node)
@@ -285,60 +307,59 @@
 
 ;;;; Methods: Processing Declarations
 
-(defmethod process-declaration ((functor list) table &key)
+(defmethod process-declaration ((functor list) module &key)
   "Processes the functor declaration by calling PROCESS-FUNCTOR with
    the OPERATOR argument being the CAR of FUNCTOR and OPERANDS being
    the CDR of FUNCTOR."
 
   (destructuring-bind (operator . operands) functor
-    (process-functor operator operands table)))
+    (process-functor operator operands module)))
 
-(defmethod process-declaration ((name symbol) table &key)
-  "Creates a node with identifier NAME and adds it to table, if table
-   does not already contain a node with that identifier. Returns the
-   newly created, or existing, node."
+(defmethod process-declaration ((name symbol) module &key)
+  "Creates a node with identifier NAME and adds it to MODULE, if
+   MODULE does not already contain a node with that
+   identifier. Returns the newly created, or existing, node."
 
-  (ensure-node name table))
+  (ensure-node name module))
 
-(defmethod process-declaration :around (decl table &key top-level (add-outer t) ((:level *level*) (if top-level 0 (1+ *level*))))
+(defmethod process-declaration :around (decl module &key top-level (add-outer t) ((:level *level*) (if top-level 0 (1+ *level*))))
   "Processes the declaration with DECL added to the front of
    *DECLARATION-STACK*, and *LEVEL* incremented by one."
 
   (let ((*declaration-stack* (cons decl *declaration-stack*))
         (node (call-next-method)))
 
-    (when (and *source-node* (meta-node? node))
-      (error 'meta-node-target-error :meta-node node))
+    (when (meta-node? node)
+      ;; Signal error if meta-node appears in source position.
+      (when *source-node*
+        (error 'meta-node-target-error :meta-node node))
 
-    ;; Add META-NODE to the meta node references of *META-NODE*
-    (when (and
-           (meta-node? node)
-           *meta-node*
-           (/= node *meta-node*))
-      (nadjoin node (meta-node-references *meta-node*)))
+      ;; Add NODE to the meta-node references of *META-NODE*
+      (when (and *meta-node* (/= node *meta-node*))
+        (nadjoin node (meta-node-references *meta-node*))))
 
     ;; If inside a meta-node and node referenced is from an outer
-    ;; node-table, add it to the outer-nodes set of the meta-node.
+    ;; module, add it to the outer-nodes set of the meta-node.
     (if (and add-outer
              *meta-node*
              (node? node)
              (not (meta-node? node))
-             (not (in-home-module? node table)))
-        (add-outer-node node (home-module node) table)
+             (not (in-home-module? node module)))
+        (add-outer-node node (home-module node) module)
         node)))
 
-(defmethod process-declaration ((n null) (table t) &key)
-  "Processes the NIL declaration. NIL declaration only originate from
+(defmethod process-declaration ((n null) (module t) &key)
+  "Processes the NIL declaration. NIL declarations only originate from
    processing done internally by the frontend and not from
    user-written code."
 
   nil)
 
-(defmethod process-declaration (literal table &key)
+(defmethod process-declaration (literal module &key)
   "Method for literal values (everything which is not a symbol or list
    is considered a literal). The literal value is simply returned."
 
-  (declare (ignore table))
+  (declare (ignore module))
   literal)
 
 
@@ -368,9 +389,9 @@
 
 ;;; Operator Declarations
 
-(defmethod process-functor ((operator (eql +op-operator+)) args table)
+(defmethod process-functor ((operator (eql +op-operator+)) args module)
   "Registers a node as an infix operator with a specific precedence
-   and associativity."
+   and associativity, in MODULE."
 
   (ensure-top-level operator
     (match-syntax (+op-operator+ identifier number (or "left" "right"))
@@ -380,7 +401,7 @@
               (guard precedence (integerp precedence))
               (optional (list (guard associativity (symbolp associativity)))))
 
-       (add-operator op precedence (operator-associativity associativity) (operator-nodes table))))))
+       (add-operator op precedence (operator-associativity associativity) (operator-nodes module))))))
 
 (defun operator-associativity (assoc)
   "Returns the operator precedence (LEFT or RIGHT) for the precedence
@@ -401,10 +422,10 @@
 
 ;;; Module Declarations
 
-(defmethod process-functor ((operator (eql +module-operator+)) args table)
+(defmethod process-functor ((operator (eql +module-operator+)) args module)
   "Changes the current module to the MODULE specified in ARGS."
 
-  (declare (ignore table))
+  (declare (ignore module))
 
   (ensure-top-level operator
     (match-syntax (+module-operator+ identifier)
@@ -412,71 +433,69 @@
       ((list (guard module (symbolp module)))
        (change-module module)))))
 
-(defmethod process-functor ((operator (eql +use-operator+)) args table)
-  "Adds a module as a node to the TABLE."
+(defmethod process-functor ((operator (eql +use-operator+)) args module)
+  "Adds a module as a node to MODULE."
 
   (ensure-top-level operator
     (match-syntax (+use-operator+ (list identifier))
         args
 
       ((list* args)
-       (iter (for module in args)
-             (process-declaration (list +alias-operator+ module module) table :top-level t))))))
+       (foreach #L(process-declaration (list +alias-operator+ %1 %1) module :top-level t) args)))))
 
-(defmethod process-functor ((operator (eql +alias-operator+)) args table)
-  "Adds an alias for a module to TABLE."
+(defmethod process-functor ((operator (eql +alias-operator+)) args module)
+  "Adds an alias for a module to MODULE."
 
   (ensure-top-level operator
     (match-syntax (+alias-operator+ identifier identifier)
         args
-      ((list (guard module (symbolp module))
+      ((list (guard module-id (symbolp module-id))
              (guard alias (symbolp alias)))
 
-       (match (get alias (all-nodes table))
+       (match (get alias (nodes module))
          ((type node)
           (error 'alias-clash-error
                  :node alias
-                 :module module
-                 :node-table table))
+                 :module module-id
+                 :node-table module))
 
-         ((and (type node-table) (not (eq table)))
+         ((and (type module) (not (eq module)))
           (error 'alias-taken-error
                  :node alias
-                 :module module
-                 :node-table table))
+                 :module module-id
+                 :node-table module))
 
          (nil
-          (setf (module-alias alias table) (get-module module))))))))
+          (setf (get alias (nodes module)) (get-module module-id))))))))
 
-(defmethod process-functor ((operator (eql +import-operator+)) args table)
-  "Imports nodes directly into TABLE, from another module."
+(defmethod process-functor ((operator (eql +import-operator+)) args module)
+  "Imports nodes directly into MODULE, from another module."
 
   (ensure-top-level operator
-    (with-slots (all-nodes) table
+    (with-slots (all-nodes) module
       (match-syntax (+import-operator+ identifier (list identifier))
           args
 
-        ((list* (guard module (symbolp module)) nodes)
-         (let ((module (get-module module)))
+        ((list* (guard from-module (symbolp from-module)) nodes)
+         (let ((from-module (get-module from-module)))
            (if nodes
-               (foreach (rcurry #'import-node module table) nodes)
-               (foreach (rcurry #'import-node module table) (map-keys (public-nodes module))))))))))
+               (foreach (rcurry #'import-node from-module module) nodes)
+               (foreach (rcurry #'import-node from-module module) (map-keys (public-nodes from-module))))))))))
 
-(defmethod process-functor ((operator (eql +export-operator+)) args table)
-  "Adds nodes to the public-nodes list of TABLE."
+(defmethod process-functor ((operator (eql +export-operator+)) args module)
+  "Adds nodes to the PUBLIC-NODES list of MODULE."
 
   (ensure-top-level operator
     (match-syntax (+export-operator+ (list identifier))
         args
 
       ((list* nodes)
-       (foreach (rcurry #'export-node table) nodes)))))
+       (foreach (rcurry #'export-node module) nodes)))))
 
-(defmethod process-functor ((operator (eql +in-module-operator+)) args table)
-  "Looks up a node in another module, which does not have an alias in
-   the current module."
+(defmethod process-functor ((operator (eql +in-module-operator+)) args module)
+  "Looks up a node in another module, by identifier.."
 
-  (declare (ignore table))
+  (declare (ignore module))
 
   (match-syntax (+in-module-operator+ identifier node)
       args
@@ -487,11 +506,9 @@
 
 ;;; Definitions
 
-(defmethod process-functor ((operator (eql +def-operator+)) operands table)
+(defmethod process-functor ((operator (eql +def-operator+)) operands module)
   "Processes a meta-node definition. Creates a new meta-node and adds
-   it to TABLE. If TABLE already contains a node with the same
-   identifier but it is not a meta-node an error condition is
-   signaled."
+   it to MODULE."
 
   (ensure-top-level operator
     (match-syntax (+def-operator+ ((identifier . identifier) . nodes))
@@ -501,22 +518,22 @@
        (add-meta-node
         name
         (make-instance 'meta-node :name name :operands args :definition body)
-        table)))))
+        module)))))
 
-(defmethod process-functor ((operator (eql +extern-operator+)) args table)
-  "Adds a stub for an externally defined meta-node to TABLE."
+(defmethod process-functor ((operator (eql +extern-operator+)) args module)
+  "Adds a stub for an externally defined meta-node to MODULE."
 
   (ensure-top-level operator
     (match-syntax (+extern-operator+ (list identifier))
         args
 
       ((list* nodes)
-       (foreach (rcurry #'add-external-meta-node table) nodes)))))
+       (foreach (rcurry #'add-external-meta-node module) nodes)))))
 
 
 ;;; Attributes
 
-(defmethod process-functor ((operator (eql +attribute-operator+)) args table)
+(defmethod process-functor ((operator (eql +attribute-operator+)) args module)
   "Sets an attribute of a node to a particular value."
 
   (ensure-top-level operator
@@ -526,80 +543,84 @@
              (guard attribute (or (symbolp attribute) (stringp attribute)))
              value)
 
-       (let* ((*return-meta-node* t)
-              (*create-nodes* t)
+       (let* ((*create-nodes* t)
               (attribute (string attribute)))
 
-         (let ((node (process-declaration node table)))
+         (let ((node (process-declaration node module)))
 
            (unless (node? node)
              (error 'not-node-error :node (first args)))
 
            (setf (attribute attribute node)
-                 (or (process-attribute node (id-symbol (string-upcase attribute)) value table)
-                     value))))))))
+                 (or
+                  (-<> attribute
+                       string-upcase
+                       id-symbol
+                       (process-attribute node <> value module))
+                  value))))))))
 
-(defgeneric process-attribute (node attribute value table)
+(defgeneric process-attribute (node attribute value module)
   (:documentation
    "Applies special processing on setting the attribute ATTRIBUTE, of
-    NODE, to VALUE. If the return value is non-NIL the attribute is
-    set to that value")
+    NODE, to VALUE. The attribute is set to the value returned by the
+    method.")
 
-  (:method ((node t) (attribute t) (value t) (table t))
-    "Pass-through method, does nothing."
-    nil))
+  (:method ((node t) (attribute t) (value t) (module t))
+    "Pass-through method. Returns the attribute."
+    value))
 
-(defmethod process-attribute (node (attribute (eql (id-symbol "INPUT"))) value (table t))
+(defmethod process-attribute (node (attribute (eql (id-symbol "INPUT"))) value (module t))
   "Adds NODE to the input-nodes list of its home module."
 
   (when (bool-value value)
     (add-input node (home-module node)))
-  nil)
+  value)
 
 
 ;;; Node lists
 
-(defmethod process-functor ((operator (eql +list-operator+)) nodes table)
+(defmethod process-functor ((operator (eql +list-operator+)) nodes module)
   "Processes a list of nodes, returns the last node in the list."
 
-  (process-node-list nodes table))
+  (process-node-list nodes module))
 
-(defun process-node-list (nodes table &key (top-level (top-level?)))
+(defun process-node-list (nodes module &key (top-level (top-level?)))
   "Process a list of nodes, returns the last node in the list."
 
   (loop
      for (decl . rest) on nodes
      ;; At top-level if not last node or list node is at top-level
-     for node = (process-declaration decl table :top-level (or rest top-level))
+     for node =
+       (let ((*create-nodes* (if rest *create-nodes* (null *meta-node*))))
+         (process-declaration decl module :top-level (or rest top-level)))
      finally
        (return node)))
 
 
 ;;; Outer nodes
 
-(defmethod process-functor ((operator (eql +outer-operator+)) args table)
-  (with-slots (outer-table) table
-    (unless outer-table
+(defmethod process-functor ((operator (eql +outer-operator+)) args module)
+  (with-slots (outer-module) module
+    (unless outer-module
       (error 'global-outer-reference-error))
 
     (match-syntax (+outer-operator+ identifier)
         args
 
       ((list name)
-       (lookup-node name outer-table)))))
+       (lookup-node name outer-module)))))
 
-(defun add-outer-node (outer-node outer-table table)
-  "Adds a reference to NODE, which is located in an outer node-table (OUTER-TABLE),
+(defun add-outer-node (outer-node outer-module module)
+  "Adds a reference to NODE, which is located in an outer module (OUTER-MODULE),
    to the current meta-node being built (the value of *META-NODE*)."
 
-  (-> (outer-node outer-node outer-table *meta-node*)
-      (ensure-node table)
-      (values table)))
+  (-> (outer-node outer-node outer-module *meta-node*)
+      (ensure-node module t)))
 
 
 ;;; Bindings
 
-(defmethod process-functor ((operator (eql +bind-operator+)) operands table)
+(defmethod process-functor ((operator (eql +bind-operator+)) operands module)
   "Establishes a binding from the first node to the second node in
    OPERANDS."
 
@@ -607,13 +628,18 @@
       operands
 
     ((list source target)
-     (with-source-node (at-source (process-declaration source table))
-       (let* ((target (process-declaration target table))
+     (with-source-node
+         (at-source
+           (let ((*create-nodes* (null *meta-node*)))
+             (process-declaration source module)))
+
+       (let* ((*create-nodes* t)
+              (target (process-declaration target module))
               (value-link (add-binding *source-node* target)))
 
          (unless (top-level?)
            (let* ((name (canonicalize-functor operator (list *source-node* target)))
-                  (cond-node (ensure-node name *functor-module*)))
+                  (cond-node (ensure-node name *functor-module* t)))
 
              (ensure-binding (cond-node target :context *source-node* :add-function nil)
                  (cond-link)
@@ -625,7 +651,7 @@
 
              cond-node)))))))
 
-(defmethod process-functor ((operator (eql +context-operator+)) operands table)
+(defmethod process-functor ((operator (eql +context-operator+)) operands module)
   "Creates a `CONTEXT-NODE' proxy for the NODE given in the first
    argument and the context with identifier given in the second
    argument."
@@ -634,16 +660,15 @@
       operands
 
     ((list node context-id)
-     (let ((node (process-declaration node table :level *level*)))
+     (let ((node (process-declaration node module :level *level*)))
        (if *source-node*
-           (-> (make-instance 'context-node :context-id context-id :node node)
-               (values table))
+           (make-instance 'context-node :context-id context-id :node node)
            node)))))
 
 
 ;;; Subnodes
 
-(defmethod process-functor ((operator (eql +subnode-operator+)) operands table)
+(defmethod process-functor ((operator (eql +subnode-operator+)) operands module)
   "Creates a node with a value function that accesses a particular
    field of an object. The binding is created in both directions, from
    the object node (the node containing the object value) to the
@@ -655,7 +680,7 @@
       operands
 
     ((list node key)
-     (let ((object-node (at-source (process-declaration node table :add-outer nil))))
+     (let ((object-node (at-source (process-declaration node module :add-outer nil))))
        (process-subnode object-node key)))))
 
 
@@ -669,35 +694,35 @@
 
   ;; Use the actual name of the object node
   (let* ((object-decl (name object-node))
-         (table (home-module object-node))
+         (module (home-module object-node))
          (name (list +subnode-operator+ object-decl key))
-         (subnode (ensure-node name table)))
-    (make-source-subnode object-decl key subnode table)
+         (subnode (ensure-node name module t)))
+    (make-source-subnode object-decl key subnode module)
 
     (handler-case
-        (make-target-subnode object-decl key subnode table)
+        (make-target-subnode object-decl key subnode module)
       (target-node-error ()))
 
     subnode))
 
 
-(defun make-source-subnode (node key subnode table)
+(defun make-source-subnode (node key subnode module)
   "Makes the value function of the subnode for when it appears as the
    source of a binding. NODE is the object node referenced, KEY is the
    subnode key and SUBNODE is the subnode `NODE' object."
 
-  (let ((node (at-source (process-declaration node table))))
+  (let ((node (at-source (process-declaration node module))))
     (create-context (subnode node)
       (->> (member-expression (bind node) key)
            (setf value-function)))))
 
-(defun make-target-subnode (node key subnode table)
+(defun make-target-subnode (node key subnode module)
   "Binds the subnode to the object node and updates the value function
    of the object node. NODE is the object node declaration, KEY is the
    field and SUBNODE is the subnode `NODE' object."
 
   (with-source-node subnode
-    (let ((object-node (process-declaration node table)))
+    (let ((object-node (process-declaration node module)))
       (create-context (object-node :object)
         (setf value-function (object-expression)))
 
@@ -709,7 +734,7 @@
              object-expression-entries
              (push (list key link)))))))
 
-(defmethod process-subnode ((module node-table) node)
+(defmethod process-subnode ((module module) node)
   "Returns the node with identifier NODE in the module MODULE."
 
   (lookup-node node module))
@@ -717,74 +742,84 @@
 
 ;;; Meta-Node instances
 
-(defmethod process-functor (operator operands table)
+(defmethod process-functor (operator operands module)
   "Creates a node with a VALUE-FUNCTION that invokes the meta-node
    with identifier OPERATOR and with operands OPERANDS. The operand
    nodes are added as dependencies of the node."
 
-  (-> (lookup-meta-node operator table)
-      (process-meta-node-decl operator operands table)))
+  (-> (process-operator-node operator module)
+      (process-meta-node-decl operator operands module)))
 
-(defun lookup-meta-node (operator table)
-  "Looks up the operator node OPERATOR in table TABLE. Signals an
-   error if OPERATOR is not a node."
+(defun process-operator-node (operator module)
+  "Processes the operator node OPERATOR in MODULE. Signals an error if
+   OPERATOR is not a node."
 
-  (let ((*create-nodes* nil)
-        (*return-meta-node* t))
+  (let ((*create-nodes* nil))
     (at-source
-      (aprog1 (process-declaration operator table)
+      (aprog1 (process-declaration operator module)
         (unless (node? it)
           (error 'non-node-operator-error :operator it))))))
 
 
-(defun process-meta-node-decl (meta-node operator operands table)
+(defun process-meta-node-decl (meta-node operator operands module)
   "Processes a functor node declaration where the operator is the
    meta-node META-NODE. If the meta-node has a macro-function it is
    evaluated and the resulting node is returned, otherwise an instance
    of the meta-node is created."
 
   (aif (node-macro-function meta-node)
-       (funcall it operator operands table)
-       (make-meta-node-instance meta-node operator operands table)))
+       (funcall it operator operands module)
+       (make-meta-node-instance meta-node operator operands module)))
 
-(defun make-meta-node-instance (meta-node operator operands table)
+(defun make-meta-node-instance (meta-node operator operands module)
   "Creates a functor node which invokes the meta-node META-NODE with
    operands OPERANDS, and adds it to *FUNCTOR-MODULE*"
 
   (when (and *source-node* (null (target-meta-node meta-node)))
     (error 'target-node-error :node (cons operator operands)))
 
-  (add-meta-node-instance meta-node operands table))
+  (add-meta-node-instance meta-node operands module))
 
 
-(defun add-meta-node-instance (meta-node operands table)
+(defun add-meta-node-instance (meta-node operands module)
   "Creates a node with a VALUE-FUNCTION function that invokes the
    meta-node META-NODE with operands OPERANDS, and adds it to
    *FUNCTOR-MODULE*. If such a node already exists it is returned."
 
   (with-accessors ((target-meta-node target-meta-node)) meta-node
     (multiple-value-bind (instance operand-nodes)
-        (create-instance-node meta-node operands table)
+        (create-instance-node meta-node operands module)
       (add-meta-node-value-function instance meta-node operand-nodes)
 
       (when target-meta-node
-        (handler-case
-            (iter
-              (for operand in (process-operands operands table instance))
-              (add-meta-node-value-function operand target-meta-node (list instance) :context instance))
-          (target-node-error ())))
+        (if *source-node*
+            (make-reverse-bindings target-meta-node instance operands module)
+            (handler-case
+                (make-reverse-bindings target-meta-node instance operands module)
+              (target-node-error ()))))
 
       instance)))
 
-(defun create-instance-node (meta-node operands table)
+(defun make-reverse-bindings (target-meta-node instance operands module)
+  "Establishes the bindings between a meta-node instance and the
+   operand nodes. TARGET-META-NODE is the meta-node which becomes the
+   binding's function. INSTANCE is the meta-node instance `NODE' and
+   OPERANDS is the list of the operand node declarations, which are
+   processed in MODULE."
+
+  (iter
+    (for operand in (process-operands operands module :source instance :create t))
+    (add-meta-node-value-function operand target-meta-node (list instance) :context instance)))
+
+(defun create-instance-node (meta-node operands module)
   "Creates a meta-node instance node and adds it to
-  *FUNCTOR-MODULE*. Additionally processes the operand node
-  declarations in OPERANDS, occurring in module TABLE.  Returns two
-  values: the instance node and the operand nodes.
+   *FUNCTOR-MODULE*. Additionally processes the operand node
+   declarations in OPERANDS, in MODULE.  Returns two values: the
+   instance node and the operand nodes.
 
-  NOTE: Does not create the value function of the instance node."
+   NOTE: Does not create the value function of the instance node."
 
-  (let* ((operands (process-operands operands table))
+  (let* ((operands (process-operands operands module :create (or (null *meta-node*) *source-node*)))
          (name (canonicalize-functor meta-node operands)))
 
     (values (ensure-node name *functor-module* t) operands)))
@@ -814,21 +849,20 @@
              (instances meta-node))))
 
 
-(defmethod process-attribute ((node t) (attribute (eql (id-symbol "TARGET-NODE"))) value table)
-  (lookup-meta-node value table))
+(defmethod process-attribute ((node t) (attribute (eql (id-symbol "TARGET-NODE"))) value module)
+  (process-operator-node value module))
 
 
 ;;; Binding Operands
 
-(defun process-operands (operands table &optional *source-node*)
-  "Creates the operand nodes and adds them to table if they are not
-   already in table. Returns the list of `node' objects in the first
-   value and the table in the second."
+(defun process-operands (operands module &key ((:source *source-node*)) ((:create *create-nodes*) (null *meta-node*)))
+  "Creates the operand nodes and adds them to MODULE if they are not
+   already in MODULE. Returns the list of `node' objects in the first
+   value and the module in the second."
 
-  (let ((*create-nodes* t))
-    (values
-     (map (rcurry #'process-declaration table) operands)
-     table)))
+  (values
+   (map (rcurry #'process-declaration module) operands)
+   module))
 
 (defun bind-operands (node operands &key context)
   "Establishes bindings between the operands (OPERANDS) and the
@@ -859,7 +893,7 @@
   (match node
     ((type node)
      (let* ((home (home-module node)))
-       (if (or (outer-table home) (= home *functor-module*))
+       (if (or (outer-module home) (= home *functor-module*))
            (name node)
            (list +in-module-operator+ (name home) (name node)))))
 

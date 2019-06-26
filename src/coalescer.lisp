@@ -30,7 +30,7 @@
 
 (defun coalesce-all (table)
   "Perform all coalescing steps on the `FLAT-NODE-TABLE' TABLE:
-   coalesce nodes, coalesce contexts, remove unreachable nodes and
+   coalesce nodes, check structure, remove unreachable nodes and
    coalesce `NODE-LINK' objects."
 
   (with-slots (nodes input-nodes) table

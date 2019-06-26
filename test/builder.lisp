@@ -116,11 +116,11 @@
 
 (defun ensure-node-table (thing)
   "If THING is a `MODULE-TABLE' return the node table bound to the
-   NODE-TABLE slot. Otherwise if THING is a `NODE-TABLE' return it."
+   CURRENT-MODULE slot. Otherwise if THING is a `MODULE' return it."
 
   (etypecase thing
-    (module-table (node-table thing))
-    (node-table thing)))
+    (module-table (current-module thing))
+    (module thing)))
 
 
 ;;;; Test for the existence of nodes
@@ -135,8 +135,8 @@
   (:method (name (modules module-table))
     (some (curry #'get-node name) (map-values (modules modules))))
 
-  (:method (name (table node-table))
-    (get name (all-nodes table)))
+  (:method (name (table module))
+    (get name (nodes table)))
 
   (:method :around (name table)
            (call-next-method (node-id name) table)))
@@ -438,14 +438,14 @@
          ,@body))))
 
 (defmacro! with-modules ((&rest modules) o!module-table &body body)
-  "Binds module `NODE-TABLE's to variables. Each element of MODULES is
+  "Binds module `MODULE's to variables. Each element of MODULES is
    of the form (VAR NAME) where VAR is the variable to which the
    module is bound and NAME designates the module's name."
 
   (flet ((make-binding (module)
            (destructuring-bind (var name) module
              `(,var (aprog1 (get ',(node-id name) (modules ,g!module-table))
-                      (is-type! it 'node-table ,(format nil "~a is a module" name)))))))
+                      (is-type! it 'module ,(format nil "~a is a module" name)))))))
     `(let ,(map #'make-binding modules)
        ,@body)))
 
@@ -613,27 +613,30 @@
           (test-simple-binding input add-a-b))))
 
     (subtest "With Target Node and Functor Arguments"
-      (with-module-table modules
-        (build ":extern(add)"
-               ":extern(f)"
-               ":extern(reverse-add)"
+      (subtest "In Source Position"
+        (with-module-table modules
+          (build ":extern(add)"
+                 ":extern(f)"
+                 ":extern(reverse-add)"
 
-               ":attribute(add, target-node, reverse-add)"
-               "input -> add(f(a), b)")
+                 ":attribute(add, target-node, reverse-add)"
+                 "add(f(a), b)")
 
-        (with-nodes ((add "add") (f "f")
-                     (input "input") (a "a") (b "b")
-                     (f-a ("f" "a"))
-                     (add-a-b ("add" ("f" "a") "b")))
-            modules
+          (with-nodes ((add "add") (f "f")
+                       (a "a") (b "b")
+                       (f-a ("f" "a"))
+                       (add-a-b ("add" ("f" "a") "b")))
+              modules
 
-          (test-node-function add-a-b add add f-a b)
-          (test-simple-binding input add-a-b)
+            (test-node-function add-a-b add add f-a b)
 
-          (test-node-function f-a f f a)
+            (test-node-function f-a f f a)
 
-          (is (length (contexts f-a)) 1)
-          (is (length (contexts b)) 0)))))
+            (is (length (contexts f-a)) 1)
+            (is (length (contexts b)) 0))))
+
+      (subtest "In Target Position"
+        (test-error ":extern(add); :extern(reverse-add); :extern(f); :attribute(add, target-node, reverse-add); input -> add(f(a), b)" 'target-node-error))))
 
   (subtest "Explicit Contexts"
     (subtest "In Target of Binding"
@@ -747,7 +750,7 @@
         (with-module-table modules
           (build ":op(+, 50, left); :op(-, 70); :op(*, 100, right)")
 
-          (with-slots (operator-nodes) (node-table modules)
+          (with-slots (operator-nodes) (current-module modules)
 
             (test-op "+" operator-nodes 50 :left)
             (test-op "-" operator-nodes 70 :right)
@@ -778,7 +781,7 @@
           (is (attribute :input node2) 1)
 
           (ok (input-node? node2) "(INPUT-NODE? node2)")
-          (ok (memberp node2 (input-nodes (node-table modules))) "node2 in input-nodes")))
+          (ok (memberp node2 (input-nodes (current-module modules))) "node2 in input-nodes")))
 
       (subtest "Errors"
         (test-error ":attribute()" 'invalid-arguments-error)
@@ -828,23 +831,11 @@
         (with-module-table modules
           ;; Test node name collisions with meta-nodes
           (build "a;b")
-          (is-error (build #1="a(x,y) : add(x,y)") 'meta-node-name-collision #1#)
+          (is-error (build #1="a(x,y) : add(x,y)") 'node-exists-error #1#))
 
-          (with-slots (node-table) modules
-            (build "f(x) : x")
-
-            (with-nodes ((f "f")) modules
-              (is-type f 'meta-node)
-              (is (operands f) (decls '!\x))
-              (is (definition f) (decls '!\x)))
-
-            (build "f(x, y) : +(x, y)")
-
-            ;; Test meta-node redefinitions
-            (with-nodes ((f "f")) modules
-              (is-type f 'meta-node)
-              (is (operands f) (decls '!\x '!\y))
-              (is (definition f) (decls '(!+ !\x !\y))))))))
+        (with-module-table modules
+          (build "f(x) : x")
+          (is-error (build "f(x,y) : +(x, y)") 'node-exists-error "f(x,y) : +(x, y)"))))
 
     (subtest "External Meta-Node Definitions"
       (with-module-table modules
@@ -2080,8 +2071,8 @@
                     m - 1 -> next
 
                     # Additional nodes to test constant folding
-                    two -> limit;
                     2 -> two
+                    two -> limit;
 
                     case(
                       k < limit : 1,
@@ -2117,8 +2108,8 @@
                       m - 1 -> next
 
                       # Additional nodes to test constant folding
-                      two -> limit
                       2 -> two
+                      two -> limit
 
                       case(
                         k < limit : acc,
@@ -2282,38 +2273,73 @@
   (subtest "Outer-Node References"
     (subtest "Simple Outer-Node References"
       (subtest "Single Module"
-        (with-module-table modules
-          (build-source-file "./modules/core.trd" modules)
+        (subtest "Explicit"
+          (with-module-table modules
+            (build-source-file "./modules/core.trd" modules)
 
-          (build ":import(core)"
+            (build ":import(core)"
 
-                 "addx(a) : addy(..(x) + a)"
-                 "addy(a) : a + ..(y)"
+                   "addx(a) : addy(..(x) + a)"
+                   "addy(a) : a + ..(y)"
 
-                 "x; y"
+                   "x; y"
 
-                 "addx(in1) -> out1"
-                 "addy(in2) -> out2"
+                   "addx(in1) -> out1"
+                   "addy(in2) -> out2"
 
-                 ":attribute(x, input, 1)"
-                 ":attribute(y, input, 1)"
-                 ":attribute(in1, input, 1)"
-                 ":attribute(in2, input, 1)")
+                   ":attribute(x, input, 1)"
+                   ":attribute(y, input, 1)"
+                   ":attribute(in1, input, 1)"
+                   ":attribute(in2, input, 1)")
 
-          (let ((table (finish-build)))
+            (let ((table (finish-build)))
 
-            (with-nodes ((+ "+")
-                         (addx "addx") (addy "addy")
-                         (x "x") (y "y")
-                         (in1 "in1") (in2 "in2") (out1 "out1") (out2 "out2"))
-                table
+              (with-nodes ((+ "+")
+                           (addx "addx") (addy "addy")
+                           (x "x") (y "y")
+                           (in1 "in1") (in2 "in2") (out1 "out1") (out2 "out2"))
+                  table
 
-              (test-meta-node addy ((a "a") (y (outer y))) `(,+ ,a ,y))
-              (test-meta-node addx ((a "a") (x (outer x)) (y (outer y)))
-                              `(,addy (,+ ,x ,a) ,y))
+                (test-meta-node addy ((a "a") (y (outer y))) `(,+ ,a ,y))
+                (test-meta-node addx ((a "a") (x (outer x)) (y (outer y)))
+                                `(,addy (,+ ,x ,a) ,y))
 
-              (has-value-function (in2 y) out2 `(,addy ,in2 ,y))
-              (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y)))))))
+                (has-value-function (in2 y) out2 `(,addy ,in2 ,y))
+                (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y)))))))
+
+        (subtest "Implicit"
+          (with-module-table modules
+            (build-source-file "./modules/core.trd" modules)
+
+            (build ":import(core)"
+
+                   "addx(a) : addy(x + a)"
+                   "addy(a) : a + y"
+
+                   "x; y"
+
+                   "addx(in1) -> out1"
+                   "addy(in2) -> out2"
+
+                   ":attribute(x, input, 1)"
+                   ":attribute(y, input, 1)"
+                   ":attribute(in1, input, 1)"
+                   ":attribute(in2, input, 1)")
+
+            (let ((table (finish-build)))
+
+              (with-nodes ((+ "+")
+                           (addx "addx") (addy "addy")
+                           (x "x") (y "y")
+                           (in1 "in1") (in2 "in2") (out1 "out1") (out2 "out2"))
+                  table
+
+                (test-meta-node addy ((a "a") (y (outer y))) `(,+ ,a ,y))
+                (test-meta-node addx ((a "a") (x (outer x)) (y (outer y)))
+                                `(,addy (,+ ,x ,a) ,y))
+
+                (has-value-function (in2 y) out2 `(,addy ,in2 ,y))
+                (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y))))))))
 
       (subtest "Multiple Modules"
         (with-module-table modules
@@ -2358,7 +2384,7 @@
               (has-value-function (in2 y) out2 `(,addy ,in2 ,y))
               (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y))))))
 
-        (subtest "Test subnodes of outer nodes."
+        (subtest "Subnodes of outer nodes."
           (with-module-table modules
             (build-source-file "./modules/core.trd" modules)
 
@@ -2397,38 +2423,73 @@
 
     (subtest "Outer-Node References from Mutually Recursive Functions"
       (subtest "Single Module"
-        (with-module-table modules
-          (build-source-file "./modules/core.trd" modules)
+        (subtest "Explicit"
+          (with-module-table modules
+            (build-source-file "./modules/core.trd" modules)
 
-          (build ":import(core)"
+            (build ":import(core)"
 
-                 "addx(a) : addy(..(x) + a)"
-                 "addy(a) : addx(a + ..(y))"
+                   "addx(a) : addy(..(x) + a)"
+                   "addy(a) : addx(a + ..(y))"
 
-                 "x; y"
+                   "x; y"
 
-                 "addx(in1) -> out1"
-                 "addy(in2) -> out2"
+                   "addx(in1) -> out1"
+                   "addy(in2) -> out2"
 
-                 ":attribute(x, input, 1)"
-                 ":attribute(y, input, 1)"
-                 ":attribute(in1, input, 1)"
-                 ":attribute(in2, input, 1)")
+                   ":attribute(x, input, 1)"
+                   ":attribute(y, input, 1)"
+                   ":attribute(in1, input, 1)"
+                   ":attribute(in2, input, 1)")
 
-          (let ((table (finish-build)))
-            (with-nodes ((+ "+")
-                         (addx "addx") (addy "addy")
-                         (x "x") (y "y")
-                         (in1 "in1") (in2 "in2") (out1 "out1") (out2 "out2"))
-                table
+            (let ((table (finish-build)))
+              (with-nodes ((+ "+")
+                           (addx "addx") (addy "addy")
+                           (x "x") (y "y")
+                           (in1 "in1") (in2 "in2") (out1 "out1") (out2 "out2"))
+                  table
 
-              (test-meta-node addy ((a "a") (in-x (outer x)) (in-y (outer y)))
-                              (make-function-call addx `((,+ ,a ,in-y)) `((,x . ,in-x) (,y . ,in-y))))
-              (test-meta-node addx ((a "a") (in-x (outer x)) (in-y (outer y)))
-                              (make-function-call addy `((,+ ,in-x ,a)) `((,x . ,in-x) (,y . ,in-y))))
+                (test-meta-node addy ((a "a") (in-x (outer x)) (in-y (outer y)))
+                                (make-function-call addx `((,+ ,a ,in-y)) `((,x . ,in-x) (,y . ,in-y))))
+                (test-meta-node addx ((a "a") (in-x (outer x)) (in-y (outer y)))
+                                (make-function-call addy `((,+ ,in-x ,a)) `((,x . ,in-x) (,y . ,in-y))))
 
-              (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y)))
-              (has-value-function (in2 x y) out2 (make-function-call addy (list in2) (list x y)))))))
+                (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y)))
+                (has-value-function (in2 x y) out2 (make-function-call addy (list in2) (list x y)))))))
+
+        (subtest "Implicit"
+          (with-module-table modules
+            (build-source-file "./modules/core.trd" modules)
+
+            (build ":import(core)"
+
+                   "addx(a) : addy(x + a)"
+                   "addy(a) : addx(a + y)"
+
+                   "x; y"
+
+                   "addx(in1) -> out1"
+                   "addy(in2) -> out2"
+
+                   ":attribute(x, input, 1)"
+                   ":attribute(y, input, 1)"
+                   ":attribute(in1, input, 1)"
+                   ":attribute(in2, input, 1)")
+
+            (let ((table (finish-build)))
+              (with-nodes ((+ "+")
+                           (addx "addx") (addy "addy")
+                           (x "x") (y "y")
+                           (in1 "in1") (in2 "in2") (out1 "out1") (out2 "out2"))
+                  table
+
+                (test-meta-node addy ((a "a") (in-x (outer x)) (in-y (outer y)))
+                                (make-function-call addx `((,+ ,a ,in-y)) `((,x . ,in-x) (,y . ,in-y))))
+                (test-meta-node addx ((a "a") (in-x (outer x)) (in-y (outer y)))
+                                (make-function-call addy `((,+ ,in-x ,a)) `((,x . ,in-x) (,y . ,in-y))))
+
+                (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y)))
+                (has-value-function (in2 x y) out2 (make-function-call addy (list in2) (list x y))))))))
 
       (subtest "Multiple Modules"
         (with-module-table modules
@@ -2476,12 +2537,13 @@
 
     (subtest "Outer-Node References from Nested Functions"
       (subtest "Single Module"
-        (with-module-table modules
-          (build-source-file "./modules/core.trd" modules)
+        (subtest "Explicit"
+          (with-module-table modules
+            (build-source-file "./modules/core.trd" modules)
 
-          (build ":import(core)"
+            (build ":import(core)"
 
-                 "count(end) : {
+                   "count(end) : {
                       iter(n, acc) : {
                         case (
                           n < ..(end) : iter(n + 1, acc + n),
@@ -2491,31 +2553,73 @@
                       iter(0, 0)
                     }"
 
-                 "start"
-                 ":attribute(start, input, 1)"
+                   "start"
+                   ":attribute(start, input, 1)"
 
-                 "count(in) -> out"
-                 ":attribute(in, input, 1)")
+                   "count(in) -> out"
+                   ":attribute(in, input, 1)")
 
-          (let ((table (finish-build)))
-            (with-nodes ((+ "+") (< "<") (if "if")
-                         (count "count")
-                         (start "start")
-                         (in "in") (out "out"))
-                table
+            (let ((table (finish-build)))
+              (with-nodes ((+ "+") (< "<") (if "if")
+                           (count "count")
+                           (start "start")
+                           (in "in") (out "out"))
+                  table
 
-              (with-nodes ((iter "iter") (end "end")) (definition count)
-                (test-meta-node count ((end "end") (in-start (outer start)))
-                                (make-function-call iter '(0 0) `((,start . ,in-start) ,end)))
+                (with-nodes ((iter "iter") (end "end")) (definition count)
+                  (test-meta-node count ((end "end") (in-start (outer start)))
+                                  (make-function-call iter '(0 0) `((,start . ,in-start) ,end)))
 
-                (test-meta-node
-                 iter
-                 ((n "n") (acc "acc") (in-start (outer start)) (in-end (outer end)))
-                 `(,if (,< ,n ,in-end)
-                       ,(make-function-call iter `((,+ ,n 1) (,+ ,acc ,n)) `((,start . ,in-start) (,end . ,in-end)))
-                       (,+ ,in-start ,acc))))
+                  (test-meta-node
+                   iter
+                   ((n "n") (acc "acc") (in-start (outer start)) (in-end (outer end)))
+                   `(,if (,< ,n ,in-end)
+                         ,(make-function-call iter `((,+ ,n 1) (,+ ,acc ,n)) `((,start . ,in-start) (,end . ,in-end)))
+                         (,+ ,in-start ,acc))))
 
-              (has-value-function (in start) out (make-function-call count (list in) (list start)))))))
+                (has-value-function (in start) out (make-function-call count (list in) (list start)))))))
+
+        (subtest "Implicit"
+          (with-module-table modules
+            (build-source-file "./modules/core.trd" modules)
+
+            (build ":import(core)"
+
+                   "count(end) : {
+                      iter(n, acc) : {
+                        case (
+                          n < end : iter(n + 1, acc + n),
+                          start + acc
+                        )
+                      }
+                      iter(0, 0)
+                    }"
+
+                   "start"
+                   ":attribute(start, input, 1)"
+
+                   "count(in) -> out"
+                   ":attribute(in, input, 1)")
+
+            (let ((table (finish-build)))
+              (with-nodes ((+ "+") (< "<") (if "if")
+                           (count "count")
+                           (start "start")
+                           (in "in") (out "out"))
+                  table
+
+                (with-nodes ((iter "iter") (end "end")) (definition count)
+                  (test-meta-node count ((end "end") (in-start (outer start)))
+                                  (make-function-call iter '(0 0) `((,start . ,in-start) ,end)))
+
+                  (test-meta-node
+                   iter
+                   ((n "n") (acc "acc") (in-start (outer start)) (in-end (outer end)))
+                   `(,if (,< ,n ,in-end)
+                         ,(make-function-call iter `((,+ ,n 1) (,+ ,acc ,n)) `((,start . ,in-start) (,end . ,in-end)))
+                         (,+ ,in-start ,acc))))
+
+                (has-value-function (in start) out (make-function-call count (list in) (list start))))))))
 
       (subtest "Multiple Modules"
         (with-module-table modules
@@ -2567,7 +2671,7 @@
       (with-module-table modules
         (build ":extern(map); :extern(add)"
                "1+(x) : add(x,1)"
-               "1+-all(list) : map(..(1+), list)"
+               "1+-all(list) : map(1+, list)"
 
                "1+-all(in) -> out"
                ":attribute(in, input, 1)")
@@ -2588,8 +2692,8 @@
     (subtest "Referencing Meta-Nodes With Outer Nodes"
       (with-module-table modules
         (build ":extern(map); :extern(add)"
-               "x+(n) : add(n, ..(x))"
-               "x+-all(list) : map(..(x+), list)"
+               "x+(n) : add(n, x)"
+               "x+-all(list) : map(x+, list)"
 
                "x+-all(in) -> out"
 
@@ -2615,7 +2719,7 @@
       (subtest "Case 1"
         (with-module-table modules
           (build ":extern(map); :extern(add)"
-                 "x+(n) : add(n, ..(x))"
+                 "x+(n) : add(n, x)"
                  "x+-all(list) : { add-x(n) : x+(n); map(add-x, list) }"
 
                  "x+-all(in) -> out"
@@ -2647,7 +2751,7 @@
         (with-module-table modules
           (build ":extern(map); :extern(add)"
                  "x+(n) : add(n, ..(x))"
-                 "x+-all(list) : { add-x(n) : map(..(x+), n); add-x(list);  }"
+                 "x+-all(list) : { add-x(n) : map(x+, n); add-x(list);  }"
 
                  "x+-all(in) -> out"
 
@@ -2681,8 +2785,8 @@
     (subtest "Cyclic Meta-Node References"
       (with-module-table modules
         (build ":extern(map); :extern(add)"
-	       "add-x(xs) : map(..(add-y), xs, ..(x))"
-	       "add-y(xs) : map(..(add-x), xs, ..(y))"
+	       "add-x(xs) : map(add-y, xs, x)"
+	       "add-y(xs) : map(add-x, xs, y)"
 
 	       "add-x(in) -> output"
 
@@ -2757,6 +2861,48 @@
                 table
 
               (has-value-function (in x) out `(,map ,(meta-node-ref add-x :outer-nodes (list x)) ,in))))))))
+
+  (subtest "Node Auto Creation"
+    ;; The previous tests already test automatic node
+    ;; creation. These tests focus on the special cases:
+
+    (subtest "Operand of Meta-Node in Target Position"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)"
+               "f(x) : { x -> int(y); y }")
+
+        (let ((table (finish-build)))
+          (with-nodes ((f "f") (int "int"))
+              table
+
+            (test-meta-node f ((x "x")) `(,int ,x))))))
+
+    (subtest "Errors"
+      (subtest "Atom Declarations"
+        (with-module-table modules
+          (build "f(x) : z")
+
+          (is-error (finish-build) 'non-existent-node)))
+
+      (subtest "Operands"
+        (with-module-table modules
+          (build ":extern(add)"
+                 "f(x) : add(x, y, z)")
+
+          (is-error (finish-build) 'non-existent-node)))
+
+      (subtest "Binding Source"
+        (with-module-table modules
+          (build "f(x) : z -> self")
+
+          (is-error (finish-build) 'non-existent-node)))
+
+      (subtest "Object Nodes"
+        (with-module-table modules
+          (build "f(x) : n.z")
+
+          (is-error (finish-build) 'non-existent-node)))))
 
   (subtest "Structure Checking"
     (subtest "Cycle Checks"

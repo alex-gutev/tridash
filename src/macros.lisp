@@ -33,7 +33,7 @@
 
 ;;;; Macro Attributes
 
-(defmethod process-attribute (node (attribute (eql (id-symbol "MACRO"))) value (table t))
+(defmethod process-attribute (node (attribute (eql (id-symbol "MACRO"))) value (module t))
   "Sets the internal :MACRO-FUNCTION attribute to a function that
    compiles the META-NODE to a CL function, calls it and calls
    PROCESS-DECLARATION on the result."
@@ -41,7 +41,7 @@
   (when (bool-value value)
     (setf (node-macro-function node)
           (make-macro-function node))
-    nil))
+    value))
 
 
 ;;;; Macro Function
@@ -50,10 +50,10 @@
   "Creates the macro-node function, which compiles META-NODE to a CL
    function, calls the function and processes the result."
 
-  (lambda (operator operands table)
+  (lambda (operator operands module)
     (declare (ignore operator))
     (-> (call-tridash-meta-node meta-node operands)
-        (process-declaration table :level *level*))))
+        (process-declaration module :level *level*))))
 
 
 ;;;; Compiling CL function from Meta-Node
@@ -73,7 +73,7 @@
   "Compiles the META-NODE meta-node to a CL function. Stores the
    compiled CL function in the :CL-FUNCTION attribute."
 
-  (build-meta-node-graph meta-node (node-table *global-module-table*))
+  (build-meta-node meta-node)
   (finish-build-meta-node meta-node)
 
   (setf (meta-node-cl-function meta-node)
@@ -307,10 +307,10 @@
 
 ;;;; Macro-Writing
 
-(defmethod process-functor ((operator (eql +quote-operator+)) args table)
+(defmethod process-functor ((operator (eql +quote-operator+)) args module)
   "Returns the raw argument unprocessed."
 
-  (declare (ignore table))
+  (declare (ignore module))
 
   (match-syntax (operator any) args
     ((list thing)

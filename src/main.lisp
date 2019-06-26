@@ -312,12 +312,12 @@ Example: tridashc ui.trd : node-name=ui")
    RETRY restart. Otherwise returns normally."
 
   (with-accessors ((module-name module-name) (module-table module-table)) c
-    (let ((current-module (node-table module-table)))
+    (let ((current-module (current-module module-table)))
       (unwind-protect
            (when (load-module module-name module-table)
              (retry))
 
-        (setf (node-table module-table) current-module)))))
+        (setf (current-module module-table) current-module)))))
 
 (defun load-module (module module-table)
   "Searches for the module MODULE in the module search paths and if

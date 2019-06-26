@@ -1,7 +1,7 @@
-;;;; modules.lisp
+;;;; module-table.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018  Alexander Gutev
+;;;; Copyright (C) 2018-2019  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -27,44 +27,49 @@
     :initform (make-hash-map)
     :documentation
     "Module Map. Each key is a module identifier symbol and the
-     corresponding value is the module's `NODE-TABLE'.")
+     corresponding value is the `MODULE'.")
 
-   (node-table
-    :accessor node-table
-    :initarg :node-table
-    :initform (make-instance 'node-table :name :init)
+   (current-module
+    :accessor current-module
+    :initarg :current-module
+    :initform (make-instance 'module :name :init)
     :documentation
-    "The `NODE-TABLE' of the current module.")))
+    "The current `MODULE', into which nodes are added."))
+
+  (:documentation
+   "Module table object mapping module identifiers to `MODULE'
+    objects."))
 
 (defvar *global-module-table*)
 
 
 (defmethod initialize-instance :after ((module-table module-table) &key &allow-other-keys)
-  "Stores the `NODE-TABLE' initially stored in the `NODE-TABLE' slot
-   of STATE in the entry for the :INIT module within the `MODULES'
-   STATE. Creates the builtin module."
+  "Adds a mapping for the `MODULE' initially bound to the
+   `CURRENT-MODULE' slot of MODULE-TABLE with identifier
+   :INIT. Creates the builtin module."
 
-  (with-slots (modules node-table) module-table
+  (with-slots (modules current-module) module-table
     (create-builtin-module module-table)
-    (setf (get :init modules) node-table)))
+    (setf (get :init modules) current-module)))
 
-(defun change-module (module &optional (frontend *global-module-table*))
-  "Changes the global node table (stored in the NODE-TABLE slot of the
-   FRONTEND argument) to the node table of the module MODULE."
+(defun change-module (module &optional (modules *global-module-table*))
+  "Changes the CURRENT-MODULE of MODULES (defaults to
+   *GLOBAL-MODULE-TABLE*) to MODULE."
 
-  (setf (node-table frontend)
-        (ensure-module module frontend)))
+  (setf (current-module modules)
+        (ensure-module module modules)))
 
-(defun ensure-module (module &optional (frontend *global-module-table*))
-  "Ensures that MODULE names a module and returns its `NODE-TABLE'. If
-   MODULE is not present in the MODULES table of FRONTEND a new empty
-   `NODE-TABLE' is created."
+(defun ensure-module (module &optional (modules *global-module-table*))
+  "Ensures that MODULE names a module and returns its `MODULE'
+   object. If MODULE is not present in the MODULES a new empty
+   `MODULE' is created."
 
-  (ensure-get module (modules frontend) (make-instance 'node-table :name module)))
+  (ensure-get module (modules modules) (make-instance 'module :name module)))
 
 (defun get-module (module &optional (modules *global-module-table*))
-  "Returns the `NODE-TABLE' of MODULE. If there is module named MODULE
-   in MODULES, signals a `NON-EXISTENT-MODULE' condition."
+  "Returns the `MODULE' with identifier MODULE in MODULES. If there is
+   no module with identifier MODULE in MODULES, signals a
+   `NON-EXISTENT-MODULE' condition."
 
   (with-retry-restart
     (or (get module (modules modules))
@@ -90,7 +95,7 @@
       (setf (node-macro-function ?->-node) #'?->-macro-function)
       (export-node (id-symbol "?->") builtin))))
 
-(defun case-macro-function (operator operands table)
+(defun case-macro-function (operator operands module)
   "Case macro function. Transforms the case expression into a series
    of nested if expressions."
 
@@ -106,9 +111,9 @@
 
       (process-declaration
        (reduce #'make-if operands :from-end t :initial-value nil)
-       table))))
+       module))))
 
-(defun ?->-macro-function (operator operands table)
+(defun ?->-macro-function (operator operands module)
   "Macro function of the ?-> operator."
 
   (match operands
@@ -122,7 +127,7 @@
         (,+bind-operator+
          (,+subnode-operator+ ,src ,(id-symbol "value"))
          ,target))
-      table
+      module
 
       :top-level t))
 

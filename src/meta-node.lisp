@@ -167,9 +167,9 @@
 
   (unique-node-name (outer-nodes meta-node) 'ex))
 
-(defun outer-node (node outer-table meta-node)
-  "Returns the name of the local node which is bound to the outer node
-   NODE, from the table OUTER-TABLE, in META-NODE."
+(defun outer-node (node outer-module meta-node)
+  "Returns the name of the local node, in META-NODE, which is bound to
+   the outer node NODE, from the module OUTER-MODULE."
 
   (with-slots (outer-nodes) meta-node
-    (cdr (ensure-get node outer-nodes (cons outer-table (outer-node-name meta-node))))))
+    (cdr (ensure-get node outer-nodes (cons outer-module (outer-node-name meta-node))))))
