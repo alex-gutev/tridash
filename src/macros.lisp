@@ -192,8 +192,8 @@
   (with-struct-slots object-expression- (entries)
       object
 
-    `(make-tridash-dict (list ,@(map #`(quote ,(car a1)) entries))
-                        (list ,@(map (compose #'tridash->cl #'cdr) entries)))))
+    `(make-tridash-dict (list ,@(map #`(quote ,(first a1)) entries))
+                        (list ,@(map (compose #'tridash->cl #'second) entries)))))
 
 (defmethod tridash->cl ((member member-expression) &key)
   "Generates a GET CL function expression."
@@ -520,7 +520,7 @@
 
   (stream-map
    (lambda (&rest values)
-     (alist-hash-map (map #'cons keys values)))
+     (alist-hash-map (map #'cons keys (map #'resolve values))))
    values))
 
 (defun tridash-dict-get (dict key)
