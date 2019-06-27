@@ -106,7 +106,8 @@
 		:lol-syntax
 		:symb
                 :mkstr
-		:defmacro!)
+		:defmacro!
+                :nlet-tail)
 
   (:export
    ;; Operators
