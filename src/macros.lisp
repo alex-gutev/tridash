@@ -512,6 +512,8 @@
 (define-tridash-function% |advance| (stream)
   (stream-rest stream))
 
+(define-tridash-function% |pack| (stream)
+  (thunk (coerce stream 'list)))
 
 (defun make-tridash-dict (keys values)
   "Creates a dictionary with keys KEYS and corresponding values
