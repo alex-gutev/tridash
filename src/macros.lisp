@@ -100,6 +100,14 @@
   "The CATCH tag symbol for `CATCH-EXPRESSIONS' which are compiled to
    CL CATCH expressions.")
 
+(define-condition tridash-fail (error)
+  ()
+
+  (:documentation
+   "Condition representing a Tridash node failing to evaluate to a
+    value."))
+
+
 (defun tridash->cl-function (meta-node)
   "Returns a CL LAMBDA expression which is compiled from META-NODE."
 
@@ -196,7 +204,7 @@
     `(tridash-dict-get ,(tridash->cl object) ',key)))
 
 
-(defmethod tridash->cl ((expr catch-expression) &key tail-position-p)
+(defmethod tridash->cl ((expr catch-expression) &key)
   "Generates a CL CATCH expression with the tag symbol given by
    +FAIL-CATCH-TAG+. If the CATCH expression returns the catch tag
    identifier, the expression in the `CATCH' slot is evaluate."
@@ -204,17 +212,13 @@
   (with-struct-slots catch-expression- (main catch)
       expr
 
-    (with-gensyms (result)
-      `(let ((,result (catch ',+fail-catch-tag+ ,(tridash->cl main))))
-         (if (eq ,result ',+fail-catch-tag+)
-             ,(tridash->cl catch :tail-position-p tail-position-p)
-             ,result)))))
+    `(,(id-symbol "catch") ,(tridash->cl main) ,(tridash->cl catch))))
 
 (defmethod tridash->cl ((fail fail-expression) &key)
-  "Generates a CL THROW expression which throws the value of
-   +FAIL-CATCH-TAG+."
+  "Generates an expression which creates a thunk that signals the
+   `TRIDASH-FAIL' error condition.."
 
-  `(throw ',+fail-catch-tag+ ',+fail-catch-tag+))
+  '(thunk (error 'tridash-fail)))
 
 
 (defmethod tridash->cl ((group expression-group) &key tail-position-p)
@@ -328,6 +332,13 @@
 
   `(make-lazy-stream :head ,head :tail (thunk ,tail)))
 
+(defmacro ignore-fail (form)
+  "Wraps form in a HANDLER-CASE that ignores `TRIDASH-FAIL' error
+   conditions."
+
+  `(handler-case ,form
+     (tridash-fail ())))
+
 (defgeneric stream-first (stream)
   (:documentation
    "Returns the first element in the stream.")
@@ -386,7 +397,8 @@
 
   (nlet-tail foreach ((streams streams))
     (unless (some #'null streams)
-      (apply fn (map #'stream-first streams))
+      (ignore-fail
+       (apply fn (map #'stream-first streams)))
       (foreach (map #'stream-rest streams)))))
 
 
@@ -453,6 +465,11 @@
   (if (bool-value (resolve cond))
       then
       else))
+
+(define-tridash-function |catch| (main catch)
+  (handler-case (resolve main)
+    (tridash-faill () catch)))
+
 
 (define-tridash-function |and| (a b)
   (if (bool-value (resolve a)) b 0))
