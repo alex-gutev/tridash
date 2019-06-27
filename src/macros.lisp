@@ -431,7 +431,9 @@
 
   (let ((name (id-symbol (string name))))
     `(progn
-       (defun ,name ,args ,@body)
+       (defun ,name ,args
+         (macrolet ((self (&rest ,g!args) `(,',name ,@,g!args)))
+          ,@body))
 
        (eval-when (:compile-toplevel :load-toplevel :execute)
          (setf (get ',name *tridash-cl-functions*) ',name)))))
@@ -514,6 +516,16 @@
 
 (define-tridash-function% |pack| (stream)
   (thunk (coerce stream 'list)))
+
+(define-tridash-function% |skip-fail| (stream)
+  (nlet-tail next ((stream stream))
+    (when stream
+      (handler-case
+          (lazy-stream
+           (resolve (stream-first stream))
+           (self (stream-rest stream)))
+        (tridash-fail () (next (stream-rest stream)))))))
+
 
 (defun make-tridash-dict (keys values)
   "Creates a dictionary with keys KEYS and corresponding values
