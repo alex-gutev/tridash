@@ -53,6 +53,7 @@
   (lambda (operator operands module)
     (declare (ignore operator))
     (-> (call-tridash-meta-node meta-node operands)
+        resolve
         (process-declaration module :level *level*))))
 
 
@@ -96,6 +97,11 @@
 (defconstant +tridash-recur-tag+ 'recur
   "TAGBODY tag for tail-recursive self calls.")
 
+(defvar *tridash-cl-functions* (make-hash-map)
+  "Map mapping Tridash meta-node identifiers to the corresponding CL
+   function identifiers.")
+
+
 (defun tridash->cl-function (meta-node)
   "Returns a CL LAMBDA expression which is compiled from META-NODE."
 
@@ -118,31 +124,6 @@
                   (tridash->cl :tail-position-p t)))))))))
 
 
-(defconstant +tridash-cl-functions+
-  (alist-hash-map
-   (symbol-mappings
-    "if"
-    "+" "-" "*" "/"
-    "<" "<=" ">" ">=" "=" '("!=" /=)
-
-    '("and" tridash-and)
-    '("or" tridash-or)
-    '("not" tridash-not)
-
-    '("int?" integerp)
-    '("real?" floatp)
-    '("string?" stringp)
-
-    "cons" "list"))
-
-  "Map mapping Tridash meta-node identifiers to the corresponding CL
-   function identifiers.")
-
-(defconstant +fail-catch-tag+ 'evaluate-fail
-  "The CATCH tag symbol for `CATCH-EXPRESSIONS' which are compiled to
-   CL CATCH expressions.")
-
-
 (defgeneric tridash->cl (expression &key &allow-other-keys)
   (:documentation
    "Compiles the Tridash expression EXPR to a CL expression. If the
@@ -157,7 +138,7 @@
     (ensure-get name *operand-vars* (gensym (mkstr name)))))
 
 
-(defmethod tridash->cl ((functor functor-expression) &key tail-position-p)
+(defmethod tridash->cl ((functor functor-expression) &key)
   "If the operator of the functor is an `EXTERNAL-META-NODE',
    generates a CL expression which calls the corresponding CL
    function, found by looking up the name of the meta-node in
@@ -172,37 +153,15 @@
 
     (match meta-node
       ((external-meta-node name)
-       (aif (get name +tridash-cl-functions+)
-            (call-external-meta-node it arguments :tail-position-p tail-position-p)
+       (aif (get name *tridash-cl-functions*)
+            `(thunk (,it ,@(map #'tridash->cl arguments)))
             (error "External meta-node ~a not supported." name)))
 
-      ((guard (and (type meta-node) (eq *current-meta-node*))
-              tail-position-p)
-       (make-tail-call arguments))
-
       ((type meta-node)
-       `(call-tridash-meta-node ,meta-node (list ,@(map #'tridash->cl arguments))))
+       `(thunk (call-tridash-meta-node ,meta-node (list ,@(map #'tridash->cl arguments)))))
 
       (_
-       `(funcall ,(tridash->cl meta-node) ,@(map #'tridash->cl arguments))))))
-
-(defun call-external-meta-node (name arguments &key tail-position-p)
-  "Generates a CL function expression with operator NAME and ARGUMENTS
-   being the TRIDASH expressions which are the
-   arguments. TAIL-POSITION-P should be true if the expression appears
-   in tail position."
-
-  (case name
-    (if
-     (destructuring-bind (cond then &optional else) arguments
-       (tridash->cl (if-expression cond then else) :tail-position-p tail-position-p)))
-
-    ((tridash-and tridash-or)
-     `(,name ,@(map #'tridash->cl (butlast arguments))
-             ,(tridash->cl (last arguments) :tail-position-p tail-position-p)))
-
-    (otherwise
-     (list* name (map #'tridash->cl arguments)))))
+       `(thunk (funcall (resolve ,(tridash->cl meta-node)) ,@(map #'tridash->cl arguments)))))))
 
 (defun make-tail-call (arguments)
   "Generates a tail self call with arguments ARGUMENTS."
@@ -213,14 +172,15 @@
      (go ,+tridash-recur-tag+)))
 
 
-
-(defmethod tridash->cl ((if if-expression) &key tail-position-p)
+(defmethod tridash->cl ((if if-expression) &key)
   (with-struct-slots if-expression- (condition then else)
       if
 
-    `(if (bool-value ,(tridash->cl condition))
-         ,(tridash->cl then :tail-position-p tail-position-p)
-         ,(tridash->cl else :tail-position-p tail-position-p))))
+    `(thunk
+      (,(id-symbol "if")
+        ,(tridash->cl condition)
+        ,(tridash->cl then)
+        ,(tridash->cl else)))))
 
 (defmethod tridash->cl ((object object-expression) &key)
   "Generates a CL expression that creates a `HASH-MAP'."
@@ -229,7 +189,7 @@
            (destructuring-bind (key value) pair
              `(cons ',key ,(tridash->cl value)))))
 
-    `(alist-hash-map (list ,@(map #'make-entry (object-expression-entries object))))))
+    `(thunk (alist-hash-map (list ,@(map #'make-entry (object-expression-entries object)))))))
 
 (defmethod tridash->cl ((member member-expression) &key)
   "Generates a GET CL function expression."
@@ -237,9 +197,9 @@
   (with-struct-slots member-expression- (object key)
       member
 
-    `(get ',key ,(tridash->cl object))))
+    `(thunk (get ',key (resolve ,(tridash->cl object))))))
 
-(defmethod tridash->cl ((expr catch-expression) &key tail-position-p)
+(defmethod tridash->cl ((expr catch-expression) &key)
   "Generates a CL CATCH expression with the tag symbol given by
    +FAIL-CATCH-TAG+. If the CATCH expression returns the catch tag
    identifier, the expression in the `CATCH' slot is evaluate."
@@ -247,17 +207,15 @@
   (with-struct-slots catch-expression- (main catch)
       expr
 
-    (with-gensyms (result)
-      `(let ((,result (catch ',+fail-catch-tag+ ,(tridash->cl main))))
-         (if (eq ,result ',+fail-catch-tag+)
-             ,(tridash->cl catch :tail-position-p tail-position-p)
-             ,result)))))
+    `(thunk
+      (handler-case (resolve ,(tridash->cl main))
+        (tridash-fail () ,(tridash->cl catch))))))
 
 (defmethod tridash->cl ((fail fail-expression) &key)
   "Generates a CL THROW expression which throws the value of
    +FAIL-CATCH-TAG+."
 
-  `(throw ',+fail-catch-tag+ ',+fail-catch-tag+))
+  '(thunk (error 'tridash-fail)))
 
 (defmethod tridash->cl ((group expression-group) &key tail-position-p)
   (tridash->cl (expression-group-expression group) :tail-position-p tail-position-p))
@@ -272,30 +230,14 @@
 
     (match node
       ((external-meta-node name)
-       (aif (get name +tridash-cl-functions+)
-            (make-external-meta-node-ref it)
+       (aif (get name *tridash-cl-functions*)
+            `#',it
             (error "External meta-node ~a not supported." name)))
 
       ((type meta-node)
        (with-gensyms (args)
          `(lambda (&rest ,args)
             (call-tridash-meta-node ,node ,args)))))))
-
-(defun make-external-meta-node-ref (name)
-  (case name
-    (if
-     (with-gensyms (cond then else)
-       `(lambda (,cond ,then &optional ,else)
-          (if ,cond ,then ,else))))
-
-    ((tridash-and tridash-or)
-     (with-gensyms (args)
-       `(lambda (&rest ,args)
-          (,(if (= name 'tridash-and) 'every 'some) #'bool-value ,args))))
-
-    (otherwise
-     `#',name)))
-
 
 (defmethod tridash->cl (literal &key)
   (match literal
@@ -317,13 +259,119 @@
      thing)))
 
 
-;;;; Builtin Functions
+;;;; Tridash CL Runtime
 
-(defmacro tridash-and (&rest args)
-  `(and ,@(map #`(bool-value ,a1) args)))
+(defstruct thunk
+  "A thunks stores a function which evaluates to a value. The function
+   FN is called to compute the value when it is actually required."
 
-(defmacro tridash-or (&rest args)
-  `(or ,@(map #`(bool-value ,a1) args)))
+  fn)
 
-(defun tridash-not (x)
-  (if (bool-value x) 0 1))
+(defmacro! thunk (expression)
+  "Creates a `THUNK' with a COMPUTE function that evaluates
+   EXPRESSION."
+
+  `(let (,g!result ,g!computed?)
+     (make-thunk
+      :fn
+      (lambda ()
+        (if ,g!computed?
+            ,g!result
+            (prog1 (setf ,g!result ,expression)
+              (setf ,g!computed? t)))))))
+
+(defun resolve (thing)
+  "If THING is a `THUNK' calls it's COMPUTE function. If the function
+   returns another `THUNK' repeats the procedure on it.
+
+   If THING is not a `THUNK', returns it."
+
+  (nlet-tail resolve ((thing thing))
+    (typecase thing
+      (thunk (resolve (funcall (thunk-fn thing))))
+      (otherwise thing))))
+
+(define-condition tridash-fail ()
+  ()
+
+  (:documentation
+   "Condition raised when a Tridash fail expression is evaluated."))
+
+
+(defmacro define-tridash-function% (name (&rest lambda-list) &body body)
+  "Defines an externally defined Tridash function, with name NAME,
+   lambda-list LAMBDA-LIST and body BODY.
+
+   NAME is converted to a string and interned in the TRIDASH.SYMBOLS
+   package. An entry which maps NAME to the the function is added to
+   *TRIDASH-CL-FUNCTIONS*."
+
+  (let ((name (id-symbol (string name))))
+    `(progn
+       (defun ,name ,lambda-list ,@body)
+
+       (eval-when (:compile-toplevel :load-toplevel :execute)
+         (setf (get ',name *tridash-cl-functions*) ',name)))))
+
+(defmacro! define-tridash-function (name (&rest lambda-list) &body body)
+  "Defines an externally defined Tridash function by
+   DEFINE-TRIDASH-FUNCTION%. If BODY consists of a single symbol a
+   function, which applies the function named by the symbol on the
+   resolved (by RESOLVE) arguments. Otherwise the macro is identical
+   to DEFINE-TRIDASH-FUNCTION%."
+
+  (match body
+    ((list (and (type symbol) fn))
+     `(define-tridash-function% ,name (&rest ,g!args)
+        (apply #',fn (map #'resolve ,g!args))))
+
+    (_
+     `(define-tridash-function% ,name ,lambda-list ,@body))))
+
+
+;;;; Core Functions
+
+;;; Conditionals and Boolean Expressions
+
+(define-tridash-function |if| (cond then else)
+  (if (bool-value (resolve cond)) then else))
+
+(define-tridash-function |and| (a b)
+  (if (bool-value (resolve a)) b 0))
+
+(define-tridash-function |or| (a b)
+  (or (bool-value (resolve a)) b))
+
+(define-tridash-function |not| (a)
+  (if (bool-value (resolve a)) 0 1))
+
+
+;;; Arithmetic
+
+(define-tridash-function + (a b) +)
+(define-tridash-function - (a b) -)
+(define-tridash-function * (a b) *)
+(define-tridash-function / (a b) /)
+
+;;; Comparison
+
+(define-tridash-function < (a b) <)
+(define-tridash-function <= (a b) <=)
+(define-tridash-function > (a b) >)
+(define-tridash-function >= (a b) >=)
+(define-tridash-function = (a b) =)
+(define-tridash-function != (a b) /=)
+
+;;; Type Conversions
+
+(define-tridash-function |string| (x) mkstr)
+
+;;; Type Predicates
+
+(define-tridash-function |int?| (x) integerp)
+(define-tridash-function |real?| (x) numberp)
+
+;;; Lists
+
+(define-tridash-function |cons| (a b) cons)
+(define-tridash-function |list| (&rest xs) list)

@@ -47,12 +47,11 @@
 
   (:import-from :tridash.frontend
                 :tridash->cl-function
-                :+fail-catch-tag+
                 :call-tridash-meta-node
 
-                :tridash-and
-                :tridash-or
-                :tridash-not))
+                :thunk
+                :resolve
+                :tridash-fail))
 
 (in-package :tridash.test.macros)
 
@@ -74,9 +73,15 @@
              (match* (got expected)
                (((type symbol) (type symbol))
                 (= got
-                   (if (starts-with #\$ (symbol-name expected))
-                       (ensure-get expected aliases got)
-                       expected)))
+                   (cond
+                     ((starts-with #\$ (symbol-name expected))
+                      (ensure-get expected aliases got))
+
+                     ((starts-with #\! (symbol-name expected))
+                      (id-symbol (subseq (symbol-name expected) 1)))
+
+                     (t
+                      expected))))
 
                ((_ _)
                 (= got expected)))))
@@ -141,7 +146,10 @@
        (functor if (functor < a b) (functor - b a) (functor - a b))
 
        ($a $b)
-       '(if (bool-value (< $a $b)) (- $b $a) (- $a $b)))))
+       '(thunk (!|if|
+                (thunk (!< $a $b))
+                (thunk (!- $b $a))
+                (thunk (!- $a $b)))))))
 
   (subtest "If Expressions"
     (with-external-meta-nodes ("<" "-")
@@ -151,7 +159,10 @@
        (if-expression (functor < a b) (functor - b a) (functor - a b))
 
        ($a $b)
-       '(if (bool-value (< $a $b)) (- $b $a) (- $a $b)))))
+       '(thunk (!|if|
+                (thunk (!< $a $b))
+                (thunk (!- $b $a))
+                (thunk (!- $a $b)))))))
 
   (subtest "Object Expressions"
     (with-external-meta-nodes ("+" "-")
@@ -163,10 +174,11 @@
           (diff ,(functor - x y))))
 
        ($x $y)
-       '(alist-hash-map
-         (list
-          (cons 'sum (+ $x $y))
-          (cons 'diff (- $x $y)))))))
+       '(thunk
+         (alist-hash-map
+          (list
+           (cons 'sum (thunk (!+ $x $y)))
+           (cons 'diff (thunk (!- $x $y)))))))))
 
   (subtest "Member Expressions"
     (test-compile-meta-node
@@ -176,7 +188,7 @@
       (member-expression object 'key1) 'key2)
 
      ($obj)
-     '(get 'key2 (get 'key1 $obj))))
+     '(thunk (get 'key2 (resolve (thunk (get 'key1 (resolve $obj))))))))
 
   (subtest "Catch Expressions"
     (with-external-meta-nodes ("/" "*")
@@ -188,10 +200,10 @@
         (functor * a b))
 
        ($a $b)
-       `(let (($result (catch ',+fail-catch-tag+ (/ $a $b))))
-          (if (eq $result ',+fail-catch-tag+)
-              (* $a $b)
-              $result)))))
+
+       '(thunk
+         (handler-case (resolve (thunk (!/ $a $b)))
+           (tridash-fail () (thunk (!* $a $b))))))))
 
   (subtest "Fail Expressions"
     (test-compile-meta-node
@@ -199,7 +211,7 @@
      (fail-expression)
 
      ()
-     `(throw ',+fail-catch-tag+ ',+fail-catch-tag+)))
+     '(thunk (error 'tridash-fail))))
 
   (subtest "Expression Groups"
     (with-external-meta-nodes ("+")
@@ -210,7 +222,7 @@
         (functor + a 1))
 
        ($a)
-       `(+ $a 1))))
+       '(thunk (!+ $a 1)))))
 
   (subtest "Calling Other Meta-Nodes"
     (with-external-meta-nodes ("-")
@@ -221,7 +233,7 @@
          (functor meta-node (functor - a))
 
          ($a)
-         `(call-tridash-meta-node ,meta-node (list (- $a)))))))
+         `(thunk (call-tridash-meta-node ,meta-node (list (thunk (!- $a)))))))))
 
   (subtest "Higher-Order Meta-Nodes"
     (subtest "External Meta-Node"
@@ -233,7 +245,7 @@
            (functor apply (meta-node-ref not) x)
 
            ($x)
-           `(call-tridash-meta-node ,apply (list #'tridash-not $x))))))
+           `(thunk (call-tridash-meta-node ,apply (list #'!|not| $x)))))))
 
     (subtest "If Meta-Node"
       (with-external-meta-nodes ("if")
@@ -244,14 +256,11 @@
            (functor apply (meta-node-ref if) x y z)
 
            ($x $y $z)
-           `(call-tridash-meta-node
-             ,apply
+           `(thunk
+             (call-tridash-meta-node
+              ,apply
 
-             (list
-              (lambda ($cond $then &optional $else)
-                (if $cond $then $else))
-
-              $x $y $z))))))
+              (list #'!|if| $x $y $z)))))))
 
     (subtest "And Meta-Node"
       (with-external-meta-nodes ("and")
@@ -262,14 +271,11 @@
            (functor apply (meta-node-ref and) x y)
 
            ($x $y)
-           `(call-tridash-meta-node
-             ,apply
+           `(thunk
+             (call-tridash-meta-node
+              ,apply
 
-             (list
-              (lambda (&rest $args)
-                (every #'bool-value $args))
-
-              $x $y))))))
+              (list #'!|and| $x $y)))))))
 
     (subtest "Or Meta-Node"
       (with-external-meta-nodes ("or")
@@ -280,14 +286,11 @@
            (functor apply (meta-node-ref or) x y)
 
            ($x $y)
-           `(call-tridash-meta-node
-             ,apply
+           `(thunk
+             (call-tridash-meta-node
+              ,apply
 
-             (list
-              (lambda (&rest $args)
-                (some #'bool-value $args))
-
-              $x $y))))))
+              (list #'!|or| $x $y)))))))
 
     (subtest "Tridash Meta-Node"
       (let ((apply (make-instance 'meta-node :name 'apply))
@@ -299,12 +302,13 @@
          (functor apply (meta-node-ref f) x)
 
          ($x)
-         `(call-tridash-meta-node
-           ,apply
-           (list
-            (lambda (&rest $args)
-              (call-tridash-meta-node ,f $args))
-            $x)))))
+         `(thunk
+           (call-tridash-meta-node
+            ,apply
+            (list
+             (lambda (&rest $args)
+               (call-tridash-meta-node ,f $args))
+             $x))))))
 
     (subtest "Invoking Nodes"
       (test-compile-meta-node
@@ -313,7 +317,7 @@
        (functor f x)
 
        ($f $x)
-       `(funcall $f $x))))
+       `(thunk (funcall (resolve $f) $x)))))
 
   (subtest "Literals"
     (with-external-meta-nodes ("and")
@@ -323,7 +327,7 @@
        (functor and "hello" 1 2.3 'symbol)
 
        ()
-       '(tridash-and "hello" 1 2.3 'symbol))))
+       '(thunk (!|and| "hello" 1 2.3 'symbol)))))
 
   (subtest "Primitive Functions"
     (with-external-meta-nodes
@@ -342,9 +346,11 @@
           (functor - d))
 
          ($a $b $c $d)
-         '(/
-           (* (+ $a $b) (- $c $d))
-           (- $d))))
+         '(thunk
+           (!/
+            (thunk
+             (!* (thunk (!+ $a $b)) (thunk (!- $c $d))))
+            (thunk (!- $d))))))
 
       (subtest "Comparison and Logical"
         (test-compile-meta-node
@@ -363,13 +369,15 @@
            (functor != x y)))
 
          ($x $y)
-         '(tridash-not
-           (tridash-or
-            (tridash-and (< $x $y) (= $y $x))
-            (<= $x 10)
-            (> 1 $y)
-            (>= 8 $y)
-            (/= $x $y)))))
+         '(thunk
+           (!|not|
+            (thunk
+             (!|or|
+              (thunk (!|and| (thunk (!< $x $y)) (thunk (!= $y $x))))
+              (thunk (!<= $x 10))
+              (thunk (!> 1 $y))
+              (thunk (!>= 8 $y))
+              (thunk (!!= $x $y))))))))
 
       (subtest "Type Checks"
         (test-compile-meta-node
@@ -383,10 +391,11 @@
           (functor string? z))
 
          ($x $y $z)
-         '(tridash-or
-           (integerp $x)
-           (floatp $y)
-           (stringp $z))))))
+         '(thunk
+           (!|or|
+            (thunk (!|int?| $x))
+            (thunk (!|real?| $y))
+            (thunk (!|string?| $z))))))))
 
   (subtest "Tail Recursion"
     (subtest "If Expressions"
@@ -575,10 +584,10 @@
              "min(x,y) : case(x < y : x, y)")
 
       (with-nodes ((min "min")) modules
-        (is (call-tridash-meta-node min '(2 10)) 2)
-        (is (call-tridash-meta-node min '(10 2)) 2)
-        (is (call-tridash-meta-node min '(-5.3 7.6)) -5.3)
-        (is (call-tridash-meta-node min '(1 1)) 1))))
+        (is (resolve (call-tridash-meta-node min '(2 10))) 2)
+        (is (resolve (call-tridash-meta-node min '(10 2))) 2)
+        (is (resolve (call-tridash-meta-node min '(-5.3 7.6))) -5.3)
+        (is (resolve (call-tridash-meta-node min '(1 1))) 1))))
 
   (subtest "Boolean Expressions"
     (subtest "If Expressions"
@@ -588,8 +597,8 @@
                "f(cond, x) : if(cond, x, 0)")
 
         (with-nodes ((f "f")) modules
-          (is (call-tridash-meta-node f '(1 10)) 10)
-          (is (call-tridash-meta-node f '(0 5)) 0))))
+          (is (resolve (call-tridash-meta-node f '(1 10))) 10)
+          (is (resolve (call-tridash-meta-node f '(0 5))) 0))))
 
     (subtest "And Expressions"
       (with-module-table modules
@@ -598,10 +607,10 @@
                "f(cond, x) : cond and x")
 
         (with-nodes ((f "f")) modules
-          (ok (call-tridash-meta-node f '(1 10)))
-          (is (call-tridash-meta-node f '(0 5)) nil)
-          (is (call-tridash-meta-node f '(5 0)) nil)
-          (is (call-tridash-meta-node f '(0 0)) nil))))
+          (ok (bool-value (resolve (call-tridash-meta-node f '(1 10)))))
+          (is (bool-value (resolve (call-tridash-meta-node f '(0 5)))) nil)
+          (is (bool-value (resolve (call-tridash-meta-node f '(5 0)))) nil)
+          (is (bool-value (resolve (call-tridash-meta-node f '(0 0)))) nil))))
 
     (subtest "Or Expressions"
       (with-module-table modules
@@ -610,10 +619,10 @@
                "f(cond, x) : cond or x")
 
         (with-nodes ((f "f")) modules
-          (ok (call-tridash-meta-node f '(1 10)))
-          (ok (call-tridash-meta-node f '(0 5)))
-          (ok (call-tridash-meta-node f '(5 0)))
-          (is (call-tridash-meta-node f '(0 0)) nil)))))
+          (ok (bool-value (resolve (call-tridash-meta-node f '(1 10)))))
+          (ok (bool-value (resolve (call-tridash-meta-node f '(0 5)))))
+          (ok (bool-value (resolve (call-tridash-meta-node f '(5 0)))))
+          (is (bool-value (resolve (call-tridash-meta-node f '(0 0)))) nil)))))
 
   (subtest "Multiple Nodes with CATCH-FAIL Expressions"
     (with-module-table modules
@@ -622,10 +631,10 @@
              "min(x,y) : { x < y -> (x -> :context(self,c)); y -> :context(self,c) }")
 
       (with-nodes ((min "min")) modules
-        (is (call-tridash-meta-node min '(2 10)) 2)
-        (is (call-tridash-meta-node min '(10 2)) 2)
-        (is (call-tridash-meta-node min '(-5.3 7.6)) -5.3)
-        (is (call-tridash-meta-node min '(1 1)) 1))))
+        (is (resolve (call-tridash-meta-node min '(2 10))) 2)
+        (is (resolve (call-tridash-meta-node min '(10 2))) 2)
+        (is (resolve (call-tridash-meta-node min '(-5.3 7.6))) -5.3)
+        (is (resolve (call-tridash-meta-node min '(1 1))) 1))))
 
   (subtest "Recursive Meta-Nodes"
     (with-module-table modules
@@ -634,9 +643,9 @@
              "fact(n) : { case(n < 2 : 1, n * fact(n - 1)) }")
 
       (with-nodes ((fact "fact")) modules
-        (is (call-tridash-meta-node fact '(3)) 6)
-        (is (call-tridash-meta-node fact '(5)) 120)
-        (is (call-tridash-meta-node fact '(0)) 1))))
+        (is (resolve (call-tridash-meta-node fact '(3))) 6)
+        (is (resolve (call-tridash-meta-node fact '(5))) 120)
+        (is (resolve (call-tridash-meta-node fact '(0))) 1))))
 
   (subtest "Tail-Recursive Meta-Nodes"
     (with-module-table modules
@@ -645,9 +654,9 @@
              "fact(n) : { iter(n,acc) : case(n < 2 : acc, iter(n - 1, n * acc)); iter(n, 1) }")
 
       (with-nodes ((fact "fact")) modules
-        (is (call-tridash-meta-node fact '(3)) 6)
-        (is (call-tridash-meta-node fact '(5)) 120)
-        (is (call-tridash-meta-node fact '(0)) 1))))
+        (is (resolve (call-tridash-meta-node fact '(3))) 6)
+        (is (resolve (call-tridash-meta-node fact '(5))) 120)
+        (is (resolve (call-tridash-meta-node fact '(0))) 1))))
 
   (subtest "Calling Other Meta-Nodes"
     (with-module-table modules
@@ -658,9 +667,9 @@
              "f(a, b) : 1-(a) * 1+(b)")
 
       (with-nodes ((f "f")) modules
-        (is (call-tridash-meta-node f '(1 5)) 0)
-        (is (call-tridash-meta-node f '(10 4)) 45)
-        (is (call-tridash-meta-node f '(4 10)) 33))))
+        (is (resolve (call-tridash-meta-node f '(1 5))) 0)
+        (is (resolve (call-tridash-meta-node f '(10 4))) 45)
+        (is (resolve (call-tridash-meta-node f '(4 10))) 33))))
 
   (subtest "Higher Order Meta-Nodes"
     (with-module-table modules
@@ -673,11 +682,11 @@
              "g(a) : apply(..(1+), a)")
 
       (with-nodes ((f "f") (g "g")) modules
-        (is (call-tridash-meta-node f '(0)) 1)
-        (is (call-tridash-meta-node f '(1)) 0)
+        (is (resolve (call-tridash-meta-node f '(0))) 1)
+        (is (resolve (call-tridash-meta-node f '(1))) 0)
 
-        (is (call-tridash-meta-node g '(1)) 2)
-        (is (call-tridash-meta-node g '(3)) 4)))
+        (is (resolve (call-tridash-meta-node g '(1))) 2)
+        (is (resolve (call-tridash-meta-node g '(3))) 4)))
 
     (subtest "Errors"
       (with-module-table modules
@@ -691,7 +700,7 @@
                "f(a) : apply(..(x+), a)")
 
         (with-nodes ((f "f")) modules
-          (is-error (call-tridash-meta-node f '(1)) 'error))))))
+          (is-error (resolve (call-tridash-meta-node f '(1))) 'error))))))
 
 (subtest "Actual Macros"
   (subtest "Compile-Time Computations"
