@@ -51,8 +51,44 @@
 
 ## Arithmetic and logical operators
 
-:extern(+, -, *, /, <, <=, >, >=, =, !=, and, or, not)
+:extern(+, a, b)
+:attribute(+, strictness, or(a,b))
 
+:extern(-, a, b)
+:attribute(-, strictness, or(a,b))
+
+:extern(*, a, b)
+:attribute(*, strictness, or(a,b))
+
+:extern(/, a, b)
+:attribute(/, strictness, or(a,b))
+
+:extern(<, a, b)
+:attribute(<, strictness, or(a,b))
+
+:extern(<=, a, b)
+:attribute(<=, strictness, or(a,b))
+
+:extern(>, a, b)
+:attribute(>, strictness, or(a,b))
+
+:extern(>=, a, b)
+:attribute(>=, strictness, or(a,b))
+
+:extern(=, a, b)
+:attribute(=, strictness, or(a,b))
+
+:extern(!=, a, b)
+:attribute(!=, strictness, or(a,b))
+
+:extern(and, a, b)
+:attribute(and, strictness, a)
+
+:extern(or, a, b)
+:attribute(or, strictness, a)
+
+:extern(not, x)
+:attribute(not, strictness, x)
 :attribute(not, target-node, not)
 
 :export(+, -, *, /, <, <=, >, >=, =, !=, and, or, not)
@@ -60,16 +96,24 @@
 
 ## Conditions
 
-:extern(if)
+:extern(if, test, then, else)
+:attribute(if, strictness, or(test, and(then, else)))
+
 :export(if, case)
 
 
 ## Type Conversions
 
-:extern(int, real, string)
-
+:extern(int, x)
+:attribute(int, strictness, x)
 :attribute(int, target-node, int)
+
+:extern(real, x)
 :attribute(real, target-node, real)
+:attribute(real, strictness, x)
+
+:extern(string, x)
+:attribute(string, strictness, x)
 :attribute(string, target-node, string)
 
 :export(int, real, string)
@@ -77,8 +121,20 @@
 
 ## Type Checks
 
-:extern(int?, real?, string?)
-:extern(inf?, NaN?)
+:extern(int?, x)
+:attribute(int?, strictness, x)
+
+:extern(real?, x)
+:attribute(real?, strictness, x)
+
+:extern(string?, x)
+:attribute(string?, strictness, x)
+
+:extern(inf?, x)
+:attribute(inf?, strictness, x)
+
+:extern(NaN?, x)
+:attribute(NaN?, strictness, x)
 
 :export(int?, real?, string?, inf?, NaN?)
 

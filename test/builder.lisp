@@ -80,6 +80,7 @@
 
    :with-module-table
    :build
+   :finish-build
    :with-nodes
    :with-modules
    :with-dependencies
@@ -839,7 +840,7 @@
 
     (subtest "External Meta-Node Definitions"
       (with-module-table modules
-        (build ":extern(add, sub); add(a,b); sub(a,b)")
+        (build ":extern(add); :extern(sub); add(a,b); sub(a,b)")
 
         (with-nodes ((add "add") (sub "sub")
                      (a "a") (b "b")
@@ -1282,7 +1283,7 @@
 
     (subtest "Object Nodes"
       (with-module-table modules
-        (build ":extern(parse, not)"
+        (build ":extern(parse); :extern(not)"
                "parse(in1) -> p"
 
                "not(p.fail) -> (p.value -> a)"
@@ -1392,7 +1393,7 @@
 
   (subtest "Common Sub Expressions"
     (with-module-table modules
-      (build ":extern(parse, NaN?)"
+      (build ":extern(parse); :extern(NaN?)"
 
              "parse(in) -> p"
              "p -> self.value"
@@ -1424,7 +1425,7 @@
                ,(expression-group `(,parse ,in) :count 2)))))))
 
     (with-module-table modules
-      (build ":extern(add, even?)"
+      (build ":extern(add); :extern(even?)"
 
              "add(a, b) -> c"
              "even?(add(a, 1)) -> (add(a, 1) -> b)"

@@ -94,9 +94,6 @@
 
 ;;;; Compiling Tridash Expressions to CL
 
-(defconstant +tridash-recur-tag+ 'recur
-  "TAGBODY tag for tail-recursive self calls.")
-
 (defvar *tridash-cl-functions* (make-hash-map)
   "Map mapping Tridash meta-node identifiers to the corresponding CL
    function identifiers.")
@@ -112,23 +109,39 @@
              (ensure-get operand *operand-vars* (gensym (mkstr operand)))))
 
       `(lambda ,(map #'add-operand (operands meta-node))
-         (block nil
-           (tagbody
-              ,+tridash-recur-tag+
-              (return
-                ,(->
-                  (contexts meta-node)
-                  map-values
-                  first
-                  value-function
-                  (tridash->cl :tail-position-p t)))))))))
+         ,(->
+           (contexts meta-node)
+           map-values
+           first
+           value-function
+           (tridash->cl :thunk t))))))
 
 
 (defgeneric tridash->cl (expression &key &allow-other-keys)
   (:documentation
    "Compiles the Tridash expression EXPR to a CL expression. If the
-    :TAIL-POSITION-P argument is provided and is true, then EXPRESSION
-    appears in tail position."))
+    :THUNK argument is true (the default), then an expression which
+    creates a `THUNK' is generated, otherwise an expression which
+    computes the value directly is returned."))
+
+(defmethod tridash->cl :around ((expression t) &key (thunk t))
+  "If THUNK is true and EXPRESSION is compiled to a CL function
+   application expression, then the CL expression is wrapped in a
+   THUNK."
+
+  (let ((cl-expression (call-next-method)))
+    (if (and thunk (not (constant? cl-expression)))
+        `(thunk ,cl-expression)
+        cl-expression)))
+
+(defun constant? (thing)
+  "Returns true if THING is a constant which should not be wrapped in
+   a `THUNK'."
+
+  (or (atom thing)
+      (match thing
+        ((list (or 'quote 'function) _) t))))
+
 
 (defmethod tridash->cl ((link node-link) &key)
   "Returns the variable corresponding to the linked node by looking up
@@ -154,42 +167,58 @@
     (match meta-node
       ((external-meta-node name)
        (aif (get name *tridash-cl-functions*)
-            `(thunk (,it ,@(map #'tridash->cl arguments)))
+            (->> (make-meta-node-arguments meta-node arguments)
+                 (list* it))
             (error "External meta-node ~a not supported." name)))
 
       ((type meta-node)
-       `(thunk (call-tridash-meta-node ,meta-node (list ,@(map #'tridash->cl arguments)))))
+       (->> (make-meta-node-arguments meta-node arguments)
+            (list* 'list)
+            (list 'call-tridash-meta-node meta-node)))
 
       (_
-       `(thunk (funcall (resolve ,(tridash->cl meta-node)) ,@(map #'tridash->cl arguments)))))))
+       `(funcall (resolve ,(tridash->cl meta-node :thunk nil)) ,@(map #'tridash->cl arguments))))))
 
-(defun make-tail-call (arguments)
-  "Generates a tail self call with arguments ARGUMENTS."
+(defun make-meta-node-arguments (meta-node arguments)
+  "Returns expressions, wrapped in `THUNK's if necessary, for the
+   arguments ARGUMENTS of the `FUNCTOR-EXPRESSION' with operator
+   META-NODE."
 
-  `(progn
-     (psetf ,@(mappend #2`(,(get a1 *operand-vars*) ,(tridash->cl a2))
-                       (operands *current-meta-node*) arguments))
-     (go ,+tridash-recur-tag+)))
+  (loop
+     for (strict? . strict-args) = (strict-arguments meta-node) then strict-args
+     for arg in arguments
+     collect (tridash->cl arg :thunk (not strict?))))
+
+(defun strict-arguments (meta-node)
+  "Returns a list indicating whether each operand of META-NODE is
+   strict or lazy, by
+   TRIDASH.FRONTEND.STRICTNESS::STRICT-ARGUMENTS. This function
+   ensures that the definition of META-NODE is fully built."
+
+  ;; Ensure that META-NODE is built
+  (build-meta-node meta-node)
+  (finish-build-meta-node meta-node)
+
+  (tridash.frontend.strictness::strict-arguments meta-node))
 
 
 (defmethod tridash->cl ((if if-expression) &key)
   (with-struct-slots if-expression- (condition then else)
       if
 
-    `(thunk
-      (,(id-symbol "if")
-        ,(tridash->cl condition)
-        ,(tridash->cl then)
-        ,(tridash->cl else)))))
+    `(,(id-symbol "if")
+       ,(tridash->cl condition :thunk nil)
+       ,(tridash->cl then)
+       ,(tridash->cl else))))
 
 (defmethod tridash->cl ((object object-expression) &key)
   "Generates a CL expression that creates a `HASH-MAP'."
 
   (flet ((make-entry (pair)
            (destructuring-bind (key value) pair
-             `(cons ',key ,(tridash->cl value)))))
+             `(cons ',key ,(tridash->cl value :thunk nil)))))
 
-    `(thunk (alist-hash-map (list ,@(map #'make-entry (object-expression-entries object)))))))
+    `(alist-hash-map (list ,@(map #'make-entry (object-expression-entries object))))))
 
 (defmethod tridash->cl ((member member-expression) &key)
   "Generates a GET CL function expression."
@@ -197,7 +226,7 @@
   (with-struct-slots member-expression- (object key)
       member
 
-    `(thunk (get ',key (resolve ,(tridash->cl object))))))
+    `(get ',key (resolve ,(tridash->cl object :thunk nil)))))
 
 (defmethod tridash->cl ((expr catch-expression) &key)
   "Generates a CL CATCH expression with the tag symbol given by
@@ -207,18 +236,18 @@
   (with-struct-slots catch-expression- (main catch)
       expr
 
-    `(thunk
-      (handler-case (resolve ,(tridash->cl main))
-        (tridash-fail () ,(tridash->cl catch))))))
+    `(handler-case (resolve ,(tridash->cl main :thunk nil))
+       (tridash-fail () ,(tridash->cl catch)))))
 
 (defmethod tridash->cl ((fail fail-expression) &key)
   "Generates a CL THROW expression which throws the value of
    +FAIL-CATCH-TAG+."
 
-  '(thunk (error 'tridash-fail)))
+  '(error 'tridash-fail))
 
-(defmethod tridash->cl ((group expression-group) &key tail-position-p)
-  (tridash->cl (expression-group-expression group) :tail-position-p tail-position-p))
+(defmethod tridash->cl ((group expression-group) &key)
+  (tridash->cl (expression-group-expression group)
+               :thunk nil))
 
 
 (defmethod tridash->cl ((ref meta-node-ref) &key)
@@ -236,7 +265,7 @@
 
       ((type meta-node)
        (with-gensyms (args)
-         `(lambda (&rest ,args)
+         `#'(lambda (&rest ,args)
             (call-tridash-meta-node ,node ,args)))))))
 
 (defmethod tridash->cl (literal &key)
@@ -370,6 +399,7 @@
 
 (define-tridash-function |int?| (x) integerp)
 (define-tridash-function |real?| (x) numberp)
+(define-tridash-function |string?| (x) stringp)
 
 ;;; Lists
 

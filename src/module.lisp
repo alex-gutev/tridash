@@ -194,13 +194,13 @@
 
   (add-node name node module))
 
-(defun add-external-meta-node (name module)
+(defun add-external-meta-node (name module &key operands)
   "Adds a stub for an externally defined meta-node with name NAME to
    MODULE."
 
   (add-meta-node
    name
-   (make-instance 'external-meta-node :name name)
+   (make-instance 'external-meta-node :name name :operands operands)
    module))
 
 

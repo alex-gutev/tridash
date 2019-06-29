@@ -52,8 +52,10 @@
                  (:file "meta-node")
                  (:file "module")
                  (:file "module-table")
+                 (:file "builder-interface")
                  (:file "conditions")
                  (:file "outer-nodes")
+                 (:file "strictness")
                  (:file "builder")
                  (:file "macros")
                  (:file "coalescer")
@@ -122,6 +124,7 @@
                  (:test-file "lexer")
                  (:test-file "parser")
                  (:test-file "builder")
+                 (:test-file "strictness")
                  (:test-file "macros")
 
                  (:module
