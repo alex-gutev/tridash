@@ -396,11 +396,43 @@ Tridash.EndUpdate = function() {};
  * @return The thunk function.
  */
 Tridash.Thunk = function(compute) {
-    var value;
+    this.computed = false;
 
-    return () => {
-        return value || (value = compute());
-    };
+    this.compute = compute;
+};
+
+/**
+ * Computes the value of the thunk if it has not already been
+ * computed.
+ *
+ * @return The value of the thunk
+ */
+Tridash.Thunk.prototype.resolve = function() {
+    if (this.computed) {
+        return this.result;
+    }
+    else {
+        this.result = this.compute();
+        this.computed = true;
+
+        return this.result;
+    }
+};
+
+/**
+ * If @a thing is a Thunk, computes the thunk's value, otherwise
+ * returns @a thing.
+ *
+ * @param thing The thing to resolve.
+ *
+ * @return The resolved value.
+ */
+Tridash.resolve = function(thing) {
+    while (thing instanceof Tridash.Thunk) {
+        thing = thing.resolve();
+    }
+
+    return thing;
 };
 
 /**
@@ -467,23 +499,55 @@ Tridash.Queue = function() {
 
 /** Functions */
 
+/* Boolean Expressions */
+
+Tridash.and = function(a, b) {
+    return Tridash.resolve(a) ? b : false;
+};
+Tridash.or = function(a, b) {
+    if ((a = Tridash.resolve(a)))
+        return a;
+
+    return b;
+};
+
+
+/* Type Conversions */
+
+Tridash.castInt = function(x) {
+    return parseInt(Tridash.resolve(x));
+};
+Tridash.castReal = function(x) {
+    return parseFloat(Tridash.resolve(x));
+};
+Tridash.castString = function(x) {
+    return String(Tridash.resolve(x));
+};
+
+
+/* Querying Types */
+
 Tridash.isInteger = Number.isInteger || function(value) {
     return typeof value === 'number' &&
         isFinite(value) && Math.floor(value) === value;
 };
 
+Tridash.isInt = function(x) {
+    return Tridash.isInteger(Tridash.resolve(x));
+};
+
 Tridash.isReal = function(value) {
-    return !isNaN(value);
+    return !isNaN(Tridash.resolve(value));
 };
 
 Tridash.isString = function(value) {
-    return typeof value === 'string';
+    return typeof Tridash.resolve(value) === 'string';
 };
 
 Tridash.isInf = function(value) {
-    return !isFinite(value);
+    return !isFinite(Tridash.resolve(value));
 };
 
 Tridash.isNaN = function(value) {
-    return isNaN(value);
+    return isNaN(Tridash.resolve(value));
 };

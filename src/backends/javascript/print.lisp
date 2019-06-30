@@ -259,10 +259,10 @@
   (print-token "}"))
 
 
-(defmethod print-ast ((catch js-catch) &key)
+(defmethod print-ast ((expression js-catch) &key)
   (with-accessors ((try js-catch-try)
                    (catch js-catch-catch))
-      catch
+      expression
 
     (print-token "try")
     (print-block try)

@@ -73,7 +73,7 @@
                           :components ((:file "package")
                                        (:file "ast")
                                        (:file "print")
-                                       (:file "analyze")
+                                       (:file "symbols")
                                        (:file "backend")
                                        (:file "functions")
                                        (:file "html"))))))

@@ -21,21 +21,6 @@
 (in-package :tridash.backend.js)
 
 
-;;;; Symbol Names
-
-(defconstant +tridash-namespace+ "Tridash"
-  "Namespace containing the Tridash runtime library")
-
-(defconstant +tridash-prefix+ (mkstr +tridash-namespace+ ".")
-  "Namespace containing the Tridash runtime library definitions.")
-
-(defconstant +node-class+ (mkstr +tridash-prefix+ "Node")
-  "Runtime node class name.")
-
-(defconstant +node-context-class+ (mkstr +tridash-prefix+ "NodeContext")
-  "Runtime node context class name.")
-
-
 ;;;; Backend State
 
 (defvar *node-ids* nil
@@ -51,16 +36,6 @@
 (defvar *meta-node-ids*
   "Hash-table mapping `META-NODE' objects to global meta-node function
    identifiers.")
-
-(defvar *meta-node-types* (make-hash-map)
-  "Map mapping `META-NODE' objects to the the symbols SYNC or ASYNC
-   indicating whether the meta-node is evaluated synchronously or
-   asynchronously.")
-
-(defvar *lazy-nodes* nil
-  "Hash-table of nodes which should be evaluated lazily. If a node
-   should be evaluated lazily it is present in the table with the
-   corresponding value T.")
 
 (defvar *context-ids* nil
   "Hash-table containing the context identifiers of each context of
@@ -142,7 +117,6 @@
           (*node-link-indices* (make-hash-map))
           (*meta-node-ids* (make-hash-map))
           (*context-ids* (make-hash-map))
-          (*lazy-nodes* (find-lazy-nodes table))
           (*context-counter* 0)
           (*initial-values* nil)
           (defs (make-code-array))
@@ -275,17 +249,6 @@
 
   (js-element (js-member (node-path node) "contexts")
               (context-js-id node context-id)))
-
-
-;;; Querying for Lazy Evaluation
-
-(defun lazy-node? (context)
-  "Returns true if the CONTEXT should be evaluated lazily. CONTEXT
-   should be evaluated lazily if it is present in *LAZY-NODES* (with
-   value T) and has a non-NIL value function."
-
-  (and (get context *lazy-nodes*)
-       (value-function context)))
 
 
 ;;;; Code Generation
@@ -432,47 +395,7 @@
 
   (let ((*current-node* meta-node))
     (when (not (external-meta-node? meta-node))
-      (case (meta-node-type meta-node)
-        (sync
-         (create-function-meta-node meta-node))
-        (async
-         (create-async-meta-node meta-node))))))
-
-
-(defun async-meta-node? (meta-node)
-  (= (meta-node-type meta-node) 'async))
-
-(defgeneric meta-node-type (meta-node)
-  (:documentation
-   "Returns SYNC if the meta-node computes its value synchronously,
-    ASYNC if the meta-node computes its value asynchronously.")
-
-  (:method ((meta-node symbol)) 'sync)
-  (:method ((meta-node external-meta-node)) 'sync))
-
-(defmethod meta-node-type ((meta-node meta-node))
-  "Returns SYNC if `META-NODE' has no subnodes other than its operand
-   nodes, that is the entire subgraph has been coalesced into the
-   value function. Returns ASYNC if it has other subnodes besides the
-   operand nodes."
-
-  (with-slots (operands definition) meta-node
-    (ensure-get
-     meta-node
-     *meta-node-types*
-
-     (cond
-       ((attribute :async meta-node)
-        'async)
-
-       ;; If meta-node has no subnodes other than the operand nodes, it
-       ;; can be coalesced to a single function
-       ((= (length (nodes definition))
-           (1+ (length operands))) ; 1+ to include the self node
-
-        'sync)
-
-       (t 'async)))))
+      (create-function-meta-node meta-node))))
 
 
 ;;;; Generate dispatch methods

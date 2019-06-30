@@ -1,7 +1,7 @@
 ;;;; functions.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018  Alexander Gutev
+;;;; Copyright (C) 2018-2019  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -19,17 +19,6 @@
 ;;;; Compile value function expressions to JS code
 
 (in-package :tridash.backend.js)
-
-
-;;;; Symbol Names
-
-(define-constant +thunk-class+ (mkstr +tridash-prefix+ "Thunk")
-  :test #'equal
-  :documentation "Thunk constructor function name.")
-
-(define-constant +end-update-class+ (mkstr +tridash-prefix+ "EndUpdate")
-  :test #'equal
-  :documentation "EndUpdate class name.")
 
 
 ;;;; Utility Functions
@@ -59,52 +48,55 @@
 
 ;;; Call Meta-Node Expressions
 
+(defconstant +js-primitive-operators+
+  (alist-hash-map
+   (list
+    (cons (id-symbol "and") "Tridash.and")
+    (cons (id-symbol "or") "Tridash.or")
+    (cons (id-symbol "not") '("!" . t))
+
+    (cons (id-symbol "+") '("+" . t))
+    (cons (id-symbol "-") '("-" . t))
+    (cons (id-symbol "*") '("*" . t))
+    (cons (id-symbol "/") '("/" . t))
+    (cons (id-symbol "<") '("<" . t))
+    (cons (id-symbol ">") '(">" . t))
+    (cons (id-symbol "<=") '("<=" . t))
+    (cons (id-symbol ">=") '(">=" . t))
+    (cons (id-symbol "=") '("===" . t))
+    (cons (id-symbol "!=") '("!==" . t))
+
+    (cons (id-symbol "int") "Tridash.castInt")
+    (cons (id-symbol "real") "Tridash.castReal")
+    (cons (id-symbol "string") "Tridash.castString")
+
+    (cons (id-symbol "int?") "Tridash.isInt")
+    (cons (id-symbol "real?") "Tridash.isReal")
+    (cons (id-symbol "string?") "Tridash.isString")
+
+    (cons (id-symbol "inf?") "Tridash.isInf")
+    (cons (id-symbol "NaN?") "Tridash.isNaN")))
+
+  "Map mapping tridash primitive operators to their corresponding
+   JavaScript primitive operators.")
+
 (defvar *in-tail-position* t
   "Boolean flag for whether the expression, currently being compiled,
    occurs in tail position of the value function, currently being
    compiled.")
-
-(defvar *in-async* nil
-  "Boolean flag for whether the expression, currently being compiled,
-   is executed asynchronously from the execution of the value
-   function.")
 
 (defvar *return-variable* nil
   "The return variable in which the result computed by the expression,
    currently being compiled, should be stored. If NIL the result
    should be returned directly using a return statement.")
 
-(defconstant +js-primitive-operators+
-  (alist-hash-map
-   (list
-    (cons (id-symbol "and") "&&")
-    (cons (id-symbol "or") "||")
-    (cons (id-symbol "not") "!")
+(defvar *thunk* nil
+  "Boolean flag for whether the current expression should be compiled
+   to a thunk.")
 
-    (cons (id-symbol "int") "parseInt")
-    (cons (id-symbol "real") "parseFloat")
-    (cons (id-symbol "string") "String")
-
-    (cons (id-symbol "int?") "Tridash.isInteger")
-    (cons (id-symbol "number?") "Tridash.isReal")
-    (cons (id-symbol "string?") "Tridash.isString")
-
-    (cons (id-symbol "inf?") "Tridash.isInf")
-    (cons (id-symbol "NaN?") "Tridash.isNaN")
-
-    (cons (id-symbol "+") "+")
-    (cons (id-symbol "-") "-")
-    (cons (id-symbol "*") "*")
-    (cons (id-symbol "/") "/")
-    (cons (id-symbol "<") "<")
-    (cons (id-symbol ">") ">")
-    (cons (id-symbol "<=") "<=")
-    (cons (id-symbol ">") ">")
-    (cons (id-symbol "!=") "!==")
-    (cons (id-symbol "=") "===")))
-
-  "Map mapping tridash primitive operators to their corresponding
-   JavaScript primitive operators.")
+(defvar *resolve* nil
+  "Boolean flag for whether the value of the current expression should
+   be resolved before being returned.")
 
 
 (defun meta-node-id (meta-node)
@@ -126,16 +118,21 @@
      (ensure-get meta-node *meta-node-ids*
                  (mkstr "metanode" (length *meta-node-ids*))))))
 
+
 (defun meta-node-call (meta-node operands)
   "Returns a `JS-CALL' expression for the meta-node META-NODE with
    operands OPERANDS. If the meta-node is asynchronous a CONS is
    returned, with the CAR being the symbol ASYNC and the CDR being the
    meta-node call expression."
 
-  (let ((call (make-js-call (meta-node-id meta-node) operands)))
-    (if (async-meta-node? meta-node)
-        (cons 'async call)
-        call)))
+  (match (meta-node-id meta-node)
+    ((cons name resolve-args?)
+     (-<>> (map #'resolve-expression operands)
+           (if resolve-args? <> operands)
+           (make-js-call name)))
+
+    (name
+     (make-js-call name operands))))
 
 
 (defparameter *meta-node-call* #'meta-node-call
@@ -167,7 +164,7 @@
                    (cdr (assoc (name (node-link-node link)) op-vars :test #'equal)))
 
                  (make-meta-node-call (node operands)
-                   (if (and *in-tail-position* (not *in-async*) (eq node meta-node))
+                   (if (and *in-tail-position* (eq node meta-node))
                        (prog1
                            (js-block
                             (js-call "=" (js-array (map #'cdr op-vars)) (js-array operands))
@@ -175,8 +172,7 @@
                          (setf tail-recursive-p t))
                        (meta-node-call node operands))))
 
-          (let* ((*meta-node-call* #'make-meta-node-call)
-                 (body (make-function-body value-function #'get-input)))
+          (let* ((body (make-function-body value-function #'get-input)))
 
             (list
              (js-function
@@ -193,112 +189,6 @@
                    body)))
 
              (store-in-public-nodes meta-node (meta-node-id meta-node)))))))))
-
-(defun create-async-meta-node (meta-node)
-  "Generates the value-function of the `meta-node'. Unlike
-   CREATE-FUNCTION-META-NODE, the function generated does not directly
-   return the computed value, instead it creates the meta-node's
-   subgraph, dispatches the operand values to the operand nodes and
-   returns a promise which is resolved when the value of the meta-node
-   is computed. This function can be used to compile any meta-node."
-
-  (with-slots (definition operands) meta-node
-    (symbol-macrolet ((promise-var "promise")
-                      (node-table-var "node_table"))
-
-      (let ((*node-path* (lambda (node)
-                           (js-element node-table-var (node-index node))))
-            (*lazy-nodes* (find-lazy-nodes definition))
-            (*node-ids* (make-hash-map))
-            (*initial-values* nil))
-
-        (labels
-            ((get-operand (operand)
-               "Returns an expression accessing the operand node named
-                by OPERAND."
-
-               (node-path (find operand (nodes definition) :key #'name)))
-
-             (operand-node-var (operand)
-               "Returns a JS array with two elements: the operand node
-                and the variable storing the operand's value."
-
-               (js-array (list (get-operand (car operand))
-                               (cdr operand))))
-
-             (make-meta-node-call (node operands)
-               "Generates an expression which invokes the meta-node
-                NODE with operands OPERANDS. If in tail position a
-                tail call is generated."
-
-               (if (and (eq *current-node* meta-node)
-                        *in-tail-position*
-                        (async-meta-node? node))
-                   (make-tail-call node operands)
-                   (meta-node-call node operands)))
-
-             (make-tail-call (node operands)
-               "Generates a tail call for the meta-node NODE with
-                operands OPERANDS. The tail call reuses the existing
-                promise and if it is a self-call the existing node
-                table is reused."
-
-               (js-block
-                (->> (when (= node meta-node)
-                       (list node-table-var))
-
-                     (append operands (list promise-var))
-                     (meta-node-call node)
-                     (cdr))
-                (js-throw (js-new +end-update-class+))))
-
-             (create-update-fn ()
-               "Generates the update value function of the value
-                node."
-
-               (let ((path (node-path meta-node)))
-                 (append-code
-                  (js-call
-                   "="
-                   (js-member path "update_value")
-                   (js-lambda
-                    (list "value")
-                    (list
-                     (js-call (js-member promise-var "resolve") "value"))))))))
-
-
-          (let ((op-vars (make-operand-ids operands))
-                (node-creation-code (make-code-array)))
-
-            (let ((*output-code* node-creation-code)
-                  (*meta-node-call* #'make-meta-node-call))
-
-              (append-code (js-call "=" node-table-var (js-array)))
-
-              (generate-code definition)
-              (create-update-fn))
-
-            (list
-             (js-function
-              (meta-node-id meta-node)
-              (append (map #'cdr op-vars)
-                      (list (js-call "=" promise-var (js-new (js-member +tridash-namespace+ "ValuePromise")))
-                            node-table-var))
-
-              (list
-               ;; Wrap node table creation in an if which checks
-               ;; whether a node table was provided as an argument.
-               (js-if
-                (js-call "===" node-table-var "undefined")
-                (make-js-block node-creation-code))
-
-               (js-call
-                (js-member +tridash-namespace+ "set_values")
-                (js-array (append (map #'operand-node-var op-vars) *initial-values*)))
-
-               (js-return (js-member "promise" "promise"))))
-
-             (ensure-list (store-in-public-nodes meta-node (meta-node-id meta-node))))))))))
 
 (defun make-operand-ids (operands)
   "Generates variable names for each operand. Returns an association
@@ -328,52 +218,33 @@
    function expression is returned."
 
   (symbol-macrolet ((values-var "values"))
-    (let ((uses-old-value nil))
-      (labels ((get-input (link)
-                 (match link
-                   ((eql :self)
-                    (setf uses-old-value t)
+    (labels ((get-input (link)
+               (match link
+                 ((eql :self)
+                  (js-members "self" "node" "value"))
 
-                    (if (lazy-node? context)
-                        (js-call "old_value")
-                        "old_value"))
+                 (_ (make-link-expression context link values-var))))
 
-                   (_ (make-link-expression context link values-var))))
+             (make-body (fn)
+               (let ((*thunk* t))
+                 (make-function-body fn #'get-input))))
 
-               (make-body (fn)
-                 (alet (make-function-body fn #'get-input)
-                   ;; If NODE should be evaluated lazily, wrap the compute
-                   ;; function in a thunk and return it.
-                   (if (lazy-node? context)
-                       (list (js-return (js-call +thunk-class+ (js-lambda nil it))))
-                       it))))
+      (with-slots (value-function) context
+        (when value-function
+          (js-lambda
+           (list values-var)
 
-        (with-slots (value-function) context
-          (when value-function
-            (js-lambda
-             (list values-var)
-
-             (let ((body (make-body value-function)))
-               (if uses-old-value
-                   (list
-                    (js-var "old_value" (js-member "this" "value"))
-                    body)
-                   body)))))))))
+           (let ((body (make-body value-function)))
+             (list
+              (js-var "self" "this")
+              body))))))))
 
 (defun make-link-expression (context link &optional (values-var "values"))
   "Creates an expression which references the node with `NODE-LINK'
    LINK linked to the context CONTEXT."
 
-  (with-accessors ((link-node node-link-node)) link
-    (flet ((make-ref (node)
-             (js-element values-var (dependency-index context node))))
+  (js-element values-var (dependency-index context (node-link-node link))))
 
-      (match link-node
-        ((cons 'async node)
-         ;; Linked node is lazy => Evaluate the thunk.
-         (cons 'async (js-call (make-ref node))))
-
-        (_ (make-ref link-node))))))
 
 (defvar *get-input* nil
   "Function which should return an expression that references the
@@ -394,9 +265,24 @@
    expression that references the value of the dependency
    corresponding to the `NODE-LINK' object passed as an argument."
 
-  (let ((*var-counter* 0)
-        (*expression-groups* (make-hash-map)))
-    (make-statements function)))
+  (flet ((make-expression-group (group)
+           (destructuring-bind (group var thunk index) group
+             (list
+              (js-call "=" var thunk)
+              (when (and (expression-group-save group) (not (in-meta-node?)))
+                (-<> (js-member "self" "saved_values")
+                     (js-element index)
+                     (js-call "=" <> var)))))))
+
+    (let* ((*var-counter* 0)
+           (*expression-groups* (make-hash-map))
+           (*thunk* t)
+           (statements (make-statements function)))
+
+      (list*
+       (map (compose #'js-var #'first) (map-values *expression-groups*))
+       (map-to 'list #'make-expression-group *expression-groups*)
+       statements))))
 
 (defun make-statements (fn)
   "Generates the statements making up the body of the value
@@ -405,36 +291,18 @@
    expression, in *RETURN-VARIABLE*, or returns the result directly if
    *RETURN_VARIABLE* is NIL."
 
-  (multiple-value-call #'add-to-block (make-expression fn)))
+  (multiple-value-call #'add-to-block (make-expression fn :thunk *thunk*)))
 
 (defun add-to-block (block expression)
   "Creates a new block which contains BLOCK and a statement which
    returns the result of EXPRESSION, generated using MAKE-RETURN. The
-   list of the block's statements is returned.
+   list of the block's statements is returned. If EXPRESSION is equal
+   to *RETURN-VARIABLE* the return expression/statement is not added
+   to BLOCK."
 
-   The second return value is true if EXPRESSION is an asynchronous
-   expression."
-
-  (flet ((get-expression (expression)
-           "If EXPRESSION is a CONS with the CAR equal to the symbol
-            ASYNC, the expression stored in the CDR is
-            returned. Otherwise EXPRESSION is returned as is."
-
-           (match expression
-             ((cons 'async expression)
-              (values expression t))
-
-             (_ expression))))
-
-    (multiple-value-bind (expression async?)
-        (get-expression expression)
-
-      (values
-       (list block
-             (when expression
-               (make-return (get-expression expression))))
-
-       async?))))
+  (list block
+        (when (and expression (/= expression *return-variable*))
+          (make-return expression))))
 
 
 ;;;; Compiling Intermediate Expressions
@@ -458,8 +326,52 @@
     NIL as the block returned in the first value contains a return
     statement."))
 
-(defmethod make-expression :around ((expression t) &key ((:return-variable *return-variable*) *return-variable*) ((:tailp *in-tail-position*) *in-tail-position*))
-  (call-next-method))
+(defmethod make-expression :around ((expression t) &key ((:return-variable *return-variable*) *return-variable*) ((:thunk *thunk*)))
+  "Wraps the compiled expression in a THUNK if :THUNK is true."
+
+  (let* ((*return-variable* (and (not *thunk*) *return-variable*)))
+
+    (multiple-value-bind (block expression)
+        (let ((*thunk* nil)) (call-next-method))
+      (if (and *thunk* (or block (not (non-computing? expression))))
+          (values nil (thunk block expression))
+          (values block expression)))))
+
+(defun non-computing? (expression)
+  "Returns true if the JS expression EXPRESSION does not compute a new
+   value but simply references an existing value.
+
+   Variable references, anonymous functions and literal values are
+   always considered non-computing. Member and element expressions are
+   considered non-computing if the object and element expressions are
+   non-computing. Function calls, new expressions, object and array
+   literals are not considered non-computing."
+
+  (match expression
+    ((type (or js-call js-new js-object js-array))
+     nil)
+
+    ((js-member- object field)
+     (and (non-computing? object)
+          field))
+
+    ((js-element- object element)
+     (and (non-computing? object)
+          (non-computing? element)))
+
+    ((type expression) t)))
+
+(defun resolve-expression (expression)
+  "Creates an expression which resolves the value of EXPRESSION."
+
+  (js-call +resolve-function+ expression))
+
+(defun thunk (block expression)
+  "Creates an expression which creates a thunk that executes BLOCK and
+   returns the result of EXPRESSION."
+
+  (let ((*return-variable* nil))
+    (js-new +thunk-class+ (list (js-lambda nil (add-to-block block expression))))))
 
 
 ;;; Node References
@@ -499,18 +411,20 @@
 (defmethod make-functor-expression ((meta-node meta-node) arguments)
   (make-operands
    arguments
+   (strict-arguments meta-node)
    (lambda (expressions)
      (let ((call (make-meta-node-call meta-node expressions)))
-       (if (value-expression? call)
+       (if (expressionp call)
            (values nil call)
            (values call nil))))))
 
 (defmethod make-functor-expression (operator arguments)
   (make-operands
    (cons operator arguments)
+   (list t)
    (lambda (expressions)
      (destructuring-bind (fn &rest args) expressions
-       (values nil (cons 'async (make-js-call fn args)))))))
+       (values nil (make-js-call (resolve-expression fn) args))))))
 
 
 ;;; If Expressions
@@ -524,7 +438,7 @@
 
     (let ((cond-var (var-name)))
       (multiple-value-bind (cond-block cond-expr)
-          (make-expression cond :return-variable cond-var :tailp nil)
+          (make-expression cond :return-variable cond-var)
 
         (multiple-value-call
             #'combine-blocks
@@ -532,23 +446,16 @@
           (when cond-block
             (js-block (js-var cond-var) cond-block))
 
-          (use-expression
-           cond-expr
+          (let ((then-block (make-statements then))
+                (else-block (make-statements else)))
 
-           (lambda (cond-expr)
-             (multiple-value-bind (then-block then-async?)
-                 (make-statements then)
+            (values
+             (js-block
+              (js-if (resolve-expression cond-expr)
+                     (make-js-block then-block)
+                     (make-js-block else-block)))
 
-               (multiple-value-bind (else-block else-async?)
-                   (make-statements else)
-
-                 (values
-                  (js-block
-                   (js-if cond-expr
-                          (make-js-block then-block)
-                          (make-js-block else-block)))
-
-                  (block-expression (or then-async? else-async?))))))))))))
+             *return-variable*)))))))
 
 
 ;;; Fail and Catch Expressions
@@ -572,22 +479,14 @@
                    (catch catch-expression-catch))
       expr
 
-    (multiple-value-bind (try try-async?) (make-statements try)
-      (multiple-value-bind (catch catch-async?) (make-statements catch)
-        (values
-         (js-block
-          (js-catch try catch))
+    (let ((try (let ((*resolve* t)) (make-statements try)))
+          (catch (make-statements catch)))
 
-         (block-expression (or try-async? catch-async?)))))))
+      (values
+       (js-block
+        (js-catch try catch))
 
-(defun block-expression (async?)
-  "Generates the expression for referencing the value computed by a JS
-   block, such as an IF or TRY-CATCH block."
-
-  (if (and *return-variable* async?)
-      (->> (js-call (js-member "Promise" "resolve") *return-variable*)
-           (cons 'async))
-      *return-variable*))
+       *return-variable*))))
 
 
 ;;; Object Expressions
@@ -602,6 +501,7 @@
 
       (make-operands
        values
+       (make-list (length values) :initial-element t)
        (lambda (values)
          (values
           nil
@@ -615,18 +515,14 @@
 
     (let ((object-var (var-name)))
       (multiple-value-bind (object-block object-expr)
-          (make-expression object :return-variable object-var :tailp nil)
+          (make-expression object :return-variable object-var)
 
         (multiple-value-call #'combine-blocks
 
           (when object-block
             (js-block (js-var object-var) object-block))
 
-          (use-expression
-           object-expr
-
-           (lambda (object)
-             (values nil (js-element object (js-string member))))))))))
+          (values nil (js-element (resolve-expression object-expr) (js-string member))))))))
 
 
 ;;; Expression Groups
@@ -642,10 +538,10 @@
         (make-expression expression))))
 
 (defun make-expression-group (group)
-  "Generates code which computes the value of the expression-group GROUP and
-   stores the resulting expression in *EXPRESSION-GROUPS*. If code for the
-   expression-group has already been generated, the variable, to which the
-   result of the expression-group is assigned, is returned."
+  "Generates code which computes the value of the `EXPRESSION-GROUP'
+   GROUP and stores the resulting expression in
+   *EXPRESSION-GROUPS*. Returns the variable which references the
+   value of the `EXPRESSION-GROUP'."
 
   (with-accessors ((expression expression-group-expression)
                    (save expression-group-save))
@@ -654,37 +550,15 @@
     (aif (get group *expression-groups*)
          (values nil (car it))
 
-         (let* ((index (length *expression-groups*))
-                (*current-expression-group-index* index))
+         (let* ((*current-expression-group-index* (length *expression-groups*))
+                (thunk (nth-value 1 (make-expression expression :thunk t))))
 
-           (multiple-value-return (blk expr)
-               (make-expression-group-expr expression
-                                       :save save
-                                       :index (length *expression-groups*))
-             (declare (ignore blk))
-             (setf (get group *expression-groups*) (cons expr (length *expression-groups*))))))))
-
-(defun make-expression-group-expr (expr &key save index)
-  "Generates code which computes the value of the expression-group
-   expression and stores it in a variable, which is returned as the
-   expression (second return value)."
-
-  (let ((var (var-name)))
-    (flet ((make-block (&rest statements)
-             (js-block
-              statements
-              (when (and (not (in-meta-node?)) save)
-                (js-call "=" (get-saved-value index) var)))))
-
-      (multiple-value-bind (blk expr) (make-expression expr :return-variable var :tailp nil)
-        (values
-         (cond
-           ((or (null expr) (= expr var))
-            (make-block (js-var var) blk))
-
-           (t
-            (make-block blk (js-var var expr))))
-         var)))))
+           (values
+            nil
+            (aprog1 (var-name)
+              (->>
+               (list it thunk *current-expression-group-index*)
+               (setf (get group *expression-groups*)))))))))
 
 (defun in-meta-node? ()
   "Returns true if currently compiling a meta-node function."
@@ -695,7 +569,7 @@
   "Returns an expression which references the saved previous value of
    the expression-group with index INDEX."
 
-  (js-element (js-member "this" "saved_values") index))
+  (js-element (js-member "self" "saved_values") index))
 
 
 ;;; Meta-Node References
@@ -710,6 +584,7 @@
     (if outer-nodes
         (make-operands
          outer-nodes
+         nil
          (lambda (expressions)
            (values
             nil
@@ -738,7 +613,7 @@
 
 ;;;; Arguments
 
-(defun make-operands (operands body-fn)
+(defun make-operands (operands strict-arguments body-fn)
   "Generates code which computes the value of each operand. BODY-FN is
    a function, which is called to generate the code which makes use of
    the operands' values. It is called with one argument: a list of JS
@@ -746,25 +621,15 @@
    return two values: a block and an expression.
 
    Two values are returned, a block which computes the values of the
-   operands, and an expression.
-
-   If all operands are synchronous expressions: the block returned
-   contains the statements of the block which computes the operands'
-   values and the block returned by BODY-FN. The expression returned
-   by BODY-FN is returned.
-
-   If at least one of the operands is an asynchronous expression: the
-   block returned is the block which computes the operand values, and
-   the expression is a Promise with a then handler function that
-   contains the block returned by BODY-FN followed by a return
-   statement, which returns the expression returned by BODY-FN."
+   operands, and an expression."
 
   (iter
+    (for (strict? . strict-args) initially strict-arguments then strict-args)
     (for operand in operands)
     (for op-var = (var-name))
 
     (multiple-value-bind (op-block op-expr)
-        (make-expression operand :return-variable op-var :tailp nil)
+        (make-expression operand :return-variable op-var :thunk (not strict?))
 
       (when op-block
         (collect (js-var op-var) into block-statements)
@@ -777,7 +642,7 @@
        (multiple-value-call
            #'combine-blocks
          (and block-statements (make-js-block block-statements))
-         (use-expressions expressions body-fn))))))
+         (funcall body-fn expressions))))))
 
 
 ;;;; Returning Values
@@ -789,36 +654,14 @@
    into the variable named by *RETURN-VARIABLE*, is generated
    otherwise a return statement is generated."
 
-  (if *return-variable*
-      (js-call "=" *return-variable* expression)
-      (js-return expression)))
+  (let ((expression (if *resolve* (resolve-expression expression) expression)))
+    (if *return-variable*
+        (js-call "=" *return-variable* expression)
+        (js-return expression))))
 
 (defun var-name (&optional (prefix "var"))
   "Returns a new unused variable name."
   (mkstr prefix (incf *var-counter*)))
-
-
-;;;; Promises for Asynchronous Expressions
-
-(defun make-promise (expressions vars body)
-  "Generates a promise expression, which waits for the promise
-   returned by EXPRESSIONS to resolve. The promise has a then handler
-   function attached to it, in which each element in VARS is the name
-   of the variable which stores the resolved value of the
-   corresponding expression in EXPRESSIONS, and BODY is the list of
-   statements comprising the body of the handler function. EXPRESSIONS
-   may either be a list or a single EXPRESSION, likewise VAR may
-   either be a list or a single variable name."
-
-  (let*-if ((args (js-array expressions) expressions)
-            (promise (js-call (js-member "Promise" "all") args) expressions)
-            (vars (js-array vars) vars))
-
-      (listp expressions)
-
-    (js-call
-     (js-member promise "then")
-     (js-lambda (list vars) body))))
 
 
 ;;;; Combining Blocks
@@ -835,87 +678,6 @@
      (when (or statements1 statements2)
        (js-block statements1 statements2))
      expression)))
-
-(defun make-body-block (body-fn arg)
-  "Generates the body of a promise handler function. The body contains
-   the block returned by BODY-FN (called with argument ARG) followed
-   by a return statement, which returns the expression returned by
-   BODY-FN."
-
-  (let ((*return-variable* nil)
-        (*in-async* t))
-    (multiple-value-call #'add-to-block (funcall body-fn arg))))
-
-
-;;;; Using Expressions
-
-(defun use-expression (expression body-fn)
-  "Calls BODY-FN with an expression which references the value
-   computed by EXPRESSION. BODY-FN should return two values a block
-   and an expression.
-
-   If EXPRESSION is synchronous it is passed directly to BODY-FN and
-   the values returned by BODY-FN are returned directly.
-
-   IF EXPRESSION is asynchronous the expression returned (second
-   return value) is EXPRESSION with a then handler function attached
-   to it. The handler function contains the block returned by BODY-FN
-   followed by a statement which returns the value computed by the
-   expression returned by BODY-FN. The block returned (first return
-   value) is NIL."
-
-  (match expression
-    ((cons 'async expression)
-     (let ((var (var-name)))
-       (values
-        nil
-        (cons 'async (make-promise expression var (make-body-block body-fn var))))))
-
-    (_ (funcall body-fn expression))))
-
-(defun use-expressions (expressions body-fn)
-  "Same as USE-EXPRESSION except that EXPRESSIONS is a list of
-   expressions and BODY-FN is passed a list of expressions which
-   reference each expression in EXPRESSIONS."
-
-  (flet ((get-expression (expression)
-           (match expression
-             ((cons 'async expression)
-              (values expression (var-name)))
-
-             (_ expression))))
-
-    (iter
-      (for expression in expressions)
-
-      (multiple-value-bind (expression var)
-          (get-expression expression)
-
-        (when var
-          (collect expression into promise-args)
-          (collect var into fn-args))
-
-        (collect (or var expression) into body-args)
-
-        (finally
-         (return
-           (if promise-args
-               (->> (make-body-block body-fn body-args)
-                    (make-promise promise-args fn-args)
-                    (cons 'async)
-                    (values nil))
-               (funcall body-fn body-args))))))))
-
-(defun value-expression? (thing)
-  "Returns true if THING is a JS expression. Unlike EXPRESSIONP, this
-   returns true if THING is a CONS where the CAR is the symbol ASYNC
-   and EXPRESSIONP returns true for the CDR."
-
-  (match thing
-    ((cons 'async thing)
-     (expressionp thing))
-
-    (_ (expressionp thing))))
 
 
 ;;;; Removing Redundant AST Nodes
