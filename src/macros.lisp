@@ -201,16 +201,6 @@
 
   (tridash.frontend.strictness::strict-arguments meta-node))
 
-
-(defmethod tridash->cl ((if if-expression) &key)
-  (with-struct-slots if-expression- (condition then else)
-      if
-
-    `(,(id-symbol "if")
-       ,(tridash->cl condition :thunk nil)
-       ,(tridash->cl then)
-       ,(tridash->cl else))))
-
 (defmethod tridash->cl ((object object-expression) &key)
   "Generates a CL expression that creates a `HASH-MAP'."
 
@@ -219,14 +209,6 @@
              `(cons ',key ,(tridash->cl value :thunk nil)))))
 
     `(alist-hash-map (list ,@(map #'make-entry (object-expression-entries object))))))
-
-(defmethod tridash->cl ((member member-expression) &key)
-  "Generates a GET CL function expression."
-
-  (with-struct-slots member-expression- (object key)
-      member
-
-    `(get ',key (resolve ,(tridash->cl object :thunk nil)))))
 
 (defmethod tridash->cl ((expr catch-expression) &key)
   "Generates a CL CATCH expression with the tag symbol given by
@@ -364,6 +346,12 @@
 
 (define-tridash-function |if| (cond then else)
   (if (bool-value (resolve cond)) then else))
+
+(define-tridash-function |member| (object key)
+  (get (resolve key) (resolve object)))
+
+
+;;; Boolean Expressions
 
 (define-tridash-function |and| (a b)
   (if (bool-value (resolve a)) b 0))

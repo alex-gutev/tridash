@@ -262,16 +262,6 @@
                  (map #'extract-expression)
                  (every #'value-fn-equal args-a)))))))
 
-(defmethod value-fn-equal ((a if-expression) (b list))
-  (match* (a b)
-    (((if-expression- (condition cond-a) (then then-a) (else else-a))
-      (list 'if cond-b then-b else-b))
-
-     (and
-      (value-fn-equal cond-a cond-b)
-      (value-fn-equal then-a then-b)
-      (value-fn-equal else-a else-b)))))
-
 (defmethod value-fn-equal ((a object-expression) (b list))
   (flet ((field= (a b)
            (and (= (first a) (first b))
@@ -285,14 +275,6 @@
             (every #'field=
                    (sort entries-a :key (compose #'symbol-name #'first))
                    (sort entries-b :key (compose #'symbol-name #'first))))))))
-
-(defmethod value-fn-equal ((a member-expression) (b list))
-  (match* (a b)
-    (((member-expression- (object object-a) (key key-a))
-      (list :member object-b key-b))
-
-     (and (= key-a key-b)
-          (value-fn-equal object-a object-b)))))
 
 (defmethod value-fn-equal ((a catch-expression) (b list))
   (match* (a b)
@@ -347,6 +329,16 @@
              (->> (stable-sort outer-nodes-b :key #'position-in-args)
                   (map #'extract-expression)
                   (every #'value-fn-equal outer-nodes-a)))))))
+
+(defmethod value-fn-equal ((a external-meta-node) b)
+  (match* (a b)
+    (((external-meta-node (name (eql (id-symbol "if")))) 'if)
+     t)
+
+    (((external-meta-node (name (eql (id-symbol "member")))) :member)
+     t)
+
+    ((_ _) (call-next-method))))
 
 (defmethod value-fn-equal (a b)
   (= a b))

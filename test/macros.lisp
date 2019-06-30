@@ -202,7 +202,7 @@
       (member-expression object 'key1) 'key2)
 
      ($obj)
-     '(thunk (get 'key2 (resolve (get 'key1 (resolve $obj)))))))
+     '(thunk (!|member| (!|member| $obj 'key1) 'key2))))
 
   (subtest "Catch Expressions"
     (with-core-nodes ("/" "*")
@@ -745,7 +745,7 @@
       (test-not-nodes '("!-" "a" "b"))
 
       (with-nodes ((a "a") (b "b") (out "out")
-                   (a!-b ((":in" "core" "if") "a" "b"))
+                   (a!-b ((":in" "builtin" "if") "a" "b"))
                    (if "if"))
           modules
 

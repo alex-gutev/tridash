@@ -82,6 +82,13 @@
 ;;; meta-node. Eventually a macro-system will be developed and these
 ;;; will be specified in Tridash code.
 
+(defparameter *core-meta-nodes*
+  (external-meta-nodes
+   '((if (cond then else) ((:strictness (or cond (and then else)))))
+     (:member (object key) ((:strictness (or object key))))))
+
+  "Map of meta-nodes which comprise the language primitives.")
+
 (defun create-builtin-module (modules)
   "Creates the builtin module."
 
@@ -89,11 +96,21 @@
     (let ((case-node (add-external-meta-node (id-symbol "case") builtin))
           (?->-node (add-external-meta-node (id-symbol "?->") builtin)))
 
+      (add-core-nodes builtin)
+
       (setf (node-macro-function case-node) #'case-macro-function)
       (export-node (id-symbol "case") builtin)
 
       (setf (node-macro-function ?->-node) #'?->-macro-function)
       (export-node (id-symbol "?->") builtin))))
+
+(defun add-core-nodes (builtin)
+  "Adds the nodes in *CORE-META-NODES* to the module BUILTIN, and its
+   export list."
+
+  (doseq (node (map-values *core-meta-nodes*))
+    (add-meta-node (name node) node builtin)
+    (export-node (name node) builtin)))
 
 (defun case-macro-function (operator operands module)
   "Case macro function. Transforms the case expression into a series
@@ -135,3 +152,17 @@
               :expected '(node node)
               :operator operator
               :arguments operands))))
+
+
+;;;; Creating Core Expressions
+
+(defun if-expression (test then else)
+  "Creates an if functor expression with test TEST, then expression
+   THEN, and else expression ELSE."
+
+  (functor-expression (get 'if *core-meta-nodes*)
+                      (list test then else)))
+
+(defun member-expression (object key)
+  (functor-expression (get :member *core-meta-nodes*)
+                      (list object key)))

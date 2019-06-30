@@ -96,9 +96,6 @@
 
 ## Conditions
 
-:extern(if, test, then, else)
-:attribute(if, strictness, or(test, and(then, else)))
-
 :export(if, case)
 
 

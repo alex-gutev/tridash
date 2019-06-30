@@ -92,9 +92,6 @@
                   ((type node-link)
                    (return-from has-node (= link expression)))
 
-                  ((if-expression- condition)
-                   (return-from has-node (has-node link condition)))
-
                   ((functor-expression-
                     (meta-node (guard (external-meta-node name)
                                       (member name '("and" "or" "if" :key #'id-symbol))))

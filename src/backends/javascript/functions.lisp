@@ -478,38 +478,49 @@
                    (arguments functor-expression-arguments))
       expression
 
-    (match meta-node
-      ((external-meta-node (name (eql (id-symbol "if"))))
-       (make-expression
-        (if-expression (first arguments) (second arguments) (third arguments))))
+    (make-functor-expression meta-node arguments)))
 
-      ((type meta-node)
-       (make-operands
-        arguments
-        (lambda (expressions)
-          (let ((call (make-meta-node-call meta-node expressions)))
-            (if (value-expression? call)
-                (values nil call)
-                (values call nil))))))
+(defgeneric make-functor-expression (operator arguments)
+  (:documentation
+   "Generates code for a functor expression consisting of OPERATOR
+    applied to ARGUMENTS."))
 
-      (_
-       (make-operands
-        (cons meta-node arguments)
-        (lambda (expressions)
-          (destructuring-bind (fn &rest args) expressions
-            (values nil (cons 'async (make-js-call fn args))))))))))
+(defmethod make-functor-expression ((meta-node external-meta-node) arguments)
+  (match (name meta-node)
+    ((eql (id-symbol "if"))
+     (make-if-expression arguments))
+
+    ((eql (id-symbol "member"))
+     (make-member-expression arguments))
+
+    (_
+     (call-next-method))))
+
+(defmethod make-functor-expression ((meta-node meta-node) arguments)
+  (make-operands
+   arguments
+   (lambda (expressions)
+     (let ((call (make-meta-node-call meta-node expressions)))
+       (if (value-expression? call)
+           (values nil call)
+           (values call nil))))))
+
+(defmethod make-functor-expression (operator arguments)
+  (make-operands
+   (cons operator arguments)
+   (lambda (expressions)
+     (destructuring-bind (fn &rest args) expressions
+       (values nil (cons 'async (make-js-call fn args)))))))
 
 
 ;;; If Expressions
 
-(defmethod make-expression ((if if-expression) &key)
-  "Generates an IF block for a conditional expression with condition
-   COND, if-true expression THEN and else expression ELSE."
+(defun make-if-expression (arguments)
+  "Generates an if-block for an IF functor expression with arguments
+   ARGUMENTS."
 
-  (with-accessors ((cond if-expression-condition)
-                   (then if-expression-then)
-                   (else if-expression-else))
-      if
+  (destructuring-bind (cond then else)
+      arguments
 
     (let ((cond-var (var-name)))
       (multiple-value-bind (cond-block cond-expr)
@@ -596,13 +607,11 @@
           nil
           (js-object (map #'list (map #'js-string keys) values))))))))
 
-(defmethod make-expression ((expr member-expression) &key)
+(defun make-member-expression (arguments)
   "Generates an expression which returns the value of a particular
    subnode (field) of an object node."
 
-  (with-accessors ((object member-expression-object)
-                   (member member-expression-key))
-      expr
+  (destructuring-bind (object member) arguments
 
     (let ((object-var (var-name)))
       (multiple-value-bind (object-block object-expr)

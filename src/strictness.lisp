@@ -138,15 +138,6 @@
   (analyze-expression (expression-group-expression group)))
 
 
-;;; If and Catch Expressions
-
-(defmethod analyze-expression ((expression if-expression))
-  (list 'or
-        (analyze-expression (if-expression-condition expression))
-        (list 'and
-              (analyze-expression (if-expression-then expression))
-              (analyze-expression (if-expression-else expression)))))
-
 (defmethod analyze-expression ((expression catch-expression))
   (analyze-expression (catch-expression-main expression)))
 
@@ -158,9 +149,6 @@
            (analyze-expression (second field))))
 
     (list* 'or (map #'analyze-field (object-expression-entries object)))))
-
-(defmethod analyze-expression ((expression member-expression))
-  (analyze-expression (member-expression-object expression)))
 
 
 ;;; Functor Expressions

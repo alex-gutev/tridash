@@ -34,25 +34,11 @@
   meta-node
   arguments)
 
-(defstruct (if-expression (:constructor if-expression (condition then else)))
-  "Represents an IF expression."
-
-  condition
-  then
-  else)
-
 (defstruct (object-expression (:constructor object-expression (&optional entries)))
   "Represents a create dictionary object expression with entries
    ENTRIES."
 
   entries)
-
-(defstruct (member-expression (:constructor member-expression (object key)))
-  "Represents a reference to a dictionary entry KEY within the
-   dictionary OBJECT."
-
-  object
-  key)
 
 (defstruct (catch-expression (:constructor catch-expression (main catch)))
   "Represents a catch expression which evaluates to the MAIN
@@ -105,17 +91,9 @@
   (:method (fn (call functor-expression))
     (foreach (curry #'walk-expression fn) (functor-expression-arguments call)))
 
-  (:method (fn (if if-expression))
-    (walk-expression fn (if-expression-condition if))
-    (walk-expression fn (if-expression-then if))
-    (walk-expression fn (if-expression-else if)))
-
   (:method (fn (object object-expression))
     (foreach (compose (curry #'walk-expression fn) #'second)
              (object-expression-entries object)))
-
-  (:method (fn (member member-expression))
-    (walk-expression fn (member-expression-object member)))
 
   (:method (fn (catch catch-expression))
     (walk-expression fn (catch-expression-main catch))
@@ -149,12 +127,6 @@
      (funcall fn (functor-expression-meta-node call))
      (map fn (functor-expression-arguments call))))
 
-  (:method (fn (if if-expression))
-    (if-expression
-     (funcall fn (if-expression-condition if))
-     (funcall fn (if-expression-then if))
-     (funcall fn (if-expression-else if))))
-
   (:method (fn (object object-expression))
     (flet ((map-entry (entry)
              (list (first entry)
@@ -162,11 +134,6 @@
 
       (object-expression
        (map #'map-entry (object-expression-entries object)))))
-
-  (:method (fn (member member-expression))
-    (member-expression
-     (funcall fn (member-expression-object member))
-     (member-expression-key member)))
 
   (:method (fn (catch catch-expression))
     (catch-expression

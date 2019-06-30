@@ -147,19 +147,12 @@
    :functor-expression-arguments
 
    :if-expression
-   :if-expression-p
-   :if-expression-condition
-   :if-expression-then
-   :if-expression-else
 
    :object-expression
    :object-expression-p
    :object-expression-entries
 
    :member-expression
-   :member-expression-p
-   :member-expression-object
-   :member-expression-key
 
    :catch-expression
    :catch-expression-p

@@ -20,6 +20,9 @@
 
 (in-package :tridash.frontend)
 
+(in-readtable cut-syntax)
+
+
 (defclass meta-node (node)
   ((operands
     :initarg :operands
@@ -119,6 +122,35 @@
   (lambda (meta-node)
     (awhen (definition meta-node)
       (funcall fn it))))
+
+(defun external-meta-node (name operands &optional attributes)
+  "Creates an `EXTERNAL-META-NODE' with name NAME, operand identifiers
+   OPERANDS. ATTRIBUTES is a list of attributes to add to the node
+   where each element is a list of the form (ATTRIBUTE VALUE)."
+
+  (aprog1 (make-instance 'external-meta-node
+                         :name (-> name
+                                   symbol-name
+                                   string-downcase
+                                   id-symbol)
+                         :operands operands)
+
+    (doseq ((attribute value) attributes)
+      (setf (attribute attribute it) value))))
+
+(defun external-meta-nodes (defs)
+  "Creates a map of `EXTERNAL-META-NODE's where the keys are the
+   meta-node identifiers and the values are the `EXTERNAL-META-NODE'
+   object. DEFS is a list of the meta-node's to create, where each
+   item is a list of the form (NAME OPERANDS ATTRIBUTES), on which
+   EXTERNAL-META-NODE is applied. The name of the meta-node is the
+   downcased SYMBOL-NAME of NAME interned in the TRIDASH.SYMBOLS
+   package."
+
+  (alist-hash-map (map #L(cons (first %1) (apply #'external-meta-node %1)) defs)))
+
+
+;;; Macro Functions
 
 (defun node-macro-function (meta-node)
   "Returns the meta-nodes macro function if it is a macro."
