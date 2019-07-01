@@ -4,6 +4,8 @@
 ;;;;
 ;;;; Tridashc build script
 
+(declaim #+sbcl(sb-ext:muffle-conditions cl:warning))
+
 (ql:quickload :tridash)
 
 (let* ((datadir #p"@datadir@/")
