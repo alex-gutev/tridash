@@ -47,11 +47,14 @@ sources = tridash.asd \
         src/operators.lisp \
         src/node.lisp \
         src/meta-node.lisp \
-        src/node-table.lisp \
-        src/modules.lisp \
+        src/module.lisp \
+        src/module-table.lisp \
+	src/builder-interface.lisp \
         src/conditions.lisp \
         src/outer-nodes.lisp \
+	src/strictness.lisp \
         src/builder.lisp \
+	src/macros.lisp \
         src/coalescer.lisp \
         src/prog-builder.lisp \
         src/main.lisp \
@@ -60,10 +63,10 @@ sources = tridash.asd \
         src/util/macros.lisp \
         src/builders/html/package.lisp \
         src/builders/html/builder.lisp \
+	src/builders/html/script-parser.lisp \
         src/backends/javascript/package.lisp \
         src/backends/javascript/ast.lisp \
         src/backends/javascript/print.lisp \
-        src/backends/javascript/analyze.lisp \
         src/backends/javascript/backend.lisp \
         src/backends/javascript/functions.lisp \
         src/backends/javascript/html.lisp \
