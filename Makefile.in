@@ -28,7 +28,7 @@ VPATH = $(srcdir)
 
 ## Build Targets
 
-all: tridashc man
+all: tridashc man js_runtime
 
 plump_sources = plump/dom.lisp \
 	plump/entities.lisp \
@@ -79,6 +79,21 @@ tridashc: build.lisp $(sources)
 	$(LISP) --load $(srcdir)/tridash.asd --load $<
 
 
+# JS Runtime Library
+
+js_runtime_sources = src/backends/javascript/runtime/runtime.js \
+	src/backends/javascript/runtime/queue.js \
+	src/backends/javascript/runtime/functions.js \
+	src/backends/javascript/runtime/exports.js
+
+UGLIFYJS = @UGLIFYJS@
+
+src/backends/javascript/runtime/tridash.min.js: $(js_runtime_sources)
+	$(UGLIFYJS) --wrap Tridash -m -o $@ $^
+
+js_runtime: src/backends/javascript/runtime/tridash.min.js
+
+
 ## Documentation
 
 man: doc/tridashc.1
@@ -117,8 +132,10 @@ install-modules:
 	install -m 644 $(srcdir)/modules/core.trd $(srcdir)/modules/core.yml \
 		$(DESTDIR)$(pkgdatadir)/modules
 
-install-data: install-modules
-	install -m 644 $(srcdir)/src/backends/javascript/runtime/tridash.js $(DESTDIR)$(pkgdatadir)/backends/javascript
+install-js-runtime: src/backends/javascript/runtime/tridash.min.js
+	install -m 644 $< $(DESTDIR)$(pkgdatadir)/backends/javascript
+
+install-data: install-modules install-js-runtime
 
 install-man:
 	- install -m 644 doc/tridashc.1 $(DESTDIR)$(mandir)/man1
@@ -140,6 +157,6 @@ check:
 	$(LISP) --load tridash.asd --load test/script.lisp
 
 
-.PHONY: all man clean distclean maintainer-clean \
+.PHONY: all man js-runtime clean distclean maintainer-clean \
 	install installdirs install-bin install-modules install-data install-man \
 	uninstall check

@@ -66,16 +66,16 @@
     (cons (id-symbol "=") '("===" . t))
     (cons (id-symbol "!=") '("!==" . t))
 
-    (cons (id-symbol "int") "Tridash.castInt")
-    (cons (id-symbol "real") "Tridash.castReal")
-    (cons (id-symbol "string") "Tridash.castString")
+    (cons (id-symbol "int") "Tridash.cast_int")
+    (cons (id-symbol "real") "Tridash.cast_real")
+    (cons (id-symbol "string") "Tridash.cast_string")
 
-    (cons (id-symbol "int?") "Tridash.isInt")
-    (cons (id-symbol "real?") "Tridash.isReal")
-    (cons (id-symbol "string?") "Tridash.isString")
+    (cons (id-symbol "int?") "Tridash.is_int")
+    (cons (id-symbol "real?") "Tridash.is_real")
+    (cons (id-symbol "string?") "Tridash.is_string")
 
-    (cons (id-symbol "inf?") "Tridash.isInf")
-    (cons (id-symbol "NaN?") "Tridash.isNaN")))
+    (cons (id-symbol "inf?") "Tridash.is_inf")
+    (cons (id-symbol "NaN?") "Tridash.is_nan")))
 
   "Map mapping tridash primitive operators to their corresponding
    JavaScript primitive operators.")

@@ -65,7 +65,7 @@
   "Flag: If true debug information, such as the names of the nodes is
    included in the generated code.")
 
-(defvar *runtime-library-path* "/usr/local/share/tridash/backends/javascript/tridash.js"
+(defvar *runtime-library-path* "/usr/local/share/tridash/backends/javascript/tridash.min.js"
   "Path to the runtime library.")
 
 (defvar *runtime-link-type* 'static

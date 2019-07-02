@@ -1278,7 +1278,7 @@
                   (js-return
                    (thunk
                     (js-return
-                     (js-call "Tridash.castInt" ($ x))))))))))))
+                     (js-call "Tridash.cast_int" ($ x))))))))))))
 
       (subtest "real"
         (with-module-table modules
@@ -1298,7 +1298,7 @@
                   (js-return
                    (thunk
                     (js-return
-                     (js-call "Tridash.castReal" ($ x))))))))))))
+                     (js-call "Tridash.cast_real" ($ x))))))))))))
 
       (subtest "string"
         (with-module-table modules
@@ -1318,7 +1318,7 @@
                   (js-return
                    (thunk
                     (js-return
-                     (js-call "Tridash.castString" ($ x)))))))))))))
+                     (js-call "Tridash.cast_string" ($ x)))))))))))))
 
     (subtest "Type Checks"
       (subtest "int"
@@ -1339,7 +1339,7 @@
                   (js-return
                    (thunk
                     (js-return
-                     (js-call "Tridash.isInt" ($ x))))))))))))
+                     (js-call "Tridash.is_int" ($ x))))))))))))
 
       (subtest "real"
         (with-module-table modules
@@ -1359,7 +1359,7 @@
                   (js-return
                    (thunk
                     (js-return
-                     (js-call "Tridash.isReal" ($ x))))))))))))
+                     (js-call "Tridash.is_real" ($ x))))))))))))
 
       (subtest "string"
         (with-module-table modules
@@ -1379,7 +1379,7 @@
                   (js-return
                    (thunk
                     (js-return
-                     (js-call "Tridash.isString" ($ x))))))))))))
+                     (js-call "Tridash.is_string" ($ x))))))))))))
 
       (subtest "Is Infinity"
         (with-module-table modules
@@ -1399,7 +1399,7 @@
                   (js-return
                    (thunk
                     (js-return
-                     (js-call "Tridash.isInf" ($ x))))))))))))
+                     (js-call "Tridash.is_inf" ($ x))))))))))))
 
       (subtest "Is NaN"
         (with-module-table modules
@@ -1419,6 +1419,6 @@
                   (js-return
                    (thunk
                     (js-return
-                     (js-call "Tridash.isNaN" ($ x)))))))))))))))
+                     (js-call "Tridash.is_nan" ($ x)))))))))))))))
 
 (finalize)

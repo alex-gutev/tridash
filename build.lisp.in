@@ -22,7 +22,7 @@
 
   ;; Set path to JavaScript runtime library
   (setf tridash.backend.js::*runtime-library-path*
-        (cl-fad:merge-pathnames-as-file datadir "backends/javascript/tridash.js"))
+        (cl-fad:merge-pathnames-as-file datadir "backends/javascript/tridash.min.js"))
 
   (asdf:make :tridash)
   (uiop:quit))
