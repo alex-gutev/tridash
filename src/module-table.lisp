@@ -85,7 +85,9 @@
 (defparameter *core-meta-nodes*
   (external-meta-nodes
    '((if (cond then else) ((:strictness (or cond (and then else)))))
-     (:member (object key) ((:strictness (or object key))))))
+     (:member (object key) ((:strictness (or object key))))
+     (:fail ())
+     (:catch (try catch) ((:strictness try)))))
 
   "Map of meta-nodes which comprise the language primitives.")
 
@@ -166,3 +168,10 @@
 (defun member-expression (object key)
   (functor-expression (get :member *core-meta-nodes*)
                       (list object key)))
+
+(defun fail-expression ()
+  (functor-expression (get :fail *core-meta-nodes*) nil))
+
+(defun catch-expression (try catch)
+  (functor-expression (get :catch *core-meta-nodes*)
+                      (list try catch)))

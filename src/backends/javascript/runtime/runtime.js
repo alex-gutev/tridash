@@ -92,11 +92,6 @@ function NodeContext(node, context_id) {
      * Array of observer node contexts.
      */
     this.observers = [];
-
-    /**
-     * Array storing saved previous values.
-     */
-    this.saved_values = [];
 };
 
 /**
@@ -209,20 +204,7 @@ function Reserve(context, start) {
  *   has been computed.
  */
 Reserve.prototype.add_dep = function(start) {
-    // Save promise for previous dependencies
-    var prev = this.all_deps;
-
-    // Add finally handler which resolves to the promise of the
-    // current dependency regardless of whether the promises of the
-    // previous dependencies were resolved or rejected.
-
-    // Add a final catch handler which resolves to the promise of the
-    // previous dependency if the promise of the current dependency is
-    // rejected.
-
-    this.all_deps =
-        this.all_deps.finally(() => start)
-        .catch(() => prev);
+    this.all_deps = this.all_deps.then(() => start);
 };
 
 /**

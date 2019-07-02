@@ -40,34 +40,17 @@
 
   entries)
 
-(defstruct (catch-expression (:constructor catch-expression (main catch)))
-  "Represents a catch expression which evaluates to the MAIN
-   expression or CATCH if the main expression fails to evaluate to a
-   value."
-
-  main catch)
-
-(defstruct (fail-expression (:constructor fail-expression (&optional type)))
-  "Represents a fail expression which signals an evaluation failure,
-   with TYPE being the failure reason."
-
-  type)
-
 (defstruct
-    (expression-group (:constructor expression-group (expression &key count save)))
-  "Groups expressions which occur in multiple location within a value
-   function.
+    (expression-block (:constructor expression-block (expression &key count)))
 
-   COUNT is the number of locations in which the expression
-   occurs.
+  "Represents expressions which occur in multiple locations within a
+   value function.
 
-   SAVE is a flag which is true if the expression's value should be
-   saved between value updates."
+   EXPRESSION is the actual expression and COUNT is the number of
+   locations in which the expression occurs."
 
   expression
-  (count 1)
-
-  (save nil))
+  (count 1))
 
 (defstruct (meta-node-ref (:constructor meta-node-ref (node &key outer-nodes)))
   "Represents a meta-node reference. NODE is the `META-NODE' object
@@ -95,16 +78,8 @@
     (foreach (compose (curry #'walk-expression fn) #'second)
              (object-expression-entries object)))
 
-  (:method (fn (catch catch-expression))
-    (walk-expression fn (catch-expression-main catch))
-    (walk-expression fn (catch-expression-catch catch)))
-
-  (:method (fn (fail fail-expression))
-    (awhen (fail-expression-type fail)
-      (walk-expression it fn)))
-
-  (:method (fn (group expression-group))
-    (walk-expression fn (expression-group-expression group)))
+  (:method (fn (block expression-block))
+    (walk-expression fn (expression-block-expression block)))
 
   (:method (fn (ref meta-node-ref))
     (foreach (curry #'walk-expression fn) (meta-node-ref-outer-nodes ref)))
@@ -119,8 +94,8 @@
     FN on it.
 
     CAUTION: Whilst the new expression tree is returned, this function
-    is destructive when EXPRESSION is an `EXPRESSION-GROUP', since the
-    identity of an expression group needs to be preserved." )
+    is destructive when EXPRESSION is an `EXPRESSION-BLOCK', since the
+    identity of an expression block needs to be preserved." )
 
   (:method (fn (call functor-expression))
     (functor-expression
@@ -135,18 +110,8 @@
       (object-expression
        (map #'map-entry (object-expression-entries object)))))
 
-  (:method (fn (catch catch-expression))
-    (catch-expression
-     (funcall fn (catch-expression-main catch))
-     (funcall fn (catch-expression-catch catch))))
-
-  (:method (fn (fail fail-expression))
-    (fail-expression
-     (awhen (fail-expression-type fail)
-       (funcall fn it))))
-
-  (:method (fn (group expression-group))
-    (with-accessors ((expression expression-group-expression)) group
+  (:method (fn (block expression-block))
+    (with-accessors ((expression expression-block-expression)) block
       (setf expression (funcall fn expression))))
 
   (:method (fn (ref meta-node-ref))

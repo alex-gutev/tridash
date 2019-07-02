@@ -210,25 +210,8 @@
 
     `(alist-hash-map (list ,@(map #'make-entry (object-expression-entries object))))))
 
-(defmethod tridash->cl ((expr catch-expression) &key)
-  "Generates a CL CATCH expression with the tag symbol given by
-   +FAIL-CATCH-TAG+. If the CATCH expression returns the catch tag
-   identifier, the expression in the `CATCH' slot is evaluate."
-
-  (with-struct-slots catch-expression- (main catch)
-      expr
-
-    `(handler-case (resolve ,(tridash->cl main :thunk nil))
-       (tridash-fail () ,(tridash->cl catch)))))
-
-(defmethod tridash->cl ((fail fail-expression) &key)
-  "Generates a CL THROW expression which throws the value of
-   +FAIL-CATCH-TAG+."
-
-  '(error 'tridash-fail))
-
-(defmethod tridash->cl ((group expression-group) &key)
-  (tridash->cl (expression-group-expression group)
+(defmethod tridash->cl ((block expression-block) &key)
+  (tridash->cl (expression-block-expression block)
                :thunk nil))
 
 
@@ -349,6 +332,13 @@
 
 (define-tridash-function |member| (object key)
   (get (resolve key) (resolve object)))
+
+(define-tridash-function |fail| ()
+  (thunk (error 'tridash-fail)))
+
+(define-tridash-function |catch| (try catch)
+  (handler-case (resolve try)
+    (tridash-fail () catch)))
 
 
 ;;; Boolean Expressions

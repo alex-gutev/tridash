@@ -217,7 +217,7 @@
   "If set to true the expression comparison is strict meaning the
    expected expression has to match the actual expression exactly,
    with the exception that the actual expression may have
-   `EXPRESSION-GROUP's not specified in the expected expression. If
+   `EXPRESSION-BLOCK's not specified in the expected expression. If
    set to NIL certain rules will be relaxed, such as expressions may
    be contained inside `NODE-LINK' objects.")
 
@@ -276,32 +276,16 @@
                    (sort entries-a :key (compose #'symbol-name #'first))
                    (sort entries-b :key (compose #'symbol-name #'first))))))))
 
-(defmethod value-fn-equal ((a catch-expression) (b list))
+(defmethod value-fn-equal ((a expression-block) (b expression-block))
   (match* (a b)
-    (((catch-expression- (main main-a) (catch catch-a))
-      (list :catch main-b catch-b))
-
-     (and (value-fn-equal main-a main-b)
-          (value-fn-equal catch-a catch-b)))))
-
-(defmethod value-fn-equal ((a fail-expression) (b list))
-  (match* (a b)
-    (((fail-expression- (type type-a))
-      (or (list :fail type-b)
-          (list :fail)))
-     (value-fn-equal type-a type-b))))
-
-(defmethod value-fn-equal ((a expression-group) (b expression-group))
-  (match* (a b)
-    (((expression-group- (expression expr-a) (count count-a) (save save-a))
-      (expression-group- (expression expr-b) (count count-b) (save save-b)))
+    (((expression-block- (expression expr-a) (count count-a))
+      (expression-block- (expression expr-b) (count count-b)))
 
      (and (value-fn-equal expr-a expr-b)
-          (= count-a count-b)
-          (if save-a save-b (not save-b))))))
+          (= count-a count-b)))))
 
-(defmethod value-fn-equal ((a expression-group) b)
-  (value-fn-equal (expression-group-expression a) b))
+(defmethod value-fn-equal ((a expression-block) b)
+  (value-fn-equal (expression-block-expression a) b))
 
 (defmethod value-fn-equal ((a meta-node-ref) (b meta-node-ref))
   (with-struct-slots meta-node-ref- ((node-a node) (outer-nodes-a outer-nodes)) a
@@ -331,11 +315,17 @@
                   (every #'value-fn-equal outer-nodes-a)))))))
 
 (defmethod value-fn-equal ((a external-meta-node) b)
-  (match* (a b)
-    (((external-meta-node (name (eql (id-symbol "if")))) 'if)
+  (match* ((name a) b)
+    (((eql (id-symbol "if")) 'if)
      t)
 
-    (((external-meta-node (name (eql (id-symbol "member")))) :member)
+    (((eql (id-symbol "member")) :member)
+     t)
+
+    (((eql (id-symbol "fail")) :fail)
+     t)
+
+    (((eql (id-symbol "catch")) :catch)
      t)
 
     ((_ _) (call-next-method))))
@@ -1411,10 +1401,10 @@
            (in) out
            `(:object
              (,(id-symbol "fail")
-               (,nan? ,(expression-group `(,parse ,in) :count 2)))
+               (,nan? ,(expression-block `(,parse ,in) :count 2)))
 
              (,(id-symbol "value")
-               ,(expression-group `(,parse ,in) :count 2)))))))
+               ,(expression-block `(,parse ,in) :count 2)))))))
 
     (with-module-table modules
       (build ":extern(add); :extern(even?)"
@@ -1443,7 +1433,7 @@
 
           (has-value-function
            (a d) out
-           `(,add (,add ,a ,(expression-group `(if (,even? (,add ,a ,1)) (,add ,a 1) (:fail)) :save t)) ,d))))))
+           `(,add (,add ,a ,(expression-block `(if (,even? (,add ,a ,1)) (,add ,a 1) (:fail)))) ,d))))))
 
   (subtest "Explicit Context"
     (subtest "Common Operands"
@@ -1468,12 +1458,10 @@
 
              `(:catch
                   (:catch
-                      ,(expression-group
-                        `(if (,< ,a 3) (,+ ,a ,b) (:fail))
-                        :save nil)
-                    ,(expression-group
-                      `(if (,> ,a 4) (,- ,a ,b) (:fail))
-                      :save nil))
+                      ,(expression-block
+                        `(if (,< ,a 3) (,+ ,a ,b) (:fail)))
+                    ,(expression-block
+                      `(if (,> ,a 4) (,- ,a ,b) (:fail))))
                 ,b))))))
 
     (subtest "Common Operands without Coalescing"
@@ -1499,9 +1487,8 @@
              output
 
              `(:catch
-                  ,(expression-group
-                    `(if (,< ,a 3) ,c (:fail))
-                    :save nil)
+                  ,(expression-block
+                    `(if (,< ,a 3) ,c (:fail)))
                 ,b))))))
 
     (subtest "Common Operand without Default"
@@ -1524,12 +1511,10 @@
              output
 
              `(:catch
-                  ,(expression-group
-                    `(if (,< ,a 3) (,+ ,a ,b) (:fail))
-                    :save nil)
-                ,(expression-group
-                  `(if (,< ,b 4) ,b (:fail))
-                  :save t)))))))
+                  ,(expression-block
+                    `(if (,< ,a 3) (,+ ,a ,b) (:fail)))
+                ,(expression-block
+                  `(if (,< ,b 4) ,b (:fail)))))))))
 
     (subtest "Single Common Ancestor"
       (with-module-table modules
@@ -1552,9 +1537,8 @@
              output
 
              `(:catch
-                  ,(expression-group
-                    `(if (,< ,a 3) (,+ ,a ,b) (:fail))
-                    :save nil)
+                  ,(expression-block
+                    `(if (,< ,a 3) (,+ ,a ,b) (:fail)))
                 ,b))))))
 
     (subtest "Single Common Ancestor without Default"
@@ -1578,12 +1562,10 @@
              output
 
              `(:catch
-                  ,(expression-group
-                    `(if (,< ,a 3) (,+ ,a ,b) (:fail))
-                    :save nil)
-                ,(expression-group
-                  `(if (,< ,b 4) ,b (:fail))
-                  :save t)))))))
+                  ,(expression-block
+                    `(if (,< ,a 3) (,+ ,a ,b) (:fail)))
+                ,(expression-block
+                  `(if (,< ,b 4) ,b (:fail)))))))))
 
     (subtest "Test Creation Order"
       (with-module-table modules
@@ -2253,14 +2235,12 @@
           (with-nodes ((fn "fn") (< "<") (+ "+")) table
             (->>
              `(:catch
-                  ,(expression-group
+                  ,(expression-block
                     `(if (,< ,x 3)
                          (,+ ,x 1)
-                         (:fail))
-                    :save nil)
-                ,(expression-group
-                  `(,+ ,x 2)
-                  :save nil))
+                         (:fail)))
+                ,(expression-block
+                  `(,+ ,x 2)))
              (test-meta-node fn ((x "x")))))))))
 
   (subtest "Outer-Node References"

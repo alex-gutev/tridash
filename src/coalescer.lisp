@@ -45,7 +45,7 @@
     (remove-unreachable-nodes input-nodes nodes)
 
     ;; Replace node linkes which no longer point to actual nodes with
-    ;; expression groups.
+    ;; expression blocks
     (coalesce-node-links nodes)))
 
 (defun coalesce-nodes (input-nodes)
@@ -182,58 +182,32 @@
     (foreach #'coalesce-links-in-node nodes)))
 
 
-(defgeneric coalesce-links-in-expression (expression &key save)
+(defgeneric coalesce-links-in-expression (expression)
   (:documentation
    "Coalesces node links in the expression EXPRESSION."))
 
-(defmethod coalesce-links-in-expression ((link node-link) &key (save t))
+(defmethod coalesce-links-in-expression ((link node-link))
   "If LINK points to an expression, instead of a NODE, returns an
-   `EXPRESSION-GROUP' containing the referenced expression."
+   `EXPRESSION-BLOCK' containing the referenced expression."
 
-  (labels ((should-save? (expr)
-             "Checks whether the value of the expression should be
-              saved, for future value updates."
+  (with-accessors ((node node-link-node)) link
+    (match node
+      ((type node-link)
+       (coalesce-links-in-expression node))
 
-             (walk-expression
-              (lambda (expression)
-                (match expression
-                  ((type fail-expression)
-                   (return-from should-save? t))
+      ((type expression-block)
+       (incf (expression-block-count node))
+       node)
 
-                  ((not (type expression-group))
-                   t)
+      ((not (type node))
+       (->> (coalesce-links-in-expression node)
+            expression-block
+            (setf node)))
 
-                  ((catch-expression catch)
-                   (return-from should-save? (should-save? catch)))))
-              expr)))
+      (_ link))))
 
-    (with-accessors ((node node-link-node)) link
-      (match node
-        ((type node-link)
-         (coalesce-links-in-expression node :save save))
-
-        ((type expression-group)
-         (incf (expression-group-count node))
-         node)
-
-        ((not (type node))
-         (let ((expr (coalesce-links-in-expression node :save save)))
-           (->> (expression-group expr :save (and save (should-save? expr)))
-                (setf node))))
-
-        (_ link)))))
-
-(defmethod coalesce-links-in-expression ((catch catch-expression) &key (save t))
-  "Coalesces `NODE-LINK's in both the main and catch expression,
-   however only the values of the catch expression are saved if
-   necessary."
-
-  (catch-expression
-   (coalesce-links-in-expression (catch-expression-main catch) :save nil)
-   (coalesce-links-in-expression (catch-expression-catch catch) :save save)))
-
-(defmethod coalesce-links-in-expression ((expression t) &key (save t))
-  (map-expression! (rcurry #'coalesce-links-in-expression :save save) expression))
+(defmethod coalesce-links-in-expression ((expression t))
+  (map-expression! #'coalesce-links-in-expression expression))
 
 
 ;;;; Constant Folding and Removing Redundant Nodes

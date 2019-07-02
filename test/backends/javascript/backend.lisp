@@ -393,7 +393,6 @@
             ((context (a b) (functor f a b)))
 
           (test-compute-function context
-            (js-var "self" "this")
             (js-return (thunk (js-return (js-call f (d a) (d b))))))))))
 
   (subtest "Conditionals"
@@ -407,7 +406,6 @@
                                        (functor - a b))))
 
             (test-compute-function context
-              (js-var "self" "this")
               (js-return
                (thunk
                 (js-if (resolve (js-call < (d a) (d b)))
@@ -427,7 +425,6 @@
                                  (functor f <> a))))
 
                 (test-compute-function context
-                  (js-var "self" "this")
                   (js-return
                    (thunk
                     (js-var ($ arg1))
@@ -448,7 +445,6 @@
                                  (functor f <> a))))
 
                 (test-compute-function context
-                  (js-var "self" "this")
                   (js-return
                    (-<>
                     (js-if (resolve (js-call < (d a) 3))
@@ -469,7 +465,6 @@
                                (if-expression a <> e))))
 
               (test-compute-function context
-                (js-var "self" "this")
                 (js-return
                  (thunk
                   (js-if (resolve (d a))
@@ -491,12 +486,12 @@
                       (if-expression cond a :self)))
 
           (test-compute-function context
-            (js-var "self" "this")
+            (js-var "old_value" (js-members "this" "node" "value"))
             (js-return
              (thunk
               (js-if (resolve (d cond))
                      (js-return (d a))
-                     (js-return (js-members "self" "node" "value"))))))))))
+                     (js-return "old_value")))))))))
 
   (subtest "Objects"
     (subtest "Object Creation"
@@ -510,7 +505,6 @@
                                         ("y" y))))
 
               (test-compute-function context
-                (js-var "self" "this")
                 (js-return
                  (thunk
                   (js-return
@@ -529,7 +523,6 @@
                                         ("max" (if-expression (functor < y x) x y)))))
 
               (test-compute-function context
-                (js-var "self" "this")
                 (js-return
                  (thunk
                   (js-var ($ min))
@@ -556,7 +549,6 @@
                   ((context (object) (functor f (member-expression object '|field|))))
 
                 (test-compute-function context
-                  (js-var "self" "this")
                   (js-return
                    (thunk
                     (js-return
@@ -571,7 +563,6 @@
                   ((context (object) (functor f (member-expression object '|field|))))
 
                 (test-compute-function context
-                  (js-var "self" "this")
                   (js-return
                    (thunk
                     (js-return
@@ -588,7 +579,6 @@
                 ((context (a) (member-expression (functor f a) '\x)))
 
               (test-compute-function context
-                (js-var "self" "this")
                 (js-return
                  (thunk
                   (js-return
@@ -600,7 +590,6 @@
               ((context (cond a b) (member-expression (if-expression cond a b) '\z)))
 
             (test-compute-function context
-              (js-var "self" "this")
               (js-return
                (thunk
                 (js-var ($ object))
@@ -611,74 +600,35 @@
                 (js-return (js-element (resolve ($ object)) (js-string "z")))))))))))
 
   (subtest "Conditional Bindings"
-    (subtest "Saving Previous Value"
-      (mock-backend-state
-        (mock-meta-nodes (<)
-          (mock-contexts
-              ((context (a) (expression-group
-                             (if-expression (functor < a 0) a (fail-expression))
-                             :save t)))
-
-            (test-compute-function context
-              (js-var "self" "this")
-              (js-var ($ g1))
-
-              (js-call "=" ($ g1)
-                       (thunk
-                        (js-if (resolve (js-call < (d a) 0))
-                               (js-return (d a))
-                               (-<> (js-member "self" "saved_values")
-                                    (js-element 0)
-                                    js-return))))
-
-              (-<> (js-member "self" "saved_values")
-                   (js-element 0)
-                   (js-call "=" <> ($ g1)))
-
-              (js-return ($ g1)))))))
-
     (subtest "Throwing EndUpdate Exception"
       (mock-backend-state
         (mock-meta-nodes (<)
           (mock-contexts
-              ((context (a) (expression-group
+              ((context (a) (expression-block
                              (if-expression (functor < a 0) a (fail-expression)))))
 
             (test-compute-function context
-              (js-var "self" "this")
               (js-return
                (thunk
                 (js-if (resolve (js-call < (d a) 0))
                        (js-return (d a))
-                       (js-throw (js-new "Tridash.EndUpdate")))))))))))
+                       (js-return
+                        (thunk
+                         (js-throw (js-new +end-update-class+)))))))))))))
 
   (subtest "Catch Expressions"
     (mock-backend-state
       (mock-meta-nodes (< + -)
         (mock-contexts
             ((context (a b) (catch-expression
-                             (expression-group
+                             (expression-block
                               (if-expression (functor < a b)
                                              (functor + a b)
-                                             (fail-expression))
-                              :save nil)
+                                             (fail-expression)))
 
-                             (expression-group
-                              (functor - a b)
-                              :save t))))
+                             (expression-block (functor - a b)))))
 
           (test-compute-function context
-            (js-var "self" "this")
-            (js-var ($ g1))
-
-            (js-call "=" ($ g1)
-                     (thunk
-                      (js-return
-                       (js-call - (d a) (d b)))))
-
-            (-<> (js-member "self" "saved_values")
-                 (js-element 0)
-                 (js-call "=" <> ($ g1)))
 
             (js-return
              (thunk
@@ -686,9 +636,14 @@
                (list
                 (js-if (resolve (js-call < (d a) (d b)))
                        (js-return (resolve (js-call + (d a) (d b))))
-                       (js-throw (js-new "Tridash.EndUpdate"))))
+                       (js-return
+                        (resolve
+                         (thunk
+                          (js-throw (js-new +end-update-class+)))))))
 
-               (list (js-return ($ g1)))))))))))
+               (list
+                (js-return
+                 (js-call - (d a) (d b))))))))))))
 
   (subtest "Meta-Node References"
     (subtest "Without Outer Nodes"
@@ -699,7 +654,6 @@
                         (functor map (meta-node-ref f) a)))
 
             (test-compute-function context
-              (js-var "self" "this")
               (js-return
                (thunk
                 (js-return
@@ -713,7 +667,6 @@
                         (functor map (meta-node-ref f :outer-nodes (list b)) a)))
 
             (test-compute-function context
-              (js-var "self" "this")
               (js-return
                (thunk
                 (js-return
@@ -737,7 +690,6 @@
             ((context (f x) (functor f x)))
 
           (test-compute-function context
-            (js-var "self" "this")
             (js-return
              (thunk
               (js-return
@@ -750,7 +702,6 @@
               ((context (f x y) (functor func (functor f x) y)))
 
             (test-compute-function context
-              (js-var "self" "this")
               (js-return
                (thunk
                 (-<> (js-call (resolve (d f)) (d x))
@@ -766,7 +717,6 @@
               ((context (f x y) (functor f (functor + x y))))
 
             (test-compute-function context
-              (js-var "self" "this")
               (js-return
                (thunk
                 (->> (js-call + (d x) (d y))
@@ -965,7 +915,33 @@
                  (thunk
                   (js-if (resolve (js-call ">" (resolve ($ x)) (resolve 0)))
                          (js-return ($ x))
-                         (js-return "null")))))))))))
+                         (js-return (thunk (js-throw (js-new +end-update-class+))))))))))))))
+
+    (subtest "Common Sub Expressions"
+      (with-module-table modules
+        (build-source-file #p"./modules/core.trd" modules)
+        (build ":import(core)")
+        (build "func(a, b) : (a + b) - (a + b)")
+
+        (with-nodes ((func "func")) (finish-build modules)
+
+          (mock-backend-state
+            (test-meta-node-function func
+              (js-function
+               (meta-node-id func)
+               '(($ a) ($ b))
+
+               (list
+                (js-var ($ g1))
+                (->> (js-call "+" (resolve ($ a)) (resolve ($ b)))
+                     js-return
+                     thunk
+                     (js-call "=" ($ g1)))
+
+                (js-return
+                 (thunk
+                  (js-return
+                   (js-call "-" (resolve ($ g1)) (resolve ($ g1)))))))))))))
 
     (subtest "Primitive Functions"
       (subtest "Arithmetic"
@@ -1257,168 +1233,168 @@
                     (-> (js-call "!" (resolve ($ x)))
                         js-return
                         thunk
-                        js-return))))))))))
+                        js-return)))))))))
 
-    (subtest "Type Conversions"
-      (subtest "int"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build ":import(core)")
-          (build "my-int(x) : int(x)")
-          (finish-build)
+      (subtest "Type Conversions"
+        (subtest "int"
+          (with-module-table modules
+            (build-source-file #p"./modules/core.trd" modules)
+            (build ":import(core)")
+            (build "my-int(x) : int(x)")
+            (finish-build)
 
-          (with-nodes ((my-int "my-int")) modules
-            (mock-backend-state
-              (test-meta-node-function my-int
-                (js-function
-                 (meta-node-id my-int)
-                 '(($ x))
+            (with-nodes ((my-int "my-int")) modules
+              (mock-backend-state
+                (test-meta-node-function my-int
+                  (js-function
+                   (meta-node-id my-int)
+                   '(($ x))
 
-                 (list
-                  (js-return
-                   (thunk
+                   (list
                     (js-return
-                     (js-call "Tridash.cast_int" ($ x))))))))))))
+                     (thunk
+                      (js-return
+                       (js-call "Tridash.cast_int" ($ x))))))))))))
 
-      (subtest "real"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build ":import(core)")
-          (build "my-real(x) : real(x)")
-          (finish-build)
+        (subtest "real"
+          (with-module-table modules
+            (build-source-file #p"./modules/core.trd" modules)
+            (build ":import(core)")
+            (build "my-real(x) : real(x)")
+            (finish-build)
 
-          (with-nodes ((my-real "my-real")) modules
-            (mock-backend-state
-              (test-meta-node-function my-real
-                (js-function
-                 (meta-node-id my-real)
-                 '(($ x))
+            (with-nodes ((my-real "my-real")) modules
+              (mock-backend-state
+                (test-meta-node-function my-real
+                  (js-function
+                   (meta-node-id my-real)
+                   '(($ x))
 
-                 (list
-                  (js-return
-                   (thunk
+                   (list
                     (js-return
-                     (js-call "Tridash.cast_real" ($ x))))))))))))
+                     (thunk
+                      (js-return
+                       (js-call "Tridash.cast_real" ($ x))))))))))))
 
-      (subtest "string"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build ":import(core)")
-          (build "my-string(x) : string(x)")
-          (finish-build)
+        (subtest "string"
+          (with-module-table modules
+            (build-source-file #p"./modules/core.trd" modules)
+            (build ":import(core)")
+            (build "my-string(x) : string(x)")
+            (finish-build)
 
-          (with-nodes ((my-string "my-string")) modules
-            (mock-backend-state
-              (test-meta-node-function my-string
-                (js-function
-                 (meta-node-id my-string)
-                 '(($ x))
+            (with-nodes ((my-string "my-string")) modules
+              (mock-backend-state
+                (test-meta-node-function my-string
+                  (js-function
+                   (meta-node-id my-string)
+                   '(($ x))
 
-                 (list
-                  (js-return
-                   (thunk
+                   (list
                     (js-return
-                     (js-call "Tridash.cast_string" ($ x)))))))))))))
+                     (thunk
+                      (js-return
+                       (js-call "Tridash.cast_string" ($ x)))))))))))))
 
-    (subtest "Type Checks"
-      (subtest "int"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build ":import(core)")
-          (build "is-int?(x) : int?(x)")
-          (finish-build)
+      (subtest "Type Checks"
+        (subtest "int"
+          (with-module-table modules
+            (build-source-file #p"./modules/core.trd" modules)
+            (build ":import(core)")
+            (build "is-int?(x) : int?(x)")
+            (finish-build)
 
-          (with-nodes ((is-int? "is-int?")) modules
-            (mock-backend-state
-              (test-meta-node-function is-int?
-                (js-function
-                 (meta-node-id is-int?)
-                 '(($ x))
+            (with-nodes ((is-int? "is-int?")) modules
+              (mock-backend-state
+                (test-meta-node-function is-int?
+                  (js-function
+                   (meta-node-id is-int?)
+                   '(($ x))
 
-                 (list
-                  (js-return
-                   (thunk
+                   (list
                     (js-return
-                     (js-call "Tridash.is_int" ($ x))))))))))))
+                     (thunk
+                      (js-return
+                       (js-call "Tridash.is_int" ($ x))))))))))))
 
-      (subtest "real"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build ":import(core)")
-          (build "is-real?(x) : real?(x)")
-          (finish-build)
+        (subtest "real"
+          (with-module-table modules
+            (build-source-file #p"./modules/core.trd" modules)
+            (build ":import(core)")
+            (build "is-real?(x) : real?(x)")
+            (finish-build)
 
-          (with-nodes ((is-real? "is-real?")) modules
-            (mock-backend-state
-              (test-meta-node-function is-real?
-                (js-function
-                 (meta-node-id is-real?)
-                 '(($ x))
+            (with-nodes ((is-real? "is-real?")) modules
+              (mock-backend-state
+                (test-meta-node-function is-real?
+                  (js-function
+                   (meta-node-id is-real?)
+                   '(($ x))
 
-                 (list
-                  (js-return
-                   (thunk
+                   (list
                     (js-return
-                     (js-call "Tridash.is_real" ($ x))))))))))))
+                     (thunk
+                      (js-return
+                       (js-call "Tridash.is_real" ($ x))))))))))))
 
-      (subtest "string"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build ":import(core)")
-          (build "is-string?(x) : string?(x)")
-          (finish-build)
+        (subtest "string"
+          (with-module-table modules
+            (build-source-file #p"./modules/core.trd" modules)
+            (build ":import(core)")
+            (build "is-string?(x) : string?(x)")
+            (finish-build)
 
-          (with-nodes ((is-string? "is-string?")) modules
-            (mock-backend-state
-              (test-meta-node-function is-string?
-                (js-function
-                 (meta-node-id is-string?)
-                 '(($ x))
+            (with-nodes ((is-string? "is-string?")) modules
+              (mock-backend-state
+                (test-meta-node-function is-string?
+                  (js-function
+                   (meta-node-id is-string?)
+                   '(($ x))
 
-                 (list
-                  (js-return
-                   (thunk
+                   (list
                     (js-return
-                     (js-call "Tridash.is_string" ($ x))))))))))))
+                     (thunk
+                      (js-return
+                       (js-call "Tridash.is_string" ($ x))))))))))))
 
-      (subtest "Is Infinity"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build ":import(core)")
-          (build "is-inf?(x) : inf?(x)")
-          (finish-build)
+        (subtest "Is Infinity"
+          (with-module-table modules
+            (build-source-file #p"./modules/core.trd" modules)
+            (build ":import(core)")
+            (build "is-inf?(x) : inf?(x)")
+            (finish-build)
 
-          (with-nodes ((is-inf? "is-inf?")) modules
-            (mock-backend-state
-              (test-meta-node-function is-inf?
-                (js-function
-                 (meta-node-id is-inf?)
-                 '(($ x))
+            (with-nodes ((is-inf? "is-inf?")) modules
+              (mock-backend-state
+                (test-meta-node-function is-inf?
+                  (js-function
+                   (meta-node-id is-inf?)
+                   '(($ x))
 
-                 (list
-                  (js-return
-                   (thunk
+                   (list
                     (js-return
-                     (js-call "Tridash.is_inf" ($ x))))))))))))
+                     (thunk
+                      (js-return
+                       (js-call "Tridash.is_inf" ($ x))))))))))))
 
-      (subtest "Is NaN"
-        (with-module-table modules
-          (build-source-file #p"./modules/core.trd" modules)
-          (build ":import(core)")
-          (build "is-nan?(x) : NaN?(x)")
-          (finish-build)
+        (subtest "Is NaN"
+          (with-module-table modules
+            (build-source-file #p"./modules/core.trd" modules)
+            (build ":import(core)")
+            (build "is-nan?(x) : NaN?(x)")
+            (finish-build)
 
-          (with-nodes ((is-nan? "is-nan?")) modules
-            (mock-backend-state
-              (test-meta-node-function is-nan?
-                (js-function
-                 (meta-node-id is-nan?)
-                 '(($ x))
+            (with-nodes ((is-nan? "is-nan?")) modules
+              (mock-backend-state
+                (test-meta-node-function is-nan?
+                  (js-function
+                   (meta-node-id is-nan?)
+                   '(($ x))
 
-                 (list
-                  (js-return
-                   (thunk
+                   (list
                     (js-return
-                     (js-call "Tridash.is_nan" ($ x)))))))))))))))
+                     (thunk
+                      (js-return
+                       (js-call "Tridash.is_nan" ($ x))))))))))))))))
 
 (finalize)

@@ -218,26 +218,29 @@
    function expression is returned."
 
   (symbol-macrolet ((values-var "values"))
-    (labels ((get-input (link)
-               (match link
-                 ((eql :self)
-                  (js-members "self" "node" "value"))
+    (let (uses-old-value?)
+      (labels ((get-input (link)
+                 (match link
+                   ((eql :self)
+                    (setf uses-old-value? t)
+                    "old_value")
 
-                 (_ (make-link-expression context link values-var))))
+                   (_ (make-link-expression context link values-var))))
 
-             (make-body (fn)
-               (let ((*thunk* t))
-                 (make-function-body fn #'get-input))))
+               (make-body (fn)
+                 (let ((*thunk* t))
+                   (make-function-body fn #'get-input))))
 
-      (with-slots (value-function) context
-        (when value-function
-          (js-lambda
-           (list values-var)
+        (with-slots (value-function) context
+          (when value-function
+            (js-lambda
+             (list values-var)
 
-           (let ((body (make-body value-function)))
-             (list
-              (js-var "self" "this")
-              body))))))))
+             (let ((body (make-body value-function)))
+               (list
+                (when uses-old-value?
+                  (js-var "old_value" (js-members "this" "node" "value")))
+                body)))))))))
 
 (defun make-link-expression (context link &optional (values-var "values"))
   "Creates an expression which references the node with `NODE-LINK'
@@ -255,9 +258,6 @@
   "Variable identifier counter. Appended as a suffix to variables
    introduced in a function.")
 
-(defvar *current-expression-group-index* nil
-  "Index of the expression-group currently being compiled.")
-
 
 (defun make-function-body (function *get-input*)
   "Generates the body of the value computation function
@@ -265,23 +265,18 @@
    expression that references the value of the dependency
    corresponding to the `NODE-LINK' object passed as an argument."
 
-  (flet ((make-expression-group (group)
-           (destructuring-bind (group var thunk index) group
-             (list
-              (js-call "=" var thunk)
-              (when (and (expression-group-save group) (not (in-meta-node?)))
-                (-<> (js-member "self" "saved_values")
-                     (js-element index)
-                     (js-call "=" <> var)))))))
+  (flet ((make-expression-block (block)
+           (destructuring-bind (var thunk) block
+             (js-call "=" var thunk))))
 
     (let* ((*var-counter* 0)
-           (*expression-groups* (make-hash-map))
+           (*expression-blocks* (make-hash-map))
            (*thunk* t)
            (statements (make-statements function)))
 
       (list*
-       (map (compose #'js-var #'first) (map-values *expression-groups*))
-       (map-to 'list #'make-expression-group *expression-groups*)
+       (map (compose #'js-var #'first) (map-values *expression-blocks*))
+       (map-to 'list #'make-expression-block (map-values *expression-blocks*))
        statements))))
 
 (defun make-statements (fn)
@@ -405,6 +400,12 @@
     ((eql (id-symbol "member"))
      (make-member-expression arguments))
 
+    ((eql (id-symbol "fail"))
+     (make-fail-expression arguments))
+
+    ((eql (id-symbol "catch"))
+     (make-catch-expression arguments))
+
     (_
      (call-next-method))))
 
@@ -460,24 +461,17 @@
 
 ;;; Fail and Catch Expressions
 
-(defmethod make-expression ((fail fail-expression) &key)
-  (cond
-    ((in-meta-node?)
-     (values nil "null"))
+(defun make-fail-expression (arguments)
+  (declare (ignore arguments))
 
-    ;; Check whether inside expression group
-    (*current-expression-group-index*
-     (values nil (get-saved-value *current-expression-group-index*)))
+  (values
+   nil
+   (thunk (js-throw (js-new +end-update-class+)) nil)))
 
-    (t
-     (values (js-block (js-throw (js-new +end-update-class+))) nil))))
-
-(defmethod make-expression ((expr catch-expression) &key)
+(defun make-catch-expression (arguments)
   "Generates a TRY-CATCH block for :CATCH expressions."
 
-  (with-accessors ((try catch-expression-main)
-                   (catch catch-expression-catch))
-      expr
+  (destructuring-bind (try catch) arguments
 
     (let ((try (let ((*resolve* t)) (make-statements try)))
           (catch (make-statements catch)))
@@ -525,51 +519,41 @@
           (values nil (js-element (resolve-expression object-expr) (js-string member))))))))
 
 
-;;; Expression Groups
+;;; Expression Blocks
 
-(defmethod make-expression ((group expression-group) &key)
-  (with-accessors ((expression expression-group-expression)
-                   (count expression-group-count)
-                   (save expression-group-save))
-      group
+(defmethod make-expression ((block expression-block) &key)
+  (with-accessors ((expression expression-block-expression)
+                   (count expression-block-count))
+      block
 
-    (if (or (> count 1) (and (not (in-meta-node?)) save))
-        (make-expression-group group)
+    (if (> count 1)
+        (make-expression-block block)
         (make-expression expression))))
 
-(defun make-expression-group (group)
-  "Generates code which computes the value of the `EXPRESSION-GROUP'
-   GROUP and stores the resulting expression in
-   *EXPRESSION-GROUPS*. Returns the variable which references the
-   value of the `EXPRESSION-GROUP'."
+(defun make-expression-block (block)
+  "Generates code which computes the value of the `EXPRESSION-BLOCK'
+   BLOCK and stores the resulting expression in
+   *EXPRESSION-BLOCKS*. Returns the variable which references the
+   value of the block."
 
-  (with-accessors ((expression expression-group-expression)
-                   (save expression-group-save))
-      group
+  (with-accessors ((expression expression-block-expression))
+      block
 
-    (aif (get group *expression-groups*)
-         (values nil (car it))
+    (aif (get block *expression-blocks*)
+         (values nil (first it))
 
-         (let* ((*current-expression-group-index* (length *expression-groups*))
-                (thunk (nth-value 1 (make-expression expression :thunk t))))
-
-           (values
-            nil
-            (aprog1 (var-name)
-              (->>
-               (list it thunk *current-expression-group-index*)
-               (setf (get group *expression-groups*)))))))))
+         (values
+          nil
+          (aprog1 (var-name)
+            (->>
+             (nth-value 1 (make-expression expression :thunk t))
+             (list it)
+             (setf (get block *expression-blocks*))))))))
 
 (defun in-meta-node? ()
   "Returns true if currently compiling a meta-node function."
 
   (meta-node? *current-node*))
-
-(defun get-saved-value (index)
-  "Returns an expression which references the saved previous value of
-   the expression-group with index INDEX."
-
-  (js-element (js-member "self" "saved_values") index))
 
 
 ;;; Meta-Node References

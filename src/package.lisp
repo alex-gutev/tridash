@@ -147,27 +147,18 @@
    :functor-expression-arguments
 
    :if-expression
+   :member-expression
+   :catch-expression
+   :fail-expression
 
    :object-expression
    :object-expression-p
    :object-expression-entries
 
-   :member-expression
-
-   :catch-expression
-   :catch-expression-p
-   :catch-expression-main
-   :catch-expression-catch
-
-   :fail-expression
-   :fail-expression-p
-   :fail-expression-type
-
-   :expression-group
-   :expression-group-p
-   :expression-group-expression
-   :expression-group-count
-   :expression-group-save
+   :expression-block
+   :expression-block-p
+   :expression-block-expression
+   :expression-block-count
 
    :meta-node-ref
    :meta-node-ref-p

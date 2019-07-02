@@ -49,10 +49,11 @@
 (defvar *current-node* nil
   "The node whose definition code is currently being generated.")
 
-(defvar *expression-groups* nil
-  "Set of expression-group expressions for which code has already been
-   generated. The mapped value is an expression (a variable name) with
-   which the value of the expression can be accessed.")
+(defvar *expression-blocks* nil
+  "Set of `EXPRESSION-BLOCK' expressions for which code has already
+   been generated. The mapped value is a list containing the name of
+   the variable in which the value of the expression is stored and a
+   thunk which computes the expression's value.")
 
 
 ;;; Code Generation Flags
@@ -198,7 +199,7 @@
 
   (when initial-values
     (make-onloaded-method
-     (let ((*expression-groups* (make-hash-map)))
+     (let ((*expression-blocks* (make-hash-map)))
        (list (make-set-initial-values initial-values))))))
 
 (defun make-set-initial-values (initial-values)

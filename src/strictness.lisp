@@ -134,12 +134,8 @@
 
   nil)
 
-(defmethod analyze-expression ((group expression-group))
-  (analyze-expression (expression-group-expression group)))
-
-
-(defmethod analyze-expression ((expression catch-expression))
-  (analyze-expression (catch-expression-main expression)))
+(defmethod analyze-expression ((block expression-block))
+  (analyze-expression (expression-block-expression block)))
 
 
 ;;; Object and Member Expressions
@@ -176,7 +172,7 @@
   (let ((values (alist-hash-map (pairlis (operands meta-node) arguments))))
     (labels ((walk (expression)
                (match expression
-                 ((list* op args)
+                 ((list* (and (or 'or 'and) op) args)
                   (list* op (map #'walk args)))
 
                  (operand

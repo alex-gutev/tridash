@@ -215,9 +215,7 @@
 
        ($a $b)
 
-       '(thunk
-         (handler-case (resolve (!/ $a $b))
-           (tridash-fail () (thunk (!* $a $b))))))))
+       '(thunk (!|catch| (!/ $a $b) (thunk (!* $a $b)))))))
 
   (subtest "Fail Expressions"
     (test-compile-meta-node
@@ -225,14 +223,14 @@
      (fail-expression)
 
      ()
-     '(thunk (error 'tridash-fail))))
+     '(thunk (!|fail|))))
 
-  (subtest "Expression Groups"
+  (subtest "Expression Blocks"
     (with-core-nodes ("+")
       (test-compile-meta-node
 
        (a)
-       (expression-group
+       (expression-block
         (functor + a 1))
 
        ($a)
@@ -467,7 +465,7 @@
                    (thunk
                     (call-tridash-meta-node ,self (list (!- $n 1) (!* $n $acc)))))))))
 
-    (subtest "Expression Groups"
+    (subtest "Expression Blocks"
       (with-core-nodes ("if" "-" "*" "<")
         (test-compile-meta-node
 
@@ -475,7 +473,7 @@
          (functor if
                   (functor < n 2)
                   acc
-                  (expression-group
+                  (expression-block
                    (functor self (functor - n 1) (functor * n acc))))
 
          ($n $acc)
@@ -520,11 +518,9 @@
 
          ($n)
          `(thunk
-           (handler-case
-               (resolve (call-tridash-meta-node ,self (list (!+ $n 1))))
-             (tridash-fail ()
-               (thunk
-                (call-tridash-meta-node ,self (list (!- $n 1)))))))))))
+           (!|catch| (call-tridash-meta-node ,self (list (!+ $n 1)))
+             (thunk
+              (call-tridash-meta-node ,self (list (!- $n 1))))))))))
 
   (subtest "Errors"
     (with-external-meta-nodes ("not-a-function")
