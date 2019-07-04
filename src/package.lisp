@@ -166,7 +166,7 @@
    :meta-node-ref-outer-nodes
 
    :walk-expression
-   :transform-expression
+   :map-expression!
 
    ;; Utility Functions
    :observer-list
