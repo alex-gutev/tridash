@@ -100,7 +100,7 @@
    variables with the same identifiers as the names, upcased."
 
   `(with-module-table ,g!modules
-     (build-source-file #p"./modules/core.trd" ,g!modules)
+     (build-core-module)
 
      (with-nodes ,(map #`(,(intern (string-upcase a1)) ,a1) names) ,g!modules
        ,@body)))
@@ -535,7 +535,7 @@
 (subtest "Calling Tridash Meta-Nodes from CL"
   (subtest "Single Expression Functions"
     (with-module-table modules
-      (build-source-file #p"./modules/core.trd" modules)
+      (build-core-module)
       (build ":import(core)"
              "min(x,y) : case(x < y : x, y)")
 
@@ -548,7 +548,7 @@
   (subtest "Boolean Expressions"
     (subtest "If Expressions"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core)"
                "f(cond, x) : if(cond, x, 0)")
 
@@ -558,7 +558,7 @@
 
     (subtest "And Expressions"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core)"
                "f(cond, x) : cond and x")
 
@@ -570,7 +570,7 @@
 
     (subtest "Or Expressions"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core)"
                "f(cond, x) : cond or x")
 
@@ -582,7 +582,7 @@
 
   (subtest "Multiple Nodes with CATCH-FAIL Expressions"
     (with-module-table modules
-      (build-source-file #p"./modules/core.trd" modules)
+      (build-core-module)
       (build ":import(core)"
              "min(x,y) : { x < y -> (x -> :context(self,c)); y -> :context(self,c) }")
 
@@ -594,7 +594,7 @@
 
   (subtest "Recursive Meta-Nodes"
     (with-module-table modules
-      (build-source-file #p"./modules/core.trd" modules)
+      (build-core-module)
       (build ":import(core)"
              "fact(n) : { case(n < 2 : 1, n * fact(n - 1)) }")
 
@@ -605,7 +605,7 @@
 
   (subtest "Tail-Recursive Meta-Nodes"
     (with-module-table modules
-      (build-source-file #p"./modules/core.trd" modules)
+      (build-core-module)
       (build ":import(core)"
              "fact(n) : { iter(n,acc) : case(n < 2 : acc, iter(n - 1, n * acc)); iter(n, 1) }")
 
@@ -616,7 +616,7 @@
 
   (subtest "Calling Other Meta-Nodes"
     (with-module-table modules
-      (build-source-file #p"./modules/core.trd" modules)
+      (build-core-module)
       (build ":import(core)"
              "1-(n) : n - 1"
              "1+(n) : n + 1"
@@ -629,7 +629,7 @@
 
   (subtest "Higher Order Meta-Nodes"
     (with-module-table modules
-      (build-source-file #p"./modules/core.trd" modules)
+      (build-core-module)
       (build ":import(core)"
              "apply(f, x) : f(x)"
              "1+(n) : n + 1"
@@ -646,7 +646,7 @@
 
     (subtest "Errors"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core)"
                "apply(f, x) : f(x)"
 
@@ -661,7 +661,7 @@
 (subtest "Actual Macros"
   (subtest "Compile-Time Computations"
     (with-module-table modules
-      (build-source-file #p"./modules/core.trd" modules)
+      (build-core-module)
       (build ":import(core)"
 
              "square(x) : x * x"
@@ -683,7 +683,7 @@
 
   (subtest "Generating Expressions"
     (with-module-table modules
-      (build-source-file #p"./modules/core.trd" modules)
+      (build-core-module)
       (build ":import(core)"
 
              "square(x) : list(:quote(*), x, x)"
@@ -703,7 +703,7 @@
 
   (subtest "Macros in Macros"
     (with-module-table modules
-      (build-source-file #p"./modules/core.trd" modules)
+      (build-core-module)
       (build ":import(core)"
 
              "'(x) : list(:quote(:quote), x)"
@@ -726,7 +726,7 @@
 
   (subtest "Macros with Multiple Arguments"
     (with-module-table modules
-      (build-source-file #p"./modules/core.trd" modules)
+      (build-core-module)
       (build ":import(core)"
 
              "'(x) : list(:quote(:quote), x)"

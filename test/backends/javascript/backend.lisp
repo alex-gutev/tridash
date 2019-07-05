@@ -86,6 +86,7 @@
                 :with-nodes
 
                 :build
+                :build-core-module
                 :finish-build))
 
 
@@ -775,7 +776,7 @@
   (subtest "Single Function Meta-Nodes"
     (subtest "Simple Function"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core)")
         (build "add(x, y) : x + y")
         (finish-build)
@@ -795,7 +796,7 @@
 
     (subtest "Recursive Meta-Nodes"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core)")
         (build "fact(n) : case(n < 1 : 1, n * fact(n - 1))")
         (finish-build)
@@ -820,7 +821,7 @@
 
     (subtest "Tail Recursive Meta-Nodes"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core)")
         (build "fact(n) : { iter(n, acc) : case(n < 1 : acc, iter(n - 1, n * acc)); iter(n, 1) }")
         (finish-build)
@@ -854,7 +855,7 @@
 
     (subtest "Mutually Recursive Meta-Nodes"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core)")
         (build "fib(n) : case(n > 1 : fib1(n) + fib2(n), 1)")
         (build "fib1(n) : fib(n - 1)")
@@ -898,7 +899,7 @@
 
     (subtest ":FAIL Expressions"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core)")
         (build "validate(x) : x > 0 -> (x -> self)")
         (finish-build)
@@ -919,7 +920,7 @@
 
     (subtest "Common Sub Expressions"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core)")
         (build "func(a, b) : (a + b) - (a + b)")
 
@@ -947,7 +948,7 @@
       (subtest "Arithmetic"
         (subtest "Add"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "add(x, y) : x + y")
             (finish-build)
@@ -967,7 +968,7 @@
 
         (subtest "Subtract"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "sub(x, y) : x - y")
             (finish-build)
@@ -987,7 +988,7 @@
 
         (subtest "Negate"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "neg(x) : -(x)")
             (finish-build)
@@ -1007,7 +1008,7 @@
 
         (subtest "Multiply"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "mul(x, y) : x * y")
             (finish-build)
@@ -1027,7 +1028,7 @@
 
         (subtest "Divide"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "div(x, y) : x / y")
             (finish-build)
@@ -1048,7 +1049,7 @@
       (subtest "Comparison"
         (subtest "Less Than"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "less?(x, y) : x < y")
             (finish-build)
@@ -1068,7 +1069,7 @@
 
         (subtest "Less Than or Equal"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "less=?(x, y) : x <= y")
             (finish-build)
@@ -1088,7 +1089,7 @@
 
         (subtest "Greater Than"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "greater?(x, y) : x > y")
             (finish-build)
@@ -1108,7 +1109,7 @@
 
         (subtest "Greater Than or Equal"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "greater=?(x, y) : x >= y")
             (finish-build)
@@ -1128,7 +1129,7 @@
 
         (subtest "Equal"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "equal?(x, y) : x = y")
             (finish-build)
@@ -1148,7 +1149,7 @@
 
         (subtest "Not Equal"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "not-equal?(x, y) : x != y")
             (finish-build)
@@ -1169,7 +1170,7 @@
       (subtest "Boolean Logic"
         (subtest "And"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "my-and(x, y) : x + y and y - x")
             (finish-build)
@@ -1193,7 +1194,7 @@
 
         (subtest "Or"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "my-or(x, y) : x + y or y - x")
             (finish-build)
@@ -1217,7 +1218,7 @@
 
         (subtest "Not"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "my-not(x) : not(x)")
             (finish-build)
@@ -1238,7 +1239,7 @@
       (subtest "Type Conversions"
         (subtest "int"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "my-int(x) : int(x)")
             (finish-build)
@@ -1258,7 +1259,7 @@
 
         (subtest "real"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "my-real(x) : real(x)")
             (finish-build)
@@ -1278,7 +1279,7 @@
 
         (subtest "string"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "my-string(x) : string(x)")
             (finish-build)
@@ -1299,7 +1300,7 @@
       (subtest "Type Checks"
         (subtest "int"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "is-int?(x) : int?(x)")
             (finish-build)
@@ -1319,7 +1320,7 @@
 
         (subtest "real"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "is-real?(x) : real?(x)")
             (finish-build)
@@ -1339,7 +1340,7 @@
 
         (subtest "string"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "is-string?(x) : string?(x)")
             (finish-build)
@@ -1359,7 +1360,7 @@
 
         (subtest "Is Infinity"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "is-inf?(x) : inf?(x)")
             (finish-build)
@@ -1379,7 +1380,7 @@
 
         (subtest "Is NaN"
           (with-module-table modules
-            (build-source-file #p"./modules/core.trd" modules)
+            (build-core-module)
             (build ":import(core)")
             (build "is-nan?(x) : NaN?(x)")
             (finish-build)

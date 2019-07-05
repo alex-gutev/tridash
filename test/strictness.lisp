@@ -52,7 +52,7 @@
 (defmacro! test-strictness ((&rest source) &body tests)
   (let ((syms (map (compose #'gensym #'first) tests)))
    `(with-module-table ,g!modules
-      (build-source-file #p"./modules/core.trd" ,g!modules)
+      (build-core-module)
       (build ":import(core)" ,@source)
 
       (with-nodes ,(map #'list syms (map #'first tests))

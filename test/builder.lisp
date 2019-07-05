@@ -57,6 +57,7 @@
   (:export
    :*flat-node-table*
    :build-node
+   :build-core-module
    :ensure-node-table
 
    :get-node
@@ -111,6 +112,11 @@
 
   (with-input-from-string (in string)
     (build-parsed-nodes (make-parser in) modules)))
+
+(defun build-core-module (&optional (modules *global-module-table*))
+  "Builds the `core` module into the `MODULE-TABLE' MODULES."
+
+  (build-source-file #p"./modules/core.trd" modules))
 
 
 ;;;; Getting a Node-Table
@@ -507,7 +513,7 @@
   (subtest "Functor Nodes"
     (subtest "Meta-Node Operators"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core); a + b -> output; int(x) -> z")
 
         (with-nodes ((+ "+") (a "a") (b "b")
@@ -624,7 +630,7 @@
   (subtest "Explicit Contexts"
     (subtest "In Target of Binding"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core);"
                "a < 3 -> ((a + b) -> :context(output, ctx))"
                "a < 4 -> ((a - b) -> :context(output, ctx))"
@@ -660,7 +666,7 @@
       ;; position.
 
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core)"
                ":context(a, ctx) -> b"
                ":context(b, z) + c -> output")
@@ -777,7 +783,7 @@
   (subtest "Meta-Nodes"
     (subtest "Meta-Node Definitions"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core); add(x,y) : x + y; add(a,b)")
 
         (with-nodes ((add "add") (a "a") (b "b") (add-ab ("add" "a" "b"))) modules
@@ -1438,7 +1444,7 @@
   (subtest "Explicit Context"
     (subtest "Common Operands"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core);"
                "a < 3 -> ((a + b) -> :context(output, ctx))"
                "a > 4 -> ((a - b) -> :context(output, ctx))"
@@ -1466,7 +1472,7 @@
 
     (subtest "Common Operands without Coalescing"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core);"
                "a + b -> c"
                "a < 3 -> (c -> :context(output, ctx1))"
@@ -1493,7 +1499,7 @@
 
     (subtest "Common Operand without Default"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core);"
                "a < 3 -> ((a + b) -> :context(output, c))"
                "b < 4 -> (b -> :context(output, c))"
@@ -1518,7 +1524,7 @@
 
     (subtest "Single Common Ancestor"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core);"
                "a < 3 -> ((a + b) -> c)"
                "c -> :context(output, ctx)"
@@ -1543,7 +1549,7 @@
 
     (subtest "Single Common Ancestor without Default"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core);"
                "a < 3 -> ((a + b) -> c)"
                "c -> :context(output, ctx)"
@@ -1569,7 +1575,7 @@
 
     (subtest "Test Creation Order"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core);"
                "a + b -> :context(output, c1)"
                "b -> :context(output, c1)"
@@ -2034,7 +2040,7 @@
   (subtest "Recursive Functions"
     (subtest "Simple Recursion"
       (with-module-table modules
-        (build-source-file "./modules/core.trd" modules)
+        (build-core-module)
 
         (build ":import(core)"
 
@@ -2068,7 +2074,7 @@
 
     (subtest "Tail Recursion with Nested Functions"
       (with-module-table modules
-        (build-source-file "./modules/core.trd" modules)
+        (build-core-module)
 
         (build ":import(core)"
 
@@ -2116,7 +2122,7 @@
     (subtest "Mutually Recursive Functions"
       (subtest "Single Module"
         (with-module-table modules
-          (build-source-file "./modules/core.trd" modules)
+          (build-core-module)
 
           (build ":import(core)"
                  "fib(n) :
@@ -2161,7 +2167,7 @@
 
       (subtest "Multiple Modules"
         (with-module-table modules
-          (build-source-file "./modules/core.trd" modules)
+          (build-core-module)
 
           (build ":module(m1)"
                  ":import(core)"
@@ -2227,7 +2233,7 @@
 
     (subtest "Multiple Contexts"
       (with-module-table modules
-        (build-source-file "./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core)"
                "fn(x) : { x < 3 -> (x + 1 -> :context(self, c)); x + 2 -> :context(self, c) }")
 
@@ -2248,7 +2254,7 @@
       (subtest "Single Module"
         (subtest "Explicit"
           (with-module-table modules
-            (build-source-file "./modules/core.trd" modules)
+            (build-core-module)
 
             (build ":import(core)"
 
@@ -2282,7 +2288,7 @@
 
         (subtest "Implicit"
           (with-module-table modules
-            (build-source-file "./modules/core.trd" modules)
+            (build-core-module)
 
             (build ":import(core)"
 
@@ -2316,7 +2322,7 @@
 
       (subtest "Multiple Modules"
         (with-module-table modules
-          (build-source-file "./modules/core.trd" modules)
+          (build-core-module)
 
           (build ":module(m1)"
                  ":import(core)"
@@ -2359,7 +2365,7 @@
 
         (subtest "Subnodes of outer nodes."
           (with-module-table modules
-            (build-source-file "./modules/core.trd" modules)
+            (build-core-module)
 
             (build ":module(m1)"
                    ":import(core)"
@@ -2398,7 +2404,7 @@
       (subtest "Single Module"
         (subtest "Explicit"
           (with-module-table modules
-            (build-source-file "./modules/core.trd" modules)
+            (build-core-module)
 
             (build ":import(core)"
 
@@ -2432,7 +2438,7 @@
 
         (subtest "Implicit"
           (with-module-table modules
-            (build-source-file "./modules/core.trd" modules)
+            (build-core-module)
 
             (build ":import(core)"
 
@@ -2466,7 +2472,7 @@
 
       (subtest "Multiple Modules"
         (with-module-table modules
-          (build-source-file "./modules/core.trd" modules)
+          (build-core-module)
 
           (build ":module(m1)"
                  ":import(core)"
@@ -2512,7 +2518,7 @@
       (subtest "Single Module"
         (subtest "Explicit"
           (with-module-table modules
-            (build-source-file "./modules/core.trd" modules)
+            (build-core-module)
 
             (build ":import(core)"
 
@@ -2554,7 +2560,7 @@
 
         (subtest "Implicit"
           (with-module-table modules
-            (build-source-file "./modules/core.trd" modules)
+            (build-core-module)
 
             (build ":import(core)"
 
@@ -2596,7 +2602,7 @@
 
       (subtest "Multiple Modules"
         (with-module-table modules
-          (build-source-file "./modules/core.trd" modules)
+          (build-core-module)
 
           (build ":module(m1)"
                  "start; :export(start)"
@@ -2841,7 +2847,7 @@
 
     (subtest "Operand of Meta-Node in Target Position"
       (with-module-table modules
-        (build-source-file #p"./modules/core.trd" modules)
+        (build-core-module)
         (build ":import(core)"
                "f(x) : { x -> int(y); y }")
 
