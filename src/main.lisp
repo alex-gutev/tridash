@@ -299,7 +299,7 @@ Example: tridashc ui.trd : node-name=ui")
    SOURCES. Returns the flattened module table."
 
   (handler-bind
-      ((non-existent-module #'load-module-handler))
+      ((non-existent-module-error #'load-module-handler))
     (build-program :files sources)))
 
 

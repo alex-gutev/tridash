@@ -176,7 +176,7 @@
 
   (let ((source (reference-operand source target context)))
     (when (typep target 'module)
-      (error 'module-node-target-error :node target))
+      (error 'target-node-error :node target))
 
     (typecase source
       (node

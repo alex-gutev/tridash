@@ -126,7 +126,7 @@
                (add-node name (make-instance 'node :name name) module)))))
 
     (handler-bind
-        ((non-existent-node #'create-node))
+        ((non-existent-node-error #'create-node))
       (lookup-node name module (unless create (outer-module module))))))
 
 (defun lookup-node (name module &optional (next-module (and module (outer-module module))))
@@ -134,13 +134,13 @@
    is not found in MODULE, MODULE's OUTER-MODULE is searched
    recursively. If the node is found it is returned in the first value
    with the module, in which it was found, in the second value. If no
-   node with that identifier is found a `NON-EXISTENT-NODE' condition
+   node with that identifier is found a `NON-EXISTENT-NODE-ERROR' condition
    is signaled."
 
-  (let ((*search-module* (or *search-module* (and module (name module)))))
+  (let ((*search-module* (or *search-module* module)))
 
    (unless module
-     (error 'non-existent-node :node name :module-name *search-module*))
+     (error 'non-existent-node-error :node name :module *search-module*))
 
     (aif (get name (nodes module))
          (values it module)
@@ -176,7 +176,7 @@
 
   (with-slots (nodes meta-nodes) module
     (when (memberp name nodes)
-      (error 'node-exists-error :node name :module module))
+      (error 'node-exists-error :node-name name :module module))
 
     (unless (get :module (attributes node))
       (setf (get :module (attributes node)) module))
@@ -190,7 +190,7 @@
   "Adds the `META-NODE' NODE with name NAME to MODULE."
 
   (when (memberp name +special-operators+)
-    (error 'special-operator-name-error :node name))
+    (error 'redefine-special-operator-error :name name))
 
   (add-node name node module))
 
@@ -236,7 +236,7 @@
     (with-slots (nodes) dest
       (when (aand (get name nodes) (/= it node))
         (error 'import-node-error
-               :node name
+               :node-name name
                :source src
                :module dest))
 
@@ -250,3 +250,10 @@
 
   (setf (get name (public-nodes module))
         (lookup-node name module)))
+
+
+;;; Print Method
+
+(defmethod print-object ((module module) stream)
+  (print-unreadable-object (module stream :type t)
+    (format stream "~a" (name module))))

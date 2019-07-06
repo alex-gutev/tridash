@@ -69,11 +69,11 @@
 (defun get-module (module &optional (modules *global-module-table*))
   "Returns the `MODULE' with identifier MODULE in MODULES. If there is
    no module with identifier MODULE in MODULES, signals a
-   `NON-EXISTENT-MODULE' condition."
+   `NON-EXISTENT-MODULE-ERROR' condition."
 
   (with-retry-restart
     (or (get module (modules modules))
-        (error 'non-existent-module :module-name module))))
+        (error 'non-existent-module-error :module-name module))))
 
 
 ;;;; Builtin Module Definition

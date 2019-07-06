@@ -380,9 +380,9 @@
    non-top-level position. Each element in CODE is
    prepended (separated by ';') to DECL before performing the tests."
 
-  (test-error (format nil "~{~a; ~}~a -> a" code decl) 'special-operator-operand)
-  (test-error (format nil "~{~a; ~}a -> ~a" code decl) 'special-operator-operand)
-  (test-error (format nil "~{~a; ~}f(x) : x; f(~a)" code decl)) 'special-operator-operand)
+  (test-error (format nil "~{~a; ~}~a -> a" code decl) 'special-operator-reference-error)
+  (test-error (format nil "~{~a; ~}a -> ~a" code decl) 'special-operator-reference-error)
+  (test-error (format nil "~{~a; ~}f(x) : x; f(~a)" code decl)) 'special-operator-reference-error)
 
 
 ;;;; Utility Macros
@@ -551,7 +551,7 @@
     (subtest "Non-Node Operators"
       (test-error "1(x, y)" 'non-node-operator-error)
       (test-error " \"hello\"(1, x, 2) " 'non-node-operator-error)
-      (test-error "z(x, y)" 'non-existent-node)))
+      (test-error "z(x, y)" 'non-existent-node-error)))
 
   (subtest "Functors in Target Position"
     (subtest "No Target Node"
@@ -804,18 +804,18 @@
         (test-top-level-only "(g(x,y) : f(x,y))")
 
         (diag "Redefining Special Operators")
-        (test-error "->(x, y) : fn(x, y)" 'special-operator-name-error)
-        (test-error ":(x, y) : z" 'special-operator-name-error)
-        (test-error ":extern(x) : x" 'special-operator-name-error)
-        (test-error ":op(a, b) : f(b, a)" 'special-operator-name-error)
-        (test-error "..(x,z) : g(x, z)" 'special-operator-name-error)
-        (test-error ".(a) : h(a)" 'special-operator-name-error)
-        (test-error ":attribute(m, n) : f(m,n)" 'special-operator-name-error)
-        (test-error ":module(m) : m" 'special-operator-name-error)
-        (test-error ":import(x) : x" 'special-operator-name-error)
-        (test-error ":use(z) : z" 'special-operator-name-error)
-        (test-error ":export(y) : h(y)" 'special-operator-name-error)
-        (test-error ":in(x, y) : add(x, y)" 'special-operator-name-error)
+        (test-error "->(x, y) : fn(x, y)" 'redefine-special-operator-error)
+        (test-error ":(x, y) : z" 'redefine-special-operator-error)
+        (test-error ":extern(x) : x" 'redefine-special-operator-error)
+        (test-error ":op(a, b) : f(b, a)" 'redefine-special-operator-error)
+        (test-error "..(x,z) : g(x, z)" 'redefine-special-operator-error)
+        (test-error ".(a) : h(a)" 'redefine-special-operator-error)
+        (test-error ":attribute(m, n) : f(m,n)" 'redefine-special-operator-error)
+        (test-error ":module(m) : m" 'redefine-special-operator-error)
+        (test-error ":import(x) : x" 'redefine-special-operator-error)
+        (test-error ":use(z) : z" 'redefine-special-operator-error)
+        (test-error ":export(y) : h(y)" 'redefine-special-operator-error)
+        (test-error ":in(x, y) : add(x, y)" 'redefine-special-operator-error)
 
         (with-module-table modules
           ;; Test node name collisions with meta-nodes
@@ -890,7 +890,7 @@
           (test-simple-binding map-input output))))
 
     (subtest "As Target of Binding"
-      (test-error ":extern(add); x -> add" 'meta-node-target-error)))
+      (test-error ":extern(add); x -> add" 'target-node-error)))
 
   (subtest "Subnodes"
     (labels ((test-object-fn (node &rest fields)
@@ -1062,24 +1062,24 @@
 
       (subtest "Errors"
         (subtest "Module Semantics"
-          (is-error (build ":module(mod2); +(j,k)") 'non-existent-node)
+          (is-error (build ":module(mod2); +(j,k)") 'non-existent-node-error)
           (is-error (build ":module(mod2); j + k") 'declaration-parse-error)
-          (is-error (build ":module(mod2); my-mod.z") 'non-existent-node)
+          (is-error (build ":module(mod2); my-mod.z") 'non-existent-node-error)
 
-          (is-error (build ":module(mod3); +(j,k)") 'non-existent-node)
+          (is-error (build ":module(mod3); +(j,k)") 'non-existent-node-error)
           (is-error (build ":module(mod3); j + k") 'declaration-parse-error)
-          (is-error (build ":module(mod3); m.z") 'non-existent-node)
+          (is-error (build ":module(mod3); m.z") 'non-existent-node-error)
 
-          (is-error (build ":module(mod4); my-mod.+(a,b)") 'non-existent-node)
-          (is-error (build ":module(mod4); :in(my-mod, z)") 'non-existent-node)
+          (is-error (build ":module(mod4); my-mod.+(a,b)") 'non-existent-node-error)
+          (is-error (build ":module(mod4); :in(my-mod, z)") 'non-existent-node-error)
 
-          (test-error ":use(no-such-module)" 'non-existent-module)
-          (test-error ":alias(no-such-module, m)" 'non-existent-module)
-          (test-error ":import(no-such-module)" 'non-existent-module)
-          (test-error ":import(no-such-module, node)" 'non-existent-module)
-          (test-error ":in(no-such-module, x)" 'non-existent-module)
-          (test-error ":export(no-such-node)" 'non-existent-node)
-          (test-error "x; :export(x, no-such-node)" 'non-existent-node))
+          (test-error ":use(no-such-module)" 'non-existent-module-error)
+          (test-error ":alias(no-such-module, m)" 'non-existent-module-error)
+          (test-error ":import(no-such-module)" 'non-existent-module-error)
+          (test-error ":import(no-such-module, node)" 'non-existent-module-error)
+          (test-error ":in(no-such-module, x)" 'non-existent-module-error)
+          (test-error ":export(no-such-node)" 'non-existent-node-error)
+          (test-error "x; :export(x, no-such-node)" 'non-existent-node-error))
 
         (subtest ":module Operator Syntax"
           (test-error ":module()" 'invalid-arguments-error)
@@ -1123,7 +1123,7 @@
         (subtest "Referencing Module Pseudo Nodes"
           (test-error ":module(m1); :module(m2); :use(m1); :extern(add); add(m1, x)" 'module-node-reference-error)
           (test-error ":module(m1); :module(m2); :use(m1); m1 -> x" 'module-node-reference-error)
-          (test-error ":module(m1); :module(m2); :use(m1); x -> m1" 'module-node-target-error))))))
+          (test-error ":module(m1); :module(m2); :use(m1); x -> m1" 'target-error))))))
 
 (subtest "Node Coalescer"
   (subtest "Simple Nodes"
@@ -1333,7 +1333,7 @@
                "c -> d"                 ; Unreachable Nodes
                ":attribute(a, input, 1)")
 
-        (is-error (finish-build) 'dependency-not-reachable))))
+        (is-error (finish-build) 'dependency-not-reachable-error))))
 
   (subtest "Cross-Module Bindings"
     (subtest "Simple Bindings"
@@ -2862,26 +2862,26 @@
         (with-module-table modules
           (build "f(x) : z")
 
-          (is-error (finish-build) 'non-existent-node)))
+          (is-error (finish-build) 'non-existent-node-error)))
 
       (subtest "Operands"
         (with-module-table modules
           (build ":extern(add)"
                  "f(x) : add(x, y, z)")
 
-          (is-error (finish-build) 'non-existent-node)))
+          (is-error (finish-build) 'non-existent-node-error)))
 
       (subtest "Binding Source"
         (with-module-table modules
           (build "f(x) : z -> self")
 
-          (is-error (finish-build) 'non-existent-node)))
+          (is-error (finish-build) 'non-existent-node-error)))
 
       (subtest "Object Nodes"
         (with-module-table modules
           (build "f(x) : n.z")
 
-          (is-error (finish-build) 'non-existent-node)))))
+          (is-error (finish-build) 'non-existent-node-error)))))
 
   (subtest "Structure Checking"
     (subtest "Cycle Checks"

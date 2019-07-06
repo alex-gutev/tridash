@@ -92,6 +92,34 @@
   (setf (get :cl-function (attributes meta-node)) fn))
 
 
+;;;; Error Conditions
+
+(define-condition unsupported-meta-node-error (semantic-error)
+  ((node-name :initarg :node-name
+              :reader node-name
+              :documentation "Name of the unsupported meta-node"))
+
+  (:documentation
+   "Error condition: `EXTERNAL-META-NODE' is not supported in
+    macros."))
+
+(defmethod print-object ((e unsupported-meta-node-error) stream)
+  (format stream "External Meta-Node `~a` is not supported in macros."
+          (node-name e)))
+
+
+(define-condition macro-outer-node-error (semantic-error)
+  ()
+
+  (:documentation
+   "Error condition: Outer nodes referenced from a macro-node or a
+    meta-node used by a macro-node."))
+
+(defmethod print-object ((e macro-outer-node-error) stream)
+  (format stream "Cannot reference outer-nodes from macro-node or meta-node used by macro-node."))
+
+
+
 ;;;; Compiling Tridash Expressions to CL
 
 (defvar *tridash-cl-functions* (make-hash-map)
@@ -166,10 +194,8 @@
 
     (match meta-node
       ((external-meta-node name)
-       (aif (get name *tridash-cl-functions*)
-            (->> (make-meta-node-arguments meta-node arguments)
-                 (list* it))
-            (error "External meta-node ~a not supported." name)))
+       (->> (make-meta-node-arguments meta-node arguments)
+            (list* (external-meta-node-cl-function name))))
 
       ((type meta-node)
        (->> (make-meta-node-arguments meta-node arguments)
@@ -220,13 +246,11 @@
       ref
 
     (when outer-nodes
-      (error "Cannot reference outer-nodes in CL backend."))
+      (error 'macro-outer-node-error))
 
     (match node
       ((external-meta-node name)
-       (aif (get name *tridash-cl-functions*)
-            `#',it
-            (error "External meta-node ~a not supported." name)))
+       `#',(external-meta-node-cl-function name))
 
       ((type meta-node)
        (with-gensyms (args)
@@ -240,6 +264,12 @@
 
     (_ `',literal)))
 
+(defun external-meta-node-cl-function (name)
+  "Returns the name of the CL function implementing the
+   `EXTERNAL-META-NODE' with name NAME."
+
+  (or (get name *tridash-cl-functions*)
+      (error 'unsupported-meta-node-error :node-name name)))
 
 ;;;; Macro-Writing
 

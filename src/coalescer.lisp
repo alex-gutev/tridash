@@ -227,7 +227,7 @@
                  (erase nodes node)
 
                  (awhen (some #'visited? (map-keys (observers node)))
-                   (error 'dependency-not-reachable :dependency node :node it))))
+                   (error 'dependency-not-reachable-error :dependency node :node it))))
 
              (visited? (node)
                (and (memberp node visited)

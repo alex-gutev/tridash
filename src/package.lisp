@@ -227,45 +227,34 @@
 
    :not-node-error
    :module-node-reference-error
-
    :non-node-operator-error
-   :operator
-
-   :non-existent-node
-   :module-name
-
+   :non-existent-node-error
    :node-exists-error
-   :meta-node-name-collision
-   :special-operator-name-error
-
-   :non-existent-module
-   :alias-clash-error
-   :alias-taken-error
-
+   :redefine-special-operator-error
+   :non-existent-module-error
+   :create-alias-error
    :import-node-error
-
    :invalid-arguments-error
+   :invalid-value-error
+   :global-outer-reference-error
+   :special-operator-reference-error
+   :target-node-error
+   :ambiguous-context-error
+   :ambiguous-meta-node-context-error
+   :node-cycle-error
+   :dependency-not-reachable-error
+   :unsupported-meta-node-error
+   :macro-outer-node-error
+
+   :module-name
+   :node-name
+   :source
    :operator
    :arguments
    :expected
-
-   :invalid-value-error
    :thing
    :allowed
-   :value
-
-   :global-outer-reference-error
-   :special-operator-operand
-
-   :meta-node-target-error
-   :module-node-target-error
-   :target-node-error
-
-   :ambiguous-context-error
-   :ambiguous-meta-node-context
-   :node-cycle-error
-
-   :dependency-not-reachable)
+   :value)
 
   (:documentation
    "Package containing the compiler frontend, which builds the node

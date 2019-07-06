@@ -523,14 +523,15 @@
               (call-tridash-meta-node ,self (list (!- $n 1))))))))))
 
   (subtest "Errors"
-    (with-external-meta-nodes ("not-a-function")
-      (is-error
-       (tridash->cl-function
-        (mock-meta-node
-         (arg)
-         (functor not-a-function arg)))
+    (subtest "Unsupported `EXTERNAL-META-NODE'"
+      (with-external-meta-nodes ("not-a-function")
+        (is-error
+         (tridash->cl-function
+          (mock-meta-node
+           (arg)
+           (functor not-a-function arg)))
 
-       'error))))
+         'unsupported-meta-node-error)))))
 
 (subtest "Calling Tridash Meta-Nodes from CL"
   (subtest "Single Expression Functions"

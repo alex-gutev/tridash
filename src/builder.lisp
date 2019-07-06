@@ -253,7 +253,7 @@
        (add-binding last-node value-node :context nil))
 
       ((> (length contexts) 1)
-       (error 'ambiguous-meta-node-context :node meta-node)))))
+       (error 'ambiguous-meta-node-context-error :node meta-node)))))
 
 
 ;;;; Methods: Processing Declarations
@@ -281,9 +281,9 @@
         (node (call-next-method)))
 
     (when (meta-node? node)
-      ;; Signal error if meta-node appears in source position.
+      ;; Signal error if meta-node appears in target position.
       (when *source-node*
-        (error 'meta-node-target-error :meta-node node))
+        (error 'target-node-error :node node))
 
       ;; Add NODE to the meta-node references of *META-NODE*
       (when (and *meta-node* (/= node *meta-node*))
@@ -326,12 +326,13 @@
              :expected ',expected))))
 
 (defmacro ensure-top-level (operator &body body)
-  "Signals an error condition of type SPECIAL-OPERATOR-OPERAND if the
-   declaration currently being processed is not at top-level."
+  "Signals an error condition of type
+   `SPECIAL-OPERATOR-REFERENCE-ERROR' if the declaration currently
+   being processed is not at top-level."
 
   `(progn
      (unless (top-level?)
-       (error 'special-operator-operand :operator ,operator))
+       (error 'special-operator-reference-error :operator ,operator))
 
      ,@body))
 
@@ -404,19 +405,16 @@
              (guard alias (symbolp alias)))
 
        (match (get alias (nodes module))
-         ((type node)
-          (error 'alias-clash-error
-                 :node alias
-                 :module module-id
-                 :node-table module))
+         ((or (type node)
+              (guard it (and (typep it 'module)
+                             (not (eq it (get-module module-id))))))
 
-         ((and (type module) (not (eq module)))
-          (error 'alias-taken-error
-                 :node alias
-                 :module module-id
-                 :node-table module))
+          (error 'create-alias-error
+                 :node-name alias
+                 :module-name module-id
+                 :module module))
 
-         (nil
+         (_
           (setf (get alias (nodes module)) (get-module module-id))))))))
 
 (defmethod process-functor ((operator (eql +import-operator+)) args module)
@@ -500,7 +498,7 @@
          (let ((node (process-declaration node module)))
 
            (unless (node? node)
-             (error 'not-node-error :node (first args)))
+             (error 'not-node-error :node node))
 
            (setf (attribute attribute node)
                  (or

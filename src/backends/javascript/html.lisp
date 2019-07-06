@@ -89,7 +89,7 @@
 
 ;;;; Compiling HTML nodes
 
-(define-condition html-component-binding (semantic-error)
+(define-condition html-component-binding-error (semantic-error)
   ((name :initarg :name
          :reader name
          :documentation
@@ -99,7 +99,7 @@
    "Error condition: A binding involving an html component node was
     established, which is not yet supported."))
 
-(defmethod print-object ((e html-component-binding) stream)
+(defmethod print-object ((e html-component-binding-error) stream)
   (format stream "Binding involving html component node ~a is not yet supported." (name e)))
 
 (defmethod create-node ((node html-component-node))
@@ -107,7 +107,7 @@
    bindings which involve the component node."
 
   (unless (emptyp (contexts node))
-    (error 'html-component-binding :name (name node))))
+    (error 'html-component-binding-error :name (name node))))
 
 (defmethod create-node ((node html-node))
   "Generates the node definition for a NODE which references an HTML
