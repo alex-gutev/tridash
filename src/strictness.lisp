@@ -81,7 +81,7 @@
   (with-slots (operands) meta-node
     (-<>> (meta-node-strictness meta-node)
           (curry #'strict?)
-          (map <> (operands meta-node)))))
+          (map <> (operand-node-names meta-node)))))
 
 (defun meta-node-strictness (meta-node)
   "Returns the strictness expression of META-NODE's operands. If the
@@ -169,7 +169,7 @@
    expression of META-NODE is returned with the operands replaced with
    the corresponding expressions in ARGUMENTS."
 
-  (let ((values (alist-hash-map (pairlis (operands meta-node) arguments))))
+  (let ((values (alist-hash-map (pairlis (operand-node-names meta-node) arguments))))
     (labels ((walk (expression)
                (match expression
                  ((list* (and (or 'or 'and) op) args)
@@ -179,6 +179,12 @@
                   (get operand values)))))
 
       (walk (meta-node-strictness meta-node)))))
+
+(defmethod analyze-expression ((list argument-list))
+  (->> list
+       argument-list-arguments
+       (map #'analyze-expression)
+       (list* 'or)))
 
 
 ;;;; Evaluating Strictness Expressions

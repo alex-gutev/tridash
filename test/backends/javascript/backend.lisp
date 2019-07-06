@@ -259,17 +259,32 @@
 (defun mock-meta-nodes% (names)
   "Returns a list of `EXTERNAL-META-NODE's with names NAMES."
 
-  (flet ((make-meta-node (opts)
-           (match opts
-             ((list name operands strict-operands)
-              (aprog1
-                  (make-instance 'external-meta-node
-                                 :name name
-                                 :operands operands)
-                (setf (attribute :strictness it)
-                      (list* 'or strict-operands))))
-             (name
-              (make-instance 'external-meta-node :name name)))))
+  (labels
+      ((make-operand (operand)
+         (match operand
+           ((or (list 'optional symb value)
+                (list 'optional symb))
+            (list +optional-argument+ symb value))
+
+           ((list 'rest symb)
+            (list +rest-argument+ symb))
+
+           ((list 'outer node)
+            (list +outer-node-argument+ node))
+
+           (_ operand)))
+
+       (make-meta-node (opts)
+         (match opts
+           ((list name operands strict-operands)
+            (aprog1
+                (make-instance 'external-meta-node
+                               :name name
+                               :operands (map #'make-operand operands))
+              (setf (attribute :strictness it)
+                    (list* 'or strict-operands))))
+           (name
+            (make-instance 'external-meta-node :name name)))))
     (map #'make-meta-node names)))
 
 (defmacro mock-meta-nodes ((&rest names) &body body)
@@ -388,13 +403,26 @@
 
 (subtest "Node Value Function Code Generation"
   (subtest "Function Calls"
-    (mock-backend-state
-      (mock-meta-nodes (f)
-        (mock-contexts
-            ((context (a b) (functor f a b)))
+    (subtest "Positional Arguments"
+      (mock-backend-state
+        (mock-meta-nodes (f)
+          (mock-contexts
+              ((context (a b) (functor f a b)))
 
-          (test-compute-function context
-            (js-return (thunk (js-return (js-call f (d a) (d b))))))))))
+            (test-compute-function context
+              (js-return (thunk (js-return (js-call f (d a) (d b))))))))))
+
+    (subtest "Rest Arguments"
+      (mock-backend-state
+        (mock-meta-nodes (f)
+          (mock-contexts
+              ((context (a b c) (functor f a (argument-list (list b c)))))
+
+            (test-compute-function context
+              (js-return
+               (thunk
+                (js-return
+                 (js-call f (d a) (thunk (js-return (js-array (list (d b) (d c)))))))))))))))
 
   (subtest "Conditionals"
     (subtest "Simple If Statements"
@@ -660,9 +688,51 @@
                 (js-return
                  (js-call map f (d a))))))))))
 
+    (subtest "With Optional Arguments"
+      (mock-backend-state
+        (mock-meta-nodes (map (1+ (n (optional d)) (n d)))
+          (mock-contexts
+              ((context (a b)
+                        (functor map (meta-node-ref 1+ :optional (list b)) a)))
+
+            (test-compute-function context
+              (js-return
+               (thunk
+                (js-return
+                 (js-call
+                  map
+
+                  (js-lambda
+                   (list ($ n) (js-call "=" ($ d) (d b)))
+                   (list
+                    (js-return
+                     (js-call 1+ ($ a) ($ d)))))
+
+                  (d a))))))))))
+
+    (subtest "With Rest Arguments"
+      (mock-backend-state
+        (mock-meta-nodes (map (list (x (rest xs)) (x)))
+          (mock-contexts
+              ((context (a) (functor map (meta-node-ref list) a)))
+
+            (test-compute-function context
+              (js-return
+               (thunk
+                (js-return
+                 (js-call
+                  map
+
+                  (js-lambda
+                   (list ($ x) (js-call "..." ($ xs)))
+                   (list
+                    (js-return
+                     (js-call list ($ x) ($ xs)))))
+                  (d a))))))))))
+
     (subtest "With Outer Nodes"
       (mock-backend-state
-        (mock-meta-nodes (map f)
+        (mock-meta-nodes (map (f (a (outer x)) (a x)))
           (mock-contexts
               ((context (a b)
                         (functor map (meta-node-ref f :outer-nodes (list b)) a)))
@@ -673,14 +743,36 @@
                 (js-return
                  (js-call
                   map
+                  (js-lambda
+                   '(($ a))
+                   (list
+                    (js-return
+                     (js-call f ($ a) (d b)))))
+                  (d a))))))))))
 
-                  (-<> (js-call "Array.prototype.slice.call" "arguments")
-                       (js-member "concat")
-                       (js-call (js-array (list (d b))))
-                       (js-call (js-member f "apply") <>)
-                       (js-return)
-                       list
-                       (js-lambda nil <>))
+    (subtest "With Optional Rest and Outer Node Operands"
+      (mock-backend-state
+        (mock-meta-nodes (map (f (a (optional b) (rest c) (outer d)) (a d)))
+          (mock-contexts
+              ((context (a b)
+                        (functor map
+                                 (meta-node-ref f :optional (list 1) :outer-nodes (list b))
+                                 a)))
+
+            (test-compute-function context
+              (js-return
+               (thunk
+                (js-return
+                 (js-call
+                  map
+
+                  (js-lambda
+                   (list
+                    ($ a) (js-call "=" ($ b) 1) (js-call "..." ($ c)))
+
+                   (list
+                    (js-return
+                     (js-call f ($ a) ($ b) ($ c) (d b)))))
 
                   (d a)))))))))))
 
@@ -943,6 +1035,87 @@
                  (thunk
                   (js-return
                    (js-call "-" (resolve ($ g1)) (resolve ($ g1)))))))))))))
+
+    (subtest "Optional Arguments"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core)")
+        (build "1+(n, d : 1) : n + d")
+        (build "f(a) : 1+(a)")
+
+        (with-nodes ((1+ "1+") (f "f"))
+            (finish-build)
+
+          (mock-backend-state
+            (test-meta-node-function 1+
+              (js-function
+               (meta-node-id 1+)
+               '(($ n) ($ d))
+
+               (list
+                (->> (js-call "+" (resolve ($ n)) (resolve ($ d)))
+                     js-return
+                     thunk
+                     js-return)))))
+
+          (mock-backend-state
+            (test-meta-node-function f
+              (js-function
+               (meta-node-id f)
+               '(($ n))
+
+               (list
+                (->> (js-call 1+ ($ n) 1)
+                     js-return
+                     thunk
+                     js-return))))))))
+
+    (subtest "Rest Arguments"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core)")
+        (build "f(x, ..(xs)) : x + xs")
+        (build "g(x, y, z) : f(x, y, z)")
+        (build "h(x) : f(x)")
+
+        (with-nodes ((f "f") (g "g") (h "h"))
+            (finish-build)
+
+          (mock-backend-state
+            (test-meta-node-function f
+              (js-function
+               (meta-node-id f)
+               '(($ x) ($ xs))
+
+               (list
+                (->> (js-call "+" (resolve ($ x)) (resolve ($ xs)))
+                     js-return
+                     thunk
+                     js-return)))))
+
+          (mock-backend-state
+            (test-meta-node-function g
+              (js-function
+               (meta-node-id g)
+               '(($ x) ($ y) ($ z))
+
+               (list
+                (->> (js-call f ($ x) (js-array (list ($ y) ($ z))))
+                     js-return
+                     thunk
+                     js-return)))))
+
+          (mock-backend-state
+            (test-meta-node-function h
+              (js-function
+               (meta-node-id h)
+               '(($ x))
+
+               (list
+                (->> (js-call f ($ x) (js-array))
+                     js-return
+                     thunk
+                     js-return))))))))
 
     (subtest "Primitive Functions"
       (subtest "Arithmetic"

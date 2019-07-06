@@ -51,7 +51,13 @@
 
                 :thunk
                 :resolve
-                :tridash-fail))
+                :tridash-fail
+                :group-rest-args
+
+                :check-arity
+
+                :+optional-argument+
+                :+rest-argument+))
 
 (in-package :tridash.test.macros)
 
@@ -113,19 +119,44 @@
    `NODE-LINK' object corresponding to the operand, and the symbol
    SELF is bound to the `META-NODE' object."
 
-  `(let ((self (make-instance 'meta-node :name 'test-meta-node :operands ',operands))
-         ,@(map #`(,a1 (node-link (make-instance 'node :name ',a1))) operands))
+  (flet ((make-operand (operand)
+           (match operand
+             ((list 'optional symb value)
+              (list +optional-argument+ symb value))
 
-     ;; Create an empty `FLAT-NODE-TABLE' to mark meta-node as
-     ;; already built
-     (setf (definition self) (make-instance 'flat-node-table))
-     (setf (value-function (context self nil))
-           ,expression)
+             ((list 'rest symb)
+              (list +rest-argument+ symb))
 
-     ,@(map #`(setf (get ',a1 (operands (context self nil))) ,a1) operands)
-     ,@(map #`(setf (get ',a1 (dependencies self)) ,a1) operands)
+             (_ operand)))
 
-     self))
+         (operand-node (operand)
+           (match operand
+             ((list* 'optional symb _)
+              symb)
+
+             ((list 'rest symb)
+              symb)
+
+             (_ operand))))
+
+    `(let ((self (make-instance 'meta-node
+                                :name 'test-meta-node
+                                :operands ',(map #'make-operand operands)))
+           ,@(map #`(,a1 (node-link (make-instance 'node :name ',a1)))
+                  (map #'operand-node operands)))
+
+       ;; Create an empty `FLAT-NODE-TABLE' to mark meta-node as
+       ;; already built
+       (setf (definition self) (make-instance 'flat-node-table))
+       (setf (value-function (context self nil))
+             ,expression)
+
+       ,@(map #`(setf (get ',a1 (operands (context self nil))) ,a1)
+              (map #'operand-node operands))
+       ,@(map #`(setf (get ',a1 (dependencies self)) ,a1)
+              (map #'operand-node operands))
+
+       self)))
 
 (defmacro test-compile-meta-node ((&rest operands) expression args body)
   "Creates and compiles a `META-NODE' to a CL LAMBDA expression and
@@ -319,7 +350,44 @@
             ,apply
             (list
              #'(lambda (&rest $args)
+                 (check-arity ,f $args)
                  (call-tridash-meta-node ,f $args))
+             $x))))))
+
+    (subtest "Meta-Node with Optional Arguments"
+      (let ((apply (mock-meta-node (f x) (functor f x)))
+            (f (mock-meta-node (x) x)))
+
+        (test-compile-meta-node
+         (x)
+         (functor apply (meta-node-ref f :optional (list 1 2)) x)
+
+         ($x)
+         `(thunk
+           (call-tridash-meta-node
+            ,apply
+            (list
+             #'(lambda (&rest $args)
+                 (check-arity ,f $args)
+                 (call-tridash-meta-node ,f $args))
+             $x))))))
+
+    (subtest "Meta-Node with Rest Arguments"
+      (let ((apply (mock-meta-node (f x) (functor f x)))
+            (f (mock-meta-node (x y (rest xs)) xs)))
+
+        (test-compile-meta-node
+         (x)
+         (functor apply (meta-node-ref f) x)
+
+         ($x)
+         `(thunk
+           (call-tridash-meta-node
+            ,apply
+            (list
+             #'(lambda (&rest $args)
+                 (check-arity ,f $args)
+                 (call-tridash-meta-node ,f (group-rest-args $args 2)))
              $x))))))
 
     (subtest "Invoking Nodes"
@@ -522,6 +590,43 @@
              (thunk
               (call-tridash-meta-node ,self (list (!- $n 1))))))))))
 
+  (subtest "Optional and Rest Arguments"
+    (subtest "Optional Arguments"
+      (with-core-nodes ("+")
+        (test-compile-meta-node
+         (n (optional d 1))
+         (functor + n d)
+
+         ($n &optional ($d 1))
+         '(thunk (!|+| $n $d)))))
+
+    (subtest "Multiple Optional Arguments"
+      (with-core-nodes ("+")
+        (test-compile-meta-node
+         (n (optional d 1) (optional e 2))
+         (functor + n (functor + d e))
+
+         ($n &optional ($d 1) ($e 2))
+         '(thunk (!|+| $n (!|+| $d $e))))))
+
+    (subtest "Rest Arguments"
+      (with-core-nodes ("cons")
+        (test-compile-meta-node
+         (x (rest xs))
+         (functor cons x xs)
+
+         ($x &optional $xs)
+         '(thunk (!|cons| $x $xs)))))
+
+    (subtest "Rest and Optional"
+      (with-core-nodes ("cons")
+        (test-compile-meta-node
+         (x (optional y 2) (rest xs))
+         (functor cons x (functor cons y xs))
+
+         ($x &optional ($y 2) $xs)
+         '(thunk (!|cons| $x (thunk (!|cons| $y $xs))))))))
+
   (subtest "Errors"
     (subtest "Unsupported `EXTERNAL-META-NODE'"
       (with-external-meta-nodes ("not-a-function")
@@ -629,21 +734,55 @@
         (is (resolve (call-tridash-meta-node f '(4 10))) 33))))
 
   (subtest "Higher Order Meta-Nodes"
-    (with-module-table modules
-      (build-core-module)
-      (build ":import(core)"
-             "apply(f, x) : f(x)"
-             "1+(n) : n + 1"
+    (subtest "No Outer-Node references"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core)"
+               "apply(f, x) : f(x)"
+               "1+(n) : n + 1"
 
-             "f(a) : apply(..(not), a)"
-             "g(a) : apply(..(1+), a)")
+               "f(a) : apply(..(not), a)"
+               "g(a) : apply(..(1+), a)")
 
-      (with-nodes ((f "f") (g "g")) modules
-        (is (resolve (call-tridash-meta-node f '(0))) 1)
-        (is (resolve (call-tridash-meta-node f '(1))) 0)
+        (with-nodes ((f "f") (g "g")) modules
+          (is (resolve (call-tridash-meta-node f '(0))) 1)
+          (is (resolve (call-tridash-meta-node f '(1))) 0)
 
-        (is (resolve (call-tridash-meta-node g '(1))) 2)
-        (is (resolve (call-tridash-meta-node g '(3))) 4)))
+          (is (resolve (call-tridash-meta-node g '(1))) 2)
+          (is (resolve (call-tridash-meta-node g '(3))) 4))))
+
+    (subtest "With Optional Arguments"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core)"
+               "apply(f, x) : f(x)"
+               "apply2(f, x, y) : f(x, y)"
+               "1+(n, d : 1) : n + d"
+
+               "f(a) : apply(1+, a)"
+               "g(a, b) : apply2(1+, a, b)")
+
+        (with-nodes ((f "f") (g "g")) modules
+          (is (resolve (call-tridash-meta-node f '(0))) 1)
+          (is (resolve (call-tridash-meta-node f '(1))) 2)
+
+          (is (resolve (call-tridash-meta-node g '(1 2))) 3)
+          (is (resolve (call-tridash-meta-node g '(5 3))) 8))))
+
+    (subtest "With Rest Arguments"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core)"
+               "apply3(f, x, y, z) : f(x, y, z)"
+               "apply(f, x) : f(x)"
+               "l(x, ..(xs)) : cons(x + 1, xs)"
+
+               "f(a, b, c) : apply3(l, a, b, c)"
+               "g(x) : apply(l, x)")
+
+        (with-nodes ((f "f") (g "g")) modules
+          (is (resolve (call-tridash-meta-node f '(1 3 4))) '(2 3 4))
+          (is (resolve (call-tridash-meta-node g '(1))) '(2)))))
 
     (subtest "Errors"
       (with-module-table modules
@@ -657,7 +796,7 @@
                "f(a) : apply(..(x+), a)")
 
         (with-nodes ((f "f")) modules
-          (is-error (resolve (call-tridash-meta-node f '(1))) 'error))))))
+          (is-error (resolve (call-tridash-meta-node f '(1))) semantic-error))))))
 
 (subtest "Actual Macros"
   (subtest "Compile-Time Computations"
@@ -746,7 +885,7 @@
                    (if "if"))
           modules
 
-        (has-value-function (a b) a!-b `(,if ,a ,b))
+        (has-value-function (a b) a!-b `(,if ,a ,b nil))
         (test-simple-binding a!-b out)))))
 
 (finalize)

@@ -109,6 +109,9 @@
 		:defmacro!
                 :nlet-tail)
 
+  (:import-from :agutil
+                :match-state)
+
   (:export
    ;; Operators
    :+subnode-operator+
@@ -163,7 +166,12 @@
    :meta-node-ref
    :meta-node-ref-p
    :meta-node-ref-node
+   :meta-node-ref-optional
    :meta-node-ref-outer-nodes
+
+   :argument-list
+   :argument-list-p
+   :argument-list-arguments
 
    :walk-expression
    :map-expression!
@@ -184,6 +192,11 @@
 
    :meta-node?
    :external-meta-node?
+
+   :operand-node-names
+   :+optional-argument+
+   :+rest-argument+
+   :+outer-node-argument+
 
    ;; Operators
    :+bind-operator+
@@ -245,6 +258,8 @@
    :dependency-not-reachable-error
    :unsupported-meta-node-error
    :macro-outer-node-error
+   :arity-error
+   :invalid-operand-list-error
 
    :module-name
    :node-name
@@ -254,7 +269,8 @@
    :expected
    :thing
    :allowed
-   :value)
+   :value
+   :arity)
 
   (:documentation
    "Package containing the compiler frontend, which builds the node

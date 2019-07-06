@@ -184,6 +184,19 @@
   (attribute :target-node meta-node))
 
 
+;;; Operand Type Symbols
+
+(defconstant +optional-argument+ +def-operator+
+  "Symbol indicating an optional argument.")
+
+(defconstant +rest-argument+ +outer-operator+
+  "Symbol indicating a rest argument.")
+
+(defconstant +outer-node-argument+ 'ex
+  "Symbol indicating an argument in which the value of an outer-node
+   is passed.")
+
+
 ;;; Outer Node References
 
 (defun unique-node-name (hash-table prefix)
@@ -197,7 +210,7 @@
   "Generates a new name for a local node which will be used to
    reference an outer node."
 
-  (unique-node-name (outer-nodes meta-node) 'ex))
+  (unique-node-name (outer-nodes meta-node) +outer-node-argument+))
 
 (defun outer-node (node outer-module meta-node)
   "Returns the name of the local node, in META-NODE, which is bound to
@@ -205,3 +218,82 @@
 
   (with-slots (outer-nodes) meta-node
     (cdr (ensure-get node outer-nodes (cons outer-module (outer-node-name meta-node))))))
+
+
+;;; Operands
+
+(defun operand-node-names (meta-node)
+  "Returns the names of the operand nodes of META-NODE."
+
+  (map
+   (lambda (operand)
+     (match operand
+       ((or (list* (eql +optional-argument+) name _)
+            (list (eql +rest-argument+) name)
+            name)
+        name)))
+   (operands meta-node)))
+
+(defun optional-operand-values (meta-node)
+  "Returns the default values for the optional arguments of
+   META-NODE."
+
+  (flet ((optional? (operand)
+           (match operand
+             ((list* (eql +optional-argument+) _)
+              t))))
+
+    (->> meta-node
+         operands
+         (remove-if-not #'optional?)
+         (map #'third))))
+
+(defun check-arity (meta-node arguments)
+  "Checks that the correct number of arguments are given to
+   META-NODE. Signals an `ARITY-ERROR' condition if the number of
+   arguments is incorrect."
+
+  (unless (correct-arity? meta-node arguments)
+    (error 'arity-error
+           :meta-node meta-node
+           :arity (meta-node-arity meta-node)
+           :arguments (length arguments))))
+
+(defun correct-arity? (meta-node arguments)
+  "Returns true if the ARGUMENTS contains the correct number of
+   arguments to META-NODE."
+
+  (destructuring-bind (min . max) (meta-node-arity meta-node)
+    (if max
+        (<= min (length arguments) max)
+        (<= min (length arguments)))))
+
+(defun meta-node-arity (meta-node)
+  "Returns a CONS where the CAR is the minimum number of arguments and
+   the CDR is the maximum number of arguments, NIL if there is no
+   maximum, that META-NODE accepts."
+
+  (reduce
+   (lambda (arity operand)
+     (match operand
+       ;; Outer Nodes
+       ((cons (eql +outer-node-argument+) _)
+        (return-from meta-node-arity arity))
+
+       ;; Rest Arguments
+       ((list (eql +rest-argument+) _)
+        (return-from meta-node-arity (cons (car arity) nil)))
+
+       ;; Optional Arguments
+       ((list* (eql +optional-argument+) _ _)
+        (destructuring-bind (min . max) arity
+          (cons min (1+ max))))
+
+       ;; Required Arguments
+       (_
+        (let ((arity (1+ (car arity))))
+          (cons arity arity)))))
+
+   (operands meta-node)
+
+   :initial-value (cons 0 0)))

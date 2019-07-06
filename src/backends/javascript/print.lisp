@@ -31,7 +31,7 @@
   "JavaScript binary operators.")
 
 (defconstant +js-unary-operators+
-  '("-" "!" "~")
+  '("-" "!" "~" "...")
 
   "JavaScript unary operators.")
 

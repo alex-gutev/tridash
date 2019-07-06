@@ -136,13 +136,62 @@
     (flet ((add-operand (operand)
              (ensure-get operand *operand-vars* (gensym (mkstr operand)))))
 
-      `(lambda ,(map #'add-operand (operands meta-node))
+      (foreach #'add-operand (operand-node-names meta-node))
+
+      `(lambda ,(make-meta-node-lambda-list meta-node)
          ,(->
            (contexts meta-node)
            map-values
            first
            value-function
            (tridash->cl :thunk t))))))
+
+(defun get-operand-var (operand)
+  "Returns the name of the variable in which the value of the operand
+   OPERAND is stored."
+
+  (get operand *operand-vars*))
+
+(defun make-meta-node-lambda-list (meta-node)
+  "Creates the lambda-list of the CL function of META-NODE."
+
+  (match-state (operands meta-node)
+    :start 'required
+
+    (required
+     (cons (and (type symbol) arg) args)
+     :from required
+
+     (cons (get-operand-var arg) (next args)))
+
+    (optional
+     (and (cons (list* (eql +optional-argument+) _) _)
+          args)
+     :from required
+
+     (cons '&optional (next args)))
+
+    (optional
+     (cons (list* (eql +optional-argument+) arg (or (list value) nil))
+           args)
+     :from optional
+
+     (when (has-nodes? value)
+       (error 'macro-outer-node-error))
+
+     (cons (list (get-operand-var arg) (tridash->cl value))
+           (next args)))
+
+    (rest
+     (and (list (list (eql +rest-argument+) _)) args)
+     :from required
+
+     (cons '&optional (next args)))
+
+    (rest
+     (list (list (eql +rest-argument+) arg))
+
+     (list (get-operand-var arg)))))
 
 
 (defgeneric tridash->cl (expression &key &allow-other-keys)
@@ -242,10 +291,10 @@
 
 
 (defmethod tridash->cl ((ref meta-node-ref) &key)
-  (with-struct-slots meta-node-ref- (node outer-nodes)
+  (with-struct-slots meta-node-ref- (node optional outer-nodes)
       ref
 
-    (when outer-nodes
+    (when (or outer-nodes (some #'has-nodes? optional))
       (error 'macro-outer-node-error))
 
     (match node
@@ -255,7 +304,53 @@
       ((type meta-node)
        (with-gensyms (args)
          `#'(lambda (&rest ,args)
-            (call-tridash-meta-node ,node ,args)))))))
+              (check-arity ,node ,args)
+              (call-tridash-meta-node
+               ,node ,(make-meta-node-arg-list node args))))))))
+
+(defun has-nodes? (expression)
+  "Checks whether EXPRESSION references any nodes."
+
+  (walk-expression
+   (lambda (x)
+     (if (typep x 'node-link)
+         (return-from has-nodes? t)
+         t))
+   expression))
+
+(defun make-meta-node-arg-list (meta-node args)
+  "Makes the argument list to be passed to the `META-NODE', inside a
+   `META-NODE-REF'. ARGS is the name of the variable storing the
+   meta-node's argument list."
+
+  (if (null (cdr (meta-node-arity meta-node)))
+      `(group-rest-args ,args ,(1- (length (operands meta-node))))
+      args))
+
+(defun group-rest-args (args n)
+  "Returns a list in which the elements after the N'th element of ARGS
+   are grouped into a single list element. If ARGS has less than N
+   elements it is returned as is."
+
+  (let ((c (make-collector nil)))
+    (loop
+       for rest on args
+       for (arg) = rest
+       for i = 0 then (1+ i)
+       do
+         (cond
+           ((< i n)
+            (accumulate c arg))
+
+           (t
+            (accumulate c rest)
+            (loop-finish))))
+
+    (collector-sequence c)))
+
+
+(defmethod tridash->cl ((list argument-list) &key)
+  (list* 'list (map #'tridash->cl (argument-list-arguments list))))
 
 (defmethod tridash->cl (literal &key)
   (match literal
@@ -270,6 +365,7 @@
 
   (or (get name *tridash-cl-functions*)
       (error 'unsupported-meta-node-error :node-name name)))
+
 
 ;;;; Macro-Writing
 
@@ -412,4 +508,8 @@
 ;;; Lists
 
 (define-tridash-function |cons| (a b) cons)
-(define-tridash-function |list| (&rest xs) list)
+
+(define-tridash-function |list| (xs)
+  (reduce #'cons (map-to 'lazy-seq #'resolve (resolve xs))
+          :initial-value nil
+          :from-end t))

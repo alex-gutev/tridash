@@ -54,7 +54,7 @@
 :extern(+, a, b)
 :attribute(+, strictness, or(a,b))
 
-:extern(-, a, b)
+:extern(-, a, :(b))
 :attribute(-, strictness, or(a,b))
 
 :extern(*, a, b)
@@ -138,8 +138,8 @@
 
 ## Lists
 
-:extern(cons)
-:extern(list)
+:extern(cons, head, tail)
+:extern(list, ..(xs))
 
 :export(cons, list)
 

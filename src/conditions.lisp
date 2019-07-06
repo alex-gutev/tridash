@@ -277,6 +277,47 @@
   (format stream "~a cannot appear as the target of a binding." (node err)))
 
 
+;;;; Arity Errors
+
+(define-condition arity-error (semantic-error)
+  ((meta-node :initarg :meta-node
+              :reader meta-node
+              :documentation
+              "The meta-node of the functor.")
+
+   (arity :initarg :arity
+          :reader arity
+          :documentation
+          "The meta-node's arity.")
+
+   (arguments :initarg :arguments
+              :reader arguments
+              :documentation
+              "The number of arguments given."))
+
+  (:documentation
+   "Error condition: A meta-node is given an incorrect number of
+    arguments."))
+
+(defmethod print-object ((e arity-error) stream)
+  (format stream "Incorrect number of arguments to ~a. Expected ~a, got ~a."
+          (meta-node e) (arity e) (arguments e)))
+
+
+(define-condition invalid-operand-list-error (semantic-error)
+  ((operands :initarg :operands
+             :reader operands
+             :documentation
+             "The operand list."))
+
+  (:documentation
+   "Error condition: The syntax of the operand list, in a meta-node
+    definition, is invalid."))
+
+(defmethod print-object ((e invalid-operand-list-error) stream)
+  (format stream "Invalid operand list: ~a" (operands e)))
+
+
 ;;;; Graph Structure Errors
 
 (define-condition ambiguous-context-error (semantic-error)

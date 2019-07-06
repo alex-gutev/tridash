@@ -218,7 +218,7 @@
              (*meta-node* meta-node)
              (*functor-module* module))
 
-        (add-operand-nodes (operands meta-node) module)
+        (add-operand-nodes (operand-node-names meta-node) module)
 
         (let* ((*create-nodes* nil)
                (last-node (at-source (process-node-list definition module :top-level t))))
@@ -280,24 +280,30 @@
   (let ((*declaration-stack* (cons decl *declaration-stack*))
         (node (call-next-method)))
 
-    (when (meta-node? node)
-      ;; Signal error if meta-node appears in target position.
-      (when *source-node*
-        (error 'target-node-error :node node))
+    (post-process-node node module :add-outer add-outer)))
 
-      ;; Add NODE to the meta-node references of *META-NODE*
-      (when (and *meta-node* (/= node *meta-node*))
-        (nadjoin node (meta-node-references *meta-node*))))
+(defun post-process-node (node module &key (add-outer t))
+  "Perform the necessary post-processing on NODE, such as adding to
+   the current META-NODE's list of referenced outer nodes."
 
-    ;; If inside a meta-node and node referenced is from an outer
-    ;; module, add it to the outer-nodes set of the meta-node.
-    (if (and add-outer
-             *meta-node*
-             (node? node)
-             (not (meta-node? node))
-             (not (in-home-module? node module)))
-        (add-outer-node node (home-module node) module)
-        node)))
+  (when (meta-node? node)
+    ;; Signal error if meta-node appears in target position.
+    (when *source-node*
+      (error 'target-node-error :node node))
+
+    ;; Add NODE to the meta-node references of *META-NODE*
+    (when (and *meta-node* (/= node *meta-node*))
+      (nadjoin node (meta-node-references *meta-node*))))
+
+  ;; If inside a meta-node and node referenced is from an outer
+  ;; module, add it to the outer-nodes set of the meta-node.
+  (if (and add-outer
+           *meta-node*
+           (node? node)
+           (not (meta-node? node))
+           (not (in-home-module? node module)))
+      (add-outer-node node (home-module node) module)
+      node))
 
 (defmethod process-declaration ((n null) (module t) &key)
   "Processes the NIL declaration. NIL declarations only originate from
@@ -466,7 +472,10 @@
       ((list* (list* (guard name (symbolp name)) args) body)
        (add-meta-node
         name
-        (make-instance 'meta-node :name name :operands args :definition body)
+        (make-instance 'meta-node
+                       :name name
+                       :operands (parse-operands args module)
+                       :definition body)
         module)))))
 
 (defmethod process-functor ((operator (eql +extern-operator+)) args module)
@@ -476,8 +485,49 @@
     (match-syntax (+extern-operator+ (list identifier))
         args
 
-      ((list* node operands)
-       (add-external-meta-node node module :operands operands)))))
+      ((list* (and (type symbol) node) operands)
+       (add-external-meta-node node module
+                               :operands (parse-operands operands module))))))
+
+(defun parse-operands (operands module)
+  "Parses the operand list OPERANDS. Checks that the structure of the
+   list is correct and processes the default values of optional
+   arguments."
+
+  (match-state operands
+    :start 'required
+    (required
+     (list* (and (type symbol) operand)
+            rest)
+     :from required
+
+     (cons operand (next rest)))
+
+    (optional
+     (list*
+      (list* (eql +optional-argument+)
+             (and (type symbol) operand)
+             (or (list default) nil))
+      rest)
+
+     :from (required optional)
+
+     (cons (list +optional-argument+ operand (process-declaration default module))
+           (next rest)))
+
+    (rest
+     (and
+      (list (list (eql +rest-argument+) (type symbol)))
+      whole)
+
+     whole)
+
+    (end nil)
+
+    (other
+     operands
+
+     (error 'invalid-operand-list-error :operands operands))))
 
 
 ;;; Attributes
@@ -769,12 +819,13 @@
    to INSTANCE and added as operands to the context CONTEXT."
 
   (create-context (instance context)
-    (->> (bind-operands instance operands :context context)
-         (functor-expression
-          (if (meta-node? meta-node)
-              meta-node
-              (add-binding meta-node instance :context context :add-function nil)))
-         (setf value-function))
+    (-<>> (make-arguments meta-node (home-module instance) operands)
+          (bind-operands instance <> :context context)
+          (functor-expression
+           (if (meta-node? meta-node)
+               meta-node
+               (add-binding meta-node instance :context context :add-function nil)))
+          (setf value-function))
 
     (add-to-instances instance meta-node context value-function)))
 
@@ -786,6 +837,38 @@
   (when (meta-node? meta-node)
     (nadjoin (instance instance context *meta-node* expression)
              (instances meta-node))))
+
+(defun make-arguments (meta-node module arguments)
+  "Creates the argument list for a functor expression."
+
+  (cond
+    ((meta-node? meta-node)
+     (check-arity meta-node arguments)
+
+     (labels ((match-arguments (operands arguments)
+                (multiple-value-match (values operands arguments)
+                  (((list (list (eql +rest-argument+) _))
+                    _)
+                   (list (argument-list arguments)))
+
+                  (((list*
+                     (list*
+                      (eql +optional-argument+)
+                      _
+                      (or nil (list default)))
+                     operands)
+                    nil)
+
+                   (cons (post-process-node default module) (match-arguments operands nil)))
+
+                  (((list* _ operands)
+                    (list* argument arguments))
+
+                   (cons argument (match-arguments operands arguments))))))
+
+       (match-arguments (operands meta-node) arguments)))
+
+    (t arguments)))
 
 
 (defmethod process-attribute ((node t) (attribute (eql (id-symbol "TARGET-NODE"))) value module)
@@ -807,12 +890,18 @@
   "Establishes bindings between the operands (OPERANDS) and the
    meta-node instance (NODE)."
 
-  (flet ((bind-operand (operand)
-           (atypecase (reference-operand operand node context)
-             (node
-              (add-binding operand node :context context :add-function nil))
+  (labels ((bind-operand (operand)
+             (atypecase (reference-operand operand node context)
+               (node
+                (add-binding operand node :context context :add-function nil))
 
-             (otherwise it))))
+               (argument-list
+                (->> operand
+                     argument-list-arguments
+                     (map #'bind-operand)
+                     argument-list))
+
+               (otherwise it))))
     (map #'bind-operand operands)))
 
 

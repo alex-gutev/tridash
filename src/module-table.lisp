@@ -84,7 +84,7 @@
 
 (defparameter *core-meta-nodes*
   (external-meta-nodes
-   '((if (cond then else) ((:strictness (or cond (and then else)))))
+   `((if (cond then (,+optional-argument+ else)) ((:strictness (or cond (and then else)))))
      (:member (object key) ((:strictness (or object key))))
      (:fail ())
      (:catch (try catch) ((:strictness try)))))

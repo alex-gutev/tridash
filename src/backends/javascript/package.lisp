@@ -140,6 +140,7 @@
   (:import-from :let-over-lambda
                 :mkstr
                 :symb
-                :lol-syntax)
+                :lol-syntax
+                :nlet-tail)
 
   (:documentation "JavaScript Backend."))

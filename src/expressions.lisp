@@ -52,13 +52,21 @@
   expression
   (count 1))
 
-(defstruct (meta-node-ref (:constructor meta-node-ref (node &key outer-nodes)))
-  "Represents a meta-node reference. NODE is the `META-NODE' object
+(defstruct (meta-node-ref (:constructor meta-node-ref (node &key optional outer-nodes)))
+  "Represents a meta-node reference. NODE is the `META-NODE' object,
+   OPTIONAL is the list of default values for the optional arguments
    and OUTER-NODES is the list of outer nodes referenced by the
-   meta-node which are append to it."
+   meta-node."
 
   node
+  optional
   outer-nodes)
+
+(defstruct (argument-list (:constructor argument-list (arguments)))
+  "Expression type representing a list used to pass the rest
+   arguments."
+
+  arguments)
 
 
 (defgeneric walk-expression (fn expression)
@@ -82,7 +90,11 @@
     (walk-expression fn (expression-block-expression block)))
 
   (:method (fn (ref meta-node-ref))
+    (foreach (curry #'walk-expression fn) (meta-node-ref-optional ref))
     (foreach (curry #'walk-expression fn) (meta-node-ref-outer-nodes ref)))
+
+  (:method (fn (list argument-list))
+    (foreach (curry #'walk-expression fn) (argument-list-arguments fn)))
 
   (:method ((fn t) (expr t))
     nil))
@@ -118,8 +130,17 @@
     (meta-node-ref
      (meta-node-ref-node ref)
 
+     :optional
+     (map (curry #'map-expression! fn) (meta-node-ref-optional ref))
+
      :outer-nodes
      (map (curry #'map-expression! fn) (meta-node-ref-outer-nodes ref))))
+
+  (:method (fn (list argument-list))
+    (->> list
+         argument-list-arguments
+         (map fn)
+         argument-list))
 
   (:method ((fn t) expr)
     expr))

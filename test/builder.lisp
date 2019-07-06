@@ -241,32 +241,9 @@
     (((functor-expression- (meta-node op-a) (arguments args-a))
       (list* op-b args-b))
 
-     (labels ((position-in-args (x)
-                "Get position of X in operands list of meta-node OP-B."
-
-                (or
-                 (match x
-                   ((list 'outer arg _)
-                    (-<>> op-b
-                          outer-nodes
-                          (get arg)
-                          cdr
-                          (position <> (operands op-b)))))
-                 0))
-
-              (extract-expression (x)
-                "Extract the actual expression which is to be compared."
-
-                (match x
-                  ((list 'outer _ expr)
-                   expr)
-                  (_ x))))
-
-       (and (value-fn-equal op-a op-b)
-            (= (length args-a) (length args-b))
-            (->> (stable-sort args-b :key #'position-in-args)
-                 (map #'extract-expression)
-                 (every #'value-fn-equal args-a)))))))
+     (and (value-fn-equal op-a op-b)
+          (= (length args-a) (length args-b))
+          (every #'value-fn-equal args-a args-b)))))
 
 (defmethod value-fn-equal ((a object-expression) (b list))
   (flet ((field= (a b)
@@ -294,8 +271,18 @@
   (value-fn-equal (expression-block-expression a) b))
 
 (defmethod value-fn-equal ((a meta-node-ref) (b meta-node-ref))
-  (with-struct-slots meta-node-ref- ((node-a node) (outer-nodes-a outer-nodes)) a
-    (with-struct-slots meta-node-ref- ((node-b node) (outer-nodes-b outer-nodes)) b
+  (with-struct-slots meta-node-ref-
+      ((node-a node)
+       (optional-a optional)
+       (outer-nodes-a outer-nodes))
+      a
+
+    (with-struct-slots meta-node-ref-
+        ((node-b node)
+         (optional-b optional)
+         (outer-nodes-b outer-nodes))
+        b
+
       (labels ((position-in-args (x)
                  "Get position of X in arguments list of NODE-B."
 
@@ -314,11 +301,24 @@
                    (_ x))))
 
         (and (= node-a node-b)
+
+             (= (length optional-a) (length optional-b))
+             (every #'value-fn-equal optional-a optional-b)
+
              (= (length outer-nodes-a) (length outer-nodes-b))
 
              (->> (stable-sort outer-nodes-b :key #'position-in-args)
                   (map #'extract-expression)
                   (every #'value-fn-equal outer-nodes-a)))))))
+
+(defmethod value-fn-equal ((a argument-list) (b argument-list))
+  (with-struct-slots argument-list- ((args-a arguments))
+      a
+    (with-struct-slots argument-list- ((args-b arguments))
+        b
+
+      (and (= (length args-a) (length args-b))
+           (every #'value-fn-equal args-a args-b)))))
 
 (defmethod value-fn-equal ((a external-meta-node) b)
   (match* ((name a) b)
@@ -365,24 +365,6 @@
     (aprog1
         (car (find-if #'init-context? (contexts node)))
       (ok! it "~a has an :INIT context" node))))
-
-
-;;; Test Errors
-
-(defun test-error (str &optional (error 'semantic-error))
-  "Tests that building the source STR results in a `SEMANTIC-ERROR'."
-
-  (is-error (build-nodes str (make-instance 'module-table)) error
-	    (format nil "`~a` raises an error of type `~s'" str error)))
-
-(defun test-top-level-only (decl &rest code)
-  "Tests that an error is raised if the declaration DECL appears in a
-   non-top-level position. Each element in CODE is
-   prepended (separated by ';') to DECL before performing the tests."
-
-  (test-error (format nil "~{~a; ~}~a -> a" code decl) 'special-operator-reference-error)
-  (test-error (format nil "~{~a; ~}a -> ~a" code decl) 'special-operator-reference-error)
-  (test-error (format nil "~{~a; ~}f(x) : x; f(~a)" code decl)) 'special-operator-reference-error)
 
 
 ;;;; Utility Macros
@@ -480,6 +462,29 @@
        (test-value-function ,g!node ,g!context ,function ,@test-args))))
 
 
+;;; Test Errors
+
+(defmacro! test-error (error &rest code)
+  "Tests that building the source code results raises the error
+   ERROR (not evaluated). The `core` module is built prior to building
+   CODE."
+
+  `(with-module-table ,g!modules
+     (build-core-module)
+     (is-error (build ,@code)
+               ,error
+	       (format nil "`~a` raises an error of type `~s'" (list ,@code) ',error))))
+
+(defun test-top-level-only (decl &rest code)
+  "Tests that an error is raised if the declaration DECL appears in a
+   non-top-level position. Each element in CODE is
+   prepended (separated by ';') to DECL before performing the tests."
+
+  (test-error special-operator-reference-error (format nil "~{~a; ~}~a -> a" code decl))
+  (test-error special-operator-reference-error (format nil "~{~a; ~}a -> ~a" code decl))
+  (test-error special-operator-reference-error (format nil "~{~a; ~}f(x) : x; f(~a)" code decl)))
+
+
 ;;;; Tests
 
 (subtest "Node Builder"
@@ -549,18 +554,18 @@
            `(,fn ,in2)))))
 
     (subtest "Non-Node Operators"
-      (test-error "1(x, y)" 'non-node-operator-error)
-      (test-error " \"hello\"(1, x, 2) " 'non-node-operator-error)
-      (test-error "z(x, y)" 'non-existent-node-error)))
+      (test-error non-node-operator-error "1(x, y)")
+      (test-error non-node-operator-error " \"hello\"(1, x, 2) ")
+      (test-error non-existent-node-error "z(x, y)")))
 
   (subtest "Functors in Target Position"
     (subtest "No Target Node"
-      (test-error ":extern(add); a -> add(b, c)" 'target-node-error))
+      (test-error target-node-error ":extern(add, x, y); a -> add(b, c)"))
 
     (subtest "With Target Node"
       (with-module-table modules
-        (build ":extern(add)"
-               ":extern(reverse-add)"
+        (build ":extern(add, x, y)"
+               ":extern(reverse-add, sum)"
 
                ":attribute(add, target-node, reverse-add)"
                "input -> add(a, b)")
@@ -580,8 +585,8 @@
     (subtest "With Target Node Cross Module"
       (with-module-table modules
         (build ":module(m1)"
-               ":extern(add)"
-               ":extern(reverse-add)"
+               ":extern(add, x, y)"
+               ":extern(reverse-add, sum)"
                ":attribute(add, target-node, reverse-add)"
 
                ":module(m2)"
@@ -604,9 +609,9 @@
     (subtest "With Target Node and Functor Arguments"
       (subtest "In Source Position"
         (with-module-table modules
-          (build ":extern(add)"
-                 ":extern(f)"
-                 ":extern(reverse-add)"
+          (build ":extern(add, x, y)"
+                 ":extern(f, x)"
+                 ":extern(reverse-add, sum)"
 
                  ":attribute(add, target-node, reverse-add)"
                  "add(f(a), b)")
@@ -625,7 +630,13 @@
             (is (length (contexts b)) 0))))
 
       (subtest "In Target Position"
-        (test-error ":extern(add); :extern(reverse-add); :extern(f); :attribute(add, target-node, reverse-add); input -> add(f(a), b)" 'target-node-error))))
+        (test-error target-node-error
+                    ":extern(add, x, y)"
+                    ":extern(reverse-add, sum)"
+                    ":extern(f, x)"
+
+                    ":attribute(add, target-node, reverse-add)"
+                    "input -> add(f(a), b)"))))
 
   (subtest "Explicit Contexts"
     (subtest "In Target of Binding"
@@ -746,11 +757,11 @@
             (test-op "*" operator-nodes 100 :right))))
 
       (subtest "Errors"
-        (test-error ":op()" 'invalid-arguments-error)
-        (test-error ":op(*)" 'invalid-arguments-error)
-        (test-error ":op(*,*)" 'invalid-arguments-error)
-        (test-error ":op(*,9,x)" 'invalid-arguments-error)
-        (test-error ":op(\"*\", 10, left)" 'invalid-arguments-error)
+        (test-error invalid-arguments-error ":op()")
+        (test-error invalid-arguments-error ":op(*)")
+        (test-error invalid-arguments-error ":op(*,*)")
+        (test-error invalid-value-error ":op(*,9,x)")
+        (test-error invalid-arguments-error ":op(\"*\", 10, left)")
 
         (test-top-level-only ":op(*, 10, left)")))
 
@@ -773,85 +784,463 @@
           (ok (memberp node2 (input-nodes (current-module modules))) "node2 in input-nodes")))
 
       (subtest "Errors"
-        (test-error ":attribute()" 'invalid-arguments-error)
-        (test-error "node; :attribute(node, attribute)" 'invalid-arguments-error)
-        (test-error "node; :attribute(node, 1, 2)" 'invalid-arguments-error)
-        (test-error ":attribute(1, attribute, value)" 'invalid-arguments-error)
+        (test-error invalid-arguments-error ":attribute()")
+        (test-error invalid-arguments-error "node; :attribute(node, attribute)")
+        (test-error invalid-arguments-error "node; :attribute(node, 1, 2)")
+        (test-error not-node-error ":attribute(1, attribute, value)")
 
         (test-top-level-only ":attribute(node, input, 1)" "node"))))
 
   (subtest "Meta-Nodes"
     (subtest "Meta-Node Definitions"
-      (with-module-table modules
-        (build-core-module)
-        (build ":import(core); add(x,y) : x + y; add(a,b)")
+      (subtest "Simple Definitions"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core); add(x,y) : x + y; add(a,b)")
 
-        (with-nodes ((add "add") (a "a") (b "b") (add-ab ("add" "a" "b"))) modules
-          (is-type add 'meta-node)
-          (is (operands add) (decls '!\x '!\y))
-          (is (definition add) (decls '(!+ !\x !\y)))
+          (with-nodes ((add "add") (a "a") (b "b") (add-ab ("add" "a" "b"))) modules
+            (is-type! add 'meta-node)
+            (is (operands add) (decls '!\x '!\y))
+            (is (definition add) (decls '(!+ !\x !\y)))
 
-          (test-node-function add-ab add add a b)))
+            (test-node-function add-ab add add a b))))
+
+      (subtest "Optional and Rest Arguments"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core)"
+                 "f(a, b : 1, c : x, :(d), ..(rest)) : a + b + c + d + rest")
+
+          (with-nodes ((f "f") (x "x")) modules
+            (is-type! f 'meta-node)
+            (is (operands f)
+                (decls '!\a
+                       '(!\: !\b 1)
+                       (list '!\: '!\c x)
+                       '(!\: !\d nil)
+                       '(!.. !|rest|))))))
 
       (subtest "Errors"
-        (test-error "x : y" 'invalid-arguments-error)
-        (test-error "{x; y} : z" 'invalid-arguments-error)
-        (test-error "{w; x}(y) : z" 'invalid-arguments-error)
-        (test-error ":(x)" 'invalid-arguments-error)
-        (test-error ":()" 'invalid-arguments-error)
-        (test-error ":(x,y,z)" 'invalid-arguments-error)
+        (subtest "Syntax"
+          (test-error invalid-arguments-error "x : y")
+          (test-error semantic-error "{x; y} : z")
+          (test-error invalid-arguments-error "{w; x}(y) : z")
+          (test-error invalid-arguments-error ":(x)")
+          (test-error invalid-arguments-error ":()")
+          (test-error invalid-arguments-error ":(x,y,z)")
 
-        (test-top-level-only "(g(x,y) : f(x,y))")
+          (test-top-level-only "(g(x,y) : f(x,y))"))
 
-        (diag "Redefining Special Operators")
-        (test-error "->(x, y) : fn(x, y)" 'redefine-special-operator-error)
-        (test-error ":(x, y) : z" 'redefine-special-operator-error)
-        (test-error ":extern(x) : x" 'redefine-special-operator-error)
-        (test-error ":op(a, b) : f(b, a)" 'redefine-special-operator-error)
-        (test-error "..(x,z) : g(x, z)" 'redefine-special-operator-error)
-        (test-error ".(a) : h(a)" 'redefine-special-operator-error)
-        (test-error ":attribute(m, n) : f(m,n)" 'redefine-special-operator-error)
-        (test-error ":module(m) : m" 'redefine-special-operator-error)
-        (test-error ":import(x) : x" 'redefine-special-operator-error)
-        (test-error ":use(z) : z" 'redefine-special-operator-error)
-        (test-error ":export(y) : h(y)" 'redefine-special-operator-error)
-        (test-error ":in(x, y) : add(x, y)" 'redefine-special-operator-error)
+        (subtest "Invalid Operand List"
+          (test-error invalid-operand-list-error "f(x, g(h)) : x")
+          (test-error invalid-operand-list-error "f(1, x, 3) : x")
 
-        (with-module-table modules
-          ;; Test node name collisions with meta-nodes
-          (build "a;b")
-          (is-error (build #1="a(x,y) : add(x,y)") 'node-exists-error #1#))
+          (test-error invalid-operand-list-error "f(x, y : 3, z) : x")
+          (test-error invalid-operand-list-error "f(x, ..(y), ..(z)) : x")
+          (test-error invalid-operand-list-error "f(x, ..(y), z) : x")
+          (test-error invalid-operand-list-error "f(x, ..(y), z : 3) : x")
 
-        (with-module-table modules
-          (build "f(x) : x")
-          (is-error (build "f(x,y) : +(x, y)") 'node-exists-error "f(x,y) : +(x, y)"))))
+          (test-error invalid-operand-list-error "f(x, :(g(y), 3)) : x")
+          (test-error invalid-operand-list-error "f(x, ..(g(y))) : x"))
+
+        (subtest "Redefining Special Operators"
+          (test-error redefine-special-operator-error "->(x, y) : fn(x, y)")
+          (test-error redefine-special-operator-error ":(x, y) : z")
+          (test-error redefine-special-operator-error ":extern(x) : x")
+          (test-error redefine-special-operator-error ":op(a, b) : f(b, a)")
+          (test-error redefine-special-operator-error "..(x,z) : g(x, z)")
+          (test-error redefine-special-operator-error ".(a) : h(a)")
+          (test-error redefine-special-operator-error ":attribute(m, n) : f(m,n)")
+          (test-error redefine-special-operator-error ":module(m) : m")
+          (test-error redefine-special-operator-error ":import(x) : x")
+          (test-error redefine-special-operator-error ":use(z) : z")
+          (test-error redefine-special-operator-error ":export(y) : h(y)")
+          (test-error redefine-special-operator-error ":in(x, y) : add(x, y)"))
+
+        (subtest "Name Collisions"
+          (with-module-table modules
+            (build "a;b")
+            (is-error (build #1="a(x,y) : add(x,y)") 'node-exists-error #1#))
+
+          (with-module-table modules
+            (build "f(x) : x")
+            (is-error (build "f(x,y) : +(x, y)") 'node-exists-error "f(x,y) : +(x, y)")))))
 
     (subtest "External Meta-Node Definitions"
-      (with-module-table modules
-        (build ":extern(add); :extern(sub); add(a,b); sub(a,b)")
+      (subtest "Simple"
+        (with-module-table modules
+          (build ":extern(add, x, y); :extern(sub, x, y); add(a,b); sub(a,b)")
 
-        (with-nodes ((add "add") (sub "sub")
-                     (a "a") (b "b")
-                     (add-ab ("add" "a" "b")) (sub-ab ("sub" "a" "b")))
-            modules
+          (with-nodes ((add "add") (sub "sub")
+                       (a "a") (b "b")
+                       (add-ab ("add" "a" "b")) (sub-ab ("sub" "a" "b")))
+              modules
 
-          (is-type add 'external-meta-node)
-          (is-type sub 'external-meta-node)
+            (is-type! add 'external-meta-node)
+            (is-type! sub 'external-meta-node)
 
-          (is (definition add) nil)
-          (is (definition sub) nil)
+            (is (operands add) (decls '!\x '!\y))
+            (is (operands sub) (decls '!\x '!\y))
 
-          (test-node-function add-ab add add a b)
-          (test-node-function sub-ab sub sub a b)))
+            (is (definition add) nil)
+            (is (definition sub) nil)
+
+            (test-node-function add-ab add add a b)
+            (test-node-function sub-ab sub sub a b))))
+
+      (subtest "Optional and Rest Arguments"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core)"
+                 ":extern(f, a, b : 1, c : x, :(d), ..(rest))")
+
+          (with-nodes ((f "f") (x "x")) modules
+            (is-type! f 'external-meta-node)
+            (is (operands f)
+                (decls '!\a
+                       '(!\: !\b 1)
+                       (list '!\: '!\c x)
+                       '(!\: !\d nil)
+                       '(!.. !|rest|))))))
 
       (subtest "Errors"
-        (test-top-level-only ":extern(y)"))))
+        (subtest "Syntax"
+          (test-top-level-only ":extern(y)")
+
+          (test-error invalid-arguments-error ":extern(g(h))")
+          (test-error semantic-error ":extern({x; y})")
+          (test-error invalid-arguments-error ":extern({w; x}(y) : z)")
+          (test-error invalid-arguments-error ":extern()"))
+
+        (subtest "Invalid Operand List"
+          (test-error invalid-operand-list-error ":extern(f, x, g(h))")
+          (test-error invalid-operand-list-error ":extern(f, 1, x, 3) : x")
+
+          (test-error invalid-operand-list-error ":extern(f, x, y : 3, z)")
+          (test-error invalid-operand-list-error ":extern(f, x, ..(y), ..(z))")
+          (test-error invalid-operand-list-error ":extern(f, x, ..(y), z)")
+          (test-error invalid-operand-list-error ":extern(f, x, ..(y), z : 3)")
+
+          (test-error invalid-operand-list-error ":extern(f, x, :(g(y), 3))")
+          (test-error invalid-operand-list-error ":extern(f, x, ..(g(y)))"))
+
+        (subtest "Redefining Special Operators"
+          (test-error redefine-special-operator-error ":extern(->)")
+          (test-error redefine-special-operator-error ":extern(:)")
+          (test-error redefine-special-operator-error ":extern(:extern)")
+          (test-error redefine-special-operator-error ":extern(:op)")
+          (test-error redefine-special-operator-error ":extern(..)")
+          (test-error redefine-special-operator-error ":extern(.)")
+          (test-error redefine-special-operator-error ":extern(:attribute)")
+          (test-error redefine-special-operator-error ":extern(:module)")
+          (test-error redefine-special-operator-error ":extern(:import)")
+          (test-error redefine-special-operator-error ":extern(:use)")
+          (test-error redefine-special-operator-error ":extern(:export)")
+          (test-error redefine-special-operator-error ":extern(:in)"))
+
+        (subtest "Name Collisions"
+          (with-module-table modules
+            (build "a;b")
+            (is-error (build ":extern(a)") 'node-exists-error ":extern(a)"))
+
+          (with-module-table modules
+            (build "f(x) : x")
+            (is-error (build ":extern(f)") 'node-exists-error ":extern(f)"))))))
+
+  (subtest "Arity Checking"
+    (subtest "Meta-Nodes"
+      (subtest "Required Only"
+        (subtest "Not Enough Arguments"
+          (test-error arity-error
+                      ":import(core)"
+                      "add(x, y) : x + y"
+                      "add(a) -> b"))
+
+        (subtest "Too Many Arguments"
+          (test-error arity-error
+                      ":import(core)"
+                      "1+(x) : x + 1"
+                      "1+(a,b) -> c")))
+
+      (subtest "Optional Arguments"
+        (subtest "Not Enough Arguments"
+          (test-error arity-error
+                      ":import(core)"
+                      "add(x, y, z : 1) : x + y + z"
+                      "add(a) -> b"))
+
+        (subtest "Too Many Arguments"
+          (test-error arity-error
+                      ":import(core)"
+                      "1+(x, y : 1) : x + y"
+                      "1+(a,b,c) -> d"))
+
+        (subtest "Required Only"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core)"
+                   "1+(x, delta : 1) : x + delta"
+
+                   "1+(a) -> b")
+
+            (with-nodes ((1+ "1+")
+                         (a "a") (b "b")
+                         (1+a ("1+" "a")))
+                modules
+
+              (has-value-function (a) 1+a `(,1+ ,a 1))
+              (test-simple-binding 1+a b))))
+
+        (subtest "Required and Optional"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core)"
+                   "1+(x, delta : 1) : x + delta"
+
+                   "1+(a, 3) -> b")
+
+            (with-nodes ((1+ "1+")
+                         (a "a") (b "b")
+                         (1+a ("1+" "a" 3)))
+                modules
+
+              (has-value-function (a) 1+a `(,1+ ,a 3))
+              (test-simple-binding 1+a b))))
+
+        (subtest "Optional with Node Default Value"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core)"
+                   "1+(x, d : delta) : x + d"
+
+                   "1+(a) -> b")
+
+            (with-nodes ((1+ "1+")
+                         (a "a") (b "b") (delta "delta")
+                         (1+a ("1+" "a")))
+                modules
+
+              (has-value-function (a delta) 1+a `(,1+ ,a ,delta))
+              (test-simple-binding 1+a b))))
+
+        (subtest "Optional with Functor Default Value"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core)"
+                   "1+(x, d : delta1 + delta2) : x + d"
+
+                   "1+(a) -> b")
+
+            (with-nodes ((1+ "1+") (+ "+")
+                         (a "a") (b "b")
+                         (delta1 "delta1") (delta2 "delta2")
+                         (d1+d2 ((":in" "core" "+") "delta1" "delta2"))
+                         (1+a ("1+" "a")))
+                modules
+
+              (test-node-function d1+d2 + + delta1 delta2)
+              (has-value-function (a d1+d2) 1+a `(,1+ ,a ,d1+d2))
+
+              (test-simple-binding 1+a b)))))
+
+      (subtest "Rest Arguments"
+        (subtest "Not Enough Arguments"
+          (test-error arity-error
+                      ":import(core); add(x, y, ..(xs)) : x + y + xs; add(a) -> b"))
+
+        (subtest "Minimum Number of Arguments"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core)"
+                   "add(x, ..(xs)) : x + xs"
+                   "add(a) -> b")
+
+            (with-nodes ((add "add")
+                         (a "a") (b "b")
+                         (add-a ("add" "a")))
+                modules
+
+              (has-value-function (a) add-a `(,add ,a ,(argument-list nil)))
+              (test-simple-binding add-a b))))
+
+        (subtest "More than number of operands"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core)"
+                   "add(x, ..(xs)) : x + xs"
+                   "add(a,b,c) -> x")
+
+            (with-nodes ((add "add")
+                         (a "a") (b "b") (c "c") (x "x")
+                         (add-abc ("add" "a" "b" "c")))
+                modules
+
+              (has-value-function
+               (a b c)
+               add-abc
+
+               `(,add ,a ,(argument-list (list b c))))
+              (test-simple-binding add-abc x))))
+
+        (subtest "Zero arguments"
+          (with-module-table modules
+            (build "f(..(xs)) : xs"
+                   "f() -> a")
+
+            (with-nodes ((f "f") (ff ("f")) (a "a"))
+                modules
+
+              (test-value-function ff f (list f (argument-list nil)))
+              (test-simple-binding ff a))))))
+
+    (subtest "External Meta-Nodes"
+      (subtest "Required Only"
+        (subtest "Not Enough Arguments"
+          (test-error arity-error
+                      ":extern(add, x, y)"
+                      "add(a) -> b"))
+
+        (subtest "Too Many Arguments"
+          (test-error arity-error
+                      ":extern(1+, x)"
+                      "1+(a,b) -> c")))
+
+      (subtest "Optional Arguments"
+        (subtest "Not Enough Arguments"
+          (test-error arity-error
+                      ":extern(add, x, y, z : 1)"
+                      "add(a) -> b"))
+
+        (subtest "Too Many Arguments"
+          (test-error arity-error
+                      ":extern(1+, x, y : 1)"
+                      "1+(a,b,c) -> d"))
+
+        (subtest "Required Only"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core)"
+                   ":extern(1+, x, delta : 1)"
+
+                   "1+(a) -> b")
+
+            (with-nodes ((1+ "1+")
+                         (a "a") (b "b")
+                         (1+a ("1+" "a")))
+                modules
+
+              (has-value-function (a) 1+a `(,1+ ,a 1))
+              (test-simple-binding 1+a b))))
+
+        (subtest "Required and Optional"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core)"
+                   ":extern(1+, x, delta : 1)"
+
+                   "1+(a, 3) -> b")
+
+            (with-nodes ((1+ "1+")
+                         (a "a") (b "b")
+                         (1+a ("1+" "a" 3)))
+                modules
+
+              (has-value-function (a) 1+a `(,1+ ,a 3))
+              (test-simple-binding 1+a b))))
+
+        (subtest "Optional with Node Default Value"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core)"
+                   ":extern(1+, x, d : delta)"
+
+                   "1+(a) -> b")
+
+            (with-nodes ((1+ "1+")
+                         (a "a") (b "b") (delta "delta")
+                         (1+a ("1+" "a")))
+                modules
+
+              (has-value-function (a delta) 1+a `(,1+ ,a ,delta))
+              (test-simple-binding 1+a b))))
+
+        (subtest "Optional with Functor Default Value"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core)"
+                   ":extern(1+, x, d : delta1 + delta2)"
+
+                   "1+(a) -> b")
+
+            (with-nodes ((1+ "1+") (+ "+")
+                         (a "a") (b "b")
+                         (delta1 "delta1") (delta2 "delta2")
+                         (d1+d2 ((":in" "core" "+") "delta1" "delta2"))
+                         (1+a ("1+" "a")))
+                modules
+
+              (test-node-function d1+d2 + + delta1 delta2)
+              (has-value-function (a d1+d2) 1+a `(,1+ ,a ,d1+d2))
+
+              (test-simple-binding 1+a b)))))
+
+      (subtest "Rest Arguments"
+        (subtest "Not Enough Arguments"
+          (test-error arity-error
+                      ":import(core)"
+                      ":extern(add, x, y, ..(xs))"
+                      "add(a) -> b"))
+
+        (subtest "Minimum Number of Arguments"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core)"
+                   ":extern(add, x, ..(xs))"
+                   "add(a) -> b")
+
+            (with-nodes ((add "add")
+                         (a "a") (b "b")
+                         (add-a ("add" "a")))
+                modules
+
+              (has-value-function (a) add-a `(,add ,a ,(argument-list nil)))
+              (test-simple-binding add-a b))))
+
+        (subtest "More than number of operands"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core)"
+                   ":extern(add, x, ..(xs))"
+                   "add(a,b,c) -> x")
+
+            (with-nodes ((add "add")
+                         (a "a") (b "b") (c "c") (x "x")
+                         (add-abc ("add" "a" "b" "c")))
+                modules
+
+              (has-value-function
+               (a b c)
+               add-abc
+
+               `(,add ,a ,(argument-list (list b c))))
+              (test-simple-binding add-abc x))))
+
+        (subtest "Zero arguments"
+          (with-module-table modules
+            (build ":extern(f, ..(xs))"
+                   "f() -> a")
+
+            (with-nodes ((f "f") (ff ("f")) (a "a"))
+                modules
+
+              (test-value-function ff f (list f (argument-list nil)))
+              (test-simple-binding ff a)))))))
 
   (subtest "Referencing Meta-Nodes as Values"
     (subtest "As Operands"
       (with-module-table modules
-        (build ":extern(map)"
-               ":extern(add)"
+        (build ":extern(map, f, list)"
+               ":extern(add, x, y)"
                "map(add, input) -> output")
 
         (with-nodes ((map "map") (add "add")
@@ -867,10 +1256,30 @@
 
           (test-simple-binding map-input output))))
 
+    (subtest "With Default Arguments"
+      (with-module-table modules
+        (build ":extern(map, f, list)"
+               ":extern(inc, x, d : delta)"
+
+               "map(inc, input) -> output")
+
+        (with-nodes ((map "map") (inc "inc")
+                     (input "input") (output "output") (delta "delta")
+                     (map-input ("map" "inc" "input")))
+            modules
+
+          (has-value-function
+           (input delta)
+           map-input
+
+           `(,map ,(meta-node-ref inc :optional (list delta)) ,input))
+
+          (test-simple-binding map-input output))))
+
     (subtest "As Source of Binding"
       (with-module-table modules
-        (build ":extern(map)"
-               ":extern(add)"
+        (build ":extern(map, f, list)"
+               ":extern(add, x, y)"
                "add -> fn"
                "map(fn, input) -> output")
 
@@ -890,7 +1299,7 @@
           (test-simple-binding map-input output))))
 
     (subtest "As Target of Binding"
-      (test-error ":extern(add); x -> add" 'target-node-error)))
+      (test-error target-node-error ":extern(add); x -> add")))
 
   (subtest "Subnodes"
     (labels ((test-object-fn (node &rest fields)
@@ -1073,57 +1482,67 @@
           (is-error (build ":module(mod4); my-mod.+(a,b)") 'non-existent-node-error)
           (is-error (build ":module(mod4); :in(my-mod, z)") 'non-existent-node-error)
 
-          (test-error ":use(no-such-module)" 'non-existent-module-error)
-          (test-error ":alias(no-such-module, m)" 'non-existent-module-error)
-          (test-error ":import(no-such-module)" 'non-existent-module-error)
-          (test-error ":import(no-such-module, node)" 'non-existent-module-error)
-          (test-error ":in(no-such-module, x)" 'non-existent-module-error)
-          (test-error ":export(no-such-node)" 'non-existent-node-error)
-          (test-error "x; :export(x, no-such-node)" 'non-existent-node-error))
+          (test-error non-existent-module-error ":use(no-such-module)")
+          (test-error non-existent-module-error ":alias(no-such-module, m)")
+          (test-error non-existent-module-error ":import(no-such-module)")
+          (test-error non-existent-module-error ":import(no-such-module, node)")
+          (test-error non-existent-module-error ":in(no-such-module, x)")
+          (test-error non-existent-node-error ":export(no-such-node)")
+          (test-error non-existent-node-error "x; :export(x, no-such-node)"))
 
         (subtest ":module Operator Syntax"
-          (test-error ":module()" 'invalid-arguments-error)
-          (test-error ":module(a, b, c)" 'invalid-arguments-error)
-          (test-error ":module(1, 2, 3)" 'invalid-arguments-error)
-          (test-error ":module(1)" 'invalid-arguments-error)
+          (test-error invalid-arguments-error ":module()")
+          (test-error invalid-arguments-error ":module(a, b, c)")
+          (test-error invalid-arguments-error ":module(1, 2, 3)")
+          (test-error invalid-arguments-error ":module(1)")
 
           (test-top-level-only ":module(m)"))
 
         (subtest ":use Operator Syntax"
-          (test-error ":use(1,2,3)")
+          (test-error invalid-arguments-error ":use(1,2,3)")
           (test-top-level-only ":use(m1)" ":module(m1)" ":module(m2)"))
 
         (subtest ":alias Operator Syntax"
-          (test-error ":alias()" 'invalid-arguments-error)
-          (test-error ":alias(m)" 'invalid-arguments-error)
-          (test-error ":alias(1)" 'invalid-arguments-error)
-          (test-error ":alias(1,2)" 'invalid-arguments-error)
-          (test-error ":module(m1); :module(m2); :alias(m1, m, x, y)" 'invalid-arguments-error)
+          (test-error invalid-arguments-error ":alias()")
+          (test-error invalid-arguments-error ":alias(m)")
+          (test-error invalid-arguments-error ":alias(1)")
+          (test-error invalid-arguments-error ":alias(1,2)")
+          (test-error invalid-arguments-error
+                      ":module(m1); :module(m2); :alias(m1, m, x, y)")
 
           (test-top-level-only ":alias(mod, m)" ":module(mod)" ":module(m1)"))
 
         (subtest ":import Operator Syntax"
-          (test-error ":import()" 'invalid-arguments-error)
-          (test-error ":import(1)" 'invalid-arguments-error)
+          (test-error invalid-arguments-error ":import()")
+          (test-error invalid-arguments-error ":import(1)")
 
           (test-top-level-only ":import(mod)" ":module(mod)" ":module(m1)")
           (test-top-level-only ":import(mod, x)" ":module(mod); x" ":module(m1)"))
 
         (subtest ":export Operator Syntax"
-          (test-error ":export(1, 2, 3)")
+          (test-error semantic-error ":export(1, 2, 3)")
 
           (test-top-level-only ":export(x)" "x"))
 
         (subtest ":in Operator Syntax"
-          (test-error ":in()" 'invalid-arguments-error)
-          (test-error ":in(x)" 'invalid-arguments-error)
-          (test-error ":module(m1); x; :module(m2); :in(m1, x, y)" 'invalid-arguments-error)
-          (test-error ":in(1, x)" 'invalid-arguments-error))
+          (test-error invalid-arguments-error ":in()")
+          (test-error invalid-arguments-error ":in(x)")
+          (test-error invalid-arguments-error
+                      ":module(m1); x; :module(m2); :in(m1, x, y)")
+          (test-error invalid-arguments-error ":in(1, x)"))
 
         (subtest "Referencing Module Pseudo Nodes"
-          (test-error ":module(m1); :module(m2); :use(m1); :extern(add); add(m1, x)" 'module-node-reference-error)
-          (test-error ":module(m1); :module(m2); :use(m1); m1 -> x" 'module-node-reference-error)
-          (test-error ":module(m1); :module(m2); :use(m1); x -> m1" 'target-error))))))
+          (test-error module-node-reference-error
+                      ":module(m1)"
+                      ":module(m2)"
+                      ":use(m1)"
+                      ":extern(add, x, y)"
+                      "add(m1, x)")
+
+          (test-error module-node-reference-error
+                      ":module(m1); :module(m2); :use(m1); m1 -> x")
+          (test-error target-node-error
+                      ":module(m1); :module(m2); :use(m1); x -> m1"))))))
 
 (subtest "Node Coalescer"
   (subtest "Simple Nodes"
@@ -1194,7 +1613,7 @@
   (subtest "Functor Nodes"
     (subtest "Simple Functor Nodes"
       (with-module-table modules
-        (build ":extern(+); :op(+, 50, left)"
+        (build ":extern(+, x, y); :op(+, 50, left)"
                "a + b + c + d -> output"
                ":attribute(a, input, 1)"
                ":attribute(b, input, 1)"
@@ -1212,7 +1631,7 @@
 
       (subtest "NO-COALESCE Attribute"
         (with-module-table modules
-          (build ":extern(+); :op(+, 50, left)"
+          (build ":extern(+, x, y); :op(+, 50, left)"
                  "a + b + c + d -> output"
                  ":attribute(a, input, 1)"
                  ":attribute(b, input, 1)"
@@ -1235,7 +1654,7 @@
 
     (subtest "Multiple Observers"
       (with-module-table modules
-        (build ":extern(+); :op(+, 50, left)"
+        (build ":extern(+, x, y); :op(+, 50, left)"
                "a + b + c + d -> out1"
                "a + b -> out2"
                ":attribute(a, input, 1)"
@@ -1259,7 +1678,7 @@
             (has-value-function (a b) a+b `(,+ ,a ,b)))))
 
       (with-module-table modules
-        (build ":extern(add)"
+        (build ":extern(add, x, y)"
                "a -> b; b -> c; b -> d; add(c,d) -> e"
                ":attribute(a, input, 1)")
 
@@ -1271,7 +1690,7 @@
 
     (subtest "Object Nodes"
       (with-module-table modules
-        (build ":extern(parse); :extern(not)"
+        (build ":extern(parse, x); :extern(not, x)"
                "parse(in1) -> p"
 
                "not(p.fail) -> (p.value -> a)"
@@ -1328,7 +1747,7 @@
 
     (subtest "Unreachable Dependency Errors"
       (with-module-table modules
-        (build ":extern(add)"
+        (build ":extern(add, x, y)"
                "a -> b; add(b, d) -> output"
                "c -> d"                 ; Unreachable Nodes
                ":attribute(a, input, 1)")
@@ -1362,7 +1781,7 @@
                ":attribute(in, input, 1)")
 
         (build ":module(m2); :use(m1);"
-               ":extern(+); :op(+, 50, left)"
+               ":extern(+, x, y); :op(+, 50, left)"
                "m1.a + m1.b + c -> output"
                ":attribute(c, input, 1)")
 
@@ -1381,7 +1800,7 @@
 
   (subtest "Common Sub Expressions"
     (with-module-table modules
-      (build ":extern(parse); :extern(NaN?)"
+      (build ":extern(parse, x); :extern(NaN?, x)"
 
              "parse(in) -> p"
              "p -> self.value"
@@ -1413,7 +1832,7 @@
                ,(expression-block `(,parse ,in) :count 2)))))))
 
     (with-module-table modules
-      (build ":extern(add); :extern(even?)"
+      (build ":extern(add, x, y); :extern(even?, x)"
 
              "add(a, b) -> c"
              "even?(add(a, 1)) -> (add(a, 1) -> b)"
@@ -1600,7 +2019,7 @@
 (subtest "Constant Folding"
   (subtest "Literal Constant Values"
     (with-module-table modules
-      (build ":extern(add)"
+      (build ":extern(add, x, y)"
              "add(a, b) -> c"
              "1 -> constant; constant -> b"
              ":attribute(a, input, 1)")
@@ -1640,7 +2059,7 @@
 
   (subtest "Constant Functor Nodes"
     (with-module-table modules
-      (build ":extern(add)"
+      (build ":extern(add, x, y)"
              "add(a, b) -> c"
 
              "1 -> c1; 2 -> c2; c2 -> c3"
@@ -1655,7 +2074,7 @@
           (has-value-function (a) c `(,add ,a (,add 1 2))))))
 
     (with-module-table modules
-      (build ":extern(add)"
+      (build ":extern(add, x, y)"
              "a -> b; b -> c"
 
              "5 -> c1; 10 -> c2; c2 -> c3"
@@ -1697,7 +2116,7 @@
 
              ":module(m2)"
              ":use(m1)"
-             ":extern(add)"
+             ":extern(add, x, y)"
 
              "2 -> param"
              "add(param, m1.param) -> sum"
@@ -1721,7 +2140,7 @@
 
              ":module(m1)"
              ":use(m2)"
-             ":extern(add)"
+             ":extern(add, x, y)"
 
              "2 -> param"
              "add(param, m2.param) -> sum"
@@ -1794,7 +2213,7 @@
 
     (subtest "Functional Bindings"
       (with-module-table modules
-        (build ":extern(add)"
+        (build ":extern(add, x, y)"
                "add(a, b) -> c"
 
                "c -> out1"
@@ -1817,7 +2236,7 @@
                  ":module(m2)"
                  ":use(m1)"
 
-                 ":extern(add)"
+                 ":extern(add, x, y)"
                  "add(m1.a, b) -> m1.c"
 
                  "m1.c -> out1"
@@ -1840,7 +2259,7 @@
                  ":module(m1)"
                  ":use(m2)"
 
-                 ":extern(add)"
+                 ":extern(add, x, y)"
                  "add(m2.a, b) -> m2.c"
 
                  "m2.c -> out1"
@@ -1895,7 +2314,7 @@
 
     (subtest "Functional Bindings"
       (with-module-table modules
-        (build ":extern(add)"
+        (build ":extern(add, x, y)"
                "add(a, b) -> d"
                "a -> c; c -> d"
                ":attribute(a, input, 1)"
@@ -1912,7 +2331,7 @@
 
                  ":module(m2)"
                  ":use(m1)"
-                 ":extern(add)"
+                 ":extern(add, x, y)"
 
                  "add(m1.a, m1.b) -> d"
                  "m1.a -> c; c -> d"
@@ -1930,7 +2349,7 @@
 
                  ":module(m1)"
                  ":use(m2)"
-                 ":extern(add)"
+                 ":extern(add, x, y)"
 
                  "add(m2.a, m2.b) -> d"
                  "m2.a -> c; c -> d"
@@ -2012,7 +2431,7 @@
   (subtest "Simple Functions"
     (subtest "Single Module"
       (with-module-table modules
-        (build ":extern(add)"
+        (build ":extern(add, x, y)"
                "1+(n) : add(n, 1)")
 
         (let ((table (finish-build)))
@@ -2023,7 +2442,7 @@
     (subtest "Multiple Modules"
       (with-module-table modules
         (build ":module(m1)"
-               ":extern(add)"
+               ":extern(add, x, y)"
 
                ":module(m2)"
                ":import(m1, add)"
@@ -2643,12 +3062,73 @@
                        ,(make-function-call iter `((,+ ,n 1) (,+ ,acc ,n)) `((,start . ,in-start) (,end . ,in-end)))
                        (,+ ,in-start ,acc))))
 
-              (has-value-function (in start) out (make-function-call count (list in) (list start)))))))))
+              (has-value-function (in start) out (make-function-call count (list in) (list start))))))))
+
+    (subtest "Optional Argument Default Values"
+      (subtest "With Default Values"
+        (with-module-table modules
+          (build-core-module)
+
+          (build ":import(core)"
+                 "dec(x, d : delta) : x - d"
+
+                 "fact(n) : case(n < 1 : 1, n * fact(dec(n)))"
+
+                 "fact(in) -> out"
+
+                 ":attribute(delta, input, 1)"
+                 ":attribute(in, input, 1)")
+
+          (let ((table (finish-build)))
+            (with-nodes ((* "*") (< "<") (if "if")
+                         (dec "dec") (fact "fact")
+                         (delta "delta") (in "in") (out "out"))
+                table
+
+              (test-meta-node
+               fact
+               ((n "n") (delta (outer delta)))
+
+               `(,if (,< ,n ,1)
+                     1
+                     (,* ,n (,fact (,dec ,n ,delta) ,delta))))
+
+              (has-value-function (in delta) out `(,fact ,in ,delta))))))
+
+      (subtest "Without Default Values"
+        (with-module-table modules
+          (build-core-module)
+
+          (build ":import(core)"
+                 "dec(x, d : delta) : x - d"
+
+                 "fact(n) : case(n < 1 : 1, n * fact(dec(n, 1)))"
+
+                 "fact(in) -> out"
+
+                 ":attribute(delta, input, 1)"
+                 ":attribute(in, input, 1)")
+
+          (let ((table (finish-build)))
+            (with-nodes ((* "*") (< "<") (if "if")
+                         (dec "dec") (fact "fact")
+                         (in "in") (out "out"))
+                table
+
+              (test-meta-node
+               fact
+               ((n "n"))
+
+               `(,if (,< ,n ,1)
+                     1
+                     (,* ,n (,fact (,dec ,n 1)))))
+
+              (has-value-function (in) out `(,fact ,in))))))))
 
   (subtest "Meta-Node References"
     (subtest "Referencing Meta-Nodes Without Outer Nodes"
       (with-module-table modules
-        (build ":extern(map); :extern(add)"
+        (build ":extern(map, f, list); :extern(add, x, y)"
                "1+(x) : add(x,1)"
                "1+-all(list) : map(1+, list)"
 
@@ -2670,7 +3150,7 @@
 
     (subtest "Referencing Meta-Nodes With Outer Nodes"
       (with-module-table modules
-        (build ":extern(map); :extern(add)"
+        (build ":extern(map, f, list); :extern(add, x, y)"
                "x+(n) : add(n, x)"
                "x+-all(list) : map(x+, list)"
 
@@ -2697,7 +3177,7 @@
     (subtest "Referencing Meta-Nodes With Outer Nodes From Nested Meta-Nodes"
       (subtest "Case 1"
         (with-module-table modules
-          (build ":extern(map); :extern(add)"
+          (build ":extern(map, f, list); :extern(add, x, y)"
                  "x+(n) : add(n, x)"
                  "x+-all(list) : { add-x(n) : x+(n); map(add-x, list) }"
 
@@ -2728,7 +3208,7 @@
 
       (subtest "Case 2"
         (with-module-table modules
-          (build ":extern(map); :extern(add)"
+          (build ":extern(map, f, list); :extern(add, x, y)"
                  "x+(n) : add(n, ..(x))"
                  "x+-all(list) : { add-x(n) : map(x+, n); add-x(list);  }"
 
@@ -2763,7 +3243,7 @@
 
     (subtest "Cyclic Meta-Node References"
       (with-module-table modules
-        (build ":extern(map); :extern(add)"
+        (build ":extern(map, f, ..(lists)); :extern(add, x, y)"
 	       "add-x(xs) : map(add-y, xs, x)"
 	       "add-y(xs) : map(add-x, xs, y)"
 
@@ -2784,7 +3264,7 @@
 
              (-<>> `((outer ,y ,yin) (outer ,x ,xin))
                    (meta-node-ref add-y :outer-nodes)
-                   (list map <> xs xin)))
+                   (list map <> (argument-list (list xs xin)))))
 
             (test-meta-node
 	     add-y
@@ -2792,20 +3272,24 @@
 
              (-<>> `((outer ,x ,xin) (outer ,y ,yin))
                    (meta-node-ref add-x :outer-nodes)
-                   (list map <> xs yin)))
+                   (list map <> (argument-list (list xs yin)))))
 
 	    (let ((x-out x) (y-out y))
 	      (has-value-function
 	       (in x y)
 	       output
 
-	       `(,add-x ,in (outer ,x-out ,x) (outer ,y-out ,y))))))))
+               (make-function-call
+                add-x
+                (list in)
+                (list (cons x-out x)
+                      (cons y-out y)))))))))
 
     (subtest "As Source of Binding"
       (subtest "Without Outer Nodes"
         (with-module-table modules
-          (build ":extern(add)"
-                 ":extern(map)"
+          (build ":extern(add, x, y)"
+                 ":extern(map, f, list)"
 
                  "add-x(n) : add(n, 1)"
 
@@ -2823,8 +3307,8 @@
 
       (subtest "With Outer Nodes"
         (with-module-table modules
-          (build ":extern(add)"
-                 ":extern(map)"
+          (build ":extern(add, x, y)"
+                 ":extern(map, f, list)"
 
                  "add-x(n) : add(n, ..(x))"
 
@@ -2839,7 +3323,71 @@
                          (x "x") (in "in") (out "out"))
                 table
 
-              (has-value-function (in x) out `(,map ,(meta-node-ref add-x :outer-nodes (list x)) ,in))))))))
+              (has-value-function (in x) out `(,map ,(meta-node-ref add-x :outer-nodes (list x)) ,in)))))))
+
+    (subtest "Referencing Meta-Nodes with Optional Arguments"
+      (subtest "With constant default values"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core)"
+                 ":extern(map, f, list)"
+
+                 "inc(x, d : 1) : x + d"
+                 "inc-all(xs) : map(inc, xs)"
+
+                 "inc-all(input) -> output"
+
+                 ":attribute(input, input, 1)")
+
+          (with-nodes ((map "map") (inc "inc")
+                       (inc-all "inc-all")
+                       (input "input")
+                       (output "output"))
+              (finish-build)
+
+            (test-meta-node
+             inc-all
+             ((xs "xs"))
+
+             `(,map ,(meta-node-ref inc :optional '(1)) ,xs))
+
+            (has-value-function
+             (input)
+             output
+
+             `(,inc-all ,input)))))
+
+      (subtest "With node default values"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core)"
+                 ":extern(map, f, list)"
+
+                 "inc(x, d : delta) : x + d"
+                 "inc-all(xs) : map(inc, xs)"
+
+                 "inc-all(input) -> output"
+
+                 ":attribute(input, input, 1)"
+                 ":attribute(delta, input, 1)")
+
+          (with-nodes ((map "map") (inc "inc")
+                       (inc-all "inc-all")
+                       (delta "delta") (input "input")
+                       (output "output"))
+              (finish-build)
+
+            (test-meta-node
+             inc-all
+             ((xs "xs") (delta (outer delta)))
+
+             `(,map ,(meta-node-ref inc :optional (list delta)) ,xs))
+
+            (has-value-function
+             (input delta)
+             output
+
+             `(,inc-all ,input ,delta)))))))
 
   (subtest "Node Auto Creation"
     ;; The previous tests already test automatic node
@@ -2866,7 +3414,7 @@
 
       (subtest "Operands"
         (with-module-table modules
-          (build ":extern(add)"
+          (build ":extern(add, x, y)"
                  "f(x) : add(x, y, z)")
 
           (is-error (finish-build) 'non-existent-node-error)))
@@ -2900,7 +3448,7 @@
 
       (subtest "Functional Bindings"
         (with-module-table modules
-          (build ":extern(add)"
+          (build ":extern(add, x, y)"
 
                  "f(a, b) : {
                       add(a, b) -> c
@@ -2936,7 +3484,7 @@
 
       (subtest "Functional Bindings"
         (with-module-table modules
-          (build ":extern(add)"
+          (build ":extern(add, x, y)"
 
                  "f(a, b) : {
                       add(a, b) -> d
@@ -2947,7 +3495,7 @@
           (is-error (finish-build) 'ambiguous-context-error))
 
         (with-module-table modules
-          (build ":extern(add)"
+          (build ":extern(add, x, y)"
 
                  "f(a, b) : {
                       a -> self

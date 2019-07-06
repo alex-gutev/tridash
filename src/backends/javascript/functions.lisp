@@ -154,10 +154,11 @@
    only be used if META-NODE has no subnodes, other than its operand
    nodes."
 
-  (with-slots (contexts operands) meta-node
-    (let ((context (cdr (first contexts)))
-          (op-vars (make-operand-ids operands))
-          (tail-recursive-p nil))
+  (with-slots (contexts) meta-node
+    (let* ((operands (operand-node-names meta-node))
+           (context (cdr (first contexts)))
+           (op-vars (make-operand-ids operands))
+           (tail-recursive-p nil))
 
       (with-slots (value-function) context
         (labels ((get-input (link)
@@ -406,6 +407,11 @@
     ((eql (id-symbol "catch"))
      (make-catch-expression arguments))
 
+    ((eql (id-symbol "-"))
+     (if (null (second arguments))
+         (call-next-method meta-node (list (first arguments)))
+         (call-next-method)))
+
     (_
      (call-next-method))))
 
@@ -426,6 +432,14 @@
    (lambda (expressions)
      (destructuring-bind (fn &rest args) expressions
        (values nil (make-js-call (resolve-expression fn) args))))))
+
+(defmethod make-expression ((arg-list argument-list) &key)
+  (make-operands
+   (argument-list-arguments arg-list)
+   nil
+
+   (lambda (args)
+     (values nil (js-array args)))))
 
 
 ;;; If Expressions
@@ -562,25 +576,71 @@
   "Generates an expression which returns a function that invokes the
    meta-node referenced by REF."
 
-  (with-struct-slots meta-node-ref- (node outer-nodes)
+  (flet ((rest-arg? (thing)
+           (match thing
+             ((list (eql +rest-argument+) _) t))))
+
+    (with-struct-slots meta-node-ref- (node optional outer-nodes)
+        ref
+
+      (if (or optional outer-nodes (find-if #'rest-arg? (operands node)))
+          (make-ref-function ref)
+          (values nil (meta-node-id node))))))
+
+(defun make-ref-function (ref)
+  "Creates a JavaScript anonymous function which executes the
+   meta-node referenced by the `META-NODE-REF' REF."
+
+  (with-struct-slots meta-node-ref- (node optional outer-nodes)
       ref
 
-    (if outer-nodes
-        (make-operands
-         outer-nodes
-         nil
-         (lambda (expressions)
-           (values
-            nil
-            (-<> (js-call "Array.prototype.slice.call" "arguments")
-                 (js-member "concat")
-                 (js-call (js-array expressions))
-                 (js-call (js-member (meta-node-id node) "apply") <>)
-                 (js-return)
-                 list
-                 (js-lambda nil <>)))))
+    (make-operands
+     (append optional outer-nodes)
+     nil
 
-        (values nil (meta-node-id node)))))
+     (lambda (op-values)
+       (let ((fn-args (make-collector nil))
+             (call-args (make-collector nil)))
+
+         (nlet-tail make-args
+             ((operands (operands node))
+              (op-values op-values))
+
+           (ematch operands
+             ((list* (list (eql +optional-argument+) _ _) rest)
+              (let ((var (var-name)))
+                (accumulate call-args var)
+                (accumulate fn-args (js-call "=" var (first op-values))))
+
+              (make-args rest (rest op-values)))
+
+             ((list* (list (eql +rest-argument+) _) rest)
+              (let ((var (var-name)))
+                (accumulate call-args var)
+                (accumulate fn-args (js-call "..." var)))
+
+              (make-args rest op-values))
+
+             ((list* (list (eql +outer-node-argument+) _) rest)
+              (accumulate call-args (first op-values))
+              (make-args rest (rest op-values)))
+
+             ((list* (type symbol) rest)
+              (let ((var (var-name)))
+                (accumulate call-args var)
+                (accumulate fn-args var))
+
+              (make-args rest op-values))
+
+             (nil)))
+
+         (values
+          nil
+          (js-lambda
+           (collector-sequence fn-args)
+           (list
+            (js-return
+             (make-js-call (meta-node-id node) (collector-sequence call-args)))))))))))
 
 
 ;;; Literal Values
