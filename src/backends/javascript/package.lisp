@@ -88,6 +88,7 @@
    :js-catch
    :js-catch-p
    :js-catch-try
+   :js-catch-var
    :js-catch-catch
 
    :js-return

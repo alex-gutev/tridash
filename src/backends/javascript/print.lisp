@@ -260,14 +260,12 @@
 
 
 (defmethod print-ast ((expression js-catch) &key)
-  (with-accessors ((try js-catch-try)
-                   (catch js-catch-catch))
-      expression
-
+  (with-struct-slots js-catch- (try var catch) expression
     (print-token "try")
     (print-block try)
 
     (print-token "catch")
+    (print-ast var :brackets t)
     (print-block catch)))
 
 ;;; Statements

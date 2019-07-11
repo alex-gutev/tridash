@@ -176,6 +176,7 @@
 
 (defmethod ast= ((got js-catch) (expected js-catch))
   (and (ast-list= (js-catch-try got) (js-catch-try expected))
+       (ast= (js-catch-var got) (js-catch-var expected))
        (ast-list= (js-catch-catch got) (js-catch-catch expected))))
 
 
@@ -438,8 +439,11 @@
               (js-return
                (thunk
                 (js-if (resolve (js-call < (d a) (d b)))
-                       (js-return (js-call - (d b) (d a)))
-                       (js-return (js-call - (d a) (d b)))))))))))
+                       (js-return
+                        (thunk (js-return (js-call - (d b) (d a)))))
+
+                       (js-return
+                        (thunk (js-return (js-call - (d a) (d b)))))))))))))
 
     (subtest "Nested If Statements"
       (subtest "Function Call Arguments"
@@ -457,9 +461,20 @@
                   (js-return
                    (thunk
                     (js-var ($ arg1))
-                    (js-if (resolve (js-call < (d a) 3))
-                           (js-call "=" ($ arg1) (js-call + (d b) (d c)))
-                           (js-call "=" ($ arg1) (d d)))
+                    (js-catch
+                     (list
+                      (js-if (resolve (js-call < (d a) 3))
+                             (js-call "="
+                                      ($ arg1)
+                                      (thunk (js-return (js-call + (d b) (d c)))))
+
+                             (js-call "="
+                                      ($ arg1)
+                                      (d d))))
+
+                     ($ e)
+                     (list
+                      (js-call "=" ($ arg1) (thunk (js-throw ($ e))))))
 
                     (js-return (js-call f ($ arg1) (d a))))))))))
 
@@ -477,8 +492,11 @@
                   (js-return
                    (-<>
                     (js-if (resolve (js-call < (d a) 3))
-                           (js-return (js-call + (d b) (d c)))
-                           (js-return (d d)))
+                           (js-return
+                            (thunk (js-return (js-call + (d b) (d c)))))
+
+                           (js-return
+                            (d d)))
                     thunk
                     (js-call f <> (d a))
                     js-return
@@ -497,15 +515,26 @@
                 (js-return
                  (thunk
                   (js-if (resolve (d a))
-                         (js-block
-                          (js-var ($ cond))
-                          (js-if (resolve (js-call < (d b) (d c)))
-                                 (js-call "=" ($ cond) (d b))
-                                 (js-call "=" ($ cond) (d c)))
 
-                          (js-if (resolve ($ cond))
-                                 (js-return (js-call + (d b) (d c)))
-                                 (js-return (d d))))
+                         (js-return
+                          (thunk
+                           (js-var ($ cond))
+                           (js-if (resolve (js-call < (d b) (d c)))
+                                  (js-call "="
+                                           ($ cond)
+                                           (d b))
+
+                                  (js-call "="
+                                           ($ cond)
+                                           (d c)))
+
+                           (js-if (resolve ($ cond))
+                                  (js-return
+                                   (thunk (js-return (js-call + (d b) (d c)))))
+
+                                  (js-return
+                                   (d d)))))
+
                          (js-return (d e)))))))))))
 
     (subtest "Old Value References"
@@ -539,8 +568,8 @@
                   (js-return
                    (js-object
                     (list
-                     (list (js-string "sum") (js-call + (d x) (d y)))
-                     (list (js-string "difference") (js-call - (d x) (d y)))
+                     (list (js-string "sum") (thunk (js-return (js-call + (d x) (d y)))))
+                     (list (js-string "difference") (thunk (js-return (js-call - (d x) (d y)))))
                      (list (js-string "x") (d x))
                      (list (js-string "y") (d y))))))))))))
 
@@ -554,20 +583,20 @@
               (test-compute-function context
                 (js-return
                  (thunk
-                  (js-var ($ min))
-                  (js-if (resolve (js-call < (d x) (d y)))
-                         (js-call "=" ($ min) (d x))
-                         (js-call "=" ($ min) (d y)))
-
-                  (js-var ($ max))
-                  (js-if (resolve (js-call < (d y) (d x)))
-                         (js-call "=" ($ max) (d x))
-                         (js-call "=" ($ max) (d y)))
                   (js-return
                    (js-object
                     (list
-                     (list (js-string "min") ($ min))
-                     (list (js-string "max") ($ max)))))))))))))
+                     (list (js-string "min")
+                           (thunk
+                            (js-if (resolve (js-call < (d x) (d y)))
+                                   (js-return (d x))
+                                   (js-return (d y)))))
+
+                     (list (js-string "max")
+                           (thunk
+                            (js-if (resolve (js-call < (d y) (d x)))
+                                   (js-return (d x))
+                                   (js-return (d y))))))))))))))))
 
     (subtest "Member Access"
       (subtest "Direct Member Access"
@@ -580,10 +609,19 @@
                 (test-compute-function context
                   (js-return
                    (thunk
-                    (js-return
-                     (js-call f (-> (d object)
-                                    resolve
-                                    (js-element (js-string "field"))))))))))))
+                    (js-var ($ arg))
+                    (js-catch
+                     (list
+                      (-<> (d object)
+                           resolve
+                           (js-element (js-string "field"))
+                           (js-call "=" ($ arg) <>)))
+
+                     ($ e)
+                     (list
+                      (js-call "=" ($ arg) (thunk (js-throw ($ e))))))
+
+                    (js-return (js-call f ($ arg))))))))))
 
         (subtest "Lazy Argument"
           (mock-backend-state
@@ -622,9 +660,15 @@
               (js-return
                (thunk
                 (js-var ($ object))
-                (js-if (resolve (d cond))
-                       (js-call "=" ($ object) (d a))
-                       (js-call "=" ($ object) (d b)))
+                (js-catch
+                 (list
+                  (js-if (resolve (d cond))
+                         (js-call "=" ($ object) (d a))
+                         (js-call "=" ($ object) (d b))))
+
+                 ($ e)
+                 (list
+                  (js-call "=" ($ object) (thunk (js-throw ($ e))))))
 
                 (js-return (js-element (resolve ($ object)) (js-string "z")))))))))))
 
@@ -664,11 +708,17 @@
               (js-catch
                (list
                 (js-if (resolve (js-call < (d a) (d b)))
-                       (js-return (resolve (js-call + (d a) (d b))))
+                       (js-return
+                        (resolve
+                         (thunk
+                          (js-return (js-call + (d a) (d b))))))
+
                        (js-return
                         (resolve
                          (thunk
                           (js-throw (js-new +end-update-class+)))))))
+
+               ($ e)
 
                (list
                 (js-return
@@ -789,19 +839,41 @@
                (js-call (resolve (d f)) (d x)))))))))
 
     (subtest "As Operand"
-      (mock-backend-state
-        (mock-meta-nodes (func)
-          (mock-contexts
-              ((context (f x y) (functor func (functor f x) y)))
+      (subtest "Strict Argument"
+        (mock-backend-state
+          (mock-meta-nodes ((func (x y) (x)))
+            (mock-contexts
+                ((context (f x y) (functor func (functor f x) y)))
 
-            (test-compute-function context
-              (js-return
-               (thunk
-                (-<> (js-call (resolve (d f)) (d x))
-                     js-return
-                     thunk
-                     (js-call func <> (d y))
-                     js-return))))))))
+              (test-compute-function context
+                (js-return
+                 (thunk
+                  (js-var ($ f))
+                  (js-catch
+                   (list
+                    (js-call "=" ($ f) (js-call (resolve (d f)) (d x))))
+
+                   ($ e)
+                   (list
+                    (js-call "=" ($ f) (thunk (js-throw ($ e))))))
+
+                  (js-return
+                   (js-call func ($ f) (d y))))))))))
+
+      (subtest "Lazy Argument"
+        (mock-backend-state
+          (mock-meta-nodes (func)
+            (mock-contexts
+                ((context (f x y) (functor func (functor f x) y)))
+
+              (test-compute-function context
+                (js-return
+                 (thunk
+                  (-<> (js-call (resolve (d f)) (d x))
+                       js-return
+                       thunk
+                       (js-call func <> (d y))
+                       js-return)))))))))
 
     (subtest "With Expression Operands"
       (mock-backend-state
@@ -863,6 +935,18 @@
             (cond ,@(map #'make-test-call calls))))
        ,@body)))
 
+(defun protected (&rest expressions)
+  "Wraps EXPRESSIONS in a TRY-CATCH block with the CATCH block
+   returning a 'failing' thunk."
+
+  (js-catch
+   expressions
+
+   ($ e)
+   (list
+    (js-return
+     (thunk (js-throw ($ e)))))))
+
 
 (subtest "Meta-Node Function Code Generation"
   (subtest "Single Function Meta-Nodes"
@@ -881,10 +965,14 @@
                '(($ x) ($ y))
 
                (list
-                (js-return
-                 (thunk
+                (js-catch
+                 (list
                   (js-return
-                   (js-call "+" (resolve ($ x)) (resolve ($ y)))))))))))))
+                   (js-call "+" (resolve ($ x)) (resolve ($ y)))))
+
+                 ($ e)
+                 (list
+                  (js-return (thunk (js-throw ($ e)))))))))))))
 
     (subtest "Recursive Meta-Nodes"
       (with-module-table modules
@@ -901,15 +989,30 @@
                '(($ n))
 
                (list
-                (js-return
-                 (thunk
-                  (js-if (resolve (js-call "<" (resolve ($ n)) (resolve 1)))
-                         (js-return 1)
-                         (->> (js-call "-" (resolve ($ n)) (resolve 1))
-                              (js-call fact)
-                              resolve
-                              (js-call "*" (resolve ($ n)))
-                              js-return)))))))))))
+                (js-catch
+                 (list
+                  (js-if
+                   (resolve (js-call "<" (resolve ($ n)) (resolve 1)))
+                   (js-return 1)
+
+                   (js-return
+                    (thunk
+                     (js-var ($ n-1))
+                     (js-catch
+                      (list
+                       (->> (js-call "-" (resolve ($ n)) (resolve 1))
+                            (js-call "=" ($ n-1))))
+
+                      ($ e1)
+                      (list
+                       (js-call "=" ($ n-1) (thunk (js-throw ($ e1))))))
+
+                     (js-return
+                      (js-call "*" (resolve ($ n)) (resolve (js-call fact ($ n-1)))))))))
+
+                 ($ e2)
+                 (list
+                  (js-return (thunk (js-throw ($ e2)))))))))))))
 
     (subtest "Tail Recursive Meta-Nodes"
       (with-module-table modules
@@ -932,18 +1035,46 @@
                    '(($ n2) ($ acc))
 
                    (list
-                    (js-return
-                     (thunk
-                      (js-if (resolve (js-call "<" (resolve ($ n)) (resolve 1)))
-                             (js-return ($ acc))
-                             (->> (js-call "*" (resolve ($ n)) (resolve ($ acc)))
-                                  (js-call iter (js-call "-" (resolve ($ n)) (resolve 1)))
-                                  js-return))))))
+                    (js-catch
+                     (list
+                      (js-if
+                       (resolve (js-call "<" (resolve ($ n2)) (resolve 1)))
+                       (js-return ($ acc))
+
+                       (js-return
+                        (thunk
+                         ;; Compute n - 1
+                         (js-var ($ n-1))
+                         (js-catch
+                          (list
+                           (->> (js-call "-" (resolve ($ n2)) (resolve 1))
+                                (js-call "=" ($ n-1))))
+
+                          ($ e1)
+                          (list
+                           (js-call "=" ($ n-1) (thunk (js-throw ($ e1))))))
+
+                         ;; Compute n * acc
+                         (js-var ($ n*acc))
+                         (js-catch
+                          (list
+                           (->> (js-call "*" (resolve ($ n2)) (resolve ($ acc)))
+                                (js-call "=" ($ n*acc))))
+
+                          ($ e2)
+                          (list
+                           (js-call "=" ($ n*acc) (thunk (js-throw ($ e2))))))
+
+                         ;; iter(n - 1, n * acc)
+                         (js-return
+                          (js-call iter ($ n-1) ($ n*acc)))))))
+
+                     ($ e3)
+                     (list
+                      (js-return (thunk (js-throw ($ e3))))))))
 
                   (js-return
-                   (thunk
-                    (js-return
-                     (js-call iter ($ n1) 1))))))))))))
+                   (js-call iter ($ n1) 1))))))))))
 
     (subtest "Mutually Recursive Meta-Nodes"
       (with-module-table modules
@@ -962,12 +1093,18 @@
                '(($ n))
 
                (list
-                (js-return
-                 (thunk
+                (js-catch
+                 (list
                   (js-if (resolve (js-call ">" (resolve ($ n)) (resolve 1)))
                          (js-return
-                          (js-call "+" (resolve (js-call fib1 ($ n))) (resolve (js-call fib2 ($ n)))))
-                         (js-return 1)))))))
+                          (thunk
+                           (js-return
+                            (js-call "+" (resolve (js-call fib1 ($ n))) (resolve (js-call fib2 ($ n)))))))
+                         (js-return 1)))
+
+                 ($ e)
+                 (list
+                  (js-return (thunk (js-throw ($ e)))))))))
 
             (test-meta-node-function fib1
               (js-function
@@ -975,9 +1112,20 @@
                '(($ n))
 
                (list
+                ;; Compute n - 1
+                (js-var ($ arg))
+                (js-catch
+                 (list
+                  (->> (js-call "-" (resolve ($ n)) (resolve 1))
+                       (js-call "=" ($ arg))))
+
+                 ($ e)
+                 (list
+                  (js-call "=" ($ arg) (thunk (js-throw ($ e))))))
+
+                ;; Compute fib(n - 1)
                 (js-return
-                 (thunk
-                  (js-return (js-call fib (js-call "-" (resolve ($ n)) (resolve 1)))))))))
+                 (js-call fib ($ arg))))))
 
             (test-meta-node-function fib2
               (js-function
@@ -985,9 +1133,20 @@
                '(($ n))
 
                (list
+                ;; Compute n - 2
+                (js-var ($ arg))
+                (js-catch
+                 (list
+                  (->> (js-call "-" (resolve ($ n)) (resolve 2))
+                       (js-call "=" ($ arg))))
+
+                 ($ e)
+                 (list
+                  (js-call "=" ($ arg) (thunk (js-throw ($ e))))))
+
+                ;; Compute fib(n - 2)
                 (js-return
-                 (thunk
-                  (js-return (js-call fib (js-call "-" (resolve ($ n)) (resolve 2)))))))))))))
+                 (js-call fib ($ arg))))))))))
 
     (subtest ":FAIL Expressions"
       (with-module-table modules
@@ -1004,11 +1163,16 @@
                '(($ x))
 
                (list
-                (js-return
-                 (thunk
+                (js-catch
+                 (list
                   (js-if (resolve (js-call ">" (resolve ($ x)) (resolve 0)))
                          (js-return ($ x))
-                         (js-return (thunk (js-throw (js-new +end-update-class+))))))))))))))
+                         (js-return (thunk (js-throw (js-new +end-update-class+))))))
+
+                 ($ e)
+                 (list
+                  (js-return
+                   (thunk (js-throw ($ e)))))))))))))
 
     (subtest "Common Sub Expressions"
       (with-module-table modules
@@ -1031,10 +1195,15 @@
                      thunk
                      (js-call "=" ($ g1)))
 
-                (js-return
-                 (thunk
+                (js-catch
+                 (list
                   (js-return
-                   (js-call "-" (resolve ($ g1)) (resolve ($ g1)))))))))))))
+                   (js-call "-" (resolve ($ g1)) (resolve ($ g1)))))
+
+                 ($ e)
+                 (list
+                  (js-return
+                   (thunk (js-throw ($ e)))))))))))))
 
     (subtest "Optional Arguments"
       (with-module-table modules
@@ -1053,10 +1222,9 @@
                '(($ n) ($ d))
 
                (list
-                (->> (js-call "+" (resolve ($ n)) (resolve ($ d)))
-                     js-return
-                     thunk
-                     js-return)))))
+                (protected
+                 (js-return
+                  (js-call "+" (resolve ($ n)) (resolve ($ d)))))))))
 
           (mock-backend-state
             (test-meta-node-function f
@@ -1065,10 +1233,7 @@
                '(($ n))
 
                (list
-                (->> (js-call 1+ ($ n) 1)
-                     js-return
-                     thunk
-                     js-return))))))))
+                (js-return (js-call 1+ ($ n) 1)))))))))
 
     (subtest "Rest Arguments"
       (with-module-table modules
@@ -1088,10 +1253,8 @@
                '(($ x) ($ xs))
 
                (list
-                (->> (js-call "+" (resolve ($ x)) (resolve ($ xs)))
-                     js-return
-                     thunk
-                     js-return)))))
+                (protected
+                 (js-return (js-call "+" (resolve ($ x)) (resolve ($ xs)))))))))
 
           (mock-backend-state
             (test-meta-node-function g
@@ -1100,10 +1263,8 @@
                '(($ x) ($ y) ($ z))
 
                (list
-                (->> (js-call f ($ x) (js-array (list ($ y) ($ z))))
-                     js-return
-                     thunk
-                     js-return)))))
+                (js-return
+                 (js-call f ($ x) (js-array (list ($ y) ($ z)))))))))
 
           (mock-backend-state
             (test-meta-node-function h
@@ -1112,10 +1273,7 @@
                '(($ x))
 
                (list
-                (->> (js-call f ($ x) (js-array))
-                     js-return
-                     thunk
-                     js-return))))))))
+                (js-return (js-call f ($ x) (js-array))))))))))
 
     (subtest "Primitive Functions"
       (subtest "Arithmetic"
@@ -1134,10 +1292,9 @@
                    '(($ x) ($ y))
 
                    (list
-                    (-> (js-call "+" (resolve ($ x)) (resolve ($ y)))
-                        js-return
-                        thunk
-                        js-return))))))))
+                    (protected
+                     (js-return
+                      (js-call "+" (resolve ($ x)) (resolve ($ y))))))))))))
 
         (subtest "Subtract"
           (with-module-table modules
@@ -1154,10 +1311,8 @@
                    '(($ x) ($ y))
 
                    (list
-                    (-> (js-call "-" (resolve ($ x)) (resolve ($ y)))
-                        js-return
-                        thunk
-                        js-return))))))))
+                    (protected
+                     (js-return (js-call "-" (resolve ($ x)) (resolve ($ y))))))))))))
 
         (subtest "Negate"
           (with-module-table modules
@@ -1174,10 +1329,8 @@
                    '(($ x))
 
                    (list
-                    (-> (js-call "-" (resolve ($ x)))
-                        js-return
-                        thunk
-                        js-return))))))))
+                    (protected
+                     (js-return (js-call "-" (resolve ($ x))))))))))))
 
         (subtest "Multiply"
           (with-module-table modules
@@ -1194,10 +1347,8 @@
                    '(($ x) ($ y))
 
                    (list
-                    (-> (js-call "*" (resolve ($ x)) (resolve ($ y)))
-                        js-return
-                        thunk
-                        js-return))))))))
+                    (protected
+                     (js-return (js-call "*" (resolve ($ x)) (resolve ($ y))))))))))))
 
         (subtest "Divide"
           (with-module-table modules
@@ -1214,10 +1365,8 @@
                    '(($ x) ($ y))
 
                    (list
-                    (-> (js-call "/" (resolve ($ x)) (resolve ($ y)))
-                        js-return
-                        thunk
-                        js-return)))))))))
+                    (protected
+                     (js-return (js-call "/" (resolve ($ x)) (resolve ($ y)))))))))))))
 
       (subtest "Comparison"
         (subtest "Less Than"
@@ -1235,10 +1384,8 @@
                    '(($ x) ($ y))
 
                    (list
-                    (-> (js-call "<" (resolve ($ x)) (resolve ($ y)))
-                        js-return
-                        thunk
-                        js-return))))))))
+                    (protected
+                     (js-return (js-call "<" (resolve ($ x)) (resolve ($ y))))))))))))
 
         (subtest "Less Than or Equal"
           (with-module-table modules
@@ -1255,10 +1402,8 @@
                    '(($ x) ($ y))
 
                    (list
-                    (-> (js-call "<=" (resolve ($ x)) (resolve ($ y)))
-                        js-return
-                        thunk
-                        js-return))))))))
+                    (protected
+                     (js-return (js-call "<=" (resolve ($ x)) (resolve ($ y))))))))))))
 
         (subtest "Greater Than"
           (with-module-table modules
@@ -1275,10 +1420,8 @@
                    '(($ x) ($ y))
 
                    (list
-                    (-> (js-call ">" (resolve ($ x)) (resolve ($ y)))
-                        js-return
-                        thunk
-                        js-return))))))))
+                    (protected
+                     (js-return (js-call ">" (resolve ($ x)) (resolve ($ y))))))))))))
 
         (subtest "Greater Than or Equal"
           (with-module-table modules
@@ -1295,10 +1438,8 @@
                    '(($ x) ($ y))
 
                    (list
-                    (-> (js-call ">=" (resolve ($ x)) (resolve ($ y)))
-                        js-return
-                        thunk
-                        js-return))))))))
+                    (protected
+                     (js-return (js-call ">=" (resolve ($ x)) (resolve ($ y))))))))))))
 
         (subtest "Equal"
           (with-module-table modules
@@ -1315,10 +1456,8 @@
                    '(($ x) ($ y))
 
                    (list
-                    (-> (js-call "===" (resolve ($ x)) (resolve ($ y)))
-                        js-return
-                        thunk
-                        js-return))))))))
+                    (protected
+                     (js-return (js-call "===" (resolve ($ x)) (resolve ($ y))))))))))))
 
         (subtest "Not Equal"
           (with-module-table modules
@@ -1335,10 +1474,8 @@
                    '(($ x) ($ y))
 
                    (list
-                    (-> (js-call "!==" (resolve ($ x)) (resolve ($ y)))
-                        js-return
-                        thunk
-                        js-return)))))))))
+                    (protected
+                     (js-return (js-call "!==" (resolve ($ x)) (resolve ($ y)))))))))))))
 
       (subtest "Boolean Logic"
         (subtest "And"
@@ -1356,14 +1493,22 @@
                    '(($ x) ($ y))
 
                    (list
-                    (-> (js-call "Tridash.and"
-                                 (js-call "+" (resolve ($ x)) (resolve ($ y)))
-                                 (thunk
-                                  (js-return
-                                   (js-call "-" (resolve ($ y)) (resolve ($ x))))))
-                        js-return
-                        thunk
-                        js-return))))))))
+                    (js-var ($ arg))
+                    (js-catch
+                     (list
+                      (->> (js-call "+" (resolve ($ x)) (resolve ($ y)))
+                           (js-call "=" ($ arg))))
+
+                     ($ e)
+                     (list
+                      (js-call "=" ($ arg) (thunk (js-throw ($ e))))))
+
+                    (js-return
+                     (js-call "Tridash.and"
+                              ($ arg)
+                              (thunk
+                               (js-return
+                                (js-call "-" (resolve ($ y)) (resolve ($ x))))))))))))))
 
         (subtest "Or"
           (with-module-table modules
@@ -1380,14 +1525,22 @@
                    '(($ x) ($ y))
 
                    (list
-                    (-> (js-call "Tridash.or"
-                                 (js-call "+" (resolve ($ x)) (resolve ($ y)))
-                                 (thunk
-                                  (js-return
-                                   (js-call "-" (resolve ($ y)) (resolve ($ x))))))
-                        js-return
-                        thunk
-                        js-return))))))))
+                    (js-var ($ arg))
+                    (js-catch
+                     (list
+                      (->> (js-call "+" (resolve ($ x)) (resolve ($ y)))
+                           (js-call "=" ($ arg))))
+
+                     ($ e)
+                     (list
+                      (js-call "=" ($ arg) (thunk (js-throw ($ e))))))
+
+                    (js-return
+                     (js-call "Tridash.or"
+                              ($ arg)
+                              (thunk
+                               (js-return
+                                (js-call "-" (resolve ($ y)) (resolve ($ x))))))))))))))
 
         (subtest "Not"
           (with-module-table modules
@@ -1404,10 +1557,8 @@
                    '(($ x))
 
                    (list
-                    (-> (js-call "!" (resolve ($ x)))
-                        js-return
-                        thunk
-                        js-return)))))))))
+                    (protected
+                     (js-return (js-call "!" (resolve ($ x)))))))))))))
 
       (subtest "Type Conversions"
         (subtest "int"
@@ -1426,9 +1577,7 @@
 
                    (list
                     (js-return
-                     (thunk
-                      (js-return
-                       (js-call "Tridash.cast_int" ($ x))))))))))))
+                     (js-call "Tridash.cast_int" ($ x))))))))))
 
         (subtest "real"
           (with-module-table modules
@@ -1446,9 +1595,7 @@
 
                    (list
                     (js-return
-                     (thunk
-                      (js-return
-                       (js-call "Tridash.cast_real" ($ x))))))))))))
+                     (js-call "Tridash.cast_real" ($ x))))))))))
 
         (subtest "string"
           (with-module-table modules
@@ -1466,9 +1613,7 @@
 
                    (list
                     (js-return
-                     (thunk
-                      (js-return
-                       (js-call "Tridash.cast_string" ($ x)))))))))))))
+                     (js-call "Tridash.cast_string" ($ x)))))))))))
 
       (subtest "Type Checks"
         (subtest "int"
@@ -1487,9 +1632,7 @@
 
                    (list
                     (js-return
-                     (thunk
-                      (js-return
-                       (js-call "Tridash.is_int" ($ x))))))))))))
+                     (js-call "Tridash.is_int" ($ x))))))))))
 
         (subtest "real"
           (with-module-table modules
@@ -1507,9 +1650,7 @@
 
                    (list
                     (js-return
-                     (thunk
-                      (js-return
-                       (js-call "Tridash.is_real" ($ x))))))))))))
+                     (js-call "Tridash.is_real" ($ x))))))))))
 
         (subtest "string"
           (with-module-table modules
@@ -1527,9 +1668,7 @@
 
                    (list
                     (js-return
-                     (thunk
-                      (js-return
-                       (js-call "Tridash.is_string" ($ x))))))))))))
+                     (js-call "Tridash.is_string" ($ x))))))))))
 
         (subtest "Is Infinity"
           (with-module-table modules
@@ -1547,9 +1686,7 @@
 
                    (list
                     (js-return
-                     (thunk
-                      (js-return
-                       (js-call "Tridash.is_inf" ($ x))))))))))))
+                     (js-call "Tridash.is_inf" ($ x))))))))))
 
         (subtest "Is NaN"
           (with-module-table modules
@@ -1567,8 +1704,6 @@
 
                    (list
                     (js-return
-                     (thunk
-                      (js-return
-                       (js-call "Tridash.is_nan" ($ x))))))))))))))))
+                     (js-call "Tridash.is_nan" ($ x))))))))))))))
 
 (finalize)

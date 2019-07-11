@@ -31,26 +31,60 @@
 /* Boolean Expressions */
 
 function and(a, b) {
-    return resolve(a) ? b : false;
-};
+    try {
+        return resolve(a) ? b : false;
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
 function or(a, b) {
-    if ((a = resolve(a)))
-        return a;
+    try {
+        if ((a = resolve(a)))
+            return a;
 
-    return b;
-};
+        return b;
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
+
+function not(x) {
+    try {
+        return !resolve(x);
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
 
 
 /* Type Conversions */
 
 function cast_int(x) {
-    return parseInt(resolve(x));
+    try {
+        return parseInt(resolve(x));
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
 };
 function cast_real(x) {
-    return parseFloat(resolve(x));
+    try {
+        return parseFloat(resolve(x));
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
 };
 function cast_string(x) {
-    return String(resolve(x));
+    try {
+        return String(resolve(x));
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
 };
 
 
@@ -62,21 +96,46 @@ var is_integer = Number.isInteger || function(value) {
 };
 
 function is_int(x) {
-    return is_integer(resolve(x));
+    try {
+        return is_integer(resolve(x));
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
 };
 
 function is_real(value) {
-    return !isNaN(resolve(value));
+    try {
+        return !isNaN(resolve(value));
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
 };
 
 function is_string(value) {
-    return typeof resolve(value) === 'string';
+    try {
+        return typeof resolve(value) === 'string';
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
 };
 
 function is_inf(value) {
-    return !isFinite(resolve(value));
+    try {
+        return !isFinite(resolve(value));
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
 };
 
 function is_nan(value) {
-    return isNaN(resolve(value));
+    try {
+        return isNaN(resolve(value));
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
 };

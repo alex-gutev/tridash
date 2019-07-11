@@ -98,6 +98,11 @@
   "Boolean flag for whether the value of the current expression should
    be resolved before being returned.")
 
+(defvar *protect* t
+  "Flag indicating whether the expression, currently being compiled,
+   should be wrapped in a try-catch block, which returns a 'failing'
+   thunk in case of an error.")
+
 
 (defun meta-node-id (meta-node)
   "Returns the global meta-node function/operator identifier of
@@ -126,13 +131,17 @@
    meta-node call expression."
 
   (match (meta-node-id meta-node)
-    ((cons name resolve-args?)
-     (-<>> (map #'resolve-expression operands)
-           (if resolve-args? <> operands)
-           (make-js-call name)))
+    ((cons name t)
+     (protect
+      nil
 
-    (name
-     (make-js-call name operands))))
+      (->> (map #'resolve-expression operands)
+           (make-js-call name))))
+
+    ((or (cons name nil) name)
+     (values
+      nil
+      (make-js-call name operands)))))
 
 
 (defparameter *meta-node-call* #'meta-node-call
@@ -173,7 +182,8 @@
                          (setf tail-recursive-p t))
                        (meta-node-call node operands))))
 
-          (let* ((body (make-function-body value-function #'get-input)))
+          (let* ((*thunk* nil)
+                 (body (make-function-body value-function #'get-input)))
 
             (list
              (js-function
@@ -272,7 +282,6 @@
 
     (let* ((*var-counter* 0)
            (*expression-blocks* (make-hash-map))
-           (*thunk* t)
            (statements (make-statements function)))
 
       (list*
@@ -287,7 +296,11 @@
    expression, in *RETURN-VARIABLE*, or returns the result directly if
    *RETURN_VARIABLE* is NIL."
 
-  (multiple-value-call #'add-to-block (make-expression fn :thunk *thunk*)))
+  (multiple-value-call #'add-to-block
+    (make-expression fn
+                     :thunk *thunk*
+                     :resolve *resolve*
+                     :protect *protect*)))
 
 (defun add-to-block (block expression)
   "Creates a new block which contains BLOCK and a statement which
@@ -322,13 +335,17 @@
     NIL as the block returned in the first value contains a return
     statement."))
 
-(defmethod make-expression :around ((expression t) &key ((:return-variable *return-variable*) *return-variable*) ((:thunk *thunk*)))
+(defmethod make-expression :around ((expression t) &key ((:return-variable *return-variable*) *return-variable*) ((:thunk *thunk*)) ((:resolve *resolve*)) ((:protect *protect*) t))
   "Wraps the compiled expression in a THUNK if :THUNK is true."
 
   (let* ((*return-variable* (and (not *thunk*) *return-variable*)))
 
     (multiple-value-bind (block expression)
-        (let ((*thunk* nil)) (call-next-method))
+        (let ((*thunk* nil)
+              (*protect* (and *protect* (null *thunk*)))
+              (*resolve* (and *resolve* (null *thunk*))))
+          (call-next-method))
+
       (if (and *thunk* (or block (not (non-computing? expression))))
           (values nil (thunk block expression))
           (values block expression)))))
@@ -344,6 +361,9 @@
    literals are not considered non-computing."
 
   (match expression
+    ((js-new- (operator (equal +thunk-class+)))
+     t)
+
     ((type (or js-call js-new js-object js-array))
      nil)
 
@@ -366,7 +386,8 @@
   "Creates an expression which creates a thunk that executes BLOCK and
    returns the result of EXPRESSION."
 
-  (let ((*return-variable* nil))
+  (let ((*return-variable* nil)
+        (*resolve* nil))
     (js-new +thunk-class+ (list (js-lambda nil (add-to-block block expression))))))
 
 
@@ -420,10 +441,7 @@
    arguments
    (strict-arguments meta-node)
    (lambda (expressions)
-     (let ((call (make-meta-node-call meta-node expressions)))
-       (if (expressionp call)
-           (values nil call)
-           (values call nil))))))
+     (make-meta-node-call meta-node expressions))))
 
 (defmethod make-functor-expression (operator arguments)
   (make-operands
@@ -431,7 +449,7 @@
    (list t)
    (lambda (expressions)
      (destructuring-bind (fn &rest args) expressions
-       (values nil (make-js-call (resolve-expression fn) args))))))
+       (protect nil (make-js-call (resolve-expression fn) args))))))
 
 (defmethod make-expression ((arg-list argument-list) &key)
   (make-operands
@@ -453,7 +471,9 @@
 
     (let ((cond-var (var-name)))
       (multiple-value-bind (cond-block cond-expr)
-          (make-expression cond :return-variable cond-var)
+          (make-expression cond
+                           :return-variable cond-var
+                           :protect nil)
 
         (multiple-value-call
             #'combine-blocks
@@ -461,16 +481,31 @@
           (when cond-block
             (js-block (js-var cond-var) cond-block))
 
-          (let ((then-block (make-statements then))
-                (else-block (make-statements else)))
-
-            (values
-             (js-block
+          (protect
+           (js-block
+            (let ((*thunk* t))
               (js-if (resolve-expression cond-expr)
-                     (make-js-block then-block)
-                     (make-js-block else-block)))
+                     (make-js-block (make-statements then))
+                     (make-js-block (make-statements else)))))
 
-             *return-variable*)))))))
+           *return-variable*))))))
+
+(defun protect (block expression)
+  "If *PROTECT* is true returns a try-catch block which returns the
+   value of EXPRESSION, if successful, or returns a 'failing'
+   thunk. If *PROTECT* is NIL, simply returns BLOCK and EXPRESSION"
+
+  (if *protect*
+      (values
+       (js-block
+        (js-catch
+         (add-to-block block expression)
+
+         "e"
+         (add-to-block nil (thunk (js-throw "e") nil))))
+       *return-variable*)
+
+      (values block expression)))
 
 
 ;;; Fail and Catch Expressions
@@ -487,12 +522,12 @@
 
   (destructuring-bind (try catch) arguments
 
-    (let ((try (let ((*resolve* t)) (make-statements try)))
+    (let ((try (let ((*resolve* t) *protect*) (make-statements try)))
           (catch (make-statements catch)))
 
       (values
        (js-block
-        (js-catch try catch))
+        (js-catch try "e" catch))
 
        *return-variable*))))
 
@@ -509,7 +544,8 @@
 
       (make-operands
        values
-       (make-list (length values) :initial-element t)
+       nil                              ; Object values are always evaluated lazily
+
        (lambda (values)
          (values
           nil
@@ -530,7 +566,7 @@
           (when object-block
             (js-block (js-var object-var) object-block))
 
-          (values nil (js-element (resolve-expression object-expr) (js-string member))))))))
+          (protect nil (js-element (resolve-expression object-expr) (js-string member))))))))
 
 
 ;;; Expression Blocks
@@ -542,7 +578,7 @@
 
     (if (> count 1)
         (make-expression-block block)
-        (make-expression expression))))
+        (make-expression expression :resolve *resolve* :protect *protect*))))
 
 (defun make-expression-block (block)
   "Generates code which computes the value of the `EXPRESSION-BLOCK'
@@ -676,7 +712,8 @@
         (make-expression operand :return-variable op-var :thunk (not strict?))
 
       (when op-block
-        (collect (js-var op-var) into block-statements)
+        (when (= op-var op-expr)
+          (collect (js-var op-var) into block-statements))
         (collect op-block into block-statements))
 
       (collect op-expr into expressions))
@@ -811,6 +848,7 @@
 (defmethod strip-redundant ((catch js-catch) &key)
   (js-catch
    (strip-redundant (js-catch-try catch))
+   (js-catch-var catch)
    (strip-redundant (js-catch-catch catch))))
 
 

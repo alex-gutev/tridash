@@ -137,10 +137,13 @@
 ;;; Try-Catch
 
 (defstruct (js-catch
-             (:constructor js-catch (try catch)))
-  "Try-Catch Statement"
+             (:constructor js-catch (try var catch)))
+  "Try-Catch Statement. TRY is the list of statements making up the
+   try block. VAR is the variable to which the exception is bound and
+   CATCH is the list of statements making up the catch block."
 
   try
+  var
   catch)
 
 
