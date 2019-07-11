@@ -101,6 +101,7 @@
     bindings established to NODE are established in the context with
     the identifier stored in the CONTEXT-ID slot."))
 
+
 ;;;; Hash Function
 
 (defmethod hash ((node node))
@@ -191,12 +192,12 @@
       (meta-node-ref
        (prog1 source
          (when add-function
-           (setf (value-function (context target context)) source))))
+           (add-function source (context target context)))))
 
       (otherwise
        (prog1 source
          (when add-function
-           (setf (value-function (context target :init)) source)))))))
+           (add-function source (context target :init))))))))
 
 
 ;;; Adding Dependencies
@@ -216,9 +217,11 @@
         (ensure-get dependency dependencies (node-link dependency :context context))
 
       (when (not in-hash?)
-        (with-slots (operands value-function) (context node context)
-          (setf (get dependency operands) link)
-          (when add-function (setf value-function link)))))))
+        (let ((context (context node context)))
+          (with-slots (operands) context
+            (setf (get dependency operands) link)
+            (when add-function
+              (add-function link context))))))))
 
 (defmethod add-dependency (dependency (proxy context-node) &key context add-function)
   "Adds the dependency to the node stored in the NODE slot of PROXY, in
@@ -232,12 +235,21 @@
                         :context context-id
                         :add-function nil)
 
-      (with-slots (value-function) (context node context-id)
-        (when (and (not existed?) add-function)
-          (setf value-function
-                (if value-function
-                    (catch-expression value-function link)
-                    link)))))))
+      (when (and (not existed?) add-function)
+        (add-function link (context node context-id))))))
+
+(defun add-function (expression context)
+  "Adds EXPRESSION to the value function of CONTEXT. If CONTEXT does
+   not have a value function function, its VALUE-FUNCTION slot is set
+   to EXPRESSION. If CONTEXT does have a value function, it is wrapped
+   in a CATCH-EXPRESSION which evaluates to the value of the existing
+   function or the value of EXPRESSION in case of failure."
+
+  (with-slots (value-function) context
+    (setf value-function
+          (if value-function
+              (catch-expression value-function expression)
+              expression))))
 
 
 ;;; Adding Observers
@@ -314,16 +326,29 @@
 
 ;;;; Contexts
 
-(defun context (node context-id)
-  "Returns the context of NODE with identifier CONTEXT-ID. If node
-   does have such a context, a new context is created."
+(defgeneric context (node context-id)
+  (:documentation
+   "Returns the context of NODE with identifier CONTEXT-ID. If node
+    does have such a context, a new context is created."))
 
+(defmethod context ((node node) context-id)
   (ensure-get context-id (contexts node) (make-instance 'node-context)))
 
-(defun (setf context) (value node context-id)
-  "Sets the context, of NODE, with identifier CONTEXT-ID to VALUE."
+(defmethod context ((context-node context-node) (id t))
+  "Returns the context referenced by the `CONTEXT-NODE'. ID is ignored
+   completely."
 
+  (with-slots (node context-id) context-node
+    (context node context-id)))
+
+
+(defgeneric (setf context) (value node context-id)
+  (:documentation
+   "Sets the context, of NODE, with identifier CONTEXT-ID to VALUE."))
+
+(defmethod (setf context) (value (node node) context-id)
   (setf (get context-id (contexts node)) value))
+
 
 (defmacro! create-context ((o!node o!context-id) &body forms)
   "Creates a context, of NODE, with identifier CONTEXT-ID. If NODE

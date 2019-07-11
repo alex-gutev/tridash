@@ -672,6 +672,38 @@
                     (if ,cond2 ,a-b (:fail)))
                 ,b))))))
 
+    (subtest "In Target of Literal Binding"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core);"
+               "a < 3 -> ((a + b) -> :context(output, ctx))"
+               "a < 4 -> ((a - b) -> :context(output, ctx))"
+               "1 -> :context(output, ctx)")
+
+        (with-nodes ((output "output")
+
+                     (cond1 ("->" ((":in" "core" "+") "a" "b") "output"))
+                     (cond2 ("->" ((":in" "core" "-") "a" "b") "output"))
+
+                     (a+b ((":in" "core" "+") "a" "b"))
+                     (a-b ((":in" "core" "-") "a" "b")))
+            modules
+
+          (let ((ctx (id-symbol "ctx"))
+                (*strict-test* nil))
+
+            (has-value-function
+             ((cond1 :context ctx) (a+b :context ctx)
+              (cond2 :context ctx) (a-b :context ctx))
+
+             output
+
+             `(:catch
+                  (:catch
+                      (if ,cond1 ,a+b (:fail))
+                    (if ,cond2 ,a-b (:fail)))
+                1))))))
+
     (subtest "In Source of Binding"
       ;; Test that the :context operator has no effect in source
       ;; position.
