@@ -144,7 +144,7 @@
            map-values
            first
            value-function
-           (tridash->cl :thunk t))))))
+           (tridash->cl :thunk nil))))))
 
 (defun get-operand-var (operand)
   "Returns the name of the variable in which the value of the operand
@@ -252,7 +252,8 @@
             (list 'call-tridash-meta-node meta-node)))
 
       (_
-       `(funcall (resolve ,(tridash->cl meta-node :thunk nil)) ,@(map #'tridash->cl arguments))))))
+       `(call-node ,(tridash->cl meta-node :thunk nil)
+                   (list ,@(map #'tridash->cl arguments)))))))
 
 (defun make-meta-node-arguments (meta-node arguments)
   "Returns expressions, wrapped in `THUNK's if necessary, for the
@@ -281,7 +282,7 @@
 
   (flet ((make-entry (pair)
            (destructuring-bind (key value) pair
-             `(cons ',key ,(tridash->cl value :thunk nil)))))
+             `(cons ',key ,(tridash->cl value :thunk t)))))
 
     `(alist-hash-map (list ,@(map #'make-entry (object-expression-entries object))))))
 
@@ -377,139 +378,3 @@
   (match-syntax (operator any) args
     ((list thing)
      thing)))
-
-
-;;;; Tridash CL Runtime
-
-(defstruct thunk
-  "A thunks stores a function which evaluates to a value. The function
-   FN is called to compute the value when it is actually required."
-
-  fn)
-
-(defmacro! thunk (expression)
-  "Creates a `THUNK' with a COMPUTE function that evaluates
-   EXPRESSION."
-
-  `(let (,g!result ,g!computed?)
-     (make-thunk
-      :fn
-      (lambda ()
-        (if ,g!computed?
-            ,g!result
-            (prog1 (setf ,g!result ,expression)
-              (setf ,g!computed? t)))))))
-
-(defun resolve (thing)
-  "If THING is a `THUNK' calls it's COMPUTE function. If the function
-   returns another `THUNK' repeats the procedure on it.
-
-   If THING is not a `THUNK', returns it."
-
-  (nlet-tail resolve ((thing thing))
-    (typecase thing
-      (thunk (resolve (funcall (thunk-fn thing))))
-      (otherwise thing))))
-
-(define-condition tridash-fail ()
-  ()
-
-  (:documentation
-   "Condition raised when a Tridash fail expression is evaluated."))
-
-
-(defmacro define-tridash-function% (name (&rest lambda-list) &body body)
-  "Defines an externally defined Tridash function, with name NAME,
-   lambda-list LAMBDA-LIST and body BODY.
-
-   NAME is converted to a string and interned in the TRIDASH.SYMBOLS
-   package. An entry which maps NAME to the the function is added to
-   *TRIDASH-CL-FUNCTIONS*."
-
-  (let ((name (id-symbol (string name))))
-    `(progn
-       (defun ,name ,lambda-list ,@body)
-
-       (eval-when (:compile-toplevel :load-toplevel :execute)
-         (setf (get ',name *tridash-cl-functions*) ',name)))))
-
-(defmacro! define-tridash-function (name (&rest lambda-list) &body body)
-  "Defines an externally defined Tridash function by
-   DEFINE-TRIDASH-FUNCTION%. If BODY consists of a single symbol a
-   function, which applies the function named by the symbol on the
-   resolved (by RESOLVE) arguments. Otherwise the macro is identical
-   to DEFINE-TRIDASH-FUNCTION%."
-
-  (match body
-    ((list (and (type symbol) fn))
-     `(define-tridash-function% ,name (&rest ,g!args)
-        (apply #',fn (map #'resolve ,g!args))))
-
-    (_
-     `(define-tridash-function% ,name ,lambda-list ,@body))))
-
-
-;;;; Core Functions
-
-;;; Conditionals and Boolean Expressions
-
-(define-tridash-function |if| (cond then else)
-  (if (bool-value (resolve cond)) then else))
-
-(define-tridash-function |member| (object key)
-  (get (resolve key) (resolve object)))
-
-(define-tridash-function |fail| ()
-  (thunk (error 'tridash-fail)))
-
-(define-tridash-function |catch| (try catch)
-  (handler-case (resolve try)
-    (tridash-fail () catch)))
-
-
-;;; Boolean Expressions
-
-(define-tridash-function |and| (a b)
-  (if (bool-value (resolve a)) b 0))
-
-(define-tridash-function |or| (a b)
-  (or (bool-value (resolve a)) b))
-
-(define-tridash-function |not| (a)
-  (if (bool-value (resolve a)) 0 1))
-
-
-;;; Arithmetic
-
-(define-tridash-function + (a b) +)
-(define-tridash-function - (a b) -)
-(define-tridash-function * (a b) *)
-(define-tridash-function / (a b) /)
-
-;;; Comparison
-
-(define-tridash-function < (a b) <)
-(define-tridash-function <= (a b) <=)
-(define-tridash-function > (a b) >)
-(define-tridash-function >= (a b) >=)
-(define-tridash-function = (a b) =)
-(define-tridash-function != (a b) /=)
-
-;;; Type Conversions
-
-(define-tridash-function |string| (x) mkstr)
-
-;;; Type Predicates
-
-(define-tridash-function |int?| (x) integerp)
-(define-tridash-function |real?| (x) numberp)
-(define-tridash-function |string?| (x) stringp)
-
-;;; Lists
-
-(define-tridash-function |cons| (a b) cons)
-
-(define-tridash-function |list| (xs)
-  (reduce #'cons (map-to 'lazy-seq #'resolve (resolve xs))
-          :initial-value nil
-          :from-end t))

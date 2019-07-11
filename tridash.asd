@@ -58,6 +58,7 @@
                  (:file "strictness")
                  (:file "builder")
                  (:file "macros")
+                 (:file "macro-runtime")
                  (:file "coalescer")
                  (:file "prog-builder")
                  (:file "main")
