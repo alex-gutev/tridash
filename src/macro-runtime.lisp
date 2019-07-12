@@ -206,3 +206,6 @@
 (define-tridash-function |list| (xs)
   (progn
     xs))
+
+(define-tridash-function |head| (list) car)
+(define-tridash-function |tail| (list) cdr)

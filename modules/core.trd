@@ -141,7 +141,17 @@
 :extern(cons, head, tail)
 :extern(list, ..(xs))
 
-:export(cons, list)
+:extern(head, list)
+:attribute(head, strictness, list)
+
+:extern(tail, list)
+:attribute(tail, strictness, tail)
+
+
+nth(list, n) :
+    if (n = 0, head(list), nth(tail(list), n - 1))
+
+:export(cons, list, head, tail)
 
 
 ### Standard Library
