@@ -718,6 +718,16 @@
         (is (resolve (call-tridash-meta-node f '(10 4))) 45)
         (is (resolve (call-tridash-meta-node f '(4 10))) 33))))
 
+  (subtest "Nested Meta-Nodes"
+    (with-module-table modules
+      (build-core-module)
+      (build ":import(core)"
+             "f(x, y, z) : { g(n) : n - sum; x + y -> sum; g(z) }")
+
+      (with-nodes ((f "f")) modules
+        (is (resolve (call-tridash-meta-node f '(1 2 3))) 0)
+        (is (resolve (call-tridash-meta-node f '(2 3 7))) 2))))
+
   (subtest "Higher Order Meta-Nodes"
     (subtest "No Outer-Node references"
       (with-module-table modules

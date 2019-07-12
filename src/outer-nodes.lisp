@@ -44,6 +44,9 @@
            (visited? (meta-node)
              (memberp meta-node visited)))
 
+      ;; Ensure meta-node has been built
+      (build-meta-node meta-node)
+
       (doseq (meta-node-ref meta-node-references)
         (unless (visited? meta-node-ref)
           (multiple-value-bind (refs complete?)

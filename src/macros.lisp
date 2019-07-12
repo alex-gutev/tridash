@@ -68,16 +68,29 @@
    otherwise it is compiled to a CL function by
    COMPILE-META-NODE-FUNCTION."
 
-  (apply
-   (or (meta-node-cl-function meta-node)
-       (compile-meta-node-function meta-node))
-   args))
+  (let ((f (or (meta-node-cl-function meta-node)
+               (compile-meta-node-function meta-node))))
+
+    (with-slots (outer-nodes operands) meta-node
+      ;; Check that all values are provided for all the outer-nodes
+      ;; referenced by the meta-node.
+      (when (and (not (emptyp outer-nodes))
+                 (< (length args) (length operands)))
+        (error 'macro-outer-node-error :meta-node meta-node)))
+
+    (apply f args)))
+
 
 (defun compile-meta-node-function (meta-node)
   "Compiles the META-NODE meta-node to a CL function. Stores the
    compiled CL function in the :CL-FUNCTION attribute."
 
   (build-meta-node meta-node)
+
+  ;; Determine the meta-node's referenced outer-nodes
+  (outer-node-references meta-node)
+  (foreach #'add-outer-node-operands (meta-nodes (definition meta-node)))
+
   (finish-build-meta-node meta-node)
 
   (setf (meta-node-cl-function meta-node)
@@ -112,14 +125,16 @@
 
 
 (define-condition macro-outer-node-error (semantic-error)
-  ()
+  ((meta-node :initarg :meta-node
+              :reader meta-node
+              :documentation "Name of the meta-node."))
 
   (:documentation
-   "Error condition: Outer nodes referenced from a macro-node or a
-    meta-node used by a macro-node."))
+   "Error condition: Outer nodes referenced from a macro meta-node."))
 
 (defmethod print-object ((e macro-outer-node-error) stream)
-  (format stream "Cannot reference outer-nodes from macro-node or meta-node used by macro-node."))
+  (format stream "Macro meta-node ~a references nodes in the global scope."
+          (meta-node e)))
 
 
 
@@ -194,7 +209,19 @@
     (rest
      (list (list (eql +rest-argument+) arg))
 
-     (list (get-operand-var arg)))))
+     (list (get-operand-var arg)))
+
+    (outer
+     (and (cons (cons (eql +outer-node-argument+) _) _) args)
+     :from required
+
+     (cons '&optional (next args)))
+
+    (outer
+     (cons (and (cons (eql +outer-node-argument+) _) arg) rest)
+     :from (optional outer rest)
+
+     (cons (get-operand-var arg) (next rest)))))
 
 
 (defgeneric tridash->cl (expression &key &allow-other-keys)
@@ -298,19 +325,20 @@
   (with-struct-slots meta-node-ref- (node optional outer-nodes)
       ref
 
-    (when (or outer-nodes (some #'has-nodes? optional))
-      (error 'macro-outer-node-error))
-
     (match node
       ((external-meta-node name)
        `#',(external-meta-node-cl-function name))
 
       ((type meta-node)
        (with-gensyms (args)
-         `#'(lambda (&rest ,args)
-              (check-arity ,node ,args)
-              (call-tridash-meta-node
-               ,node ,(make-meta-node-arg-list node args))))))))
+         (let ((fn-args (make-meta-node-arg-list node args)))
+           `#'(lambda (&rest ,args)
+                (check-arity ,node ,args)
+                (call-tridash-meta-node
+                 ,node
+                 ,(if outer-nodes
+                      `(append ,fn-args (list ,@(map #'tridash->cl outer-nodes)))
+                      fn-args)))))))))
 
 (defun has-nodes? (expression)
   "Checks whether EXPRESSION references any nodes."
