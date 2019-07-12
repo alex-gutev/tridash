@@ -131,10 +131,10 @@
      (meta-node-ref-node ref)
 
      :optional
-     (map (curry #'map-expression! fn) (meta-node-ref-optional ref))
+     (map fn (meta-node-ref-optional ref))
 
      :outer-nodes
-     (map (curry #'map-expression! fn) (meta-node-ref-outer-nodes ref))))
+     (map fn (meta-node-ref-outer-nodes ref))))
 
   (:method (fn (list argument-list))
     (->> list
