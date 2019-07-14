@@ -53,11 +53,18 @@
   "Creates the macro-node function, which compiles META-NODE to a CL
    function, calls the function and processes the result."
 
-  (lambda (operator operands module)
-    (declare (ignore operator))
-    (-> (call-tridash-meta-node meta-node operands)
-        resolve
-        (process-declaration module :level *level*))))
+  (let ((num-args (1- (length (operands meta-node))))
+        (max-args (cdr (meta-node-arity meta-node))))
+
+    (lambda (operator operands module)
+      (declare (ignore operator))
+      (check-arity meta-node operands)
+
+      (-<> (group-rest-args operands num-args)
+           (if (null max-args) <> operands)
+           (call-tridash-meta-node meta-node <>)
+           resolve
+           (process-declaration module :level *level*)))))
 
 
 ;;;; Compiling CL function from Meta-Node

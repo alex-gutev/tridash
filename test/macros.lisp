@@ -926,7 +926,77 @@
           modules
 
         (has-value-function (a b) a!-b `(,if ,a ,b nil))
-        (test-simple-binding a!-b out)))))
+        (test-simple-binding a!-b out))))
+
+  (subtest "Arity Checks"
+    (subtest "Required Only"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core, *, list)"
+
+               "square(x) : list(:quote(*), x, x)"
+               ":attribute(square, macro, 1)")
+
+        (is-error (build "square(x, y) -> out") arity-error)))
+
+    (subtest "Optional Arguments"
+      (subtest "Not Enough"
+       (with-module-table modules
+         (build-core-module)
+         (build ":import(core, +, list)"
+
+                "add3(x, y, z : 1) : list(:quote(+), x, list(:quote(+), y, z))"
+                ":attribute(add3, macro, 1)")
+
+         (is-error (build "add3(x)") arity-error)))
+
+      (subtest "Too Many"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core, +, list)"
+
+                 "1+(n, d : 1) : list(:quote(+), x, d)"
+                 ":attribute(1+, macro, 1)")
+
+          (is-error (build "1+(x, y, z)") arity-error)))
+
+      (subtest "Rest Arguments"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core, cons, list)"
+                 "make-list(x, ..(xs)) : cons(:quote(list), cons(x, xs))"
+                 ":attribute(make-list, macro, 1)"
+
+                 "make-list(x, y, z) -> output"
+
+                 ":attribute(x, input, 1)"
+                 ":attribute(y, input, 1)"
+                 ":attribute(z, input, 1)")
+
+          (with-nodes ((x "x") (y "y") (z "z")
+                       (list "list")
+                       (output "output"))
+              (finish-build)
+
+            (has-value-function
+             (x y z)
+             output
+
+             `(,list ,(argument-list (list x y z)))))))
+
+      (subtest "Rest Arguments and Outer Nodes"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core, cons, list)"
+                 "make-list(x, ..(xs)) : cons(:quote(list), cons(x, cons(y, xs)))"
+                 ":attribute(make-list, macro, 1)"
+
+                 ":attribute(a, input, 1)"
+                 ":attribute(b, input, 1)"
+                 ":attribute(c, input, 1)"
+                 ":attribute(y, input, 1)")
+
+          (is-error (build "make-list(a, b, c) -> output") semantic-error))))))
 
 (subtest "Target Node Transforms"
   (subtest "Single Argument"
