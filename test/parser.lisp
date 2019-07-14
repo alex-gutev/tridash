@@ -105,13 +105,13 @@
         '!|arg|))
 
       (let ((ops (alist-hash-map
-                  `((,+bind-operator+ 10 :right)
+                  `((,(s "->") 10 :right)
                     (,(s "+") 20 :left)
                     (,(s "-") 20 :left)
                     (,(s "*") 50 :right)
                     (,(s "/") 50 :left)
                     (:open-paren 200)
-                    (,+subnode-operator+ 500 :left)))))
+                    (,(s ".") 500 :left)))))
         (test-parser
          #?"mod.fn(arg1, arg2) + fn2(arg) -\n node1 * node2"
          (decls
@@ -149,7 +149,8 @@
         (test-parser
          #?"a -> b -> \n c -> d\n"
          (decls
-          '(!-> !\a (!-> !\b (!-> !\c !\d))))))
+          '(!-> !\a (!-> !\b (!-> !\c !\d))))
+         ops))
 
       (subtest "Node Lists"
         (test-parser

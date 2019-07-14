@@ -24,25 +24,6 @@
 (in-readtable cut-syntax)
 
 
-;;;; Builder State
-
-(defparameter *level* 0
-  "The nesting level of the declaration currently being processed. 0
-   indicates the top-level.")
-
-(defvar *meta-node* nil
-  "The meta-node which is currently being built. NIL when the global
-   module is being built.")
-
-(defvar *source-node* nil
-  "If the node currently being processed appears as the target of a
-   binding, this variable is bound to the source node of the binding,
-   otherwise it is NIL.")
-
-(defvar *functor-module* nil
-  "The module in which functor nodes are created.")
-
-
 ;;;; Utility Functions and Macros
 
 (defmacro at-source (&body body)
@@ -439,7 +420,7 @@
          (let ((from-module (get-module from-module)))
            (if nodes
                (foreach (rcurry #'import-node from-module module) nodes)
-               (foreach (rcurry #'import-node from-module module) (map-keys (public-nodes from-module))))))))))
+               (import-all-nodes from-module module))))))))
 
 (defmethod process-functor ((operator (eql +export-operator+)) args module)
   "Adds nodes to the PUBLIC-NODES list of MODULE."

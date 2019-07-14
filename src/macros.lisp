@@ -64,7 +64,7 @@
            (if (null max-args) <> operands)
            (call-tridash-meta-node meta-node <>)
            resolve
-           (process-declaration module :level *level*)))))
+           (process-macro-expansion module)))))
 
 
 ;;;; Compiling CL function from Meta-Node

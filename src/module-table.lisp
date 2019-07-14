@@ -47,7 +47,9 @@
    :INIT. Creates the builtin module."
 
   (with-slots (modules current-module) module-table
-    (create-builtin-module module-table)
+    (-> (create-builtin-module module-table)
+        (import-all-nodes current-module))
+
     (setf (get :init modules) current-module)))
 
 (defun change-module (module &optional (modules *global-module-table*))
@@ -89,6 +91,18 @@
 
   "Map of meta-nodes which comprise the language primitives.")
 
+(defconstant +core-macro-nodes+
+  `((-> ,+bind-operator+ 10 :right)
+    (\: ,+def-operator+ 5 :right)
+    (|.| ,+subnode-operator+ 1000 :left)
+    (|..| ,+outer-operator+)
+    (prog ,+list-operator+))
+
+  "List of core macro nodes where each a element is a list with the
+   first item being the node's identifier and the second item being
+   the operator to which the macro node expands to.")
+
+
 (defun create-builtin-module (modules)
   "Creates the builtin module."
 
@@ -97,12 +111,15 @@
           (?->-node (add-external-meta-node (id-symbol "?->") builtin)))
 
       (add-core-nodes builtin)
+      (add-core-macros builtin)
 
       (setf (node-macro-function case-node) #'case-macro-function)
       (export-node (id-symbol "case") builtin)
 
       (setf (node-macro-function ?->-node) #'?->-macro-function)
-      (export-node (id-symbol "?->") builtin))))
+      (export-node (id-symbol "?->") builtin)
+
+      builtin)))
 
 (defun add-core-nodes (builtin)
   "Adds the nodes in *CORE-META-NODES* to the module BUILTIN, and its
@@ -111,6 +128,28 @@
   (doseq (node (map-values *core-meta-nodes*))
     (add-meta-node (name node) node builtin)
     (export-node (name node) builtin)))
+
+(defun add-core-macros (builtin)
+  "Adds the core macro nodes in +CORE-MACRO-NODES+ to the module
+   BUILTIN."
+
+  (doseq ((node operator &rest op-info) +core-macro-nodes+)
+    (let ((meta-node  (macro-node node nil operator)))
+      (with-slots (name) meta-node
+        (add-meta-node name meta-node builtin)
+        (export-node name builtin)
+
+        (when op-info
+          (add-core-operator name op-info builtin))))))
+
+(defun add-core-operator (name op-info builtin)
+  "Adds the identifier NAME to the operator table of module
+   BUILTIN. OP-INFO is a list of the operator precedence and
+   associativity."
+
+  (destructuring-bind (precedence &optional (assoc :left)) op-info
+    (add-operator name precedence assoc (operator-nodes builtin))))
+
 
 (defun case-macro-function (operator operands module)
   "Case macro function. Transforms the case expression into a series
@@ -121,7 +160,7 @@
   (let ((if-node (list +in-module-operator+ (id-symbol "core") (id-symbol "if"))))
     (flet ((make-if (case expr)
              (match case
-               ((list (eq +def-operator+) cond node)
+               ((list (eq (id-symbol ":")) cond node)
                 (list if-node cond node expr))
 
                (_ case))))

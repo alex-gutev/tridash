@@ -22,10 +22,10 @@
 
 ;;; Basic Operators
 
-(defconstant +bind-operator+ (id-symbol "->")
+(defconstant +bind-operator+ :bind
   "Operator for establishing bindings between nodes.")
 
-(defconstant +def-operator+ (id-symbol ":")
+(defconstant +def-operator+ :define
   "Operator for defining meta-nodes.")
 
 (defconstant +op-operator+ (id-symbol ":op")
@@ -44,10 +44,10 @@
 
 ;;; Subnodes and Outer Nodes.
 
-(defconstant +outer-operator+ (id-symbol "..")
+(defconstant +outer-operator+ :outer
   "Special operator for referencing nodes defined in an outer scope.")
 
-(defconstant +subnode-operator+ (id-symbol ".")
+(defconstant +subnode-operator+ :subnode
   "Special operator for accessing sub-nodes of a node.")
 
 
@@ -61,12 +61,6 @@
 
 (defconstant +attribute-operator+ (id-symbol ":attribute")
   "Special operator for setting node attributes.")
-
-
-;;; Conditionals
-
-(defconstant +case-operator+ (id-symbol "case")
-  "Case conditional operator.")
 
 
 ;;; Modules
@@ -127,9 +121,6 @@
 
 (defconstant +infix-operators+
   (alist-hash-map
-   `((,+bind-operator+ 10 :right)
-     (,+def-operator+ 5 :right)
-     (:open-paren 900)
-     (,+subnode-operator+ 1000 :left)))
+   `((:open-paren 900)))
 
   "Initial infix operator table.")

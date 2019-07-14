@@ -203,16 +203,16 @@
 
            (get-node-name (node)
              (match node
-               ((list "." id attribute)
-                `("." ,(get-node-name id) ,attribute))
+               ((list (eql +subnode-operator+) id attribute)
+                (list +subnode-operator+ (get-node-name id) attribute))
 
                (name
-                `("." ,(macroexpand 'html-component-node-id env) ,name))))
+                (list +subnode-operator+ (macroexpand 'html-component-node-id env) name))))
 
            (make-html-test (node)
              (ematch node
                ((list node
-                      (or (list "." id attribute)
+                      (or (list (eql +subnode-operator+) id attribute)
                           id)
                       tag)
                 `(test-html-node ,node ,id ,tag ,attribute)))))
@@ -305,7 +305,7 @@
     (with-nodes ((name "name"))
         modules
       (with-html-nodes ((input-name "input-name" "input")
-                        (input-name.value ("." "input-name" "value") "input"))
+                        (input-name.value (:subnode "input-name" "value") "input"))
           modules
 
         (test-binding input-name.value name)
@@ -318,9 +318,9 @@
   (html-file-test (modules "main" #p"test/builders/html/input/test2.html")
     (with-nodes ((first "first") (last "last")) modules
       (with-html-nodes ((input-first "input-first" "input")
-                        (input-first.value ("." "input-first" "value") "input")
+                        (input-first.value (:subnode "input-first" "value") "input")
                         (input-last "input-last" "input")
-                        (input-last.value ("." "input-last" "value") "input"))
+                        (input-last.value (:subnode "input-last" "value") "input"))
           modules
 
         (test-binding input-first.value first)
@@ -336,10 +336,10 @@
   (html-file-test (modules "main" #p"test/builders/html/input/test3.html")
     (with-nodes ((name "name")) modules
       (with-html-nodes ((input-name "input-name" "input")
-                        (input-name.value ("." "input-name" "value") "input")
+                        (input-name.value (:subnode "input-name" "value") "input")
 
                         (heading "heading-name" "h1")
-                        (heading.content ("." "heading-name" "textContent") "h1"))
+                        (heading.content (:subnode "heading-name" "textContent") "h1"))
           modules
 
         (test-binding input-name.value name)
@@ -354,9 +354,9 @@
 (subtest "Inline Functors"
   (html-file-test (modules "main" #p"test/builders/html/input/test4.html" "modules/core.trd")
     (with-nodes ((a ((":in" "core" "int") "a")) (b ((":in" "core" "int") "b")) (a+b ((":in" "core" "+") "a" "b"))) modules
-      (with-html-nodes ((input-a.value ("." "input-a" "value") "input")
-                        (input-b.value ("." "input-b" "value") "input")
-                        (sum.value ("." "sum" "value") "input"))
+      (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
+                        (input-b.value (:subnode "input-b" "value") "input")
+                        (sum.value (:subnode "sum" "value") "input"))
           modules
 
         (test-binding input-a.value a)
@@ -374,9 +374,9 @@
                    (a+b ((":in" "core" "+") "a" "b")) (sum "sum"))
           modules
 
-        (with-html-nodes ((input-a.value ("." "input-a" "value") "input")
-                          (input-b.value ("." "input-b" "value") "input")
-                          (sum.value ("." "sum" "value") "input"))
+        (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
+                          (input-b.value (:subnode "input-b" "value") "input")
+                          (sum.value (:subnode "sum" "value") "input"))
             modules
 
           (test-binding input-a.value a)
@@ -395,8 +395,8 @@
                    (a+b ((":in" "core" "+") "a" "b")) (sum "sum"))
           modules
 
-        (with-html-nodes ((input-a.value ("." "input-a" "value") "input")
-                          (input-b.value ("." "input-b" "value") "input"))
+        (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
+                          (input-b.value (:subnode "input-b" "value") "input"))
             modules
 
           (test-binding input-a.value a)
@@ -418,8 +418,8 @@
   (html-file-test (modules "main" #p"test/builders/html/input/test7.html" "modules/core.trd")
     (let ((modules (finish-build-graph modules)))
       (with-nodes ((result "result")) modules
-        (with-html-nodes ((input-a.value ("." "input-a" "value") "input")
-                          (input-b.value ("." "input-b" "value") "input"))
+        (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
+                          (input-b.value (:subnode "input-b" "value") "input"))
             modules
 
           (test-binding input-a.value result)
@@ -428,8 +428,8 @@
   (html-file-test (modules ("mod" "main") #p"test/builders/html/input/test8.html" "modules/core.trd")
     (let ((modules (finish-build-graph modules)))
       (with-nodes ((result "result")) modules
-        (with-html-nodes ((input-a.value ("." "input-a" "value") "input")
-                          (input-b.value ("." "input-b" "value") "input"))
+        (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
+                          (input-b.value (:subnode "input-b" "value") "input"))
             modules
 
           (test-binding input-a.value result)

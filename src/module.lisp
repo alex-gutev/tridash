@@ -234,6 +234,11 @@
 
 ;;; Importing and Exporting Nodes
 
+(defun import-all-nodes (src dest)
+  "Imports all exported nodes from module SRC, into module DEST."
+
+  (foreach (rcurry #'import-node src dest) (map-keys (public-nodes src))))
+
 (defun import-node (name src dest)
   "Import node NAME from SRC into DEST."
 

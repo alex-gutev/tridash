@@ -103,3 +103,22 @@
   (:method ((node t) (attribute t) (value t) (module t))
     "Pass-through method. Returns the attribute."
     value))
+
+
+;;;; Builder State
+
+(defparameter *level* 0
+  "The nesting level of the declaration currently being processed. 0
+   indicates the top-level.")
+
+(defvar *meta-node* nil
+  "The meta-node which is currently being built. NIL when the global
+   module is being built.")
+
+(defvar *source-node* nil
+  "If the node currently being processed appears as the target of a
+   binding, this variable is bound to the source node of the binding,
+   otherwise it is NIL.")
+
+(defvar *functor-module* nil
+  "The module in which functor nodes are created.")

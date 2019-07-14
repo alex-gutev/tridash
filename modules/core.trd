@@ -15,6 +15,7 @@
 
 :op(., 1000, left)
 
+:export(->, :, .., .)
 
 ## Arithmetic Operators
 

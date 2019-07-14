@@ -150,6 +150,28 @@
   (alist-hash-map (map #L(cons (first %1) (apply #'external-meta-node %1)) defs)))
 
 
+(defun macro-node (name operands operator)
+  "Creates an `EXTERNAL-META-NODE', with identifier NAME, which has a
+   macro function that expands to a functor declaration with operator
+   OPERATOR."
+
+  (aprog1 (external-meta-node name operands)
+    (setf (node-macro-function it)
+          (lambda (op operands module)
+            (declare (ignore op))
+            (-> (cons operator operands)
+                (process-macro-expansion module))))))
+
+(defun process-macro-expansion (declaration module)
+  "Process DECLARATION, in module MODULE, which is assumed to be the
+   result of a macro expansion."
+
+  (process-declaration declaration
+                       module
+                       :level *level*
+                       :add-outer nil))
+
+
 ;;; Macro Functions
 
 (defun node-macro-function (meta-node)
@@ -189,10 +211,10 @@
 
 ;;; Operand Type Symbols
 
-(defconstant +optional-argument+ +def-operator+
+(defconstant +optional-argument+ (id-symbol ":")
   "Symbol indicating an optional argument.")
 
-(defconstant +rest-argument+ +outer-operator+
+(defconstant +rest-argument+ (id-symbol "..")
   "Symbol indicating a rest argument.")
 
 (defconstant +outer-node-argument+ 'ex

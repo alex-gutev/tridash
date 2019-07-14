@@ -505,7 +505,10 @@
     (with-module-table modules
       (build "a -> (b -> c)")
 
-      (with-nodes ((a "a") (b "b") (c "c") (b->c ("->" "b" "c"))) modules
+      (with-nodes ((a "a") (b "b") (c "c")
+                   (b->c (:bind "b" "c")))
+          modules
+
         (test-simple-binding a b->c :context a)
 
         (let ((*strict-test* nil))
@@ -585,11 +588,13 @@
     (subtest "With Target Node Cross Module"
       (with-module-table modules
         (build ":module(m1)"
+
                ":extern(add, x, y)"
                ":extern(reverse-add, sum)"
                ":attribute(add, target-node, reverse-add)"
 
                ":module(m2)"
+               ":import(builtin)"
                ":import(m1, add)"
 
                "input -> add(a, b)")
@@ -649,8 +654,8 @@
 
         (with-nodes ((b "b") (output "output")
 
-                     (cond1 ("->" ((":in" "core" "+") "a" "b") "output"))
-                     (cond2 ("->" ((":in" "core" "-") "a" "b") "output"))
+                     (cond1 (:bind ((":in" "core" "+") "a" "b") "output"))
+                     (cond2 (:bind ((":in" "core" "-") "a" "b") "output"))
 
                      (a+b ((":in" "core" "+") "a" "b"))
                      (a-b ((":in" "core" "-") "a" "b")))
@@ -682,8 +687,8 @@
 
         (with-nodes ((output "output")
 
-                     (cond1 ("->" ((":in" "core" "+") "a" "b") "output"))
-                     (cond2 ("->" ((":in" "core" "-") "a" "b") "output"))
+                     (cond1 (:bind ((":in" "core" "+") "a" "b") "output"))
+                     (cond2 (:bind ((":in" "core" "-") "a" "b") "output"))
 
                      (a+b ((":in" "core" "+") "a" "b"))
                      (a-b ((":in" "core" "-") "a" "b")))
@@ -733,7 +738,7 @@
         (build ":context(a, c1).field -> out")
 
         (with-nodes ((a "a") (out "out")
-                     (a.field ("." "a" "field")))
+                     (a.field (:subnode "a" "field")))
             modules
 
           (test-simple-binding a.field out)
@@ -755,7 +760,7 @@
         (build "in -> :context(a, c1).field")
 
         (with-nodes ((in "in") (a "a")
-                     (a.field ("." "a" "field")))
+                     (a.field (:subnode "a" "field")))
             modules
 
           (test-simple-binding in a.field)
@@ -876,12 +881,9 @@
           (test-error invalid-operand-list-error "f(x, ..(g(y))) : x"))
 
         (subtest "Redefining Special Operators"
-          (test-error redefine-special-operator-error "->(x, y) : fn(x, y)")
-          (test-error redefine-special-operator-error ":(x, y) : z")
+          (test-error redefine-special-operator-error ":context(x) : x")
           (test-error redefine-special-operator-error ":extern(x) : x")
           (test-error redefine-special-operator-error ":op(a, b) : f(b, a)")
-          (test-error redefine-special-operator-error "..(x,z) : g(x, z)")
-          (test-error redefine-special-operator-error ".(a) : h(a)")
           (test-error redefine-special-operator-error ":attribute(m, n) : f(m,n)")
           (test-error redefine-special-operator-error ":module(m) : m")
           (test-error redefine-special-operator-error ":import(x) : x")
@@ -957,12 +959,9 @@
           (test-error invalid-operand-list-error ":extern(f, x, ..(g(y)))"))
 
         (subtest "Redefining Special Operators"
-          (test-error redefine-special-operator-error ":extern(->)")
-          (test-error redefine-special-operator-error ":extern(:)")
+          (test-error redefine-special-operator-error ":extern(:context)")
           (test-error redefine-special-operator-error ":extern(:extern)")
           (test-error redefine-special-operator-error ":extern(:op)")
-          (test-error redefine-special-operator-error ":extern(..)")
-          (test-error redefine-special-operator-error ":extern(.)")
           (test-error redefine-special-operator-error ":extern(:attribute)")
           (test-error redefine-special-operator-error ":extern(:module)")
           (test-error redefine-special-operator-error ":extern(:import)")
@@ -1352,7 +1351,7 @@
         (build "x -> a.first; y -> a.last; a.last -> y")
 
         (with-nodes ((x "x") (y "y") (a "a")
-                     (a.first ("." "a" "first")) (a.last ("." "a" "last")))
+                     (a.first (:subnode "a" "first")) (a.last (:subnode "a" "last")))
             modules
 
           (test-object-fn a (list "first" a.first) (list "last" a.last))
@@ -1370,7 +1369,7 @@
         (with-nodes ((person-fn "Person")
                      (first "first") (last "last")
                      (person ("Person" "first" "last"))
-                     (person.first ("." ("Person" "first" "last") "first"))
+                     (person.first (:subnode ("Person" "first" "last") "first"))
                      (name "name"))
             modules
 
@@ -1380,17 +1379,19 @@
 
       (with-module-table modules
         (build ":module(mod1)"
+               ":import(builtin)"
                "x -> a.first"
 
                ":module(mod2)"
+               ":import(builtin)"
                ":use(mod1)"
                "y -> mod1.a.second")
 
         (with-modules ((mod1 "mod1") (mod2 "mod2")) modules
           (with-nodes ((a "a")
                        (x "x")
-                       (a.first ("." "a" "first"))
-                       (a.second ("." "a" "second")))
+                       (a.first (:subnode "a" "first"))
+                       (a.second (:subnode "a" "second")))
               mod1
 
             (with-nodes ((y "y")) mod2
@@ -1405,7 +1406,7 @@
     (with-module-table modules
       (build "x;y"
              ":module(my-mod); a; b"
-             ":module(my-mod); +(x,y) : add(x,y); :op(+, 50, left)"
+             ":module(my-mod); :import(builtin); +(x,y) : add(x,y); :op(+, 50, left)"
              ":module(my-mod); :export(a,+)")
 
       (with-modules ((init :init) (my-mod "my-mod"))
@@ -1414,7 +1415,12 @@
 
         (with-nodes ((my-mod.a "a") (my-mod.b "b") (+ "+")) my-mod
           (subtest "Test :use operator"
-            (build ":module(mod2); :use(my-mod); my-mod.a -> a; my-mod.+(n,m)")
+            (build ":module(mod2)"
+                   ":import(builtin)"
+                   ":use(my-mod)"
+
+                   "my-mod.a -> a"
+                   "my-mod.+(n,m)")
 
             (with-modules ((mod2 "mod2")) modules
               (with-nodes ((a "a") (n "n") (m "m"))
@@ -1426,7 +1432,12 @@
                   (test-node-function n+m + + n m)))))
 
           (subtest "Test :alias operator"
-            (build ":module(mod3); :alias(my-mod, m); m.a -> a; m.+(j,k)")
+            (build ":module(mod3)"
+                   ":import(builtin)"
+                   ":alias(my-mod, m)"
+
+                   "m.a -> a"
+                   "m.+(j,k)")
 
             (with-modules ((mod3 "mod3")) modules
               (with-nodes ((a "a") (j "j") (k "k"))
@@ -1483,13 +1494,17 @@
                   (isnt b my-mod.b :test #'eq)))))
 
           (subtest "Cross-Module Conditionally Active Bindings"
-            (build ":module(mod7); :import(my-mod, a, b); a -> (b -> c)")
+            (build ":module(mod7)"
+                   ":import(builtin)"
+                   ":import(my-mod, a, b)"
+
+                   "a -> (b -> c)")
 
             (with-modules ((mod7 "mod7")) modules
               (with-nodes ((a "a") (b "b") (c "c"))
                   mod7
 
-                (with-nodes ((b->c ("->" (":in" "my-mod" "b") (":in" "mod7" "c"))))
+                (with-nodes ((b->c (:bind (":in" "my-mod" "b") (":in" "mod7" "c"))))
                     init
 
                   (test-simple-binding a b->c :context a)
@@ -1511,7 +1526,8 @@
           (is-error (build ":module(mod3); j + k") 'declaration-parse-error)
           (is-error (build ":module(mod3); m.z") 'non-existent-node-error)
 
-          (is-error (build ":module(mod4); my-mod.+(a,b)") 'non-existent-node-error)
+          (is-error (build ":module(mod4); :import(builtin); my-mod.+(a,b)")
+                    'non-existent-node-error)
           (is-error (build ":module(mod4); :in(my-mod, z)") 'non-existent-node-error)
 
           (test-error non-existent-module-error ":use(no-such-module)")
@@ -1532,7 +1548,7 @@
 
         (subtest ":use Operator Syntax"
           (test-error invalid-arguments-error ":use(1,2,3)")
-          (test-top-level-only ":use(m1)" ":module(m1)" ":module(m2)"))
+          (test-top-level-only ":use(m1)" ":module(m1)" ":module(m2); :import(builtin)"))
 
         (subtest ":alias Operator Syntax"
           (test-error invalid-arguments-error ":alias()")
@@ -1542,14 +1558,14 @@
           (test-error invalid-arguments-error
                       ":module(m1); :module(m2); :alias(m1, m, x, y)")
 
-          (test-top-level-only ":alias(mod, m)" ":module(mod)" ":module(m1)"))
+          (test-top-level-only ":alias(mod, m)" ":module(mod)" ":module(m1); :import(builtin)"))
 
         (subtest ":import Operator Syntax"
           (test-error invalid-arguments-error ":import()")
           (test-error invalid-arguments-error ":import(1)")
 
-          (test-top-level-only ":import(mod)" ":module(mod)" ":module(m1)")
-          (test-top-level-only ":import(mod, x)" ":module(mod); x" ":module(m1)"))
+          (test-top-level-only ":import(mod)" ":module(mod)" ":module(m1); :import(builtin)")
+          (test-top-level-only ":import(mod, x)" ":module(mod); x" ":module(m1); :import(builtin)"))
 
         (subtest ":export Operator Syntax"
           (test-error semantic-error ":export(1, 2, 3)")
@@ -1572,9 +1588,17 @@
                       "add(m1, x)")
 
           (test-error module-node-reference-error
-                      ":module(m1); :module(m2); :use(m1); m1 -> x")
+                      ":module(m1)"
+                      ":module(m2)"
+                      ":import(builtin)"
+                      ":use(m1)"
+                      "m1 -> x")
           (test-error target-node-error
-                      ":module(m1); :module(m2); :use(m1); x -> m1"))))))
+                      ":module(m1)"
+                      ":module(m2)"
+                      ":import(builtin)"
+                      ":use(m1)"
+                      "x -> m1"))))))
 
 (subtest "Node Coalescer"
   (subtest "Simple Nodes"
@@ -1734,13 +1758,13 @@
         (let ((table (finish-build)))
           (test-not-nodes table
                           '("parse" "in1")
-                          '("." "p" "value")
-                          '("not" ("." "p" "fail"))
-                          '("->" ("." "p" "value") "a")
-                          '("->" "in2" "b"))
+                          '(:subnode "p" "value")
+                          '("not" (:subnode "p" "fail"))
+                          '(:bind (:subnode "p" "value") "a")
+                          '(:bind "in2" "b"))
 
           (with-nodes ((in1 "in1") (in2 "in2") (p "p")
-                       (p.fail ("." "p" "fail"))
+                       (p.fail (:subnode "p" "fail"))
                        (a "a") (b "b")
 
                        (parse "parse") (not "not"))
@@ -1789,10 +1813,17 @@
   (subtest "Cross-Module Bindings"
     (subtest "Simple Bindings"
       (with-module-table modules
-        (build ":module(m1); a -> b; b -> c; c -> d"
+        (build ":module(m1)"
+               ":import(builtin)"
+
+               "a -> b; b -> c; c -> d"
                ":attribute(a, input, 1)")
 
-        (build ":module(m2); :use(m1); m1.b -> a; b -> c; c -> d"
+        (build ":module(m2)"
+               ":import(builtin)"
+               ":use(m1)"
+
+               "m1.b -> a; b -> c; c -> d"
                ":attribute(b, input, 1)")
 
         (let ((table (finish-build)))
@@ -1809,10 +1840,16 @@
 
     (subtest "Functor Nodes"
       (with-module-table modules
-        (build ":module(m1); in -> a; in -> b"
+        (build ":module(m1)"
+               ":import(builtin)"
+
+               "in -> a; in -> b"
                ":attribute(in, input, 1)")
 
-        (build ":module(m2); :use(m1);"
+        (build ":module(m2)"
+               ":import(builtin)"
+               ":use(m1)"
+
                ":extern(+, x, y); :op(+, 50, left)"
                "m1.a + m1.b + c -> output"
                ":attribute(c, input, 1)")
@@ -1847,8 +1884,8 @@
                         "p"
                         '("NaN?" "p")
                         "self"
-                        '("." "self" "value")
-                        '("." "self" "fail"))
+                        '(:subnode "self" "value")
+                        '(:subnode "self" "fail"))
 
         (with-nodes ((in "in") (out "out")
                      (parse "parse") (nan? "NaN?"))
@@ -1881,7 +1918,7 @@
                         "b"
                         "c"
                         '("even?" ("add" "a" 1))
-                        '("->" ("add" "a" 1) "b")
+                        '(:bind ("add" "a" 1) "b")
                         '("add" "c" "d"))
 
         (with-nodes ((a "a") (d "d") (out "out")
@@ -2143,39 +2180,17 @@
   (subtest "Cross-Module Constant Folding"
     (with-module-table modules
       (build ":module(m1)"
+             ":import(builtin)"
              "1 -> constant"
              "constant -> param"
 
              ":module(m2)"
+             ":import(builtin)"
              ":use(m1)"
              ":extern(add, x, y)"
 
              "2 -> param"
              "add(param, m1.param) -> sum"
-             "add(a, sum) -> b"
-             "b -> c"
-
-             ":attribute(a, input, 1)")
-
-      (let ((table (finish-build)))
-        (test-not-nodes table "constant" "param" "sum" "b")
-
-        (with-nodes ((add "add") (a "a") (c "c")) table
-          (has-value-function (a) c `(,add ,a (,add 2 1))))))
-
-    ;; Switch module names to test that constant folding is not
-    ;; dependent on the way the modules are ordered
-    (with-module-table modules
-      (build ":module(m2)"
-             "1 -> constant"
-             "constant -> param"
-
-             ":module(m1)"
-             ":use(m2)"
-             ":extern(add, x, y)"
-
-             "2 -> param"
-             "add(param, m2.param) -> sum"
              "add(a, sum) -> b"
              "b -> c"
 
@@ -2207,12 +2222,14 @@
       (subtest "Cross-Module Bindings"
         (with-module-table modules
           (build ":module(m1)"
+                 ":import(builtin)"
                  "a -> b"
                  "b -> c"
 
                  ":attribute(a, input, 1)"
 
                  ":module(m2)"
+                 ":import(builtin)"
                  ":use(m1)"
 
                  "m1.c -> d"
@@ -2220,26 +2237,6 @@
 
                  "d -> out1"
                  "d -> m1.b")
-
-          (is-error (finish-build) 'node-cycle-error))
-
-        ;; Switch module names to test a possibly different module
-        ;; order.
-        (with-module-table modules
-          (build ":module(m2)"
-                 "a -> b"
-                 "b -> c"
-
-                 ":attribute(a, input, 1)"
-
-                 ":module(m1)"
-                 ":use(m2)"
-
-                 "m2.c -> d"
-                 "m2.c -> out2"
-
-                 "d -> out1"
-                 "d -> m2.b")
 
           (is-error (finish-build) 'node-cycle-error))))
 
@@ -2266,6 +2263,7 @@
                  ":attribute(a, input, 1)"
 
                  ":module(m2)"
+                 ":import(builtin)"
                  ":use(m1)"
 
                  ":extern(add, x, y)"
@@ -2276,29 +2274,6 @@
 
                  "d -> out2"
                  "d -> m1.a"
-
-                 ":attribute(b, input, 1)")
-
-          (is-error (finish-build) 'node-cycle-error))
-
-        ;; Switch module names to test possibly different module
-        ;; order
-        (with-module-table modules
-          (build ":module(m2)"
-                 "a; c"
-                 ":attribute(a, input, 1)"
-
-                 ":module(m1)"
-                 ":use(m2)"
-
-                 ":extern(add, x, y)"
-                 "add(m2.a, b) -> m2.c"
-
-                 "m2.c -> out1"
-                 "m2.c -> d"
-
-                 "d -> out2"
-                 "d -> m2.a"
 
                  ":attribute(b, input, 1)")
 
@@ -2318,29 +2293,16 @@
       (subtest "Cross-Module Bindings"
         (with-module-table modules
           (build ":module(m1)"
+                 ":import(builtin)"
                  "a -> d"
                  ":attribute(a, input, 1)"
 
                  ":module(m2)"
+                 ":import(builtin)"
                  ":use(m1)"
 
                  "m1.a -> b; b -> c; c -> m1.d"
                  "m1.d -> e")
-
-          (is-error (finish-build) 'ambiguous-context-error))
-
-        ;; Switch module names to test possibly different module
-        ;; order.
-        (with-module-table modules
-          (build ":module(m2)"
-                 "a -> d"
-                 ":attribute(a, input, 1)"
-
-                 ":module(m1)"
-                 ":use(m2)"
-
-                 "m2.a -> b; b -> c; c -> m2.d"
-                 "m2.d -> e")
 
           (is-error (finish-build) 'ambiguous-context-error))))
 
@@ -2362,29 +2324,13 @@
                  ":attribute(b, input, 1)"
 
                  ":module(m2)"
+                 ":import(builtin)"
                  ":use(m1)"
+
                  ":extern(add, x, y)"
 
                  "add(m1.a, m1.b) -> d"
                  "m1.a -> c; c -> d"
-                 "d -> e")
-
-          (is-error (finish-build) 'ambiguous-context-error))
-
-        ;; Switch module names to test possibly different module
-        ;; order.
-        (with-module-table modules
-          (build ":module(m2)"
-                 "a; b;"
-                 ":attribute(a, input, 1)"
-                 ":attribute(b, input, 1)"
-
-                 ":module(m1)"
-                 ":use(m2)"
-                 ":extern(add, x, y)"
-
-                 "add(m2.a, m2.b) -> d"
-                 "m2.a -> c; c -> d"
                  "d -> e")
 
           (is-error (finish-build) 'ambiguous-context-error))))))
@@ -2477,7 +2423,9 @@
                ":extern(add, x, y)"
 
                ":module(m2)"
+               ":import(builtin)"
                ":import(m1, add)"
+
                "1+(n) : add(n, 1)")
 
         (let ((table (finish-build)))
@@ -2833,6 +2781,7 @@
                    ":attribute(in2, input, 1)"
 
                    ":module(m3)"
+                   ":import(core, ->, .)"
                    ":import(m2, dict)"
 
                    "in1 -> dict.x"
@@ -2841,7 +2790,7 @@
             (let ((table (finish-build)))
               (with-nodes ((+ "+") (addx "addx")
                            (in1 "in1") (in2 "in2")
-                           (dict "dict") (dict.x ("." "dict" "x"))
+                           (dict "dict") (dict.x (:subnode "dict" "x"))
                            (out1 "out1"))
                   table
 
