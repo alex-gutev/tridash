@@ -918,7 +918,7 @@
 
              "a !- b -> out")
 
-      (test-not-nodes '("!-" "a" "b"))
+      (test-not-nodes modules '("!-" "a" "b"))
 
       (with-nodes ((a "a") (b "b") (out "out")
                    (a!-b ((":in" "builtin" "if") "a" "b"))
