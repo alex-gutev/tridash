@@ -188,6 +188,10 @@
 
   (with-slots (name definition) meta-node
     (when (typep definition 'module)
+      ;; Add referenced outer-nodes as operands of each instance of each
+      ;; meta-node.
+      (foreach #'add-outer-node-operands (meta-nodes definition))
+
       (setf definition (flatten-meta-node definition))
 
       (nadjoin meta-node (nodes definition))

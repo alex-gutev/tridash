@@ -181,7 +181,7 @@
          :test #'expression=)))
 
 
-(plan 3)
+(plan 4)
 
 (subtest "Tridash to CL Compilation"
   (subtest "Functor Expressions"
@@ -941,14 +941,14 @@
 
     (subtest "Optional Arguments"
       (subtest "Not Enough"
-       (with-module-table modules
-         (build-core-module)
-         (build ":import(core, +, list)"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core, +, list)"
 
-                "add3(x, y, z : 1) : list(:quote(+), x, list(:quote(+), y, z))"
-                ":attribute(add3, macro, 1)")
+                 "add3(x, y, z : 1) : list(:quote(+), x, list(:quote(+), y, z))"
+                 ":attribute(add3, macro, 1)")
 
-         (is-error (build "add3(x)") arity-error)))
+          (is-error (build "add3(x)") arity-error)))
 
       (subtest "Too Many"
         (with-module-table modules
@@ -996,7 +996,28 @@
                  ":attribute(c, input, 1)"
                  ":attribute(y, input, 1)")
 
-          (is-error (build "make-list(a, b, c) -> output") semantic-error))))))
+          (is-error (build "make-list(a, b, c) -> output") semantic-error)))))
+
+  (subtest "Building a Meta-Node Multiple Times"
+    (with-module-table modules
+      (build-core-module)
+      (build ":import(core, if, -, +, *, <)"
+	     "fact(n) : { 1 -> start; iter(n, acc) : if(n < start, acc, iter(n - 1, acc * n)); iter(n,1) }"
+
+	     "eval-fact(n) : fact(n)"
+	     ":attribute(eval-fact, macro, 1)"
+
+	     "fact(in) + eval-fact(3) -> output"
+	     ":attribute(in, input, 1)")
+
+      (with-nodes ((in "in") (output "output")
+		   (fact "fact") (+ "+"))
+	  (finish-build)
+
+	(has-value-function (in) output `(,+ (,fact ,in) 6))
+
+	(with-nodes ((iter "iter") (n "n")) (definition fact)
+	  (has-value-function (n) fact `(,iter ,n 1 1)))))))
 
 (subtest "Target Node Transforms"
   (subtest "Single Argument"

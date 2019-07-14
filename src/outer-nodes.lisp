@@ -122,11 +122,9 @@
                  nodes)))
 
     (with-slots (outer-nodes operands definition) meta-node
-      (let ((names (map #'cdr (map-values outer-nodes))))
-        (appendf operands names)
-        (add-operand-nodes names definition))
+      (unless (find +outer-node-argument+ operands :key #'ensure-car)
+        (let ((names (map #'cdr (map-values outer-nodes))))
+          (appendf operands names)
+          (add-operand-nodes names definition))
 
-      (update-instances (map-keys outer-nodes))
-
-      (when definition
-        (foreach #'add-outer-node-operands (meta-nodes definition))))))
+        (update-instances (map-keys outer-nodes))))))

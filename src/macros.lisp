@@ -96,7 +96,6 @@
 
   ;; Determine the meta-node's referenced outer-nodes
   (outer-node-references meta-node)
-  (foreach #'add-outer-node-operands (meta-nodes (definition meta-node)))
 
   (finish-build-meta-node meta-node)
 
