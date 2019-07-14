@@ -77,11 +77,11 @@
       (diag (format nil "Test String: ~s" string))
       (is-error (funcall parser operators) 'declaration-parse-error))))
 
-(flet ((s (string)
-         (id-symbol string)))
+(subtest "Node Expressions"
+  (flet ((s (string)
+           (id-symbol string)))
 
-  (let ((*package* (find-package :tridash.symbols)))
-    (subtest "Node Expressions"
+    (let ((*package* (find-package :tridash.symbols)))
       (test-parser
        #?"node1; node2\nnode3"
        (decls '!|node1| '!|node2| '!|node3|))
@@ -149,65 +149,65 @@
         (test-parser
          #?"a -> b -> \n c -> d\n"
          (decls
-          '(!-> !\a (!-> !\b (!-> !\c !\d)))))))
+          '(!-> !\a (!-> !\b (!-> !\c !\d))))))
 
-    (subtest "Node Lists"
-      (test-parser
-       #?"fn(a, b) : {a;b\nc\n\nd}"
-       (decls
-        '(!\:
-          (!|fn| !\a !\b)
-          (list !\a !\b !\c !\d)))
-       (alist-hash-map
-        `((,(s ":") 10 :right)
-          (:open-paren 200)))))
+      (subtest "Node Lists"
+        (test-parser
+         #?"fn(a, b) : {a;b\nc\n\nd}"
+         (decls
+          '(!\:
+            (!|fn| !\a !\b)
+            (list !\a !\b !\c !\d)))
+         (alist-hash-map
+          `((,(s ":") 10 :right)
+            (:open-paren 200)))))
 
-    (subtest "Literals"
-      (subtest "Mixed Literals (Integers, Reals and Strings)"
-        (let ((ops (alist-hash-map
-                    `((,(s "+") 20 :left)
-                      (,(s "-") 20 :left)
-                      (,(s "*") 50 :right)
-                      (,(s "/") 50 :left)
-                      (:open-paren 200)))))
+      (subtest "Literals"
+        (subtest "Mixed Literals (Integers, Reals and Strings)"
+          (let ((ops (alist-hash-map
+                      `((,(s "+") 20 :left)
+                        (,(s "-") 20 :left)
+                        (,(s "*") 50 :right)
+                        (,(s "/") 50 :left)
+                        (:open-paren 200)))))
 
-          (test-parser
-           #?"a + 1 + 2.3 -\"hello\" "
-           (decls
-            '(!- (!+ (!+ !\a 1) 2.3) "hello"))
-           ops)))
+            (test-parser
+             #?"a + 1 + 2.3 -\"hello\" "
+             (decls
+              '(!- (!+ (!+ !\a 1) 2.3) "hello"))
+             ops)))
 
-      (subtest "String Literals"
-        (subtest "Test Line Feed, Carriage Return and Tab Escapes"
-          (test-parser
-           " \"Hello\\n\\tWorld\" "
-           (list #?"Hello\n\tWorld"))
+        (subtest "String Literals"
+          (subtest "Test Line Feed, Carriage Return and Tab Escapes"
+            (test-parser
+             " \"Hello\\n\\tWorld\" "
+             (list #?"Hello\n\tWorld"))
 
-          (test-parser
-           " \"Hello\\r\\nWorld\" "
-           (list #?"Hello\r\nWorld")))
+            (test-parser
+             " \"Hello\\r\\nWorld\" "
+             (list #?"Hello\r\nWorld")))
 
-        (subtest "Test Escaped Quotes and backslashes"
-          (test-parser
-           " \"He\\\\she said \\\"Hello World\\\"\" "
-           (list #?"He\\she said \"Hello World\"")))
+          (subtest "Test Escaped Quotes and backslashes"
+            (test-parser
+             " \"He\\\\she said \\\"Hello World\\\"\" "
+             (list #?"He\\she said \"Hello World\"")))
 
-        (subtest "Unicode Escape Sequences"
-          (test-parser
-           " \"x\\u{2265}5\" "
-           (list #?"x\x{2265}5"))
+          (subtest "Unicode Escape Sequences"
+            (test-parser
+             " \"x\\u{2265}5\" "
+             (list #?"x\x{2265}5"))
 
-          (test-parser
-           " \"x \\u{2265 5\" "
-           (list #?"x \x{2265} 5"))
+            (test-parser
+             " \"x \\u{2265 5\" "
+             (list #?"x \x{2265} 5"))
 
-          (test-parser
-           " \"x \\ux1\" "
-           (list #?"x ux1"))
+            (test-parser
+             " \"x \\ux1\" "
+             (list #?"x ux1"))
 
-          (test-parser
-           " \"x \\u10\" "
-           (list #?"x u10")))))))
+            (test-parser
+             " \"x \\u10\" "
+             (list #?"x u10"))))))))
 
 (subtest "Parse Errors"
   (parse-error-p "a + b")

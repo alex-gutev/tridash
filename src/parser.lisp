@@ -202,7 +202,7 @@
                 (#\t #\Tab)
                 (#\u
                  (cond
-                   ((= (peek-char) #\})
+                   ((= (peek-char) #\{)
                     (read-char)
                     (parse-unicode))
 
