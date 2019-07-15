@@ -263,6 +263,9 @@
   (with-slots (name) (node-link-node link)
     (ensure-get name *operand-vars* (gensym (mkstr name)))))
 
+(defmethod tridash->cl ((ref node-ref) &key)
+  (node-ref-node ref))
+
 
 (defmethod tridash->cl ((functor functor-expression) &key)
   "If the operator of the functor is an `EXTERNAL-META-NODE',

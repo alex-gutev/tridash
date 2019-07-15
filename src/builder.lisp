@@ -290,6 +290,7 @@
       (add-outer-node node (home-module node) module)
       node))
 
+
 (defmethod process-declaration ((n null) (module t) &key)
   "Processes the NIL declaration. NIL declarations only originate from
    processing done internally by the frontend and not from
@@ -303,6 +304,11 @@
 
   (declare (ignore module))
   literal)
+
+(defmethod process-declaration ((node node) (module t) &key)
+  "Returns the node."
+
+  node)
 
 
 ;;;; Methods: Processing Functors
@@ -641,6 +647,15 @@
        (if *source-node*
            (make-instance 'context-node :context-id context-id :node node)
            node)))))
+
+(defmethod process-functor ((operator (eql +ref-operator+)) operands module)
+  "Returns a `NODE-REF' for the node passed as an argument."
+
+  (match-syntax (+ref-operator+ node)
+      operands
+
+    ((list node)
+     (node-ref (process-declaration node module :level *level*)))))
 
 
 ;;; Subnodes

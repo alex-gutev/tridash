@@ -34,6 +34,8 @@
 (defconstant +quote-operator+ (id-symbol ":quote")
   "Operator for suppressing processing of declarations.")
 
+(defconstant +ref-operator+ (id-symbol "&")
+  "Operator for referencing another node without creating a binding.")
 
 ;;; Contexts
 

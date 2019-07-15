@@ -862,24 +862,45 @@
         (test-simple-binding a*9 b))))
 
   (subtest "Generating Expressions"
-    (with-module-table modules
-      (build-core-module)
-      (build ":import(core)"
+    (subtest "Quoted Expressions"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core)"
 
-             "square(x) : list(:quote(*), x, x)"
-             ":attribute(square, macro, 1)"
+               "square(x) : list(:quote(*), x, x)"
+               ":attribute(square, macro, 1)"
 
-             "square(a) -> b")
+               "square(a) -> b")
 
-      (test-not-nodes modules '("square" "a"))
+        (test-not-nodes modules '("square" "a"))
 
-      (with-nodes ((a "a") (b "b")
-                   (a*a ((":in" "core" "*") "a" "a"))
-                   (* "*"))
-          modules
+        (with-nodes ((a "a") (b "b")
+                     (a*a ((":in" "core" "*") "a" "a"))
+                     (* "*"))
+            modules
 
-        (has-value-function (a) a*a `(,* ,a ,a))
-        (test-simple-binding a*a b))))
+          (has-value-function (a) a*a `(,* ,a ,a))
+          (test-simple-binding a*a b))))
+
+    (subtest "Meta-Node References"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core)"
+
+               "square(x) : list(&(*), x, x)"
+               ":attribute(square, macro, 1)"
+
+               "square(a) -> b")
+
+        (test-not-nodes modules '("square" "a"))
+
+        (with-nodes ((a "a") (b "b")
+                     (a*a ((":in" "core" "*") "a" "a"))
+                     (* "*"))
+            modules
+
+          (has-value-function (a) a*a `(,* ,a ,a))
+          (test-simple-binding a*a b)))))
 
   (subtest "Macros in Macros"
     (with-module-table modules

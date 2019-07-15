@@ -95,6 +95,7 @@
   `((-> ,+bind-operator+ 10 :right)
     (\: ,+def-operator+ 5 :right)
     (|.| ,+subnode-operator+ 1000 :left)
+    (& ,+ref-operator+)
     (|..| ,+outer-operator+)
     (prog ,+list-operator+))
 

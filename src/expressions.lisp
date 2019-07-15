@@ -27,6 +27,12 @@
   node
   context)
 
+(defstruct (node-ref (:constructor node-ref (node)))
+  "Represents a direct reference to NODE. A direct reference is a
+   reference which does not involve a binding between nodes."
+
+  node)
+
 (defstruct (functor-expression (:constructor functor-expression (meta-node arguments)))
   "Represents a functor expression with a META-NODE applied to
    ARGUMENTS."
