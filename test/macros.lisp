@@ -286,7 +286,14 @@
            (functor apply (meta-node-ref not) x)
 
            ($x)
-           `(call-tridash-meta-node ,apply (list #'!|not| $x))))))
+           `(call-tridash-meta-node
+             ,apply
+
+             (list
+              #'(lambda (&rest $args)
+                  (check-arity ,not $args)
+                  (apply #'!|not| $args))
+              $x))))))
 
     (subtest "If Meta-Node"
       (with-core-nodes ("if")
@@ -300,7 +307,11 @@
            `(call-tridash-meta-node
              ,apply
 
-             (list #'!|if| $x $y $z))))))
+             (list
+              #'(lambda (&rest $args)
+                  (check-arity ,if $args)
+                  (apply #'!|if| $args))
+              $x $y $z))))))
 
     (subtest "And Meta-Node"
       (with-core-nodes ("and")
@@ -314,7 +325,11 @@
            `(call-tridash-meta-node
              ,apply
 
-             (list #'!|and| $x $y))))))
+             (list
+              #'(lambda (&rest $args)
+                  (check-arity ,and $args)
+                  (apply #'!|and| $args))
+              $x $y))))))
 
     (subtest "Or Meta-Node"
       (with-core-nodes ("or")
@@ -328,7 +343,11 @@
            `(call-tridash-meta-node
              ,apply
 
-             (list #'!|or| $x $y))))))
+             (list
+              #'(lambda (&rest $args)
+                (check-arity ,or $args)
+                (apply #'!|or| $args))
+              $x $y))))))
 
     (subtest "Tridash Meta-Node"
       (let ((apply (mock-meta-node (f x) (functor f x)))
@@ -779,6 +798,23 @@
           (is (resolve (call-tridash-meta-node f '(1 3 4))) '(2 3 4))
           (is (resolve (call-tridash-meta-node g '(1))) '(2)))))
 
+    (subtest "External Meta-Nodes"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core)"
+               "apply(f, x) : f(x)"
+               "apply2(f, x, y) : f(x, y)"
+
+               "f(a) : apply(-, a)"
+               "g(a, b) : apply2(-, a, b)")
+
+        (with-nodes ((f "f") (g "g")) modules
+          (is (resolve (call-tridash-meta-node f '(1))) -1)
+          (is (resolve (call-tridash-meta-node f '(2))) -2)
+
+          (is (resolve (call-tridash-meta-node g '(3 2))) 1)
+          (is (resolve (call-tridash-meta-node g '(5 3))) 2))))
+
     (subtest "Errors"
       (with-module-table modules
         (build-core-module)
@@ -804,6 +840,19 @@
         (with-nodes ((sub "sub") (neg "neg")) modules
           (is (call-tridash-meta-node sub '(5 2)) 3)
           (is (call-tridash-meta-node neg '(5)) -5)))))
+
+  (subtest "Objects"
+    (with-module-table modules
+      (build "Person(first, last) : { first -> self.first; last -> self.last }"
+             "get-first(p) : p.first"
+             "get-last(p) : p.last")
+
+      (with-nodes ((person "Person") (get-first "get-first") (get-last "get-last"))
+          modules
+
+        (let ((p (call-tridash-meta-node person '("John" "Doe"))))
+          (is (call-tridash-meta-node get-first (list p)) "John")
+          (is (call-tridash-meta-node get-last (list p)) "Doe")))))
 
   (subtest "Catching Failures"
     (subtest "In Operand"
@@ -836,7 +885,42 @@
 
         (with-nodes ((test "test")) modules
           (is (bool-value (resolve (call-tridash-meta-node test '(1)))) nil)
-          (ok (bool-value (resolve (call-tridash-meta-node test '(-1))))))))))
+          (ok (bool-value (resolve (call-tridash-meta-node test '(-1)))))))))
+
+  (subtest "Errors"
+    (subtest "Type Errors"
+      (subtest "Arithmetic Functions"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core, +, and)"
+                 "1+(x) : fails(x + 1)"
+                 "fails(x) : { x and 0 -> :context(self, catch); 1 -> :context(self, catch) }")
+
+          (with-nodes ((1+ "1+")) modules
+            (is (bool-value (resolve (call-tridash-meta-node 1+ '(1)))) nil)
+            (ok (bool-value (resolve (call-tridash-meta-node 1+ '("hello"))))))))
+
+      (subtest "Objects"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core, and)"
+                 "test(x) : fails(x.key)"
+                 "fails(x) : { x and 0 -> :context(self, catch); 1 -> :context(self, catch) }")
+
+          (with-nodes ((test "test")) modules
+            (subtest "Non-Object Type"
+              (ok (bool-value (resolve (call-tridash-meta-node test '(1))))))
+
+            (subtest "Non-Existent Entry"
+              (ok (bool-value (resolve (call-tridash-meta-node test (list (make-hash-map)))))))
+
+            (subtest "Object with existing Entry"
+              (is (->> (list (cons (id-symbol "key") 1))
+                       alist-hash-map
+                       list
+                       (call-tridash-meta-node test)
+                       bool-value)
+                  nil))))))))
 
 (subtest "Actual Macros"
   (subtest "Compile-Time Computations"

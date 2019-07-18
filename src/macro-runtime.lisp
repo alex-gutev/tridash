@@ -64,7 +64,11 @@
   "Returns a list where each element of LIST is resolved by RESOLVE."
 
   (loop
-     for items = list then (resolve% (rest items))
+     for items = list then
+       (handler-case
+           (resolve% (rest items))
+         (tridash-fail () nil))
+
      while items
      collect
        (resolve (car items))))
@@ -157,6 +161,11 @@
      ;; function and return them as a thunk.
      (tridash-fail (,g!c) (thunk (error ,g!c)))))
 
+(defun fail-thunk ()
+  "Returns a new thunk which signals a `TRIDASH-FAIL' condition."
+
+  (thunk (error 'tridash-fail)))
+
 
 ;;;; Definition Macros
 
@@ -182,6 +191,11 @@
    resolved (by RESOLVE%) arguments. Otherwise the macro is identical
    to DEFINE-TRIDASH-FUNCTION%.
 
+   If the elements of LAMBDA-LIST are lists, where the first element
+   is the variable named and the second element is a type specifier,
+   then the body of the function is wrapped in a CHECK-TRIDASH-TYPES
+   form, with checks the types of the arguments in LAMBDA-LIST.
+
    This macro always wraps BODY in a HANDLER-CASE form handling the
    `TRIDASH-FAIL' condition. If the forms in BODY signal a
    `TRIDASH-FAIL' condition a thunk which re-signals the condition is
@@ -189,8 +203,13 @@
 
   (match body
     ((list (and (type symbol) fn))
-     `(define-tridash-function ,name (&rest ,g!args)
-        (apply #',fn (map #'resolve% ,g!args))))
+     `(define-tridash-function ,name ,(map #'ensure-car lambda-list)
+        ,(if (some #'consp lambda-list)
+
+             `(check-tridash-types ,lambda-list
+                (,fn ,@(map #'first lambda-list)))
+
+             `(,fn ,@(map (curry #'list 'resolve%) lambda-list)))))
 
     (_
      `(define-tridash-function% ,name ,lambda-list
@@ -199,16 +218,47 @@
 
 ;;;; Core Functions
 
-;;; Conditionals and Boolean Expressions
+(deftype tridash-value ()
+  `(or string symbol number))
 
-(define-tridash-function |if| (cond then else)
+(defmacro check-tridash-types ((&rest vars) &body body)
+  "Performs type checking and signals a `TRIDASH-FAIL' condition if
+   type checking fails. Each element of VARS is a list where the first
+   element is a symbol naming a variable and the second element is a
+   type specifier to which the value of the variable is
+   checked. Additionally each value is resolved by RESOLVE% and bound
+   to a variable with the same name. These bindings are visible to the
+   forms in BODY."
+
+  (flet ((make-check-type (var)
+           `(typep ,(first var) ',(second var)))
+
+         (make-binding (var)
+           `(,(first var) (resolve% ,(first var)))))
+
+    `(let ,(map #'make-binding vars)
+       (if (and ,@(map #'make-check-type vars))
+           (progn ,@body)
+           (error 'tridash-fail)))))
+
+
+;;; Conditionals
+
+(define-tridash-function |if| (cond then &optional (else (fail-thunk)))
   (if (bool-value (resolve% cond)) then else))
 
 (define-tridash-function |member| (object key)
-  (get (resolve% key) (resolve% object)))
+  (check-tridash-types ((object hash-map))
+    (multiple-value-bind (value in-map?)
+        (get (resolve% key) object)
+
+      (unless in-map?
+        (error 'tridash-fail))
+
+      value)))
 
 (define-tridash-function% |fail| ()
-  (thunk (error 'tridash-fail)))
+  (fail-thunk))
 
 (define-tridash-function |catch| (try catch)
   (combine-catch-thunk try catch))
@@ -217,7 +267,8 @@
   "Applies the function OPERATOR on ARGS."
 
   (catch-failures
-    (apply (resolve% operator) args)))
+    (check-tridash-types ((operator function))
+      (apply operator args))))
 
 
 ;;; Boolean Expressions
@@ -234,33 +285,41 @@
 
 ;;; Arithmetic
 
-(define-tridash-function + (a b) +)
+(define-tridash-function + ((a number) (b number)) +)
+
 (define-tridash-function - (a &optional b)
   (if b
-      (- (resolve% a) (resolve% b))
-      (- (resolve% a))))
+      (check-tridash-types ((a number) (b number))
+        (- a b))
 
-(define-tridash-function * (a b) *)
-(define-tridash-function / (a b) /)
+      (check-tridash-types ((a number))
+        (- a))))
+
+(define-tridash-function * ((a number) (b number)) *)
+(define-tridash-function / ((a number) (b number)) /)
+
 
 ;;; Comparison
 
-(define-tridash-function < (a b) <)
-(define-tridash-function <= (a b) <=)
-(define-tridash-function > (a b) >)
-(define-tridash-function >= (a b) >=)
-(define-tridash-function = (a b) =)
-(define-tridash-function != (a b) /=)
+(define-tridash-function < ((a number) (b number)) <)
+(define-tridash-function <= ((a number) (b number)) <=)
+(define-tridash-function > ((a number) (b number)) >)
+(define-tridash-function >= ((a number) (b number)) >=)
+(define-tridash-function = ((a tridash-value) (b tridash-value)) =)
+(define-tridash-function != ((a tridash-value) (b tridash-value)) /=)
+
 
 ;;; Type Conversions
 
 (define-tridash-function |string| (x) mkstr)
+
 
 ;;; Type Predicates
 
 (define-tridash-function |int?| (x) integerp)
 (define-tridash-function |real?| (x) numberp)
 (define-tridash-function |string?| (x) stringp)
+
 
 ;;; Lists
 
@@ -271,5 +330,6 @@
   (progn
     xs))
 
-(define-tridash-function |head| (list) car)
-(define-tridash-function |tail| (list) cdr)
+(define-tridash-function |head| ((list cons)) car)
+
+(define-tridash-function |tail| ((list cons)) cdr)

@@ -30,6 +30,10 @@
 (defvar *current-meta-node* nil
   "The meta-node currently being compiled to CL.")
 
+(defvar *return-nil* nil
+  "Flag: If true NIL expressions are compiled to NIL values, otherwise
+   they are compiled to a fail thunk.")
+
 
 ;;;; Macro Attributes
 
@@ -87,7 +91,6 @@
 
     (apply f args)))
 
-
 (defun compile-meta-node-function (meta-node)
   "Compiles the META-NODE meta-node to a CL function. Stores the
    compiled CL function in the :CL-FUNCTION attribute."
@@ -143,7 +146,6 @@
           (meta-node e)))
 
 
-
 ;;;; Compiling Tridash Expressions to CL
 
 (defvar *tridash-cl-functions* (make-hash-map)
@@ -155,7 +157,8 @@
   "Returns a CL LAMBDA expression which is compiled from META-NODE."
 
   (let ((*current-meta-node* meta-node)
-        (*operand-vars* (make-hash-map)))
+        (*operand-vars* (make-hash-map))
+        (*return-nil* nil))
 
     (flet ((add-operand (operand)
              (ensure-get operand *operand-vars* (gensym (mkstr operand)))))
@@ -282,13 +285,15 @@
 
     (match meta-node
       ((external-meta-node name)
-       (->> (make-meta-node-arguments meta-node arguments)
-            (list* (external-meta-node-cl-function name))))
+       (let ((*return-nil* t))
+         (->> (make-meta-node-arguments meta-node arguments)
+              (list* (external-meta-node-cl-function name)))))
 
       ((type meta-node)
-       (->> (make-meta-node-arguments meta-node arguments)
-            (list* 'list)
-            (list 'call-tridash-meta-node meta-node)))
+       (let ((*return-nil* nil))
+         (->> (make-meta-node-arguments meta-node arguments)
+              (list* 'list)
+              (list 'call-tridash-meta-node meta-node))))
 
       (_
        `(call-node ,(tridash->cl meta-node :thunk nil)
@@ -320,8 +325,9 @@
   "Generates a CL expression that creates a `HASH-MAP'."
 
   (flet ((make-entry (pair)
-           (destructuring-bind (key value) pair
-             `(cons ',key ,(tridash->cl value :thunk t)))))
+           (let ((*return-nil* nil))
+             (destructuring-bind (key value) pair
+               `(cons ',key ,(tridash->cl value :thunk t))))))
 
     `(alist-hash-map (list ,@(map #'make-entry (object-expression-entries object))))))
 
@@ -334,20 +340,21 @@
   (with-struct-slots meta-node-ref- (node optional outer-nodes)
       ref
 
-    (match node
-      ((external-meta-node name)
-       `#',(external-meta-node-cl-function name))
+    (with-gensyms (args)
+      (let ((apply-args (make-meta-node-arg-list node args)))
+        `#'(lambda (&rest ,args)
+             (check-arity ,node ,args)
+             ,(ematch node
+                ((external-meta-node name)
+                 `(apply #',name ,apply-args))
 
-      ((type meta-node)
-       (with-gensyms (args)
-         (let ((fn-args (make-meta-node-arg-list node args)))
-           `#'(lambda (&rest ,args)
-                (check-arity ,node ,args)
-                (call-tridash-meta-node
-                 ,node
-                 ,(if outer-nodes
-                      `(append ,fn-args (list ,@(map #'tridash->cl outer-nodes)))
-                      fn-args)))))))))
+                ((type meta-node)
+                 (let ((*return-nil* nil))
+                   `(call-tridash-meta-node
+                     ,node
+                     ,(if outer-nodes
+                          `(append ,apply-args (list ,@(map #'tridash->cl outer-nodes)))
+                          apply-args))))))))))
 
 (defun has-nodes? (expression)
   "Checks whether EXPRESSION references any nodes."
@@ -392,6 +399,10 @@
 
 (defmethod tridash->cl ((list argument-list) &key)
   (list* 'list (map #'tridash->cl (argument-list-arguments list))))
+
+(defmethod tridash->cl ((literal null) &key)
+  (unless *return-nil*
+    (fail-thunk)))
 
 (defmethod tridash->cl (literal &key)
   (match literal
