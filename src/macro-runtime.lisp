@@ -25,9 +25,16 @@
 
 (defstruct thunk
   "A thunks stores a function which evaluates to a value. The function
-   FN is called to compute the value when it is actually required."
+   COMPUTE is called to compute the value when it is actually required."
 
-  fn)
+  compute)
+
+(defstruct (catch-thunk (:include thunk))
+  "A thunk which resolves to the value of CATCH if its COMPUTE
+   function fails."
+
+  catch)
+
 
 (defmacro! thunk (expression)
   "Creates a `THUNK' with a COMPUTE function that evaluates
@@ -35,7 +42,7 @@
 
   `(let (,g!result ,g!computed?)
      (make-thunk
-      :fn
+      :compute
       (lambda ()
         (if ,g!computed?
             ,g!result
@@ -53,6 +60,15 @@
 
     (otherwise it)))
 
+(defun resolve-list (list)
+  "Returns a list where each element of LIST is resolved by RESOLVE."
+
+  (loop
+     for items = list then (resolve% (rest items))
+     while items
+     collect
+       (resolve (car items))))
+
 (defun resolve% (thing)
   "If THING is a `THUNK' calls it's COMPUTE function. If the function
    returns another `THUNK' repeats the procedure on it.
@@ -61,16 +77,65 @@
 
   (nlet-tail resolve ((thing thing))
     (typecase thing
-      (thunk (resolve (funcall (thunk-fn thing))))
+      (catch-thunk
+       (resolve
+        (resolve-catch
+         (catch-thunk-compute thing)
+         (catch-thunk-catch thing))))
+
+      (thunk
+       (resolve% (funcall (thunk-compute thing))))
+
       (otherwise thing))))
 
-(defun resolve-list (list)
-  "Returns a list where each element of LIST is resolved by RESOLVE."
+(defun resolve-catch (try catch)
+  "Resolves TRY fully. If TRY fails returns CATCH or the CATCH of the
+   last `CATCH-THUNK' to which TRY resolves."
 
-  (loop
-     for items = list then (resolve% (rest items))
-     while items
-     collect (resolve (car items))))
+  (handler-case
+      (nlet-tail resolve ((try (funcall try)))
+
+        (typecase try
+          (catch-thunk
+           (setf catch (combine-catch-thunk (catch-thunk-catch try)
+                                            catch))
+
+           (resolve (funcall (catch-thunk-compute try))))
+
+          (thunk
+           (resolve (funcall (thunk-compute try))))
+
+          (otherwise
+           try)))
+
+    (tridash-fail ()
+      catch)))
+
+(defun combine-catch-thunk (try catch)
+  "Returns a `CATCH-THUNK' with a COMPUTE function that evaluates to
+   TRY and CATCH as the CATCH value.
+
+   If TRY is a `CATCH-THUNK' returns a new `CATCH-THUNK', in which the
+   CATCH value is the result of combining (by COMBINE-CATCH-THUNK) the
+   CATCH value of TRY and CATCH.
+
+   If TRY is a `THUNK', returns a new `CATCH-THUNK' with COMPUTE
+   function set to the COMPUTE function of TRY and CATCH value CATCH.
+
+   If TRY is not a `THUNK', simply returns its value."
+
+  (match try
+    ((catch-thunk- compute (catch new-catch))
+     (make-catch-thunk
+      :compute compute
+      :catch (combine-catch-thunk new-catch catch)))
+
+    ((thunk- compute)
+     (make-catch-thunk
+      :compute compute
+      :catch catch))
+
+    (_ try)))
 
 
 ;;;; Failures
@@ -146,8 +211,7 @@
   (thunk (error 'tridash-fail)))
 
 (define-tridash-function |catch| (try catch)
-  (handler-case (resolve% try)
-    (tridash-fail () catch)))
+  (combine-catch-thunk try catch))
 
 (defun call-node (operator args)
   "Applies the function OPERATOR on ARGS."
