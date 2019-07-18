@@ -109,6 +109,22 @@
     (subtest "Tail-Recursive Factorial with Nested Meta-Node"
       (test-strictness
           ("fact(n) : { iter(n, acc) : case(n < 2 : acc, iter(n - 1, n * acc)); iter(n,1) }")
-        ("fact" (t))))))
+        ("fact" (t)))))
+
+  (subtest "Optional and Rest Arguments"
+    (subtest "Optional Arguments"
+      (test-strictness ("inc(n, d : 1) : n + d")
+        ("inc" (t t)))
+
+      (test-strictness ("f(x, y : 1) : { x -> self.x; y -> self.y }")
+        ("f" (nil nil))))
+
+    (subtest "Rest Arguments"
+      (test-strictness ("add(x, ..(xs)) : if(xs, add(x + head(xs), tail(xs)), x)")
+        ("add" (t t))))
+
+    (subtest "Rest Arguments"
+      (test-strictness ("f(x, ..(xs)) : { x -> self.x; xs -> self.xs }")
+        ("f" (nil nil))))))
 
 (finalize)

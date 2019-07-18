@@ -106,7 +106,7 @@
 
     ;; Initially set all arguments to strict in case of recursive
     ;; calls
-    (setf (attribute :strictness meta-node) (list* 'or (operands meta-node)))
+    (setf (attribute :strictness meta-node) (list* 'or (operand-node-names meta-node)))
 
     (replace-operands (analyze meta-node))))
 
@@ -141,10 +141,10 @@
 ;;; Object and Member Expressions
 
 (defmethod analyze-expression ((object object-expression))
-  (flet ((analyze-field (field)
-           (analyze-expression (second field))))
+  "Returns NIL since the fields of an `OBJECT-EXPRESSION' are never
+   strictly evaluated."
 
-    (list* 'or (map #'analyze-field (object-expression-entries object)))))
+  nil)
 
 
 ;;; Functor Expressions
