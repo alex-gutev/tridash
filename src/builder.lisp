@@ -281,8 +281,8 @@
   "Processes the declaration with DECL added to the front of
    *DECLARATION-STACK*, and *LEVEL* incremented by one."
 
-  (let ((*declaration-stack* (cons decl *declaration-stack*))
-        (node (call-next-method)))
+  (let* ((*declaration-stack* (cons decl *declaration-stack*))
+         (node (call-next-method)))
 
     (post-process-node node module :add-outer add-outer)))
 
