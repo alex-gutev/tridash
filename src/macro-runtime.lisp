@@ -313,11 +313,28 @@
 
 (define-tridash-function |string| (x) mkstr)
 
+(define-tridash-function |int| (x)
+  (typecase (resolve% x)
+    (integer x)
+    (real (truncate x))
+    (string
+     (handler-case
+         (parse-integer x)
+       (error () (error 'tridash-fail))))))
+
+(define-tridash-function |real| (x)
+  (typecase (resolve% x)
+    ((or integer real) x)
+    (string
+     (handler-case
+         (parse-number:parse-real-number x)
+       (error () (error 'tridash-fail))))))
+
 
 ;;; Type Predicates
 
 (define-tridash-function |int?| (x) integerp)
-(define-tridash-function |real?| (x) numberp)
+(define-tridash-function |real?| (x) realp)
 (define-tridash-function |string?| (x) stringp)
 
 
