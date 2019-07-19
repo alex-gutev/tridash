@@ -350,3 +350,20 @@
 (define-tridash-function |head| ((list cons)) car)
 
 (define-tridash-function |tail| ((list cons)) cdr)
+
+
+;;; Introspection Utilities
+
+(define-tridash-function |find-node| (node &optional module)
+  (let ((module (or module (current-module *global-module-table*))))
+    (handler-case
+        (let ((*create-nodes* nil))
+          (at-source
+            (process-declaration node module :top-level t)))
+
+      (non-existent-node-error ()
+        (error 'tridash-fail)))))
+
+(define-tridash-function |get-attribute| (node attribute)
+  (check-tridash-types ((node node))
+    (get (mkstr (resolve% attribute)) (attributes node) (fail-thunk))))
