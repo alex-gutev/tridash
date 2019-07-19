@@ -1,0 +1,24 @@
+## Tests that an error is raised if the target transform meta-node is
+## called with the incorrect number of arguments.
+
+:import(core, +, -, =, if, list, head, tail)
+
+add(x, y) : x + y
+
+nth(list, n) :
+    if (n = 0, head(list), nth(tail(list), n - 1))
+
+
+### Target Transform meta-node with only one required argument.
+
+sub-right(source) : {
+    source
+}
+
+:attribute(add, target-transform, sub-right)
+
+
+in -> add(a, b)
+
+:attribute(in, input, 1)
+:attribute(a, input, 1)

@@ -71,7 +71,34 @@
            (process-macro-expansion module)))))
 
 
-;;;; Compiling CL function from Meta-Node
+;;;; Calling Tridash Meta-Nodes from CL
+
+(defgeneric call-meta-node (meta-node args)
+  (:documentation
+   "Calls the `META-NODE' META-NODE with arguments ARGS. Arity checks
+    are performed and the rest arguments are grouped into a single
+    list. Can be used to call both `META-NODE's and
+    `EXTERNAL-META-NODE's."))
+
+(defmethod call-meta-node :around ((meta-node meta-node) args)
+  "Performs arity checking and calls groups the rest arguments into a
+   single list, before calling the next method with the new argument
+   list."
+
+  (check-arity meta-node args)
+
+  (let ((max-args (cdr (meta-node-arity meta-node))))
+    (-<>> (group-rest-args args (1- (length (operands meta-node))))
+          (if (null max-args) <> args)
+          (call-next-method meta-node)
+          resolve)))
+
+(defmethod call-meta-node ((meta-node meta-node) args)
+  (call-tridash-meta-node meta-node args))
+
+(defmethod call-meta-node ((meta-node external-meta-node) args)
+  (apply (external-meta-node-cl-function (name meta-node)) args))
+
 
 (defun call-tridash-meta-node (meta-node args)
   "Calls the meta-node META-NODE with arguments ARGS. If the meta-node
@@ -90,6 +117,9 @@
         (error 'macro-outer-node-error :meta-node meta-node)))
 
     (apply f args)))
+
+
+;;;; Compiling CL function from Meta-Node
 
 (defun compile-meta-node-function (meta-node)
   "Compiles the META-NODE meta-node to a CL function. Stores the

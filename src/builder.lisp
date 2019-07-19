@@ -892,10 +892,8 @@
 ;;; Meta-Nodes appearing as targets of a binding
 
 (defun transform-target-meta-node (transform source decl module)
-  (process-declaration
-   (resolve (call-tridash-meta-node transform (list source decl)))
-   module
-   :top-level t))
+  (-> (call-meta-node transform (list source decl))
+      (process-declaration module :top-level t)))
 
 
 ;;; Binding Operands

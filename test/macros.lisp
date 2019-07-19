@@ -1147,6 +1147,55 @@
                    (- "-"))
           (finish-build)
 
-        (has-value-function (in a) b `(,- ,in ,a))))))
+        (has-value-function (in a) b `(,- ,in ,a)))))
+
+  (subtest "Arity Checks"
+    (subtest "Required Only"
+      (subtest "Not Enough"
+        (with-module-table modules
+          (build-core-module)
+          (is-error
+           (build-source-file #p"./test/inputs/macros/target-transform-3.trd" modules)
+           arity-error)))
+
+      (subtest "Too Many"
+        (with-module-table modules
+          (build-core-module)
+          (is-error
+           (build-source-file #p"./test/inputs/macros/target-transform-4.trd" modules)
+           arity-error))))
+
+    (subtest "Rest Arguments"
+      (with-module-table modules
+        (build-core-module)
+        (build-source-file #p"./test/inputs/macros/target-transform-5.trd" modules)
+
+        (with-nodes ((in "in") (a "a") (b "b")
+                     (- "-"))
+            (finish-build)
+
+          (has-value-function (in a) b `(,- ,in ,a)))))
+
+    (subtest "Optional and Rest Arguments"
+      (with-module-table modules
+        (build-core-module)
+        (build-source-file #p"./test/inputs/macros/target-transform-6.trd" modules)
+
+        (with-nodes ((in "in") (a "a") (b "b")
+                     (- "-"))
+            (finish-build)
+
+          (has-value-function (in a) b `(,- ,in ,a)))))
+
+    (subtest "Optional Extra Arguments"
+      (with-module-table modules
+        (build-core-module)
+        (build-source-file #p"./test/inputs/macros/target-transform-7.trd" modules)
+
+        (with-nodes ((in "in") (a "a") (b "b")
+                     (- "-"))
+            (finish-build)
+
+          (has-value-function (in a) b `(,- ,in ,a)))))))
 
 (finalize)
