@@ -556,6 +556,25 @@
     (add-input node (home-module node)))
   value)
 
+(defmethod process-functor ((operator (eql +attribute-processor-operator+)) args module)
+  "Sets the attribute processor for an attribute."
+
+  (ensure-top-level operator
+    (match-syntax (+attribute-processor-operator+ string node)
+        args
+
+      ((list (guard attribute (or (symbolp attribute) (stringp attribute)))
+             node)
+
+       (let ((node (process-operator-node node module))
+             (attribute (string attribute)))
+
+         (unless (meta-node? node)
+           (error 'not-meta-node-error :node node))
+
+         (setf (get attribute (attribute-processors *global-module-table*))
+               node))))))
+
 
 ;;; Node lists
 

@@ -1,0 +1,18 @@
+## Tests setting a meta-node as an attribute processor
+
+:import(builtin)
+
+:extern(find-node, node)
+
+
+get-matcher(id) : find-node(id)
+
+attribute-processor(matcher, get-matcher)
+
+
+f(x) : x
+
+match-f(x) : x
+
+
+:attribute(f, matcher, match-f)

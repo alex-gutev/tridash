@@ -34,7 +34,16 @@
     :initarg :current-module
     :initform (make-instance 'module :name :init)
     :documentation
-    "The current `MODULE', into which nodes are added."))
+    "The current `MODULE', into which nodes are added.")
+
+   (attribute-processors
+    :accessor attribute-processors
+    :initarg :attribute-processors
+    :initform (make-hash-map :test #'cl:equalp)
+    :documentation
+    "Map of attribute processors. Each key is the attribute's string
+     identifier and the corresponding value is a meta-node which
+     should be invoked to process the attribute."))
 
   (:documentation
    "Module table object mapping module identifiers to `MODULE'
@@ -97,7 +106,9 @@
     (|.| ,+subnode-operator+ 1000 :left)
     (& ,+ref-operator+)
     (|..| ,+outer-operator+)
-    (prog ,+list-operator+))
+    (prog ,+list-operator+)
+
+    (attribute-processor ,+attribute-processor-operator+))
 
   "List of core macro nodes where each a element is a list with the
    first item being the node's identifier and the second item being

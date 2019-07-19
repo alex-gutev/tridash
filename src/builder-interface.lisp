@@ -101,8 +101,12 @@
     method.")
 
   (:method ((node t) (attribute t) (value t) (module t))
-    "Pass-through method. Returns the attribute."
-    value))
+    "If the attribute has a processor, calls it, otherwise returns
+     VALUE."
+
+    (aif (get (string attribute) (attribute-processors *global-module-table*))
+         (call-meta-node it (list value))
+         value)))
 
 
 ;;;; Builder State

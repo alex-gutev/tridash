@@ -68,6 +68,17 @@
   (format stream "~a is not a node." (node e)))
 
 
+(define-condition not-meta-node-error (semantic-error)
+  ()
+
+  (:documentation
+   "Error condition: A meta-node was expected however the object
+    provided is not a meta-node."))
+
+(defmethod print-object ((e not-meta-node-error) stream)
+  (format stream "~a is not a meta-node." (node e)))
+
+
 (define-condition module-node-reference-error (semantic-error)
   ((node :initarg :node
          :reader node

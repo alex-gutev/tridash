@@ -181,7 +181,7 @@
          :test #'expression=)))
 
 
-(plan 4)
+(plan 5)
 
 (subtest "Tridash to CL Compilation"
   (subtest "Functor Expressions"
@@ -1197,5 +1197,24 @@
             (finish-build)
 
           (has-value-function (in a) b `(,- ,in ,a)))))))
+
+(subtest "Attribute Processor Nodes"
+  (subtest "Tridash Meta-Node"
+    (with-module-table modules
+      (build-source-file #p"./test/inputs/macros/attribute-processor-1.trd" modules)
+
+      (with-nodes ((f "f") (match-f "match-f"))
+          modules
+
+        (is (attribute :matcher f) match-f :test #'eq))))
+
+  (subtest "External Meta-Node"
+    (with-module-table modules
+      (build-source-file #p"./test/inputs/macros/attribute-processor-2.trd" modules)
+
+      (with-nodes ((f "f") (match-f "match-f"))
+          modules
+
+        (is (attribute :matcher f) match-f :test #'eq)))))
 
 (finalize)

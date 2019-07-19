@@ -25,9 +25,6 @@
 (defconstant +bind-operator+ :bind
   "Operator for establishing bindings between nodes.")
 
-(defconstant +def-operator+ :define
-  "Operator for defining meta-nodes.")
-
 (defconstant +op-operator+ (id-symbol ":op")
   "Operator for marking nodes as infix operators.")
 
@@ -55,6 +52,13 @@
 
 ;;; Meta-nodes
 
+(defconstant +def-operator+ :define
+  "Operator for defining meta-nodes.")
+
+(defconstant +extern-operator+ (id-symbol ":extern")
+  "Special operator for adding stubs for meta-nodes which are defined
+   externally.")
+
 (defconstant +self-node+ (id-symbol "self")
   "Special node which references the current meta-node.")
 
@@ -63,6 +67,10 @@
 
 (defconstant +attribute-operator+ (id-symbol ":attribute")
   "Special operator for setting node attributes.")
+
+(defconstant +attribute-processor-operator+ :attribute-processor
+  "Special operator for setting a meta-node to process a particular
+   attribute.")
 
 
 ;;; Modules
@@ -88,13 +96,6 @@
 (defconstant +in-module-operator+ (id-symbol ":in")
   "Operator for referencing a node in another module which does not
    have an alias in the current module.")
-
-
-;;; Externally-Defined Meta-Nodes
-
-(defconstant +extern-operator+ (id-symbol ":extern")
-  "Special operator for adding stubs for meta-nodes which are defined
-   externally.")
 
 
 (defconstant +special-operators+
