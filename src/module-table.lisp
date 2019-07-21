@@ -40,8 +40,6 @@
    "Module table object mapping module identifiers to `MODULE'
     objects."))
 
-(defvar *global-module-table*)
-
 
 (defmethod initialize-instance :after ((module-table module-table) &key &allow-other-keys)
   "Adds a mapping for the `MODULE' initially bound to the
