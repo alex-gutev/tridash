@@ -267,8 +267,13 @@
   "Applies the function OPERATOR on ARGS."
 
   (catch-failures
-    (check-tridash-types ((operator function))
-      (apply operator args))))
+    (check-tridash-types ((operator (or function meta-node)))
+      (typecase operator
+        (function
+         (apply operator args))
+
+        (meta-node
+         (call-meta-node operator args))))))
 
 
 ;;; Boolean Expressions
