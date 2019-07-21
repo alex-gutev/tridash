@@ -47,17 +47,18 @@
       ;; Ensure meta-node has been built
       (build-meta-node meta-node)
 
-      (doseq (meta-node-ref meta-node-references)
-        (unless (visited? meta-node-ref)
-          (multiple-value-bind (refs complete?)
-              (outer-node-references meta-node-ref visited)
+      (when (typep definition 'module)
+        (doseq (meta-node-ref meta-node-references)
+          (unless (visited? meta-node-ref)
+            (multiple-value-bind (refs complete?)
+                (outer-node-references meta-node-ref visited)
 
-            (add-outer-nodes refs)
-            (when complete?
-              (erase meta-node-references meta-node-ref)))))
+              (add-outer-nodes refs)
+              (when complete?
+                (erase meta-node-references meta-node-ref)))))
 
-      (when definition
-        (foreach #'outer-node-references (meta-nodes definition)))
+        (when definition
+          (foreach #'outer-node-references (meta-nodes definition))))
 
       (values outer-nodes (emptyp meta-node-references)))))
 

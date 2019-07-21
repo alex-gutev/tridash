@@ -86,6 +86,7 @@
       (call-next-method)))
 
   (:method (fn (call functor-expression))
+    (walk-expression fn (functor-expression-meta-node call))
     (foreach (curry #'walk-expression fn) (functor-expression-arguments call)))
 
   (:method (fn (object object-expression))
@@ -100,7 +101,7 @@
     (foreach (curry #'walk-expression fn) (meta-node-ref-outer-nodes ref)))
 
   (:method (fn (list argument-list))
-    (foreach (curry #'walk-expression fn) (argument-list-arguments fn)))
+    (foreach (curry #'walk-expression fn) (argument-list-arguments list)))
 
   (:method ((fn t) (expr t))
     nil))

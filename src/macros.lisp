@@ -125,16 +125,40 @@
   "Compiles the META-NODE meta-node to a CL function. Stores the
    compiled CL function in the :CL-FUNCTION attribute."
 
-  (build-meta-node meta-node)
+  (unless (external-meta-node? meta-node)
+    (unless (typep (definition meta-node) 'flat-node-table)
+      (build-meta-node meta-node)
 
-  ;; Determine the meta-node's referenced outer-nodes
-  (outer-node-references meta-node)
+      ;; Determine the meta-node's referenced outer-nodes
+      (outer-node-references meta-node)
 
-  (finish-build-meta-node meta-node)
+      (finish-build-meta-node meta-node)
 
-  (setf (meta-node-cl-function meta-node)
-        (compile nil (tridash->cl-function meta-node))))
+      (build-referenced-meta-nodes meta-node))
 
+    (or (meta-node-cl-function meta-node)
+        (setf (meta-node-cl-function meta-node)
+              (compile nil (tridash->cl-function meta-node))))))
+
+(defun build-referenced-meta-nodes (meta-node)
+  "Compile each meta-node used by META-NODE to a CL Function."
+
+  (flet ((build-meta-nodes (expression)
+           (match expression
+             ((and (type meta-node) meta-node)
+              (compile-meta-node-function meta-node))
+
+             ((meta-node-ref- node)
+              (compile-meta-node-function node)))
+           t))
+
+    (unless (external-meta-node? meta-node)
+      (->> meta-node
+           contexts
+           first
+           cdr
+           value-function
+           (walk-expression #'build-meta-nodes)))))
 
 (defun meta-node-cl-function (meta-node)
   "Returns the compiled CL function of the meta-node."
@@ -376,7 +400,7 @@
              (check-arity ,node ,args)
              ,(ematch node
                 ((external-meta-node name)
-                 `(apply #',name ,apply-args))
+                 `(apply #',(external-meta-node-cl-function name) ,apply-args))
 
                 ((type meta-node)
                  (let ((*return-nil* nil))
