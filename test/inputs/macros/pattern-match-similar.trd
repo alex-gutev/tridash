@@ -1,0 +1,15 @@
+## Test nested patterns (in list) and quote constant
+## patterns. Additionally test that similar patterns, e.g. a list
+## pattern that is a prefix of another pattern.
+
+:import(core, @, list, real, ', +, -)
+
+calc3(exp) : {
+    exp -> list('(add), real(add-x), real(add-y))
+    exp -> list('(sub), real(sub-x), real(sub-y))
+    exp -> list('(sub), real(neg-x))
+
+    add-x + add-y -> self @ calc
+    sub-x - sub-y -> self @ calc
+    neg-x - 1 -> self @ calc
+}

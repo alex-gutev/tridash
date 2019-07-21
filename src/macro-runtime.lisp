@@ -348,23 +348,31 @@
 (define-tridash-function |cons| (a b)
   (cons a b))
 
-(define-tridash-function |list| (xs)
-  (progn
-    xs))
-
 (define-tridash-function |head| ((list cons)) car)
 
-(define-tridash-function |tail| ((list cons)) cdr)
+(define-tridash-function |tail| (list)
+  (check-tridash-types ((list cons))
+    (or (cdr list) (fail-thunk))))
+
+(define-tridash-function |cons?| (thing)
+  (consp (resolve% thing)))
 
 
 ;;; Introspection Utilities
 
+(define-tridash-function |node?| (thing)
+  (node? (resolve% thing)))
+
 (define-tridash-function |find-node| (node &optional module)
-  (let ((module (or module (current-module *global-module-table*))))
+  (let ((module (or (resolve% module) *current-module*)))
+
+    (unless (typep module 'module)
+      (error 'tridash-fail))
+
     (handler-case
         (let ((*create-nodes* nil))
           (at-source
-            (process-declaration node module :top-level t)))
+            (process-declaration (resolve node) module :top-level t)))
 
       (non-existent-node-error ()
         (error 'tridash-fail)))))

@@ -1,0 +1,23 @@
+### Tridash Core Module
+###
+### Utilities for introspecting the nodes comprising a program.
+###
+### The meta-nodes in this module may be only used by macro
+### meta-nodes. As runtime definitions are not available.
+
+:module(core)
+
+
+:extern(node?, thing)
+:attribute(node?, strictness, thing)
+
+:extern(find-node, node, :(module))
+:attribute(find-node, strictness, or(node, module))
+
+:extern(get-attribute, node, attribute)
+:attribute(get-attribute, strictness, or(node, attribute))
+
+
+### Export Declarations
+
+:export(node?, find-node, get-attribute)

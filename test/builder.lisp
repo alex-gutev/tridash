@@ -116,7 +116,15 @@
 (defun build-core-module (&optional (modules *global-module-table*))
   "Builds the `core` module into the `MODULE-TABLE' MODULES."
 
-  (build-source-file #p"./modules/core.trd" modules))
+  (build-source-file #p"./modules/core/operators.trd" modules)
+  (build-source-file #p"./modules/core/external.trd" modules)
+  (build-source-file #p"./modules/core/primitives.trd" modules)
+  (build-source-file #p"./modules/core/util.trd" modules)
+  (build-source-file #p"./modules/core/lists.trd" modules)
+  (build-source-file #p"./modules/core/introspection.trd" modules)
+  (build-source-file #p"./modules/core/pattern-match.trd" modules)
+  (build-source-file #p"./modules/core/types.trd" modules)
+  (build-source-file #p"./modules/core/macros.trd" modules))
 
 
 ;;;; Getting a Node-Table
@@ -534,8 +542,7 @@
         (with-nodes ((int "int") (x "x") (z "z") (int-x ((":in" "core" "int") "x"))) modules
           (test-simple-binding int-x z :context int-x)
 
-          (test-node-function int-x int int x)
-          (test-node-function x int-x int int-x))))
+          (test-node-function int-x int int x))))
 
     (subtest "Node Operators"
       (with-module-table modules
@@ -3309,9 +3316,9 @@
     (subtest "Referencing Meta-Nodes with Optional Arguments"
       (subtest "With constant default values"
         (with-module-table modules
-          (build-core-module)
-          (build ":import(core)"
-                 ":extern(map, f, list)"
+          (build ":extern(map, f, list)"
+                 ":extern(+, x, y)"
+                 ":op(+, 100)"
 
                  "inc(x, d : 1) : x + d"
                  "inc-all(xs) : map(inc, xs)"
@@ -3340,9 +3347,9 @@
 
       (subtest "With node default values"
         (with-module-table modules
-          (build-core-module)
-          (build ":import(core)"
-                 ":extern(map, f, list)"
+          (build ":extern(map, f, list)"
+                 ":extern(+, x, y)"
+                 ":op(+, 100)"
 
                  "inc(x, d : delta) : x + d"
                  "inc-all(xs) : map(inc, xs)"
@@ -3376,8 +3383,8 @@
 
     (subtest "Operand of Meta-Node in Target Position"
       (with-module-table modules
-        (build-core-module)
-        (build ":import(core)"
+        (build ":extern(int, x)"
+               ":attribute(int, target-node, int)"
                "f(x) : { x -> int(y); y }")
 
         (let ((table (finish-build)))

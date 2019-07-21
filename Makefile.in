@@ -72,6 +72,17 @@ sources = tridash.asd \
         src/backends/javascript/html.lisp \
 	$(plump_sources)
 
+core_module_sources = \
+	modules/core/operators.trd \
+	modules/core/external.trd \
+	modules/core/primitives.trd \
+	modules/core/util.trd \
+	modules/core/lists.trd \
+	modules/core/introspection.trd \
+	modules/core/pattern-match.trd \
+	modules/core/types.trd \
+	modules/core/macros.trd
+
 build.lisp: build.lisp.in
 	$(SED) -e 's|@datadir[@]|$(pkgdatadir)|g' $< > $@
 
@@ -121,21 +132,23 @@ maintainer-clean: distclean
 
 installdirs:
 	install -d $(DESTDIR)$(bindir)
-	install -d $(DESTDIR)$(pkgdatadir)/modules
+	install -d $(DESTDIR)$(pkgdatadir)/modules/core
 	install -d $(DESTDIR)$(pkgdatadir)/backends/javascript
 	install -d $(DESTDIR)$(mandir)/man1
 
 install-bin:
 	install -m 755 tridashc $(DESTDIR)$(bindir)
 
-install-modules:
-	install -m 644 $(srcdir)/modules/core.trd $(srcdir)/modules/core.yml \
-		$(DESTDIR)$(pkgdatadir)/modules
+install-module-build-config: modules/core.yml
+	install -m 644 $^ $(DESTDIR)$(pkgdatadir)/modules
+
+install-modules: $(core_module_sources)
+	install -m 644 $^ $(DESTDIR)$(pkgdatadir)/modules/core
 
 install-js-runtime: src/backends/javascript/runtime/tridash.min.js
 	install -m 644 $< $(DESTDIR)$(pkgdatadir)/backends/javascript
 
-install-data: install-modules install-js-runtime
+install-data: install-module-build-config install-modules install-js-runtime
 
 install-man:
 	- install -m 644 doc/tridashc.1 $(DESTDIR)$(mandir)/man1
@@ -158,5 +171,7 @@ check:
 
 
 .PHONY: all man js-runtime clean distclean maintainer-clean \
-	install installdirs install-bin install-modules install-data install-man \
-	uninstall check
+	install installdirs install-bin \
+	install-module-build-config install-modules install-data install-man \
+	uninstall \
+	check

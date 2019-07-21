@@ -1,0 +1,60 @@
+### Tridash Core Module
+###
+### Language Primitives
+
+:module(core)
+:import(builtin)
+
+### Quoting
+
+# Interpret `thing` as a literal value rather than a node declaration.
+#
+# If `thing` is a node identifier symbol, returns the symbol.
+# If `thing` is a node expression list, returns the list.
+#
+# `thing` : The node declaration to be interpreted literally.
+
+'(thing) : list(:quote(:quote), thing)
+:attribute(', macro, 1)
+
+:export(')
+
+
+### Binding
+
+# Establish a binding from `src` to `target`
+#
+# `target` : The target node of the binding.
+# `src`    : The source node of the binding.
+
+<-(target, src) : list(&(->), src, target)
+:attribute(<-, macro, 1)
+
+:export(->, <-)
+
+
+## Contexts
+
+# Forces bindings involving `node`, as the target node, to be
+# established in the explicit context with identifier `context`.
+#
+# The effect of this operator is limited to the binding of which the
+# `@` expression appears as a target. If the expression does not
+# appear as the target of a binding, the `@` operator has no effect
+# and it is as though `node` is referenced directly.
+#
+# `node`    : The node identifier.
+# `context` : A symbol serving as the explicit context identifier.
+
+@(node, context) : list('(:context), node, context)
+:attribute(@, macro, 1)
+
+:export(@)
+
+
+### Builtin Operators
+
+# Export operators imported from the `builtin` module.
+
+:export(:, ., &, .., prog)
+:export(if)

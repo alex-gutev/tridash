@@ -1,2 +1,10 @@
 sources:
-  - core.trd
+  - core/operators.trd
+  - core/external.trd
+  - core/primitives.trd
+  - core/util.trd
+  - core/lists.trd
+  - core/introspection.trd
+  - core/pattern-match.trd
+  - core/types.trd
+  - core/macros.trd

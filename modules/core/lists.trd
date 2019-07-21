@@ -1,0 +1,243 @@
+### Tridash Core Module
+###
+### List Processing Meta-Nodes
+
+:module(core)
+
+
+### List Creation
+
+## Creates a list with elements `xs`.
+##
+## xs : The list elements.
+
+list(..(xs)) : xs
+
+## Creates a list, containing all the elements of `xs`, excluding the
+## last. The last element of `xs` is interpreted as a list containing
+## the remaining elements of the list.
+##
+## xs : The elements of the list, with the last element being a list
+##      containing the remaining elements.
+
+list*(..(xs)) : foldr(cons, xs)
+
+
+## Creates a list with elements `xs`, if each element evaluates to a
+## value.
+##
+## This node fails to evaluate to a value if any element of `xs`
+## fails.
+##
+## xs : The list elements.
+
+list!(..(xs)) : {
+    every?(?, xs) -> xs -> self
+}
+
+
+### Element Access
+
+## Retrieves a list element at a particular index.
+##
+## list : The list.
+## n    : Index of the element to retrieve.
+
+nth(list, n) :
+    if (n = 0, head(list), nth(tail(list), n - 1))
+
+
+### Concatenation
+
+## Appends a list onto another list.
+##
+## Evaluates to a list containing the elements of `list1` followed by
+## the elements of `list2`.
+##
+## list1 : The first list.
+## list2 : The list to concatenate to `list1`.
+
+append(list1, list2) : {
+    current <- head(list1)
+    rest <- tail(list1)
+
+    result <- cons(current, append(rest, list2))
+
+    ?(list1) -> result -> self @ append-list
+    list2 -> self @ append-list
+}
+
+
+### Folds
+
+## Fold Left
+
+## Folds a list, to a single value, starting from the first element.
+##
+## `f` is first applied on `x` and the first element of
+## `list`. Subsequently `f` is applied on the result of the previous
+## application and the next element of `list`, until the end of `list`
+## is reached.
+##
+## x    : The initial element which becomes the first argument to `f`.
+## f    : The function with which to fold the list.
+## list : The list to fold.
+
+foldl'(x, f, list) : {
+    result <- foldl'(f(x, head(list)), f, tail(list))
+
+    ?(list) -> result -> self @ fold
+    x -> self @ fold
+}
+
+
+## Folds a list, to a single value, starting from the first element.
+##
+## Sames as `foldl'` except the first element of `list` is used as the
+## initial first argument to the fold function `f`.
+##
+## f    : The function with which to fold the list.
+## list : The list to fold.
+
+foldl(f, list) : {
+    foldl'(head(list), f, tail(list))
+}
+
+
+## Fold Right
+
+## Folds a list, to a single value, starting from the last element.
+##
+## `f` is first applied on the last element of list `l` and `x`. If no
+## `x` argument is provided or `x` fails to evaluate to a value, `f`
+## is first applied on the last two elements of `l`. Subsequently `f`
+## is applied on the previous element of `l` and the result of the
+## previous application, until the beginning of list `l` is reached.
+##
+## f : The function with which to fold the list.
+## l : The list to fold.
+## x : If provided, the initial second argument to `f`.
+
+foldr(f, l, :(x)) : {
+    fold(list) : {
+        current <- head(list)
+        rest <- tail(list)
+
+        result <- f(current, fold(rest))
+
+        ?(rest) -> result -> self @ fold
+        current -> self @ fold
+    }
+
+    fold(if(?(x), append(l, list(x)), l))
+}
+
+
+### Mapping
+
+## Applies a function on each element of a list.
+##
+## Evaluates to a list containing the result of applying `f` on each
+## element of `list` in turn.
+##
+## f    : The function to apply on each element.
+## list : The list.
+
+map(f, list) : {
+    rest <- map(f, tail(list))
+    result <- cons(f(head(list)), rest)
+
+    ?(list) -> result -> self
+}
+
+
+### Filtering
+
+## Filters elements from a list.
+##
+## Evaluates to a list where each element, for which `f` applied to
+## that element evaluates to false, is removed from the list.
+##
+## f : A function of one argument which should evaluate to true if
+##     that element should be retained or false if the element should
+##     be removed from the list.
+##
+## list : The list to filter.
+
+filter(f, list) : {
+    current <- head(list)
+    rest <- filter(f, tail(list))
+
+    f(current) -> cons(current, rest) -> result @ filter
+    rest -> result @ filter
+
+    ?(list) -> result -> self
+}
+
+
+### Testing Each Element
+
+## Evaluates to true if `f` evaluates to true when applied on each
+## element of `list`.
+##
+## f : A function of one argument applied on the elements of `list`.
+##
+## list : The list.
+
+every?(f, list) : {
+    test(x, result) : f(x) and result
+
+    foldr(test, list, 1)
+}
+
+## Evaluates to true if `f`, applied on each element, evaluates to
+## true for at least one element of `list`.
+##
+## f : A function of one argument applied on the elements of `list`.
+##
+## list : The list.
+
+some?(f, list) : {
+    test(x, result) : f(x) or result
+
+    foldr(test, list, 0)
+}
+
+
+## Evaluates to true if `f` evaluates to false when applied on each
+## element of `list`.
+##
+## f : A function of one argument applied on the elements of `list`.
+##
+## list : The list
+
+not-any?(f, list) : {
+    test(x, result) : not(f(x)) and result
+
+    foldr(test, list, 1)
+}
+
+## Evaluates to true if `f`, applied on each element, evaluates to
+## true for at least one element of `list`.
+##
+## f : A function of one argument applied on elements of `list`.
+##
+## list : The list
+
+not-every?(f, xs) : {
+    test(x, result) : not(f(x)) or result
+
+    foldr(test, xs, 0)
+}
+
+
+### Export Declarations
+
+:export(
+    list, list*, list!,
+    nth,
+    append,
+    foldl', foldl, foldr,
+    map, filter,
+    every?, some?, not-any?, not-every?
+)

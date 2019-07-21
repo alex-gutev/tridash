@@ -47,12 +47,15 @@
 
   (:import-from :tridash.frontend
                 :tridash->cl-function
+                :call-meta-node
                 :call-tridash-meta-node
                 :call-node
 
                 :thunk
                 :resolve
+                :resolve%
                 :tridash-fail
+                :fail-thunk
                 :group-rest-args
 
                 :check-arity
@@ -181,7 +184,7 @@
          :test #'expression=)))
 
 
-(plan 5)
+(plan 6)
 
 (subtest "Tridash to CL Compilation"
   (subtest "Functor Expressions"
@@ -989,7 +992,7 @@
   (subtest "Macros in Macros"
     (with-module-table modules
       (build-core-module)
-      (build ":import(core)"
+      (build ":import(core, ->, list, *)"
 
              "'(x) : list(:quote(:quote), x)"
              ":attribute(', macro, 1)"
@@ -1012,7 +1015,7 @@
   (subtest "Macros with Multiple Arguments"
     (with-module-table modules
       (build-core-module)
-      (build ":import(core)"
+      (build ":import(core, list, ->, if)"
 
              "'(x) : list(:quote(:quote), x)"
              ":attribute(', macro, 1)"
@@ -1216,5 +1219,354 @@
           modules
 
         (is (attribute :matcher f) match-f :test #'eq)))))
+
+(subtest "Core Module"
+  (subtest "Utilities"
+    (subtest "Meta-Node: fails?"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core, fails?)")
+
+        (with-nodes ((fails? "fails?")) modules
+          (is (bool-value (call-meta-node fails? '(1))) nil)
+          (ok (bool-value (call-meta-node fails? (list (fail-thunk))))))))
+
+    (subtest "Meta-Node: ?"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core, ?)")
+
+        (with-nodes ((? "?")) modules
+          (ok (bool-value (call-meta-node ? '(1))))
+          (is (bool-value (call-meta-node ? (list (fail-thunk)))) nil)))))
+
+  (subtest "Lists"
+    (with-module-table modules
+      (build-core-module)
+
+      (subtest "Meta-Node: list"
+        (build ":import(core, list, +)")
+
+        (with-nodes ((list "list")) modules
+          (is (call-meta-node list '(1 2 3)) '(1 2 3))
+
+          (ok (resolve% (call-tridash-meta-node list (list (list 1 2 (fail-thunk))))))
+          (ok (resolve% (call-tridash-meta-node list (list (list 1 (fail-thunk) 2)))))
+          (ok (resolve% (call-tridash-meta-node list (list (list (fail-thunk) 1 2)))))))
+
+      (subtest "Meta-Node: list*"
+        (build ":import(core, list*)")
+
+        (with-nodes ((list* "list*")) modules
+          (is (call-meta-node list* '(1 2 (3 4 5))) '(1 2 3 4 5))
+          (is (call-meta-node list* '((1 2 3))) '(1 2 3))))
+
+      (subtest "Meta-Node: list!"
+        (build ":import(core, list!)")
+
+        (with-nodes ((list! "list!")) modules
+          (is (call-meta-node list! '(1 2 3)) '(1 2 3))
+
+          (is-error
+           (resolve% (call-tridash-meta-node list! (list (list 1 2 (fail-thunk)))))
+           tridash-fail)
+
+          (is-error
+           (resolve% (call-tridash-meta-node list! (list (list 1 (fail-thunk) 2))))
+           tridash-fail)
+
+          (is-error
+           (resolve% (call-tridash-meta-node list! (list (list (fail-thunk) 1 2))))
+           tridash-fail)))
+
+      (subtest "Meta-Node: nth"
+        (build ":import(core, nth)")
+
+        (with-nodes ((nth "nth")) modules
+          (is (call-meta-node nth '((1 2 3) 0)) 1)
+          (is (call-meta-node nth '((1 2 3) 1)) 2)
+          (is (call-meta-node nth '((1 2 3) 2)) 3)
+          (is-error (call-meta-node nth '((1 2 3) 3)) 'tridash-fail)))
+
+      (subtest "Meta-Node: append"
+        (build ":import(core, append)")
+
+        (with-nodes ((append "append")) modules
+          (is (call-meta-node append '((1 2 3) (4 5 6))) '(1 2 3 4 5 6))
+          (is (call-meta-node append (list '(1 2 3) (fail-thunk))) '(1 2 3))
+          (is (call-meta-node append (list (fail-thunk) '(1 2 3))) '(1 2 3))))
+
+      (subtest "Meta-Node: foldl'"
+        (build ":import(core, foldl', /)")
+
+        (with-nodes ((foldl "foldl'") (/ "/")) modules
+          ;; Use division '/' as it is non-commutative. This ensures
+          ;; that the result is passed in the first argument and list
+          ;; element in the second argument.
+
+          (is (call-meta-node foldl (list 24 / '(4 3 2))) 1)
+          (is (call-meta-node foldl (list 24 / '(4 3))) 2)
+          (is (call-meta-node foldl (list 24 / nil)) 24)
+          (is (call-meta-node foldl (list 24 / (fail-thunk))) 24)))
+
+      (subtest "Meta-Node: foldl"
+        (build ":import(core, foldl, /)")
+
+        (with-nodes ((foldl "foldl") (/ "/")) modules
+          ;; Use division '/' as it is non-commutative. This ensures
+          ;; that the result is passed in the first argument and list
+          ;; element in the second argument.
+
+          (is (call-meta-node foldl (list / '(24 4 3 2))) 1)
+          (is (call-meta-node foldl (list / '(24 4 3))) 2)
+          (is (call-meta-node foldl (list / '(24))) 24)
+          (is-error (call-meta-node foldl (list / (fail-thunk))) tridash-fail)))
+
+      (subtest "Meta-Node: foldr"
+        (build ":import(core, foldr, list)")
+
+        (with-nodes ((foldr "foldr") (list "list")) modules
+          (is (call-meta-node foldr (list list '(1 2 3 4 5))) '(1 (2 (3 (4 5)))))
+          (is (call-meta-node foldr (list list '(1 2 3 4 5) 6)) '(1 (2 (3 (4 (5 6))))))
+          (is (call-meta-node foldr (list list '(1))) 1)
+          (is (call-meta-node foldr (list list (fail-thunk) 1)) 1)
+          (is-error (call-meta-node foldr (list list (fail-thunk))) tridash-fail)))
+
+      (subtest "Meta-Node: map"
+        (build ":import(core, map, +)"
+               "1+(n) : n + 1")
+
+        (with-nodes ((map "map") (1+ "1+")) modules
+          (is (call-meta-node map (list 1+ '(1 2 3 4))) '(2 3 4 5))
+          (is (call-meta-node map (list 1+ '(1))) '(2))
+          (is-error (call-meta-node map (list 1+ (fail-thunk))) tridash-fail)))
+
+      (subtest "Meta-Node: filter"
+        (build ":import(core, filter, >)"
+               ">5(n) : n > 5")
+
+        (with-nodes ((filter "filter") (>5 ">5")) modules
+          (is (call-meta-node filter (list >5 '(2 7 1 3 9 0))) '(7 9))
+          (is-error (call-meta-node filter (list >5 '(1 2 3))) tridash-fail)
+          (is-error (call-meta-node filter (list >5 (fail-thunk))) tridash-fail)))
+
+      (subtest "List Predicates"
+        (build ":import(core, >)"
+               ">3(n) : n > 3")
+
+        (with-nodes ((>3 ">3")) modules
+
+          (subtest "Meta-Node: every?"
+            (build ":import(core, every?)")
+
+            (with-nodes ((every? "every?")) modules
+              (ok (bool-value (call-meta-node every? (list >3 '(4 5 6)))))
+              (is (bool-value (call-meta-node every? (list >3 '(1 2 3 4 5 6)))) nil)
+              (ok (bool-value (call-meta-node every? (list >3 (fail-thunk)))))))
+
+          (subtest "Meta-Node: some?"
+            (build ":import(core, some?)")
+
+            (with-nodes ((some? "some?")) modules
+              (ok (bool-value (call-meta-node some? (list >3 '(4 5 6)))))
+              (ok (bool-value (call-meta-node some? (list >3 '(1 2 3 4 5 6)))) nil)
+              (is (bool-value (call-meta-node some? (list >3 '(0 1 2)))) nil)
+              (is (bool-value (call-meta-node some? (list >3 (fail-thunk)))) nil)))
+
+          (subtest "Meta-Node: not-any?"
+            (build ":import(core, not-any?)")
+
+            (with-nodes ((not-any? "not-any?")) modules
+              (is (bool-value (call-meta-node not-any? (list >3 '(4 5 6)))) nil)
+              (is (bool-value (call-meta-node not-any? (list >3 '(1 2 3 4 5 6)))) nil)
+              (ok (bool-value (call-meta-node not-any? (list >3 '(1 2 3)))))
+              (ok (bool-value (call-meta-node not-any? (list >3 (fail-thunk)))))))
+
+          (subtest "Meta-Node: not-every?"
+            (build ":import(core, not-every?)")
+
+            (with-nodes ((not-every? "not-every?")) modules
+              (is (bool-value (call-meta-node not-every? (list >3 '(4 5 6)))) nil)
+              (ok (bool-value (call-meta-node not-every? (list >3 '(1 2 3 4 5 6)))))
+              (ok (bool-value (call-meta-node not-every? (list >3 '(0 1 2)))))
+              (is (bool-value (call-meta-node not-every? (list >3 (fail-thunk)))) nil)))))))
+
+  (subtest "Introspection"
+    (with-module-table modules
+      (build-core-module)
+      (build ":import(core, node?, find-node, get-attribute, +)")
+
+      (subtest "Meta-Node: node?"
+        (build "x")
+        (with-nodes ((node? "node?") (x "x")) modules
+          (ok (bool-value (call-meta-node node? (list x))))
+          (is (bool-value (call-meta-node node? '(x))) nil)))
+
+      (subtest "Meta-Node: find-node"
+        (build "x + y")
+
+        (with-modules ((init :init)) modules
+          (let ((tridash.frontend::*functor-module* init)
+                (tridash.frontend::*current-module* init))
+            (with-nodes ((find-node "find-node")
+                         (x "x")
+                         (x+y ((":in" "core" "+") "x" "y")))
+                modules
+
+              (is (call-meta-node find-node (list (id-symbol "x"))) x)
+              (is (call-meta-node find-node (list (name x+y))) x+y)
+              (is-error (call-meta-node find-node (list (id-symbol "z"))) tridash-fail)))))
+
+      (subtest "Meta-Node: get-attribute"
+        (build ":attribute(x, my-key, my-value)")
+        (with-nodes ((get-attribute "get-attribute") (x "x"))
+            modules
+
+          (is (call-meta-node get-attribute (list x (id-symbol "my-key")))
+              (id-symbol "my-value"))
+
+          (is-error (call-meta-node get-attribute (list x (id-symbol "not-a-key")))
+                    tridash-fail)))))
+
+  (subtest "Pattern Matching"
+    (with-module-table modules
+      (build-core-module)
+
+      (subtest "Match Integer"
+        (build ":import(core, int)")
+        (build "f-int(x) : { x -> int(y); y }")
+
+        (with-nodes ((f-int "f-int")) modules
+          (is (call-meta-node f-int '(1)) 1)
+          (is-error (call-meta-node f-int '(2.3)) tridash-fail)
+          (is-error (call-meta-node f-int '("hello")) tridash-fail)))
+
+      (subtest "Match Real"
+        (build ":import(core, real)")
+        (build "f-real(x) : { x -> real(y); y }")
+
+        (with-nodes ((f-real "f-real")) modules
+          (is (call-meta-node f-real '(1)) 1)
+          (is (call-meta-node f-real '(2.3)) 2.3)
+          (is-error (call-meta-node f-real '("hello")) tridash-fail)))
+
+      (subtest "Match String"
+        (build ":import(core, string)")
+        (build "f-string(x) : { x -> string(y); y }")
+
+        (with-nodes ((f-string "f-string")) modules
+          (is (call-meta-node f-string '("hello")) "hello")
+          (is-error (call-meta-node f-string '(1)) tridash-fail)
+          (is-error (call-meta-node f-string '(2.3)) tridash-fail)))
+
+      (subtest "Match Cons"
+        (build ":import(core, cons, list)"
+               "f-cons(x) : { x -> cons(h,t); list(h,t) }")
+
+        (with-nodes ((f-cons "f-cons")) modules
+          (is (call-meta-node f-cons '((1 2 3))) '(1 (2 3)))
+          (is-error (call-meta-node f-cons '(1)) tridash-fail)
+          (is-error (call-meta-node f-cons '("hello")) tridash-fail)))
+
+      (subtest "Match List"
+        (build ":import(core, list, +)"
+               "f-list(x) : { x -> list(a, b, c); a + b + c }")
+
+        (with-nodes ((f-list "f-list")) modules
+          (is (call-meta-node f-list '((1 2 3))) 6)
+          (is-error (call-meta-node f-list '((1 2))) tridash-fail)
+          (is-error (call-meta-node f-list '((1 2 3 4))) tridash-fail)
+
+          (is-error (call-meta-node f-list '(1)) tridash-fail)
+          (is-error (call-meta-node f-list '("hello")) tridash-fail)))
+
+      (subtest "Match List*"
+        (build ":import(core, list, list*, +)"
+               "f-list*(x) : { x -> list*(a, b, xs); list*(a + b, xs) }")
+
+        (with-nodes ((f-list* "f-list*")) modules
+          (is (call-meta-node f-list* '((1 2 3))) '(3 3))
+          (is (call-meta-node f-list* '((1 2))) '(3))
+          (is (call-meta-node f-list* '((1 2 3 4))) '(3 3 4))
+
+          (is-error (call-meta-node f-list* '((1))) tridash-fail)
+          (is-error (call-meta-node f-list* '(1)) tridash-fail)
+          (is-error (call-meta-node f-list* '("hello")) tridash-fail)))
+
+      (subtest "Nested and Multiple Patterns"
+        (build-source-file #p"./test/inputs/macros/pattern-match-nested.trd" modules)
+
+        (with-nodes ((calc "calc")) modules
+          (is (call-meta-node calc (decls '(!|add| 1 2))) 3)
+          (is (call-meta-node calc (decls '(!|sub| 3 0.5))) 2.5)
+          (is (call-meta-node calc (decls '(!|neg| 5))) -5)
+
+          (is-error (call-meta-node calc '((1 2 3))) tridash-fail)
+          (is-error (call-meta-node calc (decls '(!|add| 1))) tridash-fail)
+          (is-error (call-meta-node calc (decls '(!|add| "x" "y"))) tridash-fail)
+          (is-error (call-meta-node calc '("x")) tridash-fail)))
+
+      (subtest "Similar Patterns"
+        (build-source-file #p"./test/inputs/macros/pattern-match-similar.trd" modules)
+
+        (with-nodes ((calc3 "calc3")) modules
+          (is (call-meta-node calc3 (decls '(!|add| 1 2))) 3)
+          (is (call-meta-node calc3 (decls '(!|sub| 3 0.5))) 2.5)
+          (is (call-meta-node calc3 (decls '(!|sub| 5))) 4)
+
+          (is-error (call-meta-node calc3 '((1 2 3))) tridash-fail)
+          (is-error (call-meta-node calc3 (decls '(!|add| 1))) tridash-fail)
+          (is-error (call-meta-node calc3 (decls '(!|add| "x" "y"))) tridash-fail)
+          (is-error (call-meta-node calc3 '("x")) tridash-fail)))
+
+      (subtest "Constant Patterns"
+        (build-source-file #p"./test/inputs/macros/pattern-match-constant.trd" modules)
+
+        (with-nodes ((calc2 "calc2")) modules
+          (is (call-meta-node calc2 '((0 1 2))) 3)
+          (is (call-meta-node calc2 '((0.5 3 0.5))) 2.5)
+          (is (call-meta-node calc2 '(("neg" 5))) -5)
+
+          (is-error (call-meta-node calc2 '((1 2 3))) tridash-fail)
+          (is-error (call-meta-node calc2 (decls '(0 1))) tridash-fail)
+          (is-error (call-meta-node calc2 (decls '(0 "x" "y"))) tridash-fail)
+          (is-error (call-meta-node calc2 '("x")) tridash-fail)))))
+
+  (subtest "Utility Macros"
+    (with-module-table modules
+      (build-core-module)
+
+      (subtest "Case Macro"
+        (build ":import(core, case, =, ')"
+               "test-case(x) : case(x = 1 : '(a), x = 2 : '(b), '(other))")
+
+        (with-nodes ((test-case "test-case")) modules
+          (is (call-meta-node test-case '(1)) (id-symbol "a"))
+          (is (call-meta-node test-case '(2)) (id-symbol "b"))
+          (is (call-meta-node test-case '(3)) (id-symbol "other"))))
+
+      (subtest "Case Macro Without Default"
+        (build ":import(core, case, =, ')"
+               "test-case2(x) : case(x = 1 : '(a), x = 2 : '(b))")
+
+        (with-nodes ((test-case2 "test-case2")) modules
+          (is (call-meta-node test-case2 '(1)) (id-symbol "a"))
+          (is (call-meta-node test-case2 '(2)) (id-symbol "b"))
+          (is-error (call-meta-node test-case2 '(3)) tridash-fail)))
+
+      (subtest "! Macro"
+        (build ":import(core, cons, !)"
+               "cons!(x, y) : !(cons(x, y))")
+
+        (with-nodes ((cons! "cons!")) modules
+          (is (call-meta-node cons! '(1 (2 3))) '(1 2 3))
+
+          (is-error
+           (resolve% (call-tridash-meta-node cons! (list 1 (fail-thunk))))
+           tridash-fail)
+
+          (is-error
+           (resolve% (call-tridash-meta-node cons! (list (fail-thunk) 1)))
+           tridash-fail))))))
 
 (finalize)

@@ -1,0 +1,270 @@
+### Tridash Core Module
+###
+### Pattern Matching
+
+:module(core)
+
+attribute-processor(matcher, find-node)
+
+### Utilities
+
+## Returns the matcher meta-node for `node`.
+##
+## node : The node.
+
+get-matcher(node) :
+    get-attribute(node, '(matcher))
+
+
+## Creates a Pattern object.
+##
+## The object has two subnodes:
+##
+##   - condition : The condition indicating whether the pattern was
+##                 matched. Initialized to `condition`.
+##
+##   - binding : The list of bindings established by the
+##               pattern. These must not be conditionalized on the
+##               condition indicating whether the pattern was matched,
+##               as they will be conditionalized on `condition`, and
+##               any other conditions when the final node declaration
+##               is created.
+##
+## condition : The pattern condition.
+## bindings  : List of bindings established by the pattern.
+
+Pattern(condition, :(binding)) : {
+    condition -> self.condition
+    binding -> self.bindings
+}
+
+## Creates the node declarations implementing the Pattern `pattern`.
+##
+## pattern : The pattern for which to create the declarations.
+
+make-pattern-declarations(pattern) :
+    list*(&(prog), conditionalize-bindings(pattern.condition, pattern.bindings))
+
+## Creates the `Pattern` object for the pattern declaration `pattern`
+## which is to be matched against `place`.
+##
+## place : The node whose value is matched against pattern.
+## pattern : The pattern expression.
+
+make-pattern(place, pattern) : {
+    # Helper Meta-Nodes
+
+    # If `pattern` is a functor, creates the pattern for the functor,
+    # using the operator's matcher.
+
+    make-functor-pattern(place, pattern) : {
+        operator <- head(pattern)
+        op-node <- if(node?(operator), operator, find-node(operator))
+
+        matcher <- get-matcher(op-node)
+        matcher(place, pattern)
+    }
+
+    # If `pattern` is a constant, creates a pattern which compares
+    # `place` to the constant. The pattern created does not have any
+    # binding declarations.
+
+    make-constant-pattern(place, pattern) : {
+        constant?(pattern) ->
+            Pattern(list(&(=), place, pattern)) -> self
+    }
+
+    # Creates a pattern which consists of a binding of `place` to
+    # `pattern`, and no condition.
+
+    make-binding-pattern(place, pattern) : {
+        list(list(&(->), place, list('(:context), pattern, '(match)))) -> self.bindings
+    }
+
+    # Body
+
+    make-functor-pattern(place, pattern) -> self @ make-pattern
+    make-constant-pattern(place, pattern) -> self @ make-pattern
+    make-binding-pattern(place, pattern) -> self @ make-pattern
+}
+
+
+## Conditionalizes the bindings in the list `bindings` on `condition`.
+##
+## Evaluates to a list where each binding declaration in `bindings`is
+## conditioned on `condition`. If `condition` fails to evaluate to a
+## value, `binding` is returned as is.
+##
+## condition : The condition.
+## bindings  : The list of binding declarations to conditionalize.
+
+conditionalize-bindings(condition, bindings) : {
+    conditionalize(binding) :
+        list(&(->), condition, binding)
+
+    ?(condition) -> map(conditionalize, bindings) -> self @ conditionalize
+    bindings -> self @ conditionalize
+}
+
+
+## Combines the conditions `c1` and `c2` with a conjunction `and`.
+##
+## Evaluates to the value of `c2` if `c1` fails, or to the value of
+## `c1` if `c2` fails.
+##
+## c1 : The first condition which is to be tested.
+## c2 : The second condition which is to be tested.
+
+combine-conditions(c1, c2) : {
+    ?(c1) and ?(c2) -> list(&(and), c1, c2) -> self @ combine
+    c1 -> self @ combine
+    c2 -> self @ combine
+}
+
+
+## Checks whether `x` designates a constant or a node declaration.
+##
+## x : The expression component.
+
+constant?(x) : {
+    real?(x) or string?(x)
+}
+
+
+### Pattern Matchers
+
+## Integers
+
+target-int(source, expression) :
+    make-pattern-declarations(match-int(source, expression))
+
+
+match-int(place, expression) : {
+    x <- nth(expression, 1)
+    pattern <- make-pattern(place, x)
+
+    test <- list(&(int?), place)
+    condition <- combine-conditions(test, pattern.condition)
+
+    Pattern(condition, pattern.bindings)
+}
+
+:attribute(int, matcher, match-int)
+:attribute(int, target-transform, target-int)
+
+
+## Reals
+
+target-real(source, expression) :
+    make-pattern-declarations(match-real(source, expression))
+
+match-real(place, expression) : {
+    x <- nth(expression, 1)
+    pattern <- make-pattern(place, x)
+
+    test <- list(&(real?), place)
+    condition <- combine-conditions(test, pattern.condition)
+
+    Pattern(condition, pattern.bindings)
+}
+
+:attribute(real, matcher, match-real)
+:attribute(real, target-transform, target-real)
+
+
+## Strings
+
+target-string(source, expression) :
+    make-pattern-declarations(match-string(source, expression))
+
+match-string(place, expression) : {
+    x <- nth(expression, 1)
+    pattern <- make-pattern(place, x)
+
+    test <- list(&(string?), place)
+    condition <- combine-conditions(test, pattern.condition)
+
+    Pattern(condition, pattern.bindings)
+}
+
+:attribute(string, matcher, match-string)
+:attribute(string, target-transform, target-string)
+
+
+## Cons
+
+target-cons(source, expression) :
+    make-pattern-declarations(match-cons(source, expression))
+
+match-cons(place, pattern) : {
+    phead <- nth(pattern, 1)
+    ptail <- nth(pattern, 2)
+
+    place-head <- list(&(head), place)
+    place-tail <- list(&(tail), place)
+
+    pattern-head <- make-pattern(place-head, phead)
+    pattern-tail <- make-pattern(place-tail, ptail)
+
+    condition <- combine-conditions(pattern-head.condition, pattern-tail.condition)
+    cons-condition <- list(&(cons?), place)
+
+    Pattern(
+        combine-conditions(cons-condition, condition),
+        append(pattern-head.bindings, pattern-tail.bindings)
+    )
+}
+
+:attribute(cons, matcher, match-cons)
+:attribute(cons, target-transform, target-cons)
+
+
+## List
+
+target-list(source, expression) :
+    make-pattern-declarations(match-list(source, expression))
+
+match-list(place, pattern) : {
+    make-cons(head, tail) :
+        list(&(cons), head, tail)
+
+    cons-pattern <- foldr(make-cons, tail(pattern), list(&(fails?)))
+    make-pattern(place, cons-pattern)
+}
+
+:attribute(list, target-transform, target-list)
+:attribute(list, matcher, match-list)
+
+
+## List*
+
+target-list*(source, expression) :
+    make-pattern-declarations(match-list*(source, expression))
+
+match-list*(place, pattern) : {
+    make-cons(head, tail) :
+        list(&(cons), head, tail)
+
+    cons-pattern <- foldr(make-cons, tail(pattern))
+    make-pattern(place, cons-pattern)
+}
+
+:attribute(list*, target-transform, target-list*)
+:attribute(list*, matcher, match-list*)
+
+
+## Fails?
+
+match-fails?(place, pattern) :
+    Pattern(list(&(fails?), place))
+
+:attribute(fails?, matcher, match-fails?)
+
+
+## Quote
+
+match-quote(place, pattern) : {
+    Pattern(list(&(=), place, list(&('), nth(pattern, 1))))
+}
+
+:attribute(', matcher, match-quote)

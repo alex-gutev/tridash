@@ -1,0 +1,33 @@
+### Tridash Core Module
+###
+### Miscellaneous Utilities
+
+:module(core)
+
+
+### Failure Checks
+
+## Checks whether `x` fails.
+##
+## x : The value to check.
+##
+## Evaluates to true if `x` fails, false otherwise.
+
+fails?(x) : {
+   x and 0 -> self @ catch-fail
+   1 -> self @ catch-fail
+}
+
+## Checks whether `x` evaluates to a value.
+##
+## x : The value to check.
+##
+## Evaluates to true if `x` evaluates to a value, false if `x`
+## fails.
+
+?(x) : not(fails?(x))
+
+
+### Export Declarations
+
+:export(fails?, ?)

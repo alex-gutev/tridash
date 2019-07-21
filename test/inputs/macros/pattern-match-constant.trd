@@ -1,0 +1,13 @@
+## Test integer, real and string constant patterns.
+
+:import(core, @, list, real, +, -)
+
+calc2(exp) : {
+    exp -> list(0, real(add-x), real(add-y))
+    exp -> list(0.5, real(sub-x), real(sub-y))
+    exp -> list("neg", real(neg-x))
+
+    add-x + add-y -> self @ calc
+    sub-x - sub-y -> self @ calc
+    -(neg-x) -> self @ calc
+}

@@ -1,0 +1,45 @@
+### Tridash Core Module
+###
+### Utilities for converting between types
+
+:module(core)
+
+## Converts `x` to an integer.
+##
+## The behaviour of this meta-node is equivalent if used in target
+## position.
+##
+## x : The value to convert.
+
+to-int(x) : int(x)
+
+:attribute(to-int, target-node, to-int)
+
+
+## Converts `x` to a real value.
+##
+## The behaviour of this meta-node is equivalent if used in target
+## position.
+##
+## x : The value to convert.
+
+to-real(x) : real(x)
+
+:attribute(to-real, target-node, to-real)
+
+
+## Converts `x` to a string.
+##
+## The behaviour of this meta-node is equivalent if used in target
+## position.
+##
+## x : The value to convert.
+
+to-string(x) : string(x)
+
+:attribute(to-string, target-node, to-string)
+
+
+### Export Declarations
+
+:export(to-int, to-real, to-string)

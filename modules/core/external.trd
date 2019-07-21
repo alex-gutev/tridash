@@ -1,0 +1,108 @@
+### Tridash Core Module
+###
+### External Meta-Node Declarations
+
+:module(core)
+
+### Arithmetic Operators
+
+:extern(+, a, b)
+:attribute(+, strictness, or(a,b))
+
+:extern(-, a, :(b))
+:attribute(-, strictness, or(a,b))
+
+:extern(*, a, b)
+:attribute(*, strictness, or(a,b))
+
+:extern(/, a, b)
+:attribute(/, strictness, or(a,b))
+
+
+### Comparison Operators
+
+:extern(<, a, b)
+:attribute(<, strictness, or(a,b))
+
+:extern(<=, a, b)
+:attribute(<=, strictness, or(a,b))
+
+:extern(>, a, b)
+:attribute(>, strictness, or(a,b))
+
+:extern(>=, a, b)
+:attribute(>=, strictness, or(a,b))
+
+:extern(=, a, b)
+:attribute(=, strictness, or(a,b))
+
+:extern(!=, a, b)
+:attribute(!=, strictness, or(a,b))
+
+
+### Logical Operators
+
+:extern(and, a, b)
+:attribute(and, strictness, a)
+
+:extern(or, a, b)
+:attribute(or, strictness, a)
+
+:extern(not, x)
+:attribute(not, strictness, x)
+:attribute(not, target-node, not)
+
+
+### Type Conversions
+
+:extern(int, x)
+:attribute(int, strictness, x)
+
+:extern(real, x)
+:attribute(real, target-node, real)
+
+:extern(string, x)
+:attribute(string, strictness, x)
+
+
+### Type Checks
+
+:extern(int?, x)
+:attribute(int?, strictness, x)
+
+:extern(real?, x)
+:attribute(real?, strictness, x)
+
+:extern(string?, x)
+:attribute(string?, strictness, x)
+
+:extern(inf?, x)
+:attribute(inf?, strictness, x)
+
+:extern(NaN?, x)
+:attribute(NaN?, strictness, x)
+
+
+### Lists
+
+:extern(cons, head, tail)
+
+:extern(head, list)
+:attribute(head, strictness, list)
+
+:extern(tail, list)
+:attribute(tail, strictness, tail)
+
+:extern(cons?, thing)
+:attribute(cons?, strictness, thing)
+
+
+### Export Declarations
+
+:export(+, -, *, /,
+        <, <=, >, >=,
+        =, !=,
+        and, or, not,
+        int, real, string,
+        int?, real?, string?, inf?, NaN?,
+        cons, head, tail, cons?)

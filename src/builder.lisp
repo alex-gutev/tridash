@@ -50,6 +50,11 @@
 
 ;;;; Build Entire Graph
 
+(defvar *current-module* nil
+  "The module to which the nodes currently being compiled are
+   added. This differs from the module in the CURRENT-MODULE slot of
+   *GLOBAL-NODE-TABLE* when building meta-node definitions.")
+
 (define-file-builder trd (path module-table)
   (with-open-file (in path)
     (build-parsed-nodes (make-parser in) module-table)))
@@ -72,7 +77,8 @@
    to the CURRENT-MODULE of the `MODULE-TABLE' given in the second
    argument."
 
-  (let ((*functor-module* (ensure-module :init *global-module-table*))
+  (let ((*current-module* (current-module *global-module-table*))
+        (*functor-module* (ensure-module :init *global-module-table*))
         (*declaration-stack* nil)
         (*source-node* nil))
     (process-declaration node (current-module *global-module-table*) :top-level t)))
@@ -201,6 +207,7 @@
       (let* ((module (make-inner-module (home-module meta-node)))
              (value-node (make-self-node meta-node module))
              (*meta-node* meta-node)
+             (*current-module* module)
              (*functor-module* module))
 
         (add-operand-nodes (operand-node-names meta-node) module)

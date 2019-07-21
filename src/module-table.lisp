@@ -119,19 +119,10 @@
   "Creates the builtin module."
 
   (let ((builtin (ensure-module (id-symbol "builtin") modules)))
-    (let ((case-node (add-external-meta-node (id-symbol "case") builtin))
-          (?->-node (add-external-meta-node (id-symbol "?->") builtin)))
+    (add-core-nodes builtin)
+    (add-core-macros builtin)
 
-      (add-core-nodes builtin)
-      (add-core-macros builtin)
-
-      (setf (node-macro-function case-node) #'case-macro-function)
-      (export-node (id-symbol "case") builtin)
-
-      (setf (node-macro-function ?->-node) #'?->-macro-function)
-      (export-node (id-symbol "?->") builtin)
-
-      builtin)))
+    builtin))
 
 (defun add-core-nodes (builtin)
   "Adds the nodes in *CORE-META-NODES* to the module BUILTIN, and its
@@ -161,48 +152,6 @@
 
   (destructuring-bind (precedence &optional (assoc :left)) op-info
     (add-operator name precedence assoc (operator-nodes builtin))))
-
-
-(defun case-macro-function (operator operands module)
-  "Case macro function. Transforms the case expression into a series
-   of nested if expressions."
-
-  (declare (ignore operator))
-
-  (let ((if-node (list +in-module-operator+ (id-symbol "core") (id-symbol "if"))))
-    (flet ((make-if (case expr)
-             (match case
-               ((list (eq (id-symbol ":")) cond node)
-                (list if-node cond node expr))
-
-               (_ case))))
-
-      (process-declaration
-       (reduce #'make-if operands :from-end t :initial-value nil)
-       module))))
-
-(defun ?->-macro-function (operator operands module)
-  "Macro function of the ?-> operator."
-
-  (match operands
-    ((list src target)
-
-     (process-declaration
-      `(,+bind-operator+
-        ((,+in-module-operator+ ,(id-symbol "core") ,(id-symbol "not"))
-         (,+subnode-operator+ ,src ,(id-symbol "fail")))
-
-        (,+bind-operator+
-         (,+subnode-operator+ ,src ,(id-symbol "value"))
-         ,target))
-      module
-
-      :top-level t))
-
-    (_ (error 'invalid-arguments-error
-              :expected '(node node)
-              :operator operator
-              :arguments operands))))
 
 
 ;;;; Creating Core Expressions

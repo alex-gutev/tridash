@@ -244,7 +244,7 @@
   "The identifier name of the HTML component node of the current
    file.")
 
-(defmacro! html-file-test ((module-table name file &rest preload) &body body)
+(defmacro! html-file-test ((module-table name file &key (core nil)) &body body)
   "Builds the nodes in the HTML file FILE, into a module table which
    is bound to the symbol MODULE-TABLE and evaluates the forms in
    BODY.
@@ -254,8 +254,8 @@
    established in the environment in which the forms in BODY are
    evaluated.
 
-   PRELOAD is a list of paths of file to build prior to building
-   FILE.
+   If :CORE is provided and is true, the core module is built prior to
+   building the HTML file.
 
    Finally checks that the root-node returned by BUILD-HTML-FILE is
    equivalent to the root-node of the parsed HTML file, which is at
@@ -279,7 +279,7 @@
           (diag ,(format nil "Test file: ~a" file))
 
           (with-module-table ,module-table
-            ,@(map #`(build-source-file ,a1 ,module-table) preload)
+            ,(when core '(build-core-module))
 
             (-<>> ,(if module (format nil "~a.~a" module name) name)
                   (cons "node-name")
@@ -352,8 +352,12 @@
         (test-html-attribute-function heading.content heading "textContent")))))
 
 (subtest "Inline Functors"
-  (html-file-test (modules "main" #p"test/builders/html/input/test4.html" "modules/core.trd")
-    (with-nodes ((a ((":in" "core" "int") "a")) (b ((":in" "core" "int") "b")) (a+b ((":in" "core" "+") "a" "b"))) modules
+  (html-file-test (modules "main" #p"test/builders/html/input/test4.html" :core t)
+    (with-nodes ((a ((":in" "core" "to-int") "a"))
+                 (b ((":in" "core" "to-int") "b"))
+                 (a+b ((":in" "core" "+") "a" "b")))
+        modules
+
       (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
                         (input-b.value (:subnode "input-b" "value") "input")
                         (sum.value (:subnode "sum" "value") "input"))
@@ -369,9 +373,11 @@
 
 (subtest "Multiple Inline Declarations"
   (subtest "In Attributes"
-    (html-file-test (modules "main" #p"test/builders/html/input/test5.html" "modules/core.trd")
-      (with-nodes ((a ((":in" "core" "int") "a")) (b ((":in" "core" "int") "b"))
-                   (a+b ((":in" "core" "+") "a" "b")) (sum "sum"))
+    (html-file-test (modules "main" #p"test/builders/html/input/test5.html" :core t)
+      (with-nodes ((a ((":in" "core" "to-int") "a"))
+                   (b ((":in" "core" "to-int") "b"))
+                   (a+b ((":in" "core" "+") "a" "b"))
+                   (sum "sum"))
           modules
 
         (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
@@ -390,9 +396,11 @@
           (test-binding sum sum.value)))))
 
   (subtest "In SPAN elements"
-    (html-file-test (modules "main" #p"test/builders/html/input/test6.html" "modules/core.trd")
-      (with-nodes ((a ((":in" "core" "int") "a")) (b ((":in" "core" "int") "b"))
-                   (a+b ((":in" "core" "+") "a" "b")) (sum "sum"))
+    (html-file-test (modules "main" #p"test/builders/html/input/test6.html" :core t)
+      (with-nodes ((a ((":in" "core" "to-int") "a"))
+                   (b ((":in" "core" "to-int") "b"))
+                   (a+b ((":in" "core" "+") "a" "b"))
+                   (sum "sum"))
           modules
 
         (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
@@ -415,7 +423,7 @@
                 (is html-attribute "textContent" "Bound to attribute textContent")))))))))
 
 (subtest "Self-Node Reference from Meta-Nodes"
-  (html-file-test (modules "main" #p"test/builders/html/input/test7.html" "modules/core.trd")
+  (html-file-test (modules "main" #p"test/builders/html/input/test7.html" :core t)
     (let ((modules (finish-build-graph modules)))
       (with-nodes ((result "result")) modules
         (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
@@ -425,7 +433,7 @@
           (test-binding input-a.value result)
           (test-binding input-b.value result)))))
 
-  (html-file-test (modules ("mod" "main") #p"test/builders/html/input/test8.html" "modules/core.trd")
+  (html-file-test (modules ("mod" "main") #p"test/builders/html/input/test8.html" :core t)
     (let ((modules (finish-build-graph modules)))
       (with-nodes ((result "result")) modules
         (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")

@@ -1,0 +1,67 @@
+### Tridash Core Module
+###
+### Utility Macros
+
+:module(core)
+
+## Evaluates to the value corresponding to the first condition node
+## that evaluates to true.
+##
+## Each element of `cases` is of the form:
+##
+##     condition : value
+##
+## where `condition` is the condition node and `value` is the value
+## node. If `condition` evaluates to true, the `case` functor
+## evaluates to the value of `value`. If `condition` evaluates to
+## false, the next `case` in `cases` is tested.
+##
+## The final element of `cases` may comprise of just a `value` node,
+## omitting the `condition` node and `:` operator. In this case the
+## `value` node is interpreted as the default value to which the
+## `case` functor evaluates if all `condition` nodes evaluate to
+## false. If there is no default value, the `case` functor fails to
+## evaluate a value.
+##
+## cases : List of cases of the form `condition : value`. The last
+##         case may be of the form `value`.
+
+case(..(cases)) : {
+    make-case(case, else) : {
+        case -> list('(:), condition, value)
+
+        list!(&(if), condition, value, else) -> self @ make-case
+        case -> self @ make-case
+    }
+
+    foldr(make-case, cases, list(&(fail)))
+}
+:attribute(case, macro, 1)
+
+## Expands to a node which evaluates to the value of the functor node
+## with operator `operator` and arguments `args`, only if all
+## arguments succeed. If at least one of the arguments fails to
+## evaluate to a value, the entire functor node fails to evaluate to a
+## value.
+##
+## operator : The functor operator.
+## args     : The functor arguments.
+
+!(functor) : {
+    make-fail-test(arg) :
+        list(&(?), arg)
+
+    make-check(arg, test) :
+        list(&(and), arg, test)
+
+    functor -> cons(operator, args)
+    test <- foldr(make-check, map(make-fail-test, args))
+
+    list(&(if), test, cons(operator, args))
+}
+:attribute(!, macro, 1)
+
+
+### Export Declarations
+
+:export(case, !)
