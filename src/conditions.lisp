@@ -109,7 +109,7 @@
 
 (defmethod print-object ((err non-existent-node-error) stream)
   (format stream "No node `~a` in module `~a`."
-          (node err) (name (module err))))
+          (node err) (module err)))
 
 
 ;;;; Name Collision Errors
