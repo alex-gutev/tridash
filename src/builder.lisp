@@ -654,6 +654,9 @@
 
     ((list node context-id)
      (let ((node (process-declaration node module :level *level*)))
+       (unless (node? node)
+         (error 'not-node-error :node node))
+
        (if *source-node*
            (make-instance 'context-node :context-id context-id :node node)
            node)))))
