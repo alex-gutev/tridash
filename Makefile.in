@@ -165,13 +165,25 @@ uninstall:
 
 ## Testing
 
-check:
+check: check-compiler check-runtime
+
+check-compiler:
 	cd $(srcdir); \
 	$(LISP) --load tridash.asd --load test/script.lisp
 
+
+check-runtime: $(srcdir)/test/backends/javascript/runtime/tridash.js
+	cd $(srcdir)/test/backends/javascript; npm test
+
+$(srcdir)/test/backends/javascript/runtime/tridash.js: src/backends/javascript/runtime/tridash.min.js
+	cp $< $@
+	echo "module.exports=Tridash;" >> $@
+
+
+## Phony Targets
 
 .PHONY: all man js-runtime clean distclean maintainer-clean \
 	install installdirs install-bin \
 	install-module-build-config install-modules install-data install-man \
 	uninstall \
-	check
+	check check-compiler check-runtime
