@@ -292,13 +292,15 @@
 
 (define-tridash-function + ((a number) (b number)) +)
 
-(define-tridash-function - (a &optional b)
-  (if b
-      (check-tridash-types ((a number) (b number))
-        (- a b))
+(define-tridash-function - (&rest args)
+  (ematch args
+    ((list a b)
+     (check-tridash-types ((a number) (b number))
+       (- a b)))
 
-      (check-tridash-types ((a number))
-        (- a))))
+    ((list a)
+     (check-tridash-types ((a number))
+       (- a)))))
 
 (define-tridash-function * ((a number) (b number)) *)
 (define-tridash-function / ((a number) (b number)) /)

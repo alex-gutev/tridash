@@ -361,6 +361,7 @@
   (loop
      for (strict? . strict-args) = (strict-arguments meta-node) then strict-args
      for arg in arguments
+     while (or arg (not *return-nil*))
      collect (tridash->cl arg :thunk (not strict?))))
 
 (defun strict-arguments (meta-node)
