@@ -54,3 +54,6 @@ exports.is_real = is_real;
 exports.is_string = is_string;
 exports.is_inf = is_inf;
 exports.is_nan = is_nan;
+
+exports.check_number = check_number;
+exports.check_value = check_value;

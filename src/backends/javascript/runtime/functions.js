@@ -64,7 +64,10 @@ function not(x) {
 
 function cast_int(x) {
     try {
-        return parseInt(resolve(x));
+        var intx = parseInt(resolve(x));
+
+        return !isNaN(intx) ? intx :
+            new Thunk(() => { throw Fail(); });
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -72,7 +75,10 @@ function cast_int(x) {
 };
 function cast_real(x) {
     try {
-        return parseFloat(resolve(x));
+        var realx = parseFloat(resolve(x));
+
+        return !isNaN(realx) ? realx :
+            new Thunk(() => { throw Fail(); });
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -106,7 +112,7 @@ function is_int(x) {
 
 function is_real(value) {
     try {
-        return !isNaN(resolve(value));
+	return typeof resolve(value) === 'number';
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -139,3 +145,30 @@ function is_nan(value) {
         return new Thunk(() => { throw e; });
     }
 };
+
+
+/* Internal Type Checking Functions */
+
+/**
+ * Checks that @a value is a number.
+ *
+ * @param value The value to check.
+ *
+ * @return @a value if it is a number, otherwise throws a 'Fail'
+ *   exception.
+ */
+function check_number(value) {
+    return typeof value === 'number' ? value : FailThunk();
+}
+
+/**
+ * Checks that @a value is a number or string.
+ *
+ * @param value The value to check.
+ *
+ * @return @a value if value is of the correct type, otherwise throws
+ *   a 'Fail' exception.
+ */
+function check_value(value) {
+    return typeof value === 'number' || typeof value === 'string' ? value : FailThunk();
+}

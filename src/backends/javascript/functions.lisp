@@ -55,16 +55,16 @@
     (cons (id-symbol "or") "Tridash.or")
     (cons (id-symbol "not") '("!" . t))
 
-    (cons (id-symbol "+") '("+" . t))
-    (cons (id-symbol "-") '("-" . t))
-    (cons (id-symbol "*") '("*" . t))
-    (cons (id-symbol "/") '("/" . t))
-    (cons (id-symbol "<") '("<" . t))
-    (cons (id-symbol ">") '(">" . t))
-    (cons (id-symbol "<=") '("<=" . t))
-    (cons (id-symbol ">=") '(">=" . t))
-    (cons (id-symbol "=") '("===" . t))
-    (cons (id-symbol "!=") '("!==" . t))
+    (cons (id-symbol "+") '("+" (:real :real)))
+    (cons (id-symbol "-") '("-" (:real :real)))
+    (cons (id-symbol "*") '("*" (:real :real)))
+    (cons (id-symbol "/") '("/" (:real :real)))
+    (cons (id-symbol "<") '("<" (:real :real)))
+    (cons (id-symbol ">") '(">" (:real :real)))
+    (cons (id-symbol "<=") '("<=" (:real :real)))
+    (cons (id-symbol ">=") '(">=" (:real :real)))
+    (cons (id-symbol "=") '("===" (:value :value)))
+    (cons (id-symbol "!=") '("!==" (:value :value)))
 
     (cons (id-symbol "int") "Tridash.cast_int")
     (cons (id-symbol "real") "Tridash.cast_real")
@@ -79,6 +79,13 @@
 
   "Map mapping tridash primitive operators to their corresponding
    JavaScript primitive operators.")
+
+(defconstant +type-check-functions+
+  (alist-hash-map
+   '((:real . "Tridash.check_number")
+     (:value . "Tridash.check_value")))
+
+  "Map mapping type keywords to JS type checking function names.")
 
 (defvar *in-tail-position* t
   "Boolean flag for whether the expression, currently being compiled,
@@ -138,11 +145,26 @@
       (->> (map #'resolve-expression operands)
            (make-js-call name))))
 
+    ((list name types)
+     (protect
+      nil
+
+      (->> (map #'make-type-check operands types)
+           (make-js-call name))))
+
     ((or (cons name nil) name)
      (values
       nil
       (make-js-call name operands)))))
 
+(defun make-type-check (expression type)
+  "Makes an expression which validates that the result of EXPRESSION
+   is of type TYPE."
+
+  (let ((check-fn (get type +type-check-functions+)))
+    (assert check-fn (check-fn))
+
+    (js-call check-fn (resolve-expression expression))))
 
 (defparameter *meta-node-call* #'meta-node-call
   "Function which should return a JS expression or block which invokes

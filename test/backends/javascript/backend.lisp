@@ -968,7 +968,11 @@
                 (js-catch
                  (list
                   (js-return
-                   (js-call "+" (resolve ($ x)) (resolve ($ y)))))
+                   (js-call
+                    "+"
+
+                    (js-call "Tridash.check_number" (resolve ($ x)))
+                    (js-call "Tridash.check_number" (resolve ($ y))))))
 
                  ($ e)
                  (list
@@ -992,7 +996,11 @@
                 (js-catch
                  (list
                   (js-if
-                   (resolve (js-call "<" (resolve ($ n)) (resolve 1)))
+                   (resolve
+                    (js-call
+                     "<"
+                     (js-call "Tridash.check_number" (resolve ($ n)))
+                     (js-call "Tridash.check_number" (resolve 1))))
                    (js-return 1)
 
                    (js-return
@@ -1000,7 +1008,10 @@
                      (js-var ($ n-1))
                      (js-catch
                       (list
-                       (->> (js-call "-" (resolve ($ n)) (resolve 1))
+                       (->> (js-call
+                             "-"
+                             (js-call "Tridash.check_number" (resolve ($ n)))
+                             (js-call "Tridash.check_number" (resolve 1)))
                             (js-call "=" ($ n-1))))
 
                       ($ e1)
@@ -1008,7 +1019,10 @@
                        (js-call "=" ($ n-1) (thunk (js-throw ($ e1))))))
 
                      (js-return
-                      (js-call "*" (resolve ($ n)) (resolve (js-call fact ($ n-1)))))))))
+                      (js-call
+                       "*"
+                       (js-call "Tridash.check_number" (resolve ($ n)))
+                       (js-call "Tridash.check_number" (resolve (js-call fact ($ n-1))))))))))
 
                  ($ e2)
                  (list
@@ -1038,7 +1052,11 @@
                     (js-catch
                      (list
                       (js-if
-                       (resolve (js-call "<" (resolve ($ n2)) (resolve 1)))
+                       (resolve
+                        (js-call
+                         "<"
+                         (js-call "Tridash.check_number" (resolve ($ n2)))
+                         (js-call "Tridash.check_number" (resolve 1))))
                        (js-return ($ acc))
 
                        (js-return
@@ -1047,7 +1065,10 @@
                          (js-var ($ n-1))
                          (js-catch
                           (list
-                           (->> (js-call "-" (resolve ($ n2)) (resolve 1))
+                           (->> (js-call
+                                 "-"
+                                 (js-call "Tridash.check_number" (resolve ($ n2)))
+                                 (js-call "Tridash.check_number" (resolve 1)))
                                 (js-call "=" ($ n-1))))
 
                           ($ e1)
@@ -1058,7 +1079,10 @@
                          (js-var ($ n*acc))
                          (js-catch
                           (list
-                           (->> (js-call "*" (resolve ($ n2)) (resolve ($ acc)))
+                           (->> (js-call
+                                 "*"
+                                 (js-call "Tridash.check_number" (resolve ($ n2)))
+                                 (js-call "Tridash.check_number" (resolve ($ acc))))
                                 (js-call "=" ($ n*acc))))
 
                           ($ e2)
@@ -1095,12 +1119,21 @@
                (list
                 (js-catch
                  (list
-                  (js-if (resolve (js-call ">" (resolve ($ n)) (resolve 1)))
-                         (js-return
-                          (thunk
-                           (js-return
-                            (js-call "+" (resolve (js-call fib1 ($ n))) (resolve (js-call fib2 ($ n)))))))
-                         (js-return 1)))
+                  (js-if
+                   (resolve
+                    (js-call
+                     ">"
+                     (js-call "Tridash.check_number" (resolve ($ n)))
+                     (js-call "Tridash.check_number" (resolve 1))))
+
+                   (js-return
+                    (thunk
+                     (js-return
+                      (js-call
+                       "+"
+                       (js-call "Tridash.check_number" (resolve (js-call fib1 ($ n))))
+                       (js-call "Tridash.check_number" (resolve (js-call fib2 ($ n))))))))
+                   (js-return 1)))
 
                  ($ e)
                  (list
@@ -1116,7 +1149,10 @@
                 (js-var ($ arg))
                 (js-catch
                  (list
-                  (->> (js-call "-" (resolve ($ n)) (resolve 1))
+                  (->> (js-call
+                        "-"
+                        (js-call "Tridash.check_number" (resolve ($ n)))
+                        (js-call "Tridash.check_number" (resolve 1)))
                        (js-call "=" ($ arg))))
 
                  ($ e)
@@ -1137,7 +1173,10 @@
                 (js-var ($ arg))
                 (js-catch
                  (list
-                  (->> (js-call "-" (resolve ($ n)) (resolve 2))
+                  (->> (js-call
+                        "-"
+                        (js-call "Tridash.check_number" (resolve ($ n)))
+                        (js-call "Tridash.check_number" (resolve 2)))
                        (js-call "=" ($ arg))))
 
                  ($ e)
@@ -1165,7 +1204,12 @@
                (list
                 (js-catch
                  (list
-                  (js-if (resolve (js-call ">" (resolve ($ x)) (resolve 0)))
+                  (js-if (resolve
+                          (js-call
+                           ">"
+                           (js-call "Tridash.check_number" (resolve ($ x)))
+                           (js-call "Tridash.check_number" (resolve 0))))
+
                          (js-return ($ x))
                          (js-return (thunk (js-throw (js-new +end-update-class+))))))
 
@@ -1190,7 +1234,11 @@
 
                (list
                 (js-var ($ g1))
-                (->> (js-call "+" (resolve ($ a)) (resolve ($ b)))
+                (->> (js-call
+                      "+"
+                      (js-call "Tridash.check_number" (resolve ($ a)))
+                      (js-call "Tridash.check_number" (resolve ($ b))))
+
                      js-return
                      thunk
                      (js-call "=" ($ g1)))
@@ -1198,7 +1246,10 @@
                 (js-catch
                  (list
                   (js-return
-                   (js-call "-" (resolve ($ g1)) (resolve ($ g1)))))
+                   (js-call
+                    "-"
+                    (js-call "Tridash.check_number" (resolve ($ g1)))
+                    (js-call "Tridash.check_number" (resolve ($ g1))))))
 
                  ($ e)
                  (list
@@ -1224,7 +1275,10 @@
                (list
                 (protected
                  (js-return
-                  (js-call "+" (resolve ($ n)) (resolve ($ d)))))))))
+                  (js-call
+                   "+"
+                   (js-call "Tridash.check_number" (resolve ($ n)))
+                   (js-call "Tridash.check_number" (resolve ($ d))))))))))
 
           (mock-backend-state
             (test-meta-node-function f
@@ -1254,7 +1308,11 @@
 
                (list
                 (protected
-                 (js-return (js-call "+" (resolve ($ x)) (resolve ($ xs)))))))))
+                 (js-return
+                  (js-call
+                   "+"
+                   (js-call "Tridash.check_number" (resolve ($ x)))
+                   (js-call "Tridash.check_number" (resolve ($ xs))))))))))
 
           (mock-backend-state
             (test-meta-node-function g
@@ -1294,7 +1352,11 @@
                    (list
                     (protected
                      (js-return
-                      (js-call "+" (resolve ($ x)) (resolve ($ y))))))))))))
+                      (js-call
+                       "+"
+
+                       (js-call "Tridash.check_number" (resolve ($ x)))
+                       (js-call "Tridash.check_number" (resolve ($ y)))))))))))))
 
         (subtest "Subtract"
           (with-module-table modules
@@ -1312,7 +1374,12 @@
 
                    (list
                     (protected
-                     (js-return (js-call "-" (resolve ($ x)) (resolve ($ y))))))))))))
+                     (js-return
+                      (js-call
+                       "-"
+
+                       (js-call "Tridash.check_number" (resolve ($ x)))
+                       (js-call "Tridash.check_number" (resolve ($ y)))))))))))))
 
         (subtest "Negate"
           (with-module-table modules
@@ -1330,7 +1397,11 @@
 
                    (list
                     (protected
-                     (js-return (js-call "-" (resolve ($ x))))))))))))
+                     (js-return
+                      (js-call
+                       "-"
+
+                       (js-call "Tridash.check_number" (resolve ($ x)))))))))))))
 
         (subtest "Multiply"
           (with-module-table modules
@@ -1348,7 +1419,11 @@
 
                    (list
                     (protected
-                     (js-return (js-call "*" (resolve ($ x)) (resolve ($ y))))))))))))
+                     (js-return
+                      (js-call
+                       "*"
+                       (js-call "Tridash.check_number" (resolve ($ x)))
+                       (js-call "Tridash.check_number" (resolve ($ y)))))))))))))
 
         (subtest "Divide"
           (with-module-table modules
@@ -1366,7 +1441,11 @@
 
                    (list
                     (protected
-                     (js-return (js-call "/" (resolve ($ x)) (resolve ($ y)))))))))))))
+                     (js-return
+                      (js-call
+                       "/"
+                       (js-call "Tridash.check_number" (resolve ($ x)))
+                       (js-call "Tridash.check_number" (resolve ($ y))))))))))))))
 
       (subtest "Comparison"
         (subtest "Less Than"
@@ -1385,7 +1464,12 @@
 
                    (list
                     (protected
-                     (js-return (js-call "<" (resolve ($ x)) (resolve ($ y))))))))))))
+                     (js-return
+                      (js-call
+                       "<"
+
+                       (js-call "Tridash.check_number" (resolve ($ x)))
+                       (js-call "Tridash.check_number" (resolve ($ y)))))))))))))
 
         (subtest "Less Than or Equal"
           (with-module-table modules
@@ -1403,7 +1487,12 @@
 
                    (list
                     (protected
-                     (js-return (js-call "<=" (resolve ($ x)) (resolve ($ y))))))))))))
+                     (js-return
+                      (js-call
+                       "<="
+
+                       (js-call "Tridash.check_number" (resolve ($ x)))
+                       (js-call "Tridash.check_number" (resolve ($ y)))))))))))))
 
         (subtest "Greater Than"
           (with-module-table modules
@@ -1421,7 +1510,12 @@
 
                    (list
                     (protected
-                     (js-return (js-call ">" (resolve ($ x)) (resolve ($ y))))))))))))
+                     (js-return
+                      (js-call
+                       ">"
+
+                       (js-call "Tridash.check_number" (resolve ($ x)))
+                       (js-call "Tridash.check_number" (resolve ($ y)))))))))))))
 
         (subtest "Greater Than or Equal"
           (with-module-table modules
@@ -1439,7 +1533,12 @@
 
                    (list
                     (protected
-                     (js-return (js-call ">=" (resolve ($ x)) (resolve ($ y))))))))))))
+                     (js-return
+                      (js-call
+                       ">="
+
+                       (js-call "Tridash.check_number" (resolve ($ x)))
+                       (js-call "Tridash.check_number" (resolve ($ y)))))))))))))
 
         (subtest "Equal"
           (with-module-table modules
@@ -1457,7 +1556,12 @@
 
                    (list
                     (protected
-                     (js-return (js-call "===" (resolve ($ x)) (resolve ($ y))))))))))))
+                     (js-return
+                      (js-call
+                       "==="
+
+                       (js-call "Tridash.check_value" (resolve ($ x)))
+                       (js-call "Tridash.check_value" (resolve ($ y)))))))))))))
 
         (subtest "Not Equal"
           (with-module-table modules
@@ -1475,7 +1579,12 @@
 
                    (list
                     (protected
-                     (js-return (js-call "!==" (resolve ($ x)) (resolve ($ y)))))))))))))
+                     (js-return
+                      (js-call
+                       "!=="
+
+                       (js-call "Tridash.check_value" (resolve ($ x)))
+                       (js-call "Tridash.check_value" (resolve ($ y))))))))))))))
 
       (subtest "Boolean Logic"
         (subtest "And"
@@ -1496,7 +1605,12 @@
                     (js-var ($ arg))
                     (js-catch
                      (list
-                      (->> (js-call "+" (resolve ($ x)) (resolve ($ y)))
+                      (->> (js-call
+                            "+"
+
+                            (js-call "Tridash.check_number" (resolve ($ x)))
+                            (js-call "Tridash.check_number" (resolve ($ y))))
+
                            (js-call "=" ($ arg))))
 
                      ($ e)
@@ -1508,7 +1622,11 @@
                               ($ arg)
                               (thunk
                                (js-return
-                                (js-call "-" (resolve ($ y)) (resolve ($ x))))))))))))))
+                                (js-call
+                                 "-"
+
+                                 (js-call "Tridash.check_number" (resolve ($ y)))
+                                 (js-call "Tridash.check_number" (resolve ($ x)))))))))))))))
 
         (subtest "Or"
           (with-module-table modules
@@ -1528,7 +1646,11 @@
                     (js-var ($ arg))
                     (js-catch
                      (list
-                      (->> (js-call "+" (resolve ($ x)) (resolve ($ y)))
+                      (->> (js-call
+                            "+"
+                            (js-call "Tridash.check_number" (resolve ($ x)))
+                            (js-call "Tridash.check_number" (resolve ($ y))))
+
                            (js-call "=" ($ arg))))
 
                      ($ e)
@@ -1540,7 +1662,10 @@
                               ($ arg)
                               (thunk
                                (js-return
-                                (js-call "-" (resolve ($ y)) (resolve ($ x))))))))))))))
+                                (js-call
+                                 "-"
+                                 (js-call "Tridash.check_number" (resolve ($ y)))
+                                 (js-call "Tridash.check_number" (resolve ($ x)))))))))))))))
 
         (subtest "Not"
           (with-module-table modules
