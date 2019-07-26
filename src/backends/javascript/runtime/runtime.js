@@ -367,11 +367,10 @@ function set_values(node_values) {
 /* Fail Exception Type */
 
 /**
- * Used as an exception type, which is thrown in order to skip the
- * invocation of the set_value method. The exception is caught in
- * order to prevent errors showing up in the console.
+ * Used as the fail exception type, which indicates that a value
+ * computation has failed.
  */
-function EndUpdate() {};
+function Fail() {};
 
 
 /* Thunk */
@@ -391,6 +390,25 @@ function Thunk(compute) {
 
     this.compute = compute;
 };
+
+/**
+ * A CatchThunk is a Thunk which always has a "catch value" associated
+ * with it which is returned if the compute function throws the Fail
+ * exception.
+ *
+ * @param compute The thunk's compute function.
+ *
+ * @param catch_value The value to return if @a compute throws a Fail
+ *    exception. May be a value, Thunk or CatchThunk.
+ */
+function CatchThunk(compute, catch_value) {
+    Thunk.call(this, compute);
+
+    this.catch_value = catch_value;
+};
+CatchThunk.prototype = Object.create(Thunk.prototype);
+CatchThunk.prototype.constructor = CatchThunk;
+
 
 /**
  * Computes the value of the thunk if it has not already been
@@ -419,13 +437,60 @@ Thunk.prototype.resolve = function() {
  * @return The resolved value.
  */
 function resolve(thing) {
+    // Catch value to return in case a Fail exception is thrown. If
+    // null, then there is no catch value and the exception is
+    // rethrown.
+    var catch_value = null;
+
     while (thing instanceof Thunk) {
-        thing = thing.resolve();
+	if (thing instanceof CatchThunk) {
+	    catch_value = combine_catch_thunk(thing.catch_value, catch_value);
+	}
+
+	try {
+            thing = thing.resolve();
+	}
+	catch (e) {
+	    if (e instanceof Fail && catch_value !== null) {
+		thing = catch_value;
+		catch_value = null;
+	    }
+	    else {
+		throw e;
+	    }
+	};
     }
 
     return thing;
-};
+}
 
+/**
+ * Creates a CatchThunk with a compute function that returns @a
+ * try_value and a catch value of @a catch value.
+ *
+ * @param try_value The value which should be returned by the thunk's
+ *    compute function. May be a value, Thunk or CatchThunk.
+ *
+ * @param catch_value The catch value.
+ *
+ * @return The CatchThunk. If try_value is a value, it is returned
+ *     without creating a new thunk.
+ */
+function combine_catch_thunk(try_value, catch_value) {
+    if (catch_value === null) {
+	return try_value;
+    }
+    if (try_value instanceof CatchThunk) {
+	return new CatchThunk(try_value.compute,
+			      combine_catch_thunk(try_value.catch_thunk, catch_value));
+    }
+    else if (try_value instanceof Thunk) {
+	return new CatchThunk(try_value.compute, catch_value);
+    }
+    else {
+	return try_value;
+    }
+}
 
 /* Promise */
 

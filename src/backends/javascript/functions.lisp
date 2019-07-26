@@ -518,18 +518,18 @@
    (thunk (js-throw (js-new +end-update-class+)) nil)))
 
 (defun make-catch-expression (arguments)
-  "Generates a TRY-CATCH block for :CATCH expressions."
+  "Generates code which creates a catch thunk."
 
   (destructuring-bind (try catch) arguments
 
-    (let ((try (let ((*resolve* t) *protect*) (make-statements try)))
-          (catch (make-statements catch)))
-
+    (let ((*thunk* t))
       (values
-       (js-block
-        (js-catch try "e" catch))
+       nil
 
-       *return-variable*))))
+       (js-new +catch-thunk-class+
+               (list
+                (nth-value 1 (make-expression try :thunk t))
+                (nth-value 1 (make-expression catch :thunk t))))))))
 
 
 ;;; Object Expressions

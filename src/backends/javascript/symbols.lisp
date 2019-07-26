@@ -34,10 +34,13 @@
 (defconstant +node-context-class+ (mkstr +tridash-prefix+ "NodeContext")
   "Runtime node context class name.")
 
-(defconstant +end-update-class+ (mkstr +tridash-prefix+ "EndUpdate")
-  "EndUpdate class name.")
+(defconstant +end-update-class+ (mkstr +tridash-prefix+ "Fail")
+  "Fail class name.")
 
 (defconstant +thunk-class+ (mkstr +tridash-prefix+ "Thunk")
   "Thunk constructor function name.")
+
+(defconstant +catch-thunk-class+ (mkstr +tridash-prefix+ "CatchThunk")
+  "CatchThunk constructor function name.")
 
 (defconstant +resolve-function+ (mkstr +tridash-prefix+ "resolve"))

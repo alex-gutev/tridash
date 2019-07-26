@@ -58,6 +58,7 @@
                 :+tridash-namespace+
                 :+end-update-class+
                 :+thunk-class+
+                :+catch-thunk-class+
                 :+resolve-function+
 
                 :*node-ids*
@@ -673,7 +674,7 @@
                 (js-return (js-element (resolve ($ object)) (js-string "z")))))))))))
 
   (subtest "Conditional Bindings"
-    (subtest "Throwing EndUpdate Exception"
+    (subtest "Throwing Fail Exception"
       (mock-backend-state
         (mock-meta-nodes (<)
           (mock-contexts
@@ -705,24 +706,23 @@
 
             (js-return
              (thunk
-              (js-catch
-               (list
-                (js-if (resolve (js-call < (d a) (d b)))
-                       (js-return
-                        (resolve
-                         (thunk
-                          (js-return (js-call + (d a) (d b))))))
+              (js-return
+               (js-new
+                +catch-thunk-class+
+                (list
+                 (thunk
+                  (js-if (resolve (js-call < (d a) (d b)))
+                         (js-return
+                          (thunk
+                           (js-return (js-call + (d a) (d b)))))
 
-                       (js-return
-                        (resolve
-                         (thunk
-                          (js-throw (js-new +end-update-class+)))))))
+                         (js-return
+                          (thunk
+                           (js-throw (js-new +end-update-class+))))))
 
-               ($ e)
-
-               (list
-                (js-return
-                 (js-call - (d a) (d b))))))))))))
+                 (thunk
+                  (js-return
+                   (js-call - (d a) (d b))))))))))))))
 
   (subtest "Meta-Node References"
     (subtest "Without Outer Nodes"

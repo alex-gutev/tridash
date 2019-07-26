@@ -33,9 +33,10 @@ exports.NodeContext = NodeContext;
 
 exports.set_values = set_values;
 
-exports.EndUpdate = EndUpdate;
+exports.Fail = Fail;
 
 exports.Thunk = Thunk;
+exports.CatchThunk = CatchThunk;
 exports.resolve = resolve;
 
 
