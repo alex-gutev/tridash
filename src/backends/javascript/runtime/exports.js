@@ -55,5 +55,13 @@ exports.is_string = is_string;
 exports.is_inf = is_inf;
 exports.is_nan = is_nan;
 
+exports.cons = cons;
+exports.head = head;
+exports.tail = tail;
+exports.is_cons = is_cons;
+
+
+/* Internal Use Functions */
+
 exports.check_number = check_number;
 exports.check_value = check_value;

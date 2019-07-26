@@ -147,6 +147,87 @@ function is_nan(value) {
 };
 
 
+/* Lists */
+
+function cons(head, tail) {
+    return new ConsCell(head, tail);
+}
+
+function ConsCell(head, tail) {
+    this.head = head;
+    this.tail = tail;
+}
+
+function SubArray(array, start) {
+    this.array = array;
+    this.start = start;
+}
+
+
+function head(list) {
+    try {
+	var l = resolve(list);
+
+	if (l instanceof ConsCell) {
+	    return l.head;
+	}
+	else if (Array.isArray(l)) {
+	    if (l.length > 0)
+		return l[0];
+
+	    return FailThunk();
+	}
+	else if (l instanceof SubArray && l.array.length > l.start) {
+	    return l.array[l.start];
+	}
+	else {
+	    return FailThunk();
+	}
+    }
+    catch (e) {
+	return new Thunk(() => { throw e; });
+    }
+}
+
+function tail(list) {
+    try {
+	var l = resolve(list);
+
+	if (l instanceof ConsCell) {
+	    return l.tail;
+	}
+	else if (Array.isArray(l)) {
+	    if (l.length > 1)
+		return new SubArray(l, 1);
+
+	    return FailThunk();
+	}
+	else if (l instanceof SubArray && l.array.length > (l.start + 1)) {
+	    return new SubArray(l.array, l.start + 1);
+	}
+	else {
+	    return FailThunk();
+	}
+    }
+    catch (e) {
+	return new Thunk(() => { throw e; });
+    }
+}
+
+function is_cons(thing) {
+    try {
+	var value = resolve(thing);
+
+	return value instanceof ConsCell ||
+	    (value instanceof SubArray && value.array.length > value.start) ||
+	    (Array.isArray(value) && value.length > 0);
+    }
+    catch (e) {
+	return new Thunk(() => { throw e; });
+    }
+}
+
+
 /* Internal Type Checking Functions */
 
 /**

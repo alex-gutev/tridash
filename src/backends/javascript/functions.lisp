@@ -75,7 +75,12 @@
     (cons (id-symbol "string?") "Tridash.is_string")
 
     (cons (id-symbol "inf?") "Tridash.is_inf")
-    (cons (id-symbol "NaN?") "Tridash.is_nan")))
+    (cons (id-symbol "NaN?") "Tridash.is_nan")
+
+    (cons (id-symbol "cons") "Tridash.cons")
+    (cons (id-symbol "head") "Tridash.head")
+    (cons (id-symbol "tail") "Tridash.tail")
+    (cons (id-symbol "cons?") "Tridash.is_cons")))
 
   "Map mapping tridash primitive operators to their corresponding
    JavaScript primitive operators.")

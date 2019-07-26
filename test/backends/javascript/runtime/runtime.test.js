@@ -149,5 +149,139 @@ describe('Lazy Evaluation', function() {
 	    });
     });
 });
+
+describe('Builtin Functions', function() {
+    describe('Lists', function() {
+        describe('Tridash.cons', function() {
+            it('Does not resolves its arguments', function() {
+                assert(tridash.cons(new tridash.Thunk(() => {
+                    throw tridash.Fail();
+                }), new tridash.Thunk(() => {
+                    throw tridash.Fail();
+                })));
+            });
+        });
+
+        describe('Tridash.head', function() {
+            it('Returns head of ConsCell', function() {
+                var list = new tridash.Thunk(() => {
+                    return tridash.cons(new tridash.Thunk(() => 1), null);
+                });
+
+                assert.equal(tridash.resolve(tridash.head(list)), 1);
+            });
+
+            it('Returns first element of Array', function() {
+                var list = new tridash.Thunk(() => {
+                    return [5, 6, 7];
+                });
+
+                assert.equal(tridash.resolve(tridash.head(list)), 5);
+            });
+
+            it('Returns first element of SubArray', function() {
+                var list = new tridash.Thunk(() => {
+                    return tridash.tail([5, 6, 7]);
+                });
+
+                assert.equal(tridash.resolve(tridash.head(list)), 6);
+            });
+
+            it('Fails on `null`', function() {
+                assert.throws(() => tridash.resolve(tridash.head(null)), tridash.Fail);
+            });
+
+            it('Fails on empty array', function() {
+                assert.throws(() => tridash.resolve(tridash.head([])), tridash.Fail);
+            });
+
+            it('Fails on empty SubArray', function() {
+                var sub = tridash.tail([1]);
+                assert.throws(() => tridash.resolve(tridash.head(sub)), tridash.Fail);
+            });
+
+            it('Fails on non-array', function() {
+                assert.throws(() => tridash.resolve(tridash.head(1)), tridash.Fail);
+            });
+        });
+
+        describe('Tridash.tail', function() {
+            it('Returns tail of ConsCell', function() {
+                var list = new tridash.Thunk(() => {
+                    return tridash.cons(
+                        new tridash.Thunk(() => 1), tridash.cons(2, null));
+                });
+
+                assert.deepStrictEqual(tridash.resolve(tridash.tail(list)), tridash.cons(2, null));
+            });
+
+            it('Returns SubArray of Array', function() {
+                var list = new tridash.Thunk(() => {
+                    return [5, 6, 7];
+                });
+
+                var rest = tridash.tail(list);
+
+                assert.equal(tridash.resolve(tridash.head(rest)), 6, "Second Element");
+                assert.equal(
+                    tridash.resolve(tridash.head(tridash.tail(rest))),
+                    7,
+                    "Third Element"
+                );
+            });
+
+            it('Fails on `null`', function() {
+                assert.throws(() => tridash.resolve(tridash.tail(null)), tridash.Fail);
+            });
+
+            it('Fails on empty Array', function() {
+                assert.throws(() => tridash.resolve(tridash.tail([])), tridash.Fail);
+            });
+
+            it('Fails if tail is empty', function() {
+                assert.throws(() => tridash.resolve(tridash.tail([1])), tridash.Fail);
+            });
+
+            it('Fails if tail is empty SubArray', function() {
+                var sub = tridash.tail([1,2]);
+                assert.throws(() => tridash.resolve(tridash.tail(sub)), tridash.Fail);
+            });
+
+            it('Fails on non-list', function() {
+                assert.throws(() => tridash.resolve(tridash.tail(1)), tridash.Fail);
+            });
+        });
+
+        describe('Tridash.is_cons', function() {
+            it('Returns true for conses', () => {
+                var cons = new tridash.Thunk(() => {
+                    return tridash.cons(1, 2);
+                });
+
+                assert(tridash.resolve(tridash.is_cons(cons)));
+            });
+
+            it('Returns true for arrays', () => {
+                var list = new tridash.Thunk(() => {
+                    return [1,2,3];
+                });
+
+                assert(tridash.resolve(tridash.is_cons(list)));
+            });
+
+            it('Returns true for SubArrays', () => {
+                var list = tridash.tail([1,2,3]);
+
+                assert(tridash.resolve(tridash.is_cons(list)));
+            });
+
+            it('Returns false for non-lists', () => {
+                assert(!tridash.resolve(tridash.is_cons(1)));
+            });
+
+            it('Returns false for empty arrays', () => {
+                assert(!tridash.resolve(tridash.is_cons([])));
+            });
+        });
     });
 });

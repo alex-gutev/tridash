@@ -409,6 +409,16 @@ function CatchThunk(compute, catch_value) {
 CatchThunk.prototype = Object.create(Thunk.prototype);
 CatchThunk.prototype.constructor = CatchThunk;
 
+/**
+ * Creates a thunk which throws a Fail exception.
+ *
+ * @return The thunk.
+ */
+function FailThunk() {
+    return new Thunk(() => {
+	throw new Fail();
+    });
+}
 
 /**
  * Computes the value of the thunk if it has not already been
