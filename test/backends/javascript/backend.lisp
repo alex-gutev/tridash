@@ -404,6 +404,33 @@
 ;;;; Tests
 
 (subtest "Node Value Function Code Generation"
+  (subtest "Literals"
+    (subtest "Strings"
+      (mock-backend-state
+        (mock-contexts
+            ((context () "hello"))
+
+          (test-compute-function context
+            (js-return (js-string "hello"))))))
+
+    (subtest "Symbols"
+      (mock-backend-state
+        (mock-contexts
+            ((context () '|some-key|))
+
+          (test-compute-function context
+            (js-return
+             (thunk
+              (js-return (js-call "Tridash.get_symbol" (js-string "some-key")))))))))
+
+    (subtest "Integers"
+      (mock-backend-state
+        (mock-contexts
+            ((context () 1))
+
+          (test-compute-function context
+            (js-return 1))))))
+
   (subtest "Function Calls"
     (subtest "Positional Arguments"
       (mock-backend-state

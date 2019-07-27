@@ -251,5 +251,36 @@ function check_number(value) {
  *   a 'Fail' exception.
  */
 function check_value(value) {
-    return typeof value === 'number' || typeof value === 'string' ? value : FailThunk();
+    return typeof value === 'number' ||
+        typeof value === 'string' ||
+        value instanceof Symbol ? value : FailThunk();
+}
+
+
+/* Symbols */
+
+/**
+ * Encapsulates a symbol.
+ *
+ * @param name The symbol name.
+ */
+function Symbol(name) {
+    this.name = name;
+}
+
+/**
+ * Table containing all symbols.
+ */
+var symbol_table = {};
+
+/**
+ * Returns the symbol with name @a id. If there is no such symbol in
+ * 'symbol_table' a new Symbol object is created.
+ *
+ * @param id The symbol name.
+ *
+ * @return The symbol's Symbol object.
+ */
+function get_symbol(id) {
+    return symbol_table[id] || (symbol_table[id] = new Symbol(id));
 }

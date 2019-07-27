@@ -711,6 +711,11 @@
 (defmethod make-expression ((string string) &key)
   (values nil (js-string string)))
 
+(defmethod make-expression ((sym symbol) &key)
+  (values
+   nil
+   (js-call "Tridash.get_symbol" (js-string sym))))
+
 (defmethod make-expression (literal &key)
   (values nil literal))
 

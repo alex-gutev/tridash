@@ -284,4 +284,27 @@ describe('Builtin Functions', function() {
             });
         });
     });
+
+    describe('Symbols', function() {
+        describe('Tridash.get_symbol', function() {
+            it('Should return a symbol with same identifier', function() {
+                var sym = tridash.get_symbol("x");
+                assert.equal(sym.name, "x");
+            });
+
+            it('Should always return the same symbol object', function() {
+                var sym1 = tridash.get_symbol("field");
+                var sym2 = tridash.get_symbol("field");
+
+                assert.equal(sym1, sym2);
+            });
+
+            it('Should return a different object for different symbols', function() {
+                var sym1 = tridash.get_symbol("field1");
+                var sym2 = tridash.get_symbol("field2");
+
+                assert.notEqual(sym1, sym2);
+            });
+        });
+    });
 });
