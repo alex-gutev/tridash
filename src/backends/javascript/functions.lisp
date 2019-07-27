@@ -684,7 +684,7 @@
 
               (make-args rest op-values))
 
-             ((list* (list (eql +outer-node-argument+) _) rest)
+             ((list* (cons (eql +outer-node-argument+) _) rest)
               (accumulate call-args (first op-values))
               (make-args rest (rest op-values)))
 
