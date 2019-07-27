@@ -469,6 +469,41 @@
      (let ((,g!context (node-link-context ,(ensure-car (first deps)))))
        (test-value-function ,g!node ,g!context ,function ,@test-args))))
 
+(defmacro! test-meta-node (o!meta-node (&rest operands) function &rest test-args)
+  "Test that various properties of a meta-node are correct, namely
+   that its definition has been built, its subgraph contains the
+   implicit self-node and that its value-function is correct.
+
+   OPERANDS is a list of the meta-node's operands (in the form passed
+   to WITH-DEPENDENCIES).
+
+   FUNCTION is the expected value function of the meta-node. Any
+   symbol in the value function, that is bound to an operand (appears
+   in OPERANDS), is replaced with the `NODE-LINK' corresponding to the
+   dependency between the operand node and meta-node."
+
+  (flet ((make-input-test (operand)
+           `(ok (input-node? ,(first operand))
+                (format nil "Argument ~a is an input node" ',(second operand))))
+
+         (get-operand-node (operand)
+           (ematch operand
+             ((list var (list 'outer node))
+              `(,var (cdr (get ,node (outer-nodes ,g!meta-node)))))
+
+             ((list var name)
+              `(,var ',(node-id name))))))
+
+    `(subtest (format nil "Test Meta-Node: ~a" ,g!meta-node)
+       (is-type ,g!meta-node 'meta-node
+                (format nil "~a is a meta-node" ,g!meta-node))
+
+       (with-slots ((,g!def definition)) ,g!meta-node
+         (is-type ,g!def 'flat-node-table "Meta-Node Body Built")
+
+         (with-nodes% ,(map #'get-operand-node operands) ,g!def
+           ,@(map #'make-input-test operands)
+           (has-value-function ,(map #'car operands) ,g!meta-node ,function ,@test-args))))))
 
 ;;; Test Errors
 
@@ -1817,6 +1852,59 @@
 
         (is-error (finish-build) 'dependency-not-reachable-error))))
 
+  (subtest "Removing Unused Meta-nodes"
+    (subtest "Remove all nodes in core module"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core)"
+               "f(x) : x"
+               "x -> y"
+               ":attribute(x, input, 1)")
+
+        (let ((table (finish-build)))
+          (is (length (meta-nodes table)) 0))))
+
+    (subtest "Do not remove used nodes"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core, +)"
+               "1+(x) : x + 1"
+
+               "1+(x) -> y"
+               ":attribute(x, input, 1)")
+
+        (let ((table (finish-build)))
+          (with-nodes ((1+ "1+") (x "x") (y "y")) table
+            (has-value-function (x) y `(,1+ ,x))
+            (is (length (meta-nodes table)) 2)
+            ))))
+
+    (subtest "Do not remove referenced nodes"
+      ;; Additionally this also tests that nodes used by used
+      ;; meta-nodes are not removed.
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core, +, map)"
+               "1+(x) : x + 1"
+               "f(z) : 1+(z)"
+
+               "map(f, a) -> b"
+               ":attribute(a, input, 1)")
+
+        (let ((table (finish-build)))
+          (with-nodes ((1+ "1+") (f "f") (map "map")
+                       (a "a") (b "b"))
+              table
+
+            (has-value-function
+             (a)
+             b
+             `(,map ,(meta-node-ref f) ,a))
+
+            (test-meta-node f ((z "z")) `(,1+ ,z))))
+
+        )))
+
   (subtest "Cross-Module Bindings"
     (subtest "Simple Bindings"
       (with-module-table modules
@@ -2343,42 +2431,6 @@
           (is-error (finish-build) 'ambiguous-context-error))))))
 
 
-(defmacro! test-meta-node (o!meta-node (&rest operands) function &rest test-args)
-  "Test that various properties of a meta-node are correct, namely
-   that its definition has been built, its subgraph contains the
-   implicit self-node and that its value-function is correct.
-
-   OPERANDS is a list of the meta-node's operands (in the form passed
-   to WITH-DEPENDENCIES).
-
-   FUNCTION is the expected value function of the meta-node. Any
-   symbol in the value function, that is bound to an operand (appears
-   in OPERANDS), is replaced with the `NODE-LINK' corresponding to the
-   dependency between the operand node and meta-node."
-
-  (flet ((make-input-test (operand)
-           `(ok (input-node? ,(first operand))
-                (format nil "Argument ~a is an input node" ',(second operand))))
-
-         (get-operand-node (operand)
-           (ematch operand
-             ((list var (list 'outer node))
-              `(,var (cdr (get ,node (outer-nodes ,g!meta-node)))))
-
-             ((list var name)
-              `(,var ',(node-id name))))))
-
-    `(subtest (format nil "Test Meta-Node: ~a" ,g!meta-node)
-       (is-type ,g!meta-node 'meta-node
-                (format nil "~a is a meta-node" ,g!meta-node))
-
-       (with-slots ((,g!def definition)) ,g!meta-node
-         (is-type ,g!def 'flat-node-table "Meta-Node Body Built")
-
-         (with-nodes% ,(map #'get-operand-node operands) ,g!def
-           ,@(map #'make-input-test operands)
-           (has-value-function ,(map #'car operands) ,g!meta-node ,function ,@test-args))))))
-
 (defun make-function-call (fn args outers)
   "Creates a meta-node function call expression where FN is the
    meta-node, ARGS is the list of the `NODE-LINK' objects
@@ -2417,7 +2469,8 @@
     (subtest "Single Module"
       (with-module-table modules
         (build ":extern(add, x, y)"
-               "1+(n) : add(n, 1)")
+               "1+(n) : add(n, 1)"
+               ":attribute(1+, no-remove, 1)")
 
         (let ((table (finish-build)))
           (with-nodes ((add "add") (fn "1+")) table
@@ -2433,7 +2486,8 @@
                ":import(builtin)"
                ":import(m1, add)"
 
-               "1+(n) : add(n, 1)")
+               "1+(n) : add(n, 1)"
+               ":attribute(1+, no-remove, 1)")
 
         (let ((table (finish-build)))
           (with-nodes ((add "add") (fn "1+")) table
@@ -2465,7 +2519,9 @@
                       k < limit : 1,
                       k * fact(next)
                     )
-                  }")
+                  }"
+
+               ":attribute(fact, no-remove, 1)")
 
         (let ((table (finish-build)))
           (with-nodes ((if "if") (- "-") (* "*") (< "<") (fact "fact")) table
@@ -2505,7 +2561,9 @@
                     }
 
                     iter(m, 1)
-                  }")
+                  }"
+
+               ":attribute(fact, no-remove, 1)")
 
         (let ((table (finish-build)))
           (with-nodes ((if "if") (- "-") (* "*") (< "<") (fact "fact")) table
@@ -2629,7 +2687,9 @@
         (build "Person(name, surname) : {
                   name -> self.first
                   surname -> self.last
-                }")
+                }"
+
+               ":attribute(Person, no-remove, 1)")
 
         (let ((table (finish-build)))
           (with-nodes ((person "Person")) table
@@ -2641,7 +2701,8 @@
       (with-module-table modules
         (build-core-module)
         (build ":import(core)"
-               "fn(x) : { x < 3 -> (x + 1 -> :context(self, c)); x + 2 -> :context(self, c) }")
+               "fn(x) : { x < 3 -> (x + 1 -> :context(self, c)); x + 2 -> :context(self, c) }"
+               ":attribute(fn, no-remove, 1)")
 
         (let ((table (finish-build)))
           (with-nodes ((fn "fn") (< "<") (+ "+")) table
@@ -3385,7 +3446,8 @@
       (with-module-table modules
         (build ":extern(int, x)"
                ":attribute(int, target-node, int)"
-               "f(x) : { x -> int(y); y }")
+               "f(x) : { x -> int(y); y }"
+               ":attribute(f, no-remove, 1)")
 
         (let ((table (finish-build)))
           (with-nodes ((f "f") (int "int"))
@@ -3396,26 +3458,30 @@
     (subtest "Errors"
       (subtest "Atom Declarations"
         (with-module-table modules
-          (build "f(x) : z")
+          (build "f(x) : z"
+                 ":attribute(f, no-remove, 1)")
 
           (is-error (finish-build) 'non-existent-node-error)))
 
       (subtest "Operands"
         (with-module-table modules
           (build ":extern(add, x, y)"
-                 "f(x) : add(x, y, z)")
+                 "f(x) : add(x, y, z)"
+                 ":attribute(f, no-remove, 1)")
 
           (is-error (finish-build) 'non-existent-node-error)))
 
       (subtest "Binding Source"
         (with-module-table modules
-          (build "f(x) : z -> self")
+          (build "f(x) : z -> self"
+                 ":attribute(f, no-remove, 1)")
 
           (is-error (finish-build) 'non-existent-node-error)))
 
       (subtest "Object Nodes"
         (with-module-table modules
-          (build "f(x) : n.z")
+          (build "f(x) : n.z"
+                 ":attribute(f, no-remove, 1)")
 
           (is-error (finish-build) 'non-existent-node-error)))))
 
@@ -3430,7 +3496,8 @@
                       c -> self.out2
                       d -> self.out1
                       d -> b
-                    }")
+                    }"
+                 ":attribute(f, no-remove, 1)")
 
           (is-error (finish-build) 'node-cycle-error)))
 
@@ -3444,7 +3511,8 @@
                       c -> d
                       d -> self.out2
                       d -> a
-                    }")
+                    }"
+                 ":attribute(f, no-remove, 1)")
 
           (is-error (finish-build) 'node-cycle-error))))
 
@@ -3458,7 +3526,8 @@
                       c -> d
                       d -> e
                       e
-                    }")
+                    }"
+                 ":attribute(f, no-remove, 1)")
 
           (is-error (finish-build) 'ambiguous-context-error))
 
@@ -3466,7 +3535,8 @@
           (build "f(a, b) : {
                       a -> self
                       b -> self
-                    }")
+                    }"
+                 ":attribute(f, no-remove, 1)")
 
           (is-error (finish-build) 'ambiguous-context-error)))
 
@@ -3478,7 +3548,8 @@
                       add(a, b) -> d
                       a -> c; c -> d
                       d
-                    }")
+                    }"
+                 ":attribute(f, no-remove, 1)")
 
           (is-error (finish-build) 'ambiguous-context-error))
 
@@ -3489,7 +3560,8 @@
                       a -> self
                       b -> self
                       add(a, b) -> self
-                    }")
+                    }"
+                 ":attribute(f, no-remove, 1)")
 
           (is-error (finish-build) 'ambiguous-context-error))))))
 

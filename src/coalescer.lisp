@@ -236,6 +236,94 @@
       (foreach #'mark input-nodes)
       (foreach #'sweep nodes))))
 
+(defun remove-unused-meta-nodes (nodes meta-nodes)
+  "Removes all unused meta-nodes from META-NODES. A meta-node is
+   considered used if it appears as the operator of a
+   `FUNCTOR-EXPRESSION' or is referenced by a `META-NODE-REF' in a
+   value computation function of at least one node in NODES or in the
+   function of a used `META-NODE' in META-NODES."
+
+  (let ((visited (make-hash-set))
+        (used (make-hash-set)))
+
+    (labels ((visit-node (node)
+               "Visits NODE and marks all meta-nodes, appearing with
+                the value-function of each context, as used."
+
+               (unless (visited? node)
+                 (nadjoin node visited)
+
+                 (-> #'visit-context
+                     (foreach (map-values (contexts node))))
+
+                 (foreach #'visit-node (map-keys (observers node)))))
+
+             (visit-meta-node (node)
+               "Visits `META-NODE' NODE and marks all meta-nodes,
+                appearing with the meta-node's function as used."
+
+               (unless (visited? node)
+                 (nadjoin node visited)
+                 (-> node
+                     contexts
+                     first
+                     cdr
+                     visit-context)))
+
+             (visit-context (context)
+               "Visits the context CONTEXT and marks the meta-nodes
+                appearing in its VALUE-FUNCTION as used."
+
+               (with-slots (value-function) context
+                 (when context
+                   (mark-used-meta-nodes value-function))))
+
+             (visited? (node)
+               "Returns true if NODE has been visited."
+               (and (memberp node visited)
+                    node))
+
+             (mark-used-meta-nodes (expression)
+               "Marks the meta-nodes appearing in EXPRESSION as used."
+
+               (walk-expression #'mark-meta-nodes expression))
+
+             (mark-meta-nodes (expression)
+               "If EXPRESSION is a `FUNCTOR-EXPRESSION' or a
+                `META-NODE-REF', marks the meta-node as used."
+
+               (match expression
+                 ((functor-expression- (meta-node (and (type meta-node) meta-node)))
+                  (add-used-meta-node meta-node))
+
+                 ((meta-node-ref- (node))
+                  (add-used-meta-node node)))
+               t)
+
+             (add-used-meta-node (meta-node)
+               "Adds META-NODE to the USED set and visits its."
+
+               (nadjoin meta-node used)
+               (visit-meta-node meta-node))
+
+             (visit-if-no-remove (meta-node)
+               "Adds META-NODE to the USED set if it has the
+                :NO-REMOVE attribute set to true."
+
+               (when (attribute :no-remove meta-node)
+                 (add-used-meta-node meta-node)))
+
+             (sweep (meta-node)
+               "Removes META-NODE from META-NODES if it is not in
+                USED."
+
+               (unless (memberp meta-node used)
+                 (erase meta-nodes meta-node))))
+
+      (foreach #'visit-node nodes)
+      (foreach #'visit-if-no-remove meta-nodes)
+      (foreach #'sweep meta-nodes))))
+
 (defun fold-constant-nodes (nodes)
   "Removes all constant nodes, from the set NODES, and replaces links
    to the nodes with the constant values. Constant nodes are nodes

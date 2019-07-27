@@ -158,7 +158,7 @@
    folding and structure checking. NODE-TABLE is the `FLAT-NODE-TABLE'
    containing all nodes in all modules."
 
-  (with-slots (nodes input-nodes) node-table
+  (with-slots (nodes meta-nodes input-nodes) node-table
     ;; Fold constant nodes
     (fold-constant-nodes nodes)
 
@@ -166,7 +166,10 @@
     (coalesce-all node-table)
 
     ;; Finish Building Meta-Node Subgraphs
-    (foreach #'finish-build-meta-node (meta-nodes node-table))))
+    (foreach #'finish-build-meta-node (meta-nodes node-table))
+
+    ;; Remove unused meta-nodes
+    (remove-unused-meta-nodes nodes meta-nodes)))
 
 (defun finish-build-meta-node (meta-node)
   "Performs the final build steps (node coalescing, etc.) in the

@@ -981,7 +981,8 @@
       (with-module-table modules
         (build-core-module)
         (build ":import(core)")
-        (build "add(x, y) : x + y")
+        (build "add(x, y) : x + y"
+               ":attribute(add, no-remove, 1)")
         (finish-build)
 
         (with-nodes ((add "add")) modules
@@ -1249,7 +1250,8 @@
       (with-module-table modules
         (build-core-module)
         (build ":import(core)")
-        (build "func(a, b) : (a + b) - (a + b)")
+        (build "func(a, b) : (a + b) - (a + b)"
+               ":attribute(func, no-remove, 1)")
 
         (with-nodes ((func "func")) (finish-build modules)
 
@@ -1288,7 +1290,8 @@
         (build-core-module)
         (build ":import(core)")
         (build "1+(n, d : 1) : n + d")
-        (build "f(a) : 1+(a)")
+        (build "f(a) : 1+(a)"
+               ":attribute(f, no-remove, 1)")
 
         (with-nodes ((1+ "1+") (f "f"))
             (finish-build)
@@ -1322,7 +1325,10 @@
         (build ":import(core)")
         (build "f(x, ..(xs)) : x + xs")
         (build "g(x, y, z) : f(x, y, z)")
-        (build "h(x) : f(x)")
+        (build "h(x) : f(x)"
+
+               ":attribute(h, no-remove, 1)"
+               ":attribute(g, no-remove, 1)")
 
         (with-nodes ((f "f") (g "g") (h "h"))
             (finish-build)

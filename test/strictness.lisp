@@ -50,15 +50,19 @@
 
 
 (defmacro! test-strictness ((&rest source) &body tests)
-  (let ((syms (map (compose #'gensym #'first) tests)))
-   `(with-module-table ,g!modules
-      (build-core-module)
-      (build ":import(core)" ,@source)
+  (flet ((make-attr-string (x)
+           (format nil ":attribute(~a, no-remove, 1)" x)))
 
-      (with-nodes ,(map #'list syms (map #'first tests))
-          (finish-build)
+    (let ((syms (map (compose #'gensym #'first) tests)))
+      `(with-module-table ,g!modules
+         (build-core-module)
+         (build ":import(core)" ,@source
+                ,@(map (compose #'make-attr-string #'first) tests))
 
-        ,@(map #2`(is (strict-arguments ,a1) ',(second a2)) syms tests)))))
+         (with-nodes ,(map #'list syms (map #'first tests))
+             (finish-build)
+
+           ,@(map #2`(is (strict-arguments ,a1) ',(second a2)) syms tests))))))
 
 (plan 1)
 
