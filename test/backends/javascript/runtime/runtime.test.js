@@ -307,4 +307,174 @@ describe('Builtin Functions', function() {
             });
         });
     });
+
+    describe('Type Checking', function() {
+        describe('API Functions', function() {
+            describe('int? - is_int', function() {
+                it('Should return true when given an integer', function() {
+                    assert(tridash.resolve(tridash.is_int(1)));
+                    assert(tridash.resolve(tridash.is_int(new tridash.Thunk(() => 1))));
+                });
+
+                it('Should return false when not given an integer', function() {
+                    assert(!tridash.resolve(tridash.is_int(1.2)));
+                    assert(!tridash.resolve(tridash.is_int("x")));
+                    assert(!tridash.resolve(tridash.is_int({ x: 1})));
+                });
+
+                it('Should return failures as Thunks', function() {
+                    var thunk = tridash.is_int(new tridash.Thunk(() => {
+                        throw new tridash.Fail();
+                    }));
+
+                    assert(thunk, "Returns a thunk instead of throwing exception");
+
+                    assert.throws(() => { tridash.resolve(thunk); }, tridash.Fail);
+                });
+            });
+
+            describe('real? - is_real', function() {
+                it('Should return true when given an integer', function() {
+                    assert(tridash.resolve(tridash.is_real(1)));
+                    assert(tridash.resolve(tridash.is_real(new tridash.Thunk(() => 1))));
+                });
+
+                it('Should return true when given a float', function() {
+                    assert(tridash.resolve(tridash.is_real(1.2)));
+                });
+
+                it('Should return false when not given a number', function() {
+                    assert(!tridash.resolve(tridash.is_real("x")));
+                    assert(!tridash.resolve(tridash.is_real({ x: 1})));
+                });
+
+                it('Should return failures as Thunks', function() {
+                    var thunk = tridash.is_real(new tridash.Thunk(() => {
+                        throw new tridash.Fail();
+                    }));
+
+                    assert(thunk, "Returns a thunk instead of throwing exception");
+
+                    assert.throws(() => { tridash.resolve(thunk); }, tridash.Fail);
+                });
+            });
+
+            describe('string? - is_string', function() {
+                it('Should return true when given a string', function() {
+                    assert(tridash.resolve(tridash.is_string("hello")));
+                    assert(tridash.resolve(tridash.is_string(new tridash.Thunk(() => "hello"))));
+                });
+
+                it('Should return false when not given a string', function() {
+                    assert(!tridash.resolve(tridash.is_string(1)));
+                    assert(!tridash.resolve(tridash.is_string(1.2)));
+                    assert(!tridash.resolve(tridash.is_string({ x: 1})));
+                });
+
+                it('Should return failures as Thunks', function() {
+                    var thunk = tridash.is_string(new tridash.Thunk(() => {
+                        throw new tridash.Fail();
+                    }));
+
+                    assert(thunk, "Returns a thunk instead of throwing exception");
+
+                    assert.throws(() => { tridash.resolve(thunk); }, tridash.Fail);
+                });
+            });
+
+            describe('inf? - is_inf', function() {
+                it('Should return true when given Infinity', function() {
+                    assert(tridash.resolve(tridash.is_inf(Infinity)));
+                    assert(tridash.resolve(tridash.is_inf(-Infinity)));
+                    assert(tridash.resolve(tridash.is_inf(new tridash.Thunk(() => Infinity))));
+                });
+
+                it('Should return false when not given Infinity', function() {
+                    assert(!tridash.resolve(tridash.is_inf(1)));
+                    assert(!tridash.resolve(tridash.is_inf(1.2)));
+                    assert(!tridash.resolve(tridash.is_inf(NaN)));
+                    assert(!tridash.resolve(tridash.is_inf("hello")));
+                    assert(!tridash.resolve(tridash.is_inf({ x: 1})));
+                });
+
+                it('Should return failures as Thunks', function() {
+                    var thunk = tridash.is_inf(new tridash.Thunk(() => {
+                        throw new tridash.Fail();
+                    }));
+
+                    assert(thunk, "Returns a thunk instead of throwing exception");
+
+                    assert.throws(() => { tridash.resolve(thunk); }, tridash.Fail);
+                });
+            });
+
+            describe('NaN? - is_nan', function() {
+                it('Should return true when given NaN', function() {
+                    assert(tridash.resolve(tridash.is_nan(NaN)));
+                    assert(tridash.resolve(tridash.is_nan(new tridash.Thunk(() => NaN))));
+                });
+
+                it('Should return false when given a number', function() {
+                    assert(!tridash.resolve(tridash.is_nan(1)));
+                    assert(!tridash.resolve(tridash.is_nan(1.2)));
+                });
+
+                it('Should return failures as Thunks', function() {
+                    var thunk = tridash.is_nan(new tridash.Thunk(() => {
+                        throw new tridash.Fail();
+                    }));
+
+                    assert(thunk, "Returns a thunk instead of throwing exception");
+
+                    assert.throws(() => { tridash.resolve(thunk); }, tridash.Fail);
+                });
+            });
+        });
+
+        describe('Internal Type Checks', function() {
+            describe('check_number', function() {
+                it('Should return argument if it is a number', function() {
+                    assert.equal(tridash.check_number(1), 1);
+                    assert.equal(tridash.check_number(23), 23);
+                    assert.equal(tridash.check_number(2.4), 2.4);
+                });
+
+                it('Should throw Fail exception if not a number', function() {
+                    assert.throws(() => { tridash.check_number("x"); }, tridash.Fail);
+                    assert.throws(() => { tridash.check_number({ x: 1}); }, tridash.Fail);
+                });
+            });
+
+            describe('check_value', function() {
+                it('Should return argument if it is a number', function() {
+                    assert.equal(tridash.check_value(1), 1);
+                    assert.equal(tridash.check_value(23), 23);
+                    assert.equal(tridash.check_value(2.4), 2.4);
+                });
+
+                it('Should return argument if it is a string', function() {
+                    assert.equal(tridash.check_value("hello world"), "hello world");
+                });
+
+                it('Should return argument if it is a Symbol', function() {
+                    assert.equal(tridash.check_value(tridash.get_symbol('x')), tridash.get_symbol('x'));
+                });
+
+                it('Should throw Fail exception if not a primitive value', function() {
+                    assert.throws(() => { tridash.check_value({ x: 1}); }, tridash.Fail);
+                });
+            });
+
+            describe('check_string', function() {
+                it('Should return argument if it is a string', function() {
+                    assert.equal(tridash.check_string("hello"), "hello");
+                });
+
+                it('Should throw Fail exception if not a string', function() {
+                    assert.throws(() => { tridash.check_string(1); }, tridash.Fail);
+                    assert.throws(() => { tridash.check_string({ x: 1}); }, tridash.Fail);
+                });
+            });
+        });
+    });
 });

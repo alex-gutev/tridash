@@ -65,5 +65,6 @@ exports.is_cons = is_cons;
 
 exports.check_number = check_number;
 exports.check_value = check_value;
+exports.check_string = check_string;
 
 exports.get_symbol = get_symbol;

@@ -128,9 +128,10 @@ function is_string(value) {
     }
 };
 
-function is_inf(value) {
+function is_inf(tvalue) {
     try {
-        return !isFinite(resolve(value));
+        var value = resolve(tvalue);
+        return typeof value === 'number' && !isFinite(value) && !isNaN(value);
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -241,7 +242,11 @@ function is_cons(thing) {
  *   exception.
  */
 function check_number(value) {
-    return typeof value === 'number' ? value : FailThunk();
+    if (typeof value === 'number') {
+        return value;
+    }
+
+    throw new Fail();
 }
 
 /**
@@ -253,9 +258,21 @@ function check_number(value) {
  *   a 'Fail' exception.
  */
 function check_value(value) {
-    return typeof value === 'number' ||
+    if (typeof value === 'number' ||
         typeof value === 'string' ||
-        value instanceof Symbol ? value : FailThunk();
+        value instanceof Symbol) {
+        return value;
+    }
+
+    throw new Fail();
+}
+
+function check_string(value) {
+    if (typeof value === 'string') {
+        return value;
+    }
+
+    throw new Fail();
 }
 
 
