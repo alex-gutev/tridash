@@ -112,7 +112,7 @@ function is_int(x) {
 
 function is_real(value) {
     try {
-	return typeof resolve(value) === 'number';
+        return typeof resolve(value) === 'number';
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -166,64 +166,66 @@ function SubArray(array, start) {
 
 function head(list) {
     try {
-	var l = resolve(list);
+        var l = resolve(list);
 
-	if (l instanceof ConsCell) {
-	    return l.head;
-	}
-	else if (Array.isArray(l)) {
-	    if (l.length > 0)
-		return l[0];
+        if (l instanceof ConsCell) {
+            return l.head;
+        }
+        else if (Array.isArray(l)) {
+            if (l.length > 0)
+                return l[0];
 
-	    return FailThunk();
-	}
-	else if (l instanceof SubArray && l.array.length > l.start) {
-	    return l.array[l.start];
-	}
-	else {
-	    return FailThunk();
-	}
+            return FailThunk();
+        }
+        else if (l instanceof SubArray && l.array.length > l.start) {
+            return l.array[l.start];
+        }
+        else {
+            return FailThunk();
+        }
     }
     catch (e) {
-	return new Thunk(() => { throw e; });
+        return new Thunk(() => { throw e; });
     }
 }
 
 function tail(list) {
     try {
-	var l = resolve(list);
+        var l = resolve(list);
 
-	if (l instanceof ConsCell) {
-	    return l.tail;
-	}
-	else if (Array.isArray(l)) {
-	    if (l.length > 1)
-		return new SubArray(l, 1);
+        if (l instanceof ConsCell) {
+            return l.tail;
+        }
+        else if (Array.isArray(l)) {
+            if (l.length > 1)
+                return new SubArray(l, 1);
 
-	    return FailThunk();
-	}
-	else if (l instanceof SubArray && l.array.length > (l.start + 1)) {
-	    return new SubArray(l.array, l.start + 1);
-	}
-	else {
-	    return FailThunk();
-	}
+            return FailThunk();
+        }
+        else if (l instanceof SubArray && l.array.length > (l.start + 1)) {
+            return new SubArray(l.array, l.start + 1);
+        }
+        else {
+            return FailThunk();
+        }
     }
     catch (e) {
-	return new Thunk(() => { throw e; });
+        return new Thunk(() => { throw e; });
     }
 }
 
 function is_cons(thing) {
     try {
-	var value = resolve(thing);
+        var value = resolve(thing);
 
-	return value instanceof ConsCell ||
-	    (value instanceof SubArray && value.array.length > value.start) ||
-	    (Array.isArray(value) && value.length > 0);
+        return value instanceof ConsCell ||
+            (value instanceof SubArray && value.array.length > value.start) ||
+            (Array.isArray(value) && value.length > 0);
     }
     catch (e) {
-	return new Thunk(() => { throw e; });
+        return new Thunk(() => { throw e; });
+    }
+}
     }
 }
 

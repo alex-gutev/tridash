@@ -416,7 +416,7 @@ CatchThunk.prototype.constructor = CatchThunk;
  */
 function FailThunk() {
     return new Thunk(() => {
-	throw new Fail();
+        throw new Fail();
     });
 }
 
@@ -453,22 +453,22 @@ function resolve(thing) {
     var catch_value = null;
 
     while (thing instanceof Thunk) {
-	if (thing instanceof CatchThunk) {
-	    catch_value = combine_catch_thunk(thing.catch_value, catch_value);
-	}
+        if (thing instanceof CatchThunk) {
+            catch_value = combine_catch_thunk(thing.catch_value, catch_value);
+        }
 
-	try {
+        try {
             thing = thing.resolve();
-	}
-	catch (e) {
-	    if (e instanceof Fail && catch_value !== null) {
-		thing = catch_value;
-		catch_value = null;
-	    }
-	    else {
-		throw e;
-	    }
-	};
+        }
+        catch (e) {
+            if (e instanceof Fail && catch_value !== null) {
+                thing = catch_value;
+                catch_value = null;
+            }
+            else {
+                throw e;
+            }
+        };
     }
 
     return thing;
@@ -488,17 +488,17 @@ function resolve(thing) {
  */
 function combine_catch_thunk(try_value, catch_value) {
     if (catch_value === null) {
-	return try_value;
+        return try_value;
     }
     if (try_value instanceof CatchThunk) {
-	return new CatchThunk(try_value.compute,
-			      combine_catch_thunk(try_value.catch_thunk, catch_value));
+        return new CatchThunk(try_value.compute,
+                              combine_catch_thunk(try_value.catch_thunk, catch_value));
     }
     else if (try_value instanceof Thunk) {
-	return new CatchThunk(try_value.compute, catch_value);
+        return new CatchThunk(try_value.compute, catch_value);
     }
     else {
-	return try_value;
+        return try_value;
     }
 }
 
