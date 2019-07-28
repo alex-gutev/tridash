@@ -97,6 +97,15 @@
 :attribute(cons?, strictness, thing)
 
 
+### Strings
+
+:extern(string-at, string, index)
+:attribute(string-at, strictness, or(string, index))
+
+:extern(string-concat, str1, str2)
+:attribute(string-concat, strictness, or(str1, str2))
+
+
 ### Export Declarations
 
 :export(+, -, *, /,

@@ -60,6 +60,9 @@ exports.head = head;
 exports.tail = tail;
 exports.is_cons = is_cons;
 
+exports.string_at = string_at;
+exports.string_concat = string_concat;
+
 
 /* Internal Use Functions */
 

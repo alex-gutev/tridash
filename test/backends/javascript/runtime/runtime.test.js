@@ -477,4 +477,43 @@ describe('Builtin Functions', function() {
             });
         });
     });
+
+    describe('Strings', function() {
+        describe('string-at - string_at', function() {
+            it('Should return character at given index', function() {
+                assert.equal(tridash.resolve(tridash.string_at("hello", 0).chr), "h");
+                assert.equal(tridash.resolve(tridash.string_at(new tridash.Thunk(() => "hello"), 2).chr), "l");
+            });
+
+            it('Should fail if not given a string and integer', function() {
+                var thunk1 = tridash.string_at(0,0);
+                var thunk2 = tridash.string_at("hello", "world");
+
+                assert.throws(() => { tridash.resolve(thunk1); }, tridash.Fail);
+                assert.throws(() => { tridash.resolve(thunk2); }, tridash.Fail);
+            });
+        });
+
+        describe('string-concat - string_concat', function() {
+            it('Should return the concatenation of two strings', function() {
+                assert.equal(tridash.resolve(tridash.string_concat("hello ", "world")), "hello world");
+                assert.equal(
+                    tridash.resolve(
+                        tridash.string_concat(new tridash.Thunk(() => "hello "), "world")
+                    ),
+                    "hello world"
+                );
+            });
+
+            it('Should fail if arguments are not strings', function() {
+                var thunk1 = tridash.string_concat("hello ", 1);
+                var thunk2 = tridash.string_concat(1, "hello");
+                var thunk3 = tridash.string_concat(1, 2);
+
+                assert.throws(() => tridash.resolve(thunk1), tridash.Fail);
+                assert.throws(() => tridash.resolve(thunk2), tridash.Fail);
+                assert.throws(() => tridash.resolve(thunk3), tridash.Fail);
+            });
+        });
+    });
 });

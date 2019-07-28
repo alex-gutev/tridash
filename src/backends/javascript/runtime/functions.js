@@ -227,6 +227,38 @@ function is_cons(thing) {
         return new Thunk(() => { throw e; });
     }
 }
+
+
+/* Strings */
+
+/**
+ * Wraps a character so that it is a distinct type.
+ */
+function Char(chr) {
+    this.chr = chr;
+}
+
+function string_at(tstr, tindex) {
+    try {
+        var str = check_string(resolve(tstr));
+        var index = check_number(resolve(tindex));
+
+        return index < str.length ? new Char(str.charAt(index)) : FailThunk();
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
+
+function string_concat(tstr1, tstr2) {
+    try {
+        var str1 = check_string(resolve(tstr1));
+        var str2 = check_string(resolve(tstr2));
+
+        return str1 + str2;
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
     }
 }
 
