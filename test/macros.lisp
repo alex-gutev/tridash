@@ -750,6 +750,49 @@
         (is (resolve (call-tridash-meta-node f '(1 2 3))) 0)
         (is (resolve (call-tridash-meta-node f '(2 3 7))) 2))))
 
+  (subtest "Rest and Optional Arguments"
+    (subtest "Optional Arguments"
+      (subtest "Without Default Values"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core, +)"
+                 "inc(n, :(d)) : n + d"
+
+                 "f(x) : inc(x)"
+                 "g(x) : inc(x, 2)")
+
+          (with-nodes ((f "f") (g "g")) modules
+            (is-error (call-meta-node f (list 3)) tridash-fail)
+            (is (call-meta-node g (list 5)) 7))))
+
+      (subtest "With Default Values"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core, +)"
+                 "inc(n, d : 1) : n + d"
+
+                 "f(x) : inc(x)"
+                 "g(x) : inc(x, 2)")
+
+          (with-nodes ((f "f") (g "g")) modules
+            (is (call-meta-node f (list 3)) 4)
+            (is (call-meta-node g (list 5)) 7)))))
+
+    (subtest "Rest Arguments"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core, and, fails?)"
+               "check(..(xs)) : fails?(xs)"
+
+               "f(x) : x and check()"
+               "g(x) : check(x)"
+               "h(x) : check(x, 1, 2, 3)")
+
+        (with-nodes ((f "f") (g "g") (h "h")) modules
+          (ok (bool-value (call-meta-node f '(1))))
+          (is (bool-value (call-meta-node g '(2))) nil)
+          (is (bool-value (call-meta-node h '(2))) nil)))))
+
   (subtest "Higher Order Meta-Nodes"
     (subtest "No Outer-Node references"
       (with-module-table modules
@@ -1066,45 +1109,45 @@
                  "1+(n, d : 1) : list(:quote(+), x, d)"
                  ":attribute(1+, macro, 1)")
 
-          (is-error (build "1+(x, y, z)") arity-error)))
+          (is-error (build "1+(x, y, z)") arity-error))))
 
-      (subtest "Rest Arguments"
-        (with-module-table modules
-          (build-core-module)
-          (build ":import(core, cons, list)"
-                 "make-list(x, ..(xs)) : cons(:quote(list), cons(x, xs))"
-                 ":attribute(make-list, macro, 1)"
+    (subtest "Rest Arguments"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core, cons, list)"
+               "make-list(x, ..(xs)) : cons(:quote(list), cons(x, xs))"
+               ":attribute(make-list, macro, 1)"
 
-                 "make-list(x, y, z) -> output"
+               "make-list(x, y, z) -> output"
 
-                 ":attribute(x, input, 1)"
-                 ":attribute(y, input, 1)"
-                 ":attribute(z, input, 1)")
+               ":attribute(x, input, 1)"
+               ":attribute(y, input, 1)"
+               ":attribute(z, input, 1)")
 
-          (with-nodes ((x "x") (y "y") (z "z")
-                       (list "list")
-                       (output "output"))
-              (finish-build)
+        (with-nodes ((x "x") (y "y") (z "z")
+                     (list "list")
+                     (output "output"))
+            (finish-build)
 
-            (has-value-function
-             (x y z)
-             output
+          (has-value-function
+           (x y z)
+           output
 
-             `(,list ,(argument-list (list x y z)))))))
+           `(,list ,(argument-list (list x y z)))))))
 
-      (subtest "Rest Arguments and Outer Nodes"
-        (with-module-table modules
-          (build-core-module)
-          (build ":import(core, cons, list)"
-                 "make-list(x, ..(xs)) : cons(:quote(list), cons(x, cons(y, xs)))"
-                 ":attribute(make-list, macro, 1)"
+    (subtest "Rest Arguments and Outer Nodes"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core, cons, list)"
+               "make-list(x, ..(xs)) : cons(:quote(list), cons(x, cons(y, xs)))"
+               ":attribute(make-list, macro, 1)"
 
-                 ":attribute(a, input, 1)"
-                 ":attribute(b, input, 1)"
-                 ":attribute(c, input, 1)"
-                 ":attribute(y, input, 1)")
+               ":attribute(a, input, 1)"
+               ":attribute(b, input, 1)"
+               ":attribute(c, input, 1)"
+               ":attribute(y, input, 1)")
 
-          (is-error (build "make-list(a, b, c) -> output") semantic-error)))))
+        (is-error (build "make-list(a, b, c) -> output") semantic-error))))
 
   (subtest "Building a Meta-Node Multiple Times"
     (with-module-table modules

@@ -453,7 +453,10 @@
 
 
 (defmethod tridash->cl ((list argument-list) &key)
-  (list* 'list (map #'tridash->cl (argument-list-arguments list))))
+  (with-struct-slots argument-list- (arguments) list
+    (if arguments
+        (list* 'list (map #'tridash->cl (argument-list-arguments list)))
+        (fail-thunk))))
 
 (defmethod tridash->cl ((literal null) &key)
   (unless *return-nil*
