@@ -441,6 +441,18 @@
             (test-compute-function context
               (js-return (thunk (js-return (js-call f (d a) (d b))))))))))
 
+    (subtest "Optional Argument with No Default"
+      (mock-backend-state
+        (mock-meta-nodes (f)
+          (mock-contexts
+              ((context (a b) (functor f a nil)))
+
+            (test-compute-function context
+              (js-return
+               (thunk
+                (js-return
+                 (js-call f (d a) (thunk (js-throw (js-new +end-update-class+))))))))))))
+
     (subtest "Rest Arguments"
       (mock-backend-state
         (mock-meta-nodes (f)
@@ -451,7 +463,19 @@
               (js-return
                (thunk
                 (js-return
-                 (js-call f (d a) (thunk (js-return (js-array (list (d b) (d c)))))))))))))))
+                 (js-call f (d a) (thunk (js-return (js-array (list (d b) (d c))))))))))))))
+
+    (subtest "Empty Rest Argument List"
+      (mock-backend-state
+        (mock-meta-nodes (f)
+          (mock-contexts
+              ((context (a) (functor f a (argument-list nil))))
+
+            (test-compute-function context
+              (js-return
+               (thunk
+                (js-return
+                 (js-call f (d a) (thunk (js-throw (js-new +end-update-class+)))))))))))))
 
   (subtest "Conditionals"
     (subtest "Simple If Statements"
@@ -1364,7 +1388,8 @@
                '(($ x))
 
                (list
-                (js-return (js-call f ($ x) (js-array))))))))))
+                (js-return
+                 (js-call f ($ x) (thunk (js-throw (js-new +end-update-class+))))))))))))
 
     (subtest "Primitive Functions"
       (subtest "Arithmetic"

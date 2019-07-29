@@ -479,12 +479,17 @@
        (protect nil (make-js-call (resolve-expression fn) args))))))
 
 (defmethod make-expression ((arg-list argument-list) &key)
-  (make-operands
-   (argument-list-arguments arg-list)
-   nil
+  (with-struct-slots argument-list- (arguments) arg-list
+    (if arguments
 
-   (lambda (args)
-     (values nil (js-array args)))))
+        (make-operands
+         (argument-list-arguments arg-list)
+         nil
+
+         (lambda (args)
+           (values nil (js-array args))))
+
+        (make-fail-expression nil))))
 
 
 ;;; If Expressions
@@ -720,7 +725,7 @@
   (values nil literal))
 
 (defmethod make-expression ((null null) &key)
-  (values nil "null"))
+  (make-fail-expression nil))
 
 
 ;;;; Arguments
