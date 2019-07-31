@@ -206,12 +206,20 @@
   "Map mapping Tridash meta-node identifiers to the corresponding CL
    function identifiers.")
 
+(defvar *expression-blocks* (make-hash-map)
+  "Map where each key is an `EXPRESSION-BLOCK' and each corresponding
+   value is a list of the form (VAR EXPRESSION) where VAR is the name
+   of the variable with which the value of the expression block is
+   referenced and EXPRESSION is the actual compiled expression which
+   computes the block's value.")
+
 
 (defun tridash->cl-function (meta-node)
   "Returns a CL LAMBDA expression which is compiled from META-NODE."
 
   (let ((*current-meta-node* meta-node)
         (*operand-vars* (make-hash-map))
+        (*expression-blocks* (make-hash-map))
         (*return-nil* nil))
 
     (flet ((add-operand (operand)
@@ -219,13 +227,17 @@
 
       (foreach #'add-operand (operand-node-names meta-node))
 
-      `(lambda ,(make-meta-node-lambda-list meta-node)
-         ,(->
-           (contexts meta-node)
-           map-values
-           first
-           value-function
-           (tridash->cl :thunk nil))))))
+      (let ((main (->
+                   (contexts meta-node)
+                   map-values
+                   first
+                   value-function
+                   (tridash->cl :thunk nil))))
+
+        `(lambda ,(make-meta-node-lambda-list meta-node)
+           (let ,(map #'first (map-values *expression-blocks*))
+             ,@(map #`(setf ,(first a1) ,(second a1)) (map-values *expression-blocks*))
+             ,main))))))
 
 (defun get-operand-var (operand)
   "Returns the name of the variable in which the value of the operand
@@ -387,8 +399,22 @@
     `(alist-hash-map (list ,@(map #'make-entry (object-expression-entries object))))))
 
 (defmethod tridash->cl ((block expression-block) &key)
-  (tridash->cl (expression-block-expression block)
-               :thunk nil))
+  (with-struct-slots expression-block- (expression count) block
+    (acond
+      ((= count 1)
+       (tridash->cl expression :thunk nil))
+
+      ((get block *expression-blocks*)
+       (first it))
+
+      (t
+       (let ((var (gensym))
+             (expr (tridash->cl expression :thunk t)))
+
+         (setf (get block *expression-blocks*)
+               (list var expr))
+
+         var)))))
 
 
 (defmethod tridash->cl ((ref meta-node-ref) &key)

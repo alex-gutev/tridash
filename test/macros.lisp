@@ -195,9 +195,10 @@
        (functor if (functor < a b) (functor - b a) (functor - a b))
 
        ($a $b)
-       '(!|if| (!< $a $b)
-         (thunk (!- $b $a))
-         (thunk (!- $a $b))))))
+       '(let nil
+         (!|if| (!< $a $b)
+          (thunk (!- $b $a))
+          (thunk (!- $a $b)))))))
 
   (subtest "If Expressions"
     (with-core-nodes ("<" "-")
@@ -207,9 +208,10 @@
        (if-expression (functor < a b) (functor - b a) (functor - a b))
 
        ($a $b)
-       '(!|if| (!< $a $b)
-         (thunk (!- $b $a))
-         (thunk (!- $a $b))))))
+       '(let nil
+         (!|if| (!< $a $b)
+          (thunk (!- $b $a))
+          (thunk (!- $a $b)))))))
 
   (subtest "Object Expressions"
     (with-core-nodes ("+" "-")
@@ -221,10 +223,11 @@
           (diff ,(functor - x y))))
 
        ($x $y)
-       '(alist-hash-map
-         (list
-          (cons 'sum (thunk (!+ $x $y)))
-          (cons 'diff (thunk (!- $x $y))))))))
+       '(let nil
+         (alist-hash-map
+          (list
+           (cons 'sum (thunk (!+ $x $y)))
+           (cons 'diff (thunk (!- $x $y)))))))))
 
   (subtest "Member Expressions"
     (test-compile-meta-node
@@ -234,7 +237,8 @@
       (member-expression object 'key1) 'key2)
 
      ($obj)
-     '(!|member| (!|member| $obj 'key1) 'key2)))
+     '(let nil
+       (!|member| (!|member| $obj 'key1) 'key2))))
 
   (subtest "Catch Expressions"
     (with-core-nodes ("/" "*")
@@ -247,7 +251,8 @@
 
        ($a $b)
 
-       '(!|catch| (!/ $a $b) (thunk (!* $a $b))))))
+       '(let nil
+         (!|catch| (!/ $a $b) (thunk (!* $a $b)))))))
 
   (subtest "Fail Expressions"
     (test-compile-meta-node
@@ -255,18 +260,34 @@
      (fail-expression)
 
      ()
-     '(!|fail|)))
+     '(let nil
+       (!|fail|))))
 
   (subtest "Expression Blocks"
     (with-core-nodes ("+")
-      (test-compile-meta-node
+      (subtest "Count = 1"
+        (test-compile-meta-node
 
-       (a)
-       (expression-block
-        (functor + a 1))
+         (a)
+         (expression-block
+          (functor + a 1))
 
-       ($a)
-       '(!+ $a 1))))
+         ($a)
+         '(let nil
+           (!+ $a 1))))
+
+      (subtest "Count > 1"
+        (test-compile-meta-node
+
+         (a)
+	 (let ((block (expression-block (functor + a 1) :count 2)))
+           (functor + block block))
+
+         ($a)
+         '(let ($a+1)
+           (setf $a+1 (thunk (!+ $a 1)))
+
+           (!+ $a+1 $a+1))))))
 
   (subtest "Calling Other Meta-Nodes"
     (with-core-nodes ("-")
@@ -277,7 +298,8 @@
          (functor meta-node (functor - a))
 
          ($a)
-         `(call-tridash-meta-node ,meta-node (list (!- $a)))))))
+         `(let nil
+            (call-tridash-meta-node ,meta-node (list (!- $a))))))))
 
   (subtest "Higher-Order Meta-Nodes"
     (subtest "External Meta-Node"
@@ -289,14 +311,15 @@
            (functor apply (meta-node-ref not) x)
 
            ($x)
-           `(call-tridash-meta-node
-             ,apply
+           `(let nil
+              (call-tridash-meta-node
+               ,apply
 
-             (list
-              #'(lambda (&rest $args)
-                  (check-arity ,not $args)
-                  (apply #'!|not| $args))
-              $x))))))
+               (list
+                #'(lambda (&rest $args)
+                    (check-arity ,not $args)
+                    (apply #'!|not| $args))
+                $x)))))))
 
     (subtest "If Meta-Node"
       (with-core-nodes ("if")
@@ -307,14 +330,15 @@
            (functor apply (meta-node-ref if) x y z)
 
            ($x $y $z)
-           `(call-tridash-meta-node
-             ,apply
+           `(let nil
+              (call-tridash-meta-node
+               ,apply
 
-             (list
-              #'(lambda (&rest $args)
-                  (check-arity ,if $args)
-                  (apply #'!|if| $args))
-              $x $y $z))))))
+               (list
+                #'(lambda (&rest $args)
+                    (check-arity ,if $args)
+                    (apply #'!|if| $args))
+                $x $y $z)))))))
 
     (subtest "And Meta-Node"
       (with-core-nodes ("and")
@@ -325,14 +349,15 @@
            (functor apply (meta-node-ref and) x y)
 
            ($x $y)
-           `(call-tridash-meta-node
-             ,apply
+           `(let nil
+              (call-tridash-meta-node
+               ,apply
 
-             (list
-              #'(lambda (&rest $args)
-                  (check-arity ,and $args)
-                  (apply #'!|and| $args))
-              $x $y))))))
+               (list
+                #'(lambda (&rest $args)
+                    (check-arity ,and $args)
+                    (apply #'!|and| $args))
+                $x $y)))))))
 
     (subtest "Or Meta-Node"
       (with-core-nodes ("or")
@@ -343,14 +368,15 @@
            (functor apply (meta-node-ref or) x y)
 
            ($x $y)
-           `(call-tridash-meta-node
-             ,apply
+           `(let nil
+              (call-tridash-meta-node
+               ,apply
 
-             (list
-              #'(lambda (&rest $args)
-                (check-arity ,or $args)
-                (apply #'!|or| $args))
-              $x $y))))))
+               (list
+                #'(lambda (&rest $args)
+                    (check-arity ,or $args)
+                    (apply #'!|or| $args))
+                $x $y)))))))
 
     (subtest "Tridash Meta-Node"
       (let ((apply (mock-meta-node (f x) (functor f x)))
@@ -362,13 +388,14 @@
          (functor apply (meta-node-ref f) x)
 
          ($x)
-         `(call-tridash-meta-node
-           ,apply
-           (list
-            #'(lambda (&rest $args)
-                (check-arity ,f $args)
-                (call-tridash-meta-node ,f $args))
-            $x)))))
+         `(let nil
+            (call-tridash-meta-node
+             ,apply
+             (list
+              #'(lambda (&rest $args)
+                  (check-arity ,f $args)
+                  (call-tridash-meta-node ,f $args))
+              $x))))))
 
     (subtest "Meta-Node with Optional Arguments"
       (let ((apply (mock-meta-node (f x) (functor f x)))
@@ -379,13 +406,14 @@
          (functor apply (meta-node-ref f :optional (list 1 2)) x)
 
          ($x)
-         `(call-tridash-meta-node
-           ,apply
-           (list
-            #'(lambda (&rest $args)
-                (check-arity ,f $args)
-                (call-tridash-meta-node ,f $args))
-            $x)))))
+         `(let nil
+            (call-tridash-meta-node
+             ,apply
+             (list
+              #'(lambda (&rest $args)
+                  (check-arity ,f $args)
+                  (call-tridash-meta-node ,f $args))
+              $x))))))
 
     (subtest "Meta-Node with Rest Arguments"
       (let ((apply (mock-meta-node (f x) (functor f x)))
@@ -396,13 +424,14 @@
          (functor apply (meta-node-ref f) x)
 
          ($x)
-         `(call-tridash-meta-node
-           ,apply
-           (list
-            #'(lambda (&rest $args)
-                (check-arity ,f $args)
-                (call-tridash-meta-node ,f (group-rest-args $args 2)))
-            $x)))))
+         `(let nil
+            (call-tridash-meta-node
+             ,apply
+             (list
+              #'(lambda (&rest $args)
+                  (check-arity ,f $args)
+                  (call-tridash-meta-node ,f (group-rest-args $args 2)))
+              $x))))))
 
     (subtest "Invoking Nodes"
       (test-compile-meta-node
@@ -411,7 +440,8 @@
        (functor f x y)
 
        ($f $x $y)
-       `(call-node $f (list $x $y)))))
+       `(let nil
+          (call-node $f (list $x $y))))))
 
   (subtest "Literals"
     (with-core-nodes ("and")
@@ -421,11 +451,12 @@
        (functor and "hello" (functor and 1 (functor and 2.3 'symbol)))
 
        ()
-       '(!|and| "hello"
-         (thunk
-          (!|and| 1
-           (thunk
-            (!|and| 2.3 'symbol))))))))
+       '(let nil
+         (!|and| "hello"
+          (thunk
+           (!|and| 1
+             (thunk
+              (!|and| 2.3 'symbol)))))))))
 
   (subtest "Primitive Functions"
     (with-core-nodes
@@ -444,9 +475,10 @@
           (functor - d))
 
          ($a $b $c $d)
-         '(!/
-           (!* (!+ $a $b) (!- $c $d))
-           (!- $d))))
+         '(let nil
+           (!/
+            (!* (!+ $a $b) (!- $c $d))
+            (!- $d)))))
 
       (subtest "Comparison and Logical"
         (test-compile-meta-node
@@ -473,21 +505,22 @@
               (functor != x y))))))
 
          ($x $y)
-         '(!|not|
-           (!|or|
-            (!|and| (!< $x $y) (thunk (!= $y $x)))
-            (thunk
-             (!|or|
-               (!<= $x 10)
+         '(let nil
+           (!|not|
+            (!|or|
+             (!|and| (!< $x $y) (thunk (!= $y $x)))
+             (thunk
+              (!|or|
+                (!<= $x 10)
 
-               (thunk
-                (!|or|
-                  (!> 1 $y)
+                (thunk
+                 (!|or|
+                   (!> 1 $y)
 
-                  (thunk
-                   (!|or|
-                     (!>= 8 $y)
-                     (thunk (!!= $x $y))))))))))))
+                   (thunk
+                    (!|or|
+                      (!>= 8 $y)
+                      (thunk (!!= $x $y)))))))))))))
 
       (subtest "Type Checks"
         (test-compile-meta-node
@@ -503,13 +536,14 @@
            (functor string? z)))
 
          ($x $y $z)
-         '(!|or|
-           (!|int?| $x)
+         '(let nil
+           (!|or|
+            (!|int?| $x)
 
-           (thunk
-            (!|or|
-             (!|real?| $y)
-             (thunk (!|string?| $z)))))))))
+            (thunk
+             (!|or|
+               (!|real?| $y)
+               (thunk (!|string?| $z))))))))))
 
   (subtest "Tail Recursion"
     (subtest "If Expressions"
@@ -522,10 +556,11 @@
                         (functor self (functor - n 1) (functor * n acc)))
 
          ($n $acc)
-         `(!|if| (!< $n 2)
-            $acc
-            (thunk
-             (call-tridash-meta-node ,self (list (!- $n 1) (!* $n $acc))))))))
+         `(let nil
+            (!|if| (!< $n 2)
+              $acc
+              (thunk
+               (call-tridash-meta-node ,self (list (!- $n 1) (!* $n $acc)))))))))
 
     (subtest "If Functor"
       (with-core-nodes ("if" "-" "*" "<")
@@ -538,10 +573,11 @@
                   (functor self (functor - n 1) (functor * n acc)))
 
          ($n $acc)
-         `(!|if| (!< $n 2)
-            $acc
-            (thunk
-             (call-tridash-meta-node ,self (list (!- $n 1) (!* $n $acc))))))))
+         `(let nil
+            (!|if| (!< $n 2)
+              $acc
+              (thunk
+               (call-tridash-meta-node ,self (list (!- $n 1) (!* $n $acc)))))))))
 
     (subtest "Expression Blocks"
       (with-core-nodes ("if" "-" "*" "<")
@@ -555,10 +591,11 @@
                    (functor self (functor - n 1) (functor * n acc))))
 
          ($n $acc)
-         `(!|if| (!< $n 2)
-            $acc
-            (thunk
-             (call-tridash-meta-node ,self (list (!- $n 1) (!* $n $acc))))))))
+         `(let nil
+            (!|if| (!< $n 2)
+              $acc
+              (thunk
+               (call-tridash-meta-node ,self (list (!- $n 1) (!* $n $acc)))))))))
 
     (subtest "And/Or Functors"
       (with-core-nodes ("and" "or" "=" "-")
@@ -569,9 +606,10 @@
            (functor or (functor = n 0) (functor self (functor - n 1)))
 
            ($n)
-           `(!|or| (!= $n 0)
-              (thunk
-               (call-tridash-meta-node ,self (list (!- $n 1)))))))
+           `(let nil
+              (!|or| (!= $n 0)
+                (thunk
+                 (call-tridash-meta-node ,self (list (!- $n 1))))))))
 
         (subtest "And"
           (test-compile-meta-node
@@ -580,9 +618,10 @@
            (functor and (functor = n 0) (functor self (functor - n 1)))
 
            ($n)
-           `(!|and| (!= $n 0)
-              (thunk
-               (call-tridash-meta-node ,self (list (!- $n 1)))))))))
+           `(let nil
+              (!|and| (!= $n 0)
+                (thunk
+                 (call-tridash-meta-node ,self (list (!- $n 1))))))))))
 
     (subtest "Catch Expressions"
       (with-core-nodes ("-" "+")
@@ -593,9 +632,10 @@
                            (functor self (functor - n 1)))
 
          ($n)
-         `(!|catch| (call-tridash-meta-node ,self (list (!+ $n 1)))
-            (thunk
-             (call-tridash-meta-node ,self (list (!- $n 1)))))))))
+         `(let nil
+            (!|catch| (call-tridash-meta-node ,self (list (!+ $n 1)))
+              (thunk
+               (call-tridash-meta-node ,self (list (!- $n 1))))))))))
 
   (subtest "Optional and Rest Arguments"
     (subtest "Optional Arguments"
@@ -605,7 +645,8 @@
          (functor + n d)
 
          ($n &optional ($d 1))
-         '(!|+| $n $d))))
+         '(let nil
+           (!|+| $n $d)))))
 
     (subtest "Multiple Optional Arguments"
       (with-core-nodes ("+")
@@ -614,7 +655,8 @@
          (functor + n (functor + d e))
 
          ($n &optional ($d 1) ($e 2))
-         '(!|+| $n (!|+| $d $e)))))
+         '(let nil
+           (!|+| $n (!|+| $d $e))))))
 
     (subtest "Rest Arguments"
       (with-core-nodes ("cons")
@@ -623,7 +665,8 @@
          (functor cons x xs)
 
          ($x &optional $xs)
-         '(!|cons| $x $xs))))
+         '(let nil
+           (!|cons| $x $xs)))))
 
     (subtest "Rest and Optional"
       (with-core-nodes ("cons")
@@ -632,7 +675,8 @@
          (functor cons x (functor cons y xs))
 
          ($x &optional ($y 2) $xs)
-         '(!|cons| $x (thunk (!|cons| $y $xs)))))))
+         '(let nil
+           (!|cons| $x (thunk (!|cons| $y $xs))))))))
 
   (subtest "Errors"
     (subtest "Unsupported `EXTERNAL-META-NODE'"
@@ -932,6 +976,27 @@
         (with-nodes ((test "test")) modules
           (is (bool-value (resolve (call-tridash-meta-node test '(1)))) nil)
           (ok (bool-value (resolve (call-tridash-meta-node test '(-1)))))))))
+
+  (subtest "Common Sub-Expressions"
+    (subtest "One Expression-Block"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core, +)"
+               "f(x) : (x + 1) + (x + 1)")
+
+        (with-nodes ((f "f")) modules
+          (is (call-meta-node f '(1)) 4)
+          (is (call-meta-node f '(2)) 6))))
+
+    (subtest "Two Expression-Block"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core, *, +, -)"
+               "f(x, y) : { x + 1 -> x1; y + 2 -> y2; (x1 + y2) * (x1 - y2) }")
+
+        (with-nodes ((f "f")) modules
+          (is (call-meta-node f '(3 7)) -65)
+          (is (call-meta-node f '(5 2)) 20)))))
 
   (subtest "Errors"
     (subtest "Type Errors"
