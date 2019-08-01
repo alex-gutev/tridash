@@ -788,16 +788,8 @@
    evaluated and the resulting node is returned, otherwise an instance
    of the meta-node is created."
 
-  (aif (node-macro-function meta-node)
-       (funcall it operator operands module)
-       (make-meta-node-instance meta-node operator operands module)))
-
-(defun make-meta-node-instance (meta-node operator operands module)
-  "Creates a functor node which invokes the meta-node META-NODE with
-   operands OPERANDS, and adds it to *FUNCTOR-MODULE*"
-
   (acond
-    ((aand *source-node* (target-transform-node meta-node))
+    ((and *source-node* (target-transform-node meta-node))
      (let ((source (process-declaration (gensym) module)))
        (transform-target-meta-node
         it
@@ -806,11 +798,20 @@
         module)
        source))
 
-    ((and *source-node* (null (target-meta-node meta-node)))
-     (error 'target-node-error :node (cons operator operands)))
+    ((node-macro-function meta-node)
+     (funcall it operator operands module))
 
     (t
-     (add-meta-node-instance meta-node operands module))))
+     (make-meta-node-instance meta-node operator operands module))))
+
+(defun make-meta-node-instance (meta-node operator operands module)
+  "Creates a functor node which invokes the meta-node META-NODE with
+   operands OPERANDS, and adds it to *FUNCTOR-MODULE*"
+
+  (when (and *source-node* (null (target-meta-node meta-node)))
+    (error 'target-node-error :node (cons operator operands)))
+
+  (add-meta-node-instance meta-node operands module))
 
 
 (defun add-meta-node-instance (meta-node operands module)
