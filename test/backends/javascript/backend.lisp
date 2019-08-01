@@ -445,7 +445,7 @@
       (mock-backend-state
         (mock-meta-nodes (f)
           (mock-contexts
-              ((context (a b) (functor f a nil)))
+              ((context (a) (functor f a nil)))
 
             (test-compute-function context
               (js-return
