@@ -2295,7 +2295,26 @@
         (test-not-nodes table "constant" "param" "sum" "b")
 
         (with-nodes ((add "add") (a "a") (c "c")) table
-          (has-value-function (a) c `(,add ,a (,add 2 1))))))))
+          (has-value-function (a) c `(,add ,a (,add 2 1)))))))
+
+  (subtest "Two-way Bindings"
+    (with-module-table modules
+      (build ":extern(add, a, b)"
+             "1 -> x"
+             "add(x,y) -> x"
+             "add(x,y) -> out"
+
+             ":attribute(y, input, 1)")
+
+      (let ((table (finish-build)))
+        (test-not-nodes table "x")
+
+        (with-nodes ((add "add") (y "y") (out "out")) table
+          (has-value-function
+           (y)
+           out
+
+           `(,add 1 ,y)))))))
 
 (subtest "Structure Checking"
   (subtest "Cycle Checks"

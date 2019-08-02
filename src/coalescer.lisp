@@ -331,29 +331,35 @@
 
   (labels ((value-node? (node)
              (unless (input-node? node)
-               (with-slots (contexts) node
+               (let ((contexts (remove-if (curry #'coalescable? node)
+                                          (map-values (contexts node)))))
                  (and (= (length contexts) 1)
-                      (-> contexts
-                          first
-                          cdr
-                          operands
-                          emptyp)))))
+                      (constant-context? (first contexts))
+                      (value-function (first contexts))))))
+
+           (coalescable? (node context)
+             (with-slots (operands) context
+               (unless (emptyp operands)
+                 (-> (rcurry #'memberp (map-keys (observers node)))
+                     (every (map-keys operands))))))
+
+           (constant-context? (context)
+             (emptyp (operands context)))
 
            (fold-value (node)
-             (when (value-node? node)
+             (awhen (value-node? node)
                (let ((obs (observers node)))
-                 (-> (contexts node)
-                     first
-                     cdr
-                     value-function
-                     (replace-dependency node))
+                 (replace-dependency it node)
 
                  (foreach #'fold-value (map-keys obs))
-                 (clear (observers node)))))
+                 (clear (observers node))
+                 (clear (contexts node)))))
 
            (replace-dependency (value node)
              (doseq ((obs . link) (observers node))
                (erase (dependencies obs) node)
+               (erase (observers obs) node)
+
                (setf (node-link-node link) value)
 
                (let ((context (context obs (node-link-context link))))
