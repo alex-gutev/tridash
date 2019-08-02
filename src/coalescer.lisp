@@ -41,6 +41,9 @@
     ;; common ancestor node.
     (check-structure input-nodes)
 
+    ;; Fold Constant Nodes
+    (fold-constant-nodes nodes)
+
     ;; Remove nodes not reachable from any input node.
     (remove-unreachable-nodes input-nodes nodes)
 

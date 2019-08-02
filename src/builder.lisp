@@ -159,10 +159,7 @@
    containing all nodes in all modules."
 
   (with-slots (nodes meta-nodes input-nodes) node-table
-    ;; Fold constant nodes
-    (fold-constant-nodes nodes)
-
-    ;; Coalesce Nodes
+    ;; Node Coalescing
     (coalesce-all node-table)
 
     ;; Finish Building Meta-Node Subgraphs
