@@ -125,7 +125,8 @@
 
   (flet ((make-operand (operand)
            (match operand
-             ((list 'optional symb value)
+             ((or (list 'optional symb value)
+                  (list 'optional symb))
               (list +optional-argument+ symb value))
 
              ((list 'rest symb)
@@ -400,12 +401,14 @@
              (list
               #'(lambda (&rest $args)
                   (check-arity ,f $args)
-                  (call-tridash-meta-node ,f $args))
+
+                  (destructuring-bind ($x2) $args
+                    (call-tridash-meta-node ,f (list $x2))))
               $x))))))
 
     (subtest "Meta-Node with Optional Arguments"
       (let ((apply (mock-meta-node (f x) (functor f x)))
-            (f (mock-meta-node (x) x)))
+            (f (mock-meta-node (x (optional y) (optional z)) x)))
 
         (test-compile-meta-node
          (x)
@@ -418,7 +421,9 @@
              (list
               #'(lambda (&rest $args)
                   (check-arity ,f $args)
-                  (call-tridash-meta-node ,f $args))
+
+                  (destructuring-bind ($x2 &optional ($y 1) ($z 2)) $args
+                    (call-tridash-meta-node ,f (list $x2 $y $z))))
               $x))))))
 
     (subtest "Meta-Node with Rest Arguments"
@@ -436,7 +441,9 @@
              (list
               #'(lambda (&rest $args)
                   (check-arity ,f $args)
-                  (call-tridash-meta-node ,f (group-rest-args $args 2)))
+                  (destructuring-bind ($x2 $y &rest $xs &aux ($rest (or $xs (fail-thunk))))
+                      $args
+                    (call-tridash-meta-node ,f (list $x2 $y $rest))))
               $x))))))
 
     (subtest "Invoking Nodes"
@@ -904,6 +911,16 @@
 
           (with-nodes ((f "f")) modules
             (is-error (call-meta-node f '(1)) 'tridash-fail)))))
+
+    (subtest "With Optional Arguments and Outer Node References"
+      (with-module-table modules
+	(build-core-module)
+	(build ":import(core, +)"
+	       "apply(f, x) : f(x)"
+	       "test(a, x) : { f(y, d : 1) : y + d + x; apply(f, a) }")
+
+	(with-nodes ((test "test")) modules
+	  (is (call-meta-node test '(2 3)) 6))))
 
     (subtest "External Meta-Nodes"
       (with-module-table modules

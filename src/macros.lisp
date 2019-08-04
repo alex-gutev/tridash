@@ -427,17 +427,75 @@
       (let ((apply-args (make-meta-node-arg-list node args)))
         `#'(lambda (&rest ,args)
              (check-arity ,node ,args)
+
              ,(ematch node
                 ((external-meta-node name)
                  `(apply #',(external-meta-node-cl-function name) ,apply-args))
 
                 ((type meta-node)
                  (let ((*return-nil* nil))
-                   `(call-tridash-meta-node
-                     ,node
-                     ,(if outer-nodes
-                          `(append ,apply-args (list ,@(map #'tridash->cl outer-nodes)))
-                          apply-args))))))))))
+                   (multiple-value-bind (lambda-list vars)
+                       (destructure-meta-node-args (operands node) optional)
+
+                     `(destructuring-bind ,lambda-list ,args
+                       (call-tridash-meta-node
+                        ,node
+
+                        ,(if outer-nodes
+                             `(append (list ,@vars) (list ,@(map #'tridash->cl outer-nodes)))
+                             `(list ,@vars)))))))))))))
+
+(defun destructure-meta-node-args (operands optional)
+  "Creates the destructuring lambda-list for the meta-node argument
+   list OPERANDS. OPTIONAL is the list containing the default values
+   of the optional arguments."
+
+  (let ((lambda-list (make-collector nil))
+        (vars (make-collector nil)))
+
+    (labels ((process-required (args)
+               (match args
+                 ((list* (list* (eql +optional-argument+) _) _)
+                  (accumulate lambda-list '&optional)
+                  (process-optional args optional))
+
+                 ((list* (list* (eql +rest-argument+) _) _)
+                  (make-rest))
+
+                 ((list* (type symbol) args)
+                  (let ((var (gensym)))
+                    (accumulate lambda-list var)
+                    (accumulate vars var))
+
+                  (process-required args))))
+
+             (process-optional (args optional)
+               (match args
+                 ((list* (list* (eql +optional-argument+) _) args)
+                  (let ((var (gensym)))
+                    (accumulate lambda-list (list var (tridash->cl (first optional))))
+                    (accumulate vars var))
+
+                  (process-optional args (rest optional)))
+
+                 ((list* (list* (eql +rest-argument+) _) _)
+                  (make-rest))))
+
+             (make-rest ()
+               (accumulate lambda-list '&rest)
+
+               (let ((var (gensym))
+                     (rest-var (gensym)))
+
+                 (accumulate lambda-list var)
+                 (accumulate lambda-list '&aux)
+                 (accumulate lambda-list `(,rest-var (or ,var (fail-thunk))))
+
+                 (accumulate vars rest-var))))
+
+      (process-required operands)
+      (values (collector-sequence lambda-list)
+              (collector-sequence vars)))))
 
 (defun has-nodes? (expression)
   "Checks whether EXPRESSION references any nodes."
