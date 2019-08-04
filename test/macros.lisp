@@ -177,11 +177,17 @@
    calls. BODY is evaluated in an environment in which the symbol SELF
    is bound to the `META-NODE' object."
 
-  `(let ((self (mock-meta-node ,operands ,expression)))
-     (is (tridash->cl-function self)
-         `(lambda ,',args
-            ,,body)
-         :test #'expression=)))
+  (flet ((lambda-args (lambda-list)
+           (->> (remove-if (rcurry #'memberp lambda-list-keywords) lambda-list)
+                (map #'ensure-car)
+                (map (compose #'gensym #'symbol-name)))))
+
+    `(let ((self (mock-meta-node ,operands ,expression)))
+       (is (tridash->cl-function self)
+           `(lambda ,',args
+              (declare (ignorable ,@',(lambda-args args)))
+              ,,body)
+           :test #'expression=))))
 
 
 (plan 6)

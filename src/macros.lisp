@@ -235,6 +235,7 @@
                    (tridash->cl :thunk nil))))
 
         `(lambda ,(make-meta-node-lambda-list meta-node)
+           (declare (ignorable ,@(map-values *operand-vars*)))
            (let ,(map #'first (map-values *expression-blocks*))
              ,@(map #`(setf ,(first a1) ,(second a1)) (map-values *expression-blocks*))
              ,main))))))
