@@ -285,7 +285,8 @@
     (rest
      (list (list (eql +rest-argument+) arg))
 
-     (list (get-operand-var arg)))
+     (list
+      (list (get-operand-var arg) '(fail-thunk))))
 
     (outer
      (and (cons (cons (eql +outer-node-argument+) _) _) args)

@@ -670,7 +670,7 @@
          (x (rest xs))
          (functor cons x xs)
 
-         ($x &optional $xs)
+         ($x &optional ($xs (fail-thunk)))
          '(let nil
            (!|cons| $x $xs)))))
 
@@ -680,7 +680,7 @@
          (x (optional y 2) (rest xs))
          (functor cons x (functor cons y xs))
 
-         ($x &optional ($y 2) $xs)
+         ($x &optional ($y 2) ($xs (fail-thunk)))
          '(let nil
            (!|cons| $x (thunk (!|cons| $y $xs))))))))
 
@@ -892,7 +892,18 @@
 
         (with-nodes ((f "f") (g "g")) modules
           (is (resolve (call-tridash-meta-node f '(1 3 4))) '(2 3 4))
-          (is (resolve (call-tridash-meta-node g '(1))) '(2)))))
+          (is (resolve (call-tridash-meta-node g '(1))) '(2))))
+
+      (subtest "Empty Rest Arguments"
+        (with-module-table modules
+          (build-core-module)
+          (build "apply(f, x) : f(x)"
+                 "l(x, ..(xs)) : xs"
+
+                 "f(a) : apply(l, a)")
+
+          (with-nodes ((f "f")) modules
+            (is-error (call-meta-node f '(1)) 'tridash-fail)))))
 
     (subtest "External Meta-Nodes"
       (with-module-table modules
