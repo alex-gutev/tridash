@@ -57,6 +57,7 @@
 
     (cons (id-symbol "fail") "Tridash.fail")
     (cons (id-symbol "fail-type") "Tridash.fail-type")
+    (cons (id-symbol "catch") "Tridash.make_catch_thunk")
 
     (cons (id-symbol "member") "Tridash.member")
 
@@ -85,7 +86,8 @@
     (cons (id-symbol "cons") "Tridash.cons")
     (cons (id-symbol "head") "Tridash.head")
     (cons (id-symbol "tail") "Tridash.tail")
-    (cons (id-symbol "cons?") "Tridash.is_cons")))
+    (cons (id-symbol "cons?") "Tridash.is_cons")
+    (cons (id-symbol "Empty") "Tridash.Empty")))
 
   "Map mapping tridash primitive operators to their corresponding
    JavaScript primitive operators.")
@@ -457,19 +459,21 @@
         meta-node
         (list object (if (symbolp key) (symbol-name key) key)))))
 
-    ((eql (id-symbol "fail"))
-     (make-fail-expression arguments))
-
-    ((eql (id-symbol "catch"))
-     (make-catch-expression arguments))
-
-    ((eql (id-symbol "-"))
-     (if (null (second arguments))
-         (call-next-method meta-node (list (first arguments)))
-         (call-next-method)))
-
     (_
-     (call-next-method))))
+     (call-next-method meta-node (remove-nil-arguments arguments)))))
+
+(defun remove-nil-arguments (arguments)
+  "Removes NIL's from located at the end of the list ARGUMENTS."
+
+  (flet ((null-arg (arg)
+           (or (null arg)
+               (and (argument-list-p arg)
+                    (null (argument-list-arguments arg))))))
+
+    (let ((first-nil (position nil arguments)))
+      (if (and first-nil (every #'null-arg (subseq arguments first-nil)))
+          (subseq arguments 0 first-nil)
+          arguments))))
 
 (defmethod make-functor-expression ((meta-node meta-node) arguments)
   (make-operands
@@ -497,7 +501,15 @@
          (lambda (args)
            (values nil (js-array args))))
 
-        (make-fail-expression nil))))
+        (values
+         nil
+         (empty-list)))))
+
+(defun empty-list ()
+  "Returns an expression which creates a failure that indicates an
+   empty list."
+
+  (js-call "Tridash.Empty"))
 
 
 ;;; If Expressions
@@ -546,30 +558,6 @@
        *return-variable*)
 
       (values block expression)))
-
-
-;;; Fail and Catch Expressions
-
-(defun make-fail-expression (arguments)
-  (declare (ignore arguments))
-
-  (values
-   nil
-   (thunk (js-throw (js-new +end-update-class+)) nil)))
-
-(defun make-catch-expression (arguments)
-  "Generates code which creates a catch thunk."
-
-  (destructuring-bind (try catch) arguments
-
-    (let ((*thunk* t))
-      (values
-       nil
-
-       (js-new +catch-thunk-class+
-               (list
-                (nth-value 1 (make-expression try :thunk t))
-                (nth-value 1 (make-expression catch :thunk t))))))))
 
 
 ;;; Object Expressions
@@ -659,7 +647,8 @@
 
      (lambda (op-values)
        (let ((fn-args (make-collector nil))
-             (call-args (make-collector nil)))
+             (call-args (make-collector nil))
+             (rest-arg nil))
 
          (nlet-tail make-args
              ((operands (operands node))
@@ -675,6 +664,8 @@
 
              ((list* (list (eql +rest-argument+) _) rest)
               (let ((var (var-name)))
+                (setf rest-arg var)
+
                 (accumulate call-args var)
                 (accumulate fn-args (js-call "..." var)))
 
@@ -698,6 +689,11 @@
           (js-lambda
            (collector-sequence fn-args)
            (list
+            (when rest-arg
+              (js-if
+               (js-call "===" (js-member rest-arg "length") 0)
+               (js-call "=" rest-arg (empty-list))))
+
             (js-return
              (make-js-call (meta-node-id node) (collector-sequence call-args)))))))))))
 
@@ -716,7 +712,7 @@
   (values nil literal))
 
 (defmethod make-expression ((null null) &key)
-  (make-fail-expression nil))
+  (values nil (js-call "Tridash.fail")))
 
 
 ;;;; Arguments

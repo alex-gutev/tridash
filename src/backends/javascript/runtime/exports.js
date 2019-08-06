@@ -46,6 +46,10 @@ exports.and = and;
 exports.or = or;
 exports.not = not;
 
+exports.fail = fail;
+exports.fail_type = fail_type;
+exports.make_catch_thunk = make_catch_thunk;
+
 exports.cast_int = cast_int;
 exports.cast_real = cast_real;
 exports.cast_string = cast_string;
@@ -60,6 +64,7 @@ exports.cons = cons;
 exports.head = head;
 exports.tail = tail;
 exports.is_cons = is_cons;
+exports.Empty = Empty;
 
 exports.string_at = string_at;
 exports.string_concat = string_concat;

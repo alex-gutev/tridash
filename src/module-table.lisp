@@ -95,8 +95,12 @@
   (external-meta-nodes
    `((if (cond then (,+optional-argument+ else)) ((:strictness (or cond (and then else)))))
      (:member (object key) ((:strictness (or object key))))
-     (:fail ())
-     (:catch (try catch) ((:strictness try)))))
+
+     (:catch (try catch (,+optional-argument+ test)) ((:strictness try)))
+     (:fail ((,+optional-argument+ type)))
+     (:fail-type (thing) ((:strictness thing)))
+
+     ((:empty-list "Empty") ())))
 
   "Map of meta-nodes which comprise the language primitives.")
 
@@ -167,9 +171,9 @@
   (functor-expression (get :member *core-meta-nodes*)
                       (list object key)))
 
-(defun fail-expression ()
-  (functor-expression (get :fail *core-meta-nodes*) nil))
+(defun fail-expression (&optional (type nil))
+  (functor-expression (get :fail *core-meta-nodes*) (list type)))
 
-(defun catch-expression (try catch)
+(defun catch-expression (try catch &optional test)
   (functor-expression (get :catch *core-meta-nodes*)
-                      (list try catch)))
+                      (list try catch test)))

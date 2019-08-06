@@ -549,4 +549,66 @@ describe('Builtin Functions', function() {
             });
         });
     });
+
+    describe('Failures', function() {
+        describe('Tridash.fail', function() {
+            it('Should throw a Fail exception when resolved', function() {
+                var fail = tridash.fail();
+                assert(fail, "Does not throw exception when called.");
+                assert.throws(() => tridash.resolve(fail), tridash.Fail);
+            });
+
+            it('Should throw a Fail exception with correct type', function() {
+                var fail = tridash.fail('x');
+                assert(fail, "Does not throw exception when called.");
+                assert.throws(() => tridash.resolve(fail), (e) => e instanceof tridash.Fail && e.type == 'x');
+            });
+        });
+
+        describe('Tridash.fail_type', function() {
+            it('Should return failure type on failure', function() {
+                assert.equal(tridash.fail_type(tridash.fail()), null);
+                assert.equal(tridash.fail_type(tridash.fail('x')), 'x');
+                assert.equal(tridash.fail_type(tridash.fail(1)), 1);
+            });
+
+            it('Should fail if argument does not fail', function() {
+                assert.throws(() => tridash.resolve(tridash.fail_type(1)), tridash.Fail);
+
+                var thunk = new tridash.Thunk(() => 1);
+                assert.throws(() => tridash.resolve(tridash.fail_type(thunk)), tridash.Fail);
+            });
+        });
+
+        describe('Tridash.make_catch_thunk', function() {
+            it('Should resolve to the value of try, if it does not fail', function() {
+                var value = new tridash.Thunk(() => 1);
+                assert.equal(tridash.resolve(tridash.make_catch_thunk(value, 'fail')), 1);
+            });
+
+            it('Should resolve to the value of catch, if try fails', function() {
+                var value = new tridash.Thunk(() => 'fail-value');
+                assert.equal(tridash.resolve(tridash.make_catch_thunk(tridash.fail(), value)), 'fail-value');
+            });
+
+            it('Should resolve to the value of catch only if test returns true', function() {
+                var value = new tridash.Thunk(() => 'fail-value');
+                var test = (type) => type == 'my-type';
+
+                console.log(tridash.resolve(
+                        tridash.make_catch_thunk(tridash.fail('my-type'), value, test)));
+
+                assert.equal(
+                    tridash.resolve(
+                        tridash.make_catch_thunk(tridash.fail('my-type'), value, test)),
+                    'fail-value'
+                );
+
+                assert.throws(
+                    () => tridash.resolve(tridash.make_catch_thunk(tridash.fail(), value, test)),
+                    tridash.Fail
+                );
+            });
+        });
+    });
 });

@@ -91,6 +91,12 @@
     :accessor node
     :documentation "The node")
 
+   (fail-test
+    :initarg :fail-test
+    :accessor fail-test
+    :documentation
+    "Failure type test node.")
+
    (context-id
     :initarg :context-id
     :accessor context-id
@@ -229,26 +235,30 @@
 
   (declare (ignore context))
 
-  (with-slots (node context-id) proxy
+  (with-slots (node fail-test context-id) proxy
     (multiple-value-return (link existed?)
         (add-dependency dependency node
                         :context context-id
                         :add-function nil)
 
       (when (and (not existed?) add-function)
-        (add-function link (context node context-id))))))
+        (add-function
+         link
+         (context node context-id)
+         fail-test)))))
 
-(defun add-function (expression context)
+(defun add-function (expression context &optional test)
   "Adds EXPRESSION to the value function of CONTEXT. If CONTEXT does
    not have a value function function, its VALUE-FUNCTION slot is set
    to EXPRESSION. If CONTEXT does have a value function, it is wrapped
-   in a CATCH-EXPRESSION which evaluates to the value of the existing
-   function or the value of EXPRESSION in case of failure."
+   in a CATCH-EXPRESSION, with test function TEST, which evaluates to
+   the value of the existing function or the value of EXPRESSION in
+   case of failure."
 
   (with-slots (value-function) context
     (setf value-function
           (if value-function
-              (catch-expression value-function expression)
+              (catch-expression value-function expression test)
               expression))))
 
 

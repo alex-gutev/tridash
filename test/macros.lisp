@@ -55,7 +55,9 @@
                 :resolve
                 :resolve%
                 :tridash-fail
+
                 :fail-thunk
+                :empty-list
                 :group-rest-args
 
                 :check-arity
@@ -264,7 +266,7 @@
   (subtest "Fail Expressions"
     (test-compile-meta-node
      ()
-     (fail-expression)
+     (fail-expression nil)
 
      ()
      '(let nil
@@ -441,7 +443,7 @@
              (list
               #'(lambda (&rest $args)
                   (check-arity ,f $args)
-                  (destructuring-bind ($x2 $y &rest $xs &aux ($rest (or $xs (fail-thunk))))
+                  (destructuring-bind ($x2 $y &rest $xs &aux ($rest (or $xs (empty-list))))
                       $args
                     (call-tridash-meta-node ,f (list $x2 $y $rest))))
               $x))))))
@@ -677,7 +679,7 @@
          (x (rest xs))
          (functor cons x xs)
 
-         ($x &optional ($xs (fail-thunk)))
+         ($x &optional ($xs (empty-list)))
          '(let nil
            (!|cons| $x $xs)))))
 
@@ -687,7 +689,7 @@
          (x (optional y 2) (rest xs))
          (functor cons x (functor cons y xs))
 
-         ($x &optional ($y 2) ($xs (fail-thunk)))
+         ($x &optional ($y 2) ($xs (empty-list)))
          '(let nil
            (!|cons| $x (thunk (!|cons| $y $xs))))))))
 
@@ -1435,8 +1437,11 @@
 
         (with-nodes ((append "append")) modules
           (is (call-meta-node append '((1 2 3) (4 5 6))) '(1 2 3 4 5 6))
-          (is (call-meta-node append (list '(1 2 3) (fail-thunk))) '(1 2 3))
-          (is (call-meta-node append (list (fail-thunk) '(1 2 3))) '(1 2 3))))
+          (is (call-meta-node append (list '(1 2 3) (empty-list))) '(1 2 3))
+          (is (call-meta-node append (list (empty-list) '(1 2 3))) '(1 2 3))
+
+          (is-error (call-meta-node append (list '(1 2 3) (fail-thunk))) tridash-fail)
+          (is-error (call-meta-node append (list (fail-thunk) '(1 2 3))) tridash-fail)))
 
       (subtest "Meta-Node: foldl'"
         (build ":import(core, foldl', /)")
@@ -1449,7 +1454,9 @@
           (is (call-meta-node foldl (list 24 / '(4 3 2))) 1)
           (is (call-meta-node foldl (list 24 / '(4 3))) 2)
           (is (call-meta-node foldl (list 24 / nil)) 24)
-          (is (call-meta-node foldl (list 24 / (fail-thunk))) 24)))
+          (is (call-meta-node foldl (list 24 / (empty-list))) 24)
+
+          (is-error (call-meta-node foldl (list 24 / (fail-thunk))) tridash-fail)))
 
       (subtest "Meta-Node: foldl"
         (build ":import(core, foldl, /)")
@@ -1462,6 +1469,8 @@
           (is (call-meta-node foldl (list / '(24 4 3 2))) 1)
           (is (call-meta-node foldl (list / '(24 4 3))) 2)
           (is (call-meta-node foldl (list / '(24))) 24)
+
+          (is-error (call-meta-node foldl (list / (empty-list))) tridash-fail)
           (is-error (call-meta-node foldl (list / (fail-thunk))) tridash-fail)))
 
       (subtest "Meta-Node: foldr"
@@ -1471,7 +1480,11 @@
           (is (call-meta-node foldr (list list '(1 2 3 4 5))) '(1 (2 (3 (4 5)))))
           (is (call-meta-node foldr (list list '(1 2 3 4 5) 6)) '(1 (2 (3 (4 (5 6))))))
           (is (call-meta-node foldr (list list '(1))) 1)
-          (is (call-meta-node foldr (list list (fail-thunk) 1)) 1)
+          (is (call-meta-node foldr (list list (empty-list) 1)) 1)
+          (is-error (call-meta-node foldr (list list (empty-list))) tridash-fail)
+
+
+          (is-error (call-meta-node foldr (list list (fail-thunk) 1)) tridash-fail)
           (is-error (call-meta-node foldr (list list (fail-thunk))) tridash-fail)))
 
       (subtest "Meta-Node: map"
@@ -1481,6 +1494,8 @@
         (with-nodes ((map "map") (1+ "1+")) modules
           (is (call-meta-node map (list 1+ '(1 2 3 4))) '(2 3 4 5))
           (is (call-meta-node map (list 1+ '(1))) '(2))
+
+          (is-error (call-meta-node map (list 1+ (empty-list))) tridash-fail)
           (is-error (call-meta-node map (list 1+ (fail-thunk))) tridash-fail)))
 
       (subtest "Meta-Node: filter"
@@ -1490,6 +1505,8 @@
         (with-nodes ((filter "filter") (>5 ">5")) modules
           (is (call-meta-node filter (list >5 '(2 7 1 3 9 0))) '(7 9))
           (is-error (call-meta-node filter (list >5 '(1 2 3))) tridash-fail)
+
+          (is-error (call-meta-node filter (list >5 (empty-list))) tridash-fail)
           (is-error (call-meta-node filter (list >5 (fail-thunk))) tridash-fail)))
 
       (subtest "List Predicates"
@@ -1504,7 +1521,9 @@
             (with-nodes ((every? "every?")) modules
               (ok (bool-value (call-meta-node every? (list >3 '(4 5 6)))))
               (is (bool-value (call-meta-node every? (list >3 '(1 2 3 4 5 6)))) nil)
-              (ok (bool-value (call-meta-node every? (list >3 (fail-thunk)))))))
+              (ok (bool-value (call-meta-node every? (list >3 (empty-list)))))
+
+              (is-error (bool-value (call-meta-node every? (list >3 (fail-thunk)))) tridash-fail)))
 
           (subtest "Meta-Node: some?"
             (build ":import(core, some?)")
@@ -1513,7 +1532,9 @@
               (ok (bool-value (call-meta-node some? (list >3 '(4 5 6)))))
               (ok (bool-value (call-meta-node some? (list >3 '(1 2 3 4 5 6)))) nil)
               (is (bool-value (call-meta-node some? (list >3 '(0 1 2)))) nil)
-              (is (bool-value (call-meta-node some? (list >3 (fail-thunk)))) nil)))
+              (is (bool-value (call-meta-node some? (list >3 (empty-list)))) nil)
+
+              (is-error (bool-value (call-meta-node some? (list >3 (fail-thunk)))) tridash-fail)))
 
           (subtest "Meta-Node: not-any?"
             (build ":import(core, not-any?)")
@@ -1522,7 +1543,9 @@
               (is (bool-value (call-meta-node not-any? (list >3 '(4 5 6)))) nil)
               (is (bool-value (call-meta-node not-any? (list >3 '(1 2 3 4 5 6)))) nil)
               (ok (bool-value (call-meta-node not-any? (list >3 '(1 2 3)))))
-              (ok (bool-value (call-meta-node not-any? (list >3 (fail-thunk)))))))
+              (ok (bool-value (call-meta-node not-any? (list >3 (empty-list)))))
+
+              (is-error (bool-value (call-meta-node not-any? (list >3 (fail-thunk)))) tridash-fail)))
 
           (subtest "Meta-Node: not-every?"
             (build ":import(core, not-every?)")
@@ -1531,7 +1554,9 @@
               (is (bool-value (call-meta-node not-every? (list >3 '(4 5 6)))) nil)
               (ok (bool-value (call-meta-node not-every? (list >3 '(1 2 3 4 5 6)))))
               (ok (bool-value (call-meta-node not-every? (list >3 '(0 1 2)))))
-              (is (bool-value (call-meta-node not-every? (list >3 (fail-thunk)))) nil)))))))
+              (is (bool-value (call-meta-node not-every? (list >3 (empty-list)))) nil)
+
+              (is-error (bool-value (call-meta-node not-every? (list >3 (fail-thunk)))) tridash-fail)))))))
 
   (subtest "Introspection"
     (with-module-table modules

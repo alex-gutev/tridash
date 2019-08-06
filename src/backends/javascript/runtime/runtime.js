@@ -370,7 +370,9 @@ function set_values(node_values) {
  * Used as the fail exception type, which indicates that a value
  * computation has failed.
  */
-function Fail() {};
+function Fail(type = null) {
+    this.type = type;
+};
 
 
 /* Thunk */
@@ -406,19 +408,10 @@ function CatchThunk(compute, catch_value) {
 
     this.catch_value = catch_value;
 };
+
 CatchThunk.prototype = Object.create(Thunk.prototype);
 CatchThunk.prototype.constructor = CatchThunk;
 
-/**
- * Creates a thunk which throws a Fail exception.
- *
- * @return The thunk.
- */
-function FailThunk() {
-    return new Thunk(() => {
-        throw new Fail();
-    });
-}
 
 /**
  * Computes the value of the thunk if it has not already been
@@ -501,6 +494,7 @@ function combine_catch_thunk(try_value, catch_value) {
         return try_value;
     }
 }
+
 
 /* Promise */
 

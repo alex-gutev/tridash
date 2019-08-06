@@ -14,7 +14,11 @@
 :op(:, 5, right)
 
 :op(., 1000, left)
-:op(@, 1100, left)
+:op(@, 800, left)
+
+:op(catch, 850, left)
+
+:op(|-, 15, right)
 
 
 ## Arithmetic Operators

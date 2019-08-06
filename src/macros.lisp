@@ -286,7 +286,7 @@
      (list (list (eql +rest-argument+) arg))
 
      (list
-      (list (get-operand-var arg) '(fail-thunk))))
+      (list (get-operand-var arg) '(empty-list))))
 
     (outer
      (and (cons (cons (eql +outer-node-argument+) _) _) args)
@@ -489,7 +489,7 @@
 
                  (accumulate lambda-list var)
                  (accumulate lambda-list '&aux)
-                 (accumulate lambda-list `(,rest-var (or ,var (fail-thunk))))
+                 (accumulate lambda-list `(,rest-var (or ,var (empty-list))))
 
                  (accumulate vars rest-var))))
 
@@ -542,7 +542,7 @@
   (with-struct-slots argument-list- (arguments) list
     (if arguments
         (list* 'list (map #'tridash->cl (argument-list-arguments list)))
-        (fail-thunk))))
+        '(empty-list))))
 
 (defmethod tridash->cl ((literal null) &key)
   (unless *return-nil*

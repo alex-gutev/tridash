@@ -43,12 +43,35 @@
 # appear as the target of a binding, the `@` operator has no effect
 # and it is as though `node` is referenced directly.
 #
+# `context` may also be a functor of the form `catch(id, type)` where
+# `id` is the context identifier and `type` is a failure type. If the
+# preceding context of `node` fails with failure type equal to `type`
+# then the binding to `node` takes effect. If the failure type is not
+# equal to `type` then the binding is skipped, as though it has also
+# failed with the same failure type.
+#
 # `node`    : The node identifier.
 # `context` : A symbol serving as the explicit context identifier.
 
-@(node, context) : list('(:context), node, context)
-:attribute(@, macro, 1)
+@(node, context) : {
+    test-equal(x) : {
+        test(y) : x = y
+        test
+    }
 
+    catch? <- cons?(context) and head(context) = '(catch)
+    catch-type <- head(tail(tail(context)))
+
+    test-fn <- list(&(test-equal), catch-type)
+
+    context-id <- if(catch?, head(tail(context)), context)
+    catch-expr <- list('(:context), node, context-id, test-fn)
+    expr <- list('(:context), node, context-id)
+
+    if(catch?, catch-expr, expr)
+}
+
+:attribute(@, macro, 1)
 :export(@)
 
 

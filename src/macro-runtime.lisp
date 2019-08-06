@@ -21,6 +21,10 @@
 (in-package :tridash.frontend)
 
 
+(defconstant +empty-list+ (get :empty-list *core-meta-nodes*)
+  "Meta-Node representing the empty list failure type.")
+
+
 ;;;; Thunks
 
 (defstruct thunk
@@ -67,11 +71,15 @@
      for items = list then
        (handler-case
            (resolve% (rest items))
-         (tridash-fail () nil))
+         (tridash-fail (c)
+           (if (= (fail-type c) +empty-list+)
+               nil
+               (error c))))
 
      while items
      collect
        (resolve (car items))))
+
 
 (defun resolve% (thing)
   "If THING is a `THUNK' calls it's COMPUTE function. If the function
@@ -145,7 +153,12 @@
 ;;;; Failures
 
 (define-condition tridash-fail ()
-  ()
+  ((fail-type
+    :initarg :fail-type
+    :initform nil
+    :accessor fail-type
+    :documentation
+    "Value indicating the type of failure."))
 
   (:documentation
    "Condition raised when a Tridash fail expression is evaluated."))
@@ -161,10 +174,18 @@
      ;; function and return them as a thunk.
      (tridash-fail (,g!c) (thunk (error ,g!c)))))
 
-(defun fail-thunk ()
-  "Returns a new thunk which signals a `TRIDASH-FAIL' condition."
+(defun fail-thunk (&optional type)
+  "Returns a new thunk which signals a `TRIDASH-FAIL' condition, with
+   failure type TYPE."
 
-  (thunk (error 'tridash-fail)))
+  (thunk (error 'tridash-fail :fail-type type)))
+
+(defun get-fail-type (thing)
+  (handler-case
+      (progn
+        (resolve% thing)
+        (fail-thunk))
+    (tridash-fail (c) (fail-type c))))
 
 
 ;;;; Definition Macros
@@ -257,11 +278,27 @@
 
       value)))
 
-(define-tridash-function% |fail| ()
-  (fail-thunk))
+(define-tridash-function |catch| (try catch &optional (test nil testp))
+  (->> (if testp (thunk (test-fail-type try catch test)) catch)
+       (combine-catch-thunk try)))
 
-(define-tridash-function |catch| (try catch)
-  (combine-catch-thunk try catch))
+(defun test-fail-type (try catch test)
+  "Applies the function/meta-node TEST on the failure type of TRY. If
+   the result is true, returns CATCH otherwise returns a thunk which
+   fails with the same type as TRY."
+
+  (let ((type (get-fail-type try)))
+    (if (bool-value (call-node test (list type)))
+        catch
+        (fail-thunk type))))
+
+
+(define-tridash-function% |fail| (&optional type)
+  (fail-thunk type))
+
+(define-tridash-function% |fail-type| (thing)
+  (get-fail-type thing))
+
 
 (defun call-node (operator args)
   "Applies the function OPERATOR on ARGS."
@@ -354,14 +391,30 @@
 (define-tridash-function |cons| (a b)
   (cons a b))
 
-(define-tridash-function |head| ((list cons)) car)
+(define-tridash-function |head| (list)
+  (atypecase (resolve% list)
+    (cons (car it))
+    (null (empty-list))
+    (otherwise (fail-thunk))))
 
 (define-tridash-function |tail| (list)
-  (check-tridash-types ((list cons))
-    (or (cdr list) (fail-thunk))))
+  (atypecase (resolve% list)
+    (cons
+     (or (cdr it) (empty-list)))
+    (null (empty-list))
+    (otherwise (fail-thunk))))
 
 (define-tridash-function |cons?| (thing)
   (consp (resolve% thing)))
+
+(define-tridash-function |Empty| ()
+  (empty-list))
+
+(defun empty-list ()
+  "Returns a `THUNK' which signals a `TRIDASH-FAIL' condition with the
+   type representing an empty list."
+
+  (fail-thunk +empty-list+))
 
 
 ;;; Introspection Utilities

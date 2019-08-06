@@ -559,7 +559,7 @@
 	   ((b :context b) (b->c :context b))
 	   c
 
-	   `(if ,b->c ,b (:fail)))))))
+	   `(if ,b->c ,b (:fail nil)))))))
 
   (subtest "Functor Nodes"
     (subtest "Meta-Node Operators"
@@ -715,9 +715,11 @@
 
              `(:catch
                   (:catch
-                      (if ,cond1 ,a+b (:fail))
-                    (if ,cond2 ,a-b (:fail)))
-                ,b))))))
+                      (if ,cond1 ,a+b (:fail nil))
+                    (if ,cond2 ,a-b (:fail nil))
+                    nil)
+                ,b
+                nil))))))
 
     (subtest "In Target of Literal Binding"
       (with-module-table modules
@@ -747,9 +749,11 @@
 
              `(:catch
                   (:catch
-                      (if ,cond1 ,a+b (:fail))
-                    (if ,cond2 ,a-b (:fail)))
-                1))))))
+                      (if ,cond1 ,a+b (:fail nil))
+                    (if ,cond2 ,a-b (:fail nil))
+                    nil)
+                1
+                nil))))))
 
     (subtest "In Source of Binding"
       ;; Test that the :context operator has no effect in source
@@ -1556,7 +1560,7 @@
 	             ((b :context b) (b->c :context b))
 	             c
 
-	             `(if ,b->c ,b (:fail))))))))))
+	             `(if ,b->c ,b (:fail nil))))))))))
 
       (subtest "Errors"
         (subtest "Module Semantics"
@@ -1814,11 +1818,11 @@
 
             (has-value-function
              (p p.fail) a
-             `(if (,not ,p.fail) (:member ,p ,(id-symbol "value")) (:fail)))
+             `(if (,not ,p.fail) (:member ,p ,(id-symbol "value")) (:fail nil)))
 
             (has-value-function
              (in2 p.fail) b
-             `(if ,p.fail ,in2 (:fail)))
+             `(if ,p.fail ,in2 (:fail nil)))
 
             (has-value-function (in1) p `(,parse ,in1))
             (is (length (contexts p)) 1 "Node p has a single context."))))))
@@ -2022,7 +2026,7 @@
 
           (has-value-function
            (a d) out
-           `(,add (,add ,a ,(expression-block `(if (,even? (,add ,a ,1)) (,add ,a 1) (:fail)))) ,d))))))
+           `(,add (,add ,a ,(expression-block `(if (,even? (,add ,a ,1)) (,add ,a 1) (:fail nil)))) ,d))))))
 
   (subtest "Explicit Context"
     (subtest "Common Operands"
@@ -2048,10 +2052,12 @@
              `(:catch
                   (:catch
                       ,(expression-block
-                        `(if (,< ,a 3) (,+ ,a ,b) (:fail)))
+                        `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
                     ,(expression-block
-                      `(if (,> ,a 4) (,- ,a ,b) (:fail))))
-                ,b))))))
+                      `(if (,> ,a 4) (,- ,a ,b) (:fail nil)))
+                    nil)
+                ,b
+                nil))))))
 
     (subtest "Common Operands without Coalescing"
       (with-module-table modules
@@ -2077,8 +2083,9 @@
 
              `(:catch
                   ,(expression-block
-                    `(if (,< ,a 3) ,c (:fail)))
-                ,b))))))
+                    `(if (,< ,a 3) ,c (:fail nil)))
+                ,b
+                nil))))))
 
     (subtest "Common Operand without Default"
       (with-module-table modules
@@ -2101,9 +2108,10 @@
 
              `(:catch
                   ,(expression-block
-                    `(if (,< ,a 3) (,+ ,a ,b) (:fail)))
+                    `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
                 ,(expression-block
-                  `(if (,< ,b 4) ,b (:fail)))))))))
+                  `(if (,< ,b 4) ,b (:fail nil)))
+                nil))))))
 
     (subtest "Single Common Ancestor"
       (with-module-table modules
@@ -2127,8 +2135,9 @@
 
              `(:catch
                   ,(expression-block
-                    `(if (,< ,a 3) (,+ ,a ,b) (:fail)))
-                ,b))))))
+                    `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
+                ,b
+                nil))))))
 
     (subtest "Single Common Ancestor without Default"
       (with-module-table modules
@@ -2152,9 +2161,10 @@
 
              `(:catch
                   ,(expression-block
-                    `(if (,< ,a 3) (,+ ,a ,b) (:fail)))
+                    `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
                 ,(expression-block
-                  `(if (,< ,b 4) ,b (:fail)))))))))
+                  `(if (,< ,b 4) ,b (:fail nil)))
+                nil))))))
 
     (subtest "Test Creation Order"
       (with-module-table modules
@@ -2177,8 +2187,9 @@
              output
 
              `(:catch
-                  (if (,< ,a 3) (,+ ,a ,b) (:fail))
-                ,b))))))))
+                  (if (,< ,a 3) (,+ ,a ,b) (:fail nil))
+                ,b
+                nil))))))))
 
 (subtest "Constant Folding"
   (subtest "Literal Constant Values"
@@ -2730,9 +2741,10 @@
                   ,(expression-block
                     `(if (,< ,x 3)
                          (,+ ,x 1)
-                         (:fail)))
+                         (:fail nil)))
                 ,(expression-block
-                  `(,+ ,x 2)))
+                  `(,+ ,x 2))
+                nil)
              (test-meta-node fn ((x "x")))))))))
 
   (subtest "Outer-Node References"

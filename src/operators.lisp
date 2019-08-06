@@ -34,6 +34,7 @@
 (defconstant +ref-operator+ (id-symbol "&")
   "Operator for referencing another node without creating a binding.")
 
+
 ;;; Contexts
 
 (defconstant +context-operator+ (id-symbol ":context")

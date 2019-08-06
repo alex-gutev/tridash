@@ -35,7 +35,9 @@ get-matcher(node) :
 
 Pattern(condition, :(binding)) : {
     condition -> self.condition
-    binding -> self.bindings
+
+    binding -> self.bindings @ binding
+    Empty() -> self.bindings @ binding
 }
 
 ## Creates the node declarations implementing the Pattern `pattern`.
@@ -102,7 +104,7 @@ conditionalize-bindings(condition, bindings) : {
     conditionalize(binding) :
         list(&(->), condition, binding)
 
-    ?(condition) -> map(conditionalize, bindings) -> self @ conditionalize
+    condition |- map(conditionalize, bindings) -> self @ conditionalize
     bindings -> self @ conditionalize
 }
 
@@ -228,12 +230,20 @@ match-list(place, pattern) : {
     make-cons(head, tail) :
         list(&(cons), head, tail)
 
-    cons-pattern <- foldr(make-cons, tail(pattern), list(&(fails?)))
+    cons-pattern <- foldr(make-cons, tail(pattern), list(&(Empty)))
     make-pattern(place, cons-pattern)
 }
 
 :attribute(list, target-transform, target-list)
 :attribute(list, matcher, match-list)
+
+
+## Empty List
+
+match-Empty(place, pattern) :
+    Pattern(list(&(=), list(&(fail-type), place), list(&(&), &(Empty))))
+
+:attribute(Empty, matcher, match-Empty)
 
 
 ## List*

@@ -280,13 +280,13 @@
          (match opts
            ((list name operands strict-operands)
             (aprog1
-                (make-instance 'external-meta-node
+                (make-instance 'meta-node
                                :name name
                                :operands (map #'make-operand operands))
               (setf (attribute :strictness it)
                     (list* 'or strict-operands))))
            (name
-            (make-instance 'external-meta-node :name name)))))
+            (make-instance 'meta-node :name name)))))
     (map #'make-meta-node names)))
 
 (defmacro mock-meta-nodes ((&rest names) &body body)
@@ -451,7 +451,7 @@
               (js-return
                (thunk
                 (js-return
-                 (js-call f (d a) (thunk (js-throw (js-new +end-update-class+))))))))))))
+                 (js-call f (d a) (thunk (js-return (js-call "Tridash.fail"))))))))))))
 
     (subtest "Rest Arguments"
       (mock-backend-state
@@ -475,7 +475,7 @@
               (js-return
                (thunk
                 (js-return
-                 (js-call f (d a) (thunk (js-throw (js-new +end-update-class+)))))))))))))
+                 (js-call f (d a) (thunk (js-return (js-call "Tridash.Empty")))))))))))))
 
   (subtest "Conditionals"
     (subtest "Simple If Statements"
@@ -742,7 +742,7 @@
                        (js-return (d a))
                        (js-return
                         (thunk
-                         (js-throw (js-new +end-update-class+)))))))))))))
+                         (js-return (js-call "Tridash.fail")))))))))))))
 
   (subtest "Catch Expressions"
     (mock-backend-state
@@ -757,26 +757,33 @@
                              (expression-block (functor - a b)))))
 
           (test-compute-function context
-
             (js-return
              (thunk
+              (js-var ($ try))
+              (js-catch
+               (list
+                (js-if (resolve (js-call < (d a) (d b)))
+
+                       (-<> (js-call + (d a) (d b))
+                            js-return
+                            thunk
+                            (js-call "=" ($ try) <>))
+
+                       (->> (js-call "Tridash.fail")
+                            js-return
+                            thunk
+                            (js-call "=" ($ try)))))
+
+               ($ e)
+               (list
+                (js-call "=" ($ try) (thunk (js-throw ($ e))))))
+
               (js-return
-               (js-new
-                +catch-thunk-class+
-                (list
-                 (thunk
-                  (js-if (resolve (js-call < (d a) (d b)))
+               (js-call "Tridash.make_catch_thunk"
+                        ($ try)
+                        (thunk
                          (js-return
-                          (thunk
-                           (js-return (js-call + (d a) (d b)))))
-
-                         (js-return
-                          (thunk
-                           (js-throw (js-new +end-update-class+))))))
-
-                 (thunk
-                  (js-return
-                   (js-call - (d a) (d b))))))))))))))
+                          (js-call - (d a) (d b)))))))))))))
 
   (subtest "Meta-Node References"
     (subtest "Without Outer Nodes"
@@ -830,6 +837,9 @@
                   (js-lambda
                    (list ($ x) (js-call "..." ($ xs)))
                    (list
+                    (js-if (js-call "===" (js-member ($ xs) "length") 0)
+                           (js-call "=" ($ xs) (js-call "Tridash.Empty")))
+
                     (js-return
                      (js-call list ($ x) ($ xs)))))
                   (d a))))))))))
@@ -875,6 +885,9 @@
                     ($ a) (js-call "=" ($ b) 1) (js-call "..." ($ c)))
 
                    (list
+                    (js-if (js-call "===" (js-member ($ c) "length") 0)
+                           (js-call "=" ($ c) (js-call "Tridash.Empty")))
+
                     (js-return
                      (js-call f ($ a) ($ b) ($ c) (d b)))))
 
@@ -1242,7 +1255,7 @@
                 (js-return
                  (js-call fib ($ arg))))))))))
 
-    (subtest ":FAIL Expressions"
+    (subtest "Fail Expressions"
       (with-module-table modules
         (build-core-module)
         (build ":import(core)")
@@ -1266,7 +1279,10 @@
                            (js-call "Tridash.check_number" (resolve 0))))
 
                          (js-return ($ x))
-                         (js-return (thunk (js-throw (js-new +end-update-class+))))))
+                         (js-return
+                          (thunk
+                           (js-return
+                            (js-call "Tridash.fail"))))))
 
                  ($ e)
                  (list
@@ -1392,7 +1408,7 @@
 
                (list
                 (js-return
-                 (js-call f ($ x) (thunk (js-throw (js-new +end-update-class+))))))))))))
+                 (js-call f ($ x) (js-call "Tridash.Empty"))))))))))
 
     (subtest "Primitive Functions"
       (subtest "Arithmetic"

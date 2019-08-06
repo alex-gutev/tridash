@@ -60,14 +60,50 @@ function not(x) {
 }
 
 
+/* Failures */
+
+function fail(type = null) {
+    return new Thunk(() => { throw new Fail(type); });
+}
+
+function fail_type(value) {
+    try {
+        resolve(value);
+    }
+    catch (e) {
+        if (e instanceof Fail)
+            return e.type;
+    }
+
+    return fail();
+}
+
+function make_catch_thunk(try_value, catch_value, test) {
+    if (test) {
+	var old_catch = catch_value;
+	catch_value = new Thunk(() => {
+	    try {
+		var type = fail_type(try_value);
+
+		return test(type) ? old_catch : fail(type);
+	    }
+	    catch (e) {
+		return new Thunk(() => { throw e; });
+	    }
+	});
+    }
+
+    return combine_catch_thunk(try_value, catch_value);
+}
+
+
 /* Type Conversions */
 
 function cast_int(x) {
     try {
         var intx = parseInt(resolve(x));
 
-        return !isNaN(intx) ? intx :
-            new Thunk(() => { throw Fail(); });
+        return !isNaN(intx) ? intx : fail();
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -77,8 +113,7 @@ function cast_real(x) {
     try {
         var realx = parseFloat(resolve(x));
 
-        return !isNaN(realx) ? realx :
-            new Thunk(() => { throw Fail(); });
+        return !isNaN(realx) ? realx : fail();
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -176,13 +211,13 @@ function head(list) {
             if (l.length > 0)
                 return l[0];
 
-            return FailThunk();
+            return Empty();
         }
-        else if (l instanceof SubArray && l.array.length > l.start) {
-            return l.array[l.start];
+        else if (l instanceof SubArray) {
+            return l.array.length > l.start ? l.array[l.start] : Empty();
         }
         else {
-            return FailThunk();
+            return l === null ? Empty() : fail();
         }
     }
     catch (e) {
@@ -201,13 +236,15 @@ function tail(list) {
             if (l.length > 1)
                 return new SubArray(l, 1);
 
-            return FailThunk();
+            return Empty();
         }
-        else if (l instanceof SubArray && l.array.length > (l.start + 1)) {
-            return new SubArray(l.array, l.start + 1);
+        else if (l instanceof SubArray) {
+            return l.array.length > (l.start + 1) ?
+                new SubArray(l.array, l.start + 1) :
+                Empty();
         }
         else {
-            return FailThunk();
+            return l === null ? Empty() : fail();
         }
     }
     catch (e) {
@@ -229,6 +266,11 @@ function is_cons(thing) {
 }
 
 
+function Empty() {
+    return fail(Empty);
+}
+
+
 /* Strings */
 
 /**
@@ -243,7 +285,7 @@ function string_at(tstr, tindex) {
         var str = check_string(resolve(tstr));
         var index = check_number(resolve(tindex));
 
-        return index < str.length ? new Char(str.charAt(index)) : FailThunk();
+        return index < str.length ? new Char(str.charAt(index)) : fail();
     }
     catch (e) {
         return new Thunk(() => { throw e; });

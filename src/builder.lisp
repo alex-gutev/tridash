@@ -665,13 +665,25 @@
   (match-syntax (+context-operator+ node id)
       operands
 
-    ((list node context-id)
+    ((or (list node context-id)
+         (list node context-id fail-test))
+
      (let ((node (process-declaration node module :level *level*)))
        (unless (node? node)
          (error 'not-node-error :node node))
 
        (if *source-node*
-           (make-instance 'context-node :context-id context-id :node node)
+           (make-instance 'context-node
+                          :context-id context-id
+                          :node node
+                          :fail-test
+                          (let ((*create-nodes* nil))
+                            (-<> (process-declaration fail-test module)
+                                 list
+                                 (bind-operands node <> :context context-id)
+                                 first
+                                 (at-source)
+                                 (and fail-test <>))))
            node)))))
 
 (defmethod process-functor ((operator (eql +ref-operator+)) operands module)

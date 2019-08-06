@@ -28,6 +28,28 @@ fails?(x) : {
 ?(x) : not(fails?(x))
 
 
+## Checks whether `x` evaluates to a value.
+##
+## x : The value to check.
+##
+## Evaluates to true if `x` evaluates to a value (does not fail).
+## If `x` fails, this node also fails.
+
+!!(x) : not(x and 0)
+
+## If `test` fails, the entire node fails with the same failure type,
+## otherwise the node evaluates to `value`.
+##
+## test : The value which is tested for failure.
+##
+## value : The value to which, this node evaluates, if `test` does not
+##         fail.
+
+|-(test, value) : {
+    !!(test) -> value -> self
+}
+
+
 ### Export Declarations
 
-:export(fails?, ?)
+:export(fails?, ?, !!, |-)

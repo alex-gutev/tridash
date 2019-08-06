@@ -32,7 +32,7 @@ list*(..(xs)) : foldr(cons, xs)
 ## xs : The list elements.
 
 list!(..(xs)) : {
-    every?(?, xs) -> xs -> self
+    every?(!!, xs) -> xs -> self
 }
 
 
@@ -63,8 +63,8 @@ append(list1, list2) : {
 
     result <- cons(current, append(rest, list2))
 
-    ?(list1) -> result -> self @ append-list
-    list2 -> self @ append-list
+    list1 |- result -> self @ append-list
+    list2 -> self @ append-list catch &(Empty)
 }
 
 
@@ -86,8 +86,8 @@ append(list1, list2) : {
 foldl'(x, f, list) : {
     result <- foldl'(f(x, head(list)), f, tail(list))
 
-    ?(list) -> result -> self @ fold
-    x -> self @ fold
+    list |- result -> self @ fold
+    x -> self @ fold catch &(Empty)
 }
 
 
@@ -125,8 +125,8 @@ foldr(f, l, :(x)) : {
 
         result <- f(current, fold(rest))
 
-        ?(rest) -> result -> self @ fold
-        current -> self @ fold
+        rest |- result -> self @ fold
+        current -> self @ fold catch &(Empty)
     }
 
     fold(if(?(x), append(l, list(x)), l))
@@ -147,7 +147,7 @@ map(f, list) : {
     rest <- map(f, tail(list))
     result <- cons(f(head(list)), rest)
 
-    ?(list) -> result -> self
+    list |- result -> self
 }
 
 
@@ -171,7 +171,7 @@ filter(f, list) : {
     f(current) -> cons(current, rest) -> result @ filter
     rest -> result @ filter
 
-    ?(list) -> result -> self
+    list |- result -> self
 }
 
 
@@ -234,6 +234,7 @@ not-every?(f, xs) : {
 ### Export Declarations
 
 :export(
+    Empty,
     list, list*, list!,
     nth,
     append,
