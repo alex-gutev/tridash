@@ -63,8 +63,8 @@
     (cons (id-symbol ">") '(">" (:real :real)))
     (cons (id-symbol "<=") '("<=" (:real :real)))
     (cons (id-symbol ">=") '(">=" (:real :real)))
-    (cons (id-symbol "=") '("===" (:value :value)))
-    (cons (id-symbol "!=") '("!==" (:value :value)))
+    (cons (id-symbol "=") '("===" . t))
+    (cons (id-symbol "!=") '("!==" . t))
 
     (cons (id-symbol "int") "Tridash.cast_int")
     (cons (id-symbol "real") "Tridash.cast_real")

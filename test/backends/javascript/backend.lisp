@@ -1618,8 +1618,8 @@
                       (js-call
                        "==="
 
-                       (js-call "Tridash.check_value" (resolve ($ x)))
-                       (js-call "Tridash.check_value" (resolve ($ y)))))))))))))
+                       (resolve ($ x))
+                       (resolve ($ y))))))))))))
 
         (subtest "Not Equal"
           (with-module-table modules
@@ -1641,8 +1641,8 @@
                       (js-call
                        "!=="
 
-                       (js-call "Tridash.check_value" (resolve ($ x)))
-                       (js-call "Tridash.check_value" (resolve ($ y))))))))))))))
+                       (resolve ($ x))
+                       (resolve ($ y)))))))))))))
 
       (subtest "Boolean Logic"
         (subtest "And"

@@ -312,8 +312,12 @@
 (define-tridash-function <= ((a number) (b number)) <=)
 (define-tridash-function > ((a number) (b number)) >)
 (define-tridash-function >= ((a number) (b number)) >=)
-(define-tridash-function = ((a tridash-value) (b tridash-value)) =)
-(define-tridash-function != ((a tridash-value) (b tridash-value)) /=)
+
+(define-tridash-function = (a b)
+  (= (resolve% a) (resolve% b)))
+
+(define-tridash-function != (a b)
+  (/= (resolve% a) (resolve% b)))
 
 
 ;;; Type Conversions
