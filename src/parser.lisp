@@ -460,7 +460,7 @@
                      (read token-read))
         e
 
-      (format stream "Error parsing ~a: Expected ~a, found ~a ~a."
+      (format stream "Error parsing ~a: Expected ~a, found ~a `~a`."
               rule
               (expected-string expected)
               (car read) (cdr read)))))
