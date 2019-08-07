@@ -44,6 +44,7 @@ exports.resolve = resolve;
 
 exports.and = and;
 exports.or = or;
+exports.not = not;
 
 exports.cast_int = cast_int;
 exports.cast_real = cast_real;
