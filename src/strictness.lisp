@@ -98,6 +98,9 @@
 
   (labels ((replace-operands (expression)
              (match expression
+               ((eql meta-node)
+                nil)
+
                ((type node)
                 (name expression))
 
