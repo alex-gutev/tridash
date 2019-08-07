@@ -58,7 +58,7 @@
                 (erase meta-node-references meta-node-ref)))))
 
         (when definition
-          (foreach #'outer-node-references (meta-nodes definition))))
+          (foreach (rcurry #'outer-node-references visited) (meta-nodes definition))))
 
       (values outer-nodes (emptyp meta-node-references)))))
 
