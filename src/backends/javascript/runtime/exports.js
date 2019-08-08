@@ -72,3 +72,4 @@ exports.check_value = check_value;
 exports.check_string = check_string;
 
 exports.get_symbol = get_symbol;
+exports.member = member;

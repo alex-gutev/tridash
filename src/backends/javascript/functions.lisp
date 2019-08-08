@@ -55,6 +55,11 @@
     (cons (id-symbol "or") "Tridash.or")
     (cons (id-symbol "not") '("!" . t))
 
+    (cons (id-symbol "fail") "Tridash.fail")
+    (cons (id-symbol "fail-type") "Tridash.fail-type")
+
+    (cons (id-symbol "member") "Tridash.member")
+
     (cons (id-symbol "+") '("+" (:real :real)))
     (cons (id-symbol "-") '("-" (:real :real)))
     (cons (id-symbol "*") '("*" (:real :real)))
@@ -447,7 +452,10 @@
      (make-if-expression arguments))
 
     ((eql (id-symbol "member"))
-     (make-member-expression arguments))
+     (destructuring-bind (object key) arguments
+       (call-next-method
+        meta-node
+        (list object (if (symbolp key) (symbol-name key) key)))))
 
     ((eql (id-symbol "fail"))
      (make-fail-expression arguments))
@@ -582,23 +590,6 @@
          (values
           nil
           (js-object (map #'list (map #'js-string keys) values))))))))
-
-(defun make-member-expression (arguments)
-  "Generates an expression which returns the value of a particular
-   subnode (field) of an object node."
-
-  (destructuring-bind (object member) arguments
-
-    (let ((object-var (var-name)))
-      (multiple-value-bind (object-block object-expr)
-          (make-expression object :return-variable object-var)
-
-        (multiple-value-call #'combine-blocks
-
-          (when object-block
-            (js-block (js-var object-var) object-block))
-
-          (protect nil (js-element (resolve-expression object-expr) (js-string member))))))))
 
 
 ;;; Expression Blocks

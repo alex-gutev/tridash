@@ -660,20 +660,11 @@
 
                 (test-compute-function context
                   (js-return
-                   (thunk
-                    (js-var ($ arg))
-                    (js-catch
-                     (list
-                      (-<> (d object)
-                           resolve
-                           (js-element (js-string "field"))
-                           (js-call "=" ($ arg) <>)))
-
-                     ($ e)
-                     (list
-                      (js-call "=" ($ arg) (thunk (js-throw ($ e))))))
-
-                    (js-return (js-call f ($ arg))))))))))
+                   (-<> (d object)
+                        (js-call "Tridash.member" <> (js-string "field"))
+                        (js-call f <>)
+                        js-return
+                        thunk)))))))
 
         (subtest "Lazy Argument"
           (mock-backend-state
@@ -685,11 +676,10 @@
                   (js-return
                    (thunk
                     (js-return
-                     (js-call f (-> (d object)
-                                    resolve
-                                    (js-element (js-string "field"))
-                                    js-return
-                                    thunk)))))))))))
+                     (js-call f (-<> (d object)
+                                     (js-call "Tridash.member" <> (js-string "field"))
+                                     js-return
+                                     thunk)))))))))))
 
       (subtest "Expression Member Access"
         (mock-backend-state
@@ -701,7 +691,19 @@
                 (js-return
                  (thunk
                   (js-return
-                   (js-element (resolve (js-call f (d a))) (js-string "x"))))))))))
+                   (js-call "Tridash.member" (js-call f (d a)) (js-string "x"))))))))))
+
+      (subtest "Expression Key"
+        (mock-backend-state
+          (mock-meta-nodes (f)
+            (mock-contexts
+                ((context (a) (member-expression a (functor f a))))
+
+              (test-compute-function context
+                (js-return
+                 (thunk
+                  (js-return
+                   (js-call "Tridash.member" (d a) (js-call f (d a)))))))))))
 
       (subtest "Member Access of If Expression"
         (mock-backend-state
@@ -722,7 +724,8 @@
                  (list
                   (js-call "=" ($ object) (thunk (js-throw ($ e))))))
 
-                (js-return (js-element (resolve ($ object)) (js-string "z")))))))))))
+                (js-return
+                 (js-call "Tridash.member" ($ object) (js-string "z")))))))))))
 
   (subtest "Conditional Bindings"
     (subtest "Throwing Fail Exception"

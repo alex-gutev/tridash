@@ -478,6 +478,39 @@ describe('Builtin Functions', function() {
         });
     });
 
+    describe('Dictionaries', function() {
+        describe('Tridash.member', function() {
+            it('Should return the value of the member', function() {
+                assert.equal(tridash.member({ name : 'Bob' }, 'name'), 'Bob');
+            });
+
+            it('Should resolve Thunk arguments', function() {
+                var obj = new tridash.Thunk(() => { return { name : 'Bob' } });
+                var key = new tridash.Thunk(() => 'name');
+
+                assert.equal(tridash.member(obj, key), 'Bob');
+            });
+
+            it('Should return failures as Thunks', function() {
+                var res = tridash.member(new Tridash.Thunk(() => {
+                    throw new tridash.Fail();
+                }, 'type'));
+
+                assert(res, 'Returns a thunk instead of throwing exception');
+                assert.throws(() => tridash.resolve(res), tridash.Fail);
+            });
+
+            it('Should fail if key not in dictionary', function() {
+                assert.throws(() => tridash.resolve(tridash.member({ x : 1 }, 'y')), tridash.Fail);
+            });
+
+            it('Should fail if not dictionary', function() {
+                assert.throws(() => tridash.resolve(tridash.member(1, 'z'), tridash.Fail));
+                assert.throws(() => tridash.resolve(tridash.member("hello", 'z'), tridash.Fail));
+            });
+        });
+    });
+
     describe('Strings', function() {
         describe('string-at - string_at', function() {
             it('Should return character at given index', function() {

@@ -335,3 +335,18 @@ var symbol_table = {};
 function get_symbol(id) {
     return symbol_table[id] || (symbol_table[id] = new Symbol(id));
 }
+
+
+/* Dictionaries */
+
+function member(dict, key) {
+    try {
+	dict = resolve(dict);
+	key = resolve(key);
+
+	return key in dict ? dict[key] : fail();
+    }
+    catch (e) {
+	return new Thunk(() => { throw e });
+    }
+}
