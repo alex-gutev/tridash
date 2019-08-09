@@ -1269,7 +1269,18 @@
 	(has-value-function (in) output `(,+ (,fact ,in) 6))
 
 	(with-nodes ((iter "iter") (n "n")) (definition fact)
-	  (has-value-function (n) fact `(,iter ,n 1 1)))))))
+	  (has-value-function (n) fact `(,iter ,n 1 1))))))
+
+  (subtest "Errors"
+    (subtest "Compilation Loops"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core, list)"
+               "test(x,y) : list(&(->), x, test(x,y))"
+               ":attribute(test, macro, 1)")
+
+        (with-nodes ((test "test")) modules
+          (is-error (call-meta-node test '(1 2)) compile-meta-node-loop-error))))))
 
 (subtest "Target Node Transforms"
   (subtest "Single Argument"

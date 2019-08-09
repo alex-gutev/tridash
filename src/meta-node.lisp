@@ -219,7 +219,11 @@
   (attribute :target-node meta-node))
 
 (defun target-transform-node (meta-node)
-  (attribute :target-transform meta-node))
+  (handler-case
+      (aprog1 (attribute :target-transform meta-node)
+        (when it (compile-meta-node-function it)))
+
+    (compile-meta-node-loop-error ())))
 
 
 ;;; Operand Type Symbols

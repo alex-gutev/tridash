@@ -197,27 +197,40 @@
    in its DEFINITION slot. The value of DEFINITION is replaced with
    the `MODULE' object containing the nodes in the definition."
 
-  (with-slots (name definition) meta-node
-    ;; Check that META-NODE is not an `EXTERNAL-META-NODE' and that it
-    ;; has not been built already
-    (unless (or (external-meta-node? meta-node)
-                (typep definition 'module)
-                (typep definition 'flat-node-table))
+  (with-slots (name definition attributes) meta-node
+    ;; Check that META-NODE is not being built again before it has
+    ;; finished being built the first time.
+    (when (get :building attributes)
+      (error 'compile-meta-node-loop-error :meta-node meta-node))
 
-      (let* ((module (make-inner-module (home-module meta-node)))
-             (value-node (make-self-node meta-node module))
-             (*meta-node* meta-node)
-             (*current-module* module)
-             (*functor-module* module))
+    ;; Mark META-NODE as currently being built
+    (setf (get :building attributes) t)
 
-        (add-operand-nodes (operand-node-names meta-node) module)
+    (unwind-protect
+         ;; Check that META-NODE is not an `EXTERNAL-META-NODE' and that it
+         ;; has not been built already
+         (unless (or (external-meta-node? meta-node)
+                     (typep definition 'module)
+                     (typep definition 'flat-node-table))
 
-        (let* ((*create-nodes* nil)
-               (last-node (at-source (process-node-list definition module :top-level t))))
-          (make-meta-node-function meta-node value-node last-node)
-          (setf definition module)
+           (let* ((module (make-inner-module (home-module meta-node)))
+                  (value-node (make-self-node module))
+                  (*meta-node* meta-node)
+                  (*current-module* module)
+                  (*functor-module* module))
 
-          (build-meta-nodes (meta-nodes definition)))))))
+             (add-operand-nodes (operand-node-names meta-node) module)
+
+             (let* ((*create-nodes* nil)
+                    (last-node (at-source (process-node-list definition module :top-level t))))
+               (make-meta-node-function meta-node value-node last-node)
+               (setf definition module)
+
+               (add-binding value-node meta-node :add-function t)
+
+               (build-meta-nodes (meta-nodes definition)))))
+
+      (setf (get :building attributes) nil))))
 
 (defun add-operand-nodes (names module)
   "Creates a node for each element in NAMES, the element being the
@@ -227,12 +240,11 @@
   (dolist (name names)
     (add-input (ensure-node name module t) module)))
 
-(defun make-self-node (meta-node module)
-  "Create the self which represents the value of META-NODE. MODULE is
-   the `MODULE' containing the meta-node's definition."
+(defun make-self-node (module)
+  "Create the self node. MODULE is the `MODULE' containing the
+   meta-node's definition."
 
-  (aprog1 (ensure-node +self-node+ module t)
-    (add-binding it meta-node :add-function t)))
+  (ensure-node +self-node+ module t))
 
 (defun make-meta-node-function (meta-node value-node last-node)
   "Creates the value function of the meta-node META-NODE. VALUE-NODE

@@ -200,6 +200,20 @@
           (meta-node e)))
 
 
+(define-condition compile-meta-node-loop-error (semantic-error)
+  ((meta-node :initarg :meta-node
+              :reader meta-node
+              :documentation "The meta-node."))
+
+  (:documentation
+   "Error condition: A meta-node is used in a macro used within
+    itself, leading to a compilation loop."))
+
+(defmethod print-object ((e compile-meta-node-loop-error) stream)
+  (format stream "Meta-node ~a invoked during the macro expansion of itself."
+          (meta-node e)))
+
+
 ;;;; Compiling Tridash Expressions to CL
 
 (defvar *tridash-cl-functions* (make-hash-map)

@@ -260,6 +260,7 @@
    :macro-outer-node-error
    :arity-error
    :invalid-operand-list-error
+   :compile-meta-node-loop-error
 
    :module-name
    :node-name
