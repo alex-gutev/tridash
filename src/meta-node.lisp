@@ -250,12 +250,12 @@
 
   (unique-node-name (outer-nodes meta-node) +outer-node-argument+))
 
-(defun outer-node (node outer-module meta-node)
+(defun outer-node (node meta-node)
   "Returns the name of the local node, in META-NODE, which is bound to
-   the outer node NODE, from the module OUTER-MODULE."
+   the outer node NODE"
 
   (with-slots (outer-nodes) meta-node
-    (cdr (ensure-get node outer-nodes (cons outer-module (outer-node-name meta-node))))))
+    (ensure-get node outer-nodes (outer-node-name meta-node))))
 
 
 ;;; Operands

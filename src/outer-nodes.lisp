@@ -31,33 +31,47 @@
   (nadjoin meta-node visited)
 
   (with-slots (definition outer-nodes meta-node-references) meta-node
-    (flet ((add-outer-nodes (refs)
-             "Adds the outer-node references REFS to the outer-nodes
-              set of META-NODE. Excludes outer-nodes which are defined
-              within a sub-module of the definition of META-NODE."
+    (labels ((outer-node-refs (meta-node)
+               "Returns the OUTER-NODES set of META-NODES."
 
-             (doseq ((node . ref) refs)
-               (let ((module (car ref)))
+               (unless (visited? meta-node)
+                 (multiple-value-bind (refs complete?)
+                     (outer-node-references meta-node visited)
+
+                   (when complete?
+                     (erase meta-node-references meta-node))
+
+                   refs)))
+
+             (union-refs (a b)
+               "Merges the OUTER-NODES set B into A."
+
+               (if b
+                   (map-into a #'car b)
+                   a))
+
+             (add-outer-node (node)
+               "Adds NODE to the OUTER-NODES set of META-NODE if it is
+                not defined within a sub-module of the definition of
+                META-NODE."
+
+               (let* ((module (home-module node)))
                  (unless (>= (depth module) (depth definition))
-                   (ensure-get node outer-nodes (cons module (outer-node-name meta-node)))))))
+                   (ensure-get node outer-nodes (cons module (outer-node-name meta-node))))))
 
-           (visited? (meta-node)
-             (memberp meta-node visited)))
+             (visited? (meta-node)
+               (memberp meta-node visited)))
 
       ;; Ensure meta-node has been built
       (build-meta-node meta-node)
 
-      (when (typep definition 'module)
-        (doseq (meta-node-ref meta-node-references)
-          (unless (visited? meta-node-ref)
-            (multiple-value-bind (refs complete?)
-                (outer-node-references meta-node-ref visited)
+      ;; Get all outer-node references
+      (let ((refs (reduce #'union-refs meta-node-references
+                          :key #'outer-node-refs
+                          :initial-value (hash-set))))
 
-              (add-outer-nodes refs)
-              (when complete?
-                (erase meta-node-references meta-node-ref)))))
-
-        (when definition
+        (when (typep definition 'module)
+          (foreach #'add-outer-node refs)
           (foreach (rcurry #'outer-node-references visited) (meta-nodes definition))))
 
       (values outer-nodes (emptyp meta-node-references)))))
@@ -116,7 +130,7 @@
                       ;; If node not found in outer node
                       ;; references, assume it is defined in the
                       ;; meta-node's node table.
-                      (if-let ((name (cdr (get node outer-nodes))))
+                      (if-let ((name (get node outer-nodes)))
                         (ensure-node name definition)
                         node))
                     nodes))
@@ -124,7 +138,7 @@
 
     (with-slots (outer-nodes operands definition) meta-node
       (unless (find +outer-node-argument+ operands :key #'ensure-car)
-        (let ((names (map #'cdr (map-values outer-nodes))))
+        (let ((names (map-values outer-nodes)))
           (appendf operands names)
           (add-operand-nodes names definition))
 

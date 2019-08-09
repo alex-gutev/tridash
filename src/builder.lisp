@@ -294,7 +294,7 @@
            (node? node)
            (not (meta-node? node))
            (not (in-home-module? node module)))
-      (add-outer-node node (home-module node) module)
+      (add-outer-node node module)
       node))
 
 
@@ -616,11 +616,11 @@
       ((list name)
        (lookup-node name outer-module)))))
 
-(defun add-outer-node (outer-node outer-module module)
-  "Adds a reference to NODE, which is located in an outer module (OUTER-MODULE),
-   to the current meta-node being built (the value of *META-NODE*)."
+(defun add-outer-node (outer-node module)
+  "Adds a reference to NODE to the meta-node currently being
+   built (the value of *META-NODE*)."
 
-  (-> (outer-node outer-node outer-module *meta-node*)
+  (-> (outer-node outer-node *meta-node*)
       (ensure-node module t)))
 
 
