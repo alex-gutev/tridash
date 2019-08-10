@@ -1880,8 +1880,7 @@
         (let ((table (finish-build)))
           (with-nodes ((1+ "1+") (x "x") (y "y")) table
             (has-value-function (x) y `(,1+ ,x))
-            (is (length (meta-nodes table)) 2)
-            ))))
+            (is (length (meta-nodes table)) 2)))))
 
     (subtest "Do not remove referenced nodes"
       ;; Additionally this also tests that nodes used by used
@@ -1905,9 +1904,7 @@
              b
              `(,map ,(meta-node-ref f) ,a))
 
-            (test-meta-node f ((z "z")) `(,1+ ,z))))
-
-        )))
+            (test-meta-node f ((z "z")) `(,1+ ,z)))))))
 
   (subtest "Cross-Module Bindings"
     (subtest "Simple Bindings"
