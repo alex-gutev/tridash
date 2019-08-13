@@ -107,7 +107,7 @@ conditionalize-bindings(condition, bindings) : {
     conditionalize(binding) :
         list(&(->), condition, binding)
 
-    condition |- map(conditionalize, bindings) -> self @ conditionalize
+    condition !- map(conditionalize, bindings) -> self @ conditionalize
     bindings -> self @ conditionalize
 }
 

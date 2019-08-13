@@ -1403,11 +1403,11 @@
           (ok (bool-value (call-meta-node !! '(1))))
           (is-error (call-meta-node !! (list (fail-thunk))) tridash-fail))))
 
-    (subtest "Meta-Node: |-"
+    (subtest "Meta-Node: !-"
       (with-module-table modules
         (build-core-module)
 
-        (with-nodes ((!- "|-")) modules
+        (with-nodes ((!- "!-")) modules
           (is (call-meta-node !- '(1 2)) 2)
           (is-error (call-meta-node !- (list (fail-thunk) 10)) tridash-fail)))))
 

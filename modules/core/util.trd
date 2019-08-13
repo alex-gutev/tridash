@@ -45,11 +45,11 @@ fails?(x) : {
 ## value : The value to which, this node evaluates, if `test` does not
 ##         fail.
 
-|-(test, value) : {
+!-(test, value) : {
     !!(test) -> value -> self
 }
 
 
 ### Export Declarations
 
-:export(fails?, ?, !!, |-)
+:export(fails?, ?, !!, !-)
