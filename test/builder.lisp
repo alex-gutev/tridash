@@ -533,33 +533,33 @@
 (subtest "Node Builder"
   (subtest "Simple Atom Nodes"
     (with-module-table modules
-      (build "a;b;c")
+      (build "a;b;cc")
 
-      (test-nodes modules "a" "b" "c")))
+      (test-nodes modules "a" "b" "cc")))
 
   (subtest "Bindings"
     (with-module-table modules
-      (build "a -> b; c -> b")
+      (build "a -> b; cc -> b")
 
-      (with-nodes ((a "a") (b "b") (c "c")) modules
+      (with-nodes ((a "a") (b "b") (cc "cc")) modules
         (test-simple-binding a b :context a)
-        (test-simple-binding c b :context c)))
+        (test-simple-binding cc b :context cc)))
 
     (with-module-table modules
-      (build "a -> (b -> c)")
+      (build "a -> (b -> cc)")
 
-      (with-nodes ((a "a") (b "b") (c "c")
-                   (b->c (:bind "b" "c")))
+      (with-nodes ((a "a") (b "b") (cc "cc")
+                   (b->cc (:bind "b" "cc")))
           modules
 
-        (test-simple-binding a b->c :context a)
+        (test-simple-binding a b->cc :context a)
 
         (let ((*strict-test* nil))
 	  (has-value-function
-	   ((b :context b) (b->c :context b))
-	   c
+	   ((b :context b) (b->cc :context b))
+	   cc
 
-	   `(if ,b->c ,b (:fail nil)))))))
+	   `(if ,b->cc ,b (:fail nil)))))))
 
   (subtest "Functor Nodes"
     (subtest "Meta-Node Operators"
@@ -605,7 +605,7 @@
 
   (subtest "Functors in Target Position"
     (subtest "No Target Node"
-      (test-error target-node-error ":extern(add, x, y); a -> add(b, c)"))
+      (test-error target-node-error ":extern(add, x, y); a -> add(b, cc)"))
 
     (subtest "With Target Node"
       (with-module-table modules
@@ -763,17 +763,17 @@
         (build-core-module)
         (build ":import(core)"
                ":context(a, ctx) -> b"
-               ":context(b, z) + c -> output")
+               ":context(b, z) + cc -> output")
 
-        (with-nodes ((a "a") (b "b") (c "c") (output "output")
-                     (b+c ((":in" "core" "+") "b" "c"))
+        (with-nodes ((a "a") (b "b") (cc "cc") (output "output")
+                     (b+cc ((":in" "core" "+") "b" "cc"))
                      (+ "+"))
             modules
 
           (test-simple-binding a b :context a)
-          (test-simple-binding b+c output :context b+c)
+          (test-simple-binding b+cc output :context b+cc)
 
-          (test-node-function b+c + + b c))))
+          (test-node-function b+cc + + b cc))))
 
     (subtest "Subnodes"
       ;; The :context operator has no effect when a subnode is
@@ -1037,7 +1037,7 @@
           (test-error arity-error
                       ":import(core)"
                       "1+(x) : x + 1"
-                      "1+(a,b) -> c")))
+                      "1+(a,b) -> cc")))
 
       (subtest "Optional Arguments"
         (subtest "Not Enough Arguments"
@@ -1050,7 +1050,7 @@
           (test-error arity-error
                       ":import(core)"
                       "1+(x, y : 1) : x + y"
-                      "1+(a,b,c) -> d"))
+                      "1+(a,b,cc) -> d"))
 
         (subtest "Required Only"
           (with-module-table modules
@@ -1145,18 +1145,18 @@
             (build-core-module)
             (build ":import(core)"
                    "add(x, ..(xs)) : x + xs"
-                   "add(a,b,c) -> x")
+                   "add(a,b,cc) -> x")
 
             (with-nodes ((add "add")
-                         (a "a") (b "b") (c "c") (x "x")
-                         (add-abc ("add" "a" "b" "c")))
+                         (a "a") (b "b") (cc "cc") (x "x")
+                         (add-abc ("add" "a" "b" "cc")))
                 modules
 
               (has-value-function
-               (a b c)
+               (a b cc)
                add-abc
 
-               `(,add ,a ,(argument-list (list b c))))
+               `(,add ,a ,(argument-list (list b cc))))
               (test-simple-binding add-abc x))))
 
         (subtest "Zero arguments"
@@ -1180,7 +1180,7 @@
         (subtest "Too Many Arguments"
           (test-error arity-error
                       ":extern(1+, x)"
-                      "1+(a,b) -> c")))
+                      "1+(a,b) -> cc")))
 
       (subtest "Optional Arguments"
         (subtest "Not Enough Arguments"
@@ -1191,7 +1191,7 @@
         (subtest "Too Many Arguments"
           (test-error arity-error
                       ":extern(1+, x, y : 1)"
-                      "1+(a,b,c) -> d"))
+                      "1+(a,b,cc) -> d"))
 
         (subtest "Required Only"
           (with-module-table modules
@@ -1288,18 +1288,18 @@
             (build-core-module)
             (build ":import(core)"
                    ":extern(add, x, ..(xs))"
-                   "add(a,b,c) -> x")
+                   "add(a,b,cc) -> x")
 
             (with-nodes ((add "add")
-                         (a "a") (b "b") (c "c") (x "x")
-                         (add-abc ("add" "a" "b" "c")))
+                         (a "a") (b "b") (cc "cc") (x "x")
+                         (add-abc ("add" "a" "b" "cc")))
                 modules
 
               (has-value-function
-               (a b c)
+               (a b cc)
                add-abc
 
-               `(,add ,a ,(argument-list (list b c))))
+               `(,add ,a ,(argument-list (list b cc))))
               (test-simple-binding add-abc x))))
 
         (subtest "Zero arguments"
@@ -1544,23 +1544,23 @@
                    ":import(builtin)"
                    ":import(my-mod, a, b)"
 
-                   "a -> (b -> c)")
+                   "a -> (b -> cc)")
 
             (with-modules ((mod7 "mod7")) modules
-              (with-nodes ((a "a") (b "b") (c "c"))
+              (with-nodes ((a "a") (b "b") (cc "cc"))
                   mod7
 
-                (with-nodes ((b->c (:bind (":in" "my-mod" "b") (":in" "mod7" "c"))))
+                (with-nodes ((b->cc (:bind (":in" "my-mod" "b") (":in" "mod7" "cc"))))
                     init
 
-                  (test-simple-binding a b->c :context a)
+                  (test-simple-binding a b->cc :context a)
 
                   (let ((*strict-test* nil))
 	            (has-value-function
-	             ((b :context b) (b->c :context b))
-	             c
+	             ((b :context b) (b->cc :context b))
+	             cc
 
-	             `(if ,b->c ,b (:fail nil))))))))))
+	             `(if ,b->cc ,b (:fail nil))))))))))
 
       (subtest "Errors"
         (subtest "Module Semantics"
@@ -1650,23 +1650,23 @@
   (subtest "Simple Nodes"
     (subtest "One-Way Bindings"
       (with-module-table modules
-	(build "a -> b; b -> c; c -> d"
+	(build "a -> b; b -> cc; cc -> d"
 	       ":attribute(a, input, 1)")
 
 	(let ((table (finish-build)))
-	  (test-not-nodes table "b" "c")
+	  (test-not-nodes table "b" "cc")
 
 	  (with-nodes ((a "a") (d "d")) table
 	    (test-simple-binding a d))))
 
       (subtest "NO-COALESCE Attribute"
         (with-module-table modules
-          (build "a -> b; b -> c; c -> d"
+          (build "a -> b; b -> cc; cc -> d"
                  ":attribute(a, input, 1)"
                  ":attribute(b, no-coalesce, 1)")
 
           (let ((table (finish-build)))
-            (test-not-nodes table "c")
+            (test-not-nodes table "cc")
 
             (with-nodes ((a "a") (b "b") (d "d")) table
 	      (test-simple-binding a b)
@@ -1674,25 +1674,25 @@
 
     (subtest "Two-Way Bindings"
       (with-module-table modules
-        (build "a -> b; b -> c; c -> d"
-               "d -> c; c -> b; b -> a"
+        (build "a -> b; b -> cc; cc -> d"
+               "d -> cc; cc -> b; b -> a"
                ":attribute(a, input, 1)")
 
         (let ((table (finish-build)))
-          (test-not-nodes table "b" "c")
+          (test-not-nodes table "b" "cc")
 
 	  (with-nodes ((a "a") (d "d")) table
 	    (test-simple-binding a d))))
 
       (subtest "NO-COALESCE Attribute"
         (with-module-table modules
-          (build "a -> b; b -> c; c -> d"
-                 "d -> c; c -> b; b -> a"
+          (build "a -> b; b -> cc; cc -> d"
+                 "d -> cc; cc -> b; b -> a"
                  ":attribute(a, input, 1)"
                  ":attribute(b, input, 1)")
 
           (let ((table (finish-build)))
-            (test-not-nodes table "c")
+            (test-not-nodes table "cc")
 
 	    (with-nodes ((a "a") (b "b") (d "d")) table
               (test-simple-binding a b)
@@ -1701,11 +1701,11 @@
 
     (subtest "Multiple Observers"
       (with-module-table modules
-        (build "a -> b; b -> c; b -> d; c -> e; d -> f"
+        (build "a -> b; b -> cc; b -> d; cc -> e; d -> f"
                ":attribute(a, input, 1)")
 
         (let ((table (finish-build)))
-          (test-not-nodes table "c" "d")
+          (test-not-nodes table "cc" "d")
 
           (with-nodes ((a "a") (b "b") (e "e") (f "f")) table
             (test-simple-binding a b)
@@ -1716,76 +1716,76 @@
     (subtest "Simple Functor Nodes"
       (with-module-table modules
         (build ":extern(+, x, y); :op(+, 50, left)"
-               "a + b + c + d -> output"
+               "a + b + cc + d -> output"
                ":attribute(a, input, 1)"
                ":attribute(b, input, 1)"
-               ":attribute(c, input, 1)"
+               ":attribute(cc, input, 1)"
                ":attribute(d, input, 1)")
 
         (let ((table (finish-build)))
           (test-not-nodes table
                           '("+" "a" "b")
-                          '("+" ("+" "a" "b") "c")
-                          '("+" ("+" ("+" "a" "b") "c") "d"))
+                          '("+" ("+" "a" "b") "cc")
+                          '("+" ("+" ("+" "a" "b") "cc") "d"))
 
-          (with-nodes ((+ "+") (a "a") (b "b") (c "c") (d "d") (output "output")) table
-            (has-value-function (a b c d) output `(,+ (,+ (,+ ,a ,b) ,c) ,d)))))
+          (with-nodes ((+ "+") (a "a") (b "b") (cc "cc") (d "d") (output "output")) table
+            (has-value-function (a b cc d) output `(,+ (,+ (,+ ,a ,b) ,cc) ,d)))))
 
       (subtest "NO-COALESCE Attribute"
         (with-module-table modules
           (build ":extern(+, x, y); :op(+, 50, left)"
-                 "a + b + c + d -> output"
+                 "a + b + cc + d -> output"
                  ":attribute(a, input, 1)"
                  ":attribute(b, input, 1)"
-                 ":attribute(c, input, 1)"
+                 ":attribute(cc, input, 1)"
                  ":attribute(d, input, 1)"
                  ":attribute(a + b, no-coalesce, 1)")
 
           (let ((table (finish-build)))
             (test-not-nodes table
-                            '("+" ("+" "a" "b") "c")
-                            '("+" ("+" ("+" "a" "b") "c") "d"))
+                            '("+" ("+" "a" "b") "cc")
+                            '("+" ("+" ("+" "a" "b") "cc") "d"))
 
-            (with-nodes ((+ "+") (a "a") (b "b") (c "c") (d "d")
+            (with-nodes ((+ "+") (a "a") (b "b") (cc "cc") (d "d")
                          (a+b ("+" "a" "b"))
                          (output "output"))
                 table
 
               (has-value-function (a b) a+b `(,+ ,a ,b))
-              (has-value-function (a+b c d) output `(,+ (,+ ,a+b ,c) ,d)))))))
+              (has-value-function (a+b cc d) output `(,+ (,+ ,a+b ,cc) ,d)))))))
 
     (subtest "Multiple Observers"
       (with-module-table modules
         (build ":extern(+, x, y); :op(+, 50, left)"
-               "a + b + c + d -> out1"
+               "a + b + cc + d -> out1"
                "a + b -> out2"
                ":attribute(a, input, 1)"
                ":attribute(b, input, 1)"
-               ":attribute(c, input, 1)"
+               ":attribute(cc, input, 1)"
                ":attribute(d, input, 1)")
 
         (let ((table (finish-build)))
           (test-not-nodes table
-                          '("+" ("+" "a" "b") "c")
-                          '("+" ("+" ("+" "a" "b") "c") "d"))
+                          '("+" ("+" "a" "b") "cc")
+                          '("+" ("+" ("+" "a" "b") "cc") "d"))
 
-          (with-nodes ((+ "+") (a "a") (b "b") (c "c") (d "d")
+          (with-nodes ((+ "+") (a "a") (b "b") (cc "cc") (d "d")
                        (a+b ("+" "a" "b"))
                        (out1 "out1") (out2 "out2"))
               table
 
-            (has-value-function (a+b c d) out1 `(,+ (,+ ,a+b ,c) ,d))
+            (has-value-function (a+b cc d) out1 `(,+ (,+ ,a+b ,cc) ,d))
 
             (test-simple-binding a+b out2)
             (has-value-function (a b) a+b `(,+ ,a ,b)))))
 
       (with-module-table modules
         (build ":extern(add, x, y)"
-               "a -> b; b -> c; b -> d; add(c,d) -> e"
+               "a -> b; b -> cc; b -> d; add(cc,d) -> e"
                ":attribute(a, input, 1)")
 
         (let ((table (finish-build)))
-          (test-not-nodes table "b" "c" "d")
+          (test-not-nodes table "b" "cc" "d")
 
           (with-nodes ((add "add") (a "a") (e "e")) table
             (has-value-function (a) e (list add a a))))))
@@ -1829,15 +1829,15 @@
 
   (subtest "Removing Unreachable Nodes"
     (with-module-table modules
-      (build "a -> b; b -> c;"
+      (build "a -> b; b -> cc;"
              "e -> f"                   ; Unreachable Nodes
              ":attribute(a, input, 1)")
 
       (let ((table (finish-build)))
         (test-not-nodes table "b" "e" "f")
 
-        (with-nodes ((a "a") (c "c")) table
-          (test-simple-binding a c))))
+        (with-nodes ((a "a") (cc "cc")) table
+          (test-simple-binding a cc))))
 
     (subtest "NO-REMOVE Attribute"
       (with-module-table modules
@@ -1851,7 +1851,7 @@
       (with-module-table modules
         (build ":extern(add, x, y)"
                "a -> b; add(b, d) -> output"
-               "c -> d"                 ; Unreachable Nodes
+               "cc -> d"                 ; Unreachable Nodes
                ":attribute(a, input, 1)")
 
         (is-error (finish-build) 'dependency-not-reachable-error))))
@@ -1912,19 +1912,19 @@
         (build ":module(m1)"
                ":import(builtin)"
 
-               "a -> b; b -> c; c -> d"
+               "a -> b; b -> cc; cc -> d"
                ":attribute(a, input, 1)")
 
         (build ":module(m2)"
                ":import(builtin)"
                ":use(m1)"
 
-               "m1.b -> a; b -> c; c -> d"
+               "m1.b -> a; b -> cc; cc -> d"
                ":attribute(b, input, 1)")
 
         (let ((table (finish-build)))
           (with-modules ((m1 "m1") (m2 "m2")) modules
-            (test-not-nodes table "c")
+            (test-not-nodes table "cc")
 
             (with-nodes ((m1.a "a") (m1.b "b") (m1.d "d")) m1
               (test-simple-binding m1.a m1.b)
@@ -1947,8 +1947,8 @@
                ":use(m1)"
 
                ":extern(+, x, y); :op(+, 50, left)"
-               "m1.a + m1.b + c -> output"
-               ":attribute(c, input, 1)")
+               "m1.a + m1.b + cc -> output"
+               ":attribute(cc, input, 1)")
 
         (let ((table (finish-build)))
           (with-modules ((m1 "m1") (m2 "m2")) modules
@@ -1957,11 +1957,11 @@
              "a" "b"
              '((":in" "m2" "+")
                ((":in" "m2" "+") (":in" "m1" "a") (":in" "m1" "b"))
-               (":in" "m2" "c")))
+               (":in" "m2" "cc")))
 
             (with-nodes ((in "in")) m1
-              (with-nodes ((+ "+") (c "c") (output "output")) m2
-                (has-value-function (in c) output `(,+ (,+ ,in ,in) ,c)))))))))
+              (with-nodes ((+ "+") (cc "cc") (output "output")) m2
+                (has-value-function (in cc) output `(,+ (,+ ,in ,in) ,cc)))))))))
 
   (subtest "Common Sub Expressions"
     (with-module-table modules
@@ -1999,10 +1999,10 @@
     (with-module-table modules
       (build ":extern(add, x, y); :extern(even?, x)"
 
-             "add(a, b) -> c"
+             "add(a, b) -> cc"
              "even?(add(a, 1)) -> (add(a, 1) -> b)"
 
-             "add(c, d) -> out"
+             "add(cc, d) -> out"
 
              ":attribute(a, input, 1)"
              ":attribute(d, input, 1)")
@@ -2012,10 +2012,10 @@
                         '("add" "a" 1)
                         '("add" "a" "b")
                         "b"
-                        "c"
+                        "cc"
                         '("even?" ("add" "a" 1))
                         '(:bind ("add" "a" 1) "b")
-                        '("add" "c" "d"))
+                        '("add" "cc" "d"))
 
         (with-nodes ((a "a") (d "d") (out "out")
                      (add "add") (even? "even?"))
@@ -2060,27 +2060,27 @@
       (with-module-table modules
         (build-core-module)
         (build ":import(core);"
-               "a + b -> c"
-               "a < 3 -> (c -> :context(output, ctx1))"
+               "a + b -> cc"
+               "a < 3 -> (cc -> :context(output, ctx1))"
                "b -> :context(output, ctx1)"
 
                ":attribute(a, input, 1)"
                ":attribute(b, input, 1)"
-               ":attribute(c, no-coalesce, 1)")
+               ":attribute(cc, no-coalesce, 1)")
 
         (let ((table (finish-build)))
           (with-nodes ((< "<")
-                       (a "a") (b "b") (c "c")
+                       (a "a") (b "b") (cc "cc")
                        (output "output"))
               table
 
             (has-value-function
-             (a b c)
+             (a b cc)
              output
 
              `(:catch
                   ,(expression-block
-                    `(if (,< ,a 3) ,c (:fail nil)))
+                    `(if (,< ,a 3) ,cc (:fail nil)))
                 ,b
                 nil))))))
 
@@ -2088,8 +2088,8 @@
       (with-module-table modules
         (build-core-module)
         (build ":import(core);"
-               "a < 3 -> ((a + b) -> :context(output, c))"
-               "b < 4 -> (b -> :context(output, c))"
+               "a < 3 -> ((a + b) -> :context(output, cc))"
+               "b < 4 -> (b -> :context(output, cc))"
 
                ":attribute(a, input, 1)"
                ":attribute(b, input, 1)")
@@ -2114,8 +2114,8 @@
       (with-module-table modules
         (build-core-module)
         (build ":import(core);"
-               "a < 3 -> ((a + b) -> c)"
-               "c -> :context(output, ctx)"
+               "a < 3 -> ((a + b) -> cc)"
+               "cc -> :context(output, ctx)"
                "b -> :context(output, ctx)"
 
                ":attribute(a, input, 1)"
@@ -2140,8 +2140,8 @@
       (with-module-table modules
         (build-core-module)
         (build ":import(core);"
-               "a < 3 -> ((a + b) -> c)"
-               "c -> :context(output, ctx)"
+               "a < 3 -> ((a + b) -> cc)"
+               "cc -> :context(output, ctx)"
                "b < 4 -> (b -> :context(output, ctx))"
 
                ":attribute(a, input, 1)"
@@ -2192,47 +2192,47 @@
   (subtest "Literal Constant Values"
     (with-module-table modules
       (build ":extern(add, x, y)"
-             "add(a, b) -> c"
+             "add(a, b) -> cc"
              "1 -> constant; constant -> b"
              ":attribute(a, input, 1)")
 
       (let ((table (finish-build)))
         (test-not-nodes table "b" "constant")
 
-        (with-nodes ((add "add") (a "a") (c "c")) table
-          (has-value-function (a) c `(,add ,a 1)))))
+        (with-nodes ((add "add") (a "a") (cc "cc")) table
+          (has-value-function (a) cc `(,add ,a 1)))))
 
     (with-module-table modules
-      (build "a -> b; b -> c"
+      (build "a -> b; b -> cc"
              "3 -> constant; constant -> b"
              ":attribute(a, input, 1)")
 
       (let ((table (finish-build)))
         (test-not-nodes table "constant")
 
-        (with-nodes ((a "a") (b "b") (c "c")) table
+        (with-nodes ((a "a") (b "b") (cc "cc")) table
           (test-simple-binding a b)
-          (test-simple-binding b c)
+          (test-simple-binding b cc)
 
           (test-value-function b (init-context b) 3))))
 
     (with-module-table modules
-      (build "a -> b; b -> c"
+      (build "a -> b; b -> cc"
              "\"hello\" -> constant; constant -> a"
              ":attribute(a, input, 1)")
 
       (let ((table (finish-build)))
         (test-not-nodes table "b" "constant")
 
-        (with-nodes ((a "a") (c "c")) table
-          (test-simple-binding a c)
+        (with-nodes ((a "a") (cc "cc")) table
+          (test-simple-binding a cc)
 
           (test-value-function a (init-context a) "hello")))))
 
   (subtest "Constant Functor Nodes"
     (with-module-table modules
       (build ":extern(add, x, y)"
-             "add(a, b) -> c"
+             "add(a, b) -> cc"
 
              "1 -> c1; 2 -> c2; c2 -> c3"
              "add(c1, c3) -> b"
@@ -2242,12 +2242,12 @@
       (let ((table (finish-build)))
         (test-not-nodes table "b" "c1" "c2" "c3")
 
-        (with-nodes ((add "add") (a "a") (c "c")) table
-          (has-value-function (a) c `(,add ,a (,add 1 2))))))
+        (with-nodes ((add "add") (a "a") (cc "cc")) table
+          (has-value-function (a) cc `(,add ,a (,add 1 2))))))
 
     (with-module-table modules
       (build ":extern(add, x, y)"
-             "a -> b; b -> c"
+             "a -> b; b -> cc"
 
              "5 -> c1; 10 -> c2; c2 -> c3"
              "add(c1, add(c2, c3)) -> b"
@@ -2257,28 +2257,28 @@
       (let ((table (finish-build)))
         (test-not-nodes table "c1" "c2" "c3")
 
-        (with-nodes ((add "add") (a "a") (b "b") (c "c")) table
+        (with-nodes ((add "add") (a "a") (b "b") (cc "cc")) table
           (test-simple-binding a b)
-          (test-simple-binding b c)
+          (test-simple-binding b cc)
 
           (test-value-function b (init-context b) `(,add 5 (,add 10 10))))))
 
     (with-module-table modules
-      (build "a -> b; b -> c"
+      (build "a -> b; b -> cc"
 
              "\"hello\" -> constant; constant -> a"
-             "constant -> c"
+             "constant -> cc"
 
              ":attribute(a, input, 1)")
 
       (let ((table (finish-build)))
         (test-not-nodes table "b" "constant")
 
-        (with-nodes ((a "a") (c "c")) table
-          (test-simple-binding a c)
+        (with-nodes ((a "a") (cc "cc")) table
+          (test-simple-binding a cc)
 
           (test-value-function a (init-context a) "hello")
-          (test-value-function c (init-context c) "hello")))))
+          (test-value-function cc (init-context cc) "hello")))))
 
   (subtest "Cross-Module Constant Folding"
     (with-module-table modules
@@ -2295,15 +2295,15 @@
              "2 -> param"
              "add(param, m1.param) -> sum"
              "add(a, sum) -> b"
-             "b -> c"
+             "b -> cc"
 
              ":attribute(a, input, 1)")
 
       (let ((table (finish-build)))
         (test-not-nodes table "constant" "param" "sum" "b")
 
-        (with-nodes ((add "add") (a "a") (c "c")) table
-          (has-value-function (a) c `(,add ,a (,add 2 1)))))))
+        (with-nodes ((add "add") (a "a") (cc "cc")) table
+          (has-value-function (a) cc `(,add ,a (,add 2 1)))))))
 
   (subtest "Two-way Bindings"
     (with-module-table modules
@@ -2329,10 +2329,10 @@
     (subtest "Simple Bindings"
       (with-module-table modules
         (build "a -> b"
-               "b -> c"
+               "b -> cc"
 
-               "c -> d"
-               "c -> out2"
+               "cc -> d"
+               "cc -> out2"
 
                "d -> out1"
                "d -> b"
@@ -2346,7 +2346,7 @@
           (build ":module(m1)"
                  ":import(builtin)"
                  "a -> b"
-                 "b -> c"
+                 "b -> cc"
 
                  ":attribute(a, input, 1)"
 
@@ -2354,8 +2354,8 @@
                  ":import(builtin)"
                  ":use(m1)"
 
-                 "m1.c -> d"
-                 "m1.c -> out2"
+                 "m1.cc -> d"
+                 "m1.cc -> out2"
 
                  "d -> out1"
                  "d -> m1.b")
@@ -2365,10 +2365,10 @@
     (subtest "Functional Bindings"
       (with-module-table modules
         (build ":extern(add, x, y)"
-               "add(a, b) -> c"
+               "add(a, b) -> cc"
 
-               "c -> out1"
-               "c -> d"
+               "cc -> out1"
+               "cc -> d"
 
                "d -> out2"
                "d -> a"
@@ -2381,7 +2381,7 @@
       (subtest "Cross-Module Bindings"
         (with-module-table modules
           (build ":module(m1)"
-                 "a; c"
+                 "a; cc"
                  ":attribute(a, input, 1)"
 
                  ":module(m2)"
@@ -2389,10 +2389,10 @@
                  ":use(m1)"
 
                  ":extern(add, x, y)"
-                 "add(m1.a, b) -> m1.c"
+                 "add(m1.a, b) -> m1.cc"
 
-                 "m1.c -> out1"
-                 "m1.c -> d"
+                 "m1.cc -> out1"
+                 "m1.cc -> d"
 
                  "d -> out2"
                  "d -> m1.a"
@@ -2405,7 +2405,7 @@
     (subtest "Simple Bindings"
       (with-module-table modules
         (build "a -> d"
-               "a -> b; b -> c; c -> d"
+               "a -> b; b -> cc; cc -> d"
                "d -> e"
 
                ":attribute(a, input, 1)")
@@ -2423,7 +2423,7 @@
                  ":import(builtin)"
                  ":use(m1)"
 
-                 "m1.a -> b; b -> c; c -> m1.d"
+                 "m1.a -> b; b -> cc; cc -> m1.d"
                  "m1.d -> e")
 
           (is-error (finish-build) 'ambiguous-context-error))))
@@ -2432,7 +2432,7 @@
       (with-module-table modules
         (build ":extern(add, x, y)"
                "add(a, b) -> d"
-               "a -> c; c -> d"
+               "a -> cc; cc -> d"
                ":attribute(a, input, 1)"
                ":attribute(b, input, 1)")
 
@@ -2452,7 +2452,7 @@
                  ":extern(add, x, y)"
 
                  "add(m1.a, m1.b) -> d"
-                 "m1.a -> c; c -> d"
+                 "m1.a -> cc; cc -> d"
                  "d -> e")
 
           (is-error (finish-build) 'ambiguous-context-error))))))

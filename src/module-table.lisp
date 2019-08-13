@@ -126,7 +126,40 @@
     (add-core-nodes builtin)
     (add-core-macros builtin)
 
+    (let* ((name (id-symbol "c"))
+           (chr-macro (external-meta-node name '(sym))))
+
+      (setf (node-macro-function chr-macro) #'chr-macro)
+      (add-meta-node name chr-macro builtin)
+      (export-node name builtin))
+
     builtin))
+
+(defun chr-macro (operator operands module)
+  "Character macro-node function. Converts its argument to a literal
+   character."
+
+  (declare (ignore operator module))
+
+  (destructuring-bind (thing) operands
+    (typecase thing
+      (symbol
+       (char (symbol-name thing) 0))
+
+      (string
+       (char thing 0))
+
+      (integer
+       (if (typep thing '(integer 0 9))
+           (digit-char thing)
+           (fail-thunk)))
+
+      (character
+       thing)
+
+      (otherwise
+       (fail-thunk)))))
+
 
 (defun add-core-nodes (builtin)
   "Adds the nodes in *CORE-META-NODES* to the module BUILTIN, and its
@@ -141,7 +174,7 @@
    BUILTIN."
 
   (doseq ((node operator &rest op-info) +core-macro-nodes+)
-    (let ((meta-node  (macro-node node nil operator)))
+    (let ((meta-node (macro-node node nil operator)))
       (with-slots (name) meta-node
         (add-meta-node name meta-node builtin)
         (export-node name builtin)
