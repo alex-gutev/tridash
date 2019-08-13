@@ -80,7 +80,10 @@ make-pattern(place, pattern) : {
     # `pattern`, and no condition.
 
     make-binding-pattern(place, pattern) : {
-        list(list(&(->), place, list('(:context), pattern, '(match)))) -> self.bindings
+        pattern != '(_) ->
+            list(list(&(->), place, list('(:context), pattern, '(match)))) -> self.bindings @ make-binding
+
+        Empty() -> self.bindings @ make-binding
     }
 
     # Body
@@ -278,3 +281,47 @@ match-quote(place, pattern) : {
 }
 
 :attribute(', matcher, match-quote)
+
+
+## Characters
+
+match-c(place, pattern) :
+    Pattern(list(&(=), place, pattern))
+
+:attribute(c, matcher, match-c)
+
+
+## and
+
+target-and(source, expression) :
+    make-pattern-declarations(match-and(source, expression))
+
+
+match-and(place, expression) : {
+    left <- make-pattern(place, nth(expression, 1))
+    right <- make-pattern(place, nth(expression, 2))
+
+    condition <- combine-conditions(left.condition, right.condition)
+    bindings <- append(left.bindings, right.bindings)
+
+    Pattern(condition, bindings)
+}
+
+:attribute(and, target-transform, target-and)
+:attribute(and, matcher, match-and)
+
+
+## not
+
+target-not(source, expression) :
+    make-pattern-declarations(match-not(source, expression))
+
+
+match-not(place, expression) : {
+    pattern <- make-pattern(place, nth(expression, 1))
+
+    Pattern(list!(&(not), pattern.condition))
+}
+
+:attribute(not, target-transform, target-not)
+:attribute(not, matcher, match-not)
