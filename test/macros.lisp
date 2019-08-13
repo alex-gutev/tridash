@@ -1393,7 +1393,23 @@
 
         (with-nodes ((? "?")) modules
           (ok (bool-value (call-meta-node ? '(1))))
-          (is (bool-value (call-meta-node ? (list (fail-thunk)))) nil)))))
+          (is (bool-value (call-meta-node ? (list (fail-thunk)))) nil))))
+
+    (subtest "Meta-Node: !!"
+      (with-module-table modules
+        (build-core-module)
+
+        (with-nodes ((!! "!!")) modules
+          (ok (bool-value (call-meta-node !! '(1))))
+          (is-error (call-meta-node !! (list (fail-thunk))) tridash-fail))))
+
+    (subtest "Meta-Node: |-"
+      (with-module-table modules
+        (build-core-module)
+
+        (with-nodes ((!- "|-")) modules
+          (is (call-meta-node !- '(1 2)) 2)
+          (is-error (call-meta-node !- (list (fail-thunk) 10)) tridash-fail)))))
 
   (subtest "Lists"
     (with-module-table modules
@@ -1671,6 +1687,28 @@
           (is-error (call-meta-node f-list* '(1)) tridash-fail)
           (is-error (call-meta-node f-list* '("hello")) tridash-fail)))
 
+      (subtest "Boolean Logic"
+        (subtest "Match and"
+          (build ":import(core, list, and, +)"
+                 "f-and(xs) : { xs -> list(a, 1 and b); xs -> list(a and b); a + b }")
+
+          (with-nodes ((f-and "f-and")) modules
+            (is (call-meta-node f-and '((2 1))) 3)
+            (is (call-meta-node f-and '((2))) 4)
+
+            (is-error (call-meta-node f-and '((2 2))) tridash-fail)))
+
+        (subtest "Match not"
+          (build ":import(core, list, not, and)"
+                 "f-not(xs) : { xs -> list(1, not(2) and x); x }")
+
+          (with-nodes ((f-not "f-not")) modules
+            (is (call-meta-node f-not '((1 1))) 1)
+            (is (call-meta-node f-not '((1 3))) 3)
+
+            (is-error (call-meta-node f-not '((1 2))) tridash-fail)
+            (is-error (call-meta-node f-not '((2 3))) tridash-fail))))
+
       (subtest "Nested and Multiple Patterns"
         (build-source-file #p"./test/inputs/macros/pattern-match-nested.trd" modules)
 
@@ -1704,6 +1742,7 @@
           (is (call-meta-node calc2 '((0 1 2))) 3)
           (is (call-meta-node calc2 '((0.5 3 0.5))) 2.5)
           (is (call-meta-node calc2 '(("neg" 5))) -5)
+          (is (call-meta-node calc2 '((#\- 9))) -9)
 
           (is-error (call-meta-node calc2 '((1 2 3))) tridash-fail)
           (is-error (call-meta-node calc2 (decls '(0 1))) tridash-fail)
