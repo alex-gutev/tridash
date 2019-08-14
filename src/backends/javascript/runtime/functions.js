@@ -80,17 +80,17 @@ function fail_type(value) {
 
 function make_catch_thunk(try_value, catch_value, test) {
     if (test) {
-	var old_catch = catch_value;
-	catch_value = new Thunk(() => {
-	    try {
-		var type = fail_type(try_value);
+	    var old_catch = catch_value;
+	    catch_value = new Thunk(() => {
+	        try {
+		        var type = fail_type(try_value);
 
-		return test(type) ? old_catch : fail(type);
-	    }
-	    catch (e) {
-		return new Thunk(() => { throw e; });
-	    }
-	});
+		        return test(type) ? old_catch : fail(type);
+	        }
+	        catch (e) {
+		        return new Thunk(() => { throw e; });
+	        }
+	    });
     }
 
     return combine_catch_thunk(try_value, catch_value);
@@ -383,12 +383,12 @@ function get_symbol(id) {
 
 function member(dict, key) {
     try {
-	dict = resolve(dict);
-	key = resolve(key);
+	    dict = resolve(dict);
+	    key = resolve(key);
 
-	return key in dict ? dict[key] : fail();
+	    return key in dict ? dict[key] : fail();
     }
     catch (e) {
-	return new Thunk(() => { throw e });
+	    return new Thunk(() => { throw e; });
     }
 }
