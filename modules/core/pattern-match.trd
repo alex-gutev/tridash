@@ -317,14 +317,22 @@ target-or(source, expression) :
     make-pattern-declarations(match-or(source, expression))
 
 match-or(place, expression) : {
+    conditionalize(condition, bindings) : {
+        conditioned <- conditionalize-bindings(condition, bindings)
+        map(contextualize, conditioned)
+    }
+
+    contextualize(x) :
+        list('(:context), x, '(match))
+
     left <- make-pattern(place, nth(expression, 1))
     right <- make-pattern(place, nth(expression, 2))
 
     condition <- list!(&(or), left.condition, right.condition)
 
     bindings <- append(
-        conditionalize-bindings(left.condition, left.bindings),
-        conditionalize-bindings(right.condition, right.bindings)
+        conditionalize(left.condition, left.bindings),
+        conditionalize(right.condition, right.bindings)
     )
 
     Pattern(condition, bindings)
