@@ -1698,6 +1698,18 @@
 
             (is-error (call-meta-node f-and '((2 2))) tridash-fail)))
 
+        (subtest "Match or"
+          (build ":import(core, list, or)"
+                 "f-or(xs) : { xs -> list(a) or list(1, a); a }")
+
+          (with-nodes ((f-or "f-or")) modules
+            (is (call-meta-node f-or '((1))) 1)
+            (is (call-meta-node f-or '((2))) 2)
+            (is (call-meta-node f-or '((1 10))) 10)
+
+            (is-error (call-meta-node f-or '((1 2 3))) tridash-fail)
+            (is-error (call-meta-node f-or '((2 10))) tridash-fail)))
+
         (subtest "Match not"
           (build ":import(core, list, not, and)"
                  "f-not(xs) : { xs -> list(1, not(2) and x); x }")

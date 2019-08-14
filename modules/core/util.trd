@@ -14,8 +14,21 @@
 ## Evaluates to true if `x` fails, false otherwise.
 
 fails?(x) : {
-   x and 0 -> self @ catch-fail
-   1 -> self @ catch-fail
+    x and 0 -> self @ catch-fail
+    1 -> self @ catch-fail
+}
+
+## Checks whether `x` fails with failure type `type`
+##
+## x    : The value to check.
+## type : The failure type.
+##
+## Evaluates to true if `x` fails with failure type `type`, false
+## otherwise.
+
+fail-type?(x, type) : {
+    fail-type(x) = type -> self @ catch-fail
+    0 -> self @ catch-fail
 }
 
 ## Checks whether `x` evaluates to a value.

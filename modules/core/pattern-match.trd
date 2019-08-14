@@ -244,7 +244,7 @@ match-list(place, pattern) : {
 ## Empty List
 
 match-Empty(place, pattern) :
-    Pattern(list(&(=), list(&(fail-type), place), list(&(&), &(Empty))))
+    Pattern(list(&(fail-type?), place, list(&(&), &(Empty))))
 
 :attribute(Empty, matcher, match-Empty)
 
@@ -309,6 +309,29 @@ match-and(place, expression) : {
 
 :attribute(and, target-transform, target-and)
 :attribute(and, matcher, match-and)
+
+
+## or
+
+target-or(source, expression) :
+    make-pattern-declarations(match-or(source, expression))
+
+match-or(place, expression) : {
+    left <- make-pattern(place, nth(expression, 1))
+    right <- make-pattern(place, nth(expression, 2))
+
+    condition <- list!(&(or), left.condition, right.condition)
+
+    bindings <- append(
+        conditionalize-bindings(left.condition, left.bindings),
+        conditionalize-bindings(right.condition, right.bindings)
+    )
+
+    Pattern(condition, bindings)
+}
+
+:attribute(or, target-transform, target-or)
+:attribute(or, matcher, match-or)
 
 
 ## not
