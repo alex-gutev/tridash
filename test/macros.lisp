@@ -1386,6 +1386,15 @@
           (is (bool-value (call-meta-node fails? '(1))) nil)
           (ok (bool-value (call-meta-node fails? (list (fail-thunk))))))))
 
+    (subtest "Meta-Node: fail-type?"
+      (with-module-table modules
+        (build-core-module)
+
+        (with-nodes ((fail-type? "fail-type?")) modules
+          (is (bool-value (call-meta-node fail-type? '(1 x))) nil)
+          (is (bool-value (call-meta-node fail-type? (list (fail-thunk 'y) 'x))) nil)
+          (ok (bool-value (call-meta-node fail-type? (list (fail-thunk 'x) 'x)))))))
+
     (subtest "Meta-Node: ?"
       (with-module-table modules
         (build-core-module)
