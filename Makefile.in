@@ -45,16 +45,18 @@ sources = tridash.asd \
         src/lexer.lisp \
         src/parser.lisp \
         src/operators.lisp \
+	src/expressions.lisp \
+	src/builder-interface.lisp \
         src/node.lisp \
         src/meta-node.lisp \
         src/module.lisp \
         src/module-table.lisp \
-	src/builder-interface.lisp \
         src/conditions.lisp \
         src/outer-nodes.lisp \
 	src/strictness.lisp \
         src/builder.lisp \
 	src/macros.lisp \
+	src/macro-runtime.lisp \
         src/coalescer.lisp \
         src/prog-builder.lisp \
         src/main.lisp \
@@ -67,6 +69,7 @@ sources = tridash.asd \
         src/backends/javascript/package.lisp \
         src/backends/javascript/ast.lisp \
         src/backends/javascript/print.lisp \
+	src/backends/javascript/symbols.lisp \
         src/backends/javascript/backend.lisp \
         src/backends/javascript/functions.lisp \
         src/backends/javascript/html.lisp \
@@ -81,7 +84,8 @@ core_module_sources = \
 	modules/core/introspection.trd \
 	modules/core/pattern-match.trd \
 	modules/core/types.trd \
-	modules/core/macros.trd
+	modules/core/macros.trd \
+	modules/core/strings.trd
 
 build.lisp: build.lisp.in
 	$(SED) -e 's|@datadir[@]|$(pkgdatadir)|g' $< > $@
