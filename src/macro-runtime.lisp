@@ -439,3 +439,17 @@
 (define-tridash-function |get-attribute| (node attribute)
   (check-tridash-types ((node node))
     (get (mkstr (resolve% attribute)) (attributes node) (fail-thunk))))
+
+
+;;; Strings
+
+(define-tridash-function |string-at| (string n)
+  (check-tridash-types ((string string) (n integer))
+    (unless (< n (length string))
+      (error 'tridash-fail))
+
+    (char string n)))
+
+(define-tridash-function |string-concat| (str1 str2)
+  (check-tridash-types ((str1 string) (str2 string))
+    (concatenate-to 'string str1 str2)))

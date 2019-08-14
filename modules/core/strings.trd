@@ -1,0 +1,93 @@
+### Tridash Core Module
+###
+### String Processing Functions
+
+:module(core)
+
+### Conversions
+
+## Convert a string to a list of characters.
+##
+## string : The string
+##
+## Returns a list containing the characters of the string.
+
+string->list(string) : {
+    convert(string, pos) : {
+        head <- string-at(string, pos)
+        tail <- convert(string, pos + 1)
+
+        head !- cons(head, tail) -> self @ make-list
+        Empty() -> self @ make-list
+    }
+
+    convert(string, 0)
+}
+
+
+## Convert a list to a string.
+##
+## Each element of the list is first converted to a string by
+## `string`, and then concatenated to the result string.
+##
+## list : The list to convert to a string.
+##
+## Returns a string containing the concatenation of each element of
+## list, converted to a string.
+
+list->string(list) : {
+    convert(list, acc) : {
+        list -> cons(head, tail)
+
+        current <- string-concat(acc, head)
+        rest <- convert(tail, current)
+
+        head !- rest -> self @ convert
+        acc -> self @ convert catch &(Empty)
+    }
+
+    strings <- map(string, list)
+    convert(strings, "")
+}
+
+
+### Utilities
+
+## Create a formatted string, with placeholders in the string replaced
+## by the arguments given in `args`.
+##
+## The resulting string contains the characters in `string` with each
+## '%s' placeholder replaced by the corresponding argument in `args`,
+## converted to a string. The first placeholder is replaced with the
+## first argument in `args`, the second with the second argument and
+## so on. A `%%` sequence is replaced with a literal '%'.
+##
+## string : The format string.
+## args   : The arguments to be substituted in the string.
+##
+## Returns the string with the placeholders replaced.
+
+format(string, ..(args)) : {
+    format-chars(chars, args) : {
+        chars -> list*(c(%), c(%) and char, rest-chars)
+        chars -> list*(c(%), c(s), rest-chars) and substitute
+        chars -> list*(char, rest-chars)
+
+        args -> cons(arg, rest-args)
+
+        substitute !- cons(arg, format-chars(rest-chars, rest-args)) -> self @ format
+        char !- cons(char, format-chars(rest-chars, args)) -> self @ format
+
+        Empty() -> self @ format
+    }
+
+    chars <- string->list(string)
+    formatted <- format-chars(chars, args)
+
+    list->string(formatted)
+}
+
+
+### Export Declarations
+
+:export(string->list, list->string, format)

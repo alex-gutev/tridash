@@ -124,7 +124,8 @@
   (build-source-file #p"./modules/core/introspection.trd" modules)
   (build-source-file #p"./modules/core/pattern-match.trd" modules)
   (build-source-file #p"./modules/core/types.trd" modules)
-  (build-source-file #p"./modules/core/macros.trd" modules))
+  (build-source-file #p"./modules/core/macros.trd" modules)
+  (build-source-file #p"./modules/core/strings.trd" modules))
 
 
 ;;;; Getting a Node-Table

@@ -114,4 +114,5 @@
         and, or, not,
         int, real, string,
         int?, real?, string?, inf?, NaN?,
-        cons, head, tail, cons?)
+        cons, head, tail, cons?,
+        string-at, string-concat)

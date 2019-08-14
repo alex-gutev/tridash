@@ -8,3 +8,4 @@ sources:
   - core/pattern-match.trd
   - core/types.trd
   - core/macros.trd
+  - core/strings.trd
