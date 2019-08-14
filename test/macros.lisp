@@ -1805,6 +1805,37 @@
 
           (is-error
            (resolve% (call-tridash-meta-node cons! (list (fail-thunk) 1)))
-           tridash-fail))))))
+           tridash-fail)))))
+
+  (subtest "Strings"
+    (with-module-table modules
+      (build-core-module)
+
+      (subtest "Meta-node: string->list"
+        (with-nodes ((string->list "string->list")) modules
+          (is (call-meta-node string->list '("hello")) '(#\h #\e #\l #\l #\o))
+
+          (is-error (call-meta-node string->list '(1)) tridash-fail)
+          (is-error (call-meta-node string->list '((#\h #\e #\l #\l #\o))) tridash-fail)))
+
+      (subtest "Meta-node: list->string"
+        (with-nodes ((list->string "list->string")) modules
+          (is (call-meta-node list->string '((#\h #\e #\l #\l #\o))) "hello")
+          (is (call-meta-node list->string '((#\a #\b #\c 1 2 3))) "abc123")
+          (is (call-meta-node list->string '(("ab" #\c #\1 23))) "abc123")
+          (is (call-meta-node list->string (list (empty-list))) "")
+
+          (is-error (call-meta-node list->string '("hello")) tridash-fail)
+          (is-error (call-meta-node list->string '(1)) tridash-fail)))
+
+      (subtest "Meta-node: format"
+        (with-nodes ((format "format")) modules
+          (is (call-meta-node format '("hello")) "hello")
+          (is (call-meta-node format '("Hello %s." "Bob")) "Hello Bob.")
+          (is (call-meta-node format '("Hello %s, welcome to %s." "Bob" "Earth"))
+              "Hello Bob, welcome to Earth.")
+
+          (is (call-meta-node format '("Coverage: %s%% of %s." 15 200))
+              "Coverage: 15% of 200."))))))
 
 (finalize)
