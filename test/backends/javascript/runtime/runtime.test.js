@@ -624,6 +624,22 @@ describe('Builtin Functions', function() {
         });
     });
 
+    describe('Type casts', function() {
+        describe('Tridash.cast_string', function() {
+            it('Should return integer as string', function() {
+                assert.equal(tridash.cast_string(10), "10");
+            });
+
+            it('Should return character as string', function() {
+                assert.equal(tridash.cast_string(new tridash.Char("x")), "x");
+            });
+
+            it('Should return string as string', function() {
+                assert.equal(tridash.cast_string("hello"), "hello");
+            });
+        });
+    });
+
     describe('Dictionaries', function() {
         describe('Tridash.member', function() {
             it('Should return the value of the member', function() {

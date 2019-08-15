@@ -156,7 +156,12 @@ function cast_real(x) {
 };
 function cast_string(x) {
     try {
-        return String(resolve(x));
+        x = resolve(x);
+
+        if (x instanceof Char)
+            return x.chr;
+        else
+            return String(x);
     }
     catch (e) {
         return new Thunk(() => { throw e; });
