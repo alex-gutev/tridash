@@ -1,0 +1,13 @@
+<? :import(core) ?>
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Functor Bindings</title>
+  </head>
+  <body>
+    <p>
+      <input id="input-a" value="<?@ to-int(a) ?>"/> + <input id="input-b" value="<?@ to-int(b) ?>"/> =
+      <input id="sum" value="Sum is <?@ a + b ?>."/>
+    </p>
+  </body>
+</html>

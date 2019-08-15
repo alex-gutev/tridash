@@ -395,6 +395,20 @@
 
           (test-binding sum sum.value)))))
 
+  (subtest "In Attributes between text"
+    (html-file-test (modules "main" #p"test/builders/html/input/test9.html" :core t)
+      (with-nodes ((format "format") (+ "+") (to-int "to-int")) modules
+        (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
+                          (input-b.value (:subnode "input-b" "value") "input")
+                          (sum.value (:subnode "sum" "value") "input"))
+            (finish-build)
+
+          (has-value-function
+           (input-a.value input-b.value)
+           sum.value
+
+           `(,format "Sum is %s." ,(argument-list `((,+ (,to-int ,input-a.value) (,to-int ,input-b.value))))))))))
+
   (subtest "In SPAN elements"
     (html-file-test (modules "main" #p"test/builders/html/input/test6.html" :core t)
       (with-nodes ((a ((":in" "core" "to-int") "a"))

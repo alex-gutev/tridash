@@ -261,12 +261,24 @@
    declarations and surrounding strings, otherwise returns NIL."
 
   (let ((strings (extract-nodes value)))
-   (cond
-     ((length= 1 strings)
-      (elt strings 0))
+    (cond
+      ((length= 1 strings)
+       (elt strings 0))
 
-     ((not (emptyp strings))
-      (reduce #2`(,(id-symbol "+") ,a1 ,a2) strings)))))
+      ((not (emptyp strings))
+       (let ((nodes (make-collector nil)))
+         (flet ((concat-node (string thing)
+                  (typecase thing
+                    (string
+                     (concatenate-to 'string string thing))
+
+                    (otherwise
+                     (accumulate nodes thing)
+                     (concatenate-to 'string string "%s")))))
+
+           (list* (list (id-symbol ":in") (id-symbol "core") (id-symbol "format"))
+                  (reduce #'concat-node strings :initial-value "")
+                  (collector-sequence nodes))))))))
 
 (defun extract-nodes (string)
   "Extracts Tridash nodes from the string STRING. If STRING contains
