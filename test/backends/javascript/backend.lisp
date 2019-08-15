@@ -429,7 +429,17 @@
             ((context () 1))
 
           (test-compute-function context
-            (js-return 1))))))
+            (js-return 1)))))
+
+    (subtest "Characters"
+      (mock-backend-state
+        (mock-contexts
+            ((context () #\h))
+
+          (test-compute-function context
+            (js-return
+             (thunk
+              (js-return (js-new "Tridash.Char" (list (js-string "h")))))))))))
 
   (subtest "Function Calls"
     (subtest "Positional Arguments"

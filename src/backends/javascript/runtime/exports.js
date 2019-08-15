@@ -66,6 +66,7 @@ exports.tail = tail;
 exports.is_cons = is_cons;
 exports.Empty = Empty;
 
+exports.Char = Char;
 exports.string_at = string_at;
 exports.string_concat = string_concat;
 

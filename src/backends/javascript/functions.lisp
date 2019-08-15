@@ -694,6 +694,9 @@
    nil
    (js-call "Tridash.get_symbol" (js-string sym))))
 
+(defmethod make-expression ((chr character) &key)
+  (values nil (js-new "Tridash.Char" (list (js-string chr)))))
+
 (defmethod make-expression (literal &key)
   (values nil literal))
 
