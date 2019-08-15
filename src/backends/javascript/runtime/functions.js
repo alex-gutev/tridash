@@ -423,12 +423,12 @@ function get_symbol(id) {
 
 function member(dict, key) {
     try {
-	    dict = resolve(dict);
-	    key = resolve(key);
+        dict = resolve(dict);
+        key = resolve(key);
 
-	    return key in dict ? dict[key] : fail();
+        return key in dict ? dict[key] : fail();
     }
     catch (e) {
-	    return new Thunk(() => { throw e; });
+        return new Thunk(() => { throw e; });
     }
 }
