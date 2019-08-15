@@ -69,8 +69,8 @@
     (cons (id-symbol ">") '(">" (:real :real)))
     (cons (id-symbol "<=") '("<=" (:real :real)))
     (cons (id-symbol ">=") '(">=" (:real :real)))
-    (cons (id-symbol "=") '("===" . t))
-    (cons (id-symbol "!=") '("!==" . t))
+    (cons (id-symbol "=") "Tridash.eq")
+    (cons (id-symbol "!=") "Tridash.neq")
 
     (cons (id-symbol "int") "Tridash.cast_int")
     (cons (id-symbol "real") "Tridash.cast_real")

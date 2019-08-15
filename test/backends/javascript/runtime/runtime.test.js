@@ -151,6 +151,152 @@ describe('Lazy Evaluation', function() {
 });
 
 describe('Builtin Functions', function() {
+    describe('Comparison', function() {
+        describe('Equal - Tridash.eq', function() {
+            it('Should return true for equal numbers', function() {
+                assert(tridash.eq(1, 1));
+                assert(tridash.eq(new tridash.Thunk(() => 1), new tridash.Thunk(() => 1)));
+            });
+
+            it('Should return true for equal characters', function() {
+                var c1 = new tridash.Char("c");
+                var c2 = new tridash.Char("c");
+
+                assert(tridash.eq(c1, c2));
+                assert(tridash.eq(new tridash.Thunk(() => c1), new tridash.Thunk(() => c2)));
+            });
+
+            it('Should return true for equal strings', function() {
+                var s2 = "hello";
+                s2 += " world";
+
+                assert(tridash.eq("hello world", s2));
+                assert(tridash.eq(new tridash.Thunk(() => "hello world"), new tridash.Thunk(() => s2)));
+            });
+
+            it('Should return true for identical objects', function() {
+                var obj = { x : 1 };
+
+                assert(tridash.eq(obj, obj));
+                assert(tridash.eq(new tridash.Thunk(() => obj), obj));
+            });
+
+
+            it('Should return false for unequal numbers', function() {
+                assert(!tridash.eq(1, 2));
+                assert(!tridash.eq(new tridash.Thunk(() => 1), new tridash.Thunk(() => 2)));
+            });
+
+            it('Should return false for unequal characters', function() {
+                var c1 = new tridash.Char("c");
+                var c2 = new tridash.Char("d");
+
+                assert(!tridash.eq(c1, c2));
+                assert(!tridash.eq(new tridash.Thunk(() => c1), new tridash.Thunk(() => c2)));
+            });
+
+            it('Should return false for unequal strings', function() {
+                assert(!tridash.eq("hello world", "hello"));
+                assert(!tridash.eq(new tridash.Thunk(() => "hello")), new tridash.Thunk(() => "hello"));
+            });
+
+            it('Should return false for non-identical objects', function() {
+                var obj1 = { x : 1};
+                var obj2 = { x : 1};
+
+                assert(!tridash.eq(obj1, obj2));
+                assert(!tridash.eq(new tridash.Thunk(() => obj1)), obj2);
+            });
+
+            it("Should return false if types don't match", function() {
+                assert(!tridash.eq(1, "x"));
+                assert(!tridash.eq("x", new tridash.Char("x")));
+            });
+
+
+            it('Should return failures as thunks', function() {
+                var f = tridash.fail();
+                var res1 = tridash.eq(f, 1);
+                var res2 = tridash.eq(1, f);
+
+                assert.throws(() => tridash.resolve(res1), tridash.Fail);
+                assert.throws(() => tridash.resolve(res2), tridash.Fail);
+            });
+        });
+
+        describe('Not Equal - Tridash.neq', function() {
+            it('Should return false for equal numbers', function() {
+                assert(!tridash.neq(1, 1));
+                assert(!tridash.neq(new tridash.Thunk(() => 1), new tridash.Thunk(() => 1)));
+            });
+
+            it('Should return false for equal characters', function() {
+                var c1 = new tridash.Char("c");
+                var c2 = new tridash.Char("c");
+
+                assert(!tridash.neq(c1, c2));
+                assert(!tridash.neq(new tridash.Thunk(() => c1), new tridash.Thunk(() => c2)));
+            });
+
+            it('Should return false for equal strings', function() {
+                var s2 = "hello";
+                s2 += " world";
+
+                assert(!tridash.neq("hello world", s2));
+                assert(!tridash.neq(new tridash.Thunk(() => "hello world"), new tridash.Thunk(() => s2)));
+            });
+
+            it('Should return false for identical objects', function() {
+                var obj = { x : 1 };
+
+                assert(!tridash.neq(obj, obj));
+                assert(!tridash.neq(new tridash.Thunk(() => obj), obj));
+            });
+
+
+            it('Should return true for unequal numbers', function() {
+                assert(tridash.neq(1, 2));
+                assert(tridash.neq(new tridash.Thunk(() => 1), new tridash.Thunk(() => 2)));
+            });
+
+            it('Should return true for unequal characters', function() {
+                var c1 = new tridash.Char("c");
+                var c2 = new tridash.Char("d");
+
+                assert(tridash.neq(c1, c2));
+                assert(tridash.neq(new tridash.Thunk(() => c1), new tridash.Thunk(() => c2)));
+            });
+
+            it('Should return true for unequal strings', function() {
+                assert(tridash.neq("hello world", "hello"));
+                assert(tridash.neq(new tridash.Thunk(() => "hello")), new tridash.Thunk(() => "hello"));
+            });
+
+            it('Should return true for non-identical objects', function() {
+                var obj1 = { x : 1};
+                var obj2 = { x : 1};
+
+                assert(tridash.neq(obj1, obj2));
+                assert(tridash.neq(new tridash.Thunk(() => obj1)), obj2);
+            });
+
+            it("Should return true if types don't match", function() {
+                assert(tridash.neq(1, "x"));
+                assert(tridash.neq("x", new tridash.Char("x")));
+            });
+
+
+            it('Should return failures as thunks', function() {
+                var f = tridash.fail();
+                var res1 = tridash.neq(f, 1);
+                var res2 = tridash.neq(1, f);
+
+                assert.throws(() => tridash.resolve(res1), tridash.Fail);
+                assert.throws(() => tridash.resolve(res2), tridash.Fail);
+            });
+        });
+    });
+
     describe('Lists', function() {
         describe('Tridash.cons', function() {
             it('Does not resolves its arguments', function() {

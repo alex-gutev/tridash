@@ -1653,13 +1653,8 @@
                    '(($ x) ($ y))
 
                    (list
-                    (protected
-                     (js-return
-                      (js-call
-                       "==="
-
-                       (resolve ($ x))
-                       (resolve ($ y))))))))))))
+                    (js-return
+                     (js-call "Tridash.eq" ($ x) ($ y))))))))))
 
         (subtest "Not Equal"
           (with-module-table modules
@@ -1676,13 +1671,8 @@
                    '(($ x) ($ y))
 
                    (list
-                    (protected
-                     (js-return
-                      (js-call
-                       "!=="
-
-                       (resolve ($ x))
-                       (resolve ($ y)))))))))))))
+                    (js-return
+                     (js-call "Tridash.neq" ($ x) ($ y)))))))))))
 
       (subtest "Boolean Logic"
         (subtest "And"

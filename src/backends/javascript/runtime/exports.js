@@ -42,6 +42,9 @@ exports.resolve = resolve;
 
 /* Functions */
 
+exports.eq = eq;
+exports.neq = neq;
+
 exports.and = and;
 exports.or = or;
 exports.not = not;

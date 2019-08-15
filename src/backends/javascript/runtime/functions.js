@@ -28,6 +28,39 @@
 
 /** Functions */
 
+/* Comparison */
+
+function eq(ta, tb) {
+    try {
+        var a = resolve(ta);
+        var b = resolve(tb);
+
+        if (a instanceof Char && b instanceof Char)
+            return a.chr === b.chr;
+
+        return a === b;
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
+
+function neq(ta, tb) {
+    try {
+        var a = resolve(ta);
+        var b = resolve(tb);
+
+        if (a instanceof Char && b instanceof Char)
+            return a.chr !== b.chr;
+
+        return a !== b;
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
+
+
 /* Boolean Expressions */
 
 function and(a, b) {
