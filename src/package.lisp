@@ -144,6 +144,10 @@
    :node-link-p
    :self
 
+   :node-ref
+   :node-ref-p
+   :node-ref-node
+
    :functor-expression
    :functor-expression-p
    :functor-expression-meta-node

@@ -903,6 +903,16 @@
 
                   (d a)))))))))))
 
+  (subtest "Raw Node References"
+    (subtest "Raw Meta-Node References"
+      (mock-backend-state
+        (mock-meta-nodes (f)
+          (mock-contexts
+              ((context () (node-ref f)))
+
+            (test-compute-function context
+              (js-return f)))))))
+
   (subtest "Invoking Nodes as Meta-Nodes"
     (subtest "As Return Value"
       (mock-backend-state

@@ -684,6 +684,18 @@
              (make-js-call (meta-node-id node) (collector-sequence call-args)))))))))))
 
 
+;;; Node References
+
+(defmethod make-expression ((ref node-ref) &key)
+  "Compiles raw node references. Currently generates an expression
+   which references the raw Node object or meta-node function."
+
+  (with-struct-slots node-ref- (node) ref
+    (typecase node
+      (meta-node
+       (values nil (meta-node-id node))))))
+
+
 ;;; Literal Values
 
 (defmethod make-expression ((string string) &key)
