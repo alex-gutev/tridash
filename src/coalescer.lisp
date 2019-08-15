@@ -178,7 +178,8 @@
   "Returns true if NODE may be coalesced into another node. Returns
    false if the node has the :NO-COALESCE attribute set to T."
 
-  (null (attribute :no-coalesce node)))
+  (or *meta-node* ; Ignore NO-COALESCE when in meta-node
+      (null (attribute :no-coalesce node))))
 
 
 ;;; Coalescing Node Links
