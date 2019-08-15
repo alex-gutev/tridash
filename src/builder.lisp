@@ -173,16 +173,17 @@
    definition of META-NODE. The DEFINITION of META-NODE is converted
    to a `FLAT-NODE-TABLE'."
 
-  (with-slots (name definition) meta-node
-    (when (typep definition 'module)
-      ;; Add referenced outer-nodes as operands of each instance of each
-      ;; meta-node.
-      (foreach #'add-outer-node-operands (meta-nodes definition))
+  (let ((*meta-node* meta-node))
+    (with-slots (name definition) meta-node
+      (when (typep definition 'module)
+        ;; Add referenced outer-nodes as operands of each instance of each
+        ;; meta-node.
+        (foreach #'add-outer-node-operands (meta-nodes definition))
 
-      (setf definition (flatten-meta-node definition))
+        (setf definition (flatten-meta-node definition))
 
-      (nadjoin meta-node (nodes definition))
-      (finish-build definition))))
+        (nadjoin meta-node (nodes definition))
+        (finish-build definition)))))
 
 
 ;;;; Build Meta-Nodes

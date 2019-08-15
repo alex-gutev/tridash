@@ -100,7 +100,9 @@
             replaced with the value-function of NODE."
 
            (when (coalesce? node)
-             (merge-dependencies node (first (map-keys (observers node))))
+             (aif (first (map-keys (observers node)))
+                  (merge-dependencies node it)
+                  (remove-from-dependencies node))
 
              ;; Clear observer, dependency and context sets to prepare
              ;; the node for removal as it is now not reachable from
@@ -112,9 +114,14 @@
          (coalesce? (node)
            "Returns true if NODE can be coalesced."
 
-           (and (may-coalesce? node)
-                (= (length (observers node)) 1)
-                (<= (length (contexts node)) 1)))
+           (or
+            (and (may-coalesce? node)
+                 (= (length (observers node)) 1)
+                 (<= (length (contexts node)) 1))
+
+            (and *meta-node*
+                 (not (= node *meta-node*))
+                 (emptyp (observers node)))))
 
          (merge-dependencies (node observer)
            "Merges the dependencies of NODE into the dependency set of
@@ -156,7 +163,14 @@
                      ;; Remove NODE from observers of DEPENDENCY
                      (erase observers node)
                      ;; Add OBSERVER to observers of DEPENDENCY
-                     (setf (get observer (observers dependency)) link))))))))
+                     (setf (get observer (observers dependency)) link)))))))
+
+         (remove-from-dependencies (node)
+           "Removes NODE from the observer set of each of its
+            dependency nodes."
+
+           (doseq (dep (map-keys (dependencies node)))
+             (erase (observers dep) node))))
 
       (foreach #'begin-coalesce input-nodes))))
 
