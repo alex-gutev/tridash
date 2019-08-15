@@ -113,17 +113,19 @@ function fail_type(value) {
 
 function make_catch_thunk(try_value, catch_value, test) {
     if (test) {
-	    var old_catch = catch_value;
-	    catch_value = new Thunk(() => {
-	        try {
-		        var type = fail_type(try_value);
+        var old_catch = catch_value;
 
-		        return test(type) ? old_catch : fail(type);
-	        }
-	        catch (e) {
-		        return new Thunk(() => { throw e; });
-	        }
-	    });
+        catch_value = new Thunk(() => {
+            try {
+                test = resolve(test);
+                var type = fail_type(try_value);
+
+                return test(type) ? old_catch : fail(type);
+            }
+            catch (e) {
+                return new Thunk(() => { throw e; });
+            }
+        });
     }
 
     return combine_catch_thunk(try_value, catch_value);

@@ -485,7 +485,7 @@ function combine_catch_thunk(try_value, catch_value) {
     }
     if (try_value instanceof CatchThunk) {
         return new CatchThunk(try_value.compute,
-                              combine_catch_thunk(try_value.catch_thunk, catch_value));
+                              combine_catch_thunk(try_value.catch_value, catch_value));
     }
     else if (try_value instanceof Thunk) {
         return new CatchThunk(try_value.compute, catch_value);

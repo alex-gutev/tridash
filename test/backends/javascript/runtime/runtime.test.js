@@ -742,7 +742,7 @@ describe('Builtin Functions', function() {
                 var test = (type) => type == 'my-type';
 
                 console.log(tridash.resolve(
-                        tridash.make_catch_thunk(tridash.fail('my-type'), value, test)));
+                    tridash.make_catch_thunk(tridash.fail('my-type'), value, test)));
 
                 assert.equal(
                     tridash.resolve(
@@ -754,6 +754,43 @@ describe('Builtin Functions', function() {
                     () => tridash.resolve(tridash.make_catch_thunk(tridash.fail(), value, test)),
                     tridash.Fail
                 );
+            });
+
+            it('Should resolve test function', function() {
+                var value = new tridash.Thunk(() => 'fail-value');
+                var test = new tridash.Thunk(() => ((type) => type == 'my-type'));
+
+                console.log(tridash.resolve(
+                    tridash.make_catch_thunk(tridash.fail('my-type'), value, test)));
+
+                assert.equal(
+                    tridash.resolve(
+                        tridash.make_catch_thunk(tridash.fail('my-type'), value, test)),
+                    'fail-value'
+                );
+
+                assert.throws(
+                    () => tridash.resolve(tridash.make_catch_thunk(tridash.fail(), value, test)),
+                    tridash.Fail
+                );
+            });
+
+            it('Should resolve CatchThunks in try_value', function() {
+                var try1 = false;
+                var catch1 = false;
+
+                var thunk = tridash.make_catch_thunk(
+                    tridash.make_catch_thunk(new tridash.Thunk(() => {
+                        try1 = true;
+                        return tridash.fail();
+                    }), new tridash.Thunk(() => {
+                        catch1 = true;
+                        return tridash.fail();
+                    })), 24);
+
+                assert.equal(tridash.resolve(thunk), 24);
+                assert(try1, "First try_value resolved");
+                assert(catch1, "First catch_value resolved");
             });
         });
     });
