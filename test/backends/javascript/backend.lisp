@@ -1112,61 +1112,62 @@
                  '(($ n1))
 
                  (list
-                  (js-function
-                   (meta-node-id iter)
-                   '(($ n2) ($ acc))
-
-                   (list
-                    (js-catch
-                     (list
-                      (js-if
-                       (resolve
-                        (js-call
-                         "<"
-                         (js-call "Tridash.check_number" (resolve ($ n2)))
-                         (js-call "Tridash.check_number" (resolve 1))))
-                       (js-return ($ acc))
-
-                       (js-return
-                        (thunk
-                         ;; Compute n - 1
-                         (js-var ($ n-1))
-                         (js-catch
-                          (list
-                           (->> (js-call
-                                 "-"
-                                 (js-call "Tridash.check_number" (resolve ($ n2)))
-                                 (js-call "Tridash.check_number" (resolve 1)))
-                                (js-call "=" ($ n-1))))
-
-                          ($ e1)
-                          (list
-                           (js-call "=" ($ n-1) (thunk (js-throw ($ e1))))))
-
-                         ;; Compute n * acc
-                         (js-var ($ n*acc))
-                         (js-catch
-                          (list
-                           (->> (js-call
-                                 "*"
-                                 (js-call "Tridash.check_number" (resolve ($ n2)))
-                                 (js-call "Tridash.check_number" (resolve ($ acc))))
-                                (js-call "=" ($ n*acc))))
-
-                          ($ e2)
-                          (list
-                           (js-call "=" ($ n*acc) (thunk (js-throw ($ e2))))))
-
-                         ;; iter(n - 1, n * acc)
-                         (js-return
-                          (js-call iter ($ n-1) ($ n*acc)))))))
-
-                     ($ e3)
-                     (list
-                      (js-return (thunk (js-throw ($ e3))))))))
-
                   (js-return
-                   (js-call iter ($ n1) 1))))))))))
+                   (js-call iter ($ n1) 1)))))
+
+              (test-meta-node-function iter
+                (js-function
+                 (meta-node-id iter)
+                 '(($ n2) ($ acc))
+
+                 (list
+                  (js-catch
+                   (list
+                    (js-if
+                     (resolve
+                      (js-call
+                       "<"
+                       (js-call "Tridash.check_number" (resolve ($ n2)))
+                       (js-call "Tridash.check_number" (resolve 1))))
+                     (js-return ($ acc))
+
+                     (js-return
+                      (thunk
+                       ;; Compute n - 1
+                       (js-var ($ n-1))
+                       (js-catch
+                        (list
+                         (->> (js-call
+                               "-"
+                               (js-call "Tridash.check_number" (resolve ($ n2)))
+                               (js-call "Tridash.check_number" (resolve 1)))
+                              (js-call "=" ($ n-1))))
+
+                        ($ e1)
+                        (list
+                         (js-call "=" ($ n-1) (thunk (js-throw ($ e1))))))
+
+                       ;; Compute n * acc
+                       (js-var ($ n*acc))
+                       (js-catch
+                        (list
+                         (->> (js-call
+                               "*"
+                               (js-call "Tridash.check_number" (resolve ($ n2)))
+                               (js-call "Tridash.check_number" (resolve ($ acc))))
+                              (js-call "=" ($ n*acc))))
+
+                        ($ e2)
+                        (list
+                         (js-call "=" ($ n*acc) (thunk (js-throw ($ e2))))))
+
+                       ;; iter(n - 1, n * acc)
+                       (js-return
+                        (js-call iter ($ n-1) ($ n*acc)))))))
+
+                   ($ e3)
+                   (list
+                    (js-return (thunk (js-throw ($ e3))))))))))))))
 
     (subtest "Mutually Recursive Meta-Nodes"
       (with-module-table modules

@@ -166,7 +166,7 @@
     (foreach #'finish-build-meta-node (meta-nodes node-table))
 
     ;; Remove unused meta-nodes
-    (remove-unused-meta-nodes nodes meta-nodes)))
+    (setf meta-nodes (remove-unused-meta-nodes nodes meta-nodes))))
 
 (defun finish-build-meta-node (meta-node)
   "Performs the final build steps (node coalescing, etc.) in the

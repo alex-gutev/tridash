@@ -240,9 +240,9 @@
       (foreach #'sweep nodes))))
 
 (defun remove-unused-meta-nodes (nodes meta-nodes)
-  "Removes all unused meta-nodes from META-NODES. A meta-node is
-   considered used if it appears as the operator of a
-   `FUNCTOR-EXPRESSION' or is referenced by a `META-NODE-REF' in a
+  "Returns the set of `META-NODE's which are actually used. A
+   meta-node is considered used if it appears as the operator of a
+   `FUNCTOR-EXPRESSION' or is referenced by a `META-NODE-REF' in the
    value computation function of at least one node in NODES or in the
    function of a used `META-NODE' in META-NODES."
 
@@ -314,18 +314,11 @@
                 :NO-REMOVE attribute set to true."
 
                (when (attribute :no-remove meta-node)
-                 (add-used-meta-node meta-node)))
-
-             (sweep (meta-node)
-               "Removes META-NODE from META-NODES if it is not in
-                USED."
-
-               (unless (memberp meta-node used)
-                 (erase meta-nodes meta-node))))
+                 (add-used-meta-node meta-node))))
 
       (foreach #'visit-node nodes)
       (foreach #'visit-if-no-remove meta-nodes)
-      (foreach #'sweep meta-nodes))))
+      used)))
 
 (defun fold-constant-nodes (nodes)
   "Removes all constant nodes, from the set NODES, and replaces links

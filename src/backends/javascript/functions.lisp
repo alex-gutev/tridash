@@ -203,21 +203,11 @@
   (with-slots (contexts) meta-node
     (let* ((operands (operand-node-names meta-node))
            (context (cdr (first contexts)))
-           (op-vars (make-operand-ids operands))
-           (tail-recursive-p nil))
+           (op-vars (make-operand-ids operands)))
 
       (with-slots (value-function) context
         (labels ((get-input (link)
-                   (cdr (assoc (name (node-link-node link)) op-vars :test #'equal)))
-
-                 (make-meta-node-call (node operands)
-                   (if (and *in-tail-position* (eq node meta-node))
-                       (prog1
-                           (js-block
-                            (js-call "=" (js-array (map #'cdr op-vars)) (js-array operands))
-                            (js-continue))
-                         (setf tail-recursive-p t))
-                       (meta-node-call node operands))))
+                   (cdr (assoc (name (node-link-node link)) op-vars :test #'equal))))
 
           (let* ((*thunk* nil)
                  (body (make-function-body value-function #'get-input)))
@@ -227,14 +217,7 @@
               (meta-node-id meta-node)
               (map #'cdr op-vars)
 
-              (list
-               (let ((*output-code* (make-code-array)))
-                 (create-meta-nodes (meta-nodes (definition meta-node)))
-                 *output-code*)
-
-               (if tail-recursive-p
-                   (js-while "true" (js-block body))
-                   body)))
+              body)
 
              (store-in-public-nodes meta-node (meta-node-id meta-node)))))))))
 

@@ -389,7 +389,28 @@
 (defun create-meta-nodes (meta-nodes)
   "Generates the meta-node functions of each `META-NODE' in META-NODES."
 
-  (foreach (compose #'append-code #'create-meta-node) meta-nodes))
+  (labels ((union-meta-nodes (set meta-nodes)
+             "Adds all meta-nodes, and the meta-nodes nested in their
+              definitions, to SET."
+
+             (foreach (curry #'union-meta-node set) meta-nodes))
+
+           (union-meta-node (set meta-node)
+             "Adds META-NODE, and the meta-nodes nested in its
+              definition, to SET."
+
+             (unless (memberp meta-node set)
+               (nadjoin meta-node set)
+
+               (unless (external-meta-node? meta-node)
+                 (->> meta-node
+                      definition
+                      meta-nodes
+                      (union-meta-nodes set))))))
+
+    (let ((all-meta-nodes (make-hash-set)))
+      (union-meta-nodes all-meta-nodes meta-nodes)
+      (foreach (compose #'append-code #'create-meta-node) all-meta-nodes))))
 
 (defun create-meta-node (meta-node)
   "Generates the meta-node function of META-NODE."
