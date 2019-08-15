@@ -341,10 +341,12 @@
                       (value-function (first contexts))))))
 
            (coalescable? (node context)
-             (with-slots (operands) context
-               (unless (emptyp operands)
-                 (-> (rcurry #'memberp (map-keys (observers node)))
-                     (every (map-keys operands))))))
+             (with-slots (observers) node
+               (with-slots (operands) context
+                 (unless (or (emptyp operands)
+                             (emptyp observers))
+                   (-> (rcurry #'memberp operands)
+                       (every (map-keys observers)))))))
 
            (constant-context? (context)
              (emptyp (operands context)))
