@@ -4,14 +4,14 @@ Semantically a Tridash program is composed of a set of stateful
 components called nodes, with the node's state consisting of its
 value.
 
-Each node has a set of _dependency_ nodes. A change in the state of at
+Each node has a set of 'dependency' nodes. A change in the value of at
 least one of the dependency nodes causes the node to recompute its own
-value. The node is said to be an _observer_ of its dependency nodes,
-as it actively observers and response to changes in their
-state. Similarly, each node has a set of _observer_ nodes which it
+value. The node is said to be an 'observer' of its dependency nodes,
+as it actively observes and responds to changes in their
+values. Similarly, each node has a set of 'observer' nodes which it
 notifies whenever its own value changes.
 
-This _dependency_ -- _observer_ relation is referred to as a binding.
+This 'dependency' -- 'observer' relation is referred to as a binding.
 
 .Glossary
 --
@@ -35,10 +35,10 @@ successor:: A node `a` is said to be a _successor_ of a node `b` if
 
 === Declaring Nodes ===
 
-Nodes are created on the first reference, that is when their
-identifier appears in source code. This could either be a declaration
-consisting of the identifier itself or a functor node declaration of
-which the node is an argument.
+In the global scope, nodes are created on the first reference, that is
+when their identifier appears in source code. This can either be a
+declaration consisting of the identifier itself or a functor node
+declaration of which the node is an argument.
 
 IMPORTANT: The `self` identifier is reserved as an alias for other
 nodes, see <<_meta_nodes, Meta-Nodes>>
@@ -48,7 +48,7 @@ nodes, see <<_meta_nodes, Meta-Nodes>>
 # Results in the creation of node `name`
 name
 
-# Results in the creation of nodes `a`, `b`
+# Results in the creation of nodes `a` and `b`
 a -> b
 
 # Results in the creation of nodes `x`, `y` and `f(x, y)`
@@ -72,13 +72,12 @@ example above are referred to as meta-nodes and the functor
 declaration as an instance of the meta-node. See <<_meta_nodes,
 Meta-Nodes>>.
 
-NOTE: Nodes are also created corresponding to functors written in
-infix form, e.g. for the functor `a + b`, the node `+(a, b)` is
-created.
+NOTE: Nodes are also created for functors written in infix form,
+e.g. for the functor `a + b`, the node `+(a, b)` is created.
 
-A node was not created corresponding to the `a -> b`. This is the bind
+A node corresponding to `a -> b` was not created. This is a bind
 declaration which is treated rather specially. The `->` is not a
-meta-node, that is it does not compute a value, but a special
+meta-node, that is it does not compute a value, but is a special
 operator.
 
 === Declaring Bindings ===
@@ -97,7 +96,7 @@ simple binding, since the value of `b` is simply set to the value of
 `a`.
 
 NOTE: In an explicit binding declaration the dependency, i.e. the
-left-hand side of the `->` operator is referred to as the source node,
+left-hand side of the `->` operator, is referred to as the source node
 and the observer, i.e. the right-hand side, is referred to as the
 target node.
 
@@ -109,9 +108,9 @@ direction of data-flow, from the node on the left to the node on the
 right.
 
 Functional bindings involve a function of 1 or more argument
-nodes. Function bindings are created implicitly in functor node
+nodes. Functional bindings are created implicitly in functor node
 declarations, with each argument node added as a dependency of the
-functor node. A change the value of at least one argument node results
+functor node. A change in the value of at least one argument node results
 in the value of the functor being updated to the result of
 reevaluating the expression with the new values of the argument nodes.
 
@@ -120,7 +119,7 @@ reevaluating the expression with the new values of the argument nodes.
 a + b
 --------------------------------------------------
 
-In the example, above, a functor node `+(a, b)` was created with the
+In the example, above, a functor node `+(a, b)` is created with the
 arguments `a` and `b` implicitly added as dependencies of `+(a, b)`. A
 change in either `a` or `b` will result in the value of `+(a, b)`
 being recomputed.
@@ -156,15 +155,14 @@ parallel.
 
 It is important to note the semantics when nodes share a common
 observer and the change in value of each node is triggered by a common
-ancestor node of each node. A node is said to be _dirtied_ if either
-its value has changed, or at least one of its dependency nodes has
-been _dirtied_. If a node is dirtied, all its observers are dirtied,
-and likewise their observers are dirtied and so on. A node with
-multiple dependencies will only recompute its value when it receives a
-value change notification from each of its dirtied dependency
-nodes. Thus there is no intermediate value where the node's value is
-recomputed before all the dependency nodes have recomputed their
-values.
+ancestor node. A node is said to be 'dirtied' if either its value has
+changed, or at least one of its dependency nodes has been
+'dirtied'. If a node is dirtied, all its observers are dirtied, and
+likewise their observers are dirtied and so on. A node with multiple
+dependencies will only recompute its value when it receives a value
+change notification from each of its dirtied dependency nodes. Thus
+there is no intermediate value where the node's value is recomputed
+before all the dependency nodes have recomputed their values.
 
 IMPORTANT: This is only the case when the changes in each of the
 dependency nodes are triggered by a change in a common ancestor
@@ -185,10 +183,18 @@ b + c -> out
 --------------------------------------------------
 
 In the example, above, `a` is a common ancestor of both dependency
-nodes `b` and `c` of node `+(b, c)`. A change in `a` will _dirty_
-nodes `a`, `b`, `+(a, 1)`, `c`, `+(b, c)` and `out`. The value of
-`+(b, c)` will only be recomputed when the values of both `b` and `c`
-have been recomputed.
+nodes `b` and `c` of node `+(b, c)`. A change in `a` will 'dirty' the
+following nodes:
+
+ - `a`
+ - `b`
+ - `+(a, 1)`
+ - `c`
+ - `+(b, c)`
+ - `out`.
+
+The value of `+(b, c)` will only be recomputed when the values of both
+`b` and `c` have been recomputed.
 
 If `b` and `c` did not have the common ancestor `a`, the value of
 `+(b, c)` would be computed on each change in the value of either `b`
@@ -205,9 +211,9 @@ of the dependency nodes are operands to the function.
 Contexts are created whenever a binding between two nodes is
 established.
 
-The most simple value function is the passthrough, created when a
-simple binding between two nodes is established, in which the node's
-value is simply set to the value of its dependency node.
+The most simple context function is the passthrough, created when a
+simple binding between two nodes is established. With this function,
+the node's value is simply set to the value of its dependency node.
 
 .Passthrough Example
 --------------------------------------------------
@@ -217,9 +223,9 @@ a -> b.
 --------------------------------------------------
 
 Contexts with more complex functions, of more than one operand, are
-created whenever a functor node, in which the operator is a
-_meta-node_, is declared. A context is created, with the operator as
-the context function and the arguments as the context operands.
+created on each functor node declaration. The created context has the
+operator as the context function and the arguments as the context
+operands.
 
 .Functor Node Example
 --------------------------------------------------
@@ -229,7 +235,8 @@ the context function and the arguments as the context operands.
 a + b
 --------------------------------------------------
 
-A node can have more than one context. A context is _activated_
+A node can have more than one context. A context is 'activated',
+meaning its function is evaluated to compute the node's value,
 whenever the value of one of its operand nodes changes.
 
 .Multiple Context Example
@@ -247,10 +254,10 @@ respectively.
 
 [IMPORTANT]
 ==================================================
-It is an error for two or more contexts of a single to be activated at
-the same time. This occurs when either both contexts have a common
-operand or an operand from one context shares a common ancestor with
-an operand from the other context.
+It is an error for two or more contexts of a single node to be
+activated at the same time. This occurs when either both contexts have
+a common operand or an operand from one context shares a common
+ancestor with an operand from the other context.
 
 .Example 1
 --------------------------------------------------
@@ -268,9 +275,8 @@ In the example, above, node `a` is a dependency node of `b` which is
 an operand of the `b` context of `x`. However, node `a` is also a
 dependency of node `+(a, c)` (`a + c`), which is an operand of the
 `+(a, c)` context of `x`. A change in the value of `a` would trigger a
-change in the value of both `b` and `+(a, c)` thus it is ambiguous to
-which value `b` should be set, the value of `b` or the value of `+(a,
-c)`.
+change in the value of both `b` and `+(a, c)` thus the value to which
+`b` should be set is ambiguous.
 
 Structure checking is performed at compile-time, thus the above
 example, and all such scenarios, would result in a compilation error
@@ -297,7 +303,7 @@ a -> c
 d -> a
 --------------------------------------------------
 
-In the above example a change both `b` and `c`, which are observers of
+In the above example, both `b` and `c`, which are observers of
 `a`, will be notified of a change in the value of `a` triggered by a
 change in the value of `d`. This will trigger a change in the value of
 `b` however `a` will not be notified of this change as the change was
@@ -339,14 +345,14 @@ context.
 10.5 -> threshold
 --------------------------------------------------
 
-IMPORTANT: The setting of the initial values of each node in the
-graph, is treated as having been triggered by a single common ancestor
-node. See <<_propagation_of_changes, Propagation of Changes>> for the
+IMPORTANT: The setting of the initial values of each node, is treated
+as having been triggered by a single common ancestor node. See
+<<_propagation_of_changes, Propagation of Changes>> for the
 implications of this.
 
 ==== Explicit Contexts ====
 
-The context to white a binding is established can be set explicitly
+The context to which a binding is established can be set explicitly
 with the special `:context` operator.
 
 .Syntax
@@ -372,9 +378,8 @@ equivalent to an ordinary reference to the `node`.
 
 Multiple bindings to the same explicit context can be established. The
 function of the context becomes the value of the first dependency
-which does not 'fail' to evaluate to a value. _A node may fail to
-evaluate to a value if a conditional binding is inactive, see
-<<_conditionally_active_bindings, Conditionally Active Bindings>>._
+which does not 'fail' to evaluate to a value, _see <<_failures,
+Failures>>._
 
 
 .Example
@@ -393,34 +398,51 @@ c -> :context(node, ctx)
 If `a`, `b` and `c` all fail to evaluate to a value, `node` fails to
 evaluate to a value.
 
+TIP: The `@` macro from the `core` module, which is a shorthand for the
+`:context` operator, is the preferred way of establishing bindings to
+explicit contexts in source code.
 
-=== Conditionally Active Bindings ===
+=== Failures ===
 
-A binding declaration `a -> b` can, itself, be treated as a node, to which an
-explicit binding can be established with the binding node as the
-target.
+Failures are a special type of value which represents the absence of a
+value or the failure to compute a value. Failures can either be
+created by 'conditional bindings', in which the condition node
+evaluates to 'false', or by the `fail` meta-node.
+
+Operations which expect an argument node to evaluate to a value will
+fail if at least one of the arguments fails. In formal terms if the
+result of a function requires that the value of an argument, which
+fails to evaluate to a value, is evaluated, the entire function fails
+to evaluate to a value. The following are examples of functions which
+fail if at least one of the arguments fails: `+`, `-`, `*`, `/`.
+
+If the result of a function is a dictionary, and a dictionary entry
+fails to evaluate to a value, it is only that dictionary entry that
+fails, the function still returns a dictionary.
+
+==== Conditional Bindings ====
+
+A binding declaration `a -> b` can, itself, be treated as a node, to
+which an explicit binding can be established with the binding node as
+the target.
 
 --------------------------------------------------
 c -> (a -> b)
 --------------------------------------------------
 
 The result of this declaration is that the binding `a -> b` is only
-active if the condition node `c` evaluates to a true value. If `c`
-evaluates to false, it can be considered that there is no binding
-between `a` and `b` or that the binding is _inactive_. The implication
-of the binding, `a -> b`, being _inactive_ is that no changes in
-values are propagated from `a` to `b`, i.e. changes in the value of
-`a`, will not trigger value changes in `b` or any of its successor
-nodes.
+active if the condition node `c` evaluates to a 'true' value. If `c`
+evaluates to 'false', `b` is not set to the value of `a` but is set to
+a failure value.
 
 A binding declaration, with a binding node as the target, changes the
-function of the context of the binding to cease the current
-propagation of values if the value of the condition node is false. The
-binding node `a -> b` (`->(a, b))` in prefix notation), is added as a
-dependency of `b` and as an operand of the context corresponding to
-the binding `a -> b`. The binding node is itself an observer of `c`
-with a simple passthrough function. This allows you to reference the
-'status' of the binding by referencing the binding node, `a -> b`.
+function of the context of the binding to return a failure value if
+the value of the condition node is 'false'. The binding node `a -> b`
+(`->(a, b))` in prefix notation), is added as a dependency of `b` and
+as an operand of the context corresponding to the binding `a ->
+b`. The binding node is itself an observer of `c` with a simple
+passthrough function. This allows you to reference the 'status' of the
+binding by referencing the binding node, `a -> b`.
 
 .Example: Simple Validation
 --------------------------------------------------
@@ -429,8 +451,8 @@ with a simple passthrough function. This allows you to reference the
 
 i > 0 -> (i -> j)
 
-# Perform some computation with `j` which is guaranteed to only be
-# updated to the value of `i` if it is > 0.
+# Perform some computation with `j` which is guaranteed to either be a
+# numeric value greater than zero or a fail.
 ...
 --------------------------------------------------
 
@@ -439,11 +461,13 @@ parenthesis in `c -> (a -> b)` can be omitted: `c -> a -> b`.
 
 
 Conditional bindings to an explicit context can also be established,
-see <<_explicit_contexts, Explicit Contexts>>. If either either of the
-conditions are false, i.e. the bindings are inactive, it is treated as
-though the dependency node has failed to evaluate to a value. The
-context's function then evaluates to the next dependency which does
-not fail to evaluate to a value.
+see <<_explicit_contexts, Explicit Contexts>>. If a condition node
+evaluates to 'false', it is treated as though the corresponding
+dependency node has failed to evaluate to a value. The context's
+function then evaluates to the next dependency which does not fail to
+evaluate to a value. If all condition nodes evaluate to 'false', the
+node fails to evaluate to a value.
+
 
 .Example: Conditional Bindings and Explicit Contexts
 --------------------------------------------------
@@ -453,9 +477,9 @@ c -> :context(node, ctx)
 --------------------------------------------------
 
     - If `cond1` evaluates to false, it is treated as though `a` has
-      fails to evaluate to a value.
+      failed to evaluate to a value.
     - If `cond2` evaluates to false, it is treated as though `b` has
-      fails to evaluate to a value.
+      failed to evaluate to a value.
 
 The net result is that `node` evaluates to:
 
@@ -463,6 +487,60 @@ The net result is that `node` evaluates to:
     - `b` if `cond2` evaluates to true.
     - `c` if neither `cond1` not `cond2` evaluate to true, or both `a`
       and `b` fail to evaluate to a value.
+
+
+==== Explicit Failures and Failure Types ====
+
+Failure values can also be created explicitly with the `fail`
+meta-node, from the `builtin` module. This meta-node takes one
+optional argument: a value indicating the failure type. If the failure
+type is not provided, the failure returned does not have a type.
+
+.Example: Explicit Failure with Type
+--------------------------------------------------
+# Bind `b` to `a` if `c` is true
+c -> (a -> :context(b, ctx))
+
+# If `c` is false set `b` to an explicit failure.
+fail("my-type") -> :context(b, ctx)
+--------------------------------------------------
+
+The failure type can of a failed value can be retrieved with the
+`fail-type` meta-node. This meta-node takes a single argument, which
+if it fails to evaluate to a value, returns the failure type
+associated with the failure. If the argument does not fail to evaluate
+to a value, or the failure has no type associated with it, `fail-type`
+returns a failure.
+
+.Example: Querying Failure Type
+--------------------------------------------------
+# Compare failure type of `b`, to "my-type" from example above
+
+fail-type(c) = "my-type" -> c-fails?
+--------------------------------------------------
+
+The failure type is useful to identify the cause of a failure, since
+failures are used to represent many classes of errors, such as type
+errors, out of range errors, no value errors, as well as representing
+special classes of values such as the empty list.
+
+NOTE: Currently failure types are only used, in the core language and
+module, to represent the empty list. In the remaining circumstances,
+in which failures are returned, there is no failure type. This will be
+rectified in the next release.
+
+==== Conditionally Active Bindings based on Failure Type ====
+
+The special `:context` operator takes an optional third argument which
+is a test function that is evaluated prior to activating the binding
+after the previous binding fails. The test function is applied on a
+single argument, the failure type of the previous binding. If the
+function returns 'true' the binding is activated otherwise this
+binding fails with the same failure type as the preceding binding.
+
+TIP: The `@` macro, from the `core` module, contains a shorthand
+syntax for establishing a binding to an explicit context with a test
+function that compares the failure type to a given value.
 
 === Input Nodes ===
 
@@ -500,10 +578,11 @@ special in that it has a special syntax where not all its arguments
 are interpreted as nodes.
 
 The first argument is the node of which to set the attribute, the
-second value is the attribute key (not interpreted as a node) and the
-last attribute is the value, which must be a literal value. `
+second argument is the attribute key (not interpreted as a node) and
+the last argument is the value, which is interpreted as a literal
+value, not a node reference.
 
-:attribute` declarations may only appear at top-level and may not
+`:attribute` declarations may only appear at top-level and may not
 appear in binding declarations or as arguments in functor nodes.
 
 .Attribute Declaration Syntax
@@ -529,9 +608,13 @@ listing of some attributes an a summary of their effect:
     removed.
     `public-name`:: The name with which the runtime node can be
     referenced from non-Tridash code.
+    `macro`:: If set to true the meta-node is treated as a macro node.
     `target-node`:: Sets the name of a meta-node to use as the value
-    function, in the contexts, other than the context of the meta-node
-    itself, of a meta-node instance.
+    function, in the contexts of the binding of the meta-node instance
+    (as the source node) to its arguments (as the target nodes).
+    `target-transform`:: The name of a meta-node to invoke if the
+    meta-node, of which the attribute is set, appears as the target of
+    a binding.
 
 .Examples
 --------------------------------------------------
@@ -547,9 +630,8 @@ of a dictionary of values stored in another node, referred to as the
 
 Subnodes are referenced using the special `.` operator, which is also
 an infix operator. The `parent` node appears on the left-hand side and
-the key on the right-hand side. The key is not treated as a raw
-identifier, instead the identifier appearing on the right-hand side is
-treated as the raw key identifier.
+the key on the right-hand side. The key is treated as a literal
+identifier.
 
 .Syntax
 --------------------------------------------------
@@ -564,7 +646,7 @@ associativity.
 
 .Example
 --------------------------------------------------
-person.first-name + person.last-name -> full-name
+string-concat(person.first-name, person.last-name) -> full-name
 --------------------------------------------------
 
 There are two subnode references: the first references the
@@ -589,15 +671,22 @@ subnode.
 "Smith" -> person.last-name
 --------------------------------------------------
 
+If a subnode fails to evaluate to a value, it does not cause the
+parent node to fail to evaluate to value. The parent node evaluates to
+a dictionary however the dictionary entry, corresponding to the
+subnode, evaluates to a failure.
+
+Accessing a non-existent entry, or accessing a subnode of a parent
+node which does not evaluate to a dictionary will result in a failure.
+
 == Meta-Nodes ==
 
 A meta-node is a function, of one or more arguments, which evaluates
-to a value. Meta-nodes are nodes, themselves, however no runtime node
-is created for meta-nodes. For the most part you can treat meta-nodes
-as ordinary nodes, e.g. you can set attributes on meta-nodes using the
-same `:attribute` declaration. However, as of yet you cannot reference
-the value of a meta-node. Referencing the value of a meta-node will
-result in a compilation error.
+to a value. Meta-nodes are nodes, themselves, however without a
+runtime node object. For the most part you can treat meta-nodes as
+ordinary nodes, e.g. you can set attributes on meta-nodes using the
+same `:attribute` declaration. Referencing the value of a meta-node
+references the meta-node function.
 
 Meta-node identifiers reside in the same namespace as that of ordinary
 nodes, that is you cannot have both an ordinary node and meta-node
@@ -609,9 +698,9 @@ as instances of the meta-node.
 
 TIP: Meta-nodes are referred to as meta-nodes, since they are nodes
 which describe how to compute the value of other nodes, referred to as
-their instances. Meta-nodes may also be macros, such as the builtin
-`?->` and `case` meta-nodes in the `core` module. However, at present
-there is no functionality for defining macros in Tridash code.
+their instances. Meta-nodes may also be macro-nodes which are
+evaluated at compile-time, with the result being interpreted as
+Tridash code.
 
 === Defining Meta-Nodes ===
 
@@ -625,15 +714,15 @@ name(arg1, arg2, ...) : {
 }
 --------------------------------------------------
 
-The left-hand side of the `:` operator contains the meta-node
-identifier, `name`, followed by the comma-separated list of arguments
-in parenthesis. Each item, at position _n_, of the argument list is
-the identifier of the local node to which the _n_^th^ argument is
-bound.
+The meta-node identifier, `name`, appears on the left-hand side of the
+`:` operator followed by the comma-separated list of arguments in
+parenthesis. Each item, at position _n_, of the argument list is the
+identifier of the local node to which the _n_^th^ argument is bound.
 
 CAUTION: Identifiers beginning with `:` are reserved for special
 operators. A meta-node cannot have the same identifier as a special
-operator, including the bind `->` and outer `..` operators.
+operator. Currently no warning or compilation error is triggered
+however that may change in a future release.
 
 The body consists of a sequence of ordinary node declarations enclosed
 in braces `{ ... }`. The braces are simply a way of grouping multiple
@@ -641,8 +730,7 @@ declarations into a single declaration, _See <<_node_lists, Node
 Lists>>_. If the body of the meta-node contains just a single
 declaration, the braces may be omitted.
 
-Functor expressions with the meta-node as an operator evaluate to the
-value of the last node in the body.
+The meta-node function returns value of the last node in the body.
 
 .Example
 --------------------------------------------------
@@ -683,35 +771,44 @@ operators in functors.
 
 IMPORTANT: Meta-node bodies are only processed after all global (or
 the scope in which the meta-node declaration occurs) declarations in
-the same file have been processed. This allows a meta-node `g` to
-appear as the operator in a functor within the body of another
-meta-node `f` even if the definition of `g` appears after the
-definition of `f`. Effectively this allows for mutual recursion.
+the same file have been processed. This allows a meta-node `g` to be
+used within the body of another meta-node `f` even if the definition
+of `g` appears after the definition of `f`. Effectively this allows
+for mutual recursion.
 
 ==== Local Nodes ====
 
-Nodes created within the body of a meta-node are local to the
-meta-node. Local nodes can only be referenced from within the
-meta-node's body even if they have the same identifiers as nodes
-declared in the global scope.
+Nodes local to the meta-node's definition may only be referenced from
+within the definition itself even if they have the same identifiers as
+global nodes. Local nodes are created for each of the argument nodes.
 
-IMPORTANT: A local node is always created on the first reference
-inside the meta-node's body even if a global with the same identifier
-has already been declared. Global nodes can be referenced using the
-outer `..` operator.
+A node reference, within the definition of a meta-node, primarily
+refers to the local node. If there is no local node with that
+identifier, it refers to the node in the enclosing scope. If the
+enclosing scope does not contain a node with that identifier, the
+scope's enclosing scope is searched until the global scope is
+reached. If the node is not found in any enclosing scope a compilation
+error is triggered.
 
-Meta-nodes referenced from within the body, i.e. in a functor
-expression of which the meta-node is an operator, always refer to the
-meta-node defined at global scope unless a meta-node, with the same
-identifier, is defined inside the body.
+Local nodes are created if they appear as the target of a binding,
+whether implicit or explicit. This is the means by which local nodes,
+storing intermediate results are created.
+
+NOTE: The node creation rules inside meta-node definitions differ from
+the node creation rules at the global scope.
+
+TIP: A global node, with the same identifier as a local node, can be
+referenced using the outer `..` operator.
+
 
 .Example: Local Nodes
 --------------------------------------------------
 a + b -> x
+x + y -> n
 
 addx(n) : {
-    # Refers to x that is local to the body
-    # Not the x at global scope.
+    # `n` refers to the local argument node `n`, not the global `n`
+    # `x` refers to the global node `x`
     n + x
 }
 --------------------------------------------------
@@ -728,51 +825,52 @@ factorial(n) :
     )
 --------------------------------------------------
 
+.Example: Local nodes storing intermediate results
+--------------------------------------------------
+x + 1 -> next
+
+factorial(n) :
+
+    # A local node `next` is created since it appears as the target of
+    # a binding. `next` does not refer to the global node of the same
+    # name.
+
+    n - 1 -> next
+
+    case (
+        n > 1 : n * factorial(next),
+        1
+    )
+--------------------------------------------------
+
 ==== Self Node ====
 
-The special `self` node is a local node which is as an alias for the
-meta-node. This node can be used to set the value, to which the
-meta-node evaluates to, using explicit bindings.
+The special `self` node is a local node which represents the
+meta-node's value. This node can be used to set the value, returned by
+the meta-node, using explicit bindings.
 
-Inside the body of a meta-node it is permissible to establish an
-explicit binding with the meta-node as an observer. When an explicit
-binding to the meta-node is established, the meta-node no longer
-evaluates to the value of the last node in its body.
-
-CAUTION: Whilst an explicit binding with the meta-node as an observer
-can be established, the meta-node cannot be a dependency of any node
-in its body.
+When an explicit binding to `self` is established, the meta-node no
+longer returns the value of the last node in its definition.
 
 IMPORTANT: A meta-node may not have more than a single context, see
 <<_contexts, Contexts>>, as it is ambiguous which context's value
 function to use as the meta-node function.
 
-NOTE: In the absence of an explicit binding to the meta-node, the last
-declaration in its body is implicitly bound to the meta-node.
+NOTE: In the absence of an explicit binding to `self`, the last node
+in the meta-node's definition is implicitly bound to `self`.
 
 .Example
 --------------------------------------------------
 factorial(n) : {
-    case (n > 1 : next, 1) -> self
     n * factorial(n - 1) -> next
+    case (n > 1 : next, 1) -> self
 }
 --------------------------------------------------
 
-In the example, above, the value of the `factorial` meta-node is set
-by an explicit binding to the `self` node (in the second line). The
-meta-node no longer evaluates to the value of the last node in the
-declaration list.
-
-[NOTE]
-==================================================
-`self` is merely an alias for the meta-node, in which the declaration
-occurs. The binding to self, in the second line of the previous
-example, may have been declared as follows:
-
---------------------------------------------------
-case (n > 1 : next, 1) -> factorial
---------------------------------------------------
-==================================================
+In the example, above, the value returned by the `factorial` meta-node
+is set by an explicit binding to the `self` node (in the third
+line). The meta-node no longer evaluates to the value of the last node
+in the declaration list.
 
 The `self` node is particularly useful for creating a dictionary of
 values to which the meta-node evaluates to, see <<_subnodes,
@@ -790,7 +888,7 @@ Person(first, last): {
 
 The body of a meta-node can contain other meta-node definitions nested
 inside it. These meta-nodes are local to the body, and can only be
-used inside it, even if the same meta-node identifier is used in an
+used inside it, even if the same meta-node identifier appears in an
 expression outside the body. If a meta-node with the same identifier
 is already defined at global scope, the nested meta-node shadows it in
 the scope of the body. This means that references to the meta-node
@@ -817,40 +915,52 @@ Meta-nodes may be recursive and mutually recursive, i.e. when a
 meta-node `f` contains an instance of another meta-node `g` in its
 definition, and `g` contains an instance of `f` in its definition.
 
-In the case of tail-recursive meta-nodes, a meta-node in contains an
-instance of itself in tail position, the meta-node function is
-guaranteed to consume constant `O(1)` space, regardless of the number
-of recursive calls.
+Each call to a meta-node consumes an amount of stack space, if its
+return value needs to be strictly evaluated to compute the return
+value of the current meta-node. Each call increases the amount of
+stack space used. If, however, the return value of a meta-node is
+evaluated lazily, it does not increase the amount of stack space used,
+since a 'thunk' is returned from the current function, thus freeing
+the amount of stack space consumed by the current call, rather than
+the final value.
 
-A meta-node instance is considered to be in tail position if it
-satisfies one of the following:
+Nodes are strictly evaluated only if it can be proved that their value
+will always be required in order to compute the meta-node's return
+value. If a node's value is only conditionally used, it is evaluated
+lazily.
 
-    - Is the last expression in the meta-node definition.
-    - Is an `if-true` or `if-false` argument of the `if` meta-node,
-      from the `core` module, which is itself in tail position.
-    - Is an argument of a `and` or `or` meta-node, from the `core`
-      module, which is itself in tail position.
+The following are examples of meta-nodes in which one or more of the
+arguments are evaluated lazily:
 
-All instances appearing in tail-position or appearing as the
-`if-true`, `if-false` arguments to the `if` meta-node, from the `core`
-module,
+- In the `if` meta-node, from the `core` module, the `if-true` and
+`if-false` arguments are evaluated lazily since which one is actually
+evaluated depends on the value of the first `test` argument. The
+`test` argument is evaluated strictly as its value is required in
+order to compute the return value of the meta-node.
++
+--------------------------------------------------
+if(test, if-true, if-false)
+--------------------------------------------------
 
-NOTE: Tail Call Elimination for all instances of a given meta-node,
-can be achieved by setting the `async` attribute of the meta-node to
-true. However this feature is still highly experimental and not
-properly tested.
+- In the `and` and `or` meta-nodes, from the `core` module, the first
+  argument is strictly evaluated however the second is lazily
+  evaluated as whether it is actually evaluated depends on the value
+  of the first argument.
++
+--------------------------------------------------
+and(a, b)
+or(a, b)
+--------------------------------------------------
 
 === Outer Node References ===
 
 The value of a node, declared in the global scope, can be referenced
-from within a meta-node with the outer node reference operator
-`..`. This is a special operator which takes a node identifier as an
-argument and searches for a node with that identifier, in each
-enclosing scope, starting with the scope in which the meta-node is
-defined. The first node found is referenced.
-
-CAUTION: If no node with that identifier is found in any enclosing
-scope, a compilation error is signalled.
+from within a meta-node, either directly by its identifier, as
+described in <<_local_nodes, Local Nodes>> or with the outer node
+reference operator `..`. This is a special operator which takes a node
+identifier as an argument and searches for a node with that
+identifier, in each enclosing scope, starting from the scope in which
+the meta-node is defined. The first node found is referenced.
 
 NOTE: It is not necessary for the node to have been declared prior to
 the meta-node definition, as meta-node definitions are only processed
@@ -860,13 +970,13 @@ source file.
 
 .Example
 --------------------------------------------------
-x
+n
 
-# ..(x) references the global x
-addx(n): n + ..(x)
+# ..(n) references the global node `n`
+addn(n): n + ..(n)
 --------------------------------------------------
 
-Referenced outer nodes are treated of as additional implicit or hidden
+Referenced outer nodes are treated as additional implicit or hidden
 arguments, that are added to each instance of the meta-node. The
 result of this is that any change in the referenced nodes, will
 trigger a value update in each instance of the meta-node.
@@ -876,30 +986,30 @@ The previous example can be thought of as:
 --------------------------------------------------
 # Not valid syntax.
 
-# Simply used to illustrate that outer node references are equivalent
-# to additional arguments.
+# Illustrates that outer node references are equivalent to additional
+# arguments.
 
-addx(n, ..(x)) : n + ..(x)
+addn(n, ..(n)) : n + ..(n)
 --------------------------------------------------
 
-Thus the value of `x` is appended to the argument list of all
-instances of `addx`, e.g. `addx(node)` is equivalent to `addx(node,
-x)`.
+Thus the value of `n` is appended to the argument list of all
+instances of `addn`, e.g. `addn(node)` becomes `addn(node, n)`.
 
 Meta-nodes reference all outer nodes referenced by the meta-nodes
 which are used in their body. In the previous example, if a meta-node
-makes use of `addx`, it will also reference the node `x` declared in
+makes use of `addn`, it will also reference the node `n` declared in
 the global scope.
 
 IMPORTANT: Whilst the value of an outer-node can be referenced from
-within the body of a meta-node, bindings involving the node cannot be
-established, from within the body of the meta-node.
+within the body of a meta-node, bindings with the node in target
+position cannot be established, from within the body of the meta-node.
 
 === External Meta-Nodes ===
 
 External meta-nodes are meta-nodes without a definition. They are used
-to call functions defined externally from within Tridash code. The
-special `:extern` declaration creates a meta-node without a definition.
+to call external functions defined outside of Tridash code. The
+special `:extern` declaration creates a meta-node without a
+definition.
 
 .Syntax
 --------------------------------------------------
@@ -915,15 +1025,107 @@ with the same name as the node identifier. If the `public-name`
 attribute of the meta-node is set, a call to the JavaScript function
 with the value of the attribute is generated instead.
 
+=== Macro Nodes ===
+
+A macro-node is a meta-node which is evaluated at compile-time and the
+result is interpreted as a Tridash node declaration.
+
+A meta-node is marked as a macro-node by setting the `macro` attribute
+to true. Once set the meta-node's function will be evaluated on each
+instance of the meta-node. The arguments passed to the function are
+the corresponding node declarations in the functor node
+declaration. Rather than the values of the arguments being passed to
+the function, the raw argument node declarations are passed.
+
+[TIP]
+==================================================
+Attributes are set on meta-nodes in the same way as they are set for
+ordinary nodes. The `macro` attribute of a meta-node `f` is set to
+'true', with the following declaration:
+
+--------------------------------------------------
+:attribute(f, macro, 1)
+--------------------------------------------------
+==================================================
+
+Atom node declarations are represented by a special symbol type and
+functor node declarations are represented as a list with the operator
+in the first element of the list.
+
+The return value of the meta-node function is processed as though it
+is a parsed node declaration appearing in source code.
+
+==== Literal Symbols ====
+
+The special `:quote` operator returns its argument as a literal symbol
+rather than a node declaration. The `'` macro from the core module is
+the preferred shorthand for the `:quote` operator.
+
+.Example
+--------------------------------------------------
+# This is interpreted as the literal symbol `x` rather than the node
+# with identifier `x`.
+
+:quote(x)
+
+# The following is an shorthand for the above
+'(x)
+--------------------------------------------------
+
+These can be used inside macro nodes to insert literal node or
+operator names.
+
+.Example: Definition of `'` macro
+--------------------------------------------------
+'(thing) :
+    list(:quote(:quote), thing)
+
+:attribute(', macro, 1)
+--------------------------------------------------
+
+
+==== Node References ====
+
+Generally a macro-node expands to a declaration involving some other
+meta-node. The meta-node might not be located in the same module, see
+<<_modules,Modules>>, as the module in which the macro-node instance
+occurs. Using the quote operator to generate a declaration involving
+the meta-node may result in a compilation error, if the meta-node is
+not present in the module in which the macro-node instance occurs, or
+may result in a node declaration involving an entirely different
+meta-node, if the module contains a node with the same identifier.
+
+Node objects can be referenced directly with the node reference
+operator, `&`. When the declaration returned by a macro-node contains
+a raw node object, no node lookup is done and the raw node object is
+used as though it has been returned by the node lookup. This is useful
+in macros as the node is looked up once in the same module as the
+macro-node's definition.
+
+
+.Example: Definition of `<-` Macro
+--------------------------------------------------
+<-(target, src) :
+    list(&(->), src, target)
+
+:attribute(<-, macro, 1)
+--------------------------------------------------
+
+The `<-` macro function, in the example above, returns a functor
+declaration where the operator is the node object `->`. When the
+functor declaration is processed, the operator is taken to be the `->`
+node, rather than the node with identifier `->` in the module in which
+the instance is processed.
+
 === Instances as Targets ===
 
 By default, a meta-node instance appearing as the target of a binding,
 that is on the right hand side of the `->` operator, will result in a
 compilation error. You may have noticed, however, that some meta-nodes
 in the <<_core_module, `core`>> module, can also appear as the targets
-of the binding, particularly <<meta-node-int, `int`>>,
-<<meta-node-real, `real`>> and <<meta-node-not, `not`>>. This is
-achieved by setting the `target-node` attribute.
+of the binding, particularly <<meta-node-to-int, `to-int`>>,
+<<meta-node-to-real, `to-real`>> and <<meta-node-to-string,
+`to-string`>>. This is achieved by setting the `target-node` attribute.
 
 The `target-node` attribute stores the identifier of the meta-node,
 which is applied on the value of the meta-node instance, in order to
@@ -932,10 +1134,6 @@ is set, a binding is established between the meta-node instance, as
 the dependency, and each argument node, as the observer. The function
 of the binding context is set to the meta-node with the identifier
 stored in the `target-node` attribute.
-
-NOTE: Currently the `target-node` attribute is only useful for single
-argument nodes as no information about the position of the argument is
-passed to the meta-node.
 
 As an example consider a meta-node `f` with the `target-node`
 attribute set to `g`. A declaration of the form:
@@ -956,27 +1154,40 @@ of the argument nodes can be computed given the result. This is
 achieved by binding to the meta-node instance, with the `target-node`
 attribute set to the _inverse_ function.
 
-The <<meta-node-not, `not`>> meta-node from the `core` module has its
-`target-node` attribute set to `not`. Thus the binding `x -> not(y)`,
-will result in the value of `y` being set to the value `not(x)`, on
-changes in the value of `x`.
+The <<meta-node-to-int, `to-int`>> meta-node from the `core` module
+has its `target-node` attribute set to `int`. Thus the binding `x ->
+to-int(y)`, will result in the value of `y` being set to the value
+`int(x)`, on changes in the value of `x`.
 
 CAUTION: In order for the bindings to the argument nodes, to be
 established, the `:attribute` declaration which sets the `target-node`
 attribute must occur before the first instance of the
 meta-node, however after the meta-node is defined.
 
-[TIP]
-==================================================
-Attributes are set on meta-nodes in the same way as they are set for
-ordinary nodes. To set the `target-node` attribute of a meta-node `f`
-to `g`, use the following declaration:
+=== Target Node Transforms ===
 
---------------------------------------------------
-:attribute(f, target-node, g)
---------------------------------------------------
-==================================================
+The `target-node` attribute allows for a binding of a simple function
+to be established in the reverse direction, from the meta-node
+instance to its argument. However, it lacks the functionality for
+setting a different function for each argument or generating more
+complex binding declarations.
 
+The `target-transform` attribute allows another node to be set as the
+function which is called whenever an instance of the meta-node appears
+as the target of a binding. The function is called with two arguments:
+the 'source' node of the binding and the functor declaration, which
+appears as the 'target' of the binding.
+
+The `target-transform` function should return a declaration which is
+processed instead of the binding declaration. The result is processed
+as though it appears in top-level and unlike with a macro-node, the
+result is not substituted directly in the place of the meta-node
+instance.
+
+NOTE: The 'source' argument is not necessarily the actual source node
+declaration but is generally an atom node with a randomly generated
+identifier which should serve as the source node for the binding
+declarations generated by the `target-transform` node.
 
 == Modules ==
 
@@ -995,7 +1206,7 @@ explicitly.
 
 The current module is changed with the special `:module` operator,
 which takes the identifier of the module as its only argument. If
-there no such module a new module is created.
+there is no such module a new module is created.
 
 .Example
 --------------------------------------------------
@@ -1024,9 +1235,9 @@ relations between modules have to be 'faked' with a separator such as
 
 === Referencing Nodes in Different Modules ===
 
-There are two ways to reference a node in a module different other
-than the current module. One way is to create a 'pseudo-node' for the
-module in the current module, with which nodes in the module can be
+There are two ways to reference a node in a another module, different
+from the current module. One way is to create a 'pseudo-node' for the
+module in the current module. Nodes in the module can then be
 referenced as subnodes of the module's 'pseudo-node'.
 
 ==== Module Pseudo-Nodes ====
@@ -1037,7 +1248,7 @@ identifiers as the modules.
 
 NOTE: Module pseudo-nodes are referred to as such, since syntactically
 they appear the same as any other node, however the value of a module
-pseudo-node cannot be referenced not can bindings involving it be
+pseudo-node cannot be referenced nor can bindings involving it be
 established.
 
 .Syntax
@@ -1049,7 +1260,7 @@ CAUTION: An error is signalled if a node with the same identifier as
 the module already exists in the current module.
 
 Nodes from the 'used' modules can then be referenced as subnodes of
-the modules.
+the module pseudo nodes.
 
 .Example
 --------------------------------------------------
@@ -1065,8 +1276,8 @@ mod1.b -> b
 x -> mod1.b
 --------------------------------------------------
 
-Meta-nodes from a different module can be also be used, by referencing
-the subnode of the module pseudo-node.
+Meta-nodes from a different module can be also referenced as subnodes
+of the module pseudo-node.
 
 .Example
 --------------------------------------------------
@@ -1171,6 +1382,7 @@ The `:import` operator has two forms:
 a -> b
 
 :module(mod2)
+
 # Import node `b` from `mod1`
 :import(mod1, b)
 
@@ -1189,8 +1401,8 @@ identifiers of the nodes to 'export' as arguments.
 :export(node1, node2, ...)
 --------------------------------------------------
 
-Each `:export` declaration adds (does not replace) the nodes in the
-arguments to the exported nodes of the current module.
+Each `:export` declaration adds (does not replace) nodes, in the
+arguments, to the exported nodes of the current module.
 
 .Example: `:export` and short form `:import`
 --------------------------------------------------
@@ -1203,7 +1415,7 @@ a -> b
 
 :module(mod2)
 # Import all nodes exported from `mod1`
-:import(mod1, b)
+:import(mod1)
 
 # Node `b` is the same `b` as in `mod1`
 b -> a
@@ -1235,10 +1447,9 @@ the current module.
 ==== Direct References ====
 
 It may be necessary to reference a node in another module without
-creating a pseudo-node, for its module, in the current module and
-without importing it in the current module. The special `:in` operator
-directly reference a node in another module by the module and node
-identifiers.
+creating a pseudo-node, for its module, and without importing it in
+the current module. The special `:in` operator directly references a
+node in another module by the module and node identifiers.
 
 .Syntax
 --------------------------------------------------
@@ -1246,8 +1457,7 @@ identifiers.
 --------------------------------------------------
 
 The first argument is the identifier of the module containing the
-node, and the second argument is the identifier of the node, to
-reference within the module.
+node, and the second argument is the identifier of the node.
 
 IMPORTANT: `module-id` is the identifier of the module itself, and not
 the identifier of a module pseudo-node.
@@ -1288,18 +1498,24 @@ precedence and associativity of each infix operator. _See <<__functors,
 Functors>> for more information about infix operators, operator
 precedence and associativity_.
 
-Initially all modules are created with the following infix operator
-table (_containing entries for the special operators_):
+Initially the operator table of each module contains a single entry
+which is the special entry for function application. The precedence of
+function application controls whether an expression is treated as the
+operator of a functor or the operand of an infix expression.
 
-[cols="<,>,>", options="header"]
-|====================
-| Operator | Precedence | Associativity
+The precedence of function application is set to `900`. This value
+cannot be changed.
 
-| `.`       | 1000       | left
-| <function application> | 900 |
-| `->`      | 10         | right
-| `:`       | 5          | right
-|====================
+.Example: Precedence of Function Application
+--------------------------------------------------
+# If `.` has a higher precedence than function application, the
+# following is parsed to: ((. m1 add) a b)
+
+# If `.` has a lower precedence than function application, the
+# following is parsed to: (. m1 (add a b))
+
+m1.add(a, b)
+--------------------------------------------------
 
 ==== Registering Infix Operators ====
 
@@ -1330,19 +1546,14 @@ the table already contains an entry for the identifier, the the
 'precedence' and 'associativity' values of the existing entry are
 replaced with those given in the arguments to the `:op` declaration.
 
-TIP: The 'precedence' and 'associativity' of all the special operators
-can be changed, with the exception of 'function application'.
+NOTE: The 'precedence' and 'associativity' of all operators can be
+changed, with the exception of 'function application'.
 
 When a node is imported into the current module and there is an entry,
 for the node's identifier, in the operator table of the module, from
 which the node is being imported, the entry is copied over into the
 current module's operator table, replacing any existing entries for the
 identifier if any.
-
-NOTE: Whilst it is possible to change the 'precedence' and
-'associativity' of the builtin operators, their entries cannot be
-imported into other modules as they are 'special' operators which do
-not correspond to any node.
 
 .Example: `+` infix operator from `core` module
 --------------------------------------------------
