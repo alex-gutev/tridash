@@ -117,6 +117,20 @@ doc/tridashc.1: doc/tridashc.1.adoc
 	- $(A2X) --doctype manpage --format manpage --no-xmllint --destination-dir doc $<
 
 
+doc_files = doc/tridash.adoc \
+	doc/syntax.adoc \
+	doc/semantics.adoc \
+	doc/core-libs.adoc \
+	doc/optimization.adoc
+
+# HTML Documentation
+
+doc/tridash.chunked: $(doc_files)
+	$(A2X) -f chunked --no-xmllint --icons -D doc $<
+
+html: doc/tridash.chunked
+
+
 ## Clean Targets
 
 clean:
@@ -186,7 +200,7 @@ $(srcdir)/test/backends/javascript/runtime/tridash.js: src/backends/javascript/r
 
 ## Phony Targets
 
-.PHONY: all man js-runtime clean distclean maintainer-clean \
+.PHONY: all man html js-runtime clean distclean maintainer-clean \
 	install installdirs install-bin \
 	install-module-build-config install-modules install-data install-man \
 	uninstall \
