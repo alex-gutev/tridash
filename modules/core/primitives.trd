@@ -79,5 +79,5 @@
 
 # Export operators imported from the `builtin` module.
 
-:export(:, ., &, .., prog)
+:export(:, ., &, c, .., prog)
 :export(if)
