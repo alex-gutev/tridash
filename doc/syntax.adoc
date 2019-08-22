@@ -1,9 +1,10 @@
 == Syntax ==
 
 Syntactically a Tridash program consists of a sequence of *node*
-declarations, which are divided into three types: *atom* nodes,
-*functor* nodes and *literal* nodes. Declarations are separated by
-either a semicolon `;` character or a line break.
+declarations, each consisting of a single node expression. Node
+expressions are divided into three types: *atom* nodes, *functor*
+nodes and *literal* nodes. Declarations are separated by a semicolon
+`;` character or a line break.
 
 Anything occurring between a `#` character and the end of the line is
 treated as a comment and is discarded.
@@ -23,14 +24,13 @@ treated as a comment and is discarded.
 <number> = <integer> | <real>
 --------------------------------------------------
 
-[NOTE]
-.Grammar Notation
-==================================================
+[float]
+=== Grammar Notation ===
+
 The grammar notation used in this manual adheres to the following
 conventions:
 
-    - Named syntactical entities are indicated by enclosing the name
-      in angle brackets `<...>`.
+    - Angle brackets `<...>` indicate named syntactical entities.
 
     - `=` designates that the syntactical entity on the left is
       defined by the rules on the right. Multiple definitions of the
@@ -41,9 +41,9 @@ conventions:
 
     - Literal tokens are enclosed in single quotes `'...'`.
 
-    - `..` indicates ranges, e.g. `'0'..'9'` designates the digit
+    - `..` indicates ranges, e.g. `'0'..'9'` indicates the digit
       characters in the range `0` to `9`: `0`, `1`, `2`, `3`, `4`,
-      `5`, `6`, `7,` `8,` `9`.
+      `5`, `6`, `7`, `8`, `9`.
 
     - Rules enclosed in square brackets `[...]` are optional.
 
@@ -52,15 +52,16 @@ conventions:
     - `*` indicates zero or more repetitions of the preceding rule.
 
     - `+` indicates one or more repetitions of the preceding rule.
-==================================================
+
 
 === Atom Nodes ===
 
-An *atom* node consists of a single node identifier. Node identifiers
-may consist of any sequence of characters excluding whitespace, line
-breaks, and the following special characters: `(`, `)`, `{`, `}`, `"`,
-`,`, `.`, `#`. Node identifiers must consist of at least one non-digit
-character, otherwise they are interpreted as numbers.
+An *atom* node consists of a single node identifier, referred to as a
+symbol. Node identifiers may consist of any sequence of characters
+excluding whitespace, line breaks, and the following special
+characters: `(`, `)`, `{`, `}`, `"`, `,`, `.`, `;`, `#`. Node identifiers
+must consist of at least one non-digit character, otherwise they are
+interpreted as numbers.
 
 The following are all examples of valid node identifiers:
 
@@ -73,9 +74,9 @@ The following are not valid node identifiers:
 
     - `123`
     - `a.b`
-    - `j#2`
+    - `j#2` -- Only the `j` is part of an identifier, the `#2` is a comment
     - `1e7` -- As the `e` indicates a real-number in scientific
-      notation. See <<_numbers,Numbers>>.
+      notation. _See <<_numbers, Numbers>>_.
 
 
 === Functors ===
@@ -101,15 +102,16 @@ operator may be placed in infix position, that is between the two
 argument nodes. The operator may only be an *atom* node and must be
 registered as an infix operator.
 
-IMPORTANT: Spaces between the operator and its operands are required,
-in order to distinguish the operator from the operands. This is due to
-the large number of allowed characters in node identifiers.
+IMPORTANT: Spaces between the infix operator and its operands are
+required, in order to distinguish the operator from the operands. This
+is due to there being few restrictions on the characters allowed in
+node identifiers.
 
 IMPORTANT: A line break occurring between the infix operator and its
 right argument is not treated as a declaration separator. However a
 line break between the left argument and infix operator is treated as
 terminating the declaration consisting of the left argument. The
-following line is then treated as a separate declaration.
+following line is then treated as a new separate declaration.
 
 Functor expressions written in infix and prefix form are equivalent,
 thus the following infix functor expression:
@@ -144,12 +146,18 @@ after `*`. The arguments available to it are `a` and `*(b, c)`.
 As a result the infix functor expression is parsed to the following:
 
 --------------------------------------------------
-*(+(a, b), c)
++(a, *(b, c))
 --------------------------------------------------
 
 Use parenthesis to control which arguments are grouped with which
-operators. Thus for an infix expression to be parsed to the above, `a
-+ b` must be surrounded in parenthesis:
+operators. Thus for an infix expression to be parsed to the following,
+, assuming the `*` operator has a greater precedence than `+`:
+
+--------------------------------------------------
+*(+(a, b), c)
+--------------------------------------------------
+
+`a + b` must be surrounded in parenthesis:
 
 --------------------------------------------------
 (a + b) * c
@@ -157,12 +165,12 @@ operators. Thus for an infix expression to be parsed to the above, `a
 
 === Node Lists ===
 
-Multiple node declarations can be syntactically grouped into a single
-node using the `{` and `}` delimiters. All declarations between the
-delimiters are processed and accumulated into a special 'node list'
-syntactic entity. In most contexts the node list is treated as being
-equivalent to the last node declaration before the closing brace `}`,
-however special operators and macros may process node lists in a
+Multiple declarations can be syntactically grouped into a single node
+expression using the `{` and `}` delimiters. All declarations between
+the delimiters are processed and accumulated into a special 'node
+list' syntactic entity. In most contexts the node list is treated as
+being equivalent to the last node expression before the closing brace
+`}`, however special operators and macros may process node lists in a
 different manner.
 
 .Node Lists
@@ -171,7 +179,8 @@ different manner.
 <node list> = '{' <declaration>* '}'
 --------------------------------------------------
 
-IMPORTANT: The end of file may not occur before the closing brace '}'.
+WARNING: Each node list must be terminated by a closing brace `}`
+further on the file otherwise a parse error is triggered.
 
 === Literals ===
 
@@ -196,7 +205,7 @@ is the default if the sign is omitted.
 There are numerous syntaxes for real-valued numbers. The most basic is
 the decimal syntax which comprises an *integer* followed by the
 decimal dot `.` character and a sequence of digits in the range
-`0--9`.
++0--9+.
 
 .Decimal Real Syntax
 --------------------------------------------------
@@ -207,7 +216,7 @@ decimal dot `.` character and a sequence of digits in the range
 
 NOTE: The decimal `.` must be preceded and followed by at-least one
 digit character. Thus `.5` and `1.` are not valid *real* literals,
-`0.5` and `1.0` has to be written instead.
+`0.5` and `1.0` have to be written instead.
 
 The exponent syntax allows a real-number to be specified in scientific
 notation as a magnitude latexmath:[$m$] and exponent latexmath:[$n$] pair
@@ -218,11 +227,11 @@ the exponent as an integer.
 
 .Exponent Syntax
 --------------------------------------------------
-<magnitude-exponent> = (<decimal>|<integer)[e|f|d|l]<integer>
+<magnitude-exponent> = (<decimal>|<integer>)['e'|'f'|'d'|'l']<integer>
 --------------------------------------------------
 
-`e` and `f` indicate single precision floats, `d` indicates double
-precision floats and `l` indicates long precision floats.
+`e` and `f` indicate a single precision floating point number, `d`
+indicates double precision and `l` indicates long precision.
 
 
 ==== Strings ====
@@ -235,7 +244,7 @@ quotes `"..."`.
 <string> = '"'<unicode char>*'"'
 --------------------------------------------------
 
-where `<unicode char>` can be any unicode character.
+where `<unicode char>` can be any Unicode character.
 
 A literal `"` character can appear inside a string if it is preceded
 by the backslash escape character `\`.
@@ -250,10 +259,10 @@ are shorthands for special characters, allowing the character to
 appear in the parsed string without having to write the actual
 character in the string literal.
 
-.Escape Sequnces
+.Escape Sequences
 [options="header"]
 |====================
-| Sequence | Character | Character Code (Hex)
+| Sequence | Character | ASCII Character Code (Hex)
 
 | `\n` | Line Feed (LF) / New Line | `0A`
 | `\r` | Carriage Return (CR) | `0D`
@@ -261,7 +270,7 @@ character in the string literal.
 | `\u{<code>}` | Unicode Character | `<code>`
 |====================
 
-The `\u{<code>}` escape sequence is replaced with the unicode
+The `\u{<code>}` escape sequence is replaced with the Unicode
 character with code (in hexadecimal) `<code>`. There must be an
 opening brace `{` following `\u` otherwise the escape sequence is
 treated as an ordinary literal character escape, in which `\u` is
@@ -272,8 +281,8 @@ it is good practice to insert the closing brace as it clearly delimits
 which characters are to be interpreted as the character code and which
 characters are literal characters.
 
-The `\n`, `\r` and `\t` escape sequences can alternatively be
+TIP: The `\n`, `\r` and `\t` escape sequences can alternatively be
 written as `\u{A}`, `\u{D}` and `\u{9}` respectively.
 
 CAUTION: In a future release, omitting either the opening or closing
-brace may result in a parse error.
+brace, in a Unicode escape sequence, may result in a parse error.
