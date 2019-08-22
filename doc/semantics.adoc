@@ -1,8 +1,8 @@
 == Nodes ==
 
 Semantically a Tridash program is composed of a set of stateful
-components called nodes, with the node's state consisting of its
-value.
+components called nodes, each holding a particular value at a given
+moment in time.
 
 Each node has a set of 'dependency' nodes. A change in the value of at
 least one of the dependency nodes causes the node to recompute its own
@@ -13,8 +13,9 @@ notifies whenever its own value changes.
 
 This 'dependency' -- 'observer' relation is referred to as a binding.
 
-.Glossary
---
+=== Glossary ===
+
+[glossary]
 dependency:: A node `a` is said to be a _dependency_ of node `b` if a
 change in the value of `a` triggers a change in the value of `b`.
 
@@ -31,17 +32,17 @@ is a _dependency_ of `b` or it is an _ancestor_ of a _dependency_ of `b`.
 successor:: A node `a` is said to be a _successor_ of a node `b` if
 `a` is an _observer_ of `b` or it is a successor of an _observer_ of
 `b`.
---
+
 
 === Declaring Nodes ===
 
 In the global scope, nodes are created on the first reference, that is
-when their identifier appears in source code. This can either be a
-declaration consisting of the identifier itself or a functor node
+when their identifier first appears in source code. This can either be
+a declaration consisting of the identifier itself or a functor node
 declaration of which the node is an argument.
 
-IMPORTANT: The `self` identifier is reserved as an alias for other
-nodes, see <<_meta_nodes, Meta-Nodes>>
+CAUTION: The `self` identifier is reserved as an alias for the
+current 'meta-node', _see <<_meta_nodes>>_.
 
 .Examples
 --------------------------------------------------
@@ -60,17 +61,16 @@ definition need not be complete in order for it to be referenced as an
 argument.
 
 Notice that in the last example, above, a node `f(x, y)` was
-created. This node corresponds to the functor node declaration, thus
+created. This node corresponds to the functor node expression, thus
 functors, with the exception of a few special declarations, are nodes
-themselves. From now on a functor node declaration refers only to
-syntactic functor declarations in which the operator refers to a
-function. Declarations in which the operator does not refer to a
-function are referred to as special declarations.
+themselves. From now on a functor node expression refers only to
+functors in which the operator refers to a function. Functor
+expressions in which the operator does not refer to a function are
+referred to as special declarations.
 
 NOTE: Operators which correspond to functions, such as `f` in the
-example above are referred to as meta-nodes and the functor
-declaration as an instance of the meta-node. See <<_meta_nodes,
-Meta-Nodes>>.
+example above are referred to as meta-nodes and the functor expression
+as an instance of the meta-node. See <<_meta_nodes>>.
 
 NOTE: Nodes are also created for functors written in infix form,
 e.g. for the functor `a + b`, the node `+(a, b)` is created.
@@ -96,11 +96,11 @@ simple binding, since the value of `b` is simply set to the value of
 `a`.
 
 NOTE: In an explicit binding declaration the dependency, i.e. the
-left-hand side of the `->` operator, is referred to as the source node
+left-hand side of the `->` operator, is referred to as the 'source' node
 and the observer, i.e. the right-hand side, is referred to as the
-target node.
+'target' node.
 
-NOTE: The bind operator is also registered as an infix operator with
+NOTE: The bind operator is registered as an infix operator with
 precedence *10* and *right* associativity.
 
 TIP: The `->` operator is in the form of an arrow which indicates the
@@ -109,10 +109,11 @@ right.
 
 Functional bindings involve a function of 1 or more argument
 nodes. Functional bindings are created implicitly in functor node
-declarations, with each argument node added as a dependency of the
-functor node. A change in the value of at least one argument node results
-in the value of the functor being updated to the result of
-reevaluating the expression with the new values of the argument nodes.
+expressions, with each argument node added as a dependency of the
+functor node. A change in the value of at least one argument node
+results in the value of the functor node being updated to the result
+of reevaluating the expression with the new values of the argument
+nodes.
 
 .Example
 --------------------------------------------------
@@ -142,8 +143,8 @@ a + 1 -> d
 Node `a` has three observers: `b`, `+(a, n)`, `+(a, 1)`. Each of `b`,
 `+(a, n)` and `+(a, 1)` receives the new value of `a` and immediately
 begins computing its new value. There is no strict sequential ordering
-of the value updating of the observer nodes, the following orderings
-are all possible:
+of the updating of the values of the observer nodes. The following
+orderings are all possible:
 
     - `b`, `+(a, n)`, `+(a, 1)`
     - `+(a, n)`, `b`, `+(a, 1)`
@@ -157,22 +158,22 @@ It is important to note the semantics when nodes share a common
 observer and the change in value of each node is triggered by a common
 ancestor node. A node is said to be 'dirtied' if either its value has
 changed, or at least one of its dependency nodes has been
-'dirtied'. If a node is dirtied, all its observers are dirtied, and
-likewise their observers are dirtied and so on. A node with multiple
-dependencies will only recompute its value when it receives a value
-change notification from each of its dirtied dependency nodes. Thus
-there is no intermediate value where the node's value is recomputed
-before all the dependency nodes have recomputed their values.
+'dirtied'. If a node is 'dirtied', all its observers are 'dirtied',
+and likewise their observers are 'dirtied' and so on. A node with
+multiple dependencies will only recompute its value when it receives a
+value change notification from each of its 'dirtied' dependency
+nodes. Thus there is no intermediate value where the node's value is
+recomputed before all the dependency nodes have recomputed their
+values.
 
-IMPORTANT: This is only the case when the changes in each of the
+CAUTION: This is only the case when the changes in each of the
 dependency nodes are triggered by a change in a common ancestor
 node. These semantics do no apply when the changes in the dependency
 nodes are not triggered by a change in a common ancestor node but by
 multiple simultaneous changes in an ancestor of each dependency,
 unless the changes in each ancestor are the setting of the initial
 values, in which case it is treated as though they have been triggered
-by a single common ancestor. See <<_literal_bindings, Literal
-Bindings>>.
+by a single common ancestor. See <<literal_bindings>>.
 
 .Example
 --------------------------------------------------
@@ -182,8 +183,8 @@ a + 1 -> c
 b + c -> out
 --------------------------------------------------
 
-In the example, above, `a` is a common ancestor of both dependency
-nodes `b` and `c` of node `+(b, c)`. A change in `a` will 'dirty' the
+In the example, above, `a` is a common ancestor of dependency nodes
+`b` and `c` of node `+(b, c)`. A change in `a` will 'dirty' the
 following nodes:
 
  - `a`
@@ -198,17 +199,54 @@ The value of `+(b, c)` will only be recomputed when the values of both
 
 If `b` and `c` did not have the common ancestor `a`, the value of
 `+(b, c)` would be computed on each change in the value of either `b`
-or `c`, regardless of whether the changes in values of `a` and `b` are
+or `c`, regardless of whether the changes in values of `b` and `c` are
 triggered simultaneously or not.
+
+=== Evaluation Strategy ===
+
+The value of a node is not strictly evaluated. This means that a
+node's value is only evaluated if it is actually used. In most cases
+the result of this is that node's are evaluated lazily, that is they
+are evaluated on their first use. However if it can be statically
+determined that a node's value will always be used it may be evaluated
+before its first use.
+
+.Example: Lazy Evaluation in If Conditions
+--------------------------------------------------
+a - b -> d1
+b - a -> d2
+
+if(a > b, d1, d2)
+--------------------------------------------------
+
+In the example, above, `d1` is only evaluated if `a > b` evaluates to
+true. Likewise, `d2` is only evaluated if `a > b` evaluates to
+false. `a > b` is always evaluated as its value is always used. In
+this example, this only results in a performance optimization since
+the values of node's which are not used are not needlessly
+computed. However, if `d1` or `d2` were bound to a recursive meta-node
+call, _see <<_meta_nodes>>_, an infinite loop of recursive calls would
+result had `d1` and `d2` not been evaluated lazily.
+
+A node's value is evaluated at most once. Referencing the node's value
+in more than one location will not cause it to be evaluated more than
+once. This applies to functor nodes as well as atom nodes.
+
+.Example: Multiple Usage of Nodes
+--------------------------------------------------
+# Node `f(x, y)` is used in 2 places however it will only be evaluated
+# once.
+
+f(x, y) + a -> node1
+f(x, y) + b -> node2
+--------------------------------------------------
 
 === Contexts ===
 
 The function which computes a node's value is controlled by the node's
 context at that moment in time. The node context stores information
-about the function, with which, the node's value is computed and which
-of the dependency nodes are operands to the function.
-
-Contexts are created whenever a binding between two nodes is
+about the function and which of the dependency nodes are operands to
+the function. Contexts are created whenever a binding between two nodes is
 established.
 
 The most simple context function is the passthrough, created when a
@@ -223,14 +261,14 @@ a -> b.
 --------------------------------------------------
 
 Contexts with more complex functions, of more than one operand, are
-created on each functor node declaration. The created context has the
+created for each functor node expression. The created context has the
 operator as the context function and the arguments as the context
 operands.
 
 .Functor Node Example
 --------------------------------------------------
 # A functor node `+(a, b)` is created with a `+` context.
-# `a` and `b` are added to the operands of the plus context.
+# `a` and `b` are added to the operands of the `+` context.
 
 a + b
 --------------------------------------------------
@@ -252,7 +290,7 @@ the value of `x` is set to the value of `a`. Similarly when `b` or
 respectively, and `x`'s value is set to the value of `b` or `c`,
 respectively.
 
-[IMPORTANT]
+[WARNING]
 ==================================================
 It is an error for two or more contexts of a single node to be
 activated at the same time. This occurs when either both contexts have
@@ -279,7 +317,7 @@ change in the value of both `b` and `+(a, c)` thus the value to which
 `b` should be set is ambiguous.
 
 Structure checking is performed at compile-time, thus the above
-example, and all such scenarios, would result in a compilation error
+example, and all such scenarios, will result in a compilation error
 along the lines: `Semantic Error: Node x has multiple contexts
 activated by a single common ancestor`.
 ==================================================
@@ -313,7 +351,7 @@ In the case of a change in the value of `a` triggered by a change in
 the value of `b`, only the observer `c` of `a` will be notified of the
 change.
 
-[IMPORTANT]
+[WARNING]
 ==================================================
 Cycles, other than two-way bindings between a pair of nodes, will
 result in a compilation error.
@@ -326,17 +364,19 @@ b -> a
 ==================================================
 
 
+[[literal_bindings,Literal Bindings]]
 ==== Literal Bindings ====
 
 A binding in which the dependency is a literal value, is interpreted
 as setting the initial value of a node. A special `init` context is
-created, which has no operands and simply the literal value as its
+created, which has no operands and has the literal value as its
 function.
 
 Initial values are set on the launch of the application, and are
-treated as an ordinary value change from the value `null` to the
-initial value. The initial active context of the node is the `init`
-context.
+treated as an ordinary value change to the initial value. The initial
+active context of the node is the `init` context. If a node is not
+given an initial value, its initial value is a failure value, _see
+<<_failures>>_.
 
 .Examples
 --------------------------------------------------
@@ -346,10 +386,10 @@ context.
 --------------------------------------------------
 
 IMPORTANT: The setting of the initial values of each node, is treated
-as having been triggered by a single common ancestor node. See
-<<_propagation_of_changes, Propagation of Changes>> for the
-implications of this.
+as having been triggered by a single common ancestor node. _See
+<<_propagation_of_changes>> for the implications of this_.
 
+[[explicit_contexts, Explicit Contexts]]
 ==== Explicit Contexts ====
 
 The context to which a binding is established can be set explicitly
@@ -360,10 +400,10 @@ with the special `:context` operator.
 :context(node, context-id)
 --------------------------------------------------
 
-The effect of this declaration, when it appears as the target of a
+The effect of this expression, when it appears as the target of a
 binding, is that the binding to `node` will be established in the
-context with identifier `context-id`. The identifier can be a single
-symbol or a functor.
+context with identifier `context-id`. The identifier can be a symbol
+or a functor.
 
 .Example
 --------------------------------------------------
@@ -377,9 +417,9 @@ When a `:context` declaration appears in source position it is
 equivalent to an ordinary reference to the `node`.
 
 Multiple bindings to the same explicit context can be established. The
-function of the context becomes the value of the first dependency
-which does not 'fail' to evaluate to a value, _see <<_failures,
-Failures>>._
+function of the context then selects the value of the first
+dependency, ordered by the declaration order in the source file, which
+does not 'fail' to evaluate to a value, _see <<_failures>>._
 
 
 .Example
@@ -395,24 +435,25 @@ c -> :context(node, ctx)
     - The value of `b` if `a` fails to evaluate to a value.
     - The value of `c` if both `a` and `b` fail to evaluate to a value.
 
-If `a`, `b` and `c` all fail to evaluate to a value, `node` fails to
-evaluate to a value.
+If `a`, `b` and `c` all fail to evaluate to a value, `node` evaluates
+to the failure value of `c`.
 
 TIP: The `@` macro from the `core` module, which is a shorthand for the
 `:context` operator, is the preferred way of establishing bindings to
-explicit contexts in source code.
+explicit contexts in source code. _See <<core-module-bindings>>_.
 
 === Failures ===
 
 Failures are a special type of value which represents the absence of a
 value or the failure to compute a value. Failures can either be
 created by 'conditional bindings', in which the condition node
-evaluates to 'false', or by the `fail` meta-node.
+evaluates to 'false', or by the `fail` meta-node, from the `builtin`
+module.
 
-Operations which expect an argument node to evaluate to a value will
-fail if at least one of the arguments fails. In formal terms if the
+Functions which expect an argument node to evaluate to a value will
+fail if at least one of the arguments fails. In formal terms, if the
 result of a function requires that the value of an argument, which
-fails to evaluate to a value, is evaluated, the entire function fails
+fails to evaluate to a value, be evaluated, the entire function fails
 to evaluate to a value. The following are examples of functions which
 fail if at least one of the arguments fails: `+`, `-`, `*`, `/`.
 
@@ -431,14 +472,14 @@ c -> (a -> b)
 --------------------------------------------------
 
 The result of this declaration is that the binding `a -> b` is only
-active if the condition node `c` evaluates to a 'true' value. If `c`
-evaluates to 'false', `b` is not set to the value of `a` but is set to
-a failure value.
+active if the condition node `c` evaluates to a 'true' value, any
+non-zero value. If `c` evaluates to 'false' (`0`), `b` is not set to
+the value of `a` but is set to a failure value.
 
 A binding declaration, with a binding node as the target, changes the
 function of the context of the binding to return a failure value if
 the value of the condition node is 'false'. The binding node `a -> b`
-(`->(a, b))` in prefix notation), is added as a dependency of `b` and
+(`->(a, b)` in prefix notation), is added as a dependency of `b` and
 as an operand of the context corresponding to the binding `a ->
 b`. The binding node is itself an observer of `c` with a simple
 passthrough function. This allows you to reference the 'status' of the
@@ -452,7 +493,7 @@ binding by referencing the binding node, `a -> b`.
 i > 0 -> (i -> j)
 
 # Perform some computation with `j` which is guaranteed to either be a
-# numeric value greater than zero or a fail.
+# numeric value greater than zero or a failure.
 ...
 --------------------------------------------------
 
@@ -461,12 +502,12 @@ parenthesis in `c -> (a -> b)` can be omitted: `c -> a -> b`.
 
 
 Conditional bindings to an explicit context can also be established,
-see <<_explicit_contexts, Explicit Contexts>>. If a condition node
-evaluates to 'false', it is treated as though the corresponding
-dependency node has failed to evaluate to a value. The context's
-function then evaluates to the next dependency which does not fail to
-evaluate to a value. If all condition nodes evaluate to 'false', the
-node fails to evaluate to a value.
+_see <<explicit_contexts>>_. If a condition node evaluates to
+'false', it is treated as though the corresponding dependency node has
+failed to evaluate to a value. The context's function then evaluates
+to the next dependency which does not fail to evaluate to a value. If
+all condition nodes evaluate to 'false', the node fails to evaluate to
+a value.
 
 
 .Example: Conditional Bindings and Explicit Contexts
@@ -501,11 +542,11 @@ type is not provided, the failure returned does not have a type.
 # Bind `b` to `a` if `c` is true
 c -> (a -> :context(b, ctx))
 
-# If `c` is false set `b` to an explicit failure.
+# If `c` is false set `b` to an explicit failure
 fail("my-type") -> :context(b, ctx)
 --------------------------------------------------
 
-The failure type can of a failed value can be retrieved with the
+The failure type of a 'failure value' can be retrieved with the
 `fail-type` meta-node. This meta-node takes a single argument, which
 if it fails to evaluate to a value, returns the failure type
 associated with the failure. If the argument does not fail to evaluate
@@ -526,8 +567,8 @@ special classes of values such as the empty list.
 
 NOTE: Currently failure types are only used, in the core language and
 module, to represent the empty list. In the remaining circumstances,
-in which failures are returned, there is no failure type. This will be
-rectified in the next release.
+in which failures are generated, there is no failure type. This will
+be rectified in the next release.
 
 ==== Conditionally Active Bindings based on Failure Type ====
 
@@ -540,7 +581,8 @@ binding fails with the same failure type as the preceding binding.
 
 TIP: The `@` macro, from the `core` module, contains a shorthand
 syntax for establishing a binding to an explicit context with a test
-function that compares the failure type to a given value.
+function that compares the failure type to a given value. _See
+<<core-module-bindings>>_.
 
 === Input Nodes ===
 
@@ -552,8 +594,8 @@ value computation function. Instead the value of the node is meant to
 be set explicitly through some external event.
 
 Input nodes have to be explicitly designated as such by setting the
-`input` attribute to true. (see <<_attributes,Attributes>> for more
-information about node attributes).
+`input` attribute to true. _See <<_attributes>> for more information
+about node attributes_.
 
 .Example: Setting Input Attribute
 --------------------------------------------------
@@ -563,7 +605,7 @@ a -> b
 :attribute(a, input, 1)
 --------------------------------------------------
 
-CAUTION: A compilation error is signalled if a node has a dependency
+CAUTION: A compilation error is triggered if a node has a dependency
 that is not reachable from any input node, however has at least one
 dependency that is reachable from an input node. The error is not
 signalled if all of the node's dependencies are unreachable from all
@@ -593,28 +635,30 @@ appear in binding declarations or as arguments in functor nodes.
 NOTE: The `attribute` key need not be a string, it may simply be an
 identifier as it is not interpreted as a node.
 
-IMPORTANT: As mentioned previously the `value` must be a literal value
-and may not reference the value of a node, since attributes do not
+IMPORTANT: As mentioned previously the `value` is treated as a literal
+value, not a reference to the value of a node, since attributes do not
 form part of the runtime node's state.
 
 The `input` attribute has already been introduced. The following is a
-listing of some attributes an a summary of their effect:
+listing of some attributes and a summary of their effect:
 
     `input`:: When set to true, designates a node as an input
-    node. See <<_input_nodes,Input Nodes>>.
+    node. _See <<_input_nodes>>_.
     `no-coalesce`:: When set to true, prevents the node from being
-    coalesced into other nodes. See <<_coalescing, Coalescing>>.
+    coalesced into other nodes. _See <<_coalescing>>_.
     `no-remove`:: When set to true, prevents the node from being
     removed.
     `public-name`:: The name with which the runtime node can be
     referenced from non-Tridash code.
-    `macro`:: If set to true the meta-node is treated as a macro node.
+    `macro`:: Indicates that a meta-node is a macro and should be
+    invoked at compile-time. _See <<_macro_nodes>>_.
     `target-node`:: Sets the name of a meta-node to use as the value
-    function, in the contexts of the binding of the meta-node instance
-    (as the source node) to its arguments (as the target nodes).
+    function, in the contexts of the bindings of the meta-node
+    instance (as the source node) to its arguments (as the target
+    nodes). _See <<_instances_as_targets>>_.
     `target-transform`:: The name of a meta-node to invoke if the
     meta-node, of which the attribute is set, appears as the target of
-    a binding.
+    a binding. _See <<_instances_as_targets>>_.
 
 .Examples
 --------------------------------------------------
@@ -638,7 +682,7 @@ identifier.
 <parent node>.<key identifier>
 --------------------------------------------------
 
-TIP: The `.` operator is lexically special in that spaces are not
+NOTE: The `.` operator is lexically special in that spaces are not
 required to separate it from its operand.
 
 NOTE: The `.` infix operator has precedence *1000* and *left*
@@ -646,18 +690,20 @@ associativity.
 
 .Example
 --------------------------------------------------
-string-concat(person.first-name, person.last-name) -> full-name
+string-concat(
+    person.first-name, <1>
+    person.last-name   <2>
+) -> full-name
 --------------------------------------------------
 
-There are two subnode references: the first references the
-`first-name` subnode of the parent node `person` and the second
-references the `last-name` subnode of `person`.
+<1> References the `first-name` subnode of node `person`.
+<2> References the `last-name` subnode of node `person`.
 
 An implicit two-way binding is established between the subnode and
-parent node. The binding in the direction +parent -> subnode+ has a
+parent node. The binding in the direction `parent -> subnode` has a
 value function which extracts the subnode key from the dictionary
-stored in `parent`. The binding in the reverse direction, +subnode ->
-parent+, has a function which creates a dictionary with an entry which
+stored in `parent`. The binding in the reverse direction, `subnode ->
+parent`, has a function which creates a dictionary with an entry which
 has the subnode key as the key and the value of `subnode` as the
 value. This allows a dictionary to be created in the `parent` node by
 establishing an explicit binding with `subnode` as the
@@ -671,10 +717,14 @@ subnode.
 "Smith" -> person.last-name
 --------------------------------------------------
 
-If a subnode fails to evaluate to a value, it does not cause the
-parent node to fail to evaluate to value. The parent node evaluates to
-a dictionary however the dictionary entry, corresponding to the
-subnode, evaluates to a failure.
+The value of a subnode is only evaluated when the value of its
+dictionary entry is referenced. A subnode is not evaluated when only
+the value of its parent node, which evaluates to the dictionary, is
+referenced. _See <<_evaluation_strategy>>_. If a subnode fails to
+evaluate to a value, it does not cause the parent node to fail to
+evaluate to value. The parent node evaluates to a dictionary however
+the dictionary entry, corresponding to the subnode, evaluates to a
+failure. _See <<_failures>>_.
 
 Accessing a non-existent entry, or accessing a subnode of a parent
 node which does not evaluate to a dictionary will result in a failure.
