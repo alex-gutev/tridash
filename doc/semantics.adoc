@@ -731,26 +731,25 @@ node which does not evaluate to a dictionary will result in a failure.
 
 == Meta-Nodes ==
 
-A meta-node is a function, of one or more arguments, which evaluates
-to a value. Meta-nodes are nodes, themselves, however without a
-runtime node object. For the most part you can treat meta-nodes as
-ordinary nodes, e.g. you can set attributes on meta-nodes using the
-same `:attribute` declaration. Referencing the value of a meta-node
+A meta-node is a function, of one or more arguments, which returns a
+value. Meta-nodes are nodes, themselves, however without a runtime
+node object. For the most part you can treat meta-nodes as ordinary
+nodes, e.g. you can set meta-node attributes using the same
+`:attribute` declaration. Referencing the value of a meta-node
 references the meta-node function.
 
 Meta-node identifiers reside in the same namespace as that of ordinary
 nodes, that is you cannot have both an ordinary node and meta-node
-with identifier `f`. If there is a meta-node `f`, the declaration `f`
-references the meta-node.
+with identifier `f`. If there is a meta-node `f`, the node expression
+`f` references the meta-node function.
 
 NOTE: Functor nodes with the meta-node as the operator are referred to
 as instances of the meta-node.
 
 TIP: Meta-nodes are referred to as meta-nodes, since they are nodes
-which describe how to compute the value of other nodes, referred to as
-their instances. Meta-nodes may also be macro-nodes which are
-evaluated at compile-time, with the result being interpreted as
-Tridash code.
+which describe how to compute the value of their instance
+nodes. Meta-nodes may also be macro-nodes which are evaluated at
+compile-time, with the result being interpreted as Tridash code.
 
 === Defining Meta-Nodes ===
 
@@ -771,20 +770,22 @@ identifier of the local node to which the _n_^th^ argument is bound.
 
 CAUTION: Identifiers beginning with `:` are reserved for special
 operators. A meta-node cannot have the same identifier as a special
-operator. Currently no warning or compilation error is triggered
-however that may change in a future release.
+operator. Currently no warning or compilation error is triggered, if
+the identifier begins with `:` but is not a special operator, however
+that may change in a future release.
 
 The body consists of a sequence of ordinary node declarations enclosed
 in braces `{ ... }`. The braces are simply a way of grouping multiple
-declarations into a single declaration, _See <<_node_lists, Node
-Lists>>_. If the body of the meta-node contains just a single
-declaration, the braces may be omitted.
+declarations into a single expression, _See <<_node_lists>>_. If the
+body of the meta-node contains just a single expression, the braces
+may be omitted.
 
-The meta-node function returns value of the last node in the body.
+The meta-node function returns the value of the last node in the body.
 
 .Example
 --------------------------------------------------
-# Evaluates to 1 + `n`
+# Returns 1 + `n`
+
 1+(n) : n + 1
 --------------------------------------------------
 
@@ -826,6 +827,61 @@ used within the body of another meta-node `f` even if the definition
 of `g` appears after the definition of `f`. Effectively this allows
 for mutual recursion.
 
+==== Optional Arguments ====
+
+A node in the argument list, of a meta-node definition, may also be of
+the form `name : value`. This designates that the argument, which is
+bound to local node `name`, is optional. If it is omitted, in an
+instance of the meta-node, the local argument node is set to `value`
+instead.
+
+NOTE: `value` is processed in the global scope as the meta-node
+definition is processed. Thus `value` cannot (as of yet), refer to the
+preceding argument nodes of the meta-node.
+
+The `value` may be omitted, written in prefix form `:(name)`, in which
+case if the argument is omitted, the local argument node is set to a
+failure, _see <<_failures>>_.
+
+.Example
+--------------------------------------------------
+# Increment `x` by 1 or given delta
+
+inc(x, d : 1) : x + d
+
+# Increment `a` by default delta 1
+inc(a)
+
+# Increment `b` by explicit delta 2
+inc(b, 2)
+--------------------------------------------------
+
+IMPORTANT: Optional arguments may only be followed by optional
+arguments or a rest argument. An optional argument may not be followed
+by a required argument.
+
+==== Rest Arguments ====
+
+The last node in the argument list, of a meta-node definition, may
+also be of the form `..(name)`. This designates that the local node
+`name` is bound to the list containing the remaining arguments, on
+which the meta-node is applied, after the last optional or required
+argument. This allows for a variable number of arguments.
+
+.Example
+--------------------------------------------------
+# Add `n` to each remaining argument
+
+add-n(n, ..(xs)) : {
+    inc(x) : x + n
+    map(inc, xs)
+}
+--------------------------------------------------
+
+See <<_lists>> for the documentation of lists and the list processing
+functions.
+
+[[local_nodes,Local Nodes]]
 ==== Local Nodes ====
 
 Nodes local to the meta-node's definition may only be referenced from
@@ -869,7 +925,7 @@ addx(n) : {
 
 factorial(n) :
     case (
-        # The 1- refers to the global 1- meta-node
+        # The `1-` refers to the global `1-` meta-node
         n > 1 : n * factorial(1-(n)),
         1
     )
@@ -902,8 +958,8 @@ the meta-node, using explicit bindings.
 When an explicit binding to `self` is established, the meta-node no
 longer returns the value of the last node in its definition.
 
-IMPORTANT: A meta-node may not have more than a single context, see
-<<_contexts, Contexts>>, as it is ambiguous which context's value
+CAUTION: A meta-node may not have more than a single context, _see
+<<_contexts>>_, as it is ambiguous which context's value
 function to use as the meta-node function.
 
 NOTE: In the absence of an explicit binding to `self`, the last node
@@ -913,18 +969,19 @@ in the meta-node's definition is implicitly bound to `self`.
 --------------------------------------------------
 factorial(n) : {
     n * factorial(n - 1) -> next
-    case (n > 1 : next, 1) -> self
+    case (n > 1 : next, 1) -> self <1>
 }
 --------------------------------------------------
 
+<1> Explicit binding to `self`.
+
 In the example, above, the value returned by the `factorial` meta-node
-is set by an explicit binding to the `self` node (in the third
-line). The meta-node no longer evaluates to the value of the last node
-in the declaration list.
+is set by an explicit binding to the `self` node. The meta-node no
+longer evaluates to the value of the last node in the declaration
+list.
 
 The `self` node is particularly useful for creating a dictionary of
-values to which the meta-node evaluates to, see <<_subnodes,
-Subnodes>>:
+values to which the meta-node evaluates to, _see <<_subnodes>>_:
 
 .Example: Creating Dictionaries
 --------------------------------------------------
@@ -965,37 +1022,32 @@ Meta-nodes may be recursive and mutually recursive, i.e. when a
 meta-node `f` contains an instance of another meta-node `g` in its
 definition, and `g` contains an instance of `f` in its definition.
 
-Each call to a meta-node consumes an amount of stack space, if its
-return value needs to be strictly evaluated to compute the return
-value of the current meta-node. Each call increases the amount of
-stack space used. If, however, the return value of a meta-node is
-evaluated lazily, it does not increase the amount of stack space used,
-since a 'thunk' is returned from the current function, thus freeing
-the amount of stack space consumed by the current call, rather than
-the final value.
-
-Nodes are strictly evaluated only if it can be proved that their value
-will always be required in order to compute the meta-node's return
-value. If a node's value is only conditionally used, it is evaluated
-lazily.
+Each call to a meta-node consumes an amount of stack space. Further
+calls, within the meta-node, increase the amount of stack space if
+they are strictly evaluated. However, if a call to a meta-node is
+conditionally evaluated, i.e. lazily, it does not increase the amount
+of stack space used, since a 'thunk' is returned, rather than the
+final result, thus freeing the amount of stack space used by the
+current call. _See <<_evaluation_strategy>>_.
 
 The following are examples of meta-nodes in which one or more of the
 arguments are evaluated lazily:
 
-- In the `if` meta-node, from the `core` module, the `if-true` and
-`if-false` arguments are evaluated lazily since which one is actually
-evaluated depends on the value of the first `test` argument. The
-`test` argument is evaluated strictly as its value is required in
-order to compute the return value of the meta-node.
+- In the `if` meta-node, from the <<_core_module, `core`>> module, the `if-true` and
+`if-false` arguments are evaluated lazily since only one of the
+arguments is actually evaluated, depending on the value of the first
+`test` argument. The `test` argument is evaluated strictly as its
+value is always required in order to compute the return value of the
+meta-node.
 +
 --------------------------------------------------
 if(test, if-true, if-false)
 --------------------------------------------------
 
-- In the `and` and `or` meta-nodes, from the `core` module, the first
-  argument is strictly evaluated however the second is lazily
-  evaluated as whether it is actually evaluated depends on the value
-  of the first argument.
+- In the `and` and `or` meta-nodes, from the <<_core_module, `core`>>
+  module, the first argument is strictly evaluated however the second
+  is lazily evaluated, as whether it is actually evaluated depends on
+  the value of the first argument.
 +
 --------------------------------------------------
 and(a, b)
@@ -1006,8 +1058,8 @@ or(a, b)
 
 The value of a node, declared in the global scope, can be referenced
 from within a meta-node, either directly by its identifier, as
-described in <<_local_nodes, Local Nodes>> or with the outer node
-reference operator `..`. This is a special operator which takes a node
+described in <<local_nodes>>, or with the outer node reference
+operator (`..`). This is a special operator which takes a node
 identifier as an argument and searches for a node with that
 identifier, in each enclosing scope, starting from the scope in which
 the meta-node is defined. The first node found is referenced.
@@ -1026,10 +1078,11 @@ n
 addn(n): n + ..(n)
 --------------------------------------------------
 
-Referenced outer nodes are treated as additional implicit or hidden
-arguments, that are added to each instance of the meta-node. The
-result of this is that any change in the referenced nodes, will
-trigger a value update in each instance of the meta-node.
+Referenced outer nodes, whether implicitly or by the `..` operator,
+are treated as additional hidden arguments, that are added to the
+argument list of each instance of the meta-node. The result is that
+any change in the values of the referenced nodes, will trigger a value
+update in each instance of the meta-node.
 
 The previous example can be thought of as:
 
@@ -1051,8 +1104,8 @@ makes use of `addn`, it will also reference the node `n` declared in
 the global scope.
 
 IMPORTANT: Whilst the value of an outer-node can be referenced from
-within the body of a meta-node, bindings with the node in target
-position cannot be established, from within the body of the meta-node.
+within the body of a meta-node, bindings with the node as the target
+cannot be established, from within the body of the meta-node.
 
 === External Meta-Nodes ===
 
@@ -1063,10 +1116,19 @@ definition.
 
 .Syntax
 --------------------------------------------------
-:extern(id)
+:extern(id, args...)
 --------------------------------------------------
 
-`id` is the identifier of the meta-node to create.
+[horizontal]
+`id`:: The meta-node identifier
+`args`:: The argument list
+
+The argument list has to be provided in order for the arity of the
+meta-node to be known. The same rules apply for external meta-node
+argument lists as for ordinary meta-node argument lists. Symbols
+designate required arguments, arguments of the form `:(arg, value)`
+designate optional arguments and `..(rest)` designates a rest
+argument. The argument identifiers, however, do not name local nodes.
 
 An external definition for the meta-node has to be provided, and
 linked with the generated code. In the JavaScript backend, instances
@@ -1075,17 +1137,70 @@ with the same name as the node identifier. If the `public-name`
 attribute of the meta-node is set, a call to the JavaScript function
 with the value of the attribute is generated instead.
 
+
+=== Higher-Order Meta-Nodes ===
+
+An atom node expression consisting of the meta-node itself references
+the meta-node's function as a value. This function can be passed to
+other meta-nodes as an argument, or bound to another node.
+
+In a functor expression, in which the operator is not a meta-node but
+is an ordinary node, the function stored in the node's value is
+called. If the operator node does not evaluate to a function, the
+entire functor node fails to evaluate to a value, _see <<_failures>>_.
+
+.Example: Binding Meta-Node to other Nodes
+--------------------------------------------------
+inc(x) : x + 1
+
+inc -> f   <1>
+f(a) -> x  <2>
+--------------------------------------------------
+
+<1> Value function of `inc` meta-node bound to `f` node.
+<2> Function stored in `f` meta-node applied on argument `a`.
+
+_See <<_outer_node_references>> for an example in which a meta-node is
+passed as an argument to another meta-node._
+
+The function of a meta-node which does not have optional arguments or
+outer nodes is effectively a constant, as is the case with the `inc`
+meta-node in the example above. If, however, the meta-node references
+outer nodes, a reference to the meta-node's function also references
+the values of the outer nodes. As such, if a node is bound to the
+meta-node's function, a binding between the outer nodes and the node
+is also established.
+
+.Example: Reference Meta-Node Function with Outer Nodes
+--------------------------------------------------
+# Increments `x` by the global `delta`
+inc(x) : x + delta
+
+inc -> f
+f(a) -> x
+--------------------------------------------------
+
+In the example, above, node `f` is bound to the value function of
+`inc`. However, since `inc` references the global `delta` node, a
+binding between `f` and `delta` is also established. The value
+function of `f` creates a function which invokes the `inc` with the
+value of `delta`. As a result, when the value of `delta` changes, the
+value of `f` is recomputed, and likewise the value of `f(a)` is
+recomputed.
+
+The same semantics apply for optional arguments with default values
+which are not constant literals.
+
 === Macro Nodes ===
 
-A macro-node is a meta-node which is evaluated at compile-time and the
-result is interpreted as a Tridash node declaration.
+A macro-node is a meta-node which is evaluated at compile-time with
+the result is interpreted as a Tridash node declaration.
 
 A meta-node is marked as a macro-node by setting the `macro` attribute
-to true. Once set the meta-node's function will be evaluated on each
-instance of the meta-node. The arguments passed to the function are
-the corresponding node declarations in the functor node
-declaration. Rather than the values of the arguments being passed to
-the function, the raw argument node declarations are passed.
+to true. Once set, the meta-node's function will be evaluated when
+each instance of the meta-node is processed. The arguments passed to
+the function are the raw argument node expressions of the functor node
+expression.
 
 [TIP]
 ==================================================
@@ -1098,8 +1213,8 @@ ordinary nodes. The `macro` attribute of a meta-node `f` is set to
 --------------------------------------------------
 ==================================================
 
-Atom node declarations are represented by a special symbol type and
-functor node declarations are represented as a list with the operator
+Atom node expressions are represented by a special symbol type and
+functor node expressions are represented as a list with the operator
 in the first element of the list.
 
 The return value of the meta-node function is processed as though it
@@ -1107,9 +1222,11 @@ is a parsed node declaration appearing in source code.
 
 ==== Literal Symbols ====
 
-The special `:quote` operator returns its argument as a literal symbol
-rather than a node declaration. The `'` macro from the core module is
-the preferred shorthand for the `:quote` operator.
+The special `:quote` operator returns its argument, treated as a
+literal symbol rather than a node expression.
+
+TIP: The `'` macro from the core module is the preferred shorthand for
+the `:quote` operator.
 
 .Example
 --------------------------------------------------
@@ -1118,7 +1235,7 @@ the preferred shorthand for the `:quote` operator.
 
 :quote(x)
 
-# The following is an shorthand for the above
+# The following is a shorthand for the above
 '(x)
 --------------------------------------------------
 
@@ -1137,8 +1254,8 @@ operator names.
 ==== Node References ====
 
 Generally a macro-node expands to a declaration involving some other
-meta-node. The meta-node might not be located in the same module, see
-<<_modules,Modules>>, as the module in which the macro-node instance
+meta-node. The meta-node might not be located in the same module, _see
+<<_modules>>_, as the module in which the macro-node instance
 occurs. Using the quote operator to generate a declaration involving
 the meta-node may result in a compilation error, if the meta-node is
 not present in the module in which the macro-node instance occurs, or
@@ -1148,8 +1265,8 @@ meta-node, if the module contains a node with the same identifier.
 Node objects can be referenced directly with the node reference
 operator, `&`. When the declaration returned by a macro-node contains
 a raw node object, no node lookup is done and the raw node object is
-used as though it has been returned by the node lookup. This is useful
-in macros as the node is looked up once in the same module as the
+used as though it has been returned by node lookup. This is useful in
+macros as the node is looked up once in the module containing the
 macro-node's definition.
 
 
@@ -1162,28 +1279,46 @@ macro-node's definition.
 --------------------------------------------------
 
 The `<-` macro function, in the example above, returns a functor
-declaration where the operator is the node object `->`. When the
-functor declaration is processed, the operator is taken to be the `->`
+expression where the operator is the node object `->`. When the
+functor expression is processed, the operator is taken to be the `->`
 node, rather than the node with identifier `->` in the module in which
 the instance is processed.
+
+Any node can be referenced including ordinary nodes and
+macro-nodes. Special operators, however, cannot be referenced and have
+to be returned as quoted symbols instead. There is no issue with
+directly quoting the special operator's identifier, in expressions
+returned by macros, as there is for meta-nodes since the meaning of a
+special operator cannot be overridden and does not change with the
+module. Most of the 'special operators' mentioned till this point,
+which are not an identifier prefixed with `:`, such as `->`, `:`, `&`,
+`.`, `..` are actually builtin macro nodes which expand to an internal
+special declaration, thus can be referenced with the `&`
+operator. Special operators beginning with `:`, such as `:attribute`,
+`:op`, `:module` are actual special operators and cannot be referenced
+with `&`.
 
 === Instances as Targets ===
 
 By default, a meta-node instance appearing as the target of a binding,
 that is on the right hand side of the `->` operator, will result in a
 compilation error. You may have noticed, however, that some meta-nodes
-in the <<_core_module, `core`>> module, can also appear as the targets
-of the binding, particularly <<meta-node-to-int, `to-int`>>,
+in the <<_core_module, `core`>> module, can also appear as targets of
+a binding, particularly <<meta-node-to-int, `to-int`>>,
 <<meta-node-to-real, `to-real`>> and <<meta-node-to-string,
-`to-string`>>. This is achieved by setting the `target-node` attribute.
+`to-string`>>. This is achieved by setting the `target-node`
+attribute.
 
-The `target-node` attribute stores the identifier of the meta-node,
-which is applied on the value of the meta-node instance, in order to
-compute the value of the arguments. When the `target-node` attribute
-is set, a binding is established between the meta-node instance, as
-the dependency, and each argument node, as the observer. The function
-of the binding context is set to the meta-node with the identifier
-stored in the `target-node` attribute.
+The `target-node` attribute stores the meta-node, which is applied on
+the value of the meta-node instance, in order to compute the value of
+the arguments. When the `target-node` attribute is set, a binding is
+established between the meta-node instance, as the dependency, and
+each argument node, as the observer. The function of the binding
+context is set to the meta-node stored in the `target-node` attribute.
+
+NOTE: The `target-node` meta-node is looked up immediately when the
+attribute is set, and in the same module in which the `:attribute`
+declaration is processed.
 
 As an example consider a meta-node `f` with the `target-node`
 attribute set to `g`. A declaration of the form:
@@ -1192,11 +1327,15 @@ attribute set to `g`. A declaration of the form:
 x -> f(arg)
 --------------------------------------------------
 
-results in the following binding being established:
+results in the following binding also being established, alongside the
+main binding of `arg -> f(arg)`:
 
 --------------------------------------------------
 g(f(arg)) -> arg
 --------------------------------------------------
+
+NOTE: The functor node `g(f(arg))` is not created, rather `f(arg)` is
+bound to `arg` directly and `g` is set as the value function.
 
 This is useful for creating _invertable_ meta-nodes where instead of
 computing a result given the values of the argument nodes, the values
@@ -1218,25 +1357,23 @@ meta-node, however after the meta-node is defined.
 
 The `target-node` attribute allows for a binding of a simple function
 to be established in the reverse direction, from the meta-node
-instance to its argument. However, it lacks the functionality for
+instance to its arguments. However, it lacks the functionality for
 setting a different function for each argument or generating more
 complex binding declarations.
 
-The `target-transform` attribute allows another node to be set as the
+The `target-transform` attribute allows a meta-node to be set as the
 function which is called whenever an instance of the meta-node appears
 as the target of a binding. The function is called with two arguments:
-the 'source' node of the binding and the functor declaration, which
-appears as the 'target' of the binding.
-
-The `target-transform` function should return a declaration which is
-processed instead of the binding declaration. The result is processed
-as though it appears in top-level and unlike with a macro-node, the
-result is not substituted directly in the place of the meta-node
-instance.
+the 'source' node of the binding and the functor expression, which
+appears as the 'target' of the binding. The function should return a
+declaration which is processed instead of the binding declaration. The
+result is processed as though it appears at top-level and unlike with
+a macro-node, the result is not substituted directly in the place of
+the meta-node instance.
 
 NOTE: The 'source' argument is not necessarily the actual source node
-declaration but is generally an atom node with a randomly generated
-identifier which should serve as the source node for the binding
+declaration but is generally an atom node, with a randomly generated
+identifier, which should serve as the source node for the binding
 declarations generated by the `target-transform` node.
 
 == Modules ==
