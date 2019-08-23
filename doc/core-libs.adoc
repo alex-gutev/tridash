@@ -862,6 +862,46 @@ replaced with a `%`.
 `args`:: The arguments to substitute into the string.
 
 
+=== Introspection ===
+
+The meta-nodes in this section provide functionality for introspecting
+the nodes comprising a program. These meta-nodes may only be used from
+within macro nodes during compilation, and not during runtime.
+
+[[meta-node-nodep]]
+==== Meta-Node: `node?(thing)` ====
+
+Returns true if `thing` is a node object.
+
+`thing`:: The thing to check whether it is a node.
+
+
+==== Meta-Node: `find-node(node, :(module))`
+
+Looks-up a node in a module.
+
+Returns the node object or a failure if no node is found.
+
+`node`:: The node to lookup, which can be any node expression.
+`module` ('Optional'):: The module in which to look-up the
+node. Defaults to the current module, set by the last `:module`
+declaration that is processed.
+
+NOTE: Currently there is no way to retrieve a module object, thus the
+`module` argument is not used. This functionality will be added in a
+future release.
+
+
+==== Meta-Node: `get-attribute(node, attribute)`
+
+Retrieves the value of an attribute of a node.
+
+Returns a failure if the attribute is not set.
+
+`node`:: The node object.
+`attribute`:: The attribute identifier.
+
+
 === Operator Table ===
 
 [cols="<,>,>", options="header"]
