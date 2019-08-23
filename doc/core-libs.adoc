@@ -5,36 +5,34 @@ library.
 
 === Literals ===
 
-[id="macro-node-'"]
-.Macro-Node: `'(x)`
---
+[[macro-node-quote]]
+==== Macro-Node: `'(x)` ====
+
 Interprets `x` as a literal symbol rather than a node declaration.
 
 The same symbol object is returned for a given symbol name.
 
 [horizontal]
 `x`:: An atom node declaration.
---
+
 
 [[macro-node-c]]
-.Macro-Node: `c(x)`
---
+==== Macro-Node: `c(x)` ====
+
 Returns `x` interpreted as a literal character.
 
---
 - If `x` is a symbol of one character, the character is returned.
 - If `x` is a string, the first character in the string is returned.
 - If `x` is an integer in the range 0 -- 9, the character
   corresponding to the digit is returned.
---
 
 [horizontal]
 `x`:: The value to convert to a character.
---
 
-[id="macro-node-&"]
-.Macro-Node: `&(id)`
---
+
+[[macro-node-ref]]
+==== Macro-Node: `&(id)` ====
+
 Returns the raw node object corresponding to the node with identifier
 `id`.
 
@@ -42,13 +40,14 @@ Returns the raw node object corresponding to the node with identifier
 `id`:: The node identifier, which can be any valid node
 declaration. The declaration is processed in the module in which the
 macro node instance occurs.
---
 
+
+[[core-module-bindings]]
 === Bindings ===
 
-[id="macro-node->"]
-.Macro-Node: `->(source, target)`
---
+[[macro-node-lbind]]
+==== Macro-Node: `->(source, target)` ====
+
 Establishes a binding between node `source` and node `target`.
 
 [horizontal]
@@ -57,11 +56,11 @@ Establishes a binding between node `source` and node `target`.
 
 NOTE: Registered as an infix operator with precedence *10* and *right*
 associativity.
---
 
-[id="macro-node-<-"]
-.Macro-Node: `<-(target, source)`
---
+
+[[macro-node-rbind]]
+==== Macro-Node: `<-(target, source)` ====
+
 Establishes a binding between node `source` and node `target`.
 
 Same as `->` however the argument order is reversed with the first
@@ -74,11 +73,11 @@ source node.
 
 NOTE: Registered as an infix operator with precedence *10* and *left*
 associativity.
---
 
-[id="macro-node-@"]
-.Macro-Node: `@(node, context)`
---
+
+[[macro-node-context]]
+==== Macro-Node: `@(node, context)` ====
+
 Indicates an explicit context to which bindings, involving `node` as
 the 'target', should be established.
 
@@ -90,7 +89,7 @@ binding to `node` is established in the context with identifier
 where `context-id` is the context identifier and `type` is a node, of
 which the value is interpreted as a failure type. In this case the
 binding will only be activated if the failure type, of the previous
-binding in the context, is equal to `type` by <<meta-node-=,
+binding in the context, is equal to `type` by <<meta-node-eq,
 `=`>>. _See <<_conditionally_active_bindings_based_on_failure_type,
 Conditionally Active Bindings based on Failure Type>>_.
 
@@ -101,13 +100,13 @@ Conditionally Active Bindings based on Failure Type>>_.
 NOTE: Registered as an infix operator with precedence *800* and *left*
 associativity. The `catch` symbol is also registered as an infix
 operator with precedence *850* and *left* associativity.
---
+
 
 === Meta-Node Definitions ===
 
-[id="macro-node-:"]
-.Macro-Node: `:(id(args...), body)`
---
+[[macro-node-def]]
+==== Macro-Node: `:(id(args...), body)` ====
+
 Defines a meta-node with identifier `id`, argument list `args` and
 definition `body`.
 
@@ -121,32 +120,32 @@ declaration, it should be enclosed in braces, _see <<_node_lists,Node Lists>>_.
 
 NOTE: Registered as an infix operator with precedence *5* and *right*
 associativity.
---
 
-[id="macro-node-.."]
-.Macro-Node: `..(node)`
---
+
+[[macro-node-outer]]
+==== Macro-Node: `..(node)` ====
+
 Explicitly references a node defined in the enclosing scope of the
 meta-node. _See <<_outer_node_references, Outer Node References>>_.
 
 [horizontal]
 `node`:: The node identifier, which can be any valid node declaration.
---
+
 
 === Failures ===
 
 [[meta-node-fail]]
-.Meta-Node: `fail(:(type))`
---
+==== Meta-Node: `fail(:(type))` ====
+
 Returns a failure with a given failure type.
 
 `type` (_Optional_):: The failure type. If not provided the failure returned has no
 type.
---
+
 
 [[meta-node-fail-type]]
-.Meta-Node: `fail-type(x)`
---
+==== Meta-Node: `fail-type(x)` ====
+
 Returns the failure type of `x`.
 
 If `x` does not evaluate to a failure or evaluates to a failure with
@@ -154,55 +153,55 @@ no type, returns a failure.
 
 [horizontal]
 `x`:: The value of which to return the failure type.
---
 
-[id="meta-node-fails?"]
-.Meta-Node: `fails?(x)`
---
+
+[[meta-node-failsp]]
+==== Meta-Node: `fails?(x)` ====
+
 Returns true if `x` fails to evaluate to a value.
 
 [horizontal]
 `x`:: The value to test for failure.
---
 
-[id="meta-node-?"]
-.Meta-Node: `?(x)`
---
+
+[[meta-node-succeedsp]]
+==== Meta-Node: `?(x)` ====
+
 Returns true if `x` evaluates to a value, false if `x` fails to
 evaluate to a value.
 
 [horizontal]
 `x`:: The value to test for failure.
---
 
-[id="meta-node-fail-type?"]
-.Meta-Node: `fail-type?(x, type)`
---
+
+[[meta-node-fail-typep]]
+==== Meta-Node: `fail-type?(x, type)` ====
+
 Tests for failure with a given type.
 
 Returns true if `x` fails with failure type equal to `type`, by
-<<meta-node-=,`=`>>. Returns false if the failure type of `x` is not
+<<meta-node-eq,`=`>>. Returns false if the failure type of `x` is not
 equal to `type` or `x` does not fail.
 
 [horizontal]
 `x`:: The value to check.
 `type`:: The failure type.
---
 
-[id="meta-node-!-"]
-.Meta-Node: `!-(test, value)`
---
+
+[[meta-node-test-fail-bind]]
+==== Meta-Node: `!-(test, value)` ====
+
 Returns `value` if `test` does not fail. If `test` fails, the failure
 is returned.
 
 [horizontal]
 `test`:: The value which is checked for failure.
 `value`:: The value which should be returned if `test` does not fail.
---
 
-[id="macro-node-!"]
-.Macro-Node: `!(functor)`
---
+
+[[macro-node-test-fail-functor]]
+==== Macro-Node: `!(functor)` ====
+
 Tests that each argument of a functor expression does not fail, before
 evaluating the expression.
 
@@ -211,13 +210,13 @@ fails.
 
 [horizontal]
 `functor`:: The functor expression.
---
+
 
 === Arithmetic ===
 
-[id="meta-node-+"]
-.Meta-Node: `+(x, y)`
---
+[[meta-node-plus]]
+==== Meta-Node: `+(x, y)` ====
+
 Computes the sum of `x` and `y`.
 
 [horizontal]
@@ -226,11 +225,11 @@ Computes the sum of `x` and `y`.
 
 NOTE: Registered as an infix operator with precedence *100* and *left*
 associativity.
---
 
-[id="meta-node--"]
-.Meta-Node: `-(x, y)`
---
+
+[[meta-node-minus]]
+==== Meta-Node: `-(x, y)` ====
+
 Computes the difference of `x` and `y`.
 
 [horizontal]
@@ -239,11 +238,11 @@ Computes the difference of `x` and `y`.
 
 NOTE: Registered as an infix operator with precedence *100* and *left*
 associativity.
---
 
-[id="meta-node-*"]
-.Meta-Node: `*(x, y)`
---
+
+[[meta-node-multiply]]
+==== Meta-Node: `*(x, y)` ====
+
 Computes the product of `x` and `y`.
 
 [horizontal]
@@ -252,11 +251,11 @@ Computes the product of `x` and `y`.
 
 NOTE: Registered as an infix operator with precedence *200* and *left*
 associativity.
---
 
-[id="meta-node-/"]
-.Meta-Node: `/(x, y)`
---
+
+[[meta-node-divide]]
+==== Meta-Node: `/(x, y)` ====
+
 Computes the quotient of `x` and `y`.
 
 [horizontal]
@@ -265,13 +264,13 @@ Computes the quotient of `x` and `y`.
 
 NOTE: Registered as an infix operator with precedence *200* and *left*
 associativity.
---
+
 
 === Comparison ===
 
-[id="meta-node-<"]
-.Meta-Node: `<(x, y)`
---
+[[meta-node-lt]]
+==== Meta-Node: `<(x, y)` ====
+
 Returns true if `x` is less than `y`.
 
 [horizontal]
@@ -280,11 +279,11 @@ Returns true if `x` is less than `y`.
 
 NOTE: Registered as an infix operator with precedence *50* and *left*
 associativity.
---
 
-[id="meta-node-<="]
-.Meta-Node: `<=(x, y)`
---
+
+[[meta-node-lte]]
+==== Meta-Node: `<=(x, y)` ====
+
 Returns true if `x` is less than or equal to `y`.
 
 [horizontal]
@@ -293,11 +292,11 @@ Returns true if `x` is less than or equal to `y`.
 
 NOTE: Registered as an infix operator with precedence *50* and *left*
 associativity.
---
 
-[id="meta-node->"]
-.Meta-Node: `>(x, y)`
---
+
+[[meta-node-gt]]
+==== Meta-Node: `>(x, y)` ====
+
 Returns true if `x` is greater than `y`.
 
 [horizontal]
@@ -306,11 +305,11 @@ Returns true if `x` is greater than `y`.
 
 NOTE: Registered as an infix operator with precedence *50* and *left*
 associativity.
---
 
-[id="meta-node->="]
-.Meta-Node: `>=(x, y)`
---
+
+[[meta-node-gte]]
+==== Meta-Node: `>=(x, y)` ====
+
 Returns true if `x` is greater than or equal to `y`.
 
 [horizontal]
@@ -319,21 +318,19 @@ Returns true if `x` is greater than or equal to `y`.
 
 NOTE: Registered as an infix operator with precedence *50* and *left*
 associativity.
---
 
-[id="meta-node-="]
-.Meta-Node: `=(a, b)`
---
+
+[[meta-node-eq]]
+==== Meta-Node: `=(a, b)` ====
+
 Returns true if `a` is equal to `b`.
 
---
 - 'Numbers' are equal if they represent the same numeric
   value.
 - 'Characters' are equal if they represent the same
   character.
 - 'Strings' are equal if they have the same contents.
 - Otherwise `a` and `b` are equal if they evaluate to the same object.
---
 
 [horizontal]
 `x`:: A value.
@@ -341,11 +338,11 @@ Returns true if `a` is equal to `b`.
 
 NOTE: Registered as an infix operator with precedence *50* and *left*
 associativity.
---
 
-[id="meta-node-!="]
-.Meta-Node: `!=(a, b)`
---
+
+[[meta-node-neq]]
+==== Meta-Node: `!=(a, b)` ====
+
 Returns true if `a` is not equal to `b`.
 
 [horizontal]
@@ -354,14 +351,13 @@ Returns true if `a` is not equal to `b`.
 
 NOTE: Registered as an infix operator with precedence *50* and *left*
 associativity.
---
 
 
 === Logical Operators ===
 
 [[meta-node-and]]
-.Meta-Node: `and(x, y)`
---
+==== Meta-Node: `and(x, y)` ====
+
 Logical AND.
 
 Returns the value of `y` if `x` evaluates to true.
@@ -372,11 +368,11 @@ Returns the value of `y` if `x` evaluates to true.
 
 NOTE: Registered as an infix operator with precedence *25* and *left*
 associativity.
---
+
 
 [[meta-node-or]]
-.Meta-Node: `or(x, y)`
---
+==== Meta-Node: `or(x, y)` ====
+
 Logical OR.
 
 Returns the value of `x`, if it evaluates to true, otherwise returns
@@ -388,22 +384,22 @@ the value of `y`.
 
 NOTE: Registered as an infix operator with precedence *20* and *left*
 associativity.
---
+
 
 [[meta-node-not]]
-.Meta-Node: `not(x)`
---
+==== Meta-Node: `not(x)` ====
+
 Logical NOT.
 
 Returns true if `x` evaluates to false.
 
 [horizontal]
 `x`:: A value.
---
+
 
 [[meta-node-if]]
-.Meta-Node: `if(condition, true-value, :(false-value))`
---
+==== Meta-Node: `if(condition, true-value, :(false-value))` ====
+
 
 Returns `true-value` if `condition` is true otherwise returns
 `false-value`.
@@ -416,11 +412,10 @@ evaluates to false.
 `true-value`:: Value to return if `condition` is true.
 `false-value` (_Optional_):: Value to return if `condition` is false. If
 not provided defaults to a failure.
---
+
 
 [[macro-node-case]]
-.Macro-Node: `case(..(clauses))`
---
+==== Macro-Node: `case(..(clauses))` ====
 
 --------------------------------------------------
 <clause> = <condition> : <value>
@@ -462,13 +457,13 @@ case(
 
 if(a < b, -1, if(b > a, 1, 0))
 --------------------------------------------------
---
+
 
 === Types ===
 
 [[meta-node-int]]
-.Meta-Node: `int(x)`
---
+==== Meta-Node: `int(x)` ====
+
 Converts `x` to an *integer* value.
 
     - If `x` is an *integer* returns `x`.
@@ -482,11 +477,11 @@ If `x` is neither of the above returns a failure.
 
 [horizontal]
 `x`:: The value to convert to an integer.
---
+
 
 [[meta-node-real]]
-.Meta-Node: `real(x)`
---
+==== Meta-Node: `real(x)` ====
+
 Converts `x` to a *real* number value.
 
     - If `x` is an *integer* or *real* returns `x`.
@@ -498,89 +493,89 @@ If `x` is neither of the above returns a failure.
 
 [horizontal]
 `x`:: The value to convert to a real.
---
+
 
 [[meta-node-string]]
-.Meta-Node: `string(x)`
---
+==== Meta-Node: `string(x)` ====
+
 Converts `x` to a *string*.
 
 [horizontal]
 `x`:: The value to convert to a string.
---
 
-[id="meta-node-int?"]
-.Meta-Node: `int?(x)`
---
+
+[[meta-node-intp]]
+==== Meta-Node: `int?(x)` ====
+
 Returns true if `x` is an *integer*.
 
 [horizontal]
 `x`:: The value to test.
---
 
-[id="meta-node-real?"]
-.Meta-Node: `real?(x)`
---
+
+[[meta-node-realp]]
+==== Meta-Node: `real?(x)` ====
+
 Returns true if `x` is a *real*.
 
 [horizontal]
 `x`:: The value to test.
---
 
-[id="meta-node-string?"]
-.Meta-Node: `string?(x)`
---
+
+[[meta-node-stringp]]
+==== Meta-Node: `string?(x)` ====
+
 Returns true if `x` is a *string*.
 
 [horizontal]
 `x`:: The value to test.
---
 
-[id="meta-node-inf?"]
-.Meta-Node: `inf?(x)`
---
+
+[[meta-node-infp]]
+==== Meta-Node: `inf?(x)` ====
+
 Returns true if `x` is either positive or negative infinity.
 
 [horizontal]
 `x`:: The value to test.
---
 
-[id="meta-node-NaN?"]
-.Meta-Node: `NaN?(x)`
---
+
+[[meta-node-nanp]]
+==== Meta-Node: `NaN?(x)` ====
+
 Returns true if `x` is a *NaN* value.
 
 [horizontal]
 `x`:: The value to test.
---
+
 
 === Lists ===
 
 [[meta-node-cons]]
-.Meta-Node: `cons(head, tail)`
---
+==== Meta-Node: `cons(head, tail)` ====
+
 Creates a list with the `head` as the first element and `tail` as
 the list of remaining elements.
 
 [horizontal]
 `head`:: The first element of the list.
 `tail`:: The list containing the remaining elements after the first.
---
+
 
 [[meta-node-head]]
-.Meta-Node: head(list)
---
+==== Meta-Node: head(list) ====
+
 Returns the 'head' (first element) of a list.
 
 If `list` is not a list returns a failure value.
 
 [horizontal]
 `list`:: The list.
---
+
 
 [[meta-node-tail]]
-.Meta-Node: `tail(list)`
---
+==== Meta-Node: `tail(list)` ====
+
 Returns the 'tail', the list containing the elements after the first
 element, of a list.
 
@@ -588,11 +583,11 @@ If `list` is not a list returns a failure value.
 
 [horizontal]
 `list`:: The list.
---
 
-[id="meta-node-cons?"]
-.Meta-Node: `cons?(thing)`
---
+
+[[meta-node-consp]]
+==== Meta-Node: `cons?(thing)` ====
+
 Returns true if `thing` is a list of at least one element, false
 otherwise.
 
@@ -600,40 +595,40 @@ NOTE: Does not return true if `thing` is an empty list.
 
 [horizontal]
 `list`:: The list.
---
+
 
 [[meta-node-Empty]]
-.Meta-Node: Empty()
---
+==== Meta-Node: Empty() ====
+
 Returns a failure with type indicating an empty list.
 
 NOTE: The failure type is simply `&(Empty)`, _see <<_node_references,
 Node References>>_.
---
+
 
 [[meta-node-list]]
-.Meta-Node: `list(..(xs))`
---
+==== Meta-Node: `list(..(xs))` ====
+
 Creates a list with elements `xs`.
 
 [horizontal]
 `xs`:: The list elements.
---
 
-[id="meta-node-list*"]
-.Meta-Node: `list*(..(xs))`
---
+
+[[meta-node-list-star]]
+==== Meta-Node: `list*(..(xs))` ====
+
 Creates a list containing, as elements, all the arguments in `xs`
 excluding the last. The last argument in `xs` is treated as a list
 containing the remaining elements.
 
 `xs`:: The list elements, with the last argument being the list
 containing the remaining elements.
---
 
-[id="meta-node-list!"]
-.Meta-Node: `list!(..(xs))`
---
+
+[[meta-node-list-bang]]
+==== Meta-Node: `list!(..(xs))` ====
+
 Creates a list containing, as elements, all the arguments in `xs`.
 
 Unlike `list`, if at least one of `xs` fails to evaluate to a value, a
@@ -641,11 +636,11 @@ failure is returned.
 
 [horizontal]
 `xs`:: The list elements.
---
+
 
 [[meta-node-nth]]
-.Meta-Node: `nth(list, n)`
---
+==== Meta-Node: `nth(list, n)` ====
+
 Retrieves the element of a list at a particular index.
 
 Returns a failure of type <<meta-node-Empty, `Empty`>> if `n` is
@@ -654,22 +649,22 @@ greater than the number of elements in `list`.
 [horizontal]
 `list`:: The list.
 `n`:: The index of the element to retrieved.
---
+
 
 [[meta-node-append]]
-.Meta-Node: `append(list1, list2)`
---
+==== Meta-Node: `append(list1, list2)` ====
+
 Returns a list containing the elements of `list2` appended to
 `list1`.
 
 [horizontal]
 `list1`:: The initial list.
 `list2`:: The list which is appended onto `list1`.
---
 
-[id="meta-node-foldl'"]
-.Meta-Node: `foldl'(x, f, list)`
---
+
+[[meta-node-foldl1]]
+==== Meta-Node: `foldl'(x, f, list)` ====
+
 Folds a list to a single value, starting from the first element.
 
 The function `f` is first applied on `x` and the <<meta-node-head, 'head'>> of
@@ -681,24 +676,24 @@ reached.
 `x`:: Initial first argument to `f`.
 `f`:: Function of two arguments.
 `list`:: List to fold.
---
+
 
 [[meta-node-foldl]]
-.Meta-Node: `foldl(f, list)`
---
+==== Meta-Node: `foldl(f, list)` ====
+
 Folds a list to a single value, starting from the first element.
 
-Same as <<meta-node-foldl',`foldl'`>> except the <<meta-node-head, 'head'>> of `list` is
+Same as <<meta-node-foldl1,`foldl'`>> except the <<meta-node-head, 'head'>> of `list` is
 used as the initial first argument to the fold function `f`.
 
 [horizontal]
 `f`:: Function of two arguments.
 `list`:: List to fold.
---
+
 
 [[meta-node-foldr]]
-.Meta-Node: `foldr(f, l, :(x))`
---
+==== Meta-Node: `foldr(f, l, :(x))` ====
+
 Folds a list to a single value, starting from the last element.
 
 `f` is first applied on the last element of `l` and `x`. If the `x`
@@ -715,11 +710,11 @@ returned as is.
 `f`:: Function of two arguments.
 `l`:: List to fold.
 `x` (_Optional_):: second argument to the application of `f` on the last element of `l`.
---
+
 
 [[meta-node-map]]
-.Meta-Node: `map(f, list)`
---
+==== Meta-Node: `map(f, list)` ====
+
 Applies a function on each element of a list.
 
 Returns a list containing the result of applying `f` on each element
@@ -728,11 +723,11 @@ of `list` in turn.
 [horizontal]
 `f`:: Function of one argument.
 `list`:: The list.
---
+
 
 [[meta-node-filter]]
-.Meta-Node: `filter(f, list)`
---
+==== Meta-Node: `filter(f, list)` ====
+
 Filters elements from a list.
 
 Returns a list containing only the elements of `list` for which the
@@ -744,53 +739,53 @@ argument should be retained in the list or false if it should be
 removed.
 
 `list`:: The list to filter.
---
 
-[id="meta-node-every?"]
-.Meta-Node: `every?(f, list)`
---
+
+[[meta-node-everyp]]
+==== Meta-Node: `every?(f, list)` ====
+
 Returns true if `f` returns true for every element of `list`.
 
 [horizontal]
 `f`:: Function of one argument.
 `list`:: The list.
---
 
-[id="meta-node-some?"]
-.Meta-Node: `some?(f, list)`
---
+
+[[meta-node-somep]]
+==== Meta-Node: `some?(f, list)` ====
+
 Returns true if `f` returns true for at least one element of `list`.
 
 [horizontal]
 `f`:: Function of one argument.
 `list`:: The list.
---
 
-[id="meta-node-not-any?"]
-.Meta-Node: `not-any?(f, list)`
---
+
+[[meta-node-not-anyp]]
+==== Meta-Node: `not-any?(f, list)` ====
+
 Returns true if `f` returns false for every element of `list`.
 
 [horizontal]
 `f`:: Function of one argument.
 `list`:: The list.
---
 
-[id="meta-node-not-every?"]
-.Meta-Node: `not-every?(f, list)`
---
+
+[[meta-node-not-everyp]]
+==== Meta-Node: `not-every?(f, list)` ====
+
 Returns true if `f` returns false for at least one element of `list`.
 
 [horizontal]
 `f`:: Function of one argument.
 `list`:: The list.
---
+
 
 === Strings ===
 
 [[meta-node-string-at]]
-.Meta-Node: `string-at(string, index)`
---
+==== Meta-Node: `string-at(string, index)` ====
+
 Returns the character at a given index in the string.
 
 If the index is greater than the number of characters in this string,
@@ -799,31 +794,31 @@ returns a failure.
 [horizontal]
 `string`:: The string.
 `index`:: The index of the character.
---
+
 
 [[meta-node-string-concat]]
-.Meta-Node: `string-concat(string, str1, str2)`
---
+==== Meta-Node: `string-concat(string, str1, str2)` ====
+
 Concatenates `str2` to the end of `str1`.
 
 [horizontal]
 `str1`:: The first string.
 `str2`:: The string which is concatenated to `str1`.
 
---
 
-[id="meta-node-string->list"]
-.Meta-Node: `string->list(string)`
---
+
+[[meta-node-string-to-list]]
+==== Meta-Node: `string->list(string)` ====
+
 Returns a list containing the characters in a string.
 
 [horizontal]
 `string`:: The string.
---
 
-[id="meta-node-list->string"]
-.Meta-Node: `list->string(list)`
---
+
+[[meta-node-list-to-string]]
+==== Meta-Node: `list->string(list)` ====
+
 Returns a string containing the concatenation of the elements in a list.
 
 Each element of `list` is converted to a string and concatenated to
@@ -831,11 +826,11 @@ the result string.
 
 [horizontal]
 `list`:: List of elements to concatenate.
---
+
 
 [[meta-node-format]]
-.Meta-Node: `format(string, ..(args))`
---
+==== Meta-Node: `format(string, ..(args))` ====
+
 Creates a formatted string, with the placeholders in the string
 replaced by the arguments in `args`.
 
@@ -851,7 +846,7 @@ replaced with a `%`.
 [horizontal]
 `string`:: The format string.
 `args`:: The arguments to substitute into the string.
---
+
 
 === Operator Table ===
 
