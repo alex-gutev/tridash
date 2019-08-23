@@ -10,10 +10,10 @@ library.
 
 Interprets `x` as a literal symbol rather than a node declaration.
 
-The same symbol object is returned for a given symbol name.
+The same symbol object is always returned for a given symbol name.
 
 [horizontal]
-`x`:: An atom node declaration.
+`x`:: An atom node expression.
 
 
 [[macro-node-c]]
@@ -21,24 +21,26 @@ The same symbol object is returned for a given symbol name.
 
 Returns `x` interpreted as a literal character.
 
+--
 - If `x` is a symbol of one character, the character is returned.
 - If `x` is a string, the first character in the string is returned.
 - If `x` is an integer in the range 0 -- 9, the character
   corresponding to the digit is returned.
+--
 
 [horizontal]
 `x`:: The value to convert to a character.
 
 
 [[macro-node-ref]]
-==== Macro-Node: `&(id)` ====
+==== Macro-Node: `&(node)` ====
 
 Returns the raw node object corresponding to the node with identifier
-`id`.
+`node`.
 
 [horizontal]
-`id`:: The node identifier, which can be any valid node
-declaration. The declaration is processed in the module in which the
+`node`:: The node identifier, which can be any valid node
+expression. The expression is processed in the module in which the
 macro node instance occurs.
 
 
@@ -63,7 +65,7 @@ associativity.
 
 Establishes a binding between node `source` and node `target`.
 
-Same as `->` however the argument order is reversed with the first
+Same as <<macro-node-lbind,`->`>> however the argument order is reversed with the first
 argument being the target node and the second argument being the
 source node.
 
@@ -81,17 +83,16 @@ associativity.
 Indicates an explicit context to which bindings, involving `node` as
 the 'target', should be established.
 
-When the `@` declaration appears as the target of a binding, the
-binding to `node` is established in the context with identifier
-`context`, _see <<_contexts, Contexts>>_.
+When the `@` expression appears as the target of a binding, the binding
+to `node` is established in the context with identifier `context`,
+_see <<_contexts>>_.
 
 `context` may also be a functor of the form `catch(context-id, type)`,
 where `context-id` is the context identifier and `type` is a node, of
 which the value is interpreted as a failure type. In this case the
 binding will only be activated if the failure type, of the previous
 binding in the context, is equal to `type` by <<meta-node-eq,
-`=`>>. _See <<_conditionally_active_bindings_based_on_failure_type,
-Conditionally Active Bindings based on Failure Type>>_.
+`=`>>. _See <<conditional_binding_fail_type>>_.
 
 [horizontal]
 `node`:: The node.
@@ -108,15 +109,15 @@ operator with precedence *850* and *left* associativity.
 ==== Macro-Node: `:(id(args...), body)` ====
 
 Defines a meta-node with identifier `id`, argument list `args` and
-definition `body`.
+definition `body`. _See <<_meta_nodes>>_.
 
 [horizontal]
 `id`:: Meta-node identifier.
 `args`:: Comma-separated list of node identifiers, to which the
 meta-node arguments are bound.
-`body`:: Node declaration making up the definition of the
-meta-node. If the definition consists of more than a single
-declaration, it should be enclosed in braces, _see <<_node_lists,Node Lists>>_.
+`body`:: Node expression making up the definition of the meta-node. If
+the definition consists of more than a single expression, it should be
+enclosed in braces, _see <<_node_lists,Node Lists>>_.
 
 NOTE: Registered as an infix operator with precedence *5* and *right*
 associativity.
@@ -126,10 +127,10 @@ associativity.
 ==== Macro-Node: `..(node)` ====
 
 Explicitly references a node defined in the enclosing scope of the
-meta-node. _See <<_outer_node_references, Outer Node References>>_.
+meta-node. _See <<_outer_node_references>>_.
 
 [horizontal]
-`node`:: The node identifier, which can be any valid node declaration.
+`node`:: The node identifier, which can be any valid node expression.
 
 
 === Failures ===
@@ -148,8 +149,8 @@ type.
 
 Returns the failure type of `x`.
 
-If `x` does not evaluate to a failure or evaluates to a failure with
-no type, returns a failure.
+Returns a failure if `x` does not evaluate to a failure or evaluates
+to a failure with no type.
 
 [horizontal]
 `x`:: The value of which to return the failure type.
@@ -205,8 +206,7 @@ is returned.
 Tests that each argument of a functor expression does not fail, before
 evaluating the expression.
 
-If at least one argument fails, then the entire functor expression
-fails.
+If at least one argument fails, then the entire functor node fails.
 
 [horizontal]
 `functor`:: The functor expression.
@@ -325,12 +325,14 @@ associativity.
 
 Returns true if `a` is equal to `b`.
 
+--
 - 'Numbers' are equal if they represent the same numeric
   value.
 - 'Characters' are equal if they represent the same
   character.
 - 'Strings' are equal if they have the same contents.
 - Otherwise `a` and `b` are equal if they evaluate to the same object.
+--
 
 [horizontal]
 `x`:: A value.
@@ -344,6 +346,8 @@ associativity.
 ==== Meta-Node: `!=(a, b)` ====
 
 Returns true if `a` is not equal to `b`.
+
+_See <<meta-node-eq,`=`>> for the rules of equality_.
 
 [horizontal]
 `x`:: A value.
@@ -407,7 +411,6 @@ Returns `true-value` if `condition` is true otherwise returns
 If `false-value` is not provided, a failure is returned if `condition`
 evaluates to false.
 
-[horizontal]
 `condition`:: The condition.
 `true-value`:: Value to return if `condition` is true.
 `false-value` (_Optional_):: Value to return if `condition` is false. If
@@ -425,10 +428,10 @@ Expands to nested <<meta-node-if,`if`>> expressions.
 
 Each argument is a `clause` is of the form `condition : value`. The
 `case` expression evaluates to the `value` corresponding to the first
-clause of which the `condition` evaluates to true. The final clause
-may also simply be of the form `value`, in which case it becomes the
+clause of which the `condition` node evaluates to true. The final
+clause may also be of the form `value`, in which case it becomes the
 default value, to which the `case` expression evaluates if the
-`condition`'s of all clauses evaluate to false.
+conditions of all the other clauses evaluate to false.
 
 [horizontal]
 `clauses`:: The clauses.
@@ -551,6 +554,15 @@ Returns true if `x` is a *NaN* value.
 
 === Lists ===
 
+Lists are represented by a special `cons` type, in which the 'head'
+stores the first element of the list and the 'tail' stores the list of
+remaining elements. Neither the 'head' nor the 'tail' are evaluated
+until they are actually referenced and used.
+
+The end of list is represented by a failure with the type being a node
+reference to the meta-node <<meta-node-Empty, `Empty`>> (`&(Empty)`).
+
+
 [[meta-node-cons]]
 ==== Meta-Node: `cons(head, tail)` ====
 
@@ -602,8 +614,7 @@ NOTE: Does not return true if `thing` is an empty list.
 
 Returns a failure with type indicating an empty list.
 
-NOTE: The failure type is simply `&(Empty)`, _see <<_node_references,
-Node References>>_.
+NOTE: The failure type is `&(Empty)`, _see <<node_references>>_.
 
 
 [[meta-node-list]]
@@ -622,6 +633,7 @@ Creates a list containing, as elements, all the arguments in `xs`
 excluding the last. The last argument in `xs` is treated as a list
 containing the remaining elements.
 
+[horizontal]
 `xs`:: The list elements, with the last argument being the list
 containing the remaining elements.
 
@@ -692,24 +704,26 @@ used as the initial first argument to the fold function `f`.
 
 
 [[meta-node-foldr]]
-==== Meta-Node: `foldr(f, l, :(x))` ====
+==== Meta-Node: `foldr(f, list, :(x))` ====
 
 Folds a list to a single value, starting from the last element.
 
-`f` is first applied on the last element of `l` and `x`. If the `x`
-argument is not provided or `x` fails to evaluate to a value, `f` is
-first applied on the last two elements of `l`. Subsequently `f` is
-applied on the previous element of `l` and the result of the previous
-application, until the beginning of list `l` is reached.
+`f` is first applied on the last element of `list` and the value of
+`x`. If the `x` argument is not provided or `x` fails to evaluate to a
+value, `f` is first applied on the last two elements of
+`list`. Subsequently `f` is applied on the previous element of `list`
+and the result of the previous application, until the 'head' of list
+`list` is reached.
 
-If `l` only has a single element and `x` is not provided, the element
-is returned as is. If `l` is empty and `x` is provided, `x` is
+If `list` only has a single element and `x` is not provided, the
+element is returned as is. If `l` is empty and `x` is provided, `x` is
 returned as is.
 
 
 `f`:: Function of two arguments.
-`l`:: List to fold.
-`x` (_Optional_):: second argument to the application of `f` on the last element of `l`.
+`list`:: List to fold.
+`x` (_Optional_):: Second argument to the application of `f` on the
+last element of `list`.
 
 
 [[meta-node-map]]
@@ -731,7 +745,7 @@ of `list` in turn.
 Filters elements from a list.
 
 Returns a list containing only the elements of `list` for which the
-function `f` returns true,
+function `f` returns true.
 
 [horizontal]
 `f`:: Function of one argument, which should return true if the
@@ -831,8 +845,8 @@ the result string.
 [[meta-node-format]]
 ==== Meta-Node: `format(string, ..(args))` ====
 
-Creates a formatted string, with the placeholders in the string
-replaced by the arguments in `args`.
+Creates a formatted string, in which placeholders are replaced by the
+arguments in `args`.
 
 The sequence `%s` designates a placeholder which is to be replaced by
 an argument. The first placeholder is replaced by the first argument,
@@ -855,8 +869,8 @@ replaced with a `%`.
 | Operator | Precedence | Associativity
 
 | `.`       | 1000       | left
-| `@`       | 800        | left
 | `catch`   | 850        | left
+| `@`       | 800        | left
 | `*`       | 200        | left
 | `/`       | 200        | left
 | `+`       | 100        | left

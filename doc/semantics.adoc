@@ -570,6 +570,7 @@ module, to represent the empty list. In the remaining circumstances,
 in which failures are generated, there is no failure type. This will
 be rectified in the next release.
 
+[[conditional_binding_fail_type,Conditionally Active Bindings based on Failure Type]]
 ==== Conditionally Active Bindings based on Failure Type ====
 
 The special `:context` operator takes an optional third argument which
@@ -1251,6 +1252,7 @@ operator names.
 --------------------------------------------------
 
 
+[[node_references, Node References]]
 ==== Node References ====
 
 Generally a macro-node expands to a declaration involving some other
