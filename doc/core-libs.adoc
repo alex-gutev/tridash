@@ -507,6 +507,60 @@ Converts `x` to a *string*.
 `x`:: The value to convert to a string.
 
 
+[[meta-node-to-int]]
+==== Meta-Node: `to-int(x)` ====
+
+Converts `x` to an *integer* value.
+
+Same as <<meta-node-int,`int`>> however with the `target-node`
+attribute set to <<meta-node-int,`int`>>. As such, in the following:
+
+--------------------------------------------------
+a -> to-int(b)
+--------------------------------------------------
+
+Node `b` is set to the value of `a` converted to an integer.
+
+[horizontal]
+`x`:: The value to convert.
+
+
+[[meta-node-to-real]]
+==== Meta-Node: `to-real(x)` ====
+
+Converts `x` to an *real* number value.
+
+Same as <<meta-node-real,`real`>> however with the `target-node`
+attribute set to <<meta-node-real,`real`>>. As such, in the following:
+
+--------------------------------------------------
+a -> to-real(b)
+--------------------------------------------------
+
+Node `b` is set to the value of `a` converted to a real number.
+
+[horizontal]
+`x`:: The value to convert.
+
+
+[[meta-node-to-string]]
+==== Meta-Node: `to-string(x)` ====
+
+Converts `x` to an *integer* value.
+
+Same as <<meta-node-string,`string`>> however with the `target-node`
+attribute set to <<meta-node-string,`string`>>. As such, in the following:
+
+--------------------------------------------------
+a -> to-string(b)
+--------------------------------------------------
+
+Node `b` is set to the value of `a` converted to a string.
+
+[horizontal]
+`x`:: The value to convert.
+
+
 [[meta-node-intp]]
 ==== Meta-Node: `int?(x)` ====
 
@@ -873,10 +927,11 @@ within macro nodes during compilation, and not during runtime.
 
 Returns true if `thing` is a node object.
 
+[horizontal]
 `thing`:: The thing to check whether it is a node.
 
 
-==== Meta-Node: `find-node(node, :(module))`
+==== Meta-Node: `find-node(node, :(module))` ====
 
 Looks-up a node in a module.
 
@@ -892,12 +947,13 @@ NOTE: Currently there is no way to retrieve a module object, thus the
 future release.
 
 
-==== Meta-Node: `get-attribute(node, attribute)`
+==== Meta-Node: `get-attribute(node, attribute)` ====
 
 Retrieves the value of an attribute of a node.
 
 Returns a failure if the attribute is not set.
 
+[horizontal]
 `node`:: The node object.
 `attribute`:: The attribute identifier.
 
