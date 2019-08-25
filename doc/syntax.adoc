@@ -180,7 +180,7 @@ different manner.
 --------------------------------------------------
 
 WARNING: Each node list must be terminated by a closing brace `}`
-further on the file otherwise a parse error is triggered.
+further on in the file otherwise a parse error is triggered.
 
 === Literals ===
 
