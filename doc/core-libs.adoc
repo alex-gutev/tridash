@@ -1126,6 +1126,7 @@ module, thus they have to be imported manually if they are to be used
 in another module.
 
 
+[[meta-node-Pattern]]
 ==== Meta-Node: `Pattern(condition, :(binding))` ====
 
 Creates a `Pattern` object. _See <<matchers>>_
@@ -1138,6 +1139,7 @@ established by the pattern. Defaults to the empty list if not
 provided.
 
 
+[[meta-node-get-matcher]]
 ==== Meta-Node: `get-matcher(node)` ====
 
 Returns the 'matcher' function, stored in the `matcher` attribute of a
@@ -1149,6 +1151,7 @@ Returns a failure if the node's `matcher` attribute is not set.
 `node`:: The node object of which to retrieve the 'matcher'.
 
 
+[[meta-node-make-pattern]]
 ==== Meta-Node: `make-pattern(place, pattern)` ====
 
 Creates the `Pattern` object for a pattern expression.
@@ -1165,6 +1168,7 @@ not a `meta-node` with a `matcher`, a `Pattern` with a single binding
 `place -> pattern`, and no `condition` is returned.
 
 
+[[meta-node-combine-conditions]]
 ==== Meta-Node: `combine-conditions(c1, c2)` ====
 
 Returns an expression which is the conjunction of two expression, by
@@ -1180,6 +1184,7 @@ TIP: This is useful for creating a condition which combines the
 conditions of multiple argument nodes.
 
 
+[[meta-node-conditionalize-bindings]]
 ==== Meta-Node: conditionalize-bindings(condition, bindings) ====
 
 Returns a list where each binding in `bindings` is conditioned on
@@ -1189,6 +1194,7 @@ Returns a list where each binding in `bindings` is conditioned on
 `bindings`:: List of bindings to condition.
 
 
+[[meta-node-make-pattern-declarations]]
 ==== Meta-Node: make-pattern-declarations(pattern) ====
 
 Creates the node declarations implementing a pattern.
