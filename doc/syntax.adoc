@@ -147,7 +147,9 @@ Each node registered as an infix operator has, associated with it, a
 precedence and associativity. The precedence is a number that controls
 the priority with which the operator consumes its arguments. Operators
 with a higher precedence consume arguments before operators with a
-lower precedence.
+lower precedence. The associativity controls whether the operands are
+grouped starting from the left or right, in an expression containing
+multiple instances of the same infix operator.
 
 --------------------------------------------------
 a + b * c
