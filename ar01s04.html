@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>4. Modules</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="prev" href="ar01s03.html" title="3. Meta-Nodes" /><link rel="next" href="ar01s05.html" title="5. Core Module" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s03.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s05.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_modules"></a>4. Modules</h2></div></div></div><p><a id="idm10245823840" class="indexterm"></a></p><p>Modules provide a means of avoiding name collisions between nodes. A
+module is a namespace which contains all global nodes, including
+meta-nodes, created in it. A node with identifier <code class="literal">x</code> in a module <code class="literal">m1</code>
+is distinct from a node with the same identifier <code class="literal">x</code> in another module
+<code class="literal">m2</code>.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_creating_modules"></a>4.1. Creating Modules</h3></div></div></div><p><a id="idm10245818768" class="indexterm"></a>
+<a id="idm10245817520" class="indexterm"></a>
+<a id="idm10245816528" class="indexterm"></a>
+<a id="idm10245815024" class="indexterm"></a>
+<a id="idm10245813776" class="indexterm"></a></p><p>Each new node, that is created as a result of processing a declaration
+in the source file, is added to the current module. Initially the
+current module is a nameless <code class="literal">init</code> module until it is changed
+explicitly.</p><p>The current module is changed with the special <code class="literal">:module</code> operator,
+which takes the identifier of the module as its only argument. If
+there is no such module a new module is created.</p><p><strong>Example. </strong>
+</p><pre class="screen"># Change to module with identifier `mod1`
+:module(mod1)
+
+# Nodes `a` and `b` added to `mod1`
+a -&gt; b
+
+# Change to module with identifier `mod2`
+:module(mod2)
+
+# Nodes `a` and `b` added to `mod2`
+# Distinct nodes from nodes `a` and `b` in `mod1`
+a -&gt; b</pre><p>
+</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Module identifiers reside in a different namespace from node
+identifiers, thus there is no risk of collision between a node and
+module with the same identifier, unless a pseudo-node for the module
+is added to the module containing the node.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Modules reside in a single global, flat namespace. Hierarchical
+relations between modules have to be <span class="emphasis"><em>faked</em></span> with a separator such as
+<code class="literal">/</code>, e.g. <code class="literal">module/submodule</code>.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_referencing_nodes_in_different_modules"></a>4.2. Referencing Nodes in Different Modules</h3></div></div></div><p>There are two ways to reference a node in a another module, different
+from the current module. One way is to create a <span class="emphasis"><em>pseudo-node</em></span> for the
+module in the current module. Nodes in the module can then be
+referenced as subnodes of the module’s <span class="emphasis"><em>pseudo-node</em></span>.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_module_pseudo_nodes"></a>Module Pseudo-Nodes</h4></div></div></div><p><a id="idm10245801680" class="indexterm"></a>
+<a id="idm10245800432" class="indexterm"></a>
+<a id="idm10245799440" class="indexterm"></a>
+<a id="idm10245797936" class="indexterm"></a>
+<a id="idm10245796688" class="indexterm"></a></p><p>The special <code class="literal">:use</code> operator creates pseudo-nodes for the modules
+passed as arguments. The pseudo-nodes are created with the same
+identifiers as the modules.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Module pseudo-nodes are referred to as such, since syntactically
+they are the same as any other node, however the value of a module
+pseudo-node cannot be referenced nor can bindings involving it be
+established.</p></td></tr></table></div><p><strong>Syntax. </strong>
+</p><pre class="screen">:use(mod1, mod2, ...)</pre><p>
+</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>An error is triggered if a node with the same identifier as
+the module already exists in the current module.</p></td></tr></table></div><p>Nodes from the <span class="emphasis"><em>used</em></span> modules can then be referenced as subnodes of
+the module pseudo nodes.</p><p><strong>Example. </strong>
+</p><pre class="screen">:module(mod1)
+
+a -&gt; b
+
+:module(mod2)
+:use(mod1)
+
+# Reference node `b` from module `mod1`
+mod1.b -&gt; b
+x -&gt; mod1.b</pre><p>
+</p><p>Meta-nodes from a different module can be also referenced as subnodes
+of the module pseudo-node.</p><p><strong>Example. </strong>
+</p><pre class="screen">:module(mod1)
+
+add(x, y) : x + y
+
+:module(mod2)
+:use(mod1)
+
+# Use the `add` meta-node from module `mod1`
+mod1.add(a, b) -&gt; c</pre><p>
+</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Nodes referenced from other modules, can appear both as
+dependencies or observers of bindings.</p></td></tr></table></div><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Referencing a subnode of a module pseudo-node does not
+result in the automatic creation of a node in that module. A
+compilation error is triggered, if the node does not already exist in
+the module.</p></td></tr></table></div><p><a id="idm10245785184" class="indexterm"></a>
+<a id="idm10245783680" class="indexterm"></a>
+<a id="idm10245782432" class="indexterm"></a></p><p>A pseudo-node with a different identifier, from the identifier of the
+module, can be created using the special <code class="literal">:alias</code> operator. This is
+useful for when the module identifier is too long to type out
+repeatedly, or there is already a node, in the current module, with
+the same identifier.</p><p>the <code class="literal">:alias</code> operator takes two arguments, the identifier of the
+module and the name of the pseudo-node to create in the current
+module:</p><pre class="screen">:alias(module-name, pseudo-node-name)</pre><p>The above examples can be rewritten using <code class="literal">:alias</code> declarations:</p><p><strong>Example. </strong>
+</p><pre class="screen">:module(mod1)
+
+a -&gt; b
+
+:module(mod2)
+:alias(mod1, m1)
+
+# Reference node `b` from module `mod1`
+m1.b -&gt; b
+x -&gt; m1.b</pre><p>
+</p><p><strong>Example. </strong>
+</p><pre class="screen">:module(mod1)
+
+add(x, y) : x + y
+
+:module(mod2)
+:alias(mod1, m1)
+
+# Use the `add` meta-node from module `mod1`
+m1.add(a, b) -&gt; c</pre><p>
+</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_importing_nodes"></a>Importing Nodes</h4></div></div></div><p><a id="idm10245772608" class="indexterm"></a>
+<a id="idm10245771360" class="indexterm"></a>
+<a id="idm10245770368" class="indexterm"></a>
+<a id="idm10245768864" class="indexterm"></a>
+<a id="idm10245767616" class="indexterm"></a></p><p>The second approach to referencing a node, residing in another module,
+is to add it directly to the current module. With this approach there
+is no need to reference the node as a subnode of a module
+pseudo-node. This is referred to as <span class="emphasis"><em>importing</em></span> the node and is
+achieved using the <code class="literal">:import</code> operator.</p><p>The <code class="literal">:import</code> operator adds the identifiers of nodes, residing in
+another module, to the current module. The result is that the node can
+be referenced directly by its identifier, as though it were declared
+in the current module.</p><p>The <code class="literal">:import</code> operator has two forms:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+A short form that <span class="emphasis"><em>imports</em></span> all the nodes <span class="emphasis"><em>exported</em></span> from
+      another module. Takes the module identifier as its only
+      argument.
+</li><li class="listitem">
+A short form that can be used to <span class="emphasis"><em>import</em></span> specific nodes. The
+      first argument is the module identifier, the following arguments
+      are the identifiers of the nodes to <span class="emphasis"><em>import</em></span>
+</li></ul></div><p><strong>Syntax. </strong>
+</p><pre class="screen"># Short form: Import all nodes exported from `module`
+:import(module)
+
+# Long form: Import only the nodes listed in the arguments after the
+# module identifier.
+:import(module, node1, node2, ...)</pre><p>
+</p><p><strong>Example: Long form. </strong>
+</p><pre class="screen">:module(mod1)
+
+a -&gt; b
+
+:module(mod2)
+
+# Import node `b` from `mod1`
+:import(mod1, b)
+
+# Node `b` is the same `b` as in `mod1`
+b -&gt; a
+x -&gt; b</pre><p>
+</p><p><a id="idm10245755184" class="indexterm"></a>
+<a id="idm10245753936" class="indexterm"></a>
+<a id="idm10245752944" class="indexterm"></a>
+<a id="idm10245751440" class="indexterm"></a>
+<a id="idm10245750192" class="indexterm"></a></p><p>The short form only imports those nodes which are explicitly
+<span class="emphasis"><em>exported</em></span> from the module. Nodes are explicitly exported from the
+current module with the <code class="literal">:export</code> operator which simply takes the
+identifiers of the nodes to <span class="emphasis"><em>export</em></span> as arguments.</p><p><strong>Syntax. </strong>
+</p><pre class="screen">:export(node1, node2, ...)</pre><p>
+</p><p>Each <code class="literal">:export</code> declaration adds (does not replace) nodes, in the
+arguments, to the exported nodes of the current module.</p><p><strong>Example: <code class="literal">:export</code> and short form <code class="literal">:import</code>. </strong>
+</p><pre class="screen">:module(mod1)
+
+a -&gt; b
+
+# Export node `b`
+:export(b)
+
+:module(mod2)
+# Import all nodes exported from `mod1`
+:import(mod1)
+
+# Node `b` is the same `b` as in `mod1`
+b -&gt; a
+x -&gt; b</pre><p>
+</p><p><strong>Meta-node Example: <code class="literal">:export</code> and short form <code class="literal">:import</code>. </strong>
+</p><pre class="screen">:module(mod1)
+
+add(x, y) : x + y
+
+:export(add)
+
+:module(mod2)
+:import(mod1)
+
+# Use the `add` meta-node from module `mod1`
+add(a, b) -&gt; c</pre><p>
+</p><p>A side effect of <code class="literal">:import</code> is that if the identifier of an imported
+node, whether imported by the long or short form of <code class="literal">:import</code>, is
+registered as an infix operator in the module, from which it is being
+imported, it’s entry in the module’s operator table is copied over to
+the current module. This allows the operator to be placed in infix
+position, in the current module.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>All nodes in the <code class="literal">builtin</code> module, which contains the special
+operators mentioned so far (<code class="literal">-&gt;</code>, <code class="literal">:</code>, <code class="literal">..</code>, <code class="literal">&amp;</code>, <code class="literal">.</code>), are
+automatically imported into the <code class="literal">init</code> module.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_direct_references"></a>Direct References</h4></div></div></div><p><a id="idm10245730464" class="indexterm"></a>
+<a id="idm10245729216" class="indexterm"></a>
+<a id="idm10245728224" class="indexterm"></a>
+<a id="idm10245726720" class="indexterm"></a>
+<a id="idm10245725472" class="indexterm"></a></p><p>It may be necessary to reference a node in another module without
+creating a pseudo-node, for its module, and without importing it in
+the current module. The special <code class="literal">:in</code> operator directly references a
+node in another module by the module and node identifiers.</p><p><strong>Syntax. </strong>
+</p><pre class="screen">:in(module-id, node-id)</pre><p>
+</p><p>The first argument is the identifier of the module containing the
+node, and the second argument is the identifier of the node.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">module-id</code> is the identifier of the module itself, and not
+the identifier of a module pseudo-node.</p></td></tr></table></div><p><strong>Example: <code class="literal">:in</code> Operator. </strong>
+</p><pre class="screen">:module(mod1)
+
+a -&gt; b
+
+:module(mod2)
+
+# Reference node `b` in `mod1` directly
+:in(mod1, b) -&gt; a
+x -&gt; :in(mod1, b)</pre><p>
+</p><p><strong>Example: <code class="literal">:in</code> Operator. </strong>
+</p><pre class="screen">:module(mod1)
+
+add(x, y) : x + y
+
+:module(mod2)
+
+# Use the `add` meta-node from module `mod1`
+(:in(mod1, add))(a, b) -&gt; c</pre><p>
+</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_operator_table"></a>4.3. Operator Table</h3></div></div></div><p><a id="idm10245714064" class="indexterm"></a>
+<a id="idm10245712560" class="indexterm"></a>
+<a id="idm10245711312" class="indexterm"></a></p><p>Each module may register a number of node identifiers as infix
+operators. This means that those identifiers may appear in infix
+position in declarations parsed while the module is the current
+module. The module’s <span class="emphasis"><em>operator table</em></span> stores the identifier,
+precedence and associativity of each infix operator. <span class="emphasis"><em>See
+<a class="xref" href="ar01s01.html#_functors" title="1.2. Functors">Section 1.2, “Functors”</a> for more information about infix operators, operator
+precedence and associativity</em></span>.</p><p>Initially the operator table of each module contains a single entry
+which is the special entry for function application. The precedence of
+function application controls whether an expression is treated as the
+operator of a functor or the operand of an infix expression.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The precedence of function application is set to <code class="literal">900</code>. This
+value cannot be changed.</p></td></tr></table></div><p><strong>Example: Precedence of Function Application. </strong>
+</p><pre class="screen"># If `.` has a higher precedence than function application, the
+# following is parsed to: ((. m1 add) a b)
+
+# If `.` has a lower precedence than function application, the
+# following is parsed to: (. m1 (add a b))
+
+m1.add(a, b)</pre><p>
+</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_registering_infix_operators"></a>Registering Infix Operators</h4></div></div></div><p><a id="idm10245703104" class="indexterm"></a>
+<a id="idm10245701696" class="indexterm"></a>
+<a id="idm10245700448" class="indexterm"></a>
+<a id="idm10245699456" class="indexterm"></a>
+<a id="idm10245697952" class="indexterm"></a>
+<a id="idm10245696704" class="indexterm"></a></p><p>New infix operators can be registered using the special <code class="literal">:op</code>
+declaration. This declaration modifies the operator table of the
+current module.</p><p><strong>Syntax. </strong>
+</p><pre class="screen">:op(identifier, precedence [, left | right])</pre><p>
+</p><p>The first argument is the node identifier to register as an infix
+operator. The second argument is the precedence as an integer
+value. The third argument specifies the associativity. This is either
+the identifier <code class="literal">left</code> or <code class="literal">right</code> for <span class="emphasis"><em>left</em></span> or <span class="emphasis"><em>right</em></span>
+associativity. If the third argument is omitted, <span class="emphasis"><em>left</em></span> associativity
+is assumed.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The identifier does not have to name a node or meta-node that
+exists at the time the <code class="literal">:op</code> declaration is processed. The table only
+stores the identifier for syntactic transformations, no information
+about the actual node is stored.</p></td></tr></table></div><p>An <code class="literal">:op</code> declaration adds an entry to the current module’s operator
+table if it does not already contain an entry for the identifier. If
+the table already contains an entry for the identifier, the
+<span class="emphasis"><em>precedence</em></span> and <span class="emphasis"><em>associativity</em></span> values of the existing entry are
+replaced with those given in the arguments to the <code class="literal">:op</code> declaration.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <span class="emphasis"><em>precedence</em></span> and <span class="emphasis"><em>associativity</em></span> of all operators can be
+changed, with the exception of <span class="emphasis"><em>function application</em></span>.</p></td></tr></table></div><p>When a node is imported into the current module and there is an entry,
+for the node’s identifier, in the operator table of the module, from
+which the node is being imported, the entry is copied over into the
+current module’s operator table, replacing any existing entries for the
+identifier if any.</p><p><strong>Example: <code class="literal">+</code> infix operator from <code class="literal">core</code> module. </strong>
+</p><pre class="screen"># Register `+` as infix operator
+:op(+, 100, left)
+
+# Now `+` can appear in infix position
+a + b
+
+# It can also still appear in prefix position
++(a, b)</pre><p>
+</p></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s03.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s05.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

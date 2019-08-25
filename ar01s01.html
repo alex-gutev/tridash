@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>1. Syntax</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="prev" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="next" href="ar01s02.html" title="2. Nodes" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="index.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s02.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_syntax"></a>1. Syntax</h2></div></div></div><p><a id="idm10247815760" class="indexterm"></a>
+<a id="idm10247814608" class="indexterm"></a></p><p>Syntactically a Tridash program consists of a sequence of <span class="strong"><strong>node</strong></span>
+declarations, each consisting of a single node expression. Node
+expressions are divided into three types: <span class="strong"><strong>atom</strong></span> nodes, <span class="strong"><strong>functor</strong></span>
+nodes and <span class="strong"><strong>literal</strong></span> nodes. Declarations are separated by a semicolon
+<code class="literal">;</code> character or a line break.</p><p>Anything occurring between a <code class="literal">#</code> character and the end of the line is
+treated as a comment and is discarded.</p><p><a id="idm10247809360" class="indexterm"></a>
+<a id="idm10247808208" class="indexterm"></a>
+<a id="idm10247807312" class="indexterm"></a>
+<a id="idm10247806160" class="indexterm"></a></p><p><strong>Basic Grammar. </strong>
+</p><pre class="screen">&lt;declaration&gt; = &lt;node&gt;(';' | &lt;line break&gt; | &lt;end of file&gt;)
+
+&lt;node&gt; = &lt;functor&gt; | &lt;identifier&gt; | &lt;literal&gt;
+&lt;node&gt; = '(' &lt;node&gt; ')'
+
+&lt;functor&gt; = &lt;prefix-functor&gt; | &lt;infix-functor&gt;
+&lt;prefix-functor&gt; = &lt;node&gt; '(' [&lt;node&gt; {',' &lt;node&gt;}*] ')'
+&lt;infix-functor&gt; = &lt;node&gt;' '&lt;identifier&gt;' '&lt;node&gt;
+
+&lt;literal&gt; = &lt;number&gt; | &lt;string&gt;
+&lt;number&gt; = &lt;integer&gt; | &lt;real&gt;</pre><p>
+</p><h3><a id="_grammar_notation"></a>Grammar Notation</h3><p>The grammar notation used in this manual adheres to the following
+conventions:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+Angle brackets <code class="literal">&lt;...&gt;</code> indicate named syntactical entities.
+</li><li class="listitem">
+<code class="literal">=</code> designates that the syntactical entity on the left is
+      defined by the rules on the right. Multiple definitions of the
+      same syntactical entity indicate disjunction of the rules in
+      each definition.
+</li><li class="listitem">
+<code class="literal">|</code> indicates disjunction in a single definition.
+</li><li class="listitem">
+Literal tokens are enclosed in single quotes <code class="literal">'...'</code>.
+</li><li class="listitem">
+<code class="literal">..</code> indicates ranges, e.g. <code class="literal">'0'..'9'</code> indicates the digit
+      characters in the range <code class="literal">0</code> to <code class="literal">9</code>: <code class="literal">0</code>, <code class="literal">1</code>, <code class="literal">2</code>, <code class="literal">3</code>, <code class="literal">4</code>,
+      <code class="literal">5</code>, <code class="literal">6</code>, <code class="literal">7</code>, <code class="literal">8</code>, <code class="literal">9</code>.
+</li><li class="listitem">
+Rules enclosed in square brackets <code class="literal">[...]</code> are optional.
+</li><li class="listitem">
+Multiple rules enclosed in braces <code class="literal">{...}</code> are grouped into a single rule.
+</li><li class="listitem">
+<code class="literal">*</code> indicates zero or more repetitions of the preceding rule.
+</li><li class="listitem">
+<code class="literal">+</code> indicates one or more repetitions of the preceding rule.
+</li></ul></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_atom_nodes"></a>1.1. Atom Nodes</h3></div></div></div><p><a id="idm10247782208" class="indexterm"></a>
+<a id="idm10247780800" class="indexterm"></a>
+<a id="idm10247779648" class="indexterm"></a>
+<a id="idm10247778752" class="indexterm"></a>
+<a id="idm10247777344" class="indexterm"></a>
+<a id="idm10247776192" class="indexterm"></a>
+<a id="idm10247775296" class="indexterm"></a>
+<a id="idm10247773888" class="indexterm"></a>
+<a id="idm10247772736" class="indexterm"></a></p><p>An <span class="strong"><strong>atom</strong></span> node consists of a single node identifier, referred to as a
+symbol. Node identifiers may consist of any sequence of characters
+excluding whitespace, line breaks, and the following special
+characters: <code class="literal">(</code>, <code class="literal">)</code>, <code class="literal">{</code>, <code class="literal">}</code>, <code class="literal">"</code>, <code class="literal">,</code>, <code class="literal">.</code>, <code class="literal">;</code>, <code class="literal">#</code>. Node identifiers
+must consist of at least one non-digit character, otherwise they are
+interpreted as numbers.</p><p>The following are all examples of valid node identifiers:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+<code class="literal">name</code>
+</li><li class="listitem">
+<code class="literal">full-name</code>
+</li><li class="listitem">
+<code class="literal">node1</code>
+</li><li class="listitem">
+<code class="literal">1node</code>
+</li></ul></div><p>The following are not valid node identifiers:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+<code class="literal">123</code>
+</li><li class="listitem">
+<code class="literal">a.b</code>
+</li><li class="listitem">
+<code class="literal">j#2</code> — Only the <code class="literal">j</code> is part of an identifier, the <code class="literal">#2</code> is a comment
+</li><li class="listitem">
+<code class="literal">1e7</code> — As the <code class="literal">e</code> indicates a real-number in scientific
+      notation. <span class="emphasis"><em>See <a class="link" href="ar01s01.html#_numbers" title="Numbers">Numbers</a></em></span>.
+</li></ul></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_functors"></a>1.2. Functors</h3></div></div></div><p><a id="idm10247750688" class="indexterm"></a>
+<a id="idm10247749280" class="indexterm"></a>
+<a id="idm10247748128" class="indexterm"></a></p><p>A functor node is an expression consisting of an operator node applied
+to zero or more argument nodes. Syntactically the operator node is
+written first followed by the comma-separated list of argument nodes
+in parenthesis <code class="literal">(...)</code>.</p><p><strong>Examples. </strong>
+</p><pre class="screen">op(arg)
+func(arg1, arg2)
+m.fn()</pre><p>
+</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>A line break occurring before the closing parenthesis <code class="literal">)</code>
+is not treated as a declaration separator. Instead the following line
+is treated as a continuation of the current line.</p></td></tr></table></div><p><a id="idm10247743360" class="indexterm"></a>
+<a id="idm10247741952" class="indexterm"></a>
+<a id="idm10247740704" class="indexterm"></a></p><p>In the special case of an operator applied to two arguments, the
+operator may be placed in infix position, that is between the two
+argument nodes. The operator may only be an <span class="strong"><strong>atom</strong></span> node and must be
+registered as an infix operator.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Spaces between the infix operator and its operands are
+required, in order to distinguish the operator from the operands. This
+is due to there being few restrictions on the characters allowed in
+node identifiers.</p></td></tr></table></div><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>A line break occurring between the infix operator and its
+right argument is not treated as a declaration separator. However a
+line break between the left argument and infix operator is treated as
+terminating the declaration consisting of the left argument. The
+following line is then treated as a new separate declaration.</p></td></tr></table></div><p>Functor expressions written in infix and prefix form are equivalent,
+thus the following infix functor expression:</p><pre class="screen">a + b</pre><p>is equivalent to the following prefix functor expression (<span class="emphasis"><em>either
+expression may be written in source code</em></span>):</p><pre class="screen">+(a, b)</pre><p><a id="idm10247733504" class="indexterm"></a>
+<a id="idm10247732000" class="indexterm"></a>
+<a id="idm10247730752" class="indexterm"></a>
+<a id="idm10247729760" class="indexterm"></a>
+<a id="idm10247728256" class="indexterm"></a>
+<a id="idm10247727008" class="indexterm"></a></p><p>Each node registered as an infix operator has, associated with it, a
+precedence and associativity. The precedence is a number that controls
+the priority with which the operator consumes its arguments. Operators
+with a higher precedence consume arguments before operators with a
+lower precedence. The associativity controls whether the operands are
+grouped starting from the left or right, in an expression containing
+multiple instances of the same infix operator.</p><pre class="screen">a + b * c</pre><p>The <code class="literal">*</code> operator has a greater precedence than the <code class="literal">+</code> operator, thus
+it consumes its arguments first, consuming the <code class="literal">b</code> and <code class="literal">c</code> arguments.</p><p>The <code class="literal">+</code> operator has a lower precedence thus it consumes its arguments
+after <code class="literal">*</code>. The arguments available to it are <code class="literal">a</code> and <code class="literal">*(b, c)</code>.</p><p>As a result the infix functor expression is parsed to the following:</p><pre class="screen">+(a, *(b, c))</pre><p>Use parenthesis to control which arguments are grouped with which
+operators. Thus for an infix expression to be parsed to the following,
+, assuming the <code class="literal">*</code> operator has a greater precedence than <code class="literal">+</code>:</p><pre class="screen">*(+(a, b), c)</pre><p><code class="literal">a + b</code> must be surrounded in parenthesis:</p><pre class="screen">(a + b) * c</pre></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_node_lists"></a>1.3. Node Lists</h3></div></div></div><p><a id="idm10247712144" class="indexterm"></a>
+<a id="idm10247710640" class="indexterm"></a>
+<a id="idm10247709392" class="indexterm"></a></p><p>Multiple declarations can be syntactically grouped into a single node
+expression using the <code class="literal">{</code> and <code class="literal">}</code> delimiters. All declarations between
+the delimiters are processed and accumulated into a special <span class="emphasis"><em>node
+list</em></span> syntactic entity. In most contexts the node list is treated as
+being equivalent to the last node expression before the closing brace
+<code class="literal">}</code>, however special operators and macros may process node lists in a
+different manner.</p><p><strong>Node Lists. </strong>
+</p><pre class="screen">&lt;node&gt; = &lt;node list&gt;
+&lt;node list&gt; = '{' &lt;declaration&gt;* '}'</pre><p>
+</p><div class="warning" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Warning"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Warning]" src="images/icons/warning.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Each node list must be terminated by a closing brace <code class="literal">}</code>
+further on in the file otherwise a parse error is triggered.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_literals"></a>1.4. Literals</h3></div></div></div><p><a id="idm10247701232" class="indexterm"></a>
+<a id="idm10247699984" class="indexterm"></a></p><p>Literal nodes include numbers and strings.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_numbers"></a>Numbers</h4></div></div></div><p><a id="idm10247697616" class="indexterm"></a>
+<a id="idm10247696112" class="indexterm"></a>
+<a id="idm10247694864" class="indexterm"></a></p><p>There are two types of numbers: <span class="strong"><strong>integer</strong></span>s and real-valued numbers,
+referred to as <span class="strong"><strong>real</strong></span>s, which are represented as floating-point
+numbers.</p><p><a id="idm10247691936" class="indexterm"></a>
+<a id="idm10247690432" class="indexterm"></a>
+<a id="idm10247689184" class="indexterm"></a></p><p>Integers consist of a sequence of digits in the range <code class="literal">0—9</code>,
+optionally preceded by the integer’s sign. A preceding <code class="literal">-</code> indicates a
+negative number. A preceding <code class="literal">+</code> indicates a positive integer, which
+is the default if the sign is omitted.</p><p><strong>Integer Syntax. </strong>
+</p><pre class="screen">&lt;integer&gt; = ['+'|'-']('0'..'9')+</pre><p>
+</p><p><a id="idm10247683984" class="indexterm"></a>
+<a id="idm10247682480" class="indexterm"></a>
+<a id="idm10247681232" class="indexterm"></a>
+<a id="idm10247680240" class="indexterm"></a>
+<a id="idm10247678736" class="indexterm"></a>
+<a id="idm10247677488" class="indexterm"></a></p><p>There are numerous syntaxes for real-valued numbers. The most basic is
+the decimal syntax which comprises an <span class="strong"><strong>integer</strong></span> followed by the
+decimal dot <code class="literal">.</code> character and a sequence of digits in the range
+<code class="literal">0—9</code>.</p><p><strong>Decimal Real Syntax. </strong>
+</p><pre class="screen">&lt;real&gt; = &lt;decimal&gt; | &lt;magnitude-exponent&gt;
+
+&lt;decimal&gt; = &lt;integer&gt;'.'('0'..'9')+</pre><p>
+</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The decimal <code class="literal">.</code> must be preceded and followed by at-least one
+digit character. Thus <code class="literal">.5</code> and <code class="literal">1.</code> are not valid <span class="strong"><strong>real</strong></span> literals,
+<code class="literal">0.5</code> and <code class="literal">1.0</code> have to be written instead.</p></td></tr></table></div><p><a id="idm10247667888" class="indexterm"></a>
+<a id="idm10247666384" class="indexterm"></a>
+<a id="idm10247665136" class="indexterm"></a></p><p>The exponent syntax allows a real-number to be specified in scientific
+notation as a magnitude <span class="inlinemediaobject"><span class="phrase"></span></span> and exponent <span class="inlinemediaobject"><span class="phrase"></span></span> pair
+<span class="inlinemediaobject"><span class="phrase"></span></span>. The exponent syntax comprises a real in
+decimal syntax or an integer, followed by the character <code class="literal">e</code>, <code class="literal">f</code>, <code class="literal">d</code>,
+or <code class="literal">l</code> which indicates the precision of the real-number, followed by
+the exponent as an integer.</p><p><strong>Exponent Syntax. </strong>
+</p><pre class="screen">&lt;magnitude-exponent&gt; = (&lt;decimal&gt;|&lt;integer&gt;)['e'|'f'|'d'|'l']&lt;integer&gt;</pre><p>
+</p><p><code class="literal">e</code> and <code class="literal">f</code> indicate a single precision floating point number, <code class="literal">d</code>
+indicates double precision and <code class="literal">l</code> indicates long precision.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_strings"></a>Strings</h4></div></div></div><p><a id="idm10247651520" class="indexterm"></a>
+<a id="idm10247650016" class="indexterm"></a>
+<a id="idm10247648768" class="indexterm"></a></p><p>Literal strings consist of a sequence of characters enclosed in double
+quotes <code class="literal">"..."</code>.</p><p><strong>String Syntax. </strong>
+</p><pre class="screen">&lt;string&gt; = '"'&lt;unicode char&gt;*'"'</pre><p>
+</p><p>where <code class="literal">&lt;unicode char&gt;</code> can be any Unicode character.</p><p>A literal <code class="literal">"</code> character can appear inside a string if it is preceded
+by the backslash escape character <code class="literal">\</code>.</p><p><strong>Example. </strong>
+</p><pre class="screen">"John said \"Hello\""</pre><p>
+</p><p><a id="idm10247640896" class="indexterm"></a>
+<a id="idm10247639392" class="indexterm"></a>
+<a id="idm10247638144" class="indexterm"></a></p><p>Certain escape sequence, consisting of a <code class="literal">\</code> followed by a character,
+are shorthands for special characters, allowing the character to
+appear in the parsed string without having to write the actual
+character in the string literal.</p><div class="table"><a id="idm10247635536"></a><p class="title"><strong>Table 1. Escape Sequences</strong></p><div class="table-contents"><table class="table" summary="Escape Sequences" cellpadding="4px" style="border-collapse: collapse;border-top: 3px solid #527bbd; border-bottom: 3px solid #527bbd; border-left: 3px solid #527bbd; border-right: 3px solid #527bbd; "><colgroup><col class="col_1" /><col class="col_2" /><col class="col_3" /></colgroup><thead><tr><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"> Sequence </th><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"> Character </th><th style="border-bottom: 1px solid #527bbd; " align="left" valign="top"> ASCII Character Code (Hex)</th></tr></thead><tbody><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">\n</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>Line Feed (LF) / New Line</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">0A</code></p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">\r</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>Carriage Return (CR)</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">0D</code></p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">\t</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>Tab</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">09</code></p></td></tr><tr><td style="border-right: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">\u{&lt;code&gt;}</code></p></td><td style="border-right: 1px solid #527bbd; " align="left" valign="top"><p>Unicode Character</p></td><td style="" align="left" valign="top"><p><code class="literal">&lt;code&gt;</code></p></td></tr></tbody></table></div></div><br class="table-break" /><p>The <code class="literal">\u{&lt;code&gt;}</code> escape sequence is replaced with the Unicode
+character with code (in hexadecimal) <code class="literal">&lt;code&gt;</code>. There must be an
+opening brace <code class="literal">{</code> following <code class="literal">\u</code> otherwise the escape sequence is
+treated as an ordinary literal character escape, in which <code class="literal">\u</code> is
+replaced with <code class="literal">u</code>. Currently the closing brace is optional <code class="literal">}</code>, as
+only the characters up to the first character that is not a
+hexadecimal digit are considered part of the character code. However,
+it is good practice to insert the closing brace as it clearly delimits
+which characters are to be interpreted as the character code and which
+characters are literal characters.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">\n</code>, <code class="literal">\r</code> and <code class="literal">\t</code> escape sequences can alternatively be
+written as <code class="literal">\u{A}</code>, <code class="literal">\u{D}</code> and <code class="literal">\u{9}</code> respectively.</p></td></tr></table></div><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>In a future release, omitting either the opening or closing
+brace, in a Unicode escape sequence, may result in a parse error.</p></td></tr></table></div></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="index.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s02.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
