@@ -117,7 +117,7 @@ TIP: The `->` operator is in the form of an arrow which indicates the
 direction of data-flow, from the node on the left to the node on the
 right.
 
-Functional bindings involve a function of 1 or more argument
+Functional bindings involve a function of one or more argument
 nodes. Functional bindings are created implicitly in functor node
 expressions, with each argument node added as a dependency of the
 functor node. A change in the value of at least one argument node
