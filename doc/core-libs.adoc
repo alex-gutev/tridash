@@ -1,12 +1,19 @@
 == Core Module ==
 
+(((Core Module, Standard Library)))
+(((core, module, Standard Library)))
+
 The `core` module provides the language primitives and the standard
 library.
 
 === Literals ===
 
+(((Literals, Core Module, Macros)))
+
 [[macro-node-quote]]
 ==== Macro-Node: `'(x)` ====
+
+(((', Core Module, Macro)))
 
 Interprets `x` as a literal symbol rather than a node declaration.
 
@@ -18,6 +25,8 @@ The same symbol object is always returned for a given symbol name.
 
 [[macro-node-c]]
 ==== Macro-Node: `c(x)` ====
+
+(((c, Core Module, Macro)))
 
 Returns `x` interpreted as a literal character.
 
@@ -35,6 +44,10 @@ Returns `x` interpreted as a literal character.
 [[macro-node-ref]]
 ==== Macro-Node: `&(node)` ====
 
+(((&, Core Module, Macro)))
+
+(((&, Core Module, Macro)))
+
 Returns the raw node object corresponding to the node with identifier
 `node`.
 
@@ -47,8 +60,12 @@ macro node instance occurs.
 [[core-module-bindings]]
 === Bindings ===
 
+(((Bindings, Core Module, Macros)))
+
 [[macro-node-lbind]]
 ==== Macro-Node: `->(source, target)` ====
+
+(((`->`, Core Module, Macro)))
 
 Establishes a binding between node `source` and node `target`.
 
@@ -62,6 +79,8 @@ associativity.
 
 [[macro-node-rbind]]
 ==== Macro-Node: `<-(target, source)` ====
+
+(((`<-`, Core Module, Macro)))
 
 Establishes a binding between node `source` and node `target`.
 
@@ -79,6 +98,8 @@ associativity.
 
 [[macro-node-context]]
 ==== Macro-Node: `@(node, context)` ====
+
+(((@, Core Module, Macro)))
 
 Indicates an explicit context to which bindings, involving `node` as
 the 'target', should be established.
@@ -105,8 +126,13 @@ operator with precedence *850* and *left* associativity.
 
 === Meta-Node Definitions ===
 
+(((Definitions, Core Module, Macros)))
+
+
 [[macro-node-def]]
 ==== Macro-Node: `:(id(args...), body)` ====
+
+(((:, Core Module, Macro)))
 
 Defines a meta-node with identifier `id`, argument list `args` and
 definition `body`. _See <<_meta_nodes>>_.
@@ -126,6 +152,8 @@ associativity.
 [[macro-node-outer]]
 ==== Macro-Node: `..(node)` ====
 
+(((.., Core Module, Macro)))
+
 Explicitly references a node defined in the enclosing scope of the
 meta-node. _See <<_outer_node_references>>_.
 
@@ -135,8 +163,12 @@ meta-node. _See <<_outer_node_references>>_.
 
 === Failures ===
 
+(((Failures, Core Module, Utilities)))
+
 [[meta-node-fail]]
 ==== Meta-Node: `fail(:(type))` ====
+
+(((fail, Core Module, Meta-Node)))
 
 Returns a failure with a given failure type.
 
@@ -146,6 +178,8 @@ type.
 
 [[meta-node-fail-type]]
 ==== Meta-Node: `fail-type(x)` ====
+
+(((fail-type, Core Module, Meta-Node)))
 
 Returns the failure type of `x`.
 
@@ -159,6 +193,8 @@ to a failure with no type.
 [[meta-node-failsp]]
 ==== Meta-Node: `fails?(x)` ====
 
+(((fails?, Core Module, Meta-Node)))
+
 Returns true if `x` fails to evaluate to a value.
 
 [horizontal]
@@ -167,6 +203,8 @@ Returns true if `x` fails to evaluate to a value.
 
 [[meta-node-succeedsp]]
 ==== Meta-Node: `?(x)` ====
+
+(((?, Core Module, Meta-Node)))
 
 Returns true if `x` evaluates to a value, false if `x` fails to
 evaluate to a value.
@@ -177,6 +215,8 @@ evaluate to a value.
 
 [[meta-node-fail-typep]]
 ==== Meta-Node: `fail-type?(x, type)` ====
+
+(((fail-type?, Core Module, Meta-Node)))
 
 Tests for failure with a given type.
 
@@ -192,6 +232,8 @@ equal to `type` or `x` does not fail.
 [[meta-node-test-fail-bind]]
 ==== Meta-Node: `!-(test, value)` ====
 
+(((!-, Core Module, Meta-Node)))
+
 Returns `value` if `test` does not fail. If `test` fails, the failure
 is returned.
 
@@ -202,6 +244,8 @@ is returned.
 
 [[macro-node-test-fail-functor]]
 ==== Macro-Node: `!(functor)` ====
+
+(((!, Core Module, Macro)))
 
 Tests that each argument of a functor expression does not fail, before
 evaluating the expression.
@@ -214,8 +258,12 @@ If at least one argument fails, then the entire functor node fails.
 
 === Arithmetic ===
 
+(((Arithmetic, Core Module)))
+
 [[meta-node-plus]]
 ==== Meta-Node: `+(x, y)` ====
+
+(((+, Core Module, Meta-Node)))
 
 Computes the sum of `x` and `y`.
 
@@ -230,6 +278,8 @@ associativity.
 [[meta-node-minus]]
 ==== Meta-Node: `-(x, y)` ====
 
+(((-, Core Module, Meta-Node)))
+
 Computes the difference of `x` and `y`.
 
 [horizontal]
@@ -242,6 +292,8 @@ associativity.
 
 [[meta-node-multiply]]
 ==== Meta-Node: `*(x, y)` ====
+
+(((*, Core Module, Meta-Node)))
 
 Computes the product of `x` and `y`.
 
@@ -256,6 +308,8 @@ associativity.
 [[meta-node-divide]]
 ==== Meta-Node: `/(x, y)` ====
 
+(((/, Core Module, Meta-Node)))
+
 Computes the quotient of `x` and `y`.
 
 [horizontal]
@@ -268,8 +322,12 @@ associativity.
 
 === Comparison ===
 
+(((Comparison, Core Module)))
+
 [[meta-node-lt]]
 ==== Meta-Node: `<(x, y)` ====
+
+(((<, Core Module, Meta-Node)))
 
 Returns true if `x` is less than `y`.
 
@@ -284,6 +342,8 @@ associativity.
 [[meta-node-lte]]
 ==== Meta-Node: `<=(x, y)` ====
 
+(((`<=`, Core Module, Meta-Node)))
+
 Returns true if `x` is less than or equal to `y`.
 
 [horizontal]
@@ -296,6 +356,8 @@ associativity.
 
 [[meta-node-gt]]
 ==== Meta-Node: `>(x, y)` ====
+
+(((>, Core Module, Meta-Node)))
 
 Returns true if `x` is greater than `y`.
 
@@ -310,6 +372,8 @@ associativity.
 [[meta-node-gte]]
 ==== Meta-Node: `>=(x, y)` ====
 
+(((>=, Core Module, Meta-Node)))
+
 Returns true if `x` is greater than or equal to `y`.
 
 [horizontal]
@@ -322,6 +386,8 @@ associativity.
 
 [[meta-node-eq]]
 ==== Meta-Node: `=(a, b)` ====
+
+(((=, Core Module, Meta-Node)))
 
 Returns true if `a` is equal to `b`.
 
@@ -345,6 +411,8 @@ associativity.
 [[meta-node-neq]]
 ==== Meta-Node: `!=(a, b)` ====
 
+(((!=, Core Module, Meta-Node)))
+
 Returns true if `a` is not equal to `b`.
 
 _See <<meta-node-eq,`=`>> for the rules of equality_.
@@ -359,8 +427,12 @@ associativity.
 
 === Logical Operators ===
 
+(((Logical Operators, Core Module)))
+
 [[meta-node-and]]
 ==== Meta-Node: `and(x, y)` ====
+
+(((and, Core Module, Meta-Node)))
 
 Logical AND.
 
@@ -376,6 +448,8 @@ associativity.
 
 [[meta-node-or]]
 ==== Meta-Node: `or(x, y)` ====
+
+(((or, Core Module, Meta-Node)))
 
 Logical OR.
 
@@ -393,6 +467,8 @@ associativity.
 [[meta-node-not]]
 ==== Meta-Node: `not(x)` ====
 
+(((not, Core Module, Meta-Node)))
+
 Logical NOT.
 
 Returns true if `x` evaluates to false.
@@ -404,6 +480,7 @@ Returns true if `x` evaluates to false.
 [[meta-node-if]]
 ==== Meta-Node: `if(condition, true-value, :(false-value))` ====
 
+(((if, Core Module, Meta-Node)))
 
 Returns `true-value` if `condition` is true otherwise returns
 `false-value`.
@@ -419,6 +496,8 @@ not provided defaults to a failure.
 
 [[macro-node-case]]
 ==== Macro-Node: `case(..(clauses))` ====
+
+(((case, Core Module, Macro)))
 
 --------------------------------------------------
 <clause> = <condition> : <value>
@@ -464,8 +543,13 @@ if(a < b, -1, if(b > a, 1, 0))
 
 === Types ===
 
+(((Type Conversions, Core Module)))
+(((Type Checks, Core Module)))
+
 [[meta-node-int]]
 ==== Meta-Node: `int(x)` ====
+
+(((int, Core Module, Meta-Node)))
 
 Converts `x` to an *integer* value.
 
@@ -485,6 +569,8 @@ If `x` is neither of the above returns a failure.
 [[meta-node-real]]
 ==== Meta-Node: `real(x)` ====
 
+(((real, Core Module, Meta-Node)))
+
 Converts `x` to a *real* number value.
 
     - If `x` is an *integer* or *real* returns `x`.
@@ -501,6 +587,8 @@ If `x` is neither of the above returns a failure.
 [[meta-node-string]]
 ==== Meta-Node: `string(x)` ====
 
+(((string, Core Module, Meta-Node)))
+
 Converts `x` to a *string*.
 
 [horizontal]
@@ -509,6 +597,8 @@ Converts `x` to a *string*.
 
 [[meta-node-to-int]]
 ==== Meta-Node: `to-int(x)` ====
+
+(((to-int, Core Module, Meta-Node)))
 
 Converts `x` to an *integer* value.
 
@@ -528,6 +618,8 @@ Node `b` is set to the value of `a` converted to an integer.
 [[meta-node-to-real]]
 ==== Meta-Node: `to-real(x)` ====
 
+(((to-real, Core Module, Meta-Node)))
+
 Converts `x` to an *real* number value.
 
 Same as <<meta-node-real,`real`>> however with the `target-node`
@@ -545,6 +637,8 @@ Node `b` is set to the value of `a` converted to a real number.
 
 [[meta-node-to-string]]
 ==== Meta-Node: `to-string(x)` ====
+
+(((to-string, Core Module, Meta-Node)))
 
 Converts `x` to an *integer* value.
 
@@ -564,6 +658,8 @@ Node `b` is set to the value of `a` converted to a string.
 [[meta-node-intp]]
 ==== Meta-Node: `int?(x)` ====
 
+(((int?, Core Module, Meta-Node)))
+
 Returns true if `x` is an *integer*.
 
 [horizontal]
@@ -572,6 +668,8 @@ Returns true if `x` is an *integer*.
 
 [[meta-node-realp]]
 ==== Meta-Node: `real?(x)` ====
+
+(((real?, Core Module, Meta-Node)))
 
 Returns true if `x` is a *real*.
 
@@ -582,6 +680,8 @@ Returns true if `x` is a *real*.
 [[meta-node-stringp]]
 ==== Meta-Node: `string?(x)` ====
 
+(((string?, Core Module, Meta-Node)))
+
 Returns true if `x` is a *string*.
 
 [horizontal]
@@ -590,6 +690,8 @@ Returns true if `x` is a *string*.
 
 [[meta-node-infp]]
 ==== Meta-Node: `inf?(x)` ====
+
+(((inf?, Core Module, Meta-Node)))
 
 Returns true if `x` is either positive or negative infinity.
 
@@ -600,6 +702,8 @@ Returns true if `x` is either positive or negative infinity.
 [[meta-node-nanp]]
 ==== Meta-Node: `NaN?(x)` ====
 
+(((NaN?, Core Module, Meta-Node)))
+
 Returns true if `x` is a *NaN* value.
 
 [horizontal]
@@ -607,6 +711,8 @@ Returns true if `x` is a *NaN* value.
 
 
 === Lists ===
+
+(((Lists, Core Module)))
 
 Lists are represented by a special `cons` type, in which the 'head'
 stores the first element of the list and the 'tail' stores the list of
@@ -620,6 +726,8 @@ reference to the meta-node <<meta-node-Empty, `Empty`>> (`&(Empty)`).
 [[meta-node-cons]]
 ==== Meta-Node: `cons(head, tail)` ====
 
+(((cons, Core Module, Meta-Node)))
+
 Creates a list with the `head` as the first element and `tail` as
 the list of remaining elements.
 
@@ -631,6 +739,8 @@ the list of remaining elements.
 [[meta-node-head]]
 ==== Meta-Node: head(list) ====
 
+(((head, Core Module, Meta-Node)))
+
 Returns the 'head' (first element) of a list.
 
 If `list` is not a list returns a failure value.
@@ -641,6 +751,8 @@ If `list` is not a list returns a failure value.
 
 [[meta-node-tail]]
 ==== Meta-Node: `tail(list)` ====
+
+(((tail, Core Module, Meta-Node)))
 
 Returns the 'tail', the list containing the elements after the first
 element, of a list.
@@ -654,6 +766,8 @@ If `list` is not a list returns a failure value.
 [[meta-node-consp]]
 ==== Meta-Node: `cons?(thing)` ====
 
+(((cons?, Core Module, Meta-Node)))
+
 Returns true if `thing` is a list of at least one element, false
 otherwise.
 
@@ -666,6 +780,8 @@ NOTE: Does not return true if `thing` is an empty list.
 [[meta-node-Empty]]
 ==== Meta-Node: Empty() ====
 
+(((Empty, Core Module, Meta-Node)))
+
 Returns a failure with type indicating an empty list.
 
 NOTE: The failure type is `&(Empty)`, _see <<node_references>>_.
@@ -673,6 +789,8 @@ NOTE: The failure type is `&(Empty)`, _see <<node_references>>_.
 
 [[meta-node-list]]
 ==== Meta-Node: `list(..(xs))` ====
+
+(((list, Core Module, Meta-Node)))
 
 Creates a list with elements `xs`.
 
@@ -682,6 +800,8 @@ Creates a list with elements `xs`.
 
 [[meta-node-list-star]]
 ==== Meta-Node: `list*(..(xs))` ====
+
+(((list*, Core Module, Meta-Node)))
 
 Creates a list containing, as elements, all the arguments in `xs`
 excluding the last. The last argument in `xs` is treated as a list
@@ -695,6 +815,8 @@ containing the remaining elements.
 [[meta-node-list-bang]]
 ==== Meta-Node: `list!(..(xs))` ====
 
+(((list!, Core Module, Meta-Node)))
+
 Creates a list containing, as elements, all the arguments in `xs`.
 
 Unlike `list`, if at least one of `xs` fails to evaluate to a value, a
@@ -706,6 +828,8 @@ failure is returned.
 
 [[meta-node-nth]]
 ==== Meta-Node: `nth(list, n)` ====
+
+(((nth, Core Module, Meta-Node)))
 
 Retrieves the element of a list at a particular index.
 
@@ -720,6 +844,8 @@ greater than the number of elements in `list`.
 [[meta-node-append]]
 ==== Meta-Node: `append(list1, list2)` ====
 
+(((append, Core Module, Meta-Node)))
+
 Returns a list containing the elements of `list2` appended to
 `list1`.
 
@@ -730,6 +856,8 @@ Returns a list containing the elements of `list2` appended to
 
 [[meta-node-foldl1]]
 ==== Meta-Node: `foldl'(x, f, list)` ====
+
+(((foldl', Core Module, Meta-Node)))
 
 Folds a list to a single value, starting from the first element.
 
@@ -747,6 +875,8 @@ reached.
 [[meta-node-foldl]]
 ==== Meta-Node: `foldl(f, list)` ====
 
+(((fold, Core Module, Meta-Node)))
+
 Folds a list to a single value, starting from the first element.
 
 Same as <<meta-node-foldl1,`foldl'`>> except the <<meta-node-head, 'head'>> of `list` is
@@ -759,6 +889,8 @@ used as the initial first argument to the fold function `f`.
 
 [[meta-node-foldr]]
 ==== Meta-Node: `foldr(f, list, :(x))` ====
+
+(((foldr, Core Module, Meta-Node)))
 
 Folds a list to a single value, starting from the last element.
 
@@ -783,6 +915,8 @@ last element of `list`.
 [[meta-node-map]]
 ==== Meta-Node: `map(f, list)` ====
 
+(((map, Core Module, Meta-Node)))
+
 Applies a function on each element of a list.
 
 Returns a list containing the result of applying `f` on each element
@@ -795,6 +929,8 @@ of `list` in turn.
 
 [[meta-node-filter]]
 ==== Meta-Node: `filter(f, list)` ====
+
+(((filter, Core Module, Meta-Node)))
 
 Filters elements from a list.
 
@@ -812,6 +948,8 @@ removed.
 [[meta-node-everyp]]
 ==== Meta-Node: `every?(f, list)` ====
 
+(((every?, Core Module, Meta-Node)))
+
 Returns true if `f` returns true for every element of `list`.
 
 [horizontal]
@@ -821,6 +959,8 @@ Returns true if `f` returns true for every element of `list`.
 
 [[meta-node-somep]]
 ==== Meta-Node: `some?(f, list)` ====
+
+(((some?, Core Module, Meta-Node)))
 
 Returns true if `f` returns true for at least one element of `list`.
 
@@ -832,6 +972,8 @@ Returns true if `f` returns true for at least one element of `list`.
 [[meta-node-not-anyp]]
 ==== Meta-Node: `not-any?(f, list)` ====
 
+(((not-any?, Core Module, Meta-Node)))
+
 Returns true if `f` returns false for every element of `list`.
 
 [horizontal]
@@ -842,6 +984,8 @@ Returns true if `f` returns false for every element of `list`.
 [[meta-node-not-everyp]]
 ==== Meta-Node: `not-every?(f, list)` ====
 
+(((not-every?, Core Module, Meta-Node)))
+
 Returns true if `f` returns false for at least one element of `list`.
 
 [horizontal]
@@ -851,8 +995,12 @@ Returns true if `f` returns false for at least one element of `list`.
 
 === Strings ===
 
+(((Strings, Core Module)))
+
 [[meta-node-string-at]]
 ==== Meta-Node: `string-at(string, index)` ====
+
+(((string-at, Core Module, Meta-Node)))
 
 Returns the character at a given index in the string.
 
@@ -867,6 +1015,8 @@ returns a failure.
 [[meta-node-string-concat]]
 ==== Meta-Node: `string-concat(string, str1, str2)` ====
 
+(((string-concat, Core Module, Meta-Node)))
+
 Concatenates `str2` to the end of `str1`.
 
 [horizontal]
@@ -878,6 +1028,8 @@ Concatenates `str2` to the end of `str1`.
 [[meta-node-string-to-list]]
 ==== Meta-Node: `string->list(string)` ====
 
+(((`string->list`, Core Module, Meta-Node)))
+
 Returns a list containing the characters in a string.
 
 [horizontal]
@@ -886,6 +1038,8 @@ Returns a list containing the characters in a string.
 
 [[meta-node-list-to-string]]
 ==== Meta-Node: `list->string(list)` ====
+
+(((`list->string`, Core Module, Meta-Node)))
 
 Returns a string containing the concatenation of the elements in a list.
 
@@ -898,6 +1052,8 @@ the result string.
 
 [[meta-node-format]]
 ==== Meta-Node: `format(string, ..(args))` ====
+
+(((format, Core Module, Meta-Node)))
 
 Creates a formatted string, in which placeholders are replaced by the
 arguments in `args`.
@@ -918,12 +1074,16 @@ replaced with a `%`.
 
 === Introspection ===
 
+(((Introspection Utilities, Core Module)))
+
 The meta-nodes in this section provide functionality for introspecting
 the nodes comprising a program. These meta-nodes may only be used from
 within macro nodes during compilation, and not during runtime.
 
 [[meta-node-nodep]]
 ==== Meta-Node: `node?(thing)` ====
+
+(((node?, Core Module, Meta-Node)))
 
 Returns true if `thing` is a node object.
 
@@ -932,6 +1092,8 @@ Returns true if `thing` is a node object.
 
 
 ==== Meta-Node: `find-node(node, :(module))` ====
+
+(((find-node, Core Module, Meta-Node)))
 
 Looks-up a node in a module.
 
@@ -949,6 +1111,8 @@ future release.
 
 ==== Meta-Node: `get-attribute(node, attribute)` ====
 
+(((get-attribute, Core Module, Meta-Node)))
+
 Retrieves the value of an attribute of a node.
 
 Returns a failure if the attribute is not set.
@@ -959,6 +1123,9 @@ Returns a failure if the attribute is not set.
 
 
 === Pattern Matching ===
+
+(((Pattern Matching, Core Module)))
+(((Functor Patterns, Core Module, Pattern Matching)))
 
 Pattern matching is provided by the core module in the form of
 bindings involving the meta-node instance, which is to be matched, as
@@ -1000,6 +1167,8 @@ being produced when they are passed to the `list` meta-node.
 
 ==== Nested Patterns ====
 
+(((Nested Patterns, Core Module, Pattern Matching)))
+
 Patterns may be nested, that is an argument to a meta-node instance is
 itself a meta-node instance of which the operator meta-node supports
 pattern matching. When the arguments contain one or more nested
@@ -1019,6 +1188,8 @@ the first element is an integer.
 
 
 ==== Constant Patterns ====
+
+(((Constant Patterns, Core Module, Pattern Matching)))
 
 Constant patterns comprise a constant value as opposed to a
 node. These patterns 'match' when the source node is equal, by
@@ -1064,6 +1235,9 @@ constant pattern.
 
 [[matchers, Matchers]]
 ==== Matchers ====
+
+(((matcher, Attribute, Pattern Matching)))
+(((Pattern Object, Core Module, Pattern Matching)))
 
 The `matcher` node attribute stores a meta-node which is called to
 construct the pattern for a given list of arguments. The 'matcher'
@@ -1118,6 +1292,8 @@ being an integer.
 
 ==== Utilities ====
 
+(((Pattern Matching Utilities, Core Module, Pattern Matching)))
+
 The following meta-nodes are utilities for creating and processing
 patterns.
 
@@ -1128,6 +1304,8 @@ in another module.
 
 [[meta-node-Pattern]]
 ==== Meta-Node: `Pattern(condition, :(binding))` ====
+
+(((Pattern, Core Module, Meta-Node)))
 
 Creates a `Pattern` object. _See <<matchers>>_
 
@@ -1142,6 +1320,8 @@ provided.
 [[meta-node-get-matcher]]
 ==== Meta-Node: `get-matcher(node)` ====
 
+(((get-matcher, Core Module, Meta-Node)))
+
 Returns the 'matcher' function, stored in the `matcher` attribute of a
 node.
 
@@ -1153,6 +1333,8 @@ Returns a failure if the node's `matcher` attribute is not set.
 
 [[meta-node-make-pattern]]
 ==== Meta-Node: `make-pattern(place, pattern)` ====
+
+(((make-pattern, Core Module, Meta-Node)))
 
 Creates the `Pattern` object for a pattern expression.
 
@@ -1171,6 +1353,8 @@ not a `meta-node` with a `matcher`, a `Pattern` with a single binding
 [[meta-node-combine-conditions]]
 ==== Meta-Node: `combine-conditions(c1, c2)` ====
 
+(((combine-conditions, Core Module, Meta-Node)))
+
 Returns an expression which is the conjunction of two expression, by
 <<meta-node-and, `and`>>.
 
@@ -1187,6 +1371,8 @@ conditions of multiple argument nodes.
 [[meta-node-conditionalize-bindings]]
 ==== Meta-Node: conditionalize-bindings(condition, bindings) ====
 
+(((conditionalize-bindings, Core Module, Meta-Node)))
+
 Returns a list where each binding in `bindings` is conditioned on
 `condition`. _See <<conditional_bindings>>_.
 
@@ -1196,6 +1382,8 @@ Returns a list where each binding in `bindings` is conditioned on
 
 [[meta-node-make-pattern-declarations]]
 ==== Meta-Node: make-pattern-declarations(pattern) ====
+
+(((make-pattern-declarations, Core Module, Meta-Node)))
 
 Creates the node declarations implementing a pattern.
 
@@ -1208,6 +1396,8 @@ value for a `target-transform` function. _See <<_instances_as_targets>>_.
 
 
 === Operator Table ===
+
+(((Operator Table, Core Module)))
 
 [cols="<,>,>", options="header"]
 |====================
