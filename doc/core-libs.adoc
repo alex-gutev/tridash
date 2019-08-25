@@ -958,6 +958,249 @@ Returns a failure if the attribute is not set.
 `attribute`:: The attribute identifier.
 
 
+=== Pattern Matching ===
+
+Pattern matching is provided by the core module in the form of
+bindings involving the meta-node instance, which is to be matched, as
+the target. The binding succeeds if the pattern matches, otherwise it
+fails.
+
+A meta-node which supports pattern matching, has a `target-node` or
+`target-transform`, _see <<_instances_as_targets>>_, such that when an
+instance of the meta-node appears as the target of a binding, the
+argument nodes are bound to the values, required in order for the
+meta-node to return a value that is equivalent to the value of the
+source node. When there are such values, the pattern is said to have
+'matched'. If there is no possible value for at least one argument
+node, all argument nodes should evaluate to failures. In this case the
+pattern has not 'matched'
+
+.Example
+--------------------------------------------------
+x -> int(y)
+--------------------------------------------------
+
+In the example, above, `y` is bound to the value of `x` if it is an
+integer, otherwise `y` evaluates to a failure. There is no argument
+which will result in `int` returning a non-integer value thus if the
+source node, `x`, is not an integer the argument node, `y`, is bound
+to a failure. Since `int` returns the value of its argument directly,
+when it is an integer, the argument node is simply bound to the source
+node.
+
+.Example
+--------------------------------------------------
+x -> list(y, z)
+--------------------------------------------------
+
+In the example, above, `y` is bound to the first element of `x` and
+`z` is bound to the second element of `x` if `x` is a list of two
+elements. These bindings will result in a list, equivalent to `x`,
+being produced when they are passed to the `list` meta-node.
+
+==== Nested Patterns ====
+
+Patterns may be nested, that is an argument to a meta-node instance is
+itself a meta-node instance of which the operator meta-node supports
+pattern matching. When the arguments contain one or more nested
+patterns, the bindings to the argument nodes should only succeed if
+all nested patterns 'match'.
+
+.Example
+--------------------------------------------------
+x -> list(int(y), z)
+--------------------------------------------------
+
+The example, above, is similar to the previous example except with the
+additional condition that the first element of `x` should also be an
+integer. That is `y` is bound to the first element of `x` and `z` to
+the second element of `x` if `x` is a list of two elements of which
+the first element is an integer.
+
+
+==== Constant Patterns ====
+
+Constant patterns comprise a constant value as opposed to a
+node. These patterns 'match' when the source node is equal, by
+<<meta-node-eq, `=`>>, to the constant value. Constant patterns do not
+result in any bindings being established however they do affect the
+condition of the pattern in which they are nested.
+
+IMPORTANT: Constant patterns may only be used as arguments to a
+meta-node instance, of which at least one of the arguments is not a
+constant pattern.
+
+Constant values include any literal constants, such as numbers,
+strings as well as character literals, produced by the <<macro-node-c,
+`c`>> macro, and literal symbols, produced by the
+<<macro-node-quote,`'`>> macro.
+
+.Example
+--------------------------------------------------
+x -> list(1, y, z)
+--------------------------------------------------
+
+In the example, above, `y` is bound to the second element of `x` and
+`z` to the third element of `x` if `x` is a list of three elements of
+which the first element is equal to `1`.
+
+The following are examples of invalid uses of constant patterns:
+
+.Examples: Invalid use of Constant Patterns
+--------------------------------------------------
+# Invalid as the pattern is not nested
+x -> 1
+
+# Invalid as at least one argument should not be a constant.
+x -> list(1, 2)
+--------------------------------------------------
+
+CAUTION: Functor nodes, of which the arguments are all constants, such
+as `1 + 1`, are only treated as constant patterns if the meta-node
+supports pattern matching. In this case the `+` meta-node does not
+support pattern matching, thus `1 + 1` is currently not treated as a
+constant pattern.
+
+
+[[matchers, Matchers]]
+==== Matchers ====
+
+The `matcher` node attribute stores a meta-node which is called to
+construct the pattern for a given list of arguments. The 'matcher'
+meta-node is called with two arguments: the place to be matched, which
+should become the 'source' node of any bindings established by the
+pattern, and the pattern 'functor' expression itself (including the
+operator). The meta-node should return a `Pattern` object, which is a
+dictionary containing the following entries:
+
+`condition`:: The node expression which evaluates to true if the
+pattern matches. This should include the conditions of the argument
+nodes if they are patterns themselves.
+
+`bindings`:: List of bindings established by the pattern. If there are
+no bindings established by the pattern, then this entry should be set
+to the empty list, _see <<meta-node-Empty, `Empty`>>.
++
+--
+IMPORTANT: The bindings should not be conditioned on `condition` as
+they will be conditioned later when the node declarations for the
+entire pattern (including the parent patterns) is constructed. _See
+<<conditional_bindings>>_.
+--
+
+TIP: Pattern objects may be created with the <<meta-node-Pattern,
+`Pattern`>> meta-node.
+
+All bindings, established by a pattern, should be established in an
+explicit context with identifier `match`. This allows multiple
+patterns to be specified on a single node, with the node being set to
+the value corresponding to binding of the first pattern that
+'matches'.
+
+.Example: Multiple Patterns
+--------------------------------------------------
+x -> int(y)
+x -> list(int(y))
+x -> list("x", int(y))
+--------------------------------------------------
+
+The example above contains multiple patterns involving a single node
+`y`.
+
+`y` is bound to:
+
+. the value of `x` if it is an integer, or
+. the first element of `x` if it is a list of one element, which is an
+integer, or
+. the second element of `x` if it is a list of two elements, with the
+first element being the string value `"x"` and the second element
+being an integer.
+
+==== Utilities ====
+
+The following meta-nodes are utilities for creating and processing
+patterns.
+
+CAUTION: Currently these utilities are not exported from the `core`
+module, thus they have to be imported manually if they are to be used
+in another module.
+
+
+==== Meta-Node: `Pattern(condition, :(binding))` ====
+
+Creates a `Pattern` object. _See <<matchers>>_
+
+`condition`:: The node expression which evaluates to true if the
+pattern matches.
+
+`binding (Optional)`:: List of binding expressions of the bindings
+established by the pattern. Defaults to the empty list if not
+provided.
+
+
+==== Meta-Node: `get-matcher(node)` ====
+
+Returns the 'matcher' function, stored in the `matcher` attribute of a
+node.
+
+Returns a failure if the node's `matcher` attribute is not set.
+
+[horizontal]
+`node`:: The node object of which to retrieve the 'matcher'.
+
+
+==== Meta-Node: `make-pattern(place, pattern)` ====
+
+Creates the `Pattern` object for a pattern expression.
+
+NOTE: Can be used for any pattern, including constant patterns.
+
+`place`:: The place which should be matched to the pattern, i.e. the
+source node of the bindings established by the pattern.
+
+`pattern`:: The pattern expression.
+
+NOTE: If `pattern` is a functor expression of which the operator is
+not a `meta-node` with a `matcher`, a `Pattern` with a single binding
+`place -> pattern`, and no `condition` is returned.
+
+
+==== Meta-Node: `combine-conditions(c1, c2)` ====
+
+Returns an expression which is the conjunction of two expression, by
+<<meta-node-and, `and`>>.
+
+`c1`:: The first condition, on the left hand side of the `and`.
+`c2`:: The second condition, on the right hand side of the `and`.
+
+If `c1` evaluates to a failure, returns `c2`. If `c2` evaluates to a
+failure, returns `c1`.
+
+TIP: This is useful for creating a condition which combines the
+conditions of multiple argument nodes.
+
+
+==== Meta-Node: conditionalize-bindings(condition, bindings) ====
+
+Returns a list where each binding in `bindings` is conditioned on
+`condition`. _See <<conditional_bindings>>_.
+
+`condition`:: The condition on which to condition the bindings.
+`bindings`:: List of bindings to condition.
+
+
+==== Meta-Node: make-pattern-declarations(pattern) ====
+
+Creates the node declarations implementing a pattern.
+
+Returns a single node declaration.
+
+`pattern`:: The `Pattern` object for which to create the declarations.
+
+TIP: The declaration returned by this meta-node is a suitable return
+value for a `target-transform` function. _See <<_instances_as_targets>>_.
+
+
 === Operator Table ===
 
 [cols="<,>,>", options="header"]

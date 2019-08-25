@@ -461,6 +461,7 @@ If the result of a function is a dictionary, and a dictionary entry
 fails to evaluate to a value, it is only that dictionary entry that
 fails, the function still returns a dictionary.
 
+[[conditional_bindings, Conditional Bindings]]
 ==== Conditional Bindings ====
 
 A binding declaration `a -> b` can, itself, be treated as a node, to
