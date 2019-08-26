@@ -65,6 +65,7 @@
     (cons (id-symbol "-") '("-" (:real :real)))
     (cons (id-symbol "*") '("*" (:real :real)))
     (cons (id-symbol "/") '("/" (:real :real)))
+    (cons (id-symbol "%") '("%" (:real :real)))
     (cons (id-symbol "<") '("<" (:real :real)))
     (cons (id-symbol ">") '(">" (:real :real)))
     (cons (id-symbol "<=") '("<=" (:real :real)))

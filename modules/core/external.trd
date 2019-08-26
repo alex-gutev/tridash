@@ -18,6 +18,9 @@
 :extern(/, a, b)
 :attribute(/, strictness, or(a,b))
 
+:extern(%, a, b)
+:attribute(%, strictness, or(a,b))
+
 
 ### Comparison Operators
 

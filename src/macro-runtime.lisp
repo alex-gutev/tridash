@@ -341,7 +341,7 @@
 
 (define-tridash-function * ((a number) (b number)) *)
 (define-tridash-function / ((a number) (b number)) /)
-
+(define-tridash-function % ((a number) (n number)) rem)
 
 ;;; Comparison
 
