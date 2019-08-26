@@ -139,21 +139,15 @@ doc_files = doc/tridash.adoc \
 
 # Info Documentation
 
-doc/tridash.xml: $(doc_files)
-	$(A2X) --format docbook --no-xmllint --destination-dir doc $<
-
-doc/tridash.txml: doc/tridash.xml
+doc/tridash.info: $(doc_files)
+	- $(A2X) --format docbook --no-xmllint --destination-dir . $< && \
 	$(DB2X_XSLTPROC) -s texi \
 		--string-param output-file="tridash" \
 		--string-param directory-category="Development" \
 		--string-param directory-description="A programming language based on bindings" \
-		$< -o $@
-
-doc/tridash.texi: doc/tridash.txml
-	$(DB2X_TEXIXML) --encoding=UTF-8 --to-stdout $< > $@
-
-doc/tridash.info: doc/tridash.texi
-	$(MAKEINFO) --force $< -o $@
+		tridash.xml -o tridash.txml && \
+	$(DB2X_TEXIXML) --encoding=UTF-8 tridash.txml && \
+	$(MAKEINFO) --force tridash.texi -o $@
 
 info: doc/tridash.info
 
@@ -176,7 +170,7 @@ pdf: doc/tridash.pdf
 
 ## Clean Targets
 
-clean:
+clean: clean-docbook-temp
 	rm -f build.lisp
 	rm -f tridashc
 
@@ -185,16 +179,17 @@ distclean: clean
 	rm -f config.log
 	rm -f config.status
 
-maintainer-clean: distclean clean-info
+maintainer-clean: distclean
 	rm -f doc/tridashc.1
-
-
-clean-info:
-	rm -f doc/tridash.xml
-	rm -f doc/tridash.txml
-	rm -f doc/tridash.texi
 	rm -f doc/tridash.info
-	rm -f doc/tridash.info
+
+# Clean temporary files created when converting docbook to other
+# formats
+
+clean-docbook-temp:
+	rm -f tridash.xml
+	rm -f tridash.txml
+	rm -f tridash.texi
 
 ## Installation Targets
 
