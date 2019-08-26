@@ -22,9 +22,11 @@ bindir = @bindir@
 
 datarootdir = @datarootdir@
 datadir = @datadir@
-mandir = @mandir@
+docdir = @docdir@
 
+mandir = @mandir@
 infodir = @infodir@
+
 htmldir = @htmldir@
 pdfdir = @pdfdir@
 
@@ -224,6 +226,14 @@ install-info: doc/tridash.info
 		--entry="* Tridash: (tridash).  A Programming Language Based on Bindings." \
 		"$(DESTDIR)$(infodir)/tridash.info"
 
+install-html: doc/tridash.chunked
+	install -d $(htmldir)/html
+	cp -f -R $< $(htmldir)/html
+
+install-pdf: doc/tridash.pdf
+	install -d $(pdfdir)
+	install -m 644 $< $(pdfdir)
+
 
 install: all installdirs install-bin install-data install-man install-info
 
@@ -232,7 +242,13 @@ uninstall-info:
 	$(INSTALL_INFO) --delete $(DESTDIR)$(infodir)/tridash.info $(DESTDIR)$(infodir)/dir
 	rm -f $(DESTDIR)$(infodir)/tridash.info
 
-uninstall: uninstall-info
+uninstall-html:
+	rm -rf $(htmldir)/html
+
+uninstall-pdf:
+	rm -f $(pdfdir)/tridash.pdf
+
+uninstall: uninstall-info uninstall-html uninstall-pdf
 	rm -f $(DESTDIR)$(bindir)/tridashc
 	rm -rf $(DESTDIR)$(pkgdatadir)
 	rm -f $(DESTDIR)$(mandir)/man1/tridashc.1.gz
@@ -260,7 +276,7 @@ $(srcdir)/test/backends/javascript/runtime/tridash.js: src/backends/javascript/r
 .PHONY: all man js-runtime clean distclean maintainer-clean clean-info \
 	info html pdf \
 	install installdirs install-bin \
-	install-module-build-config install-modules install-data install-man \
-	install-info \
-	uninstall uninstall-info \
+	install-module-build-config install-modules install-data \
+	install-man install-info install-html install-pdf \
+	uninstall uninstall-info uninstall-html uninstall-pdf \
 	check check-compiler check-runtime
