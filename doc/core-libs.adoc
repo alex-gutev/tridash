@@ -322,6 +322,21 @@ NOTE: Registered as an infix operator with precedence *200* and *left*
 associativity.
 
 
+[[meta-node-rem]]
+==== Meta-Node: `%(x, y)` ====
+
+(((%, Core Module, Meta-Node)))
+
+Computes the remainder of the division of `x` by `y`.
+
+[horizontal]
+`x`:: A number.
+`y`:: A number.
+
+NOTE: Registered as an infix operator with precedence *200* and *left*
+associativity.
+
+
 === Comparison ===
 
 (((Comparison, Core Module)))
