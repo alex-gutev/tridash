@@ -131,6 +131,14 @@ doc/tridash.chunked: $(doc_files)
 html: doc/tridash.chunked
 
 
+# PDF Documentation
+
+doc/tridash.pdf: $(doc_files)
+	$(A2X) --format pdf --dblatex-opts="-P latex.output.revhistory=0" --no-xmllint --icons --destination-dir doc $<
+
+pdf: doc/tridash.pdf
+
+
 ## Clean Targets
 
 clean:
@@ -200,7 +208,8 @@ $(srcdir)/test/backends/javascript/runtime/tridash.js: src/backends/javascript/r
 
 ## Phony Targets
 
-.PHONY: all man html js-runtime clean distclean maintainer-clean \
+.PHONY: all man js-runtime clean distclean maintainer-clean \
+	html pdf \
 	install installdirs install-bin \
 	install-module-build-config install-modules install-data install-man \
 	uninstall \
