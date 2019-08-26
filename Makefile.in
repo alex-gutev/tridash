@@ -126,7 +126,7 @@ doc_files = doc/tridash.adoc \
 # HTML Documentation
 
 doc/tridash.chunked: $(doc_files)
-	$(A2X) -f chunked --no-xmllint --icons -D doc $<
+	$(A2X) --format chunked --no-xmllint --icons --destination-dir doc $<
 
 html: doc/tridash.chunked
 
