@@ -28,6 +28,7 @@
 
 :op(*, 200, left)
 :op(/, 200, left)
+:op(%, 200, left)
 
 
 ## Comparison Operators
