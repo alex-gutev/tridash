@@ -276,15 +276,17 @@ associativity.
 
 
 [[meta-node-minus]]
-==== Meta-Node: `-(x, y)` ====
+==== Meta-Node: `-(x, :(y))` ====
 
 (((-, Core Module, Meta-Node)))
 
 Computes the difference of `x` and `y`.
 
-[horizontal]
+If `y` is not provided, returns the negation of `x`, i.e. `x`
+multiplied by `-1`.
+
 `x`:: A number.
-`y`:: A number.
+`y` ('Optional'):: A number.
 
 NOTE: Registered as an infix operator with precedence *100* and *left*
 associativity.
