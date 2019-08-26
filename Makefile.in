@@ -221,11 +221,11 @@ install-man: doc/tridashc.1
 install-info: doc/tridash.info
 	- install -m 644 $< $(DESTDIR)$(infodir)
 	- $(INSTALL_INFO) --dir-file="$(DESTDIR)$(infodir)/dir" \
-		--name="Tridash" \
+		--entry="* Tridash: (tridash).  A Programming Language Based on Bindings." \
 		"$(DESTDIR)$(infodir)/tridash.info"
 
 
-install: all installdirs install-bin install-data install-man
+install: all installdirs install-bin install-data install-man install-info
 
 
 uninstall-info:
@@ -262,5 +262,5 @@ $(srcdir)/test/backends/javascript/runtime/tridash.js: src/backends/javascript/r
 	install installdirs install-bin \
 	install-module-build-config install-modules install-data install-man \
 	install-info \
-	uninstall \
+	uninstall uninstall-info \
 	check check-compiler check-runtime
