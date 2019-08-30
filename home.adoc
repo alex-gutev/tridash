@@ -1,0 +1,12 @@
+= Tridash =
+
+Tridash is a programming language which aims to make application state
+management easier and less error-prone. For a philosophy of the language visit link:philosophy.html[Philosophy]
+
+- link:installation.html[Installation] -- Installation Instructions
+
+- link:tutorials[Tutorials] -- Introductory Tutorials
+
+- link:manual[Reference Manual] -- Full formal reference manual,
+  documenting the syntax, semantics, features and Core modules of the
+  language.

@@ -1,0 +1,118 @@
+= Installation =
+Alexander Gutev <alex.gutev@gmail.com>
+
+== Binaries ==
+
+Prebuilt binaries are available for x86-64 Linux, Mac OS X/macOS and
+Windows at: https://github.com/alex-gutev/tridash/releases/latest.
+
+
+=== Windows ===
+
+Download `tridash-*-x64-setup.exe` and run the installer.
+
+
+=== Linux and Mac OS X/macOS ===
+
+1. Download the tarball for your operating system:
+   - `linux_x86_64.tar.gz` for Linux
+   - `darwin_x86_64.tar.gz` for Mac OS X/macOS.
+
+2. Unpack the tarball to a directory of your choice.
+
+3. Navigate to the directory, where the tarball was unpacked, in the
+   terminal.
+
+4. Run `sudo ./install.sh`. This will install the `tridashc`
+   executable and its related files in the `/usr/local` prefix.
+
+To uninstall navigate to the directory, where the tarball was
+unpacked, and run `sudo ./uninstall.sh`.
+
+_Once Tridash is installed, the directory to which the tarball was
+unpacked can be removed._
+
+== Building from source ==
+
+The `README.md` file, in the source distribution, contains build
+instructions for Linux and Unix-like systems. Download the
+`tridash-*.tar.gz` tarball, from
+link:github.com/alex-gutev/tridash/releases[releases], rather than
+cloning the repository, or downloading the raw source code, as it
+contains a few non-source, files which have been pre-generated. If you
+clone the repository you will need to generate the following yourself:
+
+    - A `configure` script, generated with link:https://www.gnu.org/software/autoconf/[autoconf].
+    - Man and info pages, generated from AsciiDoc sources with `a2x`,
+      _see http://asciidoc.org_.
+    - A minified version of the JavaScript runtime library, which is
+      compiled from multiple JS source files with
+      link:https://github.com/mishoo/UglifyJS2/tree/harmony[uglify-es].
+
+
+=== Building Without Make ===
+
+The following instructions are for building the Tridash compiler
+directly without using the makefile. This is useful for systems which
+do not provide a `make` executable or a shell compatible with the
+Bourne shell, such as Windows.
+
+The same prerequisites apply: you'll need a Common Lisp compiler, such
+as link:http://www.sbcl.org[SBCL], and
+link:https://www.quicklisp.org/beta/[Quicklisp]. Consult the README
+for more information.
+
+1. Run SBCL or the Common Lisp implementation of your choice, making
+   sure to load the `tridash.asd` file:
++
+[source,shell]
+--------------------------------------------------
+sbcl --load tridash.asd
+--------------------------------------------------
++
+This launches the Common Lisp REPL.
+
+2. Run `(ql:quickload :tridash)` in the REPL.
+3. Run `(asdf:make :tridash)` to compile the `tridashc` executable. If
+   all went well the `tridashc` executable should have been created in
+   the same directory.
++
+NOTE: Your Common Lisp implementation may exit after creating the
+executable. This is normal.
+
+
+==== Changing the Paths
+
+This builds a `tridashc` executable, with the builtin module search
+paths set to `/usr/local/share/tridash/modules`,
+`/usr/share/tridash/modules` and `~/.tridash/modules`, and the
+JavaScript runtime library path set to
+`/usr/local/share/tridash/backends/javascript/tridash.js`. These paths
+can be changed with the `TRIDASH_MODULE_PATHS` environment variable,
+which contains a semicolon `;` separated list of paths to search for
+modules, and `TRIDASH_JS_RUNTIME` which contains the full path to the
+Tridash JavaScript runtime library.
+
+Alternatively, the builtin paths can be changed, between steps 2 and
+3, prior to compiling the executable. This requires some knowledge of
+Common Lisp. To change the module search paths, set the variable
+`tridash::*module-search-paths*` to a list of `pathname` objects of
+the module directories. For example (in the Common Lisp REPL):
+
+[source,lisp]
+--------------------------------------------------
+(setf tridash::*module-search-paths*
+       (list #p"/usr/local/share/tridash/modules"
+             #p"/usr/share/tridash/modules"
+             #p"~/.tridash/modules"))
+--------------------------------------------------
+
+To change the path to the JavaScript runtime library, set the
+`tridash.backend.js::*runtime-library-path*` to the `pathname` object
+corresponding to the runtime library path:
+
+[source,lisp]
+--------------------------------------------------
+(setf tridash.backend.js::*runtime-library-path*
+      #p"/usr/local/share/tridash/backends/javascript/tridash.js)
+--------------------------------------------------

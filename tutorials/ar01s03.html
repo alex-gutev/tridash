@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>3. Conditional Bindings</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s02.html" title="2. Functional Bindings" /><link rel="next" href="ar01s04.html" title="4. Writing your own Functions" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s02.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s04.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_conditional_bindings"></a>3. Conditional Bindings</h2></div></div></div><p>In this tutorial we’ll implement the third feature of our simple
+budgeting application, namely specifying the budget and displaying a
+message if the total expenses exceed the budget. In essence this
+tutorial demonstrates conditional bindings.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_case_operator"></a>3.1. Case Operator</h3></div></div></div><p>Conditions are specified using the special <code class="literal">case</code> operator. The <code class="literal">case</code>
+operator is special in that it has a special syntax to make it more
+readable.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">case</code> operator is actually a macro-node, implemented in
+Tridash, which expands to a series of nested <code class="literal">if</code> functor
+expressions. You can see its source in the <code class="literal">modules/core/macros.trd</code>
+file of your Tridash installation.</p></td></tr></table></div><p>The syntax of the case operator is as follows:</p><pre class="screen">case(
+  condition-1 : value-1,
+  condition-2 : value-2,
+  ....
+  default-value
+)</pre><p>Each argument is of the form <code class="literal">condition : value</code> where <code class="literal">condition</code> is
+the condition node and <code class="literal">value</code> is the corresponding value node. The
+last argument may also be of the form <code class="literal">value</code>, that is there is no
+condition node, in which case it becomes the default or else value.</p><p>The value of the <code class="literal">case</code> functor is the value of the value node
+corresponding to the first condition node which has a <span class="emphasis"><em>true</em></span> value, any
+non-zero value, or the value of the default node, if any, when all
+condition nodes have a <span class="emphasis"><em>false</em></span> (zero) value.</p><p><strong>Example. </strong>
+</p><pre class="screen">case(
+  a &gt; b : a - b
+  b &gt; a : b - a
+  0
+)</pre><p>
+</p><p>If the node <code class="literal">a &gt; b</code> evaluates to true the value of the <code class="literal">case</code> node
+becomes the value of <code class="literal">a - b</code>, otherwise if <code class="literal">b &gt; a</code> evaluates to true
+the value of the <code class="literal">case</code> node becomes the value of <code class="literal">b - a</code>. If neither
+<code class="literal">a &gt; b</code> nor <code class="literal">b &gt; a</code> evaluate to true the value of the case node
+becomes <code class="literal">0</code>.</p><p>If the default value node is omitted and no condition node evaluates
+to <span class="emphasis"><em>true</em></span>, the <code class="literal">case</code> node evaluates to a failure value (<span class="emphasis"><em>you will go
+in detail about failure values in a later tutorial which introduces
+error handling</em></span>).</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_budget_application_version_2_0"></a>3.2. Budget Application Version 2.0</h3></div></div></div><p>The feature we would like to implement is the ability to specify the
+budget and display an appropriate message indicating whether the
+budget was exceeded.</p><p>We’ll need a new input field for specifying the budget and a node in
+which to store it, lets call it <code class="literal">budget</code>. Add a new text input element
+with its value attribute bound to <code class="literal">to-real(budget)</code>, in order to
+convert the string in the text input field to a real numeric
+value. The input element should be something similar to the following,
+if inline declarations are used:</p><pre class="programlisting">&lt;input value="&lt;?@ to-real(budget) @&gt;"/&gt;</pre><p>Next we’ll need to display the message somewhere. A paragraph <code class="literal">p</code>
+element, below the total, will do. We’ll use inline declarations to
+make the code more succinct, however the logic can be placed in a
+Tridash code tag as well.</p><p>Add the following underneath the element displaying the total:</p><pre class="programlisting">&lt;p&gt;
+  &lt;?@
+    case(
+      total &lt; budget : "Within budget.",
+      "Budget exceeded!!!"
+    )
+  @&gt;
+&lt;/p&gt;</pre><p>To simplify the code the node <code class="literal">total</code> is bound to the total sum
+allocated. Alternatively the functor node <code class="literal">food + electricity + water</code>
+could have been used directly instead of the node <code class="literal">total</code>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>There is no difference in efficiency between using the <code class="literal">total</code>
+node or using the functor node directly. The value of a node is only
+computed once, whenever one of its arguments changes, even if it is
+referenced in more than one location. Moreover the value of a node is
+not computed if it is not used anywhere.</p></td></tr></table></div><p>Ensure that there is a Tridash code tag at the top of the file with
+the following contents:</p><pre class="screen">:import(core)
+
+food + electricity + water -&gt; total</pre><p>And modify the input element displaying the total, next to “Total:”,
+to be bound to the node <code class="literal">total</code> instead of <code class="literal">food + electricity +
+water</code>.</p><pre class="programlisting">&lt;input value="&lt;?@ total @&gt;"/&gt;</pre><p>Now we have a working application which should display the message
+“Within budget.”, if the total is within the budget, and “Budget
+exceeded!!!”, if the budget has been exceeded.</p><p>Here’s the full <code class="literal">ui.html</code> file:</p><p><strong>ui.html. </strong>
+</p><pre class="programlisting">&lt;?
+ :import(core)
+
+ food + electricity + water -&gt; total
+?&gt;
+
+&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Budget App&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+      &lt;h1&gt;Budget&lt;/h1&gt;
+      &lt;p&gt;&lt;label&gt;Budget: &lt;input value="&lt;?@ to-real(budget) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;h2&gt;Expenses:&lt;/h2&gt;
+      &lt;p&gt;&lt;label&gt;Food: &lt;input value="&lt;?@ to-real(food) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;label&gt;Electricity: &lt;input value="&lt;?@ to-real(electricity) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;label&gt;Water: &lt;input value="&lt;?@ to-real(water) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;label&gt;&lt;strong&gt;Total:&lt;/strong&gt; &lt;input value="&lt;?@ total ?&gt;" readonly&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;hr&gt;
+      &lt;p&gt;
+        &lt;?@
+           case(
+             total &lt; budget : "Within budget.",
+             "Budget exceeded!!!"
+           )
+        ?&gt;
+      &lt;/p&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre><p>
+</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out"></a>Let’s try it out</h4></div></div></div><p>Build the application, using the same build configuration file,
+<code class="literal">build.yml</code>, and build command from the previous tutorial.</p><p>Open the <code class="literal">app.html</code> file in a web browser, and enter some initial
+numbers in the budget and expenses fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial3/snap1.png" align="middle" alt="Snapshot: 100 entered in budget and all expense fields. Total 300, Budget Exceeded!!! displayed." /></div></div><p>Notice that the message below the total says “Budget Exceeded!!!”
+since the total of 300 did indeed exceed the budget of 100, with the
+numbers in the snapshot above.</p><p>Now try increasing the budget:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial3/snap2.png" align="middle" alt="Snapshot: Budget increased to 400. Within Budget displayed." /></div></div><p>The message changes to “Within Budget.”. This demonstrates that the
+value of a <code class="literal">case</code> functor node is recomputed if the values of any of
+the condition nodes change.</p><p>Now try increasing some of the expenses, in order for the total to
+exceed the budget again:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial3/snap3.png" align="middle" alt="Snapshot: Expense total increased to 500. Budget Exceeded!!! displayed." /></div></div><p>The message changes back to “Budget Exceeded!!!”.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_improvements"></a>3.3. Improvements</h3></div></div></div><p>Whilst the application we’ve implemented so far demonstrates the power
+of functional bindings, it is rather lacking in that whether the
+budget has been exceeded or not is only indicated by a simple text
+message. The message has to be read in full to determine whether the
+budget was exceeded, and changes in the message are hard to
+notice. Some visual cues such as the message and total changing color
+when the budget is exceeded would be helpful.</p><p>As an improvement of the application, we would like the total sum and
+message to be displayed in <span class="red">red</span> if the total exceeds the budget and in
+<span class="green">green</span> if it is within the budget.</p><p>Let’s start off by giving an id to the <code class="literal">input</code> element, which displays
+the total, and the paragraph element, which displays the message so
+that they can be referenced from Tridash code. The <code class="literal">input</code> element,
+next to “Total:”, is given the id <code class="literal">input-total</code> and the paragraph
+element, in which the message is displayed, is given the id <code class="literal">message</code>.</p><p>Let’s create a node <code class="literal">color</code> to store the color in which the total sum
+and message will be displayed. It should have the value <code class="literal">"green"</code> when
+the total is within the budget and the value <code class="literal">"red"</code> when the total
+exceeds the budget. This can be achieved by binding to a <code class="literal">case</code>
+functor node.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The values <code class="literal">"green"</code> and <code class="literal">"red"</code> are strings, storing CSS color
+names.</p></td></tr></table></div><p>Add the following to the Tridash code tag.</p><pre class="screen">case(
+  total &lt; budget : "green",
+  "red"
+) -&gt; color</pre><p>The value of the <code class="literal">case</code> functor node is <code class="literal">"green"</code> if <code class="literal">total</code> is less
+than <code class="literal">budget</code> and <code class="literal">"red"</code> otherwise. The case functor node is bound to
+the <code class="literal">color</code> node.</p><p>The <code class="literal">color</code> node somehow has to be bound to the text color if the
+<code class="literal">input-total</code> input element and the <code class="literal">message</code> paragraph element. The
+text color is a style attribute of the elements. All style attributes
+are grouped under a single subnode <code class="literal">style</code> of the HTML element node
+(as is done when referencing style attributes from JavaScript). The
+text color itself is the <code class="literal">color</code> style attribute, thus is referenced
+by the <code class="literal">color</code> subnode of the <code class="literal">style</code> subnode of the HTML element,
+<code class="literal">style.color</code>.</p><p>The <code class="literal">color</code> node is bound to the <code class="literal">color</code> style attribute of the
+elements with the following (add to the Tridash code tag):</p><pre class="screen">color -&gt; self.input-total.style.color
+color -&gt; self.message.style.color</pre><p>Full <code class="literal">ui.html</code> code:</p><p><strong>ui.html. </strong>
+</p><pre class="programlisting">&lt;?
+ :import(core)
+
+ food + electricity + water -&gt; total
+
+ case(
+     total &lt; budget : "green",
+     "red"
+ ) -&gt; color
+
+ color -&gt; self.input-total.style.color
+ color -&gt; self.message.style.color
+?&gt;
+
+&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Budget App&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+      &lt;h1&gt;Budget&lt;/h1&gt;
+      &lt;p&gt;&lt;label&gt;Budget: &lt;input value="&lt;?@ to-real(budget) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;h2&gt;Expenses:&lt;/h2&gt;
+      &lt;p&gt;&lt;label&gt;Food: &lt;input value="&lt;?@ to-real(food) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;label&gt;Electricity: &lt;input value="&lt;?@ to-real(electricity) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;label&gt;Water: &lt;input value="&lt;?@ to-real(water) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;label&gt;&lt;strong&gt;Total:&lt;/strong&gt; &lt;input id="input-total" value="&lt;?@ total ?&gt;" readonly&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;hr&gt;
+      &lt;p id="message"&gt;
+        &lt;?@
+           case(
+             total &lt; budget : "Within budget.",
+             "Budget exceeded!!!"
+           )
+        ?&gt;
+      &lt;/p&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre><p>
+</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_2"></a>Let’s try it out</h4></div></div></div><p>Enter some values for the expenses and budget such that the total
+exceeds the budget.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial3/snap4.png" align="middle" alt="Snapshot: 100 entered in budget and expense fields. Total and Budget Exceeded!!! displayed in red." /></div></div><p>The message and total are now shown in red which provides an immediate
+visual cue that the budget has been exceeded.</p><p>Now increase the budget, or decrease the expenses:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial3/snap5.png" align="middle" alt="Snapshot: Budget increased to 400. Total and Within Budget displayed in green." /></div></div><p>The color of the message and total is immediately changed to green,
+which provides a noticeable indication that the situation has changed,
+the budget has no longer been exceeded.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_2"></a>3.4. Summary</h3></div></div></div><p>In this tutorial you learned how to create conditional bindings using
+the <code class="literal">case</code> operator which allows the value of a node to be
+conditionally bound to the value of another node based on whether a
+condition node evaluates to true.</p></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s02.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s04.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

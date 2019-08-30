@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>7. Outer Node References</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s06.html" title="6. Failures of your own" /><link rel="next" href="ar01s08.html" title="8. Modules and Organization" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s06.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s08.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_outer_node_references"></a>7. Outer Node References</h2></div></div></div><p>This tutorial shows how nodes declared in an outer scope can be
+referenced from inside a meta-node.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_referencing_non_local_nodes"></a>7.1. Referencing Non-Local Nodes</h3></div></div></div><p>Recall from <a class="xref" href="ar01s04.html" title="4. Writing your own Functions">Section 4, “Writing your own Functions”</a> that node expressions, within the body of a
+meta-node, primarily refer to local nodes. However if no local node is
+found, the enclosing scope of the meta-node is searched. Local nodes
+are only created when a node expression appears as the target of a
+binding. Referencing a node with the same identifier as a node
+declared at the global scope, when there is no local node with the
+same identifier, references the global node.</p><p><strong>Example. </strong>
+</p><pre class="screen">x                <a id="CO2-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span>
+
+addx(y) : x + y  <a id="CO2-2"></a><span><img src="images/icons/callouts/2.png" alt="2" border="0" /></span></pre><p>
+</p><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO2-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+Global node <code class="literal">x</code> declaration.
+</p></td></tr><tr><td width="5%" valign="top" align="left"><p><a href="#CO2-2"><span><img src="images/icons/callouts/2.png" alt="2" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+References global node <code class="literal">x</code> as there is no local node with that identifier.
+</p></td></tr></table></div><p>What actually happens behind the scenes, when an outer node is
+referenced, is that an additional argument is added to the <code class="literal">addx</code>
+meta-node and node <code class="literal">x</code> is implicitly added to the argument list of
+each instance of <code class="literal">addx</code>. Thus the definition <code class="literal">addx</code> can be thought of
+as the following:</p><pre class="screen">addx(y, x) : x + y</pre><p>and each instance <code class="literal">addx(node)</code> can be thought of as <code class="literal">addx(node, x)</code>.</p><p>The consequence of this is that the referenced outer-node, <code class="literal">x</code>, is
+treated just like any other argument. This means that a binding is
+established between <code class="literal">x</code> and all instances of the <code class="literal">addx</code>
+meta-node. Changes in the value of <code class="literal">x</code> will trigger a re-computation
+of the values of all instances of <code class="literal">addx</code>. This implicit argument is
+also added to all meta-nodes which contain an instance of <code class="literal">addx</code> in
+their body.</p><p>The following example demonstrates referencing an outer node from a
+nested meta-node.</p><pre class="screen">add(x, y) : {
+  addx(y) : x + y
+  addx(y)
+}</pre><p>In this example the outer node <code class="literal">x</code>, referenced from within the <code class="literal">addx</code>
+meta-node is the node <code class="literal">x</code>, the first argument node, in the scope of
+the body of the <code class="literal">add</code> meta-node.</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>If no node is found, either local or in enclosing scope, a
+compilation error is triggered.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip: .. Operator"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"><code class="literal">..</code> Operator</th></tr><tr><td align="left" valign="top"><p>The <code class="literal">..(x)</code> operator can be used to explicitly reference a node <code class="literal">x</code>
+from the enclosing scope. This is useful when there is a need to
+reference a global node which has the same identifier as a local node.</p><p><strong>Example. </strong>
+</p><pre class="screen">x                   <a id="CO3-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span>
+add(x) : x + ..(x)  <a id="CO3-2"></a><span><img src="images/icons/callouts/2.png" alt="2" border="0" /></span></pre><p>
+</p><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO3-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+Global node <code class="literal">x</code> declaration.
+</p></td></tr><tr><td width="5%" valign="top" align="left"><p><a href="#CO3-2"><span><img src="images/icons/callouts/2.png" alt="2" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+<code class="literal">..(x)</code> references the global <code class="literal">x</code> node.
+</p></td></tr></table></div></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_global_color_nodes"></a>7.2. Global Color Nodes</h3></div></div></div><p>So far we have a basic working budgeting application. However the
+colors used to indicate <span class="emphasis"><em>within budget</em></span> and <span class="emphasis"><em>budget exceeded</em></span> are
+hard-coded. While red and green are good choices in the general case,
+the user may prefer different colors or would like to adjust the
+saturation and luminance of the colors.</p><p>Before we begin let’s encapsulate colors in a meta-node, with each of
+the components as subnodes.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_subnodes"></a>Subnodes</h4></div></div></div><p>We’ve briefly mentioned subnodes in <a class="xref" href="ar01s01.html" title="1. Hello Node">Section 1, “Hello Node”</a>. A subnode is a node
+which references a dictionary entry, of a particular key, out of a
+<span class="emphasis"><em>parent</em></span> node containing the dictionary of values. These are referred
+to as subnodes since they behave like individual nodes, and are
+evaluated separately from their <span class="emphasis"><em>parent</em></span> nodes.</p><p>Subnodes are referenced with the <code class="literal">.</code> special operator. The parent node
+expression is on the left-hand side with the key on the right-hand
+side. The key is interpreted as a literal symbol rather than a node
+expression.</p><p><strong>Subnode <code class="literal">.</code> Operator Syntax. </strong>
+</p><pre class="screen">parent.key</pre><p>
+</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+<p>
+<code class="literal">parent</code>
+</p>
+</td><td style="" valign="top">
+<p>
+The parent <code class="literal">node</code>, which can be any node expression.
+</p>
+</td></tr><tr><td style="" valign="top">
+<p>
+<code class="literal">key</code>
+</p>
+</td><td style="" valign="top">
+<p>
+The entry key, which is interpreted as a literal symbol.
+</p>
+</td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">.</code> operator is lexically special in that spaces are not
+required between its arguments.</p></td></tr></table></div><p>Meta-Nodes which return dictionary values can be created by binding to
+subnodes of the <code class="literal">self</code> node.</p><p><strong>Example: Meta-Node Returning Dictionary. </strong>
+</p><pre class="screen">Person(first, last) : {
+    first -&gt; self.first  <a id="CO4-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span>
+    last -&gt; self.last    <a id="CO4-2"></a><span><img src="images/icons/callouts/2.png" alt="2" border="0" /></span>
+}</pre><p>
+</p><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO4-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+Binding subnode <code class="literal">first</code> of <code class="literal">self</code> to argument node <code class="literal">first</code>. Sets
+the value of the entry with key <code class="literal">first</code> of the dictionary.
+</p></td></tr><tr><td width="5%" valign="top" align="left"><p><a href="#CO4-2"><span><img src="images/icons/callouts/2.png" alt="2" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+Binding subnode <code class="literal">last</code> of <code class="literal">self</code> to argument node <code class="literal">last</code>. Sets the
+value of the entry with key <code class="literal">last</code> of the dictionary.
+</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_encapsulating_colors"></a>Encapsulating Colors</h4></div></div></div><p>Let’s create a <code class="literal">Color</code> meta-node that takes the hue, saturation and
+luminance as arguments and creates a dictionary with three entries
+<code class="literal">hue</code>, <code class="literal">saturation</code> and <code class="literal">luminance</code>. This encapsulates colors in a
+single value.</p><pre class="screen">Color(h, s, l) : {
+    h -&gt; self.hue
+    s -&gt; self.saturation
+    l -&gt; self.luminance
+}</pre><p>Let’s create another meta-node <code class="literal">lerp-color</code> which simply linearly
+interpolates all the components of two colors, using the <code class="literal">lerp</code>
+meta-node we implemented in <a class="xref" href="ar01s04.html" title="4. Writing your own Functions">Section 4, “Writing your own Functions”</a>.</p><pre class="screen">lerp-color(c1, c2, alpha) : {
+    Color(
+        lerp(c1.hue, c2.hue, alpha),
+        lerp(c1.saturation, c2.saturation, alpha),
+        lerp(c1.luminance, c2.luminance, alpha)
+    )
+}</pre><p>Finally let’s change the <code class="literal">make-hsl</code> function to take a single
+argument, which is expected to be a dictionary with the color
+components.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>If a subnode of a <code class="literal">parent</code> node, which does not evaluate to
+a dictionary, is referenced or the dictionary does not contain an
+entry with the subnode key, the subnode evaluates to a failure.</p></td></tr></table></div><pre class="screen">make-hsl(c) :
+    format("hsl(%s,%s%%,%s%%)", c.hue, c.saturation, c.luminance)</pre><p>To further clean up the code, the interpolation of the colors will be
+performed inside a meta-node rather than having it littered all over
+the global scope. We’ll create a meta-node <code class="literal">compute-color</code> which takes
+as arguments the total expenses and budget and computes the
+interpolated color. The two colors are not passed as arguments, rather
+they are stored in the global meta-nodes <code class="literal">in-budget-color</code>, the within
+budget color, and <code class="literal">out-budget-color</code>, the budget exceeded color.</p><pre class="screen">compute-color(total, budget) : {
+    clamp((total + 1) / (budget + 1), 0, 1) -&gt; scale
+    make-hsl(lerp-color(in-budget-color, out-budget-color), scale)
+}</pre><p>The global nodes are referenced directly from within the meta-node.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This a rather contrived example since the two colors could have
+easily been passed as arguments, and in-fact it would have resulted in
+cleaner and more reusable code. However this example suffices in
+demonstrating outer node references.</p></td></tr></table></div><p>Finally let’s give the <code class="literal">in-budget-color</code> and <code class="literal">out-budget-color</code> nodes
+initial values:</p><pre class="screen"># Set initial value of in-budget-color to green
+Color(120, 90, 45) -&gt; in-budget-color
+
+# Set initial value of out-budget-color to red
+Color(0, 90, 45) -&gt; out-budget-color</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The initial value declarations can be placed before or after the
+<code class="literal">compute-color</code> meta-node definition. It makes no difference.</p></td></tr></table></div><p>The <code class="literal">in-budget-color</code> node was given an initial green color value
+(Hue = 120) and the <code class="literal">out-budget-color</code> node was given an initial red
+color value (Hue = 0).</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_6"></a>Let’s try it out</h4></div></div></div><p>There is no change in the behavior of the application between this
+tutorial and the previous tutorial however there is a change in the
+structuring of the code. Try changing the two colors and play around
+with the saturation and luminance values. <span class="emphasis"><em>Remember to recompile after
+each change.</em></span></p><pre class="screen"># Set in-budget-color to blue
+Color(240, 100, 50) -&gt; in-budget-color</pre><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial7/snap1.png" align="middle" alt="Snapshot: Within budget color changed to blue." /></div></div><p>This version of the application does not present any new features over
+the previous version however presents a significant improvement in the
+maintainability of the code. In this version, the location in the
+code, in which the colors are defined is clearly visible. Changing the
+colors is much easier than in the previous version where you would
+have to modify this segment of code:</p><pre class="screen">make-hsl(
+   lerp(120, 0, scale),
+   90,
+   45
+) -&gt; color</pre><p>It isn’t clear which arguments of the <code class="literal">lerp</code> meta-node correspond to
+the within budget color and the budget exceeded color. Someone who
+isn’t familiar with the color interpolation logic might not know what
+<code class="literal">lerp</code> is and may accidentally introduce a
+bug. Furthermore in the previous version the “Within budget” and
+“Budget exceeded” messages couldn’t have different values for the
+saturation and luminance components.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_application_preferences_interface"></a>7.3. Application Preferences Interface</h3></div></div></div><p>Whilst it is easy to change the colors by modifying the code directly,
+wouldn’t be nice if the colors can be changed directly from the
+application itself. This may seem like a lot of work requiring an
+infrastructural change to our application. Luckily with Tridash this
+can be accomplished easily without modifying the existing code, <span class="emphasis"><em>only
+new code is added</em></span>.</p><p>Let’s first design the UI. We’ll create three sliders for the <span class="emphasis"><em>hue</em></span>,
+<span class="emphasis"><em>saturation</em></span> and <span class="emphasis"><em>luminance</em></span> components of both the “Within Budget”
+and “Budget Exceeded” colors:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+Add an <code class="literal">input</code> element with <code class="literal">type="range"</code> for each of the three
+   components of the two colors. This will create a slider widget.
+</li><li class="listitem">
+For the <span class="emphasis"><em>hue</em></span> sliders set the attributes <code class="literal">min="0"</code> and
+   <code class="literal">max="360"</code>, as hue values are angles in the range <code class="literal">[0, 360]</code>.
+</li><li class="listitem">
+For the <span class="emphasis"><em>saturation</em></span> and <span class="emphasis"><em>luminance</em></span> sliders set the attributes:
+   <code class="literal">min="0"</code> and <code class="literal">max="100"</code>, as saturation and luminance values are
+   percentages.
+</li></ul></div><p>Now we need to bind the sliders to the color components. This can be
+done by binding to the <code class="literal">value</code> attribute of the sliders using inline
+declarations. For example, this will bind the <span class="emphasis"><em>hue</em></span> slider to the <span class="emphasis"><em>hue</em></span>
+component of the "Within budget" color:</p><pre class="programlisting">&lt;input type="range" min="0" max="360" value="&lt;?@ int(in-budget-color.hue) ?&gt;"&gt;</pre><p>The value of the slider is bound to <code class="literal">int(in-budget-color.hue)</code> in
+order to convert its value to an integer.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">int</code> meta-node is similar in functionality to the <code class="literal">real</code>
+meta-node but converts its argument to an integer.</p></td></tr></table></div><p>This interface is enough to allow us to change the colors directly
+from the application, however its missing a preview of the
+colors. Let’s add another two elements and bind their background
+colors to the colors.</p><p>Add the following two elements somewhere:</p><pre class="programlisting">&lt;div
+  style="display: inline-block; width: 2em; height: 2em; vertical-align: middle"
+  id="in-budget-preview"&gt;
+&lt;/div&gt;</pre><pre class="programlisting">&lt;div
+  style="display: inline-block; width: 2em; height: 2em; vertical-align: middle"
+  id="out-budget-preview"&gt;
+&lt;/div&gt;</pre><p>The <code class="literal">display: inline-block</code> style attribute simply causes the element
+to be displayed as a fixed size block inline with text. <code class="literal">width</code> and
+<code class="literal">height</code> set the size of the block and <code class="literal">vertical-align: middle</code>
+centers the element vertically on the line of text.</p><p>Bindings to individual style attributes cannot be established inline,
+and thus the elements are given ID’s in order to establish the
+bindings explicitly:</p><p>Add the following to the Tridash code tag:</p><pre class="screen">make-hsl(in-budget-color) -&gt; self.in-budget-preview.style.backgroundColor
+make-hsl(out-budget-color) -&gt; self.out-budget-preview.style.backgroundColor</pre><p>This simply binds the “Within Budget”
+color to the <code class="literal">backgroundColor</code>
+style attribute (which controls the background color) of the
+<code class="literal">in-budget-preview</code> element, and likewise the “Budget Exceeded”
+color is bound to the <code class="literal">backgroundColor</code> attribute of the
+<code class="literal">out-budget-preview</code> element. The <code class="literal">make-hsl</code> meta-node is used to
+convert the dictionary of components to a CSS HSL color string.</p><p>The following is the full Preferences UI code (excluding the explicit
+binding declarations):</p><pre class="programlisting">&lt;details&gt;
+  &lt;summary&gt;Preferences&lt;/summary&gt;
+  &lt;div&gt;
+    &lt;strong&gt;Within Budget Color:&lt;/strong&gt;
+    &lt;div
+      style="display: inline-block; width: 2em; height: 2em; vertical-align: middle"
+      id="in-budget-preview"&gt;
+    &lt;/div&gt;
+    &lt;p&gt;
+    Hue:
+    &lt;input
+      id="in-budget-hue"
+      type="range" min="0" max="360"
+      value="&lt;?@ int(in-budget-color.hue) ?&gt;" /&gt;
+    &lt;/p&gt;
+    &lt;p&gt;
+    Saturation:
+    &lt;input
+      id="in-budget-saturation" type="range" min="0" max="100"
+      value="&lt;?@ int(in-budget-color.saturation) ?&gt;" /&gt;
+    &lt;/p&gt;
+    &lt;p&gt;
+    Luminance:
+    &lt;input
+      id="in-budget-luminance"
+      type="range" min="0" max="100"
+      value="&lt;?@ int(in-budget-color.luminance) ?&gt;" /&gt;
+    &lt;/p&gt;
+  &lt;/div&gt;
+  &lt;div&gt;
+    &lt;strong&gt;Budget Exceeded Color:&lt;/strong&gt;
+    &lt;div
+      style="display: inline-block; width: 2em; height: 2em; vertical-align: middle"
+      id="out-budget-preview"&gt;
+    &lt;/div&gt;
+    &lt;/strong&gt;
+    &lt;p&gt;
+    Hue:
+    &lt;input
+      id="out-budget-hue"
+      type="range" min="0" max="360"
+      value="&lt;?@ int(out-budget-color.hue) ?&gt;"&gt;
+    &lt;/p&gt;
+    &lt;p&gt;
+    Saturation:
+    &lt;input
+      id="out-budget-saturation"
+      type="range" min="0" max="100"
+      value="&lt;?@ int(out-budget-color.saturation) ?&gt;"&gt;
+    &lt;/p&gt;
+    &lt;p&gt;
+    Luminance:
+    &lt;input
+      id="out-budget-luminance"
+      type="range" min="0" max="100"
+      value="&lt;?@ int(out-budget-color.luminance) ?&gt;"&gt;
+    &lt;/p&gt;
+  &lt;/div&gt;
+&lt;/details&gt;</pre><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">details</code> element simply allows the user to show and hide the
+preferences by clicking on the triangle next to “Preferences”.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_7"></a>Let’s try it out</h4></div></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial7/snap2.png" align="middle" alt="Initial Snapshot: Color preview boxes display colors and color component sliders set to values of color components." /></div></div><p>Now try changing some of the color components. Also try this while the
+total sum is between 0 and the budget in order to demonstrate the
+color interpolation is performed after each change.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial7/snap3.png" align="middle" alt="Snapshot: Color Within budget color changed to blue. Total and message color recomputed." /></div></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_urgent_attribute"></a>Urgent Attribute</h4></div></div></div><p>You have probably noticed a rather annoying aspect of this
+interface. The colors are not updated while the sliders are being
+dragging but only after they are released. This is analogous to the
+expense input fields: the total is only updated after the enter has
+been pressed or keyboard focus leaves the field, rather than being
+updated after each keystroke.</p><p>For the expense input fields this is the desired behaviour, however
+for the sliders it is desirable that the colors are updated while they
+are being dragged. For this to be achieved the <code class="literal">urgent</code> attribute of
+the nodes, referencing the value attributes of the sliders, has to be
+set to <span class="emphasis"><em>true</em></span> (<code class="literal">1</code>).</p><p>The <code class="literal">urgent</code> attribute of HTML nodes controls whether the node’s value
+is updated after each change in the element or only after changes are
+committed by the user.</p><p>To set the <code class="literal">urgent</code> attribute of the sliders, first give each slider
+an ID so that it can be referenced from Tridash code. Let’s give the
+following id’s to the sliders:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+<code class="literal">in-budget-hue</code> — Within budget hue.
+</li><li class="listitem">
+<code class="literal">in-budget-saturation</code> — Within budget saturation.
+</li><li class="listitem">
+<code class="literal">in-budget-luminance</code> — Within budget luminance.
+</li><li class="listitem">
+<code class="literal">out-budget-hue</code> — Budget exceeded hue.
+</li><li class="listitem">
+<code class="literal">out-budget-saturation</code> — Budget exceeded saturation.
+</li><li class="listitem">
+<code class="literal">out-budget-luminance</code> — Budget exceeded luminance.
+</li></ul></div><p>Add the following to the Tridash code tag:</p><pre class="screen">:attribute(self.in-budget-hue.value, urgent, 1)
+:attribute(self.in-budget-saturation.value, urgent, 1)
+:attribute(self.in-budget-luminance.value, urgent, 1)
+
+:attribute(self.out-budget-hue.value, urgent, 1)
+:attribute(self.out-budget-saturation.value, urgent, 1)
+:attribute(self.out-budget-luminance.value, urgent, 1)</pre><p>Try it out, the colors will now update while the sliders are being
+dragged.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_referencing_global_nodes"></a>7.4. Referencing Global Nodes</h3></div></div></div><p>A node defined in an enclosing scope of the meta-node can be
+referenced by its identifier, or explicitly with the <code class="literal">..</code>
+operator. However sometimes we would explicitly like to reference a
+node that is defined at the global scope, not simply in an enclosing
+scope of the meta-node. This can be achieved by <span class="emphasis"><em>using</em></span> the global
+module in the meta-node.</p><p>You’ll learn about modules in the next tutorial but for now all you
+need to know is that the module is set using a <code class="literal">:module(module-name)</code>
+declaration. All node declarations following the <code class="literal">:module</code> declaration
+will be declared inside the module <code class="literal">module-name</code>. The <code class="literal">:use(module)</code>
+declaration allows nodes in <code class="literal">module</code> to be referenced from the module
+in which the declaration occurs. Node <code class="literal">x</code> in module <code class="literal">module</code> can be
+referenced, following the <code class="literal">:use</code> declaration, as a subnode of <code class="literal">module</code>
+(<code class="literal">module.x</code>).</p><p>A global node can be referenced from within a meta-node with the
+following:</p><pre class="screen">:module(mod)
+
+# The node
+x
+
+meta-node1(x):
+   meta-node2(y):
+      :use(mod)
+
+      # Reference global node x
+      mod.x  <a id="CO5-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></pre><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO5-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+References the node <code class="literal">x</code> defined at the global scope, not the <code class="literal">x</code>
+argument node to <code class="literal">meta-node1</code>.
+</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_6"></a>7.5. Summary</h3></div></div></div><p>In this tutorial you learned how to reference nodes declared outside a
+meta-node from within the body of the meta-node. Changes in the values
+of the referenced nodes result in a re-evaluation of all instance
+nodes of the meta-node. In essence outer-node references can be
+thought of as hidden arguments.</p><p>We used outer-node references to store our color preferences in global
+nodes, which are referenced from within the <code class="literal">compute-color</code>
+meta-node. <code class="literal">compute-color</code> is responsible for computing the
+interpolated color. Further on you learned about node attributes and
+how the <code class="literal">urgent</code> attribute influences when changes in HTML nodes are
+propagated.</p></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s06.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s08.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>4. Modules</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="prev" href="ar01s03.html" title="3. Meta-Nodes" /><link rel="next" href="ar01s05.html" title="5. Core Module" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s03.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s05.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_modules"></a>4. Modules</h2></div></div></div><p><a id="idm408788914880" class="indexterm"></a></p><p>Modules provide a means of avoiding name collisions between nodes. A
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>4. Modules</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="prev" href="ar01s03.html" title="3. Meta-Nodes" /><link rel="next" href="ar01s05.html" title="5. Core Module" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s03.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s05.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_modules"></a>4. Modules</h2></div></div></div><p><a id="idm449598066912" class="indexterm"></a></p><p>Modules provide a means of avoiding name collisions between nodes. A
 module is a namespace which contains all global nodes, including
 meta-nodes, created in it. A node with identifier <code class="literal">x</code> in a module <code class="literal">m1</code>
 is distinct from a node with the same identifier <code class="literal">x</code> in another module
-<code class="literal">m2</code>.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_creating_modules"></a>4.1. Creating Modules</h3></div></div></div><p><a id="idm408788909808" class="indexterm"></a>
-<a id="idm408788908560" class="indexterm"></a>
-<a id="idm408788907568" class="indexterm"></a>
-<a id="idm408788906064" class="indexterm"></a>
-<a id="idm408788904816" class="indexterm"></a></p><p>Each new node, that is created as a result of processing a declaration
+<code class="literal">m2</code>.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_creating_modules"></a>4.1. Creating Modules</h3></div></div></div><p><a id="idm449598061472" class="indexterm"></a>
+<a id="idm449598060176" class="indexterm"></a>
+<a id="idm449598059152" class="indexterm"></a>
+<a id="idm449598057568" class="indexterm"></a>
+<a id="idm449598056256" class="indexterm"></a></p><p>Each new node, that is created as a result of processing a declaration
 in the source file, is added to the current module. Initially the
 current module is a nameless <code class="literal">init</code> module until it is changed
 explicitly.</p><p>The current module is changed with the special <code class="literal">:module</code> operator,
@@ -33,11 +33,11 @@ relations between modules have to be <span class="emphasis"><em>faked</em></span
 <code class="literal">/</code>, e.g. <code class="literal">module/submodule</code>.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_referencing_nodes_in_different_modules"></a>4.2. Referencing Nodes in Different Modules</h3></div></div></div><p>There are two ways to reference a node in a another module, different
 from the current module. One way is to create a <span class="emphasis"><em>pseudo-node</em></span> for the
 module in the current module. Nodes in the module can then be
-referenced as subnodes of the module’s <span class="emphasis"><em>pseudo-node</em></span>.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_module_pseudo_nodes"></a>Module Pseudo-Nodes</h4></div></div></div><p><a id="idm408788892720" class="indexterm"></a>
-<a id="idm408788891472" class="indexterm"></a>
-<a id="idm408788890480" class="indexterm"></a>
-<a id="idm408788888976" class="indexterm"></a>
-<a id="idm408788887728" class="indexterm"></a></p><p>The special <code class="literal">:use</code> operator creates pseudo-nodes for the modules
+referenced as subnodes of the module’s <span class="emphasis"><em>pseudo-node</em></span>.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_module_pseudo_nodes"></a>Module Pseudo-Nodes</h4></div></div></div><p><a id="idm449598043488" class="indexterm"></a>
+<a id="idm449598042192" class="indexterm"></a>
+<a id="idm449598041168" class="indexterm"></a>
+<a id="idm449598039584" class="indexterm"></a>
+<a id="idm449598038272" class="indexterm"></a></p><p>The special <code class="literal">:use</code> operator creates pseudo-nodes for the modules
 passed as arguments. The pseudo-nodes are created with the same
 identifiers as the modules.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Module pseudo-nodes are referred to as such, since syntactically
 they are the same as any other node, however the value of a module
@@ -72,9 +72,9 @@ mod1.add(a, b) -&gt; c</pre><p>
 dependencies or observers of bindings.</p></td></tr></table></div><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Referencing a subnode of a module pseudo-node does not
 result in the automatic creation of a node in that module. A
 compilation error is triggered, if the node does not already exist in
-the module.</p></td></tr></table></div><p><a id="idm408788876224" class="indexterm"></a>
-<a id="idm408788874720" class="indexterm"></a>
-<a id="idm408788873472" class="indexterm"></a></p><p>A pseudo-node with a different identifier, from the identifier of the
+the module.</p></td></tr></table></div><p><a id="idm449598026448" class="indexterm"></a>
+<a id="idm449598024944" class="indexterm"></a>
+<a id="idm449598023632" class="indexterm"></a></p><p>A pseudo-node with a different identifier, from the identifier of the
 module, can be created using the special <code class="literal">:alias</code> operator. This is
 useful for when the module identifier is too long to type out
 repeatedly, or there is already a node, in the current module, with
@@ -101,11 +101,11 @@ add(x, y) : x + y
 
 # Use the `add` meta-node from module `mod1`
 m1.add(a, b) -&gt; c</pre><p>
-</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_importing_nodes"></a>Importing Nodes</h4></div></div></div><p><a id="idm408788863648" class="indexterm"></a>
-<a id="idm408788862400" class="indexterm"></a>
-<a id="idm408788861408" class="indexterm"></a>
-<a id="idm408788859904" class="indexterm"></a>
-<a id="idm408788858656" class="indexterm"></a></p><p>The second approach to referencing a node, residing in another module,
+</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_importing_nodes"></a>Importing Nodes</h4></div></div></div><p><a id="idm449598013408" class="indexterm"></a>
+<a id="idm449598012128" class="indexterm"></a>
+<a id="idm449598011104" class="indexterm"></a>
+<a id="idm449598009552" class="indexterm"></a>
+<a id="idm449598008240" class="indexterm"></a></p><p>The second approach to referencing a node, residing in another module,
 is to add it directly to the current module. With this approach there
 is no need to reference the node as a subnode of a module
 pseudo-node. This is referred to as <span class="emphasis"><em>importing</em></span> the node and is
@@ -140,11 +140,11 @@ a -&gt; b
 # Node `b` is the same `b` as in `mod1`
 b -&gt; a
 x -&gt; b</pre><p>
-</p><p><a id="idm408788846224" class="indexterm"></a>
-<a id="idm408788844976" class="indexterm"></a>
-<a id="idm408788843984" class="indexterm"></a>
-<a id="idm408788842480" class="indexterm"></a>
-<a id="idm408788841232" class="indexterm"></a></p><p>The short form only imports those nodes which are explicitly
+</p><p><a id="idm449597995216" class="indexterm"></a>
+<a id="idm449597993936" class="indexterm"></a>
+<a id="idm449597992912" class="indexterm"></a>
+<a id="idm449597991328" class="indexterm"></a>
+<a id="idm449597990016" class="indexterm"></a></p><p>The short form only imports those nodes which are explicitly
 <span class="emphasis"><em>exported</em></span> from the module. Nodes are explicitly exported from the
 current module with the <code class="literal">:export</code> operator which simply takes the
 identifiers of the nodes to <span class="emphasis"><em>export</em></span> as arguments.</p><p><strong>Syntax. </strong>
@@ -184,11 +184,11 @@ imported, it’s entry in the module’s operator table is copied over to
 the current module. This allows the operator to be placed in infix
 position, in the current module.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>All nodes in the <code class="literal">builtin</code> module, which contains the special
 operators mentioned so far (<code class="literal">-&gt;</code>, <code class="literal">:</code>, <code class="literal">..</code>, <code class="literal">&amp;</code>, <code class="literal">.</code>), are
-automatically imported into the <code class="literal">init</code> module.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_direct_references"></a>Direct References</h4></div></div></div><p><a id="idm408788821504" class="indexterm"></a>
-<a id="idm408788820256" class="indexterm"></a>
-<a id="idm408788819264" class="indexterm"></a>
-<a id="idm408788817760" class="indexterm"></a>
-<a id="idm408788816512" class="indexterm"></a></p><p>It may be necessary to reference a node in another module without
+automatically imported into the <code class="literal">init</code> module.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_direct_references"></a>Direct References</h4></div></div></div><p><a id="idm449597969344" class="indexterm"></a>
+<a id="idm449597968048" class="indexterm"></a>
+<a id="idm449597967024" class="indexterm"></a>
+<a id="idm449597965456" class="indexterm"></a>
+<a id="idm449597964144" class="indexterm"></a></p><p>It may be necessary to reference a node in another module without
 creating a pseudo-node, for its module, and without importing it in
 the current module. The special <code class="literal">:in</code> operator directly references a
 node in another module by the module and node identifiers.</p><p><strong>Syntax. </strong>
@@ -214,9 +214,9 @@ add(x, y) : x + y
 
 # Use the `add` meta-node from module `mod1`
 (:in(mod1, add))(a, b) -&gt; c</pre><p>
-</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_operator_table"></a>4.3. Operator Table</h3></div></div></div><p><a id="idm408788805104" class="indexterm"></a>
-<a id="idm408788803600" class="indexterm"></a>
-<a id="idm408788802352" class="indexterm"></a></p><p>Each module may register a number of node identifiers as infix
+</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_operator_table"></a>4.3. Operator Table</h3></div></div></div><p><a id="idm449597952448" class="indexterm"></a>
+<a id="idm449597950880" class="indexterm"></a>
+<a id="idm449597949584" class="indexterm"></a></p><p>Each module may register a number of node identifiers as infix
 operators. This means that those identifiers may appear in infix
 position in declarations parsed while the module is the current
 module. The module’s <span class="emphasis"><em>operator table</em></span> stores the identifier,
@@ -234,12 +234,12 @@ value cannot be changed.</p></td></tr></table></div><p><strong>Example: Preceden
 # following is parsed to: (. m1 (add a b))
 
 m1.add(a, b)</pre><p>
-</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_registering_infix_operators"></a>Registering Infix Operators</h4></div></div></div><p><a id="idm408788794144" class="indexterm"></a>
-<a id="idm408788792736" class="indexterm"></a>
-<a id="idm408788791488" class="indexterm"></a>
-<a id="idm408788790496" class="indexterm"></a>
-<a id="idm408788788992" class="indexterm"></a>
-<a id="idm408788787744" class="indexterm"></a></p><p>New infix operators can be registered using the special <code class="literal">:op</code>
+</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_registering_infix_operators"></a>Registering Infix Operators</h4></div></div></div><p><a id="idm449597940816" class="indexterm"></a>
+<a id="idm449597939328" class="indexterm"></a>
+<a id="idm449597938032" class="indexterm"></a>
+<a id="idm449597937008" class="indexterm"></a>
+<a id="idm449597935440" class="indexterm"></a>
+<a id="idm449597934128" class="indexterm"></a></p><p>New infix operators can be registered using the special <code class="literal">:op</code>
 declaration. This declaration modifies the operator table of the
 current module.</p><p><strong>Syntax. </strong>
 </p><pre class="screen">:op(identifier, precedence [, left | right])</pre><p>

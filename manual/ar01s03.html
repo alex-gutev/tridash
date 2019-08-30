@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>3. Meta-Nodes</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="prev" href="ar01s02.html" title="2. Nodes" /><link rel="next" href="ar01s04.html" title="4. Modules" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s02.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s04.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_meta_nodes"></a>3. Meta-Nodes</h2></div></div></div><p><a id="idm408789219200" class="indexterm"></a>
-<a id="idm408789217696" class="indexterm"></a>
-<a id="idm408789216448" class="indexterm"></a>
-<a id="idm408789215456" class="indexterm"></a>
-<a id="idm408789213952" class="indexterm"></a>
-<a id="idm408789212704" class="indexterm"></a></p><p>A meta-node is a function, of one or more arguments, which returns a
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>3. Meta-Nodes</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="prev" href="ar01s02.html" title="2. Nodes" /><link rel="next" href="ar01s04.html" title="4. Modules" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s02.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s04.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_meta_nodes"></a>3. Meta-Nodes</h2></div></div></div><p><a id="idm449599453760" class="indexterm"></a>
+<a id="idm449599452256" class="indexterm"></a>
+<a id="idm449599450976" class="indexterm"></a>
+<a id="idm449599449952" class="indexterm"></a>
+<a id="idm449599448384" class="indexterm"></a>
+<a id="idm449599447088" class="indexterm"></a></p><p>A meta-node is a function, of one or more arguments, which returns a
 value. Meta-nodes are nodes, themselves, however without a runtime
 node object. For the most part you can treat meta-nodes as ordinary
 nodes, e.g. you can set meta-node attributes using the same
@@ -16,11 +16,11 @@ with identifier <code class="literal">f</code>. If there is a meta-node <code cl
 as instances of the meta-node.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Meta-nodes are referred to as meta-nodes, since they are nodes
 which describe how to compute the value of their instance
 nodes. Meta-nodes may also be macro-nodes which are evaluated at
-compile-time, with the result being interpreted as Tridash code.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_defining_meta_nodes"></a>3.1. Defining Meta-Nodes</h3></div></div></div><p><a id="idm408789204944" class="indexterm"></a>
-<a id="idm408789203696" class="indexterm"></a>
-<a id="idm408789202704" class="indexterm"></a>
-<a id="idm408789201200" class="indexterm"></a>
-<a id="idm408789199952" class="indexterm"></a></p><p>Meta-nodes are defined using the special <code class="literal">:</code> definition operator which
+compile-time, with the result being interpreted as Tridash code.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_defining_meta_nodes"></a>3.1. Defining Meta-Nodes</h3></div></div></div><p><a id="idm449599438832" class="indexterm"></a>
+<a id="idm449599437584" class="indexterm"></a>
+<a id="idm449599436576" class="indexterm"></a>
+<a id="idm449599434992" class="indexterm"></a>
+<a id="idm449599433664" class="indexterm"></a></p><p>Meta-nodes are defined using the special <code class="literal">:</code> definition operator which
 has the following syntax:</p><p><strong>Definition Operator Syntax. </strong>
 </p><pre class="screen">name(arg1, arg2, ...) : {
     declarations*
@@ -66,9 +66,9 @@ the scope in which the meta-node declaration occurs) declarations in
 the same file have been processed. This allows a meta-node <code class="literal">g</code> to be
 used within the body of another meta-node <code class="literal">f</code> even if the definition
 of <code class="literal">g</code> appears after the definition of <code class="literal">f</code>. Effectively this allows
-for mutual recursion.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_optional_arguments"></a>Optional Arguments</h4></div></div></div><p><a id="idm408789178064" class="indexterm"></a>
-<a id="idm408789176560" class="indexterm"></a>
-<a id="idm408789175312" class="indexterm"></a></p><p>A node in the argument list, of a meta-node definition, may also be of
+for mutual recursion.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_optional_arguments"></a>Optional Arguments</h4></div></div></div><p><a id="idm449599410768" class="indexterm"></a>
+<a id="idm449599409168" class="indexterm"></a>
+<a id="idm449599407856" class="indexterm"></a></p><p>A node in the argument list, of a meta-node definition, may also be of
 the form <code class="literal">name : value</code>. This designates that the argument, which is
 bound to local node <code class="literal">name</code>, is optional. If it is omitted, in an
 instance of the meta-node, the local argument node is set to <code class="literal">value</code>
@@ -88,9 +88,9 @@ inc(a)
 inc(b, 2)</pre><p>
 </p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Optional arguments may only be followed by optional
 arguments or a rest argument. An optional argument may not be followed
-by a required argument.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_rest_arguments"></a>Rest Arguments</h4></div></div></div><p><a id="idm408789163584" class="indexterm"></a>
-<a id="idm408789162080" class="indexterm"></a>
-<a id="idm408789160832" class="indexterm"></a></p><p>The last node in the argument list, of a meta-node definition, may
+by a required argument.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_rest_arguments"></a>Rest Arguments</h4></div></div></div><p><a id="idm449599395456" class="indexterm"></a>
+<a id="idm449599393920" class="indexterm"></a>
+<a id="idm449599392624" class="indexterm"></a></p><p>The last node in the argument list, of a meta-node definition, may
 also be of the form <code class="literal">..(name)</code>. This designates that the local node
 <code class="literal">name</code> is bound to the list containing the remaining arguments, on
 which the meta-node is applied, after the last optional or required
@@ -102,9 +102,9 @@ add-n(n, ..(xs)) : {
     map(inc, xs)
 }</pre><p>
 </p><p>See <a class="xref" href="ar01s05.html#_lists" title="5.9. Lists">Section 5.9, “Lists”</a> for the documentation of lists and the list processing
-functions.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="local_nodes"></a>Local Nodes</h4></div></div></div><p><a id="idm408789153856" class="indexterm"></a>
-<a id="idm408789152352" class="indexterm"></a>
-<a id="idm408789151104" class="indexterm"></a></p><p>Nodes local to the meta-node’s definition may only be referenced from
+functions.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="local_nodes"></a>Local Nodes</h4></div></div></div><p><a id="idm449599385040" class="indexterm"></a>
+<a id="idm449599383504" class="indexterm"></a>
+<a id="idm449599382192" class="indexterm"></a></p><p>Nodes local to the meta-node’s definition may only be referenced from
 within the definition itself even if they have the same identifiers as
 global nodes. Local nodes are created for each of the argument nodes.</p><p>A node reference, within the definition of a meta-node, primarily
 refers to the local node. If there is no local node with that
@@ -149,9 +149,9 @@ factorial(n) :
         n &gt; 1 : n * factorial(next),
         1
     )</pre><p>
-</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_self_node"></a>Self Node</h4></div></div></div><p><a id="idm408789138976" class="indexterm"></a>
-<a id="idm408789137472" class="indexterm"></a>
-<a id="idm408789136224" class="indexterm"></a></p><p>The special <code class="literal">self</code> node is a local node which represents the
+</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_self_node"></a>Self Node</h4></div></div></div><p><a id="idm449599369840" class="indexterm"></a>
+<a id="idm449599368256" class="indexterm"></a>
+<a id="idm449599366944" class="indexterm"></a></p><p>The special <code class="literal">self</code> node is a local node which represents the
 meta-node’s value. This node can be used to set the value, returned by
 the meta-node, using explicit bindings.</p><p>When an explicit binding to <code class="literal">self</code> is established, the meta-node no
 longer returns the value of the last node in its definition.</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>A meta-node may not have more than a single context, <span class="emphasis"><em>see
@@ -173,9 +173,9 @@ values to which the meta-node evaluates to, <span class="emphasis"><em>see <a cl
     first -&gt; self.first-name
     last -&gt; self.last-name
 }</pre><p>
-</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_nested_meta_nodes"></a>Nested Meta-Nodes</h4></div></div></div><p><a id="idm408789118752" class="indexterm"></a>
-<a id="idm408789117248" class="indexterm"></a>
-<a id="idm408789116000" class="indexterm"></a></p><p>The body of a meta-node can contain other meta-node definitions nested
+</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_nested_meta_nodes"></a>Nested Meta-Nodes</h4></div></div></div><p><a id="idm449599348000" class="indexterm"></a>
+<a id="idm449599346464" class="indexterm"></a>
+<a id="idm449599345168" class="indexterm"></a></p><p>The body of a meta-node can contain other meta-node definitions nested
 inside it. These meta-nodes are local to the body, and can only be
 used inside it, even if the same meta-node identifier appears in an
 expression outside the body. If a meta-node with the same identifier
@@ -193,10 +193,10 @@ within the body refer to the nested meta-node and not the global node.</p><p><st
 
     iter(n, 1)
 }</pre><p>
-</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_recursive_meta_nodes"></a>3.2. Recursive Meta-Nodes</h3></div></div></div><p><a id="idm408789110880" class="indexterm"></a>
-<a id="idm408789109728" class="indexterm"></a>
-<a id="idm408789108736" class="indexterm"></a>
-<a id="idm408789107488" class="indexterm"></a></p><p>Meta-nodes may be recursive and mutually recursive, i.e. when a
+</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_recursive_meta_nodes"></a>3.2. Recursive Meta-Nodes</h3></div></div></div><p><a id="idm449599339760" class="indexterm"></a>
+<a id="idm449599338576" class="indexterm"></a>
+<a id="idm449599337552" class="indexterm"></a>
+<a id="idm449599336256" class="indexterm"></a></p><p>Meta-nodes may be recursive and mutually recursive, i.e. when a
 meta-node <code class="literal">f</code> contains an instance of another meta-node <code class="literal">g</code> in its
 definition, and <code class="literal">g</code> contains an instance of <code class="literal">f</code> in its definition.</p><p>Each call to a meta-node consumes an amount of stack space. Further
 calls, within the meta-node, increase the amount of stack space if
@@ -218,11 +218,11 @@ In the <code class="literal">and</code> and <code class="literal">or</code> meta
   is lazily evaluated, as whether it is actually evaluated depends on
   the value of the first argument.
 </p><pre class="screen">and(a, b)
-or(a, b)</pre></li></ul></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_outer_node_references"></a>3.3. Outer Node References</h3></div></div></div><p><a id="idm408789089168" class="indexterm"></a>
-<a id="idm408789087920" class="indexterm"></a>
-<a id="idm408789086928" class="indexterm"></a>
-<a id="idm408789085424" class="indexterm"></a>
-<a id="idm408789084176" class="indexterm"></a></p><p>The value of a node, declared in the global scope, can be referenced
+or(a, b)</pre></li></ul></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_outer_node_references"></a>3.3. Outer Node References</h3></div></div></div><p><a id="idm449598251712" class="indexterm"></a>
+<a id="idm449598250432" class="indexterm"></a>
+<a id="idm449598249408" class="indexterm"></a>
+<a id="idm449598247824" class="indexterm"></a>
+<a id="idm449598246496" class="indexterm"></a></p><p>The value of a node, declared in the global scope, can be referenced
 from within a meta-node, either directly by its identifier, as
 described in <a class="xref" href="ar01s03.html#local_nodes" title="Local Nodes">Local Nodes</a>, or with the outer node reference
 operator (<code class="literal">..</code>). This is a special operator which takes a node
@@ -252,8 +252,8 @@ which are used in their body. In the previous example, if a meta-node
 makes use of <code class="literal">addn</code>, it will also reference the node <code class="literal">n</code> declared in
 the global scope.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Whilst the value of an outer-node can be referenced from
 within the body of a meta-node, bindings with the node as the target
-cannot be established, from within the body of the meta-node.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_external_meta_nodes"></a>3.4. External Meta-Nodes</h3></div></div></div><p><a id="idm408789068672" class="indexterm"></a>
-<a id="idm408789067424" class="indexterm"></a></p><p>External meta-nodes are meta-nodes without a definition. They are used
+cannot be established, from within the body of the meta-node.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_external_meta_nodes"></a>3.4. External Meta-Nodes</h3></div></div></div><p><a id="idm449598230112" class="indexterm"></a>
+<a id="idm449598228864" class="indexterm"></a></p><p>External meta-nodes are meta-nodes without a definition. They are used
 to call external functions defined outside of Tridash code. The
 special <code class="literal">:extern</code> declaration creates a meta-node without a
 definition.</p><p><strong>Syntax. </strong>
@@ -284,10 +284,10 @@ linked with the generated code. In the JavaScript backend, instances
 of the meta-node are compiled to a call to the JavaScript function
 with the same name as the node identifier. If the <code class="literal">public-name</code>
 attribute of the meta-node is set, a call to the JavaScript function
-with the value of the attribute is generated instead.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_higher_order_meta_nodes"></a>3.5. Higher-Order Meta-Nodes</h3></div></div></div><p><a id="idm408789051152" class="indexterm"></a>
-<a id="idm408789049904" class="indexterm"></a>
-<a id="idm408789048912" class="indexterm"></a>
-<a id="idm408789047664" class="indexterm"></a></p><p>An atom node expression consisting of the meta-node itself references
+with the value of the attribute is generated instead.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_higher_order_meta_nodes"></a>3.5. Higher-Order Meta-Nodes</h3></div></div></div><p><a id="idm449598211952" class="indexterm"></a>
+<a id="idm449598210704" class="indexterm"></a>
+<a id="idm449598209696" class="indexterm"></a>
+<a id="idm449598208384" class="indexterm"></a></p><p>An atom node expression consisting of the meta-node itself references
 the meta-node’s function as a value. This function can be passed to
 other meta-nodes as an argument, or bound to another node.</p><p>In a functor expression, in which the operator is not a meta-node but
 is an ordinary node, the function stored in the node’s value is
@@ -321,14 +321,14 @@ function of <code class="literal">f</code> creates a function which invokes the 
 value of <code class="literal">delta</code>. As a result, when the value of <code class="literal">delta</code> changes, the
 value of <code class="literal">f</code> is recomputed, and likewise the value of <code class="literal">f(a)</code> is
 recomputed.</p><p>The same semantics apply for optional arguments with default values
-which are not constant literals.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_macro_nodes"></a>3.6. Macro Nodes</h3></div></div></div><p><a id="idm408789022800" class="indexterm"></a>
-<a id="idm408789021552" class="indexterm"></a>
-<a id="idm408789020560" class="indexterm"></a>
-<a id="idm408789019056" class="indexterm"></a>
-<a id="idm408789017808" class="indexterm"></a>
-<a id="idm408789016816" class="indexterm"></a>
-<a id="idm408789015312" class="indexterm"></a>
-<a id="idm408789014064" class="indexterm"></a></p><p>A macro-node is a meta-node which is evaluated at compile-time with
+which are not constant literals.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_macro_nodes"></a>3.6. Macro Nodes</h3></div></div></div><p><a id="idm449598181408" class="indexterm"></a>
+<a id="idm449598180160" class="indexterm"></a>
+<a id="idm449598179168" class="indexterm"></a>
+<a id="idm449598177584" class="indexterm"></a>
+<a id="idm449598176288" class="indexterm"></a>
+<a id="idm449598175264" class="indexterm"></a>
+<a id="idm449598173696" class="indexterm"></a>
+<a id="idm449598172400" class="indexterm"></a></p><p>A macro-node is a meta-node which is evaluated at compile-time with
 the result is interpreted as a Tridash node declaration.</p><p>A meta-node is marked as a macro-node by setting the <code class="literal">macro</code> attribute
 to true. Once set, the meta-node’s function will be evaluated when
 each instance of the meta-node is processed. The arguments passed to
@@ -338,11 +338,11 @@ ordinary nodes. The <code class="literal">macro</code> attribute of a meta-node 
 <span class="emphasis"><em>true</em></span>, with the following declaration:</p><pre class="screen">:attribute(f, macro, 1)</pre></td></tr></table></div><p>Atom node expressions are represented by a special symbol type and
 functor node expressions are represented as a list with the operator
 in the first element of the list.</p><p>The return value of the meta-node function is processed as though it
-is a parsed node declaration appearing in source code.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_literal_symbols"></a>Literal Symbols</h4></div></div></div><p><a id="idm408789005600" class="indexterm"></a>
-<a id="idm408789004352" class="indexterm"></a>
-<a id="idm408789003360" class="indexterm"></a>
-<a id="idm408789001856" class="indexterm"></a>
-<a id="idm408789000608" class="indexterm"></a></p><p>The special <code class="literal">:quote</code> operator returns its argument, treated as a
+is a parsed node declaration appearing in source code.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_literal_symbols"></a>Literal Symbols</h4></div></div></div><p><a id="idm449598163376" class="indexterm"></a>
+<a id="idm449598162128" class="indexterm"></a>
+<a id="idm449598161136" class="indexterm"></a>
+<a id="idm449598159584" class="indexterm"></a>
+<a id="idm449598158272" class="indexterm"></a></p><p>The special <code class="literal">:quote</code> operator returns its argument, treated as a
 literal symbol rather than a node expression.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">'</code> macro from the core module is the preferred shorthand for
 the <code class="literal">:quote</code> operator.</p></td></tr></table></div><p><strong>Example. </strong>
 </p><pre class="screen"># This is interpreted as the literal symbol `x` rather than the node
@@ -358,11 +358,11 @@ operator names.</p><p><strong>Example: Definition of <code class="literal">'</co
     list(:quote(:quote), thing)
 
 :attribute(', macro, 1)</pre><p>
-</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="node_references"></a>Node References</h4></div></div></div><p><a id="idm408788990960" class="indexterm"></a>
-<a id="idm408788989712" class="indexterm"></a>
-<a id="idm408788988720" class="indexterm"></a>
-<a id="idm408788987216" class="indexterm"></a>
-<a id="idm408788985968" class="indexterm"></a></p><p>Generally a macro-node expands to a declaration involving some other
+</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="node_references"></a>Node References</h4></div></div></div><p><a id="idm449598148304" class="indexterm"></a>
+<a id="idm449598147008" class="indexterm"></a>
+<a id="idm449598145984" class="indexterm"></a>
+<a id="idm449598144400" class="indexterm"></a>
+<a id="idm449598143088" class="indexterm"></a></p><p>Generally a macro-node expands to a declaration involving some other
 meta-node. The meta-node might not be located in the same module, <span class="emphasis"><em>see
 <a class="xref" href="ar01s04.html" title="4. Modules">Section 4, “Modules”</a></em></span>, as the module in which the macro-node instance
 occurs. Using the quote operator to generate a declaration involving
@@ -395,11 +395,11 @@ which are not an identifier prefixed with <code class="literal">:</code>, such a
 special declaration, thus can be referenced with the <code class="literal">&amp;</code>
 operator. Special operators beginning with <code class="literal">:</code>, such as <code class="literal">:attribute</code>,
 <code class="literal">:op</code>, <code class="literal">:module</code> are actual special operators and cannot be referenced
-with <code class="literal">&amp;</code>.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_instances_as_targets"></a>3.7. Instances as Targets</h3></div></div></div><p><a id="idm408788965344" class="indexterm"></a>
-<a id="idm408788964096" class="indexterm"></a>
-<a id="idm408788963104" class="indexterm"></a>
-<a id="idm408788961600" class="indexterm"></a>
-<a id="idm408788960352" class="indexterm"></a></p><p>By default, a meta-node instance appearing as the target of a binding,
+with <code class="literal">&amp;</code>.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_instances_as_targets"></a>3.7. Instances as Targets</h3></div></div></div><p><a id="idm449598121264" class="indexterm"></a>
+<a id="idm449598120016" class="indexterm"></a>
+<a id="idm449598118992" class="indexterm"></a>
+<a id="idm449598117408" class="indexterm"></a>
+<a id="idm449598116096" class="indexterm"></a></p><p>By default, a meta-node instance appearing as the target of a binding,
 that is on the right hand side of the <code class="literal">-&gt;</code> operator, will result in a
 compilation error. You may have noticed, however, that some meta-nodes
 in the <a class="link" href="ar01s05.html" title="5. Core Module"><code class="literal">core</code></a> module, can also appear as targets of
@@ -425,12 +425,12 @@ to-int(y)</code>, will result in the value of <code class="literal">y</code> bei
 <code class="literal">int(x)</code>, on changes in the value of <code class="literal">x</code>.</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>In order for the bindings to the argument nodes, to be
 established, the <code class="literal">:attribute</code> declaration which sets the <code class="literal">target-node</code>
 attribute must occur before the first instance of the
-meta-node, however after the meta-node is defined.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_target_node_transforms"></a>3.8. Target Node Transforms</h3></div></div></div><p><a id="idm408788929744" class="indexterm"></a>
-<a id="idm408788928240" class="indexterm"></a>
-<a id="idm408788926992" class="indexterm"></a>
-<a id="idm408788926000" class="indexterm"></a>
-<a id="idm408788924496" class="indexterm"></a>
-<a id="idm408788923248" class="indexterm"></a></p><p>The <code class="literal">target-node</code> attribute allows for a binding of a simple function
+meta-node, however after the meta-node is defined.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_target_node_transforms"></a>3.8. Target Node Transforms</h3></div></div></div><p><a id="idm449598082496" class="indexterm"></a>
+<a id="idm449598080960" class="indexterm"></a>
+<a id="idm449598079648" class="indexterm"></a>
+<a id="idm449598078624" class="indexterm"></a>
+<a id="idm449598077024" class="indexterm"></a>
+<a id="idm449598075712" class="indexterm"></a></p><p>The <code class="literal">target-node</code> attribute allows for a binding of a simple function
 to be established in the reverse direction, from the meta-node
 instance to its arguments. However, it lacks the functionality for
 setting a different function for each argument or generating more

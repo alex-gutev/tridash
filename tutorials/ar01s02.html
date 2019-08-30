@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>2. Functional Bindings</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s01.html" title="1. Hello Node" /><link rel="next" href="ar01s03.html" title="3. Conditional Bindings" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s01.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s03.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_functional_bindings"></a>2. Functional Bindings</h2></div></div></div><p>The bindings in the previous tutorial were pretty boring and
+limited. Whatever was entered in the text field was simply displayed,
+verbatim, below it. In-fact, this functionality is already offered by
+many web frameworks and GUI toolkits. The real power of the Tridash
+language comes from the ability to specify arbitrary functions in
+bindings which are dependent on the values of more than a single
+node. Moreover these bindings can be established in Tridash itself
+without having to implement "transformer" or "converter"
+interfaces/subclasses in a lower-level language.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_simple_budgeting_application"></a>2.1. Simple Budgeting Application</h3></div></div></div><p>In this tutorial we’ll be implementing a very basic budgeting
+application with the following desired features:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+Allocate amounts to spend on a number of predefined expense
+    categories.
+</li><li class="listitem">
+Compute the total amount allocated.
+</li><li class="listitem">
+Specify a limit (the budget) on the total amount spent on expenses.
+</li><li class="listitem">
+Indicate whether the total amount allocated exceeds the limit,
+    with some visual cues such as the total amount turning red if it
+    exceeds the limit.
+</li></ul></div><p>We’ll start with a very basic version and incrementally add features
+and improve it.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_first_version"></a>First Version</h4></div></div></div><p>In the first version we’ll focus on the first two features, allocating
+an amount of money to different expenses and computing the total
+amount allocated.</p><p>Begin with the following <code class="literal">ui.html</code> file:</p><p><strong>ui.html. </strong>
+</p><pre class="programlisting">&lt;?
+ :import(core)
+
+ food + electricity + water -&gt; total
+?&gt;
+
+&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Budget App&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+      &lt;h1&gt;Budget App&lt;/h1&gt;
+      &lt;p&gt;&lt;label&gt;Food: &lt;input value="&lt;?@ to-real(food) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;label&gt;Electricity: &lt;input value="&lt;?@ to-real(electricity) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;label&gt;Water: &lt;input value="&lt;?@ to-real(water) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;label&gt;&lt;strong&gt;Total:&lt;/strong&gt; &lt;input value="&lt;?@ total ?&gt;" readonly&gt;&lt;/label&gt;&lt;/p&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre><p>
+</p><p>A lot is going on here, lets focus on the body of the HTML file for
+now.</p><p>The body defines an interface with three text input fields for
+entering the amount allocated to “Food”, “Electricity” and “Water”
+expenses, and a fourth readonly text field for displaying the total
+amount allocated. Each field is bound, using implicit bindings, to the
+nodes <code class="literal">to-real(food)</code>, <code class="literal">to-real(electricity)</code>, <code class="literal">to-real(water)</code> and <code class="literal">total</code>
+respectively.</p><p>The <code class="literal">total</code> node is a simple node, similar to the nodes seen in the
+previous tutorial.</p><p>The remaining nodes are examples of <code class="literal">functor</code> nodes. A functor node
+consists of an expression comprising an operator applied to zero or
+more arguments.</p><pre class="screen">operator(argument1, argument2, ...)</pre><p>A binding is established between each of the arguments and the functor
+node. Whenever the value of one of the arguments changes, the
+expression is reevaluated and the value of the functor node is
+updated.</p><p>In the functor node <code class="literal">to-real(food)</code> the operator is <code class="literal">to-real</code>, which
+simply converts its single argument, the node <code class="literal">food</code>, to a real
+(floating-point) numeric value. With the <code class="literal">to-real</code> operator a two-way
+binding is established between the argument and the functor node. The
+result of this is that if another node (not the argument) is bound to
+the functor node, <code class="literal">node -&gt; real(argument)</code>, its value is converted to
+a real value and the value of the argument node is updated to it.</p><p>The value of the input element, in which the amount allocated to food
+is entered, is implicitly bound to <code class="literal">to-real(food)</code>. Thus when text is
+entered in the input element, the value of the <code class="literal">food</code> node is set to
+the value in text field converted to a real value. The same is true
+for the electricity and water fields.</p><p>The bulk of the application logic is specified in the Tridash code tag
+at the beginning of the file.</p><p>The first line, <code class="literal">:import(core)</code>, is a special declaration which imports
+all the nodes from the <code class="literal">core</code> module into the current module, <span class="emphasis"><em>more on
+modules later</em></span>. The only nodes we use from the <code class="literal">core</code> module are the
+addition <code class="literal">+</code> operator and <code class="literal">to-real</code> operator.</p><p>The line <code class="literal">food + electricity + water -&gt; total</code> is in effect
+responsible for computing the total amount allocated and displaying it
+in the “Total” field. Lets break it down bit by bit.</p><p>A binding is established between the node <code class="literal">food + electricity + water</code>
+and the node <code class="literal">total</code>. The former is a functor node with the <code class="literal">+</code>
+operator.</p><p>The <code class="literal">+</code> operator is an infix operator, which means it can be placed
+between its two arguments (infix notation), instead of being placed
+before its arguments (prefix notation). The spaces between the infix
+<code class="literal">+</code> operator and its argument nodes are mandatory as
+<code class="literal">food+electricity+water</code> is a valid node identifier and is thus
+interpreted as a single node. The infix notation is transformed to the
+prefix notation <code class="literal">+(+(food, electricity), water)</code>. Both notations are
+equivalent and either one can be written in the source file, provided
+the operator is registered as an infix operator (<span class="emphasis"><em>more on this
+later</em></span>).</p><p>The <code class="literal">+</code> operator computes, you guessed it, the sum of the values of
+its argument nodes. The first argument is the functor node <code class="literal">+(food,
+electricity)</code> which computes the sum of the amount allocated to <code class="literal">food</code>
+and <code class="literal">electricity</code>, and the second argument is <code class="literal">water</code>, thus the
+functor node computes the total sum.</p><p>The total sum is bound to the <code class="literal">total</code> node which, recall, is bound to
+the text field displaying the total amount allocated to all
+expenses. Thus whenever the total amount allocated changes, the new
+total is displayed in the text field next to “Total:”. The total
+amount, itself, is updated, whenever the amount in one of the
+“Food:”, “Electricity:” or “Water:” text fields is changed by
+the user.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_build_configuration_file"></a>Build Configuration File</h4></div></div></div><p>To simplify the build command, the build options will be specified in
+a build configuration file.</p><p>The build configuration file contains the list of sources, along with
+the source-specific options, and the output options in YAML syntax
+<span class="emphasis"><em>(see <a class="ulink" href="https://yaml.org" target="_top">https://yaml.org</a> for details)</em></span>.</p><p>Create the following <code class="literal">build.yaml</code> file:</p><p><strong>build.yml. </strong>
+</p><pre class="programlisting">sources:
+  - path: ui.html
+    node-name: ui
+
+output:
+  path: app.html
+  type: html
+  main-ui: ui</pre><p>
+</p><p>The outer structure of the file is a dictionary with two entries
+<code class="literal">sources</code> and <code class="literal">output</code>.</p><p>The <code class="literal">sources</code> entry contains the list of source files. Each item in
+the list is either the path to the source file or is a dictionary with
+the path in the <code class="literal">path</code> entry and the source-specific options in the
+remaining entries. In this application there is one source file
+<code class="literal">ui.html</code> with one source processing option <code class="literal">node-name</code> set to <code class="literal">ui</code>.</p><p>The <code class="literal">output</code> entry is a dictionary containing the output options. The
+<code class="literal">path</code> entry specifies the <code class="literal">path</code> to the output file, in
+this case <code class="literal">app.html</code>. The remainder of the entries are output
+options. In this case, the output options are the same as in the
+previous tutorial, <code class="literal">type=html</code> and <code class="literal">main-ui=ui</code>.</p><p>To build from a build configuration file run the following command:</p><pre class="programlisting">tridashc -b build.yml</pre><p>The <code class="literal">-b</code> option specifies the path to the build configuration file
+containing the build options. All other command line options are
+ignored when this option is specified.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_running_the_application_2"></a>Running the Application</h4></div></div></div><p>Open the <code class="literal">app.html</code> file in a web browser, and enter some
+numbers in the text fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial2/snap1.png" align="middle" alt="Snapshot: 100, 300, 500 entered in expense fields. 900 displayed in total." /></div></div><p>Notice that the total is computed and displayed in the text field next
+to “Total:”.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>You will only see a total computed once you have entered a valid
+number in each field.</p></td></tr></table></div><p>Now try changing some of the amounts allocated:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial2/snap2.png" align="middle" alt="Snapshot: Electricity changed to 350. New total 950 displayed." /></div></div><p>Notice that the total amount allocated is automatically recomputed and
+the new total is displayed in the total field.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_inline_functional_bindings"></a>2.2. Inline Functional Bindings</h3></div></div></div><p>The application built in this tutorial can be implemented more
+succinctly by replacing the <code class="literal">total</code> node with <code class="literal">food + electricity +
+water</code> in the inline node declaration within the <code class="literal">value</code> attribute of
+the total <code class="literal">input</code> element.</p><pre class="programlisting">&lt;label&gt;
+  &lt;strong&gt;Total:&lt;/strong&gt;
+  &lt;input value="&lt;?@ food + electricity + water ?&gt;" readonly&gt;
+&lt;/label&gt;</pre><p>This shows that inline node declarations can contain any valid node
+declaration not just a simple node.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary"></a>2.3. Summary</h3></div></div></div><p>In this tutorial you learned how to create bindings involving a
+function of the values of two or more nodes. Whenever the value of one
+of the argument nodes changes, the expression is re-evaluated to
+compute the node’s new value.</p></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s01.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s03.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

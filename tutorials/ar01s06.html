@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>6. Failures of your own</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s05.html" title="5. Error Handling" /><link rel="next" href="ar01s07.html" title="7. Outer Node References" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s05.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s07.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_failures_of_your_own"></a>6. Failures of your own</h2></div></div></div><p>You’ve been introduced to failure values in the previous tutorial and
+how to handle them using explicit contexts. In this tutorial you’ll
+learn how to create your own failure values, which will be used to fix
+the second issue with our budgeting application, namely ensuring that
+only positive numeric values are entered in the budget and expense
+text input fields.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_conditional_bindings_2"></a>6.1. Conditional Bindings</h3></div></div></div><p>Conditional bindings allow a binding between two nodes to be active
+only if a <span class="emphasis"><em>condition</em></span> node evaluates to true. Conditional bindings are
+declared by declaring a binding with the bind node expression as the
+target of the binding.</p><p><strong>Conditional Binding Declaration. </strong>
+</p><pre class="screen">condition -&gt; (a -&gt; b)</pre><p>
+</p><p>A conditional binding <code class="literal">a -&gt; b</code> is declared, which is conditioned on
+the node <code class="literal">condition</code>. If <code class="literal">condition</code> evaluates to true, the binding <code class="literal">a
+-&gt; b</code> is active and thus node <code class="literal">b</code> evaluates to the value of <code class="literal">a</code>. If,
+however, <code class="literal">condition</code> evaluates to <span class="emphasis"><em>false</em></span>, <code class="literal">b</code> evaluates to a failure
+value.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>A conditional binding declaration may follow the main binding
+declaration, <code class="literal">a -&gt; b</code>, in the source code.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>When a conditional binding is declared, a node <code class="literal">a -&gt; b</code> is
+created which may be used to reference the status of the binding,
+i.e. is it active or inactive.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">-&gt;</code> operator has right associativity thus the parenthesis in
+the previous example are optional, however were added for clarity.</p></td></tr></table></div><p><strong>Example: Simple Conditional Binding. </strong>
+</p><pre class="screen">a &lt; 0 -&gt; (a -&gt; b)</pre><p>
+</p><p>In this example <code class="literal">b</code> is only bound to <code class="literal">a</code> if <code class="literal">a</code> is less than <code class="literal">0</code>,
+otherwise <code class="literal">b</code> evaluates to a failure value.</p><p><strong>Example: A <code class="literal">min</code> Meta-Node. </strong>
+</p><pre class="screen">min(a, b) : {
+    a &lt; b -&gt; (a -&gt; self @ ct)
+    b -&gt; self @ ct
+}</pre><p>
+</p><p>This example combines conditional bindings and explicit contexts. If
+<code class="literal">a</code> is less than <code class="literal">b</code>, <code class="literal">self</code> is bound to the value of <code class="literal">a</code> and thus the
+<code class="literal">min</code> meta-node returns the value of <code class="literal">a</code>. Otherwise, <code class="literal">b &gt;= a</code>, <code class="literal">self</code>
+is bound to the value of <code class="literal">b</code>, since the first binding resulted in a
+failure value, and thus the value of <code class="literal">b</code> is returned from the
+meta-node.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_simple_validation"></a>6.2. Simple Validation</h3></div></div></div><p>To fix the second issue, we need the <code class="literal">budget</code>, <code class="literal">food</code>, <code class="literal">electricity</code>
+and <code class="literal">water</code> nodes to evaluate to failures not only if non-numeric data
+is entered in the text fields but also if negative numbers are
+entered.</p><p>We’ll create a simple <code class="literal">validate</code> meta-node which converts its argument
+to a real number and checks that the real value is greater than or
+equal to <code class="literal">0</code>. For this we’ll use conditional bindings.</p><p><strong>Meta-Node <code class="literal">validate</code>. </strong>
+</p><pre class="screen">validate(value) : {
+    x &lt;- real(value)
+    x &gt;= 0 -&gt; x -&gt; self
+}</pre><p>
+</p><p>The first declaration binds the local node <code class="literal">x</code> to the argument <code class="literal">value</code>
+converted to a <code class="literal">real</code> number.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">x</code> is a local node as it appears as the target of a binding.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">real</code> meta-node performs the same function as the <code class="literal">to-real</code>
+meta-node.</p></td></tr></table></div><p>The second declaration conditionally binds <code class="literal">x</code> to the <code class="literal">self</code> node if
+<code class="literal">x</code> is greater than or equal to <code class="literal">0</code> (<code class="literal">x &gt;= 0</code>). As a result the return
+value of the meta-node is its argument converted to a real number, if
+it is greater than <code class="literal">0</code>. If the real value is less than <code class="literal">0</code>, or the
+argument cannot be converted to a real value, a failure is returned.</p><p>A simple way, to incorporate this in our application is to create new
+nodes which are bound directly to the string values entered in the
+text input fields. Let’s call them <code class="literal">in-budget</code>, <code class="literal">in-food</code>,
+<code class="literal">in-electricity</code> and <code class="literal">in-water</code>. Change the HTML code, where the input
+fields are created to the following:</p><pre class="programlisting">&lt;p&gt;
+    &lt;label&gt;Budget: &lt;input value="&lt;?@ in-budget ?&gt;" /&gt;&lt;/label&gt;
+    &lt;?@ error?(budget) ?&gt;
+&lt;/p&gt;
+&lt;h2&gt;Expenses:&lt;/h2&gt;
+&lt;p&gt;
+    &lt;label&gt;Food: &lt;input value="&lt;?@ in-food ?&gt;" /&gt;&lt;/label&gt;
+    &lt;?@ error?(food) ?&gt;
+&lt;/p&gt;
+&lt;p&gt;
+    &lt;label&gt;Electricity: &lt;input value="&lt;?@ in-electricity ?&gt;" /&gt;&lt;/label&gt;
+    &lt;?@ error?(electricity) ?&gt;
+&lt;/p&gt;
+&lt;p&gt;
+    &lt;label&gt;Water: &lt;input value="&lt;?@ in-water ?&gt;" /&gt;&lt;/label&gt;
+    &lt;?@ error?(water) ?&gt;
+&lt;/p&gt;</pre><p>Also make sure that the initial values are given to the <code class="literal">in-...</code> nodes
+rather than the nodes which stored the parsed numeric values. Change
+the section of the Tridash code tag, responsible for setting the
+initial values, to the following:</p><pre class="screen"># Initial Values
+
+0 -&gt; in-budget
+0 -&gt; in-food
+0 -&gt; in-water
+0 -&gt; in-electricity</pre><p>Now we need to bind <code class="literal">validate</code> instances of those node to the
+<code class="literal">budget</code>, <code class="literal">food</code>, <code class="literal">electricity</code> and <code class="literal">water</code> nodes.</p><p>Add the following to the Tridash code tag:</p><pre class="screen"># Validation
+
+validate(in-budget) -&gt; budget
+validate(in-food) -&gt; food
+validate(in-electricity) -&gt; electricity
+validate(in-water) -&gt; water</pre><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_5"></a>Let’s try it out</h4></div></div></div><p>Build and run the application, and enter negative values in some of
+the fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial6/snap1.png" align="middle" alt="Snapshot: -30 entered in Electricity. Error message displayed next to it." /></div></div><p>The error message was displayed next to the field where a negative
+value was entered, in this case electricity. The total unchanged,
+status message and color were left unchanged.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_meta_node_instances_as_targets"></a>6.3. Meta-Node Instances as Targets</h3></div></div></div><p>Whilst we’ve fixed the second issue with our application, we had to
+make a lot of changes to our code:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+New nodes had to be created to store the raw string input values.
+</li><li class="listitem">
+We had to change which nodes are given initial values.
+</li><li class="listitem">
+The <code class="literal">validate</code> instances had to be explicitly bound to the nodes
+   which store the parsed numeric values.
+</li></ul></div><p>Most of the new code we’ve added is repetitive boilerplate, we’re
+creating an instance of the <code class="literal">validate</code> meta-node for each input
+field’s value and binding it to the corresponding node storing the
+parsed value. Recall that we didn’t have to do this when converting
+the field values to real-numbers, we could simply write <code class="literal">to-real(...)</code>
+in the inline node expressions, within the value attributes, and be
+done with it. It was mentioned <code class="literal">to-real</code> was a special meta-node in
+that an instance of it can also appear as the target of a binding,
+whereas ordinarily that would trigger a compilation error. It turns
+out we can also make any the <code class="literal">validate</code> node special by setting a
+<code class="literal">target-node</code> attribute.</p><p>Node attributes are arbitrary key-value pairs associated with each
+node, which control certain compilation properties. Attributes are set
+using the special <code class="literal">:attribute</code> operator which has the following
+syntax:</p><pre class="screen">:attribute(node, attribute, value)</pre><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+<code class="literal">node</code>
+</span></dt><dd>
+The node of which to set the attribute. Can be any node
+  expression including a functor node.
+</dd><dt><span class="term">
+<code class="literal">attribute</code>
+</span></dt><dd>
+The attribute key. Interpreted as a literal symbol
+  rather than a node expression.
+</dd><dt><span class="term">
+<code class="literal">value</code>
+</span></dt><dd>
+The value to set the attribute to. Like <code class="literal">attribute</code> this
+  is interpreted as a literal rather than a node expression.
+</dd></dl></div><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Attributes do not form part of a node’s runtime state thus
+cannot be bound to the values of other nodes.</p></td></tr></table></div><p>The <code class="literal">target-node</code> attribute, when set on a meta-node <code class="literal">m</code>, stores a
+meta-node which is used as the binding’s function, when an instance of
+<code class="literal">m</code> appears as the target of a binding. When an instance of the
+meta-node <code class="literal">m</code>, with the <code class="literal">target-node</code> attribute set, is processed, a
+binding between the instance, as the source, and each argument node,
+as the target, is established with the function of the binding being
+the meta-node stored in the <code class="literal">target-node</code> attribute.</p><p><strong>Example: <code class="literal">to-real</code>. </strong>
+</p><pre class="screen">:attribute(to-real, target-node, real)
+
+# results in a binding equivalent to the following
+# real(to-real(y)) -&gt; x
+
+x -&gt; to-real(y)</pre><p>
+</p><p>In the example above, the <code class="literal">target-node</code> attribute of <code class="literal">to-real</code> is set
+to the meta-node <code class="literal">real</code>. The binding declaration, in the last line,
+results in the node <code class="literal">to-real(y)</code> being bound to <code class="literal">x</code>, with the function
+<code class="literal">real</code> being the function of the binding. As a result <code class="literal">y</code> is bound to
+the value of <code class="literal">x</code> converted to a <code class="literal">real</code> value.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">to-real</code> performs the same function as <code class="literal">real</code>, however a
+separate node is created in order to give it a different <code class="literal">target-node</code>
+attribute. The behaviour of the <code class="literal">real</code> meta-node, when an instance of
+it appears as the target of a binding, is to perform pattern matching
+on the argument, <span class="emphasis"><em>pattern matching will be introduced in a later
+tutorial</em></span>.</p></td></tr></table></div><p>To apply this to our application, we’ll give the <code class="literal">validate</code> meta-node
+a <code class="literal">target-node</code> attribute so that it can be used directly inline, in
+the value attributes of the HTML input fields. We need the <code class="literal">validate</code>
+meta-node to perform the same function, when it appears as the target
+thus we’ll simply set the <code class="literal">target-node</code> attribute of <code class="literal">validate</code> to
+itself.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This section builds on the code from the previous tutorial, with
+the definition of <code class="literal">validate</code> added to it. It does not include the
+modifications made at the end of <a class="xref" href="ar01s06.html#_simple_validation" title="6.2. Simple Validation">Section 6.2, “Simple Validation”</a>.</p></td></tr></table></div><p>Add the following after the definition of <code class="literal">validate</code> in the Tridash code tag.</p><pre class="screen">:attribute(validate, target-node, validate)</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>When the <code class="literal">target-node</code> attribute is set, the meta-node is looked
+up as the <code class="literal">:attribute</code> declaration is processed.</p></td></tr></table></div><p>As a result we can simply replace <code class="literal">to-real(...)</code> with <code class="literal">validate(...)</code>
+in the inline declarations, within the value attributes of the HTML
+input elements. This will be equivalent to the code we wrote at the
+end of <a class="xref" href="ar01s06.html#_simple_validation" title="6.2. Simple Validation">Section 6.2, “Simple Validation”</a>.</p><p>Change the text input fields HTML code to the following:</p><pre class="screen">&lt;p&gt;
+    &lt;label&gt;Food: &lt;input value="&lt;?@ validate(food) ?&gt;" /&gt;&lt;/label&gt;
+    &lt;?@ error?(food) ?&gt;
+&lt;/p&gt;
+&lt;p&gt;
+    &lt;label&gt;Electricity: &lt;input value="&lt;?@ validate(electricity) ?&gt;" /&gt;&lt;/label&gt;
+    &lt;?@ error?(electricity) ?&gt;
+&lt;/p&gt;
+&lt;p&gt;
+    &lt;label&gt;Water: &lt;input value="&lt;?@ validate(water) ?&gt;" /&gt;&lt;/label&gt;
+    &lt;?@ error?(water) ?&gt;
+&lt;/p&gt;</pre><p>That is all that is necessary to add the new validation logic to our
+application. There is no need for creating new nodes, coming up with
+new node names and changing which nodes are given initial values.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_5"></a>6.4. Summary</h3></div></div></div><p>In this tutorial you learned how to create your own failure
+values. This was used to add further input validation to the budgeting
+application, thus fixing the second issue. Furthermore you learned how
+to use <code class="literal">target-node</code> attributes to reduce the amount of binding
+boilerplate code that needs to be written.</p></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s05.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s07.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
