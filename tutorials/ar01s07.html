@@ -163,9 +163,9 @@ For the <span class="emphasis"><em>saturation</em></span> and <span class="empha
 </li></ul></div><p>Now we need to bind the sliders to the color components. This can be
 done by binding to the <code class="literal">value</code> attribute of the sliders using inline
 declarations. For example, this will bind the <span class="emphasis"><em>hue</em></span> slider to the <span class="emphasis"><em>hue</em></span>
-component of the "Within budget" color:</p><pre class="programlisting">&lt;input type="range" min="0" max="360" value="&lt;?@ int(in-budget-color.hue) ?&gt;"&gt;</pre><p>The value of the slider is bound to <code class="literal">int(in-budget-color.hue)</code> in
-order to convert its value to an integer.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">int</code> meta-node is similar in functionality to the <code class="literal">real</code>
-meta-node but converts its argument to an integer.</p></td></tr></table></div><p>This interface is enough to allow us to change the colors directly
+component of the "Within budget" color:</p><pre class="programlisting">&lt;input type="range" min="0" max="360" value="&lt;?@ to-int(in-budget-color.hue) ?&gt;"&gt;</pre><p>The value of the slider is bound to <code class="literal">to-int(in-budget-color.hue)</code> in
+order to convert its value to an integer.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">to-int</code> meta-node is similar in functionality to the
+<code class="literal">to-real</code> meta-node but converts its argument to an integer.</p></td></tr></table></div><p>This interface is enough to allow us to change the colors directly
 from the application, however its missing a preview of the
 colors. Let’s add another two elements and bind their background
 colors to the colors.</p><p>Add the following two elements somewhere:</p><pre class="programlisting">&lt;div
@@ -200,20 +200,20 @@ binding declarations):</p><pre class="programlisting">&lt;details&gt;
     &lt;input
       id="in-budget-hue"
       type="range" min="0" max="360"
-      value="&lt;?@ int(in-budget-color.hue) ?&gt;" /&gt;
+      value="&lt;?@ to-int(in-budget-color.hue) ?&gt;" /&gt;
     &lt;/p&gt;
     &lt;p&gt;
     Saturation:
     &lt;input
       id="in-budget-saturation" type="range" min="0" max="100"
-      value="&lt;?@ int(in-budget-color.saturation) ?&gt;" /&gt;
+      value="&lt;?@ to-int(in-budget-color.saturation) ?&gt;" /&gt;
     &lt;/p&gt;
     &lt;p&gt;
     Luminance:
     &lt;input
       id="in-budget-luminance"
       type="range" min="0" max="100"
-      value="&lt;?@ int(in-budget-color.luminance) ?&gt;" /&gt;
+      value="&lt;?@ to-int(in-budget-color.luminance) ?&gt;" /&gt;
     &lt;/p&gt;
   &lt;/div&gt;
   &lt;div&gt;
@@ -228,21 +228,21 @@ binding declarations):</p><pre class="programlisting">&lt;details&gt;
     &lt;input
       id="out-budget-hue"
       type="range" min="0" max="360"
-      value="&lt;?@ int(out-budget-color.hue) ?&gt;"&gt;
+      value="&lt;?@ to-int(out-budget-color.hue) ?&gt;"&gt;
     &lt;/p&gt;
     &lt;p&gt;
     Saturation:
     &lt;input
       id="out-budget-saturation"
       type="range" min="0" max="100"
-      value="&lt;?@ int(out-budget-color.saturation) ?&gt;"&gt;
+      value="&lt;?@ to-int(out-budget-color.saturation) ?&gt;"&gt;
     &lt;/p&gt;
     &lt;p&gt;
     Luminance:
     &lt;input
       id="out-budget-luminance"
       type="range" min="0" max="100"
-      value="&lt;?@ int(out-budget-color.luminance) ?&gt;"&gt;
+      value="&lt;?@ to-int(out-budget-color.luminance) ?&gt;"&gt;
     &lt;/p&gt;
   &lt;/div&gt;
 &lt;/details&gt;</pre><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">details</code> element simply allows the user to show and hide the
