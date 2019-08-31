@@ -8,9 +8,9 @@
 !define VERSIONMINOR 5
 !define VERSIONBUILD 1
 
-!define HELPURL "https://github.com/alex-gutev/tridash/wiki"
+!define HELPURL "https://alex-gutev.github.io/tridash/manual/"
 !define UPDATEURL "https://github.com/alex-gutev/tridash/releases/latest"
-!define ABOUTURL "https://github.com/alex-gutev/tridash/wiki"
+!define ABOUTURL "https://alex-gutev.github.io/tridash/"
 
 !include "winmessages.nsh"
 
@@ -39,13 +39,30 @@ Section "install"
   # Copy Core Modules
   setOutpath $INSTDIR\modules
 
-  File "..\modules\core.trd"
   File "..\modules\core.yml"
+
+  setOutpath $INSTDIR\modules\core
+
+  File "..\modules\core\operators.trd"
+  File "..\modules\core\external.trd"
+  File "..\modules\core\primitives.trd"
+  File "..\modules\core\util.trd"
+  File "..\modules\core\lists.trd"
+  File "..\modules\core\introspection.trd"
+  File "..\modules\core\pattern-match.trd"
+  File "..\modules\core\types.trd"
+  File "..\modules\core\macros.trd"
+  File "..\modules\core\strings.trd"
 
   # Copy Runtime Libraries
   setOutPath $INSTDIR\backends\javascript
 
-  File "..\src\backends\javascript\runtime\tridash.js"
+  File "..\src\backends\javascript\runtime\tridash.min.js"
+
+  # Add Documentation
+  setOutpath $INSTDIR
+
+  File "..\doc\htmlhelp\tridash.chm"
 
   # Create Uninstaller
   writeUninstaller "$INSTDIR\uninstall.exe"
@@ -75,8 +92,8 @@ Section "install"
   WriteRegExpandStr ${env_hklm} TRIDASH_MODULE_PATHS "$INSTDIR\modules"
   WriteRegExpandStr ${env_hkcu} TRIDASH_MODULE_PATHS "$INSTDIR\modules"
 
-  WriteRegExpandStr ${env_hklm} TRIDASH_JS_RUNTIME "$INSTDIR\backends\javascript\tridash.js"
-  WriteRegExpandStr ${env_hkcu} TRIDASH_JS_RUNTIME "$INSTDIR\backends\javascript\tridash.js"
+  WriteRegExpandStr ${env_hklm} TRIDASH_JS_RUNTIME "$INSTDIR\backends\javascript\tridash.min.js"
+  WriteRegExpandStr ${env_hkcu} TRIDASH_JS_RUNTIME "$INSTDIR\backends\javascript\tridash.min.js"
 
   # Add compiler to path
 
@@ -103,13 +120,16 @@ Section "uninstall"
   rmDir /r $INSTDIR\bin
 
   # Delete core modules, leave any other modules in-place
-  delete $INSTDIR\modules\core.trd
   delete $INSTDIR\modules\core.yml
+  rmDir /r $INSTDIR\modules\core
 
   # Delete modules directory if empty
   rmDir $INSTDIR\modules
   # Delete runtime libraries
   rmDir /r $INSTDIR\backends
+
+  # Delete Documentation
+  delete $INSTDIR\tridash.chm
 
   # Delete uninstaller
   delete $INSTDIR\uninstall.exe
