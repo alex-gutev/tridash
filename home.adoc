@@ -1,12 +1,98 @@
 = Tridash =
 
-Tridash is a programming language which aims to make application state
-management easier and less error-prone. For a philosophy of the language visit link:philosophy.html[Philosophy]
+Tridash is a programming language which aims to make the development
+of interactive applications easier and less error-prone.
 
-- link:installation.html[Installation] -- Installation Instructions
+== How's it Different ==
 
-- link:tutorials[Tutorials] -- Introductory Tutorials
+What sets Tridash apart from the popular languages of today is that it
+is designed from the ground up for developing applications which
+respond to user interaction and events, whereas most programming
+languages, particularly imperative programming languages are
+originally designed for developing batch-style applications which
+perform their task and then exit without interacting with the user. As
+a result developing interactive applications with these languages, is
+difficult and prone to bugs.
 
-- link:manual[Reference Manual] -- Full formal reference manual,
-  documenting the syntax, semantics, features and Core modules of the
-  language.
+In Tridash an application is composed of a set of stateful
+computational components called nodes. Each node has a particular
+value, which is computed from a function of one or more dependency
+nodes. When the values of a node's dependency nodes changes, the
+node's value is automatically recomputed. Nodes can either be purely
+computational components or can be bound to the state of a user
+interface element, the network or the file system. For example a node
+can be bound to the value of a text field UI element.
+
+With Tridash you can focus on the core logic of your application code,
+by expressing the application state as a set of dependencies between
+components. This is contrary to the approach taken by most languages
+where your application is expressed as a linear sequence of
+instructions, in which it is up to the programmer to manually manage
+the application state correctly.
+
+Visit link:philosophy.html[Philosophy], if you'd like to read on about
+the philosophy of the language.
+
+=== Examples ===
+
+==== Summing Values ====
+
+Let's say you an application consisting of three text input fields,
+and you'd like to compute their sum and display it in a fourth text
+field. Additionally you'd like the sum to be recomputed, with the new
+sum displayed, whenever the values of one of the text fields is
+changed by the user. In most of today's languages this would require
+setting up event listeners, and callback functions for each of the
+text fields, you'd then have to update a `sum` variable and manually
+change the value of the fourth text field to the new sum. With
+Tridash, the entire application can be implemented with the following:
+
+--------------------------------------------------
+<? :import(core) ?>
+
+<!doctype html>
+<html>
+    <body>
+      <p><label>Food: <input value="<?@ to-real(food) ?>" /></label></p>
+      <p><label>Electricity: <input value="<?@ to-real(electricity) ?>" /></label></p>
+      <p><label>Water: <input value="<?@ to-real(water) ?>" /></label></p>
+      <p><label><strong>Total:</strong> <input value="<?@ food + electricity + water ?>" readonly></label></p>
+    </body>
+</html>
+--------------------------------------------------
+
+NOTE: This example targets the JavaScript backend with HTML used for
+the user interface, however Tridash is not intended exclusively for
+building web apps. Other backends, allowing for desktop applications
+to be written, will be added in a future release.
+
+That's all that is necessary. The main application logic is actually
+contained in `<?@ food + electricty + water ?>` which computes the sum
+of the values entered in the three text fields. Whenever the value of
+a text field is changed, the sum is automatically recomputed.
+
+
+== Getting Started ==
+
+Visit link:installation.html[Installation] for the download links and
+installation instructions for the platform of your choice.
+
+=== Tutorials ===
+
+Introductory tutorials, which introduce the basic features of the
+language and gradually move on to more advanced topics, are available
+link:tutorials[here].
+
+.Alternative Formats
+- PDF
+- Single Page HTML
+
+
+== Documentation ==
+
+The full manual documenting the syntax, semantics, features and core
+modules of the language is available link:manual[here].
+
+.Alternative Formats
+- PDF
+- Single Page HTML
