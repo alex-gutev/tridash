@@ -1,7 +1,7 @@
 all: index.html philosophy.html installation.html
 
 index.html: home.adoc
-	a2x --format xhtml --no-xmllint --icons --stylesheet=home.css $<
+	a2x --format xhtml --no-xmllint --icons $<
 	mv home.html index.html
 
 philosophy.html: philosophy.adoc

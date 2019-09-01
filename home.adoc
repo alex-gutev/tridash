@@ -84,8 +84,8 @@ language and gradually move on to more advanced topics, are available
 link:tutorials[here].
 
 .Alternative Formats
-- PDF
-- Single Page HTML
+- link:tutorials.pdf[PDF]
+- link:tutorials.html[Single Page HTML]
 
 
 == Documentation ==
@@ -94,5 +94,5 @@ The full manual documenting the syntax, semantics, features and core
 modules of the language is available link:manual[here].
 
 .Alternative Formats
-- PDF
-- Single Page HTML
+- link:tridash.pdf[PDF]
+- link:tridash.html[Single Page HTML]
