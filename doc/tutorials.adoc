@@ -2579,7 +2579,7 @@ file, provided this file appears before `ui.html` in the sources list.
 This ensures that the HTML nodes processed in the file are added to
 the `budget-app` module instead of the `init` module however the HTML
 component node of the file, is still added to the `init`
-module. Recall from <<tutorial-1>>, that an HTML
+module. Recall from <<tutorial1>>, that an HTML
 component node is created for each HTML file processed, with the
 identifier of the node given by the `node-name` source processing
 option. The node is created in the `init` module. This does not pose a
