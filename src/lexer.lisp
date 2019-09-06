@@ -57,19 +57,29 @@
     :reader location
     :documentation
     "Location (LINE . COLUMN) within the source file at which the
-     error occurred."))
+     error occurred.")
+
+   (lexeme
+    :initarg :lexeme
+    :initform ""
+    :reader lexeme
+    :documentation
+    "The lexeme which triggered the parse error"))
 
   (:documentation
    "Base condition class representing parse errors."))
 
 (define-condition invalid-token (tridash-parse-error)
-  ((lexeme :initarg :lexeme
-          :reader lexeme
-          :documentation
-          "The invalid token string"))
+  ()
 
   (:documentation
    "Invalid token error condition."))
+
+(define-condition unclosed-string-error (tridash-parse-error)
+  ()
+
+  (:documentation
+   "Error condition: String missing its closing quote."))
 
 
 (defmacro! define-tokenizer (name &body states)
@@ -218,11 +228,11 @@
   ((:in-string . :invalid)
    (#\\ . :string-escape)
    (#\" . :string)
-   (nil . :invalid)
+   (nil . :unclosed-string)
    (_ . :in-string))
 
   ((:string-escape . :invalid)
-   (nil . :invalid)
+   (nil . :unclosed-string)
    (_ . :in-string))
 
   ;; Integers
@@ -293,10 +303,14 @@
                    (setf (lexer-token lex) it)
                    (setf (lexer-token lex) nil))
 
-               (when (eq (car it) :invalid)
-                 (error 'invalid-token
-                        :lexeme (cdr it)
-                        :location (lexer-position lex)))))
+               (case (car it)
+                 (:invalid
+                  (error 'invalid-token
+                         :lexeme (cdr it)
+                         :location (lexer-position lex)))
+
+                 (:unclosed-string
+                  (error 'unclosed-string-error)))))
 
            (get-next-token ()
              "Returns either the value of the TOKEN slot or reads a
@@ -382,14 +396,17 @@
 ;;; Print Object Methods
 
 (defmethod print-object :around ((e tridash-parse-error) stream)
-  (with-slots (source-path location) e
+  (with-slots (source-path location lexeme) e
     (destructuring-bind (line . column) location
       (format stream "Parse error in ~a at ~a:~a: "
               source-path
-              line
-              column)
+              (1+ line)
+              (- (1+ column) (length lexeme)))
       (call-next-method))))
 
 (defmethod print-object ((e invalid-token) stream)
   (with-slots (lexeme) e
     (format stream "Invalid Token: `~a`." lexeme)))
+
+(defmethod print-object ((e unclosed-string-error) stream)
+  (format stream "Unclosed string literal (missing closing `\"`)."))

@@ -262,8 +262,9 @@
 
   (error 'declaration-parse-error
          :expected '(or :id :integer :real :string :open-paren :open-brace)
-         :token (cons type lexeme)
-         :rule 'node-operand))
+         :token type
+         :rule 'node-operand
+         :lexeme lexeme))
 
 
 (defun node-path->name (path &optional (prefix "NODE"))
@@ -318,8 +319,9 @@
                  (otherwise
                   (error 'declaration-parse-error
                          :expected '(or :comma :close-paren)
-                         :token (cons type lxm)
-                         :rule 'functor-operands)))))
+                         :token type
+                         :rule 'functor-operands
+                         :lexeme lxm)))))
 
            (end-list? ()
              (when (= (next-token lex :peek t) :close-paren)
@@ -364,8 +366,9 @@
     (unless (= type :close-paren)
       (error 'declaration-parse-error
              :expected :close-paren
-             :token (cons type lxm)
-             :rule 'bracketed-node))))
+             :token type
+             :rule 'bracketed-node
+             :lexeme lxm))))
 
 (defun parse-operator (lex min-prec)
   "Checks whether the next token is a binary infix operator. If the
@@ -383,8 +386,9 @@
         (unless info
           (error 'declaration-parse-error
                  :rule 'operator
-                 :token (cons type lexeme)
-                 :expected '(or infix-operator terminate)))
+                 :token type
+                 :expected '(or :infix-operator :terminate)
+                 :lexeme lexeme))
 
         (when (>= (first info) min-prec)
           (next-token lex)
@@ -402,8 +406,9 @@
       ((/= type *list-delimiter*)
        (error 'declaration-parse-error
               :expected :terminate
-              :token (cons type lxm)
-              :rule 'terminator)))))
+              :token type
+              :rule 'terminator
+              :lexeme lxm)))))
 
 
 ;;;; Utility Functions
@@ -428,6 +433,31 @@
 
 ;;;; Parse Error Conditions
 
+(defconstant +token-names+
+  '((:id . "identifier")
+    (:integer . "integer")
+    (:real . "real")
+    (:string . "string")
+    (:open-paren . "`(`")
+    (:open-brace . "`{`")
+    (:comma . "`,`")
+    (:close-paren . "`)`")
+    (:close-brace . "`}`")
+    (:infix-operator . "infix operator")
+    (:terminate . "`;` / line break"))
+
+  "The names of the token types, which are displayed.")
+
+(defconstant +rule-names+
+  '((node-operand . "Operand Node")
+    (functor-operands . "Argument List")
+    (node-list . "Node List")
+    (bracketed-node . "Node")
+    (operator . "Infix Operator")
+    (terminator . "Declaration Terminator"))
+
+  "The names of the rules which are displayed.")
+
 (define-condition declaration-parse-error (tridash-parse-error)
   ((rule :initarg :rule
          :reader rule
@@ -437,7 +467,7 @@
    (token-read :initarg :token
                :reader token-read
                :documentation
-               "The token (TYPE . LEXEME) which was actually read.")
+               "The type of the token that was actually read.")
 
    (token-expected :initarg :expected
                    :reader token-expected
@@ -448,19 +478,48 @@
    "Parse error condition."))
 
 (defmethod print-object ((e declaration-parse-error) stream)
-  (flet ((expected-string (expected)
-           (match expected
-             ((list* 'or tokens)
-              (format nil "~{~a~@{~#[,~; or~:;,~] ~a~}~}" tokens))
+  (labels ((expected-string (expected)
+             (match expected
+               ((list* 'or tokens)
+                (format nil "~{~a~@{~#[,~; or~:;,~] ~a~}~}"
+                        (map #'token-name tokens)))
 
-             (_ expected))))
+               (_ (token-name expected))))
+
+           (token-name (type)
+             (or (cdr (assoc type +token-names+))
+                 type))
+
+           (rule-name (rule)
+             (or (cdr (assoc rule +rule-names+))
+                 rule))
+
+           (found-token (type lexeme)
+             (case type
+               ((:id :integer :real :string)
+                (format nil "~a `~a`"
+                        (cdr (assoc type +token-names+))
+                        lexeme))
+
+               (:terminate
+                (format nil "declaration terminator"))
+
+               (otherwise
+                (token-name type)))))
 
     (with-accessors ((rule rule)
                      (expected token-expected)
-                     (read token-read))
+                     (read token-read)
+                     (lexeme lexeme))
         e
 
-      (format stream "Error parsing ~a: Expected ~a, found ~a `~a`."
-              rule
-              (expected-string expected)
-              (car read) (cdr read)))))
+      (if read
+
+          (format stream "Error parsing ~a: Expected ~a, found ~a."
+                  (rule-name rule)
+                  (expected-string expected)
+                  (found-token read lexeme))
+
+          (format stream "Error parsing ~a: Unexpected end of file, expected ~a."
+                  (rule-name rule)
+                  (expected-string expected))))))
