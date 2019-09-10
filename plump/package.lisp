@@ -52,6 +52,7 @@
    #:element
    #:tag-name
    #:attributes
+   #:attr-locations
    #:doctype
    #:doctype
    #:fulltext-element

@@ -55,47 +55,72 @@
 (defun read-attribute-name ()
   (consume-until (make-matcher (or (is #\=) :whitespace :tag-end))))
 
+(defun attribute-location ()
+  "Returns the location of the current attribute. The return value is
+   a CONS where the first element is the string storing the HTML file
+   and the second element is the index, within the string, of the
+   first character of the attribute."
+
+  (cons
+   *string*
+   (case (peek)
+     ((#\" #\') (1+ *index*))
+     (otherwise *index*))))
+
 (defun read-attribute ()
   (let ((name (read-attribute-name))
-        (value ""))
+        (value "")
+        (pos (cons *string* *index*)))
     (skip-whitespace)
     (let ((next (consume)))
       (cond
         ((and next (char= next #\=))
          (skip-whitespace)
+         (setf pos (attribute-location))
          (setf value (read-attribute-value)))
         ((not next)
          (cons name NIL))
         (T
          (unread))))
-    (cons name value)))
+    (list name value pos)))
 
 (defun read-attributes ()
   (loop with table = (make-attribute-map)
-        for char = (peek)
-        do (case char
-             ((#\/ #\> NIL)
-              (return table))
-             (#.*whitespace*
-              (advance))
-             (T
-              (let ((entry (read-attribute)))
-                (setf (gethash (car entry) table) (cdr entry)))))))
+     with locations = (make-attribute-map)
+     for char = (peek)
+     do (case char
+          ((#\/ #\> NIL)
+           (return (values table locations)))
+          (#.*whitespace*
+           (advance))
+          (T
+           (destructuring-bind (name value pos) (read-attribute)
+             (setf (gethash name table) value)
+             (setf (gethash name locations) pos))))))
 
 (defun read-standard-tag (name)
-  (let* ((closing (consume))
-         (attrs (if (member closing *whitespace* :test #'eql)
-                    (prog1 (read-attributes)
-                      (setf closing (consume)))
-                    (make-attribute-map))))
-    (case closing
-      (#\/
-       (advance)
-       (make-element *root* name :attributes attrs))
-      (#\>
-       (let ((*root* (make-element *root* name :attributes attrs)))
-         (read-children)
-         *root*)))))
+  (let* ((closing (consume)))
+
+    (multiple-value-bind (attrs attr-locations)
+        (if (member closing *whitespace* :test #'eql)
+            (multiple-value-prog1 (read-attributes)
+              (setf closing (consume)))
+            (values
+             (make-attribute-map)
+             (make-attribute-map)))
+
+      (case closing
+        (#\/
+         (advance)
+         (make-element *root* name
+                       :attributes attrs
+                       :attr-locations attr-locations))
+        (#\>
+         (let ((*root* (make-element *root* name
+                                     :attributes attrs
+                                     :attr-locations attr-locations)))
+           (read-children)
+           *root*))))))
 
 (defun read-tag ()
   (if (and (char= #\< (or (consume) #\ ))

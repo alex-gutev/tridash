@@ -70,6 +70,21 @@
              (values type lexeme))))))))
 
 
+(defun html-file-position (&optional (pos (cons plump:*string* plump:*index*)))
+  "Returns the position, in an HTML file, as a CONS of the form (LINE
+   . COLUMN). POS is a cons where the CAR is the HTML content string
+   and the CDR is the index within the string."
+
+  (destructuring-bind (string . index) pos
+    (cons
+     (aif (count-if #'tridash.parser::linebreakp string :end index)
+          (1+ it)
+          1)
+
+     (aif (position-if #'tridash.parser::linebreakp string :from-end t :end index)
+          (- index it)
+          (1+ index)))))
+
 ;;;; Parsing Tridash code tags
 
 (plump:define-tag-dispatcher (tridash plump:*tag-dispatchers*) (name)
@@ -77,7 +92,9 @@
 
 (plump:define-tag-parser tridash (name)
   (with-open-stream (in (make-instance 'html-script-stream))
-    (let* ((lex (make-inline-lexer :stream in))
+
+    (let* ((lex (make-inline-lexer :stream in
+                                   :position (html-file-position)))
            (last (parse-build-nodes (make-parser lex))))
 
       (cond

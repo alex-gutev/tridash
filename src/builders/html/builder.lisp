@@ -69,6 +69,7 @@
 (defvar *html-file-path* nil
   "Path to the HTML file currently being processed.")
 
+
 ;;;; Building HTML files
 
 (define-file-builder (html htm) (file modules options)
@@ -121,12 +122,13 @@
    "Extracts node declarations from each attribute of the element.")
 
   (:method ((element plump:element))
-    (let ((attributes (plump:attributes element)))
+    (let ((attributes (plump:attributes element))
+          (attr-locations (plump:attr-locations element)))
 
       (let ((tag (plump:tag-name element)))
         (doseq ((key . value) attributes)
           (acond
-            ((extract-tridash-node value)
+            ((extract-tridash-node value (get key attr-locations))
              (let ((html-id (html-element-id element)))
                (make-html-element-node html-id tag *global-module-table*)
 
@@ -253,14 +255,17 @@
 
 ;;; Parse Attributes and Text Content
 
-(defun extract-tridash-node (value)
+(defun extract-tridash-node (value position)
   "Extracts node declarations from the string VALUE, where value is
    either the value of an HTML attribute or the text content of an
    HTML text node. If VALUE contains inline Tridash node declarations,
    returns a node declaration which is the concatenation of node
-   declarations and surrounding strings, otherwise returns NIL."
+   declarations and surrounding strings, otherwise returns NIL.
 
-  (let ((strings (extract-nodes value)))
+   POSITION is the position within the HTML file, as a CONS of the
+   form (STRING . INDEX), of the attribute string."
+
+  (let ((strings (extract-nodes value position)))
     (cond
       ((length= 1 strings)
        (elt strings 0))
@@ -280,15 +285,22 @@
                   (reduce #'concat-node strings :initial-value "")
                   (collector-sequence nodes))))))))
 
-(defun extract-nodes (string)
+(defun extract-nodes (string position)
   "Extracts Tridash nodes from the string STRING. If STRING contains
    inline Tridash node declarations, returns a sequence of the literal
    string portions and Tridash node declarations (in the order they
-   appear in STRING) otherwise returns NIL."
+   appear in STRING) otherwise returns NIL.
+
+   POSITION is the position within the HTML file, as a CONS of the
+   form (STRING . INDEX), of the attribute string."
 
   (flet ((parse-node (start end)
            (with-input-from-string (in string :start start :end end)
-             (parse-build-nodes (make-parser in)))))
+             (->>  (add-position position start)
+                   html-file-position
+                   (make-inline-lexer :stream in :position)
+                   make-parser
+                   parse-build-nodes))))
 
     (let ((string-start 0)
           (strings (make-array 0 :adjustable t :fill-pointer t)))
@@ -307,6 +319,15 @@
         (vector-push-extend (subseq string string-start) strings))
 
       strings)))
+
+(defun add-position (html-position offset)
+  "Increments the HTML file position, (STRING . INDEX), by OFFSET."
+
+  (if html-position
+      (cons (car html-position)
+            (+ (cdr html-position) offset))
+
+      (cons "" 0)))
 
 (defun parse-build-nodes (parser &optional (modules *global-module-table*))
   "Builds the node declarations parsed using PARSER, and adds them to

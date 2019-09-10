@@ -31,7 +31,11 @@
 
 (defclass element (nesting-node child-node)
   ((%tag-name :initarg :tag-name :initform (error "Tag name required.") :accessor tag-name :type string)
-   (%attributes :initarg :attributes :initform (make-attribute-map) :accessor attributes :type hash-table)))
+   (%attributes :initarg :attributes :initform (make-attribute-map) :accessor attributes :type hash-table)
+
+   (attr-locations :initarg :attr-locations
+                   :accessor attr-locations
+                   :documentation "Location, in file, of attributes")))
 
 (defmethod print-object ((node element) stream)
   (print-unreadable-object (node stream :type T :identity T)
@@ -108,11 +112,12 @@
     ,parent
     (make-instance ',class :parent ,parent ,@properties)))
 
-(defun make-element (parent tag &key (children (make-child-array)) (attributes (make-attribute-map)))
+(defun make-element (parent tag &key attr-locations (children (make-child-array)) (attributes (make-attribute-map)))
   (make-appending (element parent)
     :tag-name tag
     :children children
-    :attributes attributes))
+    :attributes attributes
+    :attr-locations attr-locations))
 
 (defun make-text-node (parent &optional (text ""))
   (make-appending (text-node parent)
@@ -126,10 +131,11 @@
   (make-appending (doctype parent)
     :doctype doctype))
 
-(defun make-fulltext-element (parent tag &key text (attributes (make-attribute-map)))
+(defun make-fulltext-element (parent tag &key text (attributes (make-attribute-map)) attr-locations)
   (let ((element (make-instance 'fulltext-element :tag-name tag
                                                   :parent parent
-                                                  :attributes attributes)))
+                                                  :attributes attributes
+                                                  :attr-locations attr-locations)))
     (when text
       (make-text-node element text))
     (append-child parent element)))
@@ -262,6 +268,13 @@
           do (setf (gethash key map) val))
     map))
 
+(defun clone-attr-locations (node)
+  (let ((map (make-attribute-map)))
+    (loop for key being the hash-keys of (attr-locations node)
+          for val being the hash-values of (attr-locations node)
+          do (setf (gethash key map) val))
+    map))
+
 (defgeneric clone-node (node &optional deep)
   (:method ((node node) &optional (deep T))
     (declare (ignore deep))
@@ -292,7 +305,8 @@
                                 :parent (parent node)
                                 :tag-name (tag-name node)
                                 :children (make-child-array)
-                                :attributes (clone-attributes node))))
+                                :attributes (clone-attributes node)
+                                :attr-locations (clone-attr-locations node))))
       (setf (children clone) (clone-children node deep clone))
       clone))
   (:method ((node doctype) &optional (deep T))

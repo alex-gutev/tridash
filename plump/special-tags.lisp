@@ -101,10 +101,13 @@
            (string-equal name ,(string tag)))
 
      (define-tag-parser ,tag (name)
-       (let ((attrs (read-attributes)))
-         (when (char= (or (consume) #\ ) #\/)
-           (advance)) ;; Consume closing
-         (make-element *root* ,(string-downcase tag) :attributes attrs)))
+       (multiple-value-bind (attrs locations)
+           (read-attributes)
+        (when (char= (or (consume) #\ ) #\/)
+          (advance)) ;; Consume closing
+        (make-element *root* ,(string-downcase tag)
+                      :attributes attrs
+                      :attr-locations locations)))
 
      (define-tag-printer ,tag (node)
        (plump-dom::wrs "<" (tag-name node))
@@ -131,7 +134,7 @@
 
      (define-tag-parser ,tag (name)
        (read-standard-tag name))
-     
+
      (define-tag-printer ,tag (node)
        (plump-dom::wrs "<" (tag-name node))
        (serialize (attributes node) *stream*)
@@ -173,26 +176,34 @@
 
        (define-tag-parser ,tag (name)
          (let* ((closing (consume))
-                (attrs (if (char= closing #\Space)
-                           (prog1 (read-attributes)
-                             (setf closing (consume)))
-                           (make-attribute-map))))
-           (case closing
-             (#\/
-              (advance)
-              (make-element *root* ,name :attributes attrs))
-             (#\>
-              (let ((*root* (make-fulltext-element *root* ,name :attributes attrs))
-                    (string (read-fulltext-element-content name)))
-                (make-text-node *root* string)
-                *root*)))))
+                (attrs))
+           (multiple-value-bind (attrs locations)
+               (if (char= closing #\Space)
+                   (multiple-value-prog1 (read-attributes)
+                     (setf closing (consume)))
+                   (values (make-attribute-map)
+                           (make-attribute-map)))
+
+             (case closing
+               (#\/
+                (advance)
+                (make-element *root* ,name
+                              :attributes attrs
+                              :attr-locations locations))
+               (#\>
+                (let ((*root* (make-fulltext-element *root* ,name
+                                                     :attributes attrs
+                                                     :attr-locations locations))
+                      (string (read-fulltext-element-content name)))
+                  (make-text-node *root* string)
+                  *root*))))))
 
        (define-tag-printer ,tag (node)
          (plump-dom::wrs "<" (tag-name node))
          (serialize (attributes node) *stream*)
          (plump-dom::wrs ">")
          (loop for child across (children node)
-               do (serialize child *stream*))
+            do (serialize child *stream*))
          (plump-dom::wrs "</" (tag-name node) ">")
          T))))
 
