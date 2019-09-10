@@ -39,7 +39,7 @@
    token was peeked."
 
   stream
-  (position (cons 0 0))
+  (position (cons 1 1))
 
   token)
 
@@ -305,9 +305,7 @@
 
                (case (car it)
                  (:invalid
-                  (error 'invalid-token
-                         :lexeme (cdr it)
-                         :location (lexer-position lex)))
+                  (error 'invalid-token :lexeme (cdr it)))
 
                  (:unclosed-string
                   (error 'unclosed-string-error)))))
@@ -361,7 +359,7 @@
       (unless peek
         (destructuring-bind (line . column) position
           (if (linebreakp it)
-              (setf position (cons (1+ line) 0))
+              (setf position (cons (1+ line) 1))
               (setf position (cons line (1+ column)))))))))
 
 
@@ -400,8 +398,8 @@
     (destructuring-bind (line . column) location
       (format stream "Parse error in ~a at ~a:~a: "
               source-path
-              (1+ line)
-              (- (1+ column) (length lexeme)))
+              line
+              (- column (length lexeme)))
       (call-next-method))))
 
 (defmethod print-object ((e invalid-token) stream)
