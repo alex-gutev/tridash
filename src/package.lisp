@@ -72,8 +72,30 @@
    :+list-operator+
    :*current-source-file*
 
+   ;; Declaration Types
+
+   :node-declaration
+   :node-declaration-location
+
+   :atom-node
+   :atom-node-identifier
+   :atom-node-p
+
+   :literal-node
+   :literal-node-value
+   :literal-node-p
+
+   :functor-node
+   :functor-node-operator
+   :functor-node-operands
+   :functor-node-p
+
+   ;; Parser
+
    :make-parser
    :add-operator
+
+   ;; Identifiers
 
    :node-path->name
    :id-symbol

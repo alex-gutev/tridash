@@ -22,6 +22,7 @@
         :optima)
 
   (:import-from :lol :defmacro!)
+  (:import-from :alexandria :length=)
 
   (:export :match*
            :shadow-function
@@ -29,6 +30,7 @@
 
            :decls
            :node-id
+           :decl=
 
 	   :testf
 	   :okf
@@ -103,6 +105,32 @@
     (cons (cons (node-id (car name)) (node-id (cdr name))))
     (string (id-symbol name))
     (otherwise name)))
+
+(defun decl= (got expected)
+  "Returns true if the node declaration GOT is equivalent to
+   EXPECTED."
+
+  (match* (got expected)
+    (((or (atom-node- (identifier got))
+          (and (type symbol) got))
+
+      (and (type symbol) expected))
+
+     (= got expected))
+
+    (((or (functor-node- (operator got-op) (operands got-args))
+          (list* got-op got-args))
+
+      (list* exp-op exp-args))
+
+     (and (decl= got-op exp-op)
+          (length= got-args exp-args)
+          (every #'decl= got-args exp-args)))
+
+    (((or (literal-node- (value got)) got)
+      expected)
+
+     (= got expected))))
 
 
 ;;; Utility Test Macros

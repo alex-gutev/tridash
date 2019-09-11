@@ -263,6 +263,25 @@
 
 ;;;; Methods: Processing Declarations
 
+(defmethod process-declaration ((atom atom-node) module &key)
+  (process-declaration (atom-node-identifier atom)
+                       module
+                       :level *level*
+                       :add-stack nil))
+
+(defmethod process-declaration ((functor functor-node) module &key)
+  (process-declaration (cons (functor-node-operator functor) (functor-node-operands functor))
+                       module
+                       :level *level*
+                       :add-stack nil))
+
+(defmethod process-declaration ((literal literal-node) module &key)
+  (process-declaration (literal-node-value literal)
+                       module
+                       :level *level*
+                       :add-stack nil))
+
+
 (defmethod process-declaration ((functor list) module &key)
   "Processes the functor declaration by calling PROCESS-FUNCTOR with
    the OPERATOR argument being the CAR of FUNCTOR and OPERANDS being
@@ -278,11 +297,11 @@
 
   (ensure-node name module))
 
-(defmethod process-declaration :around (decl module &key top-level (add-outer t) ((:level *level*) (if top-level 0 (1+ *level*))))
+(defmethod process-declaration :around (decl module &key top-level (add-outer t) ((:level *level*) (if top-level 0 (1+ *level*))) (add-stack t))
   "Processes the declaration with DECL added to the front of
    *DECLARATION-STACK*, and *LEVEL* incremented by one."
 
-  (let* ((*declaration-stack* (cons decl *declaration-stack*))
+  (let* ((*declaration-stack* (if add-stack (cons decl *declaration-stack*) *declaration-stack*))
          (node (call-next-method)))
 
     (post-process-node node module :add-outer add-outer)))
@@ -333,14 +352,79 @@
 
 ;;;; Methods: Processing Functors
 
-(defmacro match-syntax ((operator &rest expected) args &body clauses)
-  `(match ,args
-     ,@clauses
-     (_
-      (error 'invalid-arguments-error
-             :operator ,operator
-             :arguments ,args
-             :expected ',expected))))
+(defmacro match-syntax (operator (&rest patterns) args &body body)
+  (labels ((make-pattern (pattern place)
+             (let ((place (or place '_)))
+               (match pattern
+                 ('atom
+                  `(or (atom-node- (identifier ,place))
+                       (and (type symbol) ,place)))
+
+                 ('node
+                  `(and (or (type atom-node)
+                            (type functor-node)
+                            (type symbol)
+                            (type list)
+                            (type node)
+                            (type module))
+                        ,place))
+
+                 ((list 'atom value)
+                  (let ((sym (id-symbol value)))
+                    `(or (atom-node- (identifier (and ',sym ,place)))
+                         (and ',sym ,place))))
+
+                 ((and (or 'integer 'string) type)
+                  `(or (literal-node- (value (and (type ,type) ,place)))
+                       (and (type ,type) ,place)))
+
+                 ((list* 'functor (list op-pattern op-place) args)
+                  `(and
+                    (or (functor-node-
+                         (operator ,(make-pattern op-pattern op-place))
+                         (operands ,(make-patterns args)))
+
+                        (cons ,(make-pattern op-pattern op-place)
+                              ,(make-patterns args)))
+                    ,place))
+
+                 ((cons (and (or 'or 'and) op) patterns)
+                  (cons op (map (rcurry #'make-pattern place) patterns)))
+
+                 ('any place))))
+
+           (make-patterns (patterns)
+             (match patterns
+               ((list (list 'rest (list* pattern (or (list place) nil))))
+                (with-gensyms (x)
+                  `(guard
+                    ,place
+                    (and (listp ,place)
+                         (every
+                          (lambda (,x)
+                            (declare (ignorable ,x))
+                            (match ,x
+                              (,(make-pattern pattern '_) t)))
+                          ,place)))))
+
+               ((cons (list 'optional pattern) rest)
+                `(or ,(make-patterns (cons pattern rest)) nil))
+
+               ((cons (list* pattern (or (list place) nil)) rest)
+                (list
+                 'cons
+                 (make-pattern pattern place)
+                 (make-patterns rest))))))
+
+    `(match ,args
+       (,(make-patterns patterns)
+         ,@body)
+
+       (_
+        (error 'invalid-arguments-error
+               :operator ,operator
+               :arguments ,args
+               :expected ',patterns)))))
 
 (defmacro ensure-top-level (operator &body body)
   "Signals an error condition of type
@@ -353,8 +437,29 @@
 
      ,@body))
 
+(defun unwrap-declaration (decl)
+  "Converts a declaration, wrapped in `ATOM-NODE', `FUNCTOR-NODE' or
+   `LITERAL-NODE' structures to a CL primitive representation."
+
+  (match decl
+    ((atom-node- identifier)
+     identifier)
+
+    ((functor-node- operator operands)
+     (list* (unwrap-declaration operator)
+            (map #'unwrap-declaration operands)))
+
+    ((literal-node- value)
+     value)
+
+    (_ decl)))
+
 
 ;;; Special Operators
+
+(defmethod process-functor ((operator atom-node) args module)
+  (process-functor (atom-node-identifier operator) args module))
+
 
 ;;; Operator Declarations
 
@@ -363,14 +468,11 @@
    and associativity, in MODULE."
 
   (ensure-top-level operator
-    (match-syntax (+op-operator+ identifier number (or "left" "right"))
+    (match-syntax +op-operator+
+        ((atom op) (integer precedence) (optional ((or (atom "left") (atom "right")) associativity)))
         args
 
-      ((list* (guard op (symbolp op))
-              (guard precedence (integerp precedence))
-              (optional (list (guard associativity (symbolp associativity)))))
-
-       (add-operator op precedence (operator-associativity associativity) (operator-nodes module))))))
+      (add-operator op precedence (operator-associativity associativity) (operator-nodes module)))))
 
 (defun operator-associativity (assoc)
   "Returns the operator precedence (LEFT or RIGHT) for the precedence
@@ -397,77 +499,82 @@
   (declare (ignore module))
 
   (ensure-top-level operator
-    (match-syntax (+module-operator+ identifier)
+    (match-syntax +module-operator+
+        ((atom module))
         args
-      ((list (guard module (symbolp module)))
-       (change-module module)))))
+
+      (change-module module))))
 
 (defmethod process-functor ((operator (eql +use-operator+)) args module)
   "Adds a module as a node to MODULE."
 
   (ensure-top-level operator
-    (match-syntax (+use-operator+ (list identifier))
+    (match-syntax +use-operator+
+        ((rest (atom modules)))
         args
 
-      ((list* args)
-       (foreach #L(process-declaration (list +alias-operator+ %1 %1) module :top-level t) args)))))
+      (foreach #L(process-declaration (list +alias-operator+ %1 %1) module :top-level t)
+               modules))))
 
 (defmethod process-functor ((operator (eql +alias-operator+)) args module)
   "Adds an alias for a module to MODULE."
 
   (ensure-top-level operator
-    (match-syntax (+alias-operator+ identifier identifier)
+    (match-syntax +alias-operator+
+        ((atom module-id) (atom alias))
         args
-      ((list (guard module-id (symbolp module-id))
-             (guard alias (symbolp alias)))
 
-       (match (get alias (nodes module))
-         ((or (type node)
-              (guard it (and (typep it 'module)
-                             (not (eq it (get-module module-id))))))
+      (match (get alias (nodes module))
+        ((or (type node)
+             (guard it (and (typep it 'module)
+                            (not (eq it (get-module module-id))))))
 
-          (error 'create-alias-error
-                 :node-name alias
-                 :module-name module-id
-                 :module module))
+         (error 'create-alias-error
+                :node-name alias
+                :module-name module-id
+                :module module))
 
-         (_
-          (setf (get alias (nodes module)) (get-module module-id))))))))
+        (_
+         (setf (get alias (nodes module)) (get-module module-id)))))))
 
 (defmethod process-functor ((operator (eql +import-operator+)) args module)
   "Imports nodes directly into MODULE, from another module."
 
   (ensure-top-level operator
     (with-slots (all-nodes) module
-      (match-syntax (+import-operator+ identifier (list identifier))
+      (match-syntax +import-operator+
+          ((atom from-module) (rest (node nodes)))
           args
 
-        ((list* (guard from-module (symbolp from-module)) nodes)
-         (let ((from-module (get-module from-module)))
-           (if nodes
-               (foreach (rcurry #'import-node from-module module) nodes)
-               (import-all-nodes from-module module))))))))
+        (let ((from-module (get-module from-module)))
+
+          (if nodes
+              (foreach (rcurry #'import-node from-module module)
+                       (map #'unwrap-declaration nodes))
+              (import-all-nodes from-module module)))))))
 
 (defmethod process-functor ((operator (eql +export-operator+)) args module)
   "Adds nodes to the PUBLIC-NODES list of MODULE."
 
   (ensure-top-level operator
-    (match-syntax (+export-operator+ (list identifier))
+    (match-syntax +export-operator+
+        ((rest (node nodes)))
         args
 
-      ((list* nodes)
-       (foreach (rcurry #'export-node module) nodes)))))
+      (foreach (rcurry #'export-node module)
+               (map #'unwrap-declaration nodes)))))
 
 (defmethod process-functor ((operator (eql +in-module-operator+)) args module)
   "Looks up a node in another module, by identifier.."
 
   (declare (ignore module))
 
-  (match-syntax (+in-module-operator+ identifier node)
+  (match-syntax +in-module-operator+
+      ((atom module) (node node))
       args
 
-    ((list (guard module (symbolp module)) node)
-     (process-subnode (get-module module) node))))
+    (process-subnode (get-module module)
+                     (unwrap-declaration node))))
 
 
 ;;; Definitions
@@ -477,28 +584,31 @@
    it to MODULE."
 
   (ensure-top-level operator
-    (match-syntax (+def-operator+ ((identifier . identifier) . nodes))
+    (match-syntax +def-operator+
+        (((functor (atom name) (rest (any args))))
+         (rest (any body)))
+
         operands
 
-      ((list* (list* (guard name (symbolp name)) args) body)
-       (add-meta-node
-        name
-        (make-instance 'meta-node
-                       :name name
-                       :operands (parse-operands args module)
-                       :definition body)
-        module)))))
+      (add-meta-node
+       name
+       (make-instance 'meta-node
+                      :name name
+                      :operands (parse-operands (map #'unwrap-declaration args) module)
+                      :definition body)
+       module))))
 
 (defmethod process-functor ((operator (eql +extern-operator+)) args module)
   "Adds a stub for an externally defined meta-node to MODULE."
 
   (ensure-top-level operator
-    (match-syntax (+extern-operator+ (list identifier))
+    (match-syntax +extern-operator+
+        ((atom name) (rest (any operands)))
         args
 
-      ((list* (and (type symbol) node) operands)
-       (add-external-meta-node node module
-                               :operands (parse-operands operands module))))))
+      (-<> (map #'unwrap-declaration operands)
+           (parse-operands module)
+           (add-external-meta-node name module :operands <>)))))
 
 (defun parse-operands (operands module)
   "Parses the operand list OPERANDS. Checks that the structure of the
@@ -547,27 +657,26 @@
   "Sets an attribute of a node to a particular value."
 
   (ensure-top-level operator
-    (match-syntax (+attribute-operator+ node string literal)
+    (match-syntax +attribute-operator+
+        ((node node) ((or string atom) attribute) (any value))
         args
-      ((list node
-             (guard attribute (or (symbolp attribute) (stringp attribute)))
-             value)
 
-       (let* ((*create-nodes* t)
-              (attribute (string attribute)))
+      (let* ((*create-nodes* t)
+             (attribute (string attribute)))
 
-         (let ((node (process-declaration node module)))
+        (let ((node (process-declaration (unwrap-declaration node) module))
+              (value (unwrap-declaration value)))
 
-           (unless (node? node)
-             (error 'not-node-error :node node))
+          (unless (node? node)
+            (error 'not-node-error :node node))
 
-           (setf (attribute attribute node)
-                 (or
-                  (-<> attribute
-                       string-upcase
-                       id-symbol
-                       (process-attribute node <> value module))
-                  value))))))))
+          (setf (attribute attribute node)
+                (or
+                 (-<> attribute
+                      string-upcase
+                      id-symbol
+                      (process-attribute node <> value module))
+                 value)))))))
 
 (defmethod process-attribute (node (attribute (eql (id-symbol "INPUT"))) value (module t))
   "Adds NODE to the input-nodes list of its home module."
@@ -580,20 +689,18 @@
   "Sets the attribute processor for an attribute."
 
   (ensure-top-level operator
-    (match-syntax (+attribute-processor-operator+ string node)
+    (match-syntax +attribute-processor-operator+
+        (((or string atom) attribute) (node node))
         args
 
-      ((list (guard attribute (or (symbolp attribute) (stringp attribute)))
-             node)
+      (let ((node (process-operator-node (unwrap-declaration node) module))
+            (attribute (string attribute)))
 
-       (let ((node (process-operator-node node module))
-             (attribute (string attribute)))
+        (unless (meta-node? node)
+          (error 'not-meta-node-error :node node))
 
-         (unless (meta-node? node)
-           (error 'not-meta-node-error :node node))
-
-         (setf (get attribute (attribute-processors *global-module-table*))
-               node))))))
+        (setf (get attribute (attribute-processors *global-module-table*))
+              node)))))
 
 
 ;;; Node lists
@@ -623,11 +730,11 @@
     (unless outer-module
       (error 'global-outer-reference-error))
 
-    (match-syntax (+outer-operator+ identifier)
+    (match-syntax +outer-operator+
+        ((node node))
         args
 
-      ((list name)
-       (lookup-node name outer-module)))))
+      (lookup-node (unwrap-declaration node) outer-module))))
 
 (defun add-outer-node (outer-node module)
   "Adds a reference to NODE to the meta-node currently being
@@ -643,70 +750,68 @@
   "Establishes a binding from the first node to the second node in
    OPERANDS."
 
-  (match-syntax (+bind-operator+ node node)
+  (match-syntax +bind-operator+
+      ((any source) (node target))
       operands
 
-    ((list source target)
-     (with-source-node
-         (at-source
-           (let ((*create-nodes* (null *meta-node*)))
-             (process-declaration source module)))
+    (with-source-node
+        (at-source
+          (let ((*create-nodes* (null *meta-node*)))
+            (process-declaration source module)))
 
-       (let* ((*create-nodes* t)
-              (target (process-declaration target module))
-              (value-link (add-binding *source-node* target)))
+      (let* ((*create-nodes* t)
+             (target (process-declaration target module))
+             (value-link (add-binding *source-node* target)))
 
-         (unless (top-level?)
-           (let* ((name (canonicalize-functor operator (list *source-node* target)))
-                  (cond-node (ensure-node name *functor-module* t)))
+        (unless (top-level?)
+          (let* ((name (canonicalize-functor operator (list *source-node* target)))
+                 (cond-node (ensure-node name *functor-module* t)))
 
-             (ensure-binding (cond-node target :context *source-node* :add-function nil)
-                 (cond-link)
+            (ensure-binding (cond-node target :context *source-node* :add-function nil)
+                (cond-link)
 
-               (replace-dependency-link
-                target value-link
-                (lambda (value-link)
-                  (if-expression cond-link value-link (fail-expression)))))
+              (replace-dependency-link
+               target value-link
+               (lambda (value-link)
+                 (if-expression cond-link value-link (fail-expression)))))
 
-             cond-node)))))))
+            cond-node))))))
 
 (defmethod process-functor ((operator (eql +context-operator+)) operands module)
   "Creates a `CONTEXT-NODE' proxy for the NODE given in the first
    argument and the context with identifier given in the second
    argument."
 
-  (match-syntax (+context-operator+ node id)
+  (match-syntax +context-operator+
+      ((node node) (node context-id) (optional (node fail-test)))
       operands
 
-    ((or (list node context-id)
-         (list node context-id fail-test))
+    (let ((node (process-declaration (unwrap-declaration node) module :level *level*)))
+      (unless (node? node)
+        (error 'not-node-error :node node))
 
-     (let ((node (process-declaration node module :level *level*)))
-       (unless (node? node)
-         (error 'not-node-error :node node))
-
-       (if *source-node*
-           (make-instance 'context-node
-                          :context-id context-id
-                          :node node
-                          :fail-test
-                          (let ((*create-nodes* nil))
-                            (-<> (process-declaration fail-test module)
-                                 list
-                                 (bind-operands node <> :context context-id)
-                                 first
-                                 (at-source)
-                                 (and fail-test <>))))
-           node)))))
+      (if *source-node*
+          (make-instance 'context-node
+                         :context-id (unwrap-declaration context-id)
+                         :node node
+                         :fail-test
+                         (let ((*create-nodes* nil))
+                           (-<> (process-declaration (unwrap-declaration fail-test) module)
+                                list
+                                (bind-operands node <> :context context-id)
+                                first
+                                (at-source)
+                                (and fail-test <>))))
+          node))))
 
 (defmethod process-functor ((operator (eql +ref-operator+)) operands module)
   "Returns a `NODE-REF' for the node passed as an argument."
 
-  (match-syntax (+ref-operator+ node)
+  (match-syntax +ref-operator+
+      ((node node))
       operands
 
-    ((list node)
-     (node-ref (process-declaration node module :level *level*)))))
+    (node-ref (process-declaration (unwrap-declaration node) module :level *level*))))
 
 
 ;;; Subnodes
@@ -719,12 +824,13 @@
    direction the value of the field of the object value, stored in the
    object node, is updated."
 
-  (match-syntax (+subnode-operator+ node identifier)
+  (match-syntax +subnode-operator+
+      ((node node) (atom key))
       operands
 
-    ((list node key)
-     (let ((object-node (at-source (process-declaration node module :add-outer nil))))
-       (process-subnode object-node key)))))
+    (let* ((node (unwrap-declaration node))
+           (object-node (at-source (process-declaration node module :add-outer nil))))
+      (process-subnode object-node key))))
 
 
 (defgeneric process-subnode (object-node key)
@@ -821,7 +927,7 @@
        source))
 
     ((node-macro-function meta-node)
-     (funcall it operator operands module))
+     (funcall it (unwrap-declaration operator) (map #'unwrap-declaration operands) module))
 
     (t
      (make-meta-node-instance meta-node operator operands module))))

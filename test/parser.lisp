@@ -64,7 +64,7 @@
          for got = (funcall parser operators)
          for expected in decls
          while got
-         do (is got expected)
+         do (is got expected :test #'decl=)
          finally (ok (null got))))))
 
 (defun parse-error-p (string &optional (operators +infix-operators+))

@@ -584,6 +584,8 @@
 
   (declare (ignore module))
 
-  (match-syntax (operator any) args
-    ((list thing)
-     thing)))
+  (match-syntax +quote-operator+
+      ((any thing))
+      args
+
+    thing))

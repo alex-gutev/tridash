@@ -36,6 +36,38 @@
    NIL for end of file.")
 
 
+;;;; Declaration Types
+
+(defstruct node-declaration
+  "Represents a node declaration. Stores the location at which the
+   node declaration occurs in the source file."
+
+  location)
+
+(defstruct (atom-node (:include node-declaration)
+                      (:constructor atom-node (identifier &key location)))
+
+  "Represents an atom node declaration wit the identifier IDENTIFIER."
+
+  identifier)
+
+(defstruct (literal-node (:include node-declaration)
+                         (:constructor literal-node (value &key location)))
+
+  "Represents the literal value VALUE."
+
+  value)
+
+(defstruct (functor-node (:include node-declaration)
+                         (:constructor functor-node (operator operands &key location)))
+
+  "Represents a functor node declaration with operator OPERATOR and
+   operands OPERANDS."
+
+  operator
+  operands)
+
+
 ;;;; Adding operators
 
 (defun add-operator (symbol prec assoc operators)
@@ -135,11 +167,15 @@
                   (-<>
                    (parse-node-operand lex :line-term nil)
                    (parse-expression (next-precedence prec assoc))
-                   (list op lhs <>)
+                   (list lhs <>)
+                   (functor-node op <> :location (node-declaration-location lhs))
                    (parse-expression min-prec))))
 
                ((operand-list? lex min-prec)
-                (parse-expression (list* lhs (parse-prefix-operands lex)) min-prec))
+                (parse-expression
+                 (functor-node lhs (parse-prefix-operands lex)
+                               :location (node-declaration-location lhs))
+                 min-prec))
 
                (t lhs)))
 
@@ -174,18 +210,24 @@
   "Parses an integer: converts the lexeme string to a CL integer
    value."
 
-  (parse-integer lexeme))
+  (literal-node
+   (parse-integer lexeme)
+   :location (prior-position lex lexeme)))
 
 (defmethod parse-node ((type (eql :real)) lexeme (lex t))
   "Parses a floating point real-number: converts the lexeme string to
    a CL floating-point number."
 
-  (parse-real-number lexeme))
+  (literal-node
+   (parse-real-number lexeme)
+   :location (prior-position lex lexeme)))
 
 (defmethod parse-node ((type (eql :string)) lexeme (lex t))
   "Parses a string literal."
 
-  (parse-string lexeme))
+  (literal-node
+   (parse-string lexeme)
+   :location (prior-position lex lexeme)))
 
 (defun parse-string (str)
   "Parse a string literal (enclosed in quotes), possibly with escape
@@ -240,7 +282,18 @@
   "Parses either an atom node or a functor node, if the token
    following the identifier is an :OPEN-PAREN, '(', token."
 
-  (id-symbol lexeme))
+  (atom-node
+   (id-symbol lexeme)
+   :location (prior-position lex lexeme)))
+
+(defun prior-position (lexer lexeme)
+  "Returns the lexer position prior to the token with lexeme LEXEME."
+
+  (destructuring-bind (line . column)
+      (lexer-position lexer)
+
+    (cons line (- column (length lexeme)))))
+
 
 (defmethod parse-node ((type (eql :open-paren)) (lexeme t) lex)
   "Parses a node expression, enclosed within parenthesis."
@@ -341,9 +394,11 @@
    DELIMITER is read. The first element of the list returned is
    +LIST-OPERATOR+ followed by the parsed nodes."
 
-  (let ((*list-delimiter* delimiter))
-    (cons
-     'list
+  (let ((*list-delimiter* delimiter)
+        (pos (lexer-position lex)))
+
+    (functor-node
+     +list-operator+
 
      (iter
        (for type = (has-input? lex))
@@ -356,7 +411,9 @@
                 :rule 'node-list))
 
        (collect (parse-delimited-node lex))
-       (finally (next-token lex))))))
+       (finally (next-token lex)))
+
+     :location pos)))
 
 
 (defun parse-close-paren (lex)
@@ -392,7 +449,9 @@
 
         (when (>= (first info) min-prec)
           (next-token lex)
-          (cons op info))))))
+          (cons
+           (atom-node op :location (prior-position lex lexeme))
+           info))))))
 
 (defun parse-terminator (lex)
   "Consumes the declaration terminator. If the end of file is reached,

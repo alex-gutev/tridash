@@ -844,7 +844,7 @@
         (test-error invalid-arguments-error ":op()")
         (test-error invalid-arguments-error ":op(*)")
         (test-error invalid-arguments-error ":op(*,*)")
-        (test-error invalid-value-error ":op(*,9,x)")
+        (test-error invalid-arguments-error ":op(*,9,x)")
         (test-error invalid-arguments-error ":op(\"*\", 10, left)")
 
         (test-top-level-only ":op(*, 10, left)")))
@@ -871,7 +871,7 @@
         (test-error invalid-arguments-error ":attribute()")
         (test-error invalid-arguments-error "node; :attribute(node, attribute)")
         (test-error invalid-arguments-error "node; :attribute(node, 1, 2)")
-        (test-error not-node-error ":attribute(1, attribute, value)")
+        (test-error invalid-arguments-error ":attribute(1, attribute, value)")
 
         (test-top-level-only ":attribute(node, input, 1)" "node"))))
 
@@ -885,7 +885,7 @@
           (with-nodes ((add "add") (a "a") (b "b") (add-ab ("add" "a" "b"))) modules
             (is-type! add 'meta-node)
             (is (operands add) (decls '!\x '!\y))
-            (is (definition add) (decls '(!+ !\x !\y)))
+            (is (definition add) (decls '(!+ !\x !\y)) :test #'decl=)
 
             (test-node-function add-ab add add a b))))
 
