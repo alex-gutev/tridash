@@ -142,20 +142,20 @@
   (declare (ignore operator module))
 
   (destructuring-bind (thing) operands
-    (typecase thing
+    (atypecase (unwrap-declaration thing)
       (symbol
-       (char (symbol-name thing) 0))
+       (char (symbol-name it) 0))
 
       (string
-       (char thing 0))
+       (char it 0))
 
       (integer
        (if (typep thing '(integer 0 9))
-           (digit-char thing)
+           (digit-char it)
            (fail-thunk)))
 
       (character
-       thing)
+       it)
 
       (otherwise
        (fail-thunk)))))

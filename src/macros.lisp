@@ -62,13 +62,14 @@
 
     (lambda (operator operands module)
       (declare (ignore operator))
-      (check-arity meta-node operands)
+      (let ((operands (map #'unwrap-declaration operands)))
+        (check-arity meta-node operands)
 
-      (-<> (group-rest-args operands num-args)
-           (if (null max-args) <> operands)
-           (call-tridash-meta-node meta-node <>)
-           resolve
-           (process-macro-expansion module)))))
+        (-<> (group-rest-args operands num-args)
+             (if (null max-args) <> operands)
+             (call-tridash-meta-node meta-node <>)
+             resolve
+             (process-macro-expansion module))))))
 
 
 ;;;; Calling Tridash Meta-Nodes from CL

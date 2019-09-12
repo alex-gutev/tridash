@@ -76,6 +76,7 @@
 
    :node-declaration
    :node-declaration-location
+   :node-declaration-p
 
    :atom-node
    :atom-node-identifier
@@ -208,6 +209,8 @@
 
    :observers-count
    :dependencies-count
+
+   :unwrap-declaration
 
    ;; Meta-node
    :meta-node

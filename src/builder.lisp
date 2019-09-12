@@ -452,6 +452,9 @@
     ((literal-node- value)
      value)
 
+    ((type list)
+     (map #'unwrap-declaration decl))
+
     (_ decl)))
 
 
@@ -927,7 +930,7 @@
        source))
 
     ((node-macro-function meta-node)
-     (funcall it (unwrap-declaration operator) (map #'unwrap-declaration operands) module))
+     (funcall it operator operands module))
 
     (t
      (make-meta-node-instance meta-node operator operands module))))
@@ -1050,8 +1053,9 @@
 ;;; Meta-Nodes appearing as targets of a binding
 
 (defun transform-target-meta-node (transform source decl module)
-  (-> (call-meta-node transform (list source decl))
-      (process-declaration module :top-level t)))
+  (-<> (list (unwrap-declaration source) (unwrap-declaration decl))
+       (call-meta-node transform <>)
+       (process-declaration module :top-level t)))
 
 
 ;;; Binding Operands
