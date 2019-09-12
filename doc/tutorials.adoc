@@ -175,7 +175,6 @@ directly below the prompt. Let's try it out to see if it works.
 
 Run the following command to build the application:
 
-[source,shell]
 --------------------------------------------------
 tridashc hello-ui.html : node-name=ui -o hello.html -p type=html -p main-ui=ui
 --------------------------------------------------
@@ -440,7 +439,6 @@ _(see <https://yaml.org> for details)_.
 Create the following `build.yaml` file:
 
 .build.yml
-[source, yaml]
 --------------------------------------------------
 sources:
   - path: ui.html
@@ -469,7 +467,6 @@ previous tutorial, `type=html` and `main-ui=ui`.
 
 To build from a build configuration file run the following command:
 
-[source, shell]
 --------------------------------------------------
 tridashc -b build.yml
 --------------------------------------------------
@@ -2307,7 +2304,6 @@ TIP: If we are building using the command line directly, we'd simply
 list `util.trd` and `app.trd` in the compile command.
 
 .build.yml
-[source,yaml]
 --------------------------------------------------
 sources:
   - util.trd
@@ -2596,7 +2592,6 @@ syntax applies in the `main-ui` output option.
 Change the `build.yml` file to the following:
 
 .build.yml
-[source,yaml]
 --------------------------------------------------
 sources:
   - util.trd
