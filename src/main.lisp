@@ -348,13 +348,16 @@ Example: tridashc ui.trd : node-name=ui")
    "Compiler application debugger hook. Currently simply displays the
     error and exits the application with exit code 1."))
 
-(defmethod debugger-hook (condition prev-hook)
+(defmethod debugger-hook :around (condition prev-hook)
   (declare (ignore prev-hook))
 
   (let ((*print-pprint-dispatch* (pprint-table)))
-    (format *debug-io* "~&~a~%" condition)
-
+    (call-next-method)
     (opts:exit 1)))
+
+(defmethod debugger-hook (condition prev-hook)
+  (format *debug-io* "~&~a~%" condition))
+
 
 (defun pprint-table ()
   "Returns a PPRINT-DISPATCH table suitable for printing error
@@ -399,3 +402,35 @@ Example: tridashc ui.trd : node-name=ui")
 
   (prog1 (read)
     (fresh-line)))
+
+
+;;; Semantic Errors
+
+(defmethod debugger-hook ((condition semantic-error) prev-hook)
+  "Prints the semantic error along with the declaration stack."
+
+  (declare (ignore prev-hook))
+
+  (with-slots (declaration-stack) condition
+    (format t "~&~a~%~%" condition)
+
+    (when *current-source-file*
+      (format t "File: ~a~%~%" *current-source-file*))
+
+    (print-declaration-stack declaration-stack)))
+
+(defun print-declaration-stack (stack)
+  "Prints the declaration stack along with the locations of the
+   declarations in the source file."
+
+  (dolist (decl stack)
+    (typecase decl
+      (node-declaration
+       (destructuring-bind (line . column)
+           (node-declaration-location decl)
+         (format t "In ~a at ~a:~a~%~%"
+                 (unwrap-declaration decl)
+                 line column)))
+
+      (otherwise
+       (format t "In ~a~%~%" (unwrap-declaration decl))))))

@@ -65,10 +65,11 @@
     is not a node."))
 
 (defmethod print-object ((e not-node-error) stream)
-  (format stream "~a is not a node." (node e)))
+  (format stream "Expected a node, ~a is not a node."
+          (display-node (node e))))
 
 
-(define-condition not-meta-node-error (semantic-error)
+(define-condition not-meta-node-error (not-node-error)
   ()
 
   (:documentation
@@ -76,7 +77,8 @@
     provided is not a meta-node."))
 
 (defmethod print-object ((e not-meta-node-error) stream)
-  (format stream "~a is not a meta-node." (node e)))
+  (format stream "~a is not a meta-node."
+          (display-node (node e))))
 
 
 (define-condition module-node-reference-error (semantic-error)
@@ -88,7 +90,8 @@
    "Error condition: The value of a module pseudo-node was referenced."))
 
 (defmethod print-object ((e module-node-reference-error) stream)
-  (format stream "Cannot reference the value of ~a." (node e)))
+  (format stream "Cannot reference the value of ~a."
+          (display-node (node e))))
 
 
 (define-condition non-node-operator-error (semantic-error)
@@ -100,7 +103,8 @@
    "Error condition: The operator of a functor is not a node."))
 
 (defmethod print-object ((e non-node-operator-error) stream)
-  (format stream "~a cannot appear as an operator as it is not a node." (operator e)))
+  (format stream "~a cannot appear as an operator since it is not a node."
+          (display-node (operator e))))
 
 
 (define-condition non-existent-node-error (semantic-error)
@@ -120,7 +124,7 @@
 
 (defmethod print-object ((err non-existent-node-error) stream)
   (format stream "No node `~a` in module `~a`."
-          (node err) (module err)))
+          (node err) (name (module err))))
 
 
 ;;;; Name Collision Errors
@@ -223,30 +227,10 @@
    "Error condition: Invalid arguments passed to a special operator."))
 
 (defmethod print-object ((e invalid-arguments-error) stream)
-  (format stream "Invalid arguments ~a to ~a. Expected arguments of the form ~a."
-          (arguments e) (operator e) (expected e)))
-
-
-(define-condition invalid-value-error (semantic-error)
-  ((thing :initarg :thing
-          :reader thing
-          :documentation
-          "The 'thing' for which an invalid value was specified.")
-
-   (allowed :initarg :allowed
-            :reader allowed
-            :initform nil
-            :documentation
-            "List of allowed values.")
-
-   (value :initarg :value
-          :reader value
-          :documentation
-          "The actual value.")))
-
-(defmethod print-object ((e invalid-value-error) stream)
-  (format stream "Invalid value ~a for ~a. Must be one of: ~{~a~#[~; or ~:;, ~]~}."
-          (value e) (thing e) (allowed e)))
+  (format stream "Invalid arguments ~a to special operator `~a`. Expected arguments of the form:~% ~a."
+          (display-args (unwrap-declaration (arguments e)))
+          (operator e)
+          (expected e)))
 
 
 (define-condition global-outer-reference-error (semantic-error) ()
@@ -285,7 +269,8 @@
     it cannot appear as the target."))
 
 (defmethod print-object ((err target-node-error) stream)
-  (format stream "~a cannot appear as the target of a binding." (node err)))
+  (format stream "`~a` cannot appear as the target of a binding."
+          (display-node (unwrap-declaration (node err)))))
 
 
 ;;;; Arity Errors
@@ -311,8 +296,21 @@
     arguments."))
 
 (defmethod print-object ((e arity-error) stream)
-  (format stream "Incorrect number of arguments to ~a. Expected ~a, got ~a."
-          (meta-node e) (arity e) (arguments e)))
+  (with-slots (meta-node arity arguments) e
+    (format stream "Incorrect number of arguments to ~a. "
+            (display-node meta-node))
+
+    (match arity
+      ((list min)
+       (format stream "Expected at least ~a argument~:P," min))
+
+      ((cons min max)
+       (if (= min max)
+           (format stream "Expected ~a argument~:P," min)
+           (format stream "Expected at least ~a and at most ~a argument~:P,"
+                   min max))))
+
+    (format stream " ~a argument~:P provided." arguments)))
 
 
 (define-condition invalid-operand-list-error (semantic-error)
@@ -326,7 +324,7 @@
     definition, is invalid."))
 
 (defmethod print-object ((e invalid-operand-list-error) stream)
-  (format stream "Invalid operand list: ~a" (operands e)))
+  (format stream "Invalid operand list: ~a" (display-args (operands e))))
 
 
 ;;;; Graph Structure Errors
@@ -343,7 +341,7 @@
 
 (defmethod print-object ((err ambiguous-context-error) stream)
   (format stream "~a has multiple contexts activated by a single common ancestor."
-          (node err)))
+          (display-node (node err))))
 
 
 (define-condition ambiguous-meta-node-context-error (ambiguous-context-error) ()
@@ -353,7 +351,7 @@
 
 (defmethod print-object ((e ambiguous-meta-node-context-error) stream)
   (format stream "The value function of ~a is ambiguous as it has multiple contexts."
-          (node e)))
+          (display-node (node e))))
 
 
 (define-condition node-cycle-error (semantic-error)
@@ -365,7 +363,7 @@
    "Error condition: A cycle in the graph was detected."))
 
 (defmethod print-object ((e node-cycle-error) stream)
-  (format stream "Cycle detected in ~a." (node e)))
+  (format stream "Cycle detected in ~a." (display-node (node e))))
 
 
 (define-condition dependency-not-reachable-error (semantic-error)
@@ -385,4 +383,35 @@
 
 (defmethod print-object ((e dependency-not-reachable-error) stream)
   (format stream "Dependency ~a of ~a is not reachable from any input node."
-          (dependency e) (node e)))
+          (display-node (dependency e))
+          (display-node (node e))))
+
+
+;;;; Printing Utility Functions
+
+(defun display-node (node)
+  "Returns a string displaying NODE and its type."
+
+  (typecase node
+    (meta-node
+     (format nil "<Meta-Node: ~a>" (name node)))
+
+    (node
+     (format nil "<Node: ~a>" (name node)))
+
+    (module
+     (format nil "<Module: ~a>" (name node)))
+
+    (string
+     (format nil "~s" node))
+
+    (otherwise
+     node)))
+
+(defun display-args (args)
+  "Returns a string containing a comma-separated representation of the
+   argument list ARGS."
+
+  (if args
+      (format nil "(~{~a~^, ~})" args)
+      "()"))

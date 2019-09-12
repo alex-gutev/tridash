@@ -414,7 +414,15 @@
                 (list
                  'cons
                  (make-pattern pattern place)
-                 (make-patterns rest))))))
+                 (make-patterns rest)))))
+
+           (extract-pattern (pattern)
+             (match pattern
+               ((or
+                 (list (or 'rest 'optional) (list* pattern _))
+                 (list* pattern _)
+                 pattern)
+                pattern))))
 
     `(match ,args
        (,(make-patterns patterns)
@@ -424,7 +432,7 @@
         (error 'invalid-arguments-error
                :operator ,operator
                :arguments ,args
-               :expected ',patterns)))))
+               :expected ',(map #'extract-pattern patterns))))))
 
 (defmacro ensure-top-level (operator &body body)
   "Signals an error condition of type
@@ -486,12 +494,7 @@
      :left)
     ((or (= assoc (id-symbol "right"))
          (null assoc))
-     :right)
-    (t
-     (error 'invalid-value-error
-            :thing "operator associativity"
-            :allowed '("left" "right")
-            :value assoc))))
+     :right)))
 
 
 ;;; Module Declarations

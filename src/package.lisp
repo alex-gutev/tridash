@@ -277,7 +277,6 @@
    :create-alias-error
    :import-node-error
    :invalid-arguments-error
-   :invalid-value-error
    :global-outer-reference-error
    :special-operator-reference-error
    :target-node-error
