@@ -62,7 +62,9 @@
 
     (lambda (operator operands module)
       (declare (ignore operator))
-      (let ((operands (map #'unwrap-declaration operands)))
+
+      (let ((*tridash-call-reason* :macro)
+            (operands (map #'unwrap-declaration operands)))
         (check-arity meta-node operands)
 
         (-<> (group-rest-args operands num-args)

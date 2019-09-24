@@ -1058,6 +1058,7 @@
 (defun transform-target-meta-node (transform source decl module)
   (-<> (list (unwrap-declaration source) (unwrap-declaration decl))
        (call-meta-node transform <>)
+       (let ((*tridash-call-reason* :target-transform)) <>)
        (process-declaration module :top-level t)))
 
 

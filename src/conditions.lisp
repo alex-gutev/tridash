@@ -393,15 +393,6 @@
   "Returns a string displaying NODE and its type."
 
   (typecase node
-    (meta-node
-     (format nil "<Meta-Node: ~a>" (name node)))
-
-    (node
-     (format nil "<Node: ~a>" (name node)))
-
-    (module
-     (format nil "<Module: ~a>" (name node)))
-
     (string
      (format nil "~s" node))
 

@@ -265,5 +265,4 @@
 ;;; Print Method
 
 (defmethod print-object ((module module) stream)
-  (print-unreadable-object (module stream :type t)
-    (format stream "~a" (name module))))
+  (format stream "<Module: ~a>" (name module)))

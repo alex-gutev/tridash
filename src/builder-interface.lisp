@@ -41,6 +41,12 @@
 
 (defvar *global-module-table*)
 
+(defvar *tridash-call-reason* nil
+  "The reason for calling into Tridash code. One of the following:
+
+   :MACRO - Expanding a macro.
+   :TARGET-TRANSFORM - Perform a target node transform.")
+
 
 ;;;; Flattened Node Symbol Table
 

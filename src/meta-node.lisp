@@ -339,3 +339,12 @@
    (operands meta-node)
 
    :initial-value (cons 0 0)))
+
+
+;;; Print Methods
+
+(defmethod print-object ((node meta-node) stream)
+  (format stream "<Meta-Node: ~a>" (name node)))
+
+(defmethod print-object ((node external-meta-node) stream)
+  (format stream "<External-Meta-Node: ~a>" (name node)))

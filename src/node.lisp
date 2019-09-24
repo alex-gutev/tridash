@@ -436,8 +436,4 @@
 ;;; Print Method
 
 (defmethod print-object ((node node) stream)
-  "Prints a representation of the NODE object which includes the
-   node's name."
-
-  (print-unreadable-object (node stream :type t)
-    (format stream "~a" (name node))))
+  (format stream "<Node: ~a>" (name node)))

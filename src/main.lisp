@@ -434,3 +434,41 @@ Example: tridashc ui.trd : node-name=ui")
 
       (otherwise
        (format t "In ~a~%~%" (unwrap-declaration decl))))))
+
+
+;;; Failures
+
+(defmethod debugger-hook ((condition tridash-fail) prev-hook)
+  "Prints the reason for the tridash call which resulted in a failure
+   value."
+
+  (declare (ignore prev-hook))
+
+  (flet ((call-reason (reason)
+           (case reason
+             (:macro
+              "macro expansion")
+
+             (:target-transform
+              "target transform")))
+
+         (type-desc (type)
+           (typecase type
+             (string
+              (format nil " with type: ~s" type))
+
+             (null
+              "")
+
+             (otherwise
+              (format nil " with type: ~a" type)))))
+
+    (with-slots (fail-type) condition
+      (format t "~&Failure in ~a~a.~%~%"
+              (call-reason *tridash-call-reason*)
+              (type-desc fail-type))
+
+      (when *current-source-file*
+        (format t "File: ~a~%~%" *current-source-file*))
+
+      (print-declaration-stack *declaration-stack*))))

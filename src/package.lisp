@@ -299,7 +299,14 @@
    :thing
    :allowed
    :value
-   :arity)
+   :arity
+
+   ;; Tridash Failure Condition
+   :tridash-fail
+   :fail-type
+
+   :*declaration-stack*
+   :*tridash-call-reason*)
 
   (:documentation
    "Package containing the compiler frontend, which builds the node
