@@ -76,30 +76,33 @@
 
 ;;;; Calling Tridash Meta-Nodes from CL
 
-(defgeneric call-meta-node (meta-node args)
+(defgeneric call-meta-node (meta-node args &key &allow-other-keys)
   (:documentation
    "Calls the `META-NODE' META-NODE with arguments ARGS. Arity checks
     are performed and the rest arguments are grouped into a single
     list. Can be used to call both `META-NODE's and
     `EXTERNAL-META-NODE's."))
 
-(defmethod call-meta-node :around ((meta-node meta-node) args)
+(defmethod call-meta-node :around ((meta-node meta-node) args &key (resolve t))
   "Performs arity checking and calls groups the rest arguments into a
    single list, before calling the next method with the new argument
    list."
 
   (check-arity meta-node args)
 
-  (let ((max-args (cdr (meta-node-arity meta-node))))
-    (-<>> (group-rest-args args (1- (length (operands meta-node))))
-          (if (null max-args) <> args)
-          (call-next-method meta-node)
-          resolve)))
+  (let* ((max-args (cdr (meta-node-arity meta-node)))
+         (value
+          (-<>> (group-rest-args args (1- (length (operands meta-node))))
+                (if (null max-args) <> args)
+                (call-next-method meta-node))))
+    (if resolve
+        (resolve value)
+        value)))
 
-(defmethod call-meta-node ((meta-node meta-node) args)
+(defmethod call-meta-node ((meta-node meta-node) args &key)
   (call-tridash-meta-node meta-node args))
 
-(defmethod call-meta-node ((meta-node external-meta-node) args)
+(defmethod call-meta-node ((meta-node external-meta-node) args &key)
   (apply (external-meta-node-cl-function (name meta-node)) args))
 
 

@@ -111,7 +111,7 @@
      VALUE."
 
     (aif (get (string attribute) (attribute-processors *global-module-table*))
-         (call-meta-node it (list value))
+         (call-meta-node it (list value) :resolve nil)
          value)))
 
 
