@@ -444,24 +444,38 @@ Example: tridashc ui.trd : node-name=ui")
 
   (declare (ignore prev-hook))
 
-  (flet ((call-reason (reason)
-           (case reason
-             (:macro
-              "macro expansion")
+  (labels ((call-reason (reason)
+             (case reason
+               (:macro
+                "macro expansion")
 
-             (:target-transform
-              "target transform")))
+               (:target-transform
+                "target transform")))
 
-         (type-desc (type)
-           (typecase type
-             (string
-              (format nil " with type: ~s" type))
+           (display-value (value)
+             (typecase value
+               ((eql fail)
+                "<FAIL>")
 
-             (null
-              "")
+               (string
+                (format nil "~s" value))
 
-             (otherwise
-              (format nil " with type: ~a" type)))))
+               (list
+                (map #'display-value value))
+
+               (otherwise value)))
+
+           (type-desc (type)
+             (handler-bind
+                 ((tridash-fail
+                   (lambda (c)
+                     (declare (ignore c))
+                     (replace-failure 'fail))))
+
+               (if type
+                   (format nil ", with type: ~a"
+                           (display-value (tridash.frontend::resolve type)))
+                   ""))))
 
     (with-slots (fail-type) condition
       (format t "~&Failure in ~a~a.~%~%"

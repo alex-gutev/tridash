@@ -87,18 +87,26 @@
 
    If THING is not a `THUNK', returns it."
 
-  (nlet-tail resolve ((thing thing))
-    (typecase thing
-      (catch-thunk
-       (resolve
-        (resolve-catch
-         (catch-thunk-compute thing)
-         (catch-thunk-catch thing))))
+  (restart-case
+      (nlet-tail resolve ((thing thing))
+        (typecase thing
+          (catch-thunk
+           (resolve
+            (resolve-catch
+             (catch-thunk-compute thing)
+             (catch-thunk-catch thing))))
 
-      (thunk
-       (resolve% (funcall (thunk-compute thing))))
+          (thunk
+           (resolve% (funcall (thunk-compute thing))))
 
-      (otherwise thing))))
+          (otherwise thing)))
+    (replace-failure (value) value)))
+
+(defun replace-failure (value)
+  "Invokes the REPLACE-FAILURE restart, which replaces the failure
+   value with VALUE."
+
+  (invoke-restart 'replace-failure value))
 
 (defun resolve-catch (try catch)
   "Resolves TRY fully. If TRY fails returns CATCH or the CATCH of the

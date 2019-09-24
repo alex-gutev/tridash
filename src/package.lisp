@@ -304,6 +304,7 @@
    ;; Tridash Failure Condition
    :tridash-fail
    :fail-type
+   :replace-failure
 
    :*declaration-stack*
    :*tridash-call-reason*)
