@@ -3592,7 +3592,17 @@
                     }"
                  ":attribute(f, no-remove, 1)")
 
-          (is-error (finish-build) 'ambiguous-context-error))))))
+          (is-error (finish-build) 'ambiguous-context-error)))))
+
+  (subtest "Constant Functions"
+    (subtest "Ignored Arguments"
+      (with-module-table modules
+        (build "f(x) : 1"
+               ":attribute(f, no-remove, 1)")
+
+        (let ((table (finish-build)))
+          (with-nodes ((f "f")) table
+            (test-value-function f (car (first (contexts f))) 1)))))))
 
 
 (finalize)

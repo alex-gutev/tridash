@@ -47,7 +47,7 @@
     ;; Remove nodes not reachable from any input node.
     (remove-unreachable-nodes input-nodes nodes)
 
-    ;; Replace node linkes which no longer point to actual nodes with
+    ;; Replace node links which no longer point to actual nodes with
     ;; expression blocks
     (coalesce-node-links nodes)))
 
@@ -241,7 +241,9 @@
                  (foreach #'mark (map-keys (observers node)))))
 
              (sweep (node)
-               (unless (or (visited? node) (attribute :no-remove node))
+               (unless (or (visited? node)
+                           (attribute :no-remove node)
+                           (meta-node? node))
                  (erase nodes node)
 
                  (awhen (some #'visited? (map-keys (observers node)))
@@ -361,12 +363,13 @@
 
            (fold-value (node)
              (awhen (value-node? node)
-               (let ((obs (observers node)))
-                 (replace-dependency it node)
+               (with-slots (observers) node
+                 (unless (emptyp observers)
+                   (replace-dependency it node)
 
-                 (foreach #'fold-value (map-keys obs))
-                 (clear (observers node))
-                 (clear (contexts node)))))
+                   (foreach #'fold-value (map-keys observers))
+                   (clear (observers node))
+                   (clear (contexts node))))))
 
            (replace-dependency (value node)
              (doseq ((obs . link) (observers node))
