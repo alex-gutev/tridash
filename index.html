@@ -1,34 +1,114 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Tridash</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /></head><body><div xml:lang="en" class="article" lang="en"><div class="titlepage"><div><div><h2 class="title"><a id="idm55851712224"></a>Tridash</h2></div></div><hr /></div><div class="toc"><p><strong>Table of Contents</strong></p><dl class="toc"><dt><span class="section"><a href="#_how_8217_s_it_different">1. How’s it Different</a></span></dt><dd><dl><dt><span class="section"><a href="#_examples">1.1. Examples</a></span></dt></dl></dd><dt><span class="section"><a href="#_getting_started">2. Getting Started</a></span></dt><dd><dl><dt><span class="section"><a href="#_tutorials">2.1. Tutorials</a></span></dt></dl></dd><dt><span class="section"><a href="#_documentation">3. Documentation</a></span></dt></dl></div><p>Tridash is a programming language which aims to make the development
-of interactive applications easier and less error-prone.</p><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_how_8217_s_it_different"></a>1. How’s it Different</h2></div></div></div><p>What sets Tridash apart from the popular languages of today is that it
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="generator" content="AsciiDoc 8.6.10">
+<title>Tridash</title>
+<link rel="stylesheet" href="style/asciidoc.css" type="text/css">
+
+
+</head>
+<body class="article">
+<div id="header">
+<h1>Tridash</h1>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph"><p>Tridash is a programming language which aims to make the development
+of interactive applications easier and less error-prone.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_8217_s_it_different">How&#8217;s it Different</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>What sets Tridash apart from the popular languages of today is that it
 is designed from the ground up for developing applications which
 respond to user interaction and events, whereas most programming
 languages, particularly imperative programming languages are
 originally designed for developing batch-style applications which
 perform their task and then exit without interacting with the user. As
 a result developing interactive applications with these languages, is
-difficult and prone to bugs.</p><p>In Tridash an application is composed of a set of stateful
+difficult and prone to bugs.</p></div>
+<div class="paragraph"><p>In Tridash an application is composed of a set of stateful
 computational components called nodes. Each node has a particular
 value, which is computed from a function of one or more dependency
-nodes. When the values of a node’s dependency nodes changes, the
-node’s value is automatically recomputed. Nodes can either be purely
+nodes. When the values of a node&#8217;s dependency nodes changes, the
+node&#8217;s value is automatically recomputed. Nodes can either be purely
 computational components or can be bound to the state of a user
 interface element, the network or the file system. For example a node
-can be bound to the value of a text field UI element.</p><p>With Tridash you can focus on the core logic of your application code,
+can be bound to the value of a text field UI element.</p></div>
+<div class="paragraph"><p>With Tridash you can focus on the core logic of your application code,
 by expressing the application state as a set of dependencies between
 components. This is contrary to the approach taken by most languages
 where your application is expressed as a linear sequence of
 instructions, in which it is up to the programmer to manually manage
-the application state correctly.</p><p>Visit <a class="ulink" href="philosophy.html" target="_top">Philosophy</a>, if you’d like to read on about
-the philosophy of the language.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_examples"></a>1.1. Examples</h3></div></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_summing_values"></a>Summing Values</h4></div></div></div><p>Let’s say you an application consisting of three text input fields,
-and you’d like to compute their sum and display it in a fourth text
-field. Additionally you’d like the sum to be recomputed, with the new
+the application state correctly.</p></div>
+<div class="paragraph"><p>Visit <a href="philosophy.html">Philosophy</a>, if you&#8217;d like to read on about
+the philosophy of the language.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_getting_started">Getting Started</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Visit <a href="installation.html">Installation</a> for the download links and
+installation instructions for the platform of your choice.</p></div>
+<div class="sect2">
+<h3 id="_tutorials">Tutorials</h3>
+<div class="paragraph"><p>Introductory tutorials, which introduce the basic features of the
+language and gradually move on to more advanced topics, are available
+<a href="tutorials">here</a>.</p></div>
+<div class="ulist"><div class="title">Alternative Formats</div><ul>
+<li>
+<p>
+<a href="tutorials.pdf">PDF</a>
+</p>
+</li>
+<li>
+<p>
+<a href="tutorials.html">Single Page HTML</a>
+</p>
+</li>
+</ul></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_documentation">Documentation</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>The full manual documenting the syntax, semantics, features and core
+modules of the language is available <a href="manual">here</a>.</p></div>
+<div class="ulist"><div class="title">Alternative Formats</div><ul>
+<li>
+<p>
+<a href="tridash.pdf">PDF</a>
+</p>
+</li>
+<li>
+<p>
+<a href="tridash.html">Single Page HTML</a>
+</p>
+</li>
+</ul></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_examples">Examples</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_summing_values">Summing Values</h3>
+<div class="paragraph"><p>Let&#8217;s say you an application consisting of three text input fields,
+and you&#8217;d like to compute their sum and display it in a fourth text
+field. Additionally you&#8217;d like the sum to be recomputed, with the new
 sum displayed, whenever the values of one of the text fields is
-changed by the user. In most of today’s languages this would require
+changed by the user. In most of today&#8217;s languages this would require
 setting up event listeners, and callback functions for each of the
-text fields, you’d then have to update a <code class="literal">sum</code> variable and manually
+text fields, you&#8217;d then have to update a <span class="monospaced">sum</span> variable and manually
 change the value of the fourth text field to the new sum. With
-Tridash, the entire application can be implemented with the following:</p><pre class="screen">&lt;? :import(core) ?&gt;
+Tridash, the entire application can be implemented with the following:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>&lt;? :import(core) ?&gt;
 
 &lt;!doctype html&gt;
 &lt;html&gt;
@@ -38,22 +118,32 @@ Tridash, the entire application can be implemented with the following:</p><pre c
       &lt;p&gt;&lt;label&gt;Water: &lt;input value="&lt;?@ to-real(water) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
       &lt;p&gt;&lt;label&gt;&lt;strong&gt;Total:&lt;/strong&gt; &lt;input value="&lt;?@ food + electricity + water ?&gt;" readonly&gt;&lt;/label&gt;&lt;/p&gt;
     &lt;/body&gt;
-&lt;/html&gt;</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This example targets the JavaScript backend with HTML used for
+&lt;/html&gt;</pre>
+</div></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<img src="./images/icons/note.png" alt="Note">
+</td>
+<td class="content">This example targets the JavaScript backend with HTML used for
 the user interface, however Tridash is not intended exclusively for
 building web apps. Other backends, allowing for desktop applications
-to be written, will be added in a future release.</p></td></tr></table></div><p>That’s all that is necessary. The main application logic is actually
-contained in <code class="literal">&lt;?@ food + electricty + water ?&gt;</code> which computes the sum
+to be written, will be added in a future release.</td>
+</tr></table>
+</div>
+<div class="paragraph"><p>That&#8217;s all that is necessary. The main application logic is actually
+contained in <span class="monospaced">&lt;?@ food + electricty + water ?&gt;</span> which computes the sum
 of the values entered in the three text fields. Whenever the value of
-a text field is changed, the sum is automatically recomputed.</p></div></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_getting_started"></a>2. Getting Started</h2></div></div></div><p>Visit <a class="ulink" href="installation.html" target="_top">Installation</a> for the download links and
-installation instructions for the platform of your choice.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_tutorials"></a>2.1. Tutorials</h3></div></div></div><p>Introductory tutorials, which introduce the basic features of the
-language and gradually move on to more advanced topics, are available
-<a class="ulink" href="tutorials" target="_top">here</a>.</p><div class="itemizedlist"><p class="title"><strong>Alternative Formats</strong></p><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-<a class="ulink" href="tutorials.pdf" target="_top">PDF</a>
-</li><li class="listitem">
-<a class="ulink" href="tutorials.html" target="_top">Single Page HTML</a>
-</li></ul></div></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_documentation"></a>3. Documentation</h2></div></div></div><p>The full manual documenting the syntax, semantics, features and core
-modules of the language is available <a class="ulink" href="manual" target="_top">here</a>.</p><div class="itemizedlist"><p class="title"><strong>Alternative Formats</strong></p><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-<a class="ulink" href="tridash.pdf" target="_top">PDF</a>
-</li><li class="listitem">
-<a class="ulink" href="tridash.html" target="_top">Single Page HTML</a>
-</li></ul></div></div></div></body></html>
+a text field is changed, the sum is automatically recomputed.</p></div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated
+ 2019-09-25 09:21:45 CEST
+</div>
+</div>
+</body>
+</html>

@@ -1,11 +1,31 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Philosophy</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /></head><body><div xml:lang="en" class="article" lang="en"><div class="titlepage"><div><div><h2 class="title"><a id="idm210444124672"></a>Philosophy</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Alexander</span> <span class="surname">Gutev</span></h3><code class="email">&lt;<a class="email" href="mailto:alex.gutev@gmail.com">alex.gutev@gmail.com</a>&gt;</code></div></div></div><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_the_state_management_problem"></a>1. The State Management Problem</h2></div></div></div><p>Most programming languages provide few tools for managing the state of
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="generator" content="AsciiDoc 8.6.10">
+<title>Philosophy</title>
+<link rel="stylesheet" href="style/asciidoc.css" type="text/css">
+
+
+</head>
+<body class="article">
+<div id="header">
+<h1>Philosophy</h1>
+<span id="author">Alexander Gutev</span><br>
+<span id="email" class="monospaced">&lt;<a href="mailto:alex.gutev@gmail.com">alex.gutev@gmail.com</a>&gt;</span><br>
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="_the_state_management_problem">The State Management Problem</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Most programming languages provide few tools for managing the state of
 an application. In general it is up to the programmer to establish
 listeners for important events or user interactions and manually
 update the state of the application by modifying memory directly. This
 is known as imperative programming. There is no way to specify the
 application state as a set of a components, the states of which, are a
-function of the states of other components.</p><p>Manually tracking and updating the state of the application is tedious
+function of the states of other components.</p></div>
+<div class="paragraph"><p>Manually tracking and updating the state of the application is tedious
 as it requires a lot of boilerplate code to be written to listen for
 changes in the states of various application objects and update the
 states of all objects whose state depends on those objects.  This
@@ -16,16 +36,20 @@ various event listeners. Changes to the application logic require
 changes in multiple event listeners, which can introduce subtle bugs
 if the application logic is not implemented correctly across all event
 listeners. As a result the core application logic is inflexible and
-difficult to change once it has been written.</p><p>The problem is magnified when concurrency is involved. Consider that
+difficult to change once it has been written.</p></div>
+<div class="paragraph"><p>The problem is magnified when concurrency is involved. Consider that
 the state of the user interface needs to be updated in response to an
 event, such as the arrival of data from the network, however the state
-of the user interface may only be updated from a specific <span class="emphasis"><em>main</em></span>
-thread whereas the event is delivered on a <span class="emphasis"><em>background</em></span> thread
-(different from the <span class="emphasis"><em>main</em></span> thread). Suddenly inter-thread (and
+of the user interface may only be updated from a specific <em>main</em>
+thread whereas the event is delivered on a <em>background</em> thread
+(different from the <em>main</em> thread). Suddenly inter-thread (and
 sometimes even inter-process) synchronization logic has to be
 intermixed with the application logic. The net result is that the
 application logic is obscured in layers of event listener and
-synchronization code.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_partial_solutions"></a>1.1. Partial Solutions</h3></div></div></div><p>Some toolkits or frameworks provide functionality for binding various
+synchronization code.</p></div>
+<div class="sect2">
+<h3 id="_partial_solutions">Partial Solutions</h3>
+<div class="paragraph"><p>Some toolkits or frameworks provide functionality for binding various
 UI elements to application objects, such that when the state of the UI
 element changes, the state of the application object is automatically
 updated, without having to write additional code. However, these
@@ -33,30 +57,38 @@ bindings are usually very limited, as they only support trivial
 bindings which only allow the value of the application object to be
 automatically updated to match the value stored in the UI element or
 vice versa. As an example of a trivial binding, consider a text field
-bound to an an application object <code class="literal">X</code>, when the user enters text in
-the text field <code class="literal">X</code> is automatically set to the value stored in the
+bound to an an application object <span class="monospaced">X</span>, when the user enters text in
+the text field <span class="monospaced">X</span> is automatically set to the value stored in the
 text field. The binding is unconditional, meaning it is not possible
 to specify under which conditions the state of the application object
 should be automatically updated and under which conditions it should
 not. Arbitrary functions are usually not supported, that is it is not
 possible to specify, for example, that the state of an application
-object <code class="literal">Sum</code> is bound to the sum of the values of two text fields <code class="literal">A</code>
-and <code class="literal">B</code>. The result is that programmers often forgo using bindings, in
-favor of imperative state management, due to these limitations.</p><p>Some toolkits may provide support for bindings involving more complex
-functions, often known as <span class="emphasis"><em>value transformers</em></span> or <span class="emphasis"><em>formatters</em></span>.
+object <span class="monospaced">Sum</span> is bound to the sum of the values of two text fields <span class="monospaced">A</span>
+and <span class="monospaced">B</span>. The result is that programmers often forgo using bindings, in
+favor of imperative state management, due to these limitations.</p></div>
+<div class="paragraph"><p>Some toolkits may provide support for bindings involving more complex
+functions, often known as <em>value transformers</em> or <em>formatters</em>.
 However, these generally have to be specified in a different language,
 separate from the language in which the bindings are specified,
-usually requiring that a subclass or some <span class="emphasis"><em>value transformer</em></span>
+usually requiring that a subclass or some <em>value transformer</em>
 interface is implemented, which complicates the matter. Moreover,
 these are usually still limited to a function of a single argument,
 that is the state of the component can only be bound to a maximum of
-one other component, meaning the <code class="literal">Sum</code> example cannot be implemented
-without resorting to lower-level imperative state management.</p></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_the_tridash_solution"></a>2. The Tridash Solution</h2></div></div></div><p>In Tridash an application is decomposed into a set of separate
+one other component, meaning the <span class="monospaced">Sum</span> example cannot be implemented
+without resorting to lower-level imperative state management.</p></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_tridash_solution">The Tridash Solution</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>In Tridash an application is decomposed into a set of separate
 components, called nodes, which can correspond to UI elements, other
 stateful components, such as the filesystem, operating system or
 network, or simply computational components. Each node has a
 particular value, at a given moment in time, which comprises the
-node’s state. The value (state) of each node can be specified as an
+node&#8217;s state. The value (state) of each node can be specified as an
 arbitrary function of the values (states) of an arbitrary number of
 other nodes. This is unlike most toolkits/frameworks, which claim to
 support bindings, that only allow a simple binding to a single other
@@ -65,4 +97,15 @@ specified, and even new functions can be written, entirely using
 Tridash without having to drop-down to a lower-level language. The aim
 is that, using Tridash, the entire application state can be specified
 as a set of nodes where the state of each node is a function of other
-nodes.</p></div></div></body></html>
+nodes.</p></div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated
+ 2019-09-24 18:56:44 CEST
+</div>
+</div>
+</body>
+</html>

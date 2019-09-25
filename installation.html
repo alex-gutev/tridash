@@ -1,68 +1,195 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Installation</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /></head><body><div xml:lang="en" class="article" lang="en"><div class="titlepage"><div><div><h2 class="title"><a id="idm446111439568"></a>Installation</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Alexander</span> <span class="surname">Gutev</span></h3><code class="email">&lt;<a class="email" href="mailto:alex.gutev@gmail.com">alex.gutev@gmail.com</a>&gt;</code></div></div></div><hr /></div><div class="toc"><p><strong>Table of Contents</strong></p><dl class="toc"><dt><span class="section"><a href="#_binaries">1. Binaries</a></span></dt><dd><dl><dt><span class="section"><a href="#_windows">1.1. Windows</a></span></dt><dt><span class="section"><a href="#_linux_and_mac_os_x_macos">1.2. Linux and Mac OS X/macOS</a></span></dt></dl></dd><dt><span class="section"><a href="#_building_from_source">2. Building from source</a></span></dt><dd><dl><dt><span class="section"><a href="#_building_without_make">2.1. Building Without Make</a></span></dt></dl></dd></dl></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_binaries"></a>1. Binaries</h2></div></div></div><p>Prebuilt binaries are available for x86-64 Linux, Mac OS X/macOS and
-Windows at: <a class="ulink" href="https://github.com/alex-gutev/tridash/releases/latest" target="_top">https://github.com/alex-gutev/tridash/releases/latest</a>.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_windows"></a>1.1. Windows</h3></div></div></div><p>Download <code class="literal">tridash-*-x64-setup.exe</code> and run the installer.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_linux_and_mac_os_x_macos"></a>1.2. Linux and Mac OS X/macOS</h3></div></div></div><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p class="simpara">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="generator" content="AsciiDoc 8.6.10">
+<title>Installation</title>
+<link rel="stylesheet" href="style/asciidoc.css" type="text/css">
+
+
+</head>
+<body class="article">
+<div id="header">
+<h1>Installation</h1>
+<span id="author">Alexander Gutev</span><br>
+<span id="email" class="monospaced">&lt;<a href="mailto:alex.gutev@gmail.com">alex.gutev@gmail.com</a>&gt;</span><br>
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="_binaries">Binaries</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Prebuilt binaries are available for x86-64 Linux, Mac OS X/macOS and
+Windows at: <a href="https://github.com/alex-gutev/tridash/releases/latest">https://github.com/alex-gutev/tridash/releases/latest</a>.</p></div>
+<div class="sect2">
+<h3 id="_windows">Windows</h3>
+<div class="paragraph"><p>Download <span class="monospaced">tridash-*-x64-setup.exe</span> and run the installer.</p></div>
+</div>
+<div class="sect2">
+<h3 id="_linux_and_mac_os_x_macos">Linux and Mac OS X/macOS</h3>
+<div class="olist arabic"><ol class="arabic">
+<li>
+<p>
 Download the tarball for your operating system:
-</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-<code class="literal">linux_x86_64.tar.gz</code> for Linux
-</li><li class="listitem">
-<code class="literal">darwin_x86_64.tar.gz</code> for Mac OS X/macOS.
-</li></ul></div></li><li class="listitem">
+</p>
+<div class="ulist"><ul>
+<li>
+<p>
+<span class="monospaced">linux_x86_64.tar.gz</span> for Linux
+</p>
+</li>
+<li>
+<p>
+<span class="monospaced">darwin_x86_64.tar.gz</span> for Mac OS X/macOS.
+</p>
+</li>
+</ul></div>
+</li>
+<li>
+<p>
 Unpack the tarball to a directory of your choice.
-</li><li class="listitem">
+</p>
+</li>
+<li>
+<p>
 Navigate to the directory, where the tarball was unpacked, in the
    terminal.
-</li><li class="listitem">
-Run <code class="literal">sudo ./install.sh</code>. This will install the <code class="literal">tridashc</code>
-   executable and its related files in the <code class="literal">/usr/local</code> prefix.
-</li></ol></div><p>To uninstall navigate to the directory, where the tarball was
-unpacked, and run <code class="literal">sudo ./uninstall.sh</code>.</p><p><span class="emphasis"><em>Once Tridash is installed, the directory to which the tarball was
-unpacked can be removed.</em></span></p></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_building_from_source"></a>2. Building from source</h2></div></div></div><p>The <code class="literal">README.md</code> file, in the source distribution, contains build
+</p>
+</li>
+<li>
+<p>
+Run <span class="monospaced">sudo ./install.sh</span>. This will install the <span class="monospaced">tridashc</span>
+   executable and its related files in the <span class="monospaced">/usr/local</span> prefix.
+</p>
+</li>
+</ol></div>
+<div class="paragraph"><p>To uninstall navigate to the directory, where the tarball was
+unpacked, and run <span class="monospaced">sudo ./uninstall.sh</span>.</p></div>
+<div class="paragraph"><p><em>Once Tridash is installed, the directory to which the tarball was
+unpacked can be removed.</em></p></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_building_from_source">Building from source</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>The <span class="monospaced">README.md</span> file, in the source distribution, contains build
 instructions for Linux and Unix-like systems. Download the
-<code class="literal">tridash-*.tar.gz</code> tarball, from
-<a class="ulink" href="github.com/alex-gutev/tridash/releases" target="_top">releases</a>, rather than
+<span class="monospaced">tridash-*.tar.gz</span> tarball, from
+<a href="github.com/alex-gutev/tridash/releases">releases</a>, rather than
 cloning the repository, or downloading the raw source code, as it
 contains a few non-source, files which have been pre-generated. If you
-clone the repository you will need to generate the following yourself:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-A <code class="literal">configure</code> script, generated with <a class="ulink" href="https://www.gnu.org/software/autoconf/" target="_top">autoconf</a>.
-</li><li class="listitem">
-Man and info pages, generated from AsciiDoc sources with <code class="literal">a2x</code>,
-      <span class="emphasis"><em>see <a class="ulink" href="http://asciidoc.org" target="_top">http://asciidoc.org</a></em></span>.
-</li><li class="listitem">
+clone the repository you will need to generate the following yourself:</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+A <span class="monospaced">configure</span> script, generated with <a href="https://www.gnu.org/software/autoconf/">autoconf</a>.
+</p>
+</li>
+<li>
+<p>
+Man and info pages, generated from AsciiDoc sources with <span class="monospaced">a2x</span>,
+      <em>see <a href="http://asciidoc.org">http://asciidoc.org</a></em>.
+</p>
+</li>
+<li>
+<p>
 A minified version of the JavaScript runtime library, which is
       compiled from multiple JS source files with
-      <a class="ulink" href="https://github.com/mishoo/UglifyJS2/tree/harmony" target="_top">uglify-es</a>.
-</li></ul></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_building_without_make"></a>2.1. Building Without Make</h3></div></div></div><p>The following instructions are for building the Tridash compiler
+      <a href="https://github.com/mishoo/UglifyJS2/tree/harmony">uglify-es</a>.
+</p>
+</li>
+</ul></div>
+<div class="sect2">
+<h3 id="_building_without_make">Building Without Make</h3>
+<div class="paragraph"><p>The following instructions are for building the Tridash compiler
 directly without using the makefile. This is useful for systems which
-do not provide a <code class="literal">make</code> executable or a shell compatible with the
-Bourne shell, such as Windows.</p><p>The same prerequisites apply: you’ll need a Common Lisp compiler, such
-as <a class="ulink" href="http://www.sbcl.org" target="_top">SBCL</a>, and
-<a class="ulink" href="https://www.quicklisp.org/beta/" target="_top">Quicklisp</a>. Consult the README
-for more information.</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p class="simpara">
+do not provide a <span class="monospaced">make</span> executable or a shell compatible with the
+Bourne shell, such as Windows.</p></div>
+<div class="paragraph"><p>The same prerequisites apply: you&#8217;ll need a Common Lisp compiler, such
+as <a href="http://www.sbcl.org">SBCL</a>, and
+<a href="https://www.quicklisp.org/beta/">Quicklisp</a>. Consult the README
+for more information.</p></div>
+<div class="olist arabic"><ol class="arabic">
+<li>
+<p>
 Run SBCL or the Common Lisp implementation of your choice, making
-   sure to load the <code class="literal">tridash.asd</code> file:
-</p><pre class="programlisting">sbcl --load tridash.asd</pre><p class="simpara">This launches the Common Lisp REPL.</p></li><li class="listitem">
-Run <code class="literal">(ql:quickload :tridash)</code> in the REPL.
-</li><li class="listitem"><p class="simpara">
-Run <code class="literal">(asdf:make :tridash)</code> to compile the <code class="literal">tridashc</code> executable. If
-   all went well the <code class="literal">tridashc</code> executable should have been created in
+   sure to load the <span class="monospaced">tridash.asd</span> file:
+</p>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sbcl --load tridash<span style="color: #990000">.</span>asd</tt></pre></div></div>
+<div class="paragraph"><p>This launches the Common Lisp REPL.</p></div>
+</li>
+<li>
+<p>
+Run <span class="monospaced">(ql:quickload :tridash)</span> in the REPL.
+</p>
+</li>
+<li>
+<p>
+Run <span class="monospaced">(asdf:make :tridash)</span> to compile the <span class="monospaced">tridashc</span> executable. If
+   all went well the <span class="monospaced">tridashc</span> executable should have been created in
    the same directory.
-</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Your Common Lisp implementation may exit after creating the
-executable. This is normal.</p></td></tr></table></div></li></ol></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_changing_the_paths"></a>Changing the Paths</h4></div></div></div><p>This builds a <code class="literal">tridashc</code> executable, with the builtin module search
-paths set to <code class="literal">/usr/local/share/tridash/modules</code>,
-<code class="literal">/usr/share/tridash/modules</code> and <code class="literal">~/.tridash/modules</code>, and the
+</p>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<img src="./images/icons/note.png" alt="Note">
+</td>
+<td class="content">Your Common Lisp implementation may exit after creating the
+executable. This is normal.</td>
+</tr></table>
+</div>
+</li>
+</ol></div>
+<div class="sect3">
+<h4 id="_changing_the_paths">Changing the Paths</h4>
+<div class="paragraph"><p>This builds a <span class="monospaced">tridashc</span> executable, with the builtin module search
+paths set to <span class="monospaced">/usr/local/share/tridash/modules</span>,
+<span class="monospaced">/usr/share/tridash/modules</span> and <span class="monospaced">~/.tridash/modules</span>, and the
 JavaScript runtime library path set to
-<code class="literal">/usr/local/share/tridash/backends/javascript/tridash.js</code>. These paths
-can be changed with the <code class="literal">TRIDASH_MODULE_PATHS</code> environment variable,
-which contains a semicolon <code class="literal">;</code> separated list of paths to search for
-modules, and <code class="literal">TRIDASH_JS_RUNTIME</code> which contains the full path to the
-Tridash JavaScript runtime library.</p><p>Alternatively, the builtin paths can be changed, between steps 2 and
+<span class="monospaced">/usr/local/share/tridash/backends/javascript/tridash.js</span>. These paths
+can be changed with the <span class="monospaced">TRIDASH_MODULE_PATHS</span> environment variable,
+which contains a semicolon <span class="monospaced">;</span> separated list of paths to search for
+modules, and <span class="monospaced">TRIDASH_JS_RUNTIME</span> which contains the full path to the
+Tridash JavaScript runtime library.</p></div>
+<div class="paragraph"><p>Alternatively, the builtin paths can be changed, between steps 2 and
 3, prior to compiling the executable. This requires some knowledge of
 Common Lisp. To change the module search paths, set the variable
-<code class="literal">tridash::*module-search-paths*</code> to a list of <code class="literal">pathname</code> objects of
-the module directories. For example (in the Common Lisp REPL):</p><pre class="programlisting">(setf tridash::*module-search-paths*
-       (list #p"/usr/local/share/tridash/modules"
-             #p"/usr/share/tridash/modules"
-             #p"~/.tridash/modules"))</pre><p>To change the path to the JavaScript runtime library, set the
-<code class="literal">tridash.backend.js::*runtime-library-path*</code> to the <code class="literal">pathname</code> object
-corresponding to the runtime library path:</p><pre class="programlisting">(setf tridash.backend.js::*runtime-library-path*
-      #p"/usr/local/share/tridash/backends/javascript/tridash.js)</pre></div></div></div></div></body></html>
+<span class="monospaced">tridash::*module-search-paths*</span> to a list of <span class="monospaced">pathname</span> objects of
+the module directories. For example (in the Common Lisp REPL):</p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #FF0000">(</span><span style="font-weight: bold"><span style="color: #0000FF">setf</span></span> tridash::*module-search-paths*
+       <span style="color: #FF0000">(</span><span style="font-weight: bold"><span style="color: #0000FF">list</span></span> #p<span style="color: #FF0000">"/usr/local/share/tridash/modules"</span>
+             #p<span style="color: #FF0000">"/usr/share/tridash/modules"</span>
+             #p<span style="color: #FF0000">"~/.tridash/modules"</span><span style="color: #FF0000">))</span></tt></pre></div></div>
+<div class="paragraph"><p>To change the path to the JavaScript runtime library, set the
+<span class="monospaced">tridash.backend.js::*runtime-library-path*</span> to the <span class="monospaced">pathname</span> object
+corresponding to the runtime library path:</p></div>
+<div class="listingblock">
+<div class="content"><!-- Generator: GNU source-highlight
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><span style="color: #FF0000">(</span><span style="font-weight: bold"><span style="color: #0000FF">setf</span></span> tridash.backend.js::*runtime-library-path*
+      #p<span style="color: #FF0000">"/usr/local/share/tridash/backends/javascript/tridash.js)</span></tt></pre></div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated
+ 2019-09-24 18:56:44 CEST
+</div>
+</div>
+</body>
+</html>

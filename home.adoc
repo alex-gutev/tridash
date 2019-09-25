@@ -33,9 +33,34 @@ the application state correctly.
 Visit link:philosophy.html[Philosophy], if you'd like to read on about
 the philosophy of the language.
 
-=== Examples ===
+== Getting Started ==
 
-==== Summing Values ====
+Visit link:installation.html[Installation] for the download links and
+installation instructions for the platform of your choice.
+
+=== Tutorials ===
+
+Introductory tutorials, which introduce the basic features of the
+language and gradually move on to more advanced topics, are available
+link:tutorials[here].
+
+.Alternative Formats
+- link:tutorials.pdf[PDF]
+- link:tutorials.html[Single Page HTML]
+
+
+== Documentation ==
+
+The full manual documenting the syntax, semantics, features and core
+modules of the language is available link:manual[here].
+
+.Alternative Formats
+- link:tridash.pdf[PDF]
+- link:tridash.html[Single Page HTML]
+
+== Examples ==
+
+=== Summing Values ===
 
 Let's say you an application consisting of three text input fields,
 and you'd like to compute their sum and display it in a fourth text
@@ -70,29 +95,3 @@ That's all that is necessary. The main application logic is actually
 contained in `<?@ food + electricty + water ?>` which computes the sum
 of the values entered in the three text fields. Whenever the value of
 a text field is changed, the sum is automatically recomputed.
-
-
-== Getting Started ==
-
-Visit link:installation.html[Installation] for the download links and
-installation instructions for the platform of your choice.
-
-=== Tutorials ===
-
-Introductory tutorials, which introduce the basic features of the
-language and gradually move on to more advanced topics, are available
-link:tutorials[here].
-
-.Alternative Formats
-- link:tutorials.pdf[PDF]
-- link:tutorials.html[Single Page HTML]
-
-
-== Documentation ==
-
-The full manual documenting the syntax, semantics, features and core
-modules of the language is available link:manual[here].
-
-.Alternative Formats
-- link:tridash.pdf[PDF]
-- link:tridash.html[Single Page HTML]

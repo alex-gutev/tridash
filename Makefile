@@ -1,14 +1,14 @@
 all: index.html philosophy.html installation.html
 
 index.html: home.adoc
-	a2x --format xhtml --no-xmllint --icons $<
+	asciidoc -b html5 -a disable-javascript -a linkcss -a stylesdir=style -a icons $<
 	mv home.html index.html
 
 philosophy.html: philosophy.adoc
-	a2x --format xhtml --no-xmllint $<
+	asciidoc -b html5 -a disable-javascript -a linkcss -a stylesdir=style -a icons $<
 
 installation.html: installation.adoc
-	a2x --format xhtml --no-xmllint --icons $<
+	asciidoc -b html5 -a disable-javascript -a linkcss -a stylesdir=style -a icons $<
 
 
 clean:
