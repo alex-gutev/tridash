@@ -42,7 +42,7 @@ installation instructions for the platform of your choice.
 
 Introductory tutorials, which introduce the basic features of the
 language and gradually move on to more advanced topics, are available
-link:tutorials[here].
+link:tutorials/[here].
 
 .Alternative Formats
 - link:tutorials.pdf[PDF]
