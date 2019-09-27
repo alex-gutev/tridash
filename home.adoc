@@ -46,7 +46,7 @@ link:tutorials[here].
 
 .Alternative Formats
 - link:tutorials.pdf[PDF]
-- link:tutorials.html[Single Page HTML]
+- link:tutorials-single.html[Single Page HTML]
 
 
 == Documentation ==
@@ -56,7 +56,7 @@ modules of the language is available link:manual[here].
 
 .Alternative Formats
 - link:tridash.pdf[PDF]
-- link:tridash.html[Single Page HTML]
+- link:tridash-single.html[Single Page HTML]
 
 == Examples ==
 
