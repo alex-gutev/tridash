@@ -1836,6 +1836,9 @@
               "Hello Bob, welcome to Earth.")
 
           (is (call-meta-node format '("Coverage: %s%% of %s." 15 200))
-              "Coverage: 15% of 200."))))))
+              "Coverage: 15% of 200.")
+
+          (is (call-meta-node format '("%s" "abc")) "abc")
+          (is (call-meta-node format '("%s%%" 35)) "35%"))))))
 
 (finalize)
