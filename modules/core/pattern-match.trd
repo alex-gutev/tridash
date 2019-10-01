@@ -112,7 +112,7 @@ make-pattern(place, pattern) : {
 
     make-binding-pattern(place, pattern) : {
         pattern != '(_) ->
-            list(list(&(->), place, list('(:context), pattern, '(match)))) -> self.bindings @ make-binding
+            list(make-match-bind(place, pattern)) -> self.bindings @ make-binding
 
         Empty() -> self.bindings @ make-binding
     }
@@ -136,7 +136,7 @@ make-pattern(place, pattern) : {
 
 conditionalize-bindings(condition, bindings) : {
     conditionalize(binding) :
-        list(&(->), condition, binding)
+        list(&(->), list(&(fail-match), condition), binding)
 
     condition !- map(conditionalize, bindings) -> self @ conditionalize
     bindings -> self @ conditionalize
@@ -165,6 +165,32 @@ combine-conditions(c1, c2) : {
 constant?(x) : {
     real?(x) or string?(x)
 }
+
+
+## Creates a failure with type &(Match-Fail).
+
+Match-Fail() : fail(&(Match-Fail))
+
+## Generates a binding `src -> target`, with `target` in the `match`
+## context which is activated on failures with type `&(Match-Fail)`.
+##
+## src : The source of the binding.
+## target : The target of the binding.
+
+make-match-bind(src, target) : {
+    context <- list('(catch), '(match), list(&(&), &(Match-Fail)))
+    ctarget <- list(&(@), target, context)
+
+    list(&(->), src, ctarget)
+}
+
+## If `condition` evaluates to false or to a failure, returns a
+## failure with type `&(Match-Fail)` otherwise returns true.
+##
+## condition : The pattern condition
+
+fail-match(condition) :
+    if (?(condition) and condition, 1, Match-Fail())
 
 
 ### Pattern Matchers

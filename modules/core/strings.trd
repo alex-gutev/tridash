@@ -73,7 +73,7 @@ list->string(list) : {
         current <- string-concat(acc, head)
         rest <- convert(tail, current)
 
-        head !- rest -> self @ convert
+        list !- rest -> self @ convert
         acc -> self @ convert catch &(Empty)
     }
 
