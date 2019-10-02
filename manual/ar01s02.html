@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>2. Nodes</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="prev" href="ar01s01.html" title="1. Syntax" /><link rel="next" href="ar01s03.html" title="3. Meta-Nodes" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s01.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s03.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_nodes"></a>2. Nodes</h2></div></div></div><p><a id="idm449599865632" class="indexterm"></a>
-<a id="idm449599864384" class="indexterm"></a>
-<a id="idm449599863392" class="indexterm"></a>
-<a id="idm449599862144" class="indexterm"></a>
-<a id="idm449599861152" class="indexterm"></a>
-<a id="idm449599859904" class="indexterm"></a>
-<a id="idm449599858912" class="indexterm"></a>
-<a id="idm449599857664" class="indexterm"></a></p><p>Semantically a Tridash program is composed of a set of stateful
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>2. Nodes</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="prev" href="ar01s01.html" title="1. Syntax" /><link rel="next" href="ar01s03.html" title="3. Meta-Nodes" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s01.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s03.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_nodes"></a>2. Nodes</h2></div></div></div><p><a id="idm371439404736" class="indexterm"></a>
+<a id="idm371439403584" class="indexterm"></a>
+<a id="idm371439402688" class="indexterm"></a>
+<a id="idm371439401536" class="indexterm"></a>
+<a id="idm371439400640" class="indexterm"></a>
+<a id="idm371439399488" class="indexterm"></a>
+<a id="idm371439398592" class="indexterm"></a>
+<a id="idm371439397440" class="indexterm"></a></p><p>Semantically a Tridash program is composed of a set of stateful
 components called nodes, each holding a particular value at a given
 moment in time.</p><p>Each node has a set of <span class="emphasis"><em>dependency</em></span> nodes. A change in the value of at
 least one of the dependency nodes causes the node to recompute its own
@@ -40,8 +40,8 @@ successor
 A node <code class="literal">a</code> is said to be a <span class="emphasis"><em>successor</em></span> of a node <code class="literal">b</code> if
 <code class="literal">a</code> is an <span class="emphasis"><em>observer</em></span> of <code class="literal">b</code> or it is a successor of an <span class="emphasis"><em>observer</em></span> of
 <code class="literal">b</code>.
-</p></dd></dl></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_declaring_nodes"></a>2.1. Declaring Nodes</h3></div></div></div><p><a id="idm449599824480" class="indexterm"></a>
-<a id="idm449599823232" class="indexterm"></a></p><p>In the global scope, nodes are created on the first reference, that is
+</p></dd></dl></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_declaring_nodes"></a>2.1. Declaring Nodes</h3></div></div></div><p><a id="idm371444790672" class="indexterm"></a>
+<a id="idm371444789520" class="indexterm"></a></p><p>In the global scope, nodes are created on the first reference, that is
 when their identifier first appears in source code. This can either be
 a declaration consisting of the identifier itself or a functor node
 declaration of which the node is an argument.</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">self</code> identifier is reserved as an alias for the
@@ -68,12 +68,12 @@ as an instance of the meta-node. See <a class="xref" href="ar01s03.html" title="
 e.g. for the functor <code class="literal">a + b</code>, the node <code class="literal">+(a, b)</code> is created.</p></td></tr></table></div><p>A node corresponding to <code class="literal">a -&gt; b</code> was not created. This is a bind
 declaration which is treated rather specially. The <code class="literal">-&gt;</code> is not a
 meta-node, that is it does not compute a value, but is a special
-operator.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_declaring_bindings"></a>2.2. Declaring Bindings</h3></div></div></div><p><a id="idm449599808480" class="indexterm"></a>
-<a id="idm449599806976" class="indexterm"></a>
-<a id="idm449599805728" class="indexterm"></a>
-<a id="idm449599804736" class="indexterm"></a>
-<a id="idm449599802880" class="indexterm"></a>
-<a id="idm449599801632" class="indexterm"></a></p><p>A binding between two nodes is declared with the special bind operator
+operator.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_declaring_bindings"></a>2.2. Declaring Bindings</h3></div></div></div><p><a id="idm371444776064" class="indexterm"></a>
+<a id="idm371444774656" class="indexterm"></a>
+<a id="idm371444773504" class="indexterm"></a>
+<a id="idm371444772608" class="indexterm"></a>
+<a id="idm371444770752" class="indexterm"></a>
+<a id="idm371444769504" class="indexterm"></a></p><p>A binding between two nodes is declared with the special bind operator
 <code class="literal">-&gt;</code>.</p><pre class="screen">a -&gt; b</pre><p>The above declares <code class="literal">b</code> an observer of <code class="literal">a</code> and likewise <code class="literal">a</code> a
 dependency of <code class="literal">b</code>. The result is that a change in the value of <code class="literal">a</code>
 will trigger a change in the value of <code class="literal">b</code>. This is an example of a
@@ -95,9 +95,9 @@ nodes.</p><p><strong>Example. </strong>
 </p><p>In the example, above, a functor node <code class="literal">+(a, b)</code> is created with the
 arguments <code class="literal">a</code> and <code class="literal">b</code> implicitly added as dependencies of <code class="literal">+(a, b)</code>. A
 change in either <code class="literal">a</code> or <code class="literal">b</code> will result in the value of <code class="literal">+(a, b)</code>
-being recomputed.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_propagation_of_changes"></a>2.3. Propagation of Changes</h3></div></div></div><p><a id="idm449599779792" class="indexterm"></a>
-<a id="idm449599778288" class="indexterm"></a>
-<a id="idm449599777040" class="indexterm"></a></p><p>As emphasized in the previous sections, changes in the value of a node
+being recomputed.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_propagation_of_changes"></a>2.3. Propagation of Changes</h3></div></div></div><p><a id="idm371444747664" class="indexterm"></a>
+<a id="idm371444746160" class="indexterm"></a>
+<a id="idm371444744912" class="indexterm"></a></p><p>As emphasized in the previous sections, changes in the value of a node
 are propagated to its observer nodes. The new value is propagated to
 each of the observers simultaneously. Each observer then proceeds to
 recompute its own value in parallel with the other observers.</p><p><strong>Example. </strong>
@@ -156,8 +156,8 @@ following nodes:</p><div class="itemizedlist"><ul class="itemizedlist" style="li
 <code class="literal">b</code> and <code class="literal">c</code> have been recomputed.</p><p>If <code class="literal">b</code> and <code class="literal">c</code> did not have the common ancestor <code class="literal">a</code>, the value of
 <code class="literal">+(b, c)</code> would be computed on each change in the value of either <code class="literal">b</code>
 or <code class="literal">c</code>, regardless of whether the changes in values of <code class="literal">b</code> and <code class="literal">c</code> are
-triggered simultaneously or not.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_evaluation_strategy"></a>2.4. Evaluation Strategy</h3></div></div></div><p><a id="idm449599731184" class="indexterm"></a>
-<a id="idm449599729936" class="indexterm"></a></p><p>The value of a node is not strictly evaluated. This means that a
+triggered simultaneously or not.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_evaluation_strategy"></a>2.4. Evaluation Strategy</h3></div></div></div><p><a id="idm371444699056" class="indexterm"></a>
+<a id="idm371444697808" class="indexterm"></a></p><p>The value of a node is not strictly evaluated. This means that a
 node’s value is only evaluated if it is actually used. In most cases
 the result of this is that node’s are evaluated lazily, that is they
 are evaluated on their first use. However if it can be statically
@@ -182,9 +182,9 @@ once. This applies to functor nodes as well as atom nodes.</p><p><strong>Example
 
 f(x, y) + a -&gt; node1
 f(x, y) + b -&gt; node2</pre><p>
-</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_contexts"></a>2.5. Contexts</h3></div></div></div><p><a id="idm449599715568" class="indexterm"></a>
-<a id="idm449599714064" class="indexterm"></a>
-<a id="idm449599712816" class="indexterm"></a></p><p>The function which computes a node’s value is controlled by the node’s
+</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_contexts"></a>2.5. Contexts</h3></div></div></div><p><a id="idm371444683440" class="indexterm"></a>
+<a id="idm371444681936" class="indexterm"></a>
+<a id="idm371444680688" class="indexterm"></a></p><p>The function which computes a node’s value is controlled by the node’s
 context at that moment in time. The node context stores information
 about the function and which of the dependency nodes are operands to
 the function. Contexts are created whenever a binding between two nodes is
@@ -232,9 +232,9 @@ change in the value of both <code class="literal">b</code> and <code class="lite
 <code class="literal">b</code> should be set is ambiguous.</p><p>Structure checking is performed at compile-time, thus the above
 example, and all such scenarios, will result in a compilation error
 along the lines: <code class="literal">Semantic Error: Node x has multiple contexts
-activated by a single common ancestor</code>.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_two_way_bindings"></a>Two-Way Bindings</h4></div></div></div><p><a id="idm449599682176" class="indexterm"></a>
-<a id="idm449599680672" class="indexterm"></a>
-<a id="idm449599679424" class="indexterm"></a></p><p>A dependency of a node may also be an observer of the same node. This
+activated by a single common ancestor</code>.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_two_way_bindings"></a>Two-Way Bindings</h4></div></div></div><p><a id="idm371444650048" class="indexterm"></a>
+<a id="idm371444648544" class="indexterm"></a>
+<a id="idm371444647296" class="indexterm"></a></p><p>A dependency of a node may also be an observer of the same node. This
 allows for a two-way binding in which data may flow from either
 direction. In this case only the observer nodes which are not also
 operands of the node’s current context are notified of a change in the
@@ -256,12 +256,12 @@ change.</p><div class="warning" style="margin-left: 0; margin-right: 10%;"><tabl
 result in a compilation error.</p><p><strong>Example. </strong>
 </p><pre class="screen">a + 1 -&gt; b
 b -&gt; a</pre><p>
-</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="literal_bindings"></a>Literal Bindings</h4></div></div></div><p><a id="idm449599663504" class="indexterm"></a>
-<a id="idm449599662000" class="indexterm"></a>
-<a id="idm449599660752" class="indexterm"></a>
-<a id="idm449599659760" class="indexterm"></a>
-<a id="idm449599658256" class="indexterm"></a>
-<a id="idm449599657008" class="indexterm"></a></p><p>A binding in which the dependency is a literal value, is interpreted
+</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="literal_bindings"></a>Literal Bindings</h4></div></div></div><p><a id="idm371444631376" class="indexterm"></a>
+<a id="idm371444629872" class="indexterm"></a>
+<a id="idm371444628624" class="indexterm"></a>
+<a id="idm371444627632" class="indexterm"></a>
+<a id="idm371444626128" class="indexterm"></a>
+<a id="idm371444624880" class="indexterm"></a></p><p>A binding in which the dependency is a literal value, is interpreted
 as setting the initial value of a node. A special <code class="literal">init</code> context is
 created, which has no operands and has the literal value as its
 function.</p><p>Initial values are set on the launch of the application, and are
@@ -274,12 +274,12 @@ given an initial value, its initial value is a failure value, <span class="empha
 10.5 -&gt; threshold</pre><p>
 </p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The setting of the initial values of each node, is treated
 as having been triggered by a single common ancestor node. <span class="emphasis"><em>See
-<a class="xref" href="ar01s02.html#_propagation_of_changes" title="2.3. Propagation of Changes">Section 2.3, “Propagation of Changes”</a> for the implications of this</em></span>.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="explicit_contexts"></a>Explicit Contexts</h4></div></div></div><p><a id="idm449599648000" class="indexterm"></a>
-<a id="idm449599646496" class="indexterm"></a>
-<a id="idm449599645248" class="indexterm"></a>
-<a id="idm449599644256" class="indexterm"></a>
-<a id="idm449599642752" class="indexterm"></a>
-<a id="idm449599641504" class="indexterm"></a></p><p>The context to which a binding is established can be set explicitly
+<a class="xref" href="ar01s02.html#_propagation_of_changes" title="2.3. Propagation of Changes">Section 2.3, “Propagation of Changes”</a> for the implications of this</em></span>.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="explicit_contexts"></a>Explicit Contexts</h4></div></div></div><p><a id="idm371444615440" class="indexterm"></a>
+<a id="idm371444613888" class="indexterm"></a>
+<a id="idm371444612592" class="indexterm"></a>
+<a id="idm371444611568" class="indexterm"></a>
+<a id="idm371444609984" class="indexterm"></a>
+<a id="idm371444608672" class="indexterm"></a></p><p>The context to which a binding is established can be set explicitly
 with the special <code class="literal">:context</code> operator.</p><p><strong>Syntax. </strong>
 </p><pre class="screen">:context(node, context-id)</pre><p>
 </p><p>The effect of this expression, when it appears as the target of a
@@ -307,8 +307,8 @@ The value of <code class="literal">c</code> if both <code class="literal">a</cod
 </li></ul></div><p>If <code class="literal">a</code>, <code class="literal">b</code> and <code class="literal">c</code> all fail to evaluate to a value, <code class="literal">node</code> evaluates
 to the failure value of <code class="literal">c</code>.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">@</code> macro from the <code class="literal">core</code> module, which is a shorthand for the
 <code class="literal">:context</code> operator, is the preferred way of establishing bindings to
-explicit contexts in source code. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#core-module-bindings" title="5.2. Bindings">Section 5.2, “Bindings”</a></em></span>.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_failures"></a>2.6. Failures</h3></div></div></div><p><a id="idm449599613296" class="indexterm"></a>
-<a id="idm449599612048" class="indexterm"></a></p><p>Failures are a special type of value which represents the absence of a
+explicit contexts in source code. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#core-module-bindings" title="5.2. Bindings">Section 5.2, “Bindings”</a></em></span>.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_failures"></a>2.6. Failures</h3></div></div></div><p><a id="idm371439384288" class="indexterm"></a>
+<a id="idm371439383136" class="indexterm"></a></p><p>Failures are a special type of value which represents the absence of a
 value or the failure to compute a value. Failures can either be
 created by <span class="emphasis"><em>conditional bindings</em></span>, in which the condition node
 evaluates to <span class="emphasis"><em>false</em></span>, or by the <code class="literal">fail</code> meta-node, from the <code class="literal">builtin</code>
@@ -319,9 +319,9 @@ fails to evaluate to a value, be evaluated, the entire function fails
 to evaluate to a value. The following are examples of functions which
 fail if at least one of the arguments fails: <code class="literal">+</code>, <code class="literal">-</code>, <code class="literal">*</code>, <code class="literal">/</code>.</p><p>If the result of a function is a dictionary, and a dictionary entry
 fails to evaluate to a value, it is only that dictionary entry that
-fails, the function still returns a dictionary.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="conditional_bindings"></a>Conditional Bindings</h4></div></div></div><p><a id="idm449599602800" class="indexterm"></a>
-<a id="idm449599601296" class="indexterm"></a>
-<a id="idm449599600048" class="indexterm"></a></p><p>A binding declaration <code class="literal">a -&gt; b</code> can, itself, be treated as a node, to
+fails, the function still returns a dictionary.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="conditional_bindings"></a>Conditional Bindings</h4></div></div></div><p><a id="idm371439374960" class="indexterm"></a>
+<a id="idm371439373552" class="indexterm"></a>
+<a id="idm371439372400" class="indexterm"></a></p><p>A binding declaration <code class="literal">a -&gt; b</code> can, itself, be treated as a node, to
 which an explicit binding can be established with the binding node as
 the target.</p><pre class="screen">c -&gt; (a -&gt; b)</pre><p>The result of this declaration is that the binding <code class="literal">a -&gt; b</code> is only
 active if the condition node <code class="literal">c</code> evaluates to a <span class="emphasis"><em>true</em></span> value, any
@@ -366,9 +366,9 @@ If <code class="literal">cond2</code> evaluates to false, it is treated as thoug
 </li><li class="listitem">
 <code class="literal">c</code> if neither <code class="literal">cond1</code> not <code class="literal">cond2</code> evaluate to true, or both <code class="literal">a</code>
       and <code class="literal">b</code> fail to evaluate to a value.
-</li></ul></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_explicit_failures_and_failure_types"></a>Explicit Failures and Failure Types</h4></div></div></div><p><a id="idm449599562800" class="indexterm"></a>
-<a id="idm449599561296" class="indexterm"></a>
-<a id="idm449599560048" class="indexterm"></a></p><p>Failure values can also be created explicitly with the <code class="literal">fail</code>
+</li></ul></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_explicit_failures_and_failure_types"></a>Explicit Failures and Failure Types</h4></div></div></div><p><a id="idm371439339280" class="indexterm"></a>
+<a id="idm371439337872" class="indexterm"></a>
+<a id="idm371439336720" class="indexterm"></a></p><p>Failure values can also be created explicitly with the <code class="literal">fail</code>
 meta-node, from the <code class="literal">builtin</code> module. This meta-node takes one
 optional argument: a value indicating the failure type. If the failure
 type is not provided, the failure returned does not have a type.</p><p><strong>Example: Explicit Failure with Type. </strong>
@@ -400,8 +400,8 @@ function returns <span class="emphasis"><em>true</em></span> the binding is acti
 binding fails with the same failure type as the preceding binding.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">@</code> macro, from the <code class="literal">core</code> module, contains a shorthand
 syntax for establishing a binding to an explicit context with a test
 function that compares the failure type to a given value. <span class="emphasis"><em>See
-<a class="xref" href="ar01s05.html#core-module-bindings" title="5.2. Bindings">Section 5.2, “Bindings”</a></em></span>.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_input_nodes"></a>2.7. Input Nodes</h3></div></div></div><p><a id="idm449599542080" class="indexterm"></a>
-<a id="idm449599540784" class="indexterm"></a></p><p>Input nodes are the nodes which receive the application input, which
+<a class="xref" href="ar01s05.html#core-module-bindings" title="5.2. Bindings">Section 5.2, “Bindings”</a></em></span>.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_input_nodes"></a>2.7. Input Nodes</h3></div></div></div><p><a id="idm371439320400" class="indexterm"></a>
+<a id="idm371439319248" class="indexterm"></a></p><p>Input nodes are the nodes which receive the application input, which
 could be the value entered in a text field of the user interface (UI),
 data received from the network, etc. Input nodes do not have any
 dependencies and have a special <code class="literal">input</code> context, which does not have a
@@ -417,11 +417,11 @@ about node attributes</em></span>.</p><p><strong>Example: Setting Input Attribut
 that is not reachable from any input node, however has at least one
 dependency that is reachable from an input node. The error is not
 signalled if all of the node’s dependencies are unreachable from all
-the input nodes.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_attributes"></a>2.8. Attributes</h3></div></div></div><p><a id="idm449599531840" class="indexterm"></a>
-<a id="idm449599530592" class="indexterm"></a>
-<a id="idm449599529584" class="indexterm"></a>
-<a id="idm449599528000" class="indexterm"></a>
-<a id="idm449599526688" class="indexterm"></a></p><p>Attributes are arbitrary key value pairs associated with a node, which
+the input nodes.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_attributes"></a>2.8. Attributes</h3></div></div></div><p><a id="idm371439311600" class="indexterm"></a>
+<a id="idm371439310448" class="indexterm"></a>
+<a id="idm371439309552" class="indexterm"></a>
+<a id="idm371439308144" class="indexterm"></a>
+<a id="idm371439306992" class="indexterm"></a></p><p>Attributes are arbitrary key value pairs associated with a node, which
 control various compilation options of the node. These are set using
 the special <code class="literal">:attribute</code> declaration. The <code class="literal">:attribute</code> declaration is
 special in that it has a special syntax where not all its arguments
@@ -476,13 +476,13 @@ The name of a meta-node to invoke if the
 </dd></dl></div><p><strong>Examples. </strong>
 </p><pre class="screen">:attribute(a, input, 1)
 :attribute(a, public-name, "app-input")</pre><p>
-</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_subnodes"></a>2.9. Subnodes</h3></div></div></div><p><a id="idm449599491760" class="indexterm"></a>
-<a id="idm449599490464" class="indexterm"></a>
-<a id="idm449599489440" class="indexterm"></a>
-<a id="idm449599488144" class="indexterm"></a>
-<a id="idm449599487120" class="indexterm"></a>
-<a id="idm449599485552" class="indexterm"></a>
-<a id="idm449599484240" class="indexterm"></a></p><p>Subnodes are nodes which reference a value, with a particular key, out
+</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_subnodes"></a>2.9. Subnodes</h3></div></div></div><p><a id="idm371439274560" class="indexterm"></a>
+<a id="idm371439273312" class="indexterm"></a>
+<a id="idm371439272320" class="indexterm"></a>
+<a id="idm371439271072" class="indexterm"></a>
+<a id="idm371439270080" class="indexterm"></a>
+<a id="idm371439268576" class="indexterm"></a>
+<a id="idm371439267328" class="indexterm"></a></p><p>Subnodes are nodes which reference a value, with a particular key, out
 of a dictionary of values stored in another node, referred to as the
 <code class="literal">parent</code> node.</p><p>Subnodes are referenced using the special <code class="literal">.</code> operator, which is also
 an infix operator. The <code class="literal">parent</code> node appears on the left-hand side and
