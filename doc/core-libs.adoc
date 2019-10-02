@@ -1253,8 +1253,9 @@ argument nodes are bound to the values, required in order for the
 meta-node to return a value that is equivalent to the value of the
 source node. When there are such values, the pattern is said to have
 'matched'. If there is no possible value for at least one argument
-node, all argument nodes should evaluate to failures. In this case the
-pattern has not 'matched'
+node, all argument nodes should evaluate to failures of type
+<<match-fail, `&(Match-Fail)`>>. In this case the pattern has not
+'matched'
 
 .Example
 --------------------------------------------------
@@ -1393,10 +1394,11 @@ TIP: Pattern objects may be created with the <<meta-node-Pattern,
 `Pattern`>> meta-node.
 
 All bindings, established by a pattern, should be established in an
-explicit context with identifier `match`. This allows multiple
-patterns to be specified on a single node, with the node being set to
-the value corresponding to binding of the first pattern that
-'matches'.
+explicit context with identifier `match`, which is activated only on
+failures with type <<match-fail,`&(Match-Fail)`>>. This allows
+multiple patterns to be specified on a single node, with the node
+being set to the value corresponding to the binding of the first
+pattern that 'matches'.
 
 .Example: Multiple Patterns
 --------------------------------------------------
@@ -1524,6 +1526,36 @@ Returns a list where each binding in `bindings` is conditioned on
 
 `condition`:: The condition on which to condition the bindings.
 `bindings`:: List of bindings to condition.
+
+[[match-fail]]
+==== Meta-Node: Match-Fail() ====
+
+(((Match-Fail, Core Module, Meta-Node)))
+
+Returns a failure with the type `&(Match-Fail)`.
+
+This failure type is used to indicate that a pattern failed to match.
+
+
+==== Meta-Node: fail-match(condition) ====
+
+(((fail-match, Core Module, Meta-Node)))
+
+If `condition` evaluates to false or to a failure, returns a failure
+with type <<match-fail,`&(Match-Fail)`>>, otherwise returns 'true'.
+
+`condition`:: The pattern condition.
+
+
+==== Meta-Node: make-match-bind(src, target) ====
+
+(((make-match-bind, Core Module, Meta-Node)))
+
+Generates a binding `src -> target`, with `target` in the `match`
+context which is activated on failures with type <<match-fail,`&(Match-Fail)`>>.
+
+`src`:: The source of the binding.
+`target`:: The target of the binding.
 
 
 [[meta-node-make-pattern-declarations]]
