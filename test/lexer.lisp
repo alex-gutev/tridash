@@ -77,6 +77,14 @@
      (:id "+")
      (:id "2node")
      (:id "-")
+     (:id "third-node")))
+
+  (is-tokens
+   #?"node-1s    +\t2node - \f third-node"
+   '((:id "node-1s")
+     (:id "+")
+     (:id "2node")
+     (:id "-")
      (:id "third-node"))))
 
 (subtest "Terminate Tokens"

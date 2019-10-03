@@ -378,7 +378,7 @@
   "Returns true if C is a whitespace character (excluding line
    breaks)."
 
-  (memberp c '(#\Space #\Tab)))
+  (memberp c '(#\Space #\Tab #\Page)))
 
 (defun linebreakp (c)
   "Returns true if C is a line break character."
