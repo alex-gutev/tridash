@@ -36,36 +36,58 @@ lerp-color(c1, c2, alpha) : {
 make-hsl(c) :
     format("hsl(%s,%s%%,%s%%)", c.hue, c.saturation, c.luminance)</pre><p>
 </p><p>Let’s also extract the application logic into another file called <code class="literal">app.trd</code>:</p><p><strong>app.trd. </strong>
-</p><pre class="screen"># Application Logic
+</p><pre class="screen">### Application Logic
 
-validate(thing) : {
+## Input Validation
+
+valid-amount(thing) : {
     x &lt;- real(thing)
     x &gt;= 0 -&gt; x -&gt; self
 }
 
-:attribute(validate, target-node, validate)
+:attribute(valid-amount, target-node, valid-amount)
 
+## Error Handling
+
+error-prompt(thing) : {
+    error-message &lt;- "Please enter a valid number \u{2265} 0!"
+    if (fails?(thing), error-message, "")
+}
+
+## Colour Interpolation
 
 compute-color(total, budget) : {
     clamp((total + 1) / (budget + 1), 0, 1) -&gt; scale
-    make-hsl(lerp-color(..(in-budget-color), ..(out-budget-color), scale))
+    make-hsl(lerp-color(in-budget-color, out-budget-color, scale))
 }
+
+## Initial Values
+
+0 -&gt; budget
+0 -&gt; food
+0 -&gt; water
+0 -&gt; electricity
+
+## Computing Total
 
 food + electricity + water -&gt; total
 
-compute-color(total, budget) -&gt; color
+make-hsl(
+    case(
+        total &lt; budget : in-budget-color,
+        out-budget-color
+    )
+) -&gt; color
 
 
-# Error Handling
+clamp((total + 1) / (budget + 1), 0, 1) -&gt; scale
 
-error?(thing) : {
-    "Please enter a valid number" -&gt; error-message
-    if (fails?(thing), error-message, "")
-}</pre><p>
-</p><p>This leaves only the setting of the initial values for the budget,
-expenses, the colors and the error message in the <code class="literal">ui.html</code>.</p><p>Now we need to add these sources to the build configuration file.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>If we are building using the command line directly, we’d simply
+compute-color(total, budget) -&gt; meter-color</pre><p>
+</p><p>The only code left inside the <code class="literal">ui.html</code> file is the binding of the
+colors to the various style properties of the elements, the setting of
+the default colours and the <code class="literal">urgent</code> attribute declarations.</p><p>Now we need to add these sources to the build configuration file.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>If we are building using the command line directly, we’d simply
 list <code class="literal">util.trd</code> and <code class="literal">app.trd</code> in the compile command.</p></td></tr></table></div><p><strong>build.yml. </strong>
-</p><pre class="programlisting">sources:
+</p><pre class="screen">sources:
   - util.trd
   - app.trd
   - path: ui.html
@@ -90,7 +112,7 @@ clash with other nodes in the application.</p><p>Modules are means of separating
 module is a namespace in which nodes are contained. A node with
 identifier <code class="literal">x</code> in module <code class="literal">mod1</code> is a distinct node from the node <code class="literal">x</code>
 in <code class="literal">mod2</code>, even though the two nodes have the same identifiers.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>We’ve already made use of a builtin module, the <code class="literal">core</code> module,
-which contains the <code class="literal">int</code>, <code class="literal">real`</code>, <code class="literal">to-real</code> meta-nodes, as well as
+which contains the <code class="literal">int</code>, <code class="literal">real</code>, <code class="literal">to-real</code> meta-nodes, as well as
 the arithmetic and comparison operators.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_creating_modules"></a>Creating Modules</h4></div></div></div><p>Modules are created with the <code class="literal">:module</code> operator which has the
 following syntax:</p><pre class="screen">:module(module-name)</pre><p>This indicates that all node references, in the declarations following
 the <code class="literal">:module</code> declaration, will occur in the module with identifier
@@ -105,7 +127,7 @@ x -&gt; node2</pre><p>
 </p><p>The first reference to the node <code class="literal">x</code> occurs in module <code class="literal">mod1</code> thus a
 node <code class="literal">x</code> is added to <code class="literal">mod1</code>. The second referenced occurs in module
 <code class="literal">mod2</code> thus the node is added to <code class="literal">mod2</code>. The two nodes <code class="literal">x</code> are
-distinct even though they share the same identifiers.</p><p>If no module is specified the node references occur in a nameless
+distinct even though they share the same identifier.</p><p>If no module is specified the node references occur in a nameless
 <code class="literal">init</code> module. The current module is reset to the <code class="literal">init</code> module prior
 to processing each source file.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Module identifiers are distinct from node identifiers, thus
 a node <code class="literal">mod</code> will not clash with a module <code class="literal">mod</code> unless the module is
@@ -139,13 +161,13 @@ A long form in which the first argument is the module and the
    following arguments are the individual nodes to import from the
    module. Only the nodes listed are imported.
 </li></ul></div><p><strong>Example. </strong>
-</p><pre class="screen"># Short form: Import all nodes from mod1
+</p><pre class="screen"># Short form: Import all nodes exported from mod1
 :import(mod1)
 
 # Long form: Only import nodes x, y, z
 :import(mod1, x, y, z)</pre><p>
 </p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The short form only imports those nodes which are exported
-from the mode not all nodes.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The long form allows you to choose which nodes are imported into
+from the module not all nodes.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The long form allows you to choose which nodes are imported into
 the current module. You can list any node in the module, not just an
 exported node.</p></td></tr></table></div><p><code class="literal">:import</code> also has a side-effect in that if an imported node, whether
 imported by the long or short form, is registered as an infix
@@ -166,11 +188,11 @@ x mod1.@ y
 
 # Instead you have to write it in prefix notation:
 mod1.@(x, y)</pre></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_exporting_nodes"></a>Exporting Nodes</h4></div></div></div><p>We mentioned that the short form of the <code class="literal">:import</code> operator imports all
-nodes from the module. The <code class="literal">:export</code> operator is used to export nodes
-from the current module.</p><pre class="screen">:module(mod1)
+nodes which are exported from the module. Nodes are exported from the
+current module using the <code class="literal">:export</code> operator.</p><pre class="screen">:module(mod1)
 
 # Exports nodes x, y and z from the current module
-:export(x, y, z)</pre><p>Importing mod1 by the short form, <code class="literal">:import(mod1)</code>, will import nodes
+:export(x, y, z)</pre><p>Importing <code class="literal">mod1</code> by the short form, <code class="literal">:import(mod1)</code>, will import nodes
 <code class="literal">x</code>, <code class="literal">y</code> and <code class="literal">z</code> (and other nodes listed in other <code class="literal">:export</code>
 declarations) into the module.</p><p><code class="literal">:export</code> can take any number of arguments and multiple <code class="literal">:export</code>
 declarations will result in the nodes listed in each declaration being
@@ -185,12 +207,12 @@ Imports all nodes from the <code class="literal">core</code> module into <code c
 includes the arithmetic and comparison operators as well as the
 special operators, <code class="literal">-&gt;</code>, <code class="literal">:</code>, <code class="literal">.</code>, which are originally from the
 <code class="literal">builtin</code> module.
-</p></td></tr></table></div><p>Add the following declaration new the bottom of the file to export the
-meta-nodes from the module:</p><pre class="screen">:export(lerp, clamp, Color, lerp-color, make-hsl)</pre><p>Lets keep the main application logic in a <code class="literal">budget-app</code> module.</p><p>Add the following to the top of the <code class="literal">app.trd</code> file:</p><pre class="screen">:module(budget-app)
+</p></td></tr></table></div><p>Add the following declaration near the bottom of the file to export
+the meta-nodes from the module:</p><pre class="screen">:export(lerp, clamp, Color, lerp-color, make-hsl)</pre><p>Lets keep the main application logic in a <code class="literal">budget-app</code> module.</p><p>Add the following to the top of the <code class="literal">app.trd</code> file:</p><pre class="screen">:module(budget-app)
 
 :import(core)
 :import(util)</pre><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>We have to import both the <code class="literal">core</code> module and <code class="literal">util</code> module.</p></td></tr></table></div><p>It doesn’t make sense to keep the UI in a separate module from the
-application logic, as the UI is designed specifically for the
+application logic, as the UI is designed specifically for this
 application, thus we’ll add the HTML nodes to the <code class="literal">budget-app</code>
 module. To do so we need to add <code class="literal">:module(budget-app)</code> to the top of
 the Tridash code tag at the beginning of the <code class="literal">ui.html</code> file. There is
@@ -210,7 +232,7 @@ than <code class="literal">init</code>, the <code class="literal">node-name</cod
 <code class="literal">module.name</code>, where <code class="literal">module</code> is the module in which the node should
 be created and <code class="literal">name</code> is the name of the node to create. The same
 syntax applies in the <code class="literal">main-ui</code> output option.</p><p>Change the <code class="literal">build.yml</code> file to the following:</p><p><strong>build.yml. </strong>
-</p><pre class="programlisting">sources:
+</p><pre class="screen">sources:
   - util.trd
   - app.trd
   - path: ui.html
@@ -222,7 +244,7 @@ output:
   main-ui: budget-app.ui</pre><p>
 </p><p>Build and run the application. You wont see any new features however
 we’ve significantly improved the organization of the code.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_infix_operators"></a>8.4. Infix Operators</h3></div></div></div><p><span class="emphasis"><em>This section contains a detailed explanation of registering your own
-infix operators. We will not being making any enhancements to the
+infix operators. We will not be making any enhancements to the
 budgeting application in this section.</em></span></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_precedence_and_associativity_basics"></a>Precedence and Associativity Basics</h4></div></div></div><p>Each module has an operator table, which contains the identifiers of
 all nodes which can be placed in infix position as well as their
 precedence and associativity. The precedence is a number which
@@ -237,8 +259,8 @@ containing multiple instances of the same infix operator. The <code class="liter
 operator has left associativity:</p><p>Thus the following infix expression:</p><pre class="screen">x + y + z</pre><p>is parsed to the following expression in prefix notation:</p><pre class="screen">+(+(x, y), z)</pre><p>i.e. it is equivalent to</p><pre class="screen">(x + y) + z</pre><p>If the <code class="literal">+</code> operator were to have right associativity, the expression
 would be parsed to the following:</p><pre class="screen">+(x, +(y, z))</pre><p>Below is a table showing the precedence and associativity of some of
 the builtin operators.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Visit the file in <code class="literal">&lt;prefix&gt;/share/tridash/modules/core/operators.trd</code> to see the full
-list:</p></td></tr></table></div><div class="informaltable"><table class="informaltable" cellpadding="4px" style="border-collapse: collapse;border-top: 3px solid #527bbd; border-bottom: 3px solid #527bbd; border-left: 3px solid #527bbd; border-right: 3px solid #527bbd; "><colgroup><col class="col_1" /><col class="col_2" /><col class="col_3" /></colgroup><thead><tr><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"> Operator </th><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"> Precedence </th><th style="border-bottom: 1px solid #527bbd; " align="left" valign="top"> Associativity</th></tr></thead><tbody><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">-&gt;</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>10</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>right</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">or</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>20</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">and</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>25</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">+</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>100</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">-</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>100</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">*</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>200</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">/</code></p></td><td style="border-right: 1px solid #527bbd; " align="right" valign="top"><p>200</p></td><td style="" align="left" valign="top"><p>left</p></td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_registering_your_own_infix_operators"></a>Registering your own infix operators</h4></div></div></div><p>Node identifiers can be registered as infix operators using the <code class="literal">:op</code>
-operator.</p><pre class="screen">:op(id, precedence, [left | right])</pre><p>The first argument is the identifier. The second argument is the
+list:</p></td></tr></table></div><div class="informaltable"><table class="informaltable" cellpadding="4px" style="border-collapse: collapse;border-top: 3px solid #527bbd; border-bottom: 3px solid #527bbd; border-left: 3px solid #527bbd; border-right: 3px solid #527bbd; "><colgroup><col class="col_1" /><col class="col_2" /><col class="col_3" /></colgroup><thead><tr><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"> Operator </th><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"> Precedence </th><th style="border-bottom: 1px solid #527bbd; " align="left" valign="top"> Associativity</th></tr></thead><tbody><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">-&gt;</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>10</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>right</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">or</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>20</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">and</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>25</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">+</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>100</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">-</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>100</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">*</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>200</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">/</code></p></td><td style="border-right: 1px solid #527bbd; " align="right" valign="top"><p>200</p></td><td style="" align="left" valign="top"><p>left</p></td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_registering_your_own_infix_operators"></a>Registering your own infix operators</h4></div></div></div><p>Node identifiers can be registered as infix operators using a special
+<code class="literal">:op</code> declaration.</p><pre class="screen">:op(id, precedence, [left | right])</pre><p>The first argument is the identifier. The second argument is the
 operator precedence as a number and the final argument is the symbol
 <code class="literal">left</code> or <code class="literal">right</code> for left or right associativity. If the third
 argument is omitted it defaults to <code class="literal">left</code>.</p><p>This declaration adds an infix operator to the operator table of the

@@ -17,18 +17,19 @@ non-digit character otherwise it is interpreted as a number.</p><p>The following
 <code class="literal">1node</code>
 </li></ul></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>There are few restrictions on the characters allowed in node
 identifiers, meaning node identifiers may even contain symbols such as
-<code class="literal">-</code>, <code class="literal">+</code>, <code class="literal">=</code>, <code class="literal">&gt;</code>, <code class="literal">?</code>, etc.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_bindings"></a>1.2. Bindings</h3></div></div></div><p>A node can be bound to another node, in which changes in the node’s
-value. Bindings can be established explicitly using the <code class="literal">-&gt;</code> operator,
-or implicitly (<span class="emphasis"><em>more on this in the next section</em></span>).</p><p><strong>Example. </strong>
+<code class="literal">-</code>, <code class="literal">+</code>, <code class="literal">=</code>, <code class="literal">&gt;</code>, <code class="literal">?</code>, etc.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_bindings"></a>1.2. Bindings</h3></div></div></div><p>A node can be bound to another node in which case its value is
+automatically updated when the value of the node, to which it is
+bound, changes. Bindings can be established explicitly using the <code class="literal">-&gt;</code>
+operator, or implicitly (<span class="emphasis"><em>more on this in the next section</em></span>).</p><p><strong>Example. </strong>
 </p><pre class="screen">a -&gt; b</pre><p>
 </p><p>In the example, above, a binding is established between node <code class="literal">a</code> and
 node <code class="literal">b</code>. The result is that when the value of <code class="literal">a</code> changes, the value
 of <code class="literal">b</code> is automatically updated to match the value of <code class="literal">a</code>. This kind
 of binding is known as a simple binding since a node is simply set to
-the value of another node. Node <code class="literal">a</code> is referred to as a dependency
-node of <code class="literal">b</code>, since <code class="literal">b</code>'s value depends on the value of <code class="literal">a</code>, and <code class="literal">b</code> is
-referred to as an observer node of <code class="literal">a</code> since it actively observes its
-value.</p><p>The binding established in the example, above, is one-way, since data
+the value of another node. Node <code class="literal">a</code> is referred to as a <span class="emphasis"><em>dependency</em></span>
+node of <code class="literal">b</code>, since <code class="literal">b</code><span class="emphasis"><em>s value depends on the value of <code class="literal">a</code>, and <code class="literal">b</code> is
+referred to as an 'observer</em></span> node of <code class="literal">a</code> since it actively observes its
+value.</p><p>The binding established in the example, above, is one-way since data
 flows only from <code class="literal">a</code> to <code class="literal">b</code> and not from <code class="literal">b</code> to <code class="literal">a</code>. This means that
 the value of <code class="literal">b</code> is updated when the value of <code class="literal">a</code> changes however the
 value of <code class="literal">a</code> is not updated when the value of <code class="literal">b</code> changes.</p><p>If a binding in the reverse direction is also established:</p><pre class="screen">b -&gt; a</pre><p>the binding becomes a two-way binding and the value of each node is
@@ -65,10 +66,10 @@ semicolon <code class="literal">;</code>.</p><p><strong>Tridash Code. </strong>
 name -&gt; self.span-name.textContent</pre><p>
 </p><p>The first declaration (the first line) binds the
 <code class="literal">self.input-name.value</code> node to the <code class="literal">name</code> node.</p><p>The node <code class="literal">self.input-name</code> is a special node that references the
-<code class="literal">input</code> element, with id <code class="literal">input-name</code>, further in the file. HTML
-elements can be referenced from within Tridash code, in the same HTML
-file, by <code class="literal">self.&lt;id&gt;</code> where <code class="literal">&lt;id&gt;</code> is the id of the
-element.</p><p>The <code class="literal">.</code> operator is a special operator for referencing subnodes of
+<code class="literal">input</code> element, with id <code class="literal">input-name</code>, in the HTML file. HTML elements
+can be referenced from within Tridash code, in the same HTML file,
+using the expression <code class="literal">self.&lt;id&gt;</code> where <code class="literal">&lt;id&gt;</code> is substituted with the
+id of the element.</p><p>The <code class="literal">.</code> operator is a special operator for referencing subnodes of
 nodes, these will be explained in detail later. The subnode identifier
 is the identifier which appears to the right of the operator. When a
 subnode of a node, that references an HTML element, is referenced, the
@@ -82,16 +83,16 @@ the value of <code class="literal">name</code> is set to it. In other words, whe
 entered in the input element, the value of <code class="literal">name</code> is automatically set
 to the text entered.</p><p>In the second declaration, the <code class="literal">name</code> node is bound to the
 <code class="literal">self.span-name.textContent</code> node. <code class="literal">self.span-name</code> references the
-HTML <code class="literal">span</code> element with ID <code class="literal">span-name</code>, further down the file, with
-the node <code class="literal">self.span-name.textContent</code> referencing the <code class="literal">textContent</code>
-attribute, i.e. the content, of the element. The result of this
-binding is that whenever the value of the <code class="literal">name</code> node changes, its
-value is displayed in the <code class="literal">span</code> element. As mentioned earlier, the
-value of the <code class="literal">name</code> node is automatically set to the text entered in
-the <code class="literal">input</code> element, thus the value entered in the <code class="literal">input</code> element is
-displayed in the <code class="literal">span</code> element.</p><p>The application we’ve just written, simply prompts the user for
+HTML <code class="literal">span</code> element with ID <code class="literal">span-name</code>, with the node
+<code class="literal">self.span-name.textContent</code> referencing the <code class="literal">textContent</code> attribute,
+i.e. the content, of the element. The result of this binding is that
+whenever the value of the <code class="literal">name</code> node changes, its value is displayed
+in the <code class="literal">span</code> element. As mentioned earlier, the value of the <code class="literal">name</code>
+node is automatically set to the text entered in the <code class="literal">input</code> element,
+thus the value entered in the <code class="literal">input</code> element is displayed in the
+<code class="literal">span</code> element.</p><p>The application we’ve just written, simply prompts the user for
 his/her name and displays “Hello” followed by the user’s name
-directly below the prompt. Let’s try it out to see if it works.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_building"></a>Building</h4></div></div></div><p>Run the following command to build the application:</p><pre class="programlisting">tridashc hello-ui.html : node-name=ui -o hello.html -p type=html -p main-ui=ui</pre><p>That looks complicated, let’s simplify it a bit.</p><p>The <code class="literal">tridashc</code> executable compiles one or more Tridash source files,
+directly below the prompt. Let’s try it out to see if it works.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_building"></a>Building</h4></div></div></div><p>Run the following command to build the application:</p><pre class="screen">tridashc hello-ui.html : node-name=ui -o hello.html -p type=html -p main-ui=ui</pre><p>That looks complicated, let’s simplify it a bit.</p><p>The <code class="literal">tridashc</code> executable compiles one or more Tridash source files,
 generating a single output file. The source files are simply listed,
 after the command <code class="literal">tridashc</code>. In this case there is one source file,
 <code class="literal">hello-ui.html</code>. The name of the output file is given by the <code class="literal">-o</code> or

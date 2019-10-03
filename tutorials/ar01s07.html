@@ -99,7 +99,7 @@ meta-node we implemented in <a class="xref" href="ar01s04.html" title="4. Writi
         lerp(c1.luminance, c2.luminance, alpha)
     )
 }</pre><p>Finally let’s change the <code class="literal">make-hsl</code> function to take a single
-argument, which is expected to be a dictionary with the color
+argument, which is expected to be a dictionary of the color
 components.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>If a subnode of a <code class="literal">parent</code> node, which does not evaluate to
 a dictionary, is referenced or the dictionary does not contain an
 entry with the subnode key, the subnode evaluates to a failure.</p></td></tr></table></div><pre class="screen">make-hsl(c) :
@@ -108,8 +108,9 @@ performed inside a meta-node rather than having it littered all over
 the global scope. We’ll create a meta-node <code class="literal">compute-color</code> which takes
 as arguments the total expenses and budget and computes the
 interpolated color. The two colors are not passed as arguments, rather
-they are stored in the global meta-nodes <code class="literal">in-budget-color</code>, the within
-budget color, and <code class="literal">out-budget-color</code>, the budget exceeded color.</p><pre class="screen">compute-color(total, budget) : {
+they are stored in the global meta-nodes <code class="literal">in-budget-color</code>, the
+<span class="emphasis"><em>within budget</em></span> color, and <code class="literal">out-budget-color</code>, the <span class="emphasis"><em>budget exceeded</em></span>
+color.</p><pre class="screen">compute-color(total, budget) : {
     clamp((total + 1) / (budget + 1), 0, 1) -&gt; scale
     make-hsl(lerp-color(in-budget-color, out-budget-color), scale)
 }</pre><p>The global nodes are referenced directly from within the meta-node.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This a rather contrived example since the two colors could have
@@ -141,8 +142,8 @@ have to modify this segment of code:</p><pre class="screen">make-hsl(
 the within budget color and the budget exceeded color. Someone who
 isn’t familiar with the color interpolation logic might not know what
 <code class="literal">lerp</code> is and may accidentally introduce a
-bug. Furthermore in the previous version the “Within budget” and
-“Budget exceeded” messages couldn’t have different values for the
+bug. Furthermore in the previous version the <span class="emphasis"><em>within budget</em></span> and
+<span class="emphasis"><em>budget exceeded</em></span> colors couldn’t have different values for the
 saturation and luminance components.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_application_preferences_interface"></a>7.3. Application Preferences Interface</h3></div></div></div><p>Whilst it is easy to change the colors by modifying the code directly,
 wouldn’t be nice if the colors can be changed directly from the
 application itself. This may seem like a lot of work requiring an
@@ -187,81 +188,84 @@ style attribute (which controls the background color) of the
 color is bound to the <code class="literal">backgroundColor</code> attribute of the
 <code class="literal">out-budget-preview</code> element. The <code class="literal">make-hsl</code> meta-node is used to
 convert the dictionary of components to a CSS HSL color string.</p><p>The following is the full Preferences UI code (excluding the explicit
-binding declarations):</p><pre class="programlisting">&lt;details&gt;
+binding declarations):</p><pre class="programlisting">&lt;details style="margin-top: 5px"&gt;
   &lt;summary&gt;Preferences&lt;/summary&gt;
-  &lt;div&gt;
-    &lt;strong&gt;Within Budget Color:&lt;/strong&gt;
-    &lt;div
-      style="display: inline-block; width: 2em; height: 2em; vertical-align: middle"
-      id="in-budget-preview"&gt;
-    &lt;/div&gt;
-    &lt;p&gt;
-    Hue:
-    &lt;input
-      id="in-budget-hue"
-      type="range" min="0" max="360"
-      value="&lt;?@ to-int(in-budget-color.hue) ?&gt;" /&gt;
-    &lt;/p&gt;
-    &lt;p&gt;
-    Saturation:
-    &lt;input
-      id="in-budget-saturation" type="range" min="0" max="100"
-      value="&lt;?@ to-int(in-budget-color.saturation) ?&gt;" /&gt;
-    &lt;/p&gt;
-    &lt;p&gt;
-    Luminance:
-    &lt;input
-      id="in-budget-luminance"
-      type="range" min="0" max="100"
-      value="&lt;?@ to-int(in-budget-color.luminance) ?&gt;" /&gt;
-    &lt;/p&gt;
+  &lt;strong&gt;Within Budget Color:&lt;/strong&gt;
+  &lt;div
+    style="display: inline-block; width: 2em; height: 2em; vertical-align: middle"
+    id="in-budget-preview"&gt;
   &lt;/div&gt;
+
   &lt;div&gt;
-    &lt;strong&gt;Budget Exceeded Color:&lt;/strong&gt;
-    &lt;div
-      style="display: inline-block; width: 2em; height: 2em; vertical-align: middle"
-      id="out-budget-preview"&gt;
+    &lt;label for="in-budget-hue"&gt;Hue:&lt;/label&gt;
+    &lt;div&gt;
+      &lt;input
+        id="in-budget-hue"
+        type="range" min="0" max="360"
+        value="&lt;?@ to-int(in-budget-color.hue) ?&gt;" /&gt;
     &lt;/div&gt;
-    &lt;/strong&gt;
-    &lt;p&gt;
-    Hue:
-    &lt;input
-      id="out-budget-hue"
-      type="range" min="0" max="360"
-      value="&lt;?@ to-int(out-budget-color.hue) ?&gt;"&gt;
-    &lt;/p&gt;
-    &lt;p&gt;
-    Saturation:
-    &lt;input
-      id="out-budget-saturation"
-      type="range" min="0" max="100"
-      value="&lt;?@ to-int(out-budget-color.saturation) ?&gt;"&gt;
-    &lt;/p&gt;
-    &lt;p&gt;
-    Luminance:
-    &lt;input
-      id="out-budget-luminance"
-      type="range" min="0" max="100"
-      value="&lt;?@ to-int(out-budget-color.luminance) ?&gt;"&gt;
-    &lt;/p&gt;
+
+    &lt;label for="in-budget-saturation"&gt;Saturation:&lt;/label&gt;
+    &lt;div&gt;
+      &lt;input
+        id="in-budget-saturation"
+        type="range" min="0" max="100"
+        value="&lt;?@ to-int(in-budget-color.saturation) ?&gt;" /&gt;
+    &lt;/div&gt;
+    &lt;label for="in-budget-luminance"&gt;Luminance:&lt;/label&gt;
+    &lt;div&gt;
+      &lt;input
+        id="in-budget-luminance"
+        type="range" min="0" max="100"
+        value="&lt;?@ to-int(in-budget-color.luminance) ?&gt;" /&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;strong&gt;Budget Exceeded Color:&lt;/strong&gt;
+  &lt;div
+    style="display: inline-block; width: 2em; height: 2em; vertical-align: middle"
+    id="out-budget-preview"&gt;&lt;/div&gt;
+  &lt;div&gt;
+    &lt;label for="out-budget-hue"&gt;Hue:&lt;/label&gt;
+    &lt;div&gt;
+      &lt;input
+        id="out-budget-hue"
+        type="range" min="0" max="360"
+        value="&lt;?@ to-int(out-budget-color.hue) ?&gt;" /&gt;
+    &lt;/div&gt;
+    &lt;label for="out-budget-saturation"&gt;Saturation:&lt;/label&gt;
+    &lt;div&gt;
+      &lt;input
+        id="out-budget-saturation"
+        type="range" min="0" max="100"
+        value="&lt;?@ to-int(out-budget-color.saturation) ?&gt;" /&gt;
+    &lt;/div&gt;
+    &lt;label for="out-budget-luminance"&gt;Luminance:&lt;/label&gt;
+    &lt;div&gt;
+      &lt;input
+         id="out-budget-luminance"
+         type="range" min="0" max="100"
+         value="&lt;?@ to-int(out-budget-color.luminance) ?&gt;" /&gt;
+    &lt;/div&gt;
   &lt;/div&gt;
 &lt;/details&gt;</pre><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">details</code> element simply allows the user to show and hide the
 preferences by clicking on the triangle next to “Preferences”.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_7"></a>Let’s try it out</h4></div></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial7/snap2.png" align="middle" alt="Initial Snapshot: Color preview boxes display colors and color component sliders set to values of color components." /></div></div><p>Now try changing some of the color components. Also try this while the
-total sum is between 0 and the budget in order to demonstrate the
+total sum is between 0 and the budget in order to demonstrate that the
 color interpolation is performed after each change.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial7/snap3.png" align="middle" alt="Snapshot: Color Within budget color changed to blue. Total and message color recomputed." /></div></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_urgent_attribute"></a>Urgent Attribute</h4></div></div></div><p>You have probably noticed a rather annoying aspect of this
 interface. The colors are not updated while the sliders are being
-dragging but only after they are released. This is analogous to the
-expense input fields: the total is only updated after the enter has
-been pressed or keyboard focus leaves the field, rather than being
+dragged but only after they are released. This is analogous to the
+expense input fields: the total is only updated after the enter key
+has been pressed or keyboard focus leaves the field, rather than being
 updated after each keystroke.</p><p>For the expense input fields this is the desired behaviour, however
 for the sliders it is desirable that the colors are updated while they
 are being dragged. For this to be achieved the <code class="literal">urgent</code> attribute of
 the nodes, referencing the value attributes of the sliders, has to be
 set to <span class="emphasis"><em>true</em></span> (<code class="literal">1</code>).</p><p>The <code class="literal">urgent</code> attribute of HTML nodes controls whether the node’s value
 is updated after each change in the element or only after changes are
-committed by the user.</p><p>To set the <code class="literal">urgent</code> attribute of the sliders, first give each slider
-an ID so that it can be referenced from Tridash code. Let’s give the
-following id’s to the sliders:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+committed by the user.</p><p>To set the <code class="literal">urgent</code> attribute of the sliders, we have to give each
+slider an ID (which has already been down) so that it can be
+referenced from Tridash code. The following IDs have been given to the
+slider <code class="literal">input</code> elements.</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
 <code class="literal">in-budget-hue</code> — Within budget hue.
 </li><li class="listitem">
 <code class="literal">in-budget-saturation</code> — Within budget saturation.
@@ -313,6 +317,5 @@ nodes of the meta-node. In essence outer-node references can be
 thought of as hidden arguments.</p><p>We used outer-node references to store our color preferences in global
 nodes, which are referenced from within the <code class="literal">compute-color</code>
 meta-node. <code class="literal">compute-color</code> is responsible for computing the
-interpolated color. Further on you learned about node attributes and
-how the <code class="literal">urgent</code> attribute influences when changes in HTML nodes are
-propagated.</p></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s06.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s08.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
+interpolated color. Further on you learned about how the <code class="literal">urgent</code>
+attribute influences when changes in HTML nodes are propagated.</p></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s06.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s08.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

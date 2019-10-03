@@ -6,8 +6,8 @@ the second issue with our budgeting application, namely ensuring that
 only positive numeric values are entered in the budget and expense
 text input fields.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_conditional_bindings_2"></a>6.1. Conditional Bindings</h3></div></div></div><p>Conditional bindings allow a binding between two nodes to be active
 only if a <span class="emphasis"><em>condition</em></span> node evaluates to true. Conditional bindings are
-declared by declaring a binding with the bind node expression as the
-target of the binding.</p><p><strong>Conditional Binding Declaration. </strong>
+declared by declaring a binding with the bind expression as the target
+of the binding.</p><p><strong>Conditional Binding Declaration. </strong>
 </p><pre class="screen">condition -&gt; (a -&gt; b)</pre><p>
 </p><p>A conditional binding <code class="literal">a -&gt; b</code> is declared, which is conditioned on
 the node <code class="literal">condition</code>. If <code class="literal">condition</code> evaluates to true, the binding <code class="literal">a
@@ -33,16 +33,18 @@ failure value, and thus the value of <code class="literal">b</code> is returned 
 meta-node.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_simple_validation"></a>6.2. Simple Validation</h3></div></div></div><p>To fix the second issue, we need the <code class="literal">budget</code>, <code class="literal">food</code>, <code class="literal">electricity</code>
 and <code class="literal">water</code> nodes to evaluate to failures not only if non-numeric data
 is entered in the text fields but also if negative numbers are
-entered.</p><p>We’ll create a simple <code class="literal">validate</code> meta-node which converts its argument
-to a real number and checks that the real value is greater than or
-equal to <code class="literal">0</code>. For this we’ll use conditional bindings.</p><p><strong>Meta-Node <code class="literal">validate</code>. </strong>
-</p><pre class="screen">validate(value) : {
+entered.</p><p>We’ll create a simple <code class="literal">valid-amount</code> meta-node which converts its
+argument to a real number and checks that the real value is greater
+than or equal to <code class="literal">0</code>. For this we’ll use conditional bindings.</p><p><strong>Meta-Node <code class="literal">valid-amount</code>. </strong>
+</p><pre class="screen">valid-amount(value) : {
     x &lt;- real(value)
     x &gt;= 0 -&gt; x -&gt; self
 }</pre><p>
 </p><p>The first declaration binds the local node <code class="literal">x</code> to the argument <code class="literal">value</code>
 converted to a <code class="literal">real</code> number.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">x</code> is a local node as it appears as the target of a binding.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">real</code> meta-node performs the same function as the <code class="literal">to-real</code>
-meta-node.</p></td></tr></table></div><p>The second declaration conditionally binds <code class="literal">x</code> to the <code class="literal">self</code> node if
+meta-node.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">&lt;-</code> is the same as <code class="literal">-&gt;</code> only with arguments reversed, that is
+the target of the binding is on the left hand side and the source on
+the right hand side.</p></td></tr></table></div><p>The second declaration conditionally binds <code class="literal">x</code> to the <code class="literal">self</code> node if
 <code class="literal">x</code> is greater than or equal to <code class="literal">0</code> (<code class="literal">x &gt;= 0</code>). As a result the return
 value of the meta-node is its argument converted to a real number, if
 it is greater than <code class="literal">0</code>. If the real value is less than <code class="literal">0</code>, or the
@@ -50,23 +52,35 @@ argument cannot be converted to a real value, a failure is returned.</p><p>A sim
 nodes which are bound directly to the string values entered in the
 text input fields. Let’s call them <code class="literal">in-budget</code>, <code class="literal">in-food</code>,
 <code class="literal">in-electricity</code> and <code class="literal">in-water</code>. Change the HTML code, where the input
-fields are created to the following:</p><pre class="programlisting">&lt;p&gt;
-    &lt;label&gt;Budget: &lt;input value="&lt;?@ in-budget ?&gt;" /&gt;&lt;/label&gt;
-    &lt;?@ error?(budget) ?&gt;
-&lt;/p&gt;
-&lt;h2&gt;Expenses:&lt;/h2&gt;
-&lt;p&gt;
-    &lt;label&gt;Food: &lt;input value="&lt;?@ in-food ?&gt;" /&gt;&lt;/label&gt;
-    &lt;?@ error?(food) ?&gt;
-&lt;/p&gt;
-&lt;p&gt;
-    &lt;label&gt;Electricity: &lt;input value="&lt;?@ in-electricity ?&gt;" /&gt;&lt;/label&gt;
-    &lt;?@ error?(electricity) ?&gt;
-&lt;/p&gt;
-&lt;p&gt;
-    &lt;label&gt;Water: &lt;input value="&lt;?@ in-water ?&gt;" /&gt;&lt;/label&gt;
-    &lt;?@ error?(water) ?&gt;
-&lt;/p&gt;</pre><p>Also make sure that the initial values are given to the <code class="literal">in-...</code> nodes
+fields are created to the following:</p><pre class="programlisting">&lt;div&gt;
+  &lt;label for="budget"&gt;Budget:&lt;/label&gt;
+  &lt;div&gt;
+    &lt;input id="budget" value="&lt;?@ in-budget ?&gt;"/&gt;
+    &lt;?@ error-prompt(budget) ?&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;hr&gt;
+&lt;div&gt;
+  &lt;label for="food"&gt;Food:&lt;/label&gt;
+  &lt;div&gt;
+    &lt;input id="food" value="&lt;?@ in-food ?&gt;" /&gt;
+    &lt;?@ error-prompt(food) ?&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div&gt;
+  &lt;label for="electricity"&gt;Electricity:&lt;/label&gt;
+  &lt;div&gt;
+    &lt;input id="electricity" value="&lt;?@ in-electricity ?&gt;" /&gt;
+    &lt;?@ error-prompt(electricity) ?&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div&gt;
+  &lt;label for="water"&gt;Water:&lt;/label&gt;
+  &lt;div&gt;
+    &lt;input id="water" value="&lt;?@ in-water ?&gt;" /&gt;
+    &lt;?@ error-prompt(water) ?&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre><p>Also make sure that the initial values are given to the <code class="literal">in-...</code> nodes
 rather than the nodes which stored the parsed numeric values. Change
 the section of the Tridash code tag, responsible for setting the
 initial values, to the following:</p><pre class="screen"># Initial Values
@@ -74,25 +88,31 @@ initial values, to the following:</p><pre class="screen"># Initial Values
 0 -&gt; in-budget
 0 -&gt; in-food
 0 -&gt; in-water
-0 -&gt; in-electricity</pre><p>Now we need to bind <code class="literal">validate</code> instances of those node to the
+0 -&gt; in-electricity</pre><p>Now we need to bind <code class="literal">valid-amount</code> instances of those nodes to the
 <code class="literal">budget</code>, <code class="literal">food</code>, <code class="literal">electricity</code> and <code class="literal">water</code> nodes.</p><p>Add the following to the Tridash code tag:</p><pre class="screen"># Validation
 
-validate(in-budget) -&gt; budget
-validate(in-food) -&gt; food
-validate(in-electricity) -&gt; electricity
-validate(in-water) -&gt; water</pre><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_5"></a>Let’s try it out</h4></div></div></div><p>Build and run the application, and enter negative values in some of
+valid-amount(in-budget) -&gt; budget
+valid-amount(in-food) -&gt; food
+valid-amount(in-electricity) -&gt; electricity
+valid-amount(in-water) -&gt; water</pre><p>Additionally let’s change the error message to indicate that negative
+numbers are invalid. Change the <code class="literal">error-prompt</code> meta-node to the
+following:</p><pre class="screen">error-prompt(thing) : {
+    error-message &lt;- "Please enter a valid number \u{2265} 0!"
+    if (fails?(thing), error-message, "")
+}</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">\u{2265}</code> represents the unicode character with code 2265 which
+is the character <code class="literal">≥</code>.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_5"></a>Let’s try it out</h4></div></div></div><p>Build and run the application, and enter negative values in some of
 the fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial6/snap1.png" align="middle" alt="Snapshot: -30 entered in Electricity. Error message displayed next to it." /></div></div><p>The error message was displayed next to the field where a negative
-value was entered, in this case electricity. The total unchanged,
-status message and color were left unchanged.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_meta_node_instances_as_targets"></a>6.3. Meta-Node Instances as Targets</h3></div></div></div><p>Whilst we’ve fixed the second issue with our application, we had to
+value was entered, in this case electricity. The total, status message
+and meter were left unchanged.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_meta_node_instances_as_targets"></a>6.3. Meta-Node Instances as Targets</h3></div></div></div><p>Whilst we’ve fixed the second issue with our application, we had to
 make a lot of changes to our code:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
 New nodes had to be created to store the raw string input values.
 </li><li class="listitem">
 We had to change which nodes are given initial values.
 </li><li class="listitem">
-The <code class="literal">validate</code> instances had to be explicitly bound to the nodes
+The <code class="literal">valid-amount</code> instances had to be explicitly bound to the nodes
    which store the parsed numeric values.
 </li></ul></div><p>Most of the new code we’ve added is repetitive boilerplate, we’re
-creating an instance of the <code class="literal">validate</code> meta-node for each input
+creating an instance of the <code class="literal">valid-amount</code> meta-node for each input
 field’s value and binding it to the corresponding node storing the
 parsed value. Recall that we didn’t have to do this when converting
 the field values to real-numbers, we could simply write <code class="literal">to-real(...)</code>
@@ -100,7 +120,7 @@ in the inline node expressions, within the value attributes, and be
 done with it. It was mentioned <code class="literal">to-real</code> was a special meta-node in
 that an instance of it can also appear as the target of a binding,
 whereas ordinarily that would trigger a compilation error. It turns
-out we can also make any the <code class="literal">validate</code> node special by setting a
+out we can also make the <code class="literal">valid-amount</code> node special by setting a
 <code class="literal">target-node</code> attribute.</p><p>Node attributes are arbitrary key-value pairs associated with each
 node, which control certain compilation properties. Attributes are set
 using the special <code class="literal">:attribute</code> operator which has the following
@@ -130,41 +150,59 @@ the meta-node stored in the <code class="literal">target-node</code> attribute.<
 </p><pre class="screen">:attribute(to-real, target-node, real)
 
 # results in a binding equivalent to the following
-# real(to-real(y)) -&gt; x
+# real(x) -&gt; y
 
 x -&gt; to-real(y)</pre><p>
 </p><p>In the example above, the <code class="literal">target-node</code> attribute of <code class="literal">to-real</code> is set
 to the meta-node <code class="literal">real</code>. The binding declaration, in the last line,
-results in the node <code class="literal">to-real(y)</code> being bound to <code class="literal">x</code>, with the function
+results in the node <code class="literal">to-real(y)</code> being bound to <code class="literal">y</code>, with the function
 <code class="literal">real</code> being the function of the binding. As a result <code class="literal">y</code> is bound to
 the value of <code class="literal">x</code> converted to a <code class="literal">real</code> value.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">to-real</code> performs the same function as <code class="literal">real</code>, however a
 separate node is created in order to give it a different <code class="literal">target-node</code>
 attribute. The behaviour of the <code class="literal">real</code> meta-node, when an instance of
 it appears as the target of a binding, is to perform pattern matching
 on the argument, <span class="emphasis"><em>pattern matching will be introduced in a later
-tutorial</em></span>.</p></td></tr></table></div><p>To apply this to our application, we’ll give the <code class="literal">validate</code> meta-node
-a <code class="literal">target-node</code> attribute so that it can be used directly inline, in
-the value attributes of the HTML input fields. We need the <code class="literal">validate</code>
-meta-node to perform the same function, when it appears as the target
-thus we’ll simply set the <code class="literal">target-node</code> attribute of <code class="literal">validate</code> to
-itself.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This section builds on the code from the previous tutorial, with
-the definition of <code class="literal">validate</code> added to it. It does not include the
-modifications made at the end of <a class="xref" href="ar01s06.html#_simple_validation" title="6.2. Simple Validation">Section 6.2, “Simple Validation”</a>.</p></td></tr></table></div><p>Add the following after the definition of <code class="literal">validate</code> in the Tridash code tag.</p><pre class="screen">:attribute(validate, target-node, validate)</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>When the <code class="literal">target-node</code> attribute is set, the meta-node is looked
-up as the <code class="literal">:attribute</code> declaration is processed.</p></td></tr></table></div><p>As a result we can simply replace <code class="literal">to-real(...)</code> with <code class="literal">validate(...)</code>
+tutorial</em></span>.</p></td></tr></table></div><p>To apply this to our application, we’ll give the <code class="literal">valid-amount</code>
+meta-node a <code class="literal">target-node</code> attribute so that it can be used directly
+inline, in the value attributes of the HTML input fields. We need the
+<code class="literal">valid-amount</code> meta-node to perform the same function, when it appears
+as a binding target thus we’ll simply set the <code class="literal">target-node</code> attribute
+of <code class="literal">valid-amount</code> to itself.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This section builds on the code from the previous tutorial, with
+the definition of <code class="literal">valid-amount</code> added to it, and the modifications to
+the <code class="literal">error-prompt</code> meta-node. It does not include the remaining
+modifications made in <a class="xref" href="ar01s06.html#_simple_validation" title="6.2. Simple Validation">Section 6.2, “Simple Validation”</a>.</p></td></tr></table></div><p>Add the following after the definition of <code class="literal">validate</code> in the Tridash code tag.</p><pre class="screen">:attribute(valid-amount, target-node, valid-amount)</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>When the <code class="literal">target-node</code> attribute is set, the meta-node is looked
+up as the <code class="literal">:attribute</code> declaration is processed.</p></td></tr></table></div><p>As a result we can simply replace <code class="literal">to-real(...)</code> with <code class="literal">valid-amount(...)</code>
 in the inline declarations, within the value attributes of the HTML
 input elements. This will be equivalent to the code we wrote at the
-end of <a class="xref" href="ar01s06.html#_simple_validation" title="6.2. Simple Validation">Section 6.2, “Simple Validation”</a>.</p><p>Change the text input fields HTML code to the following:</p><pre class="screen">&lt;p&gt;
-    &lt;label&gt;Food: &lt;input value="&lt;?@ validate(food) ?&gt;" /&gt;&lt;/label&gt;
-    &lt;?@ error?(food) ?&gt;
-&lt;/p&gt;
-&lt;p&gt;
-    &lt;label&gt;Electricity: &lt;input value="&lt;?@ validate(electricity) ?&gt;" /&gt;&lt;/label&gt;
-    &lt;?@ error?(electricity) ?&gt;
-&lt;/p&gt;
-&lt;p&gt;
-    &lt;label&gt;Water: &lt;input value="&lt;?@ validate(water) ?&gt;" /&gt;&lt;/label&gt;
-    &lt;?@ error?(water) ?&gt;
-&lt;/p&gt;</pre><p>That is all that is necessary to add the new validation logic to our
+end of <a class="xref" href="ar01s06.html#_simple_validation" title="6.2. Simple Validation">Section 6.2, “Simple Validation”</a>.</p><p>Change the text input fields HTML code to the following:</p><pre class="programlisting">&lt;div&gt;
+  &lt;label for="budget"&gt;Budget:&lt;/label&gt;
+  &lt;div&gt;
+    &lt;input id="budget" value="&lt;?@ valid-amount(budget) ?&gt;"/&gt;
+    &lt;?@ error-prompt(budget) ?&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;hr&gt;
+&lt;div&gt;
+  &lt;label for="food"&gt;Food:&lt;/label&gt;
+  &lt;div&gt;
+    &lt;input id="food" value="&lt;?@ valid-amount(food) ?&gt;" /&gt;
+    &lt;?@ error-prompt(food) ?&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div&gt;
+  &lt;label for="electricity"&gt;Electricity:&lt;/label&gt;
+  &lt;div&gt;
+    &lt;input id="electricity" value="&lt;?@ valid-amount(electricity) ?&gt;" /&gt;
+    &lt;?@ error-prompt(electricity) ?&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div&gt;
+  &lt;label for="water"&gt;Water:&lt;/label&gt;
+  &lt;div&gt;
+    &lt;input id="water" value="&lt;?@ valid-amount(water) ?&gt;" /&gt;
+    &lt;?@ error-prompt(water) ?&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre><p>That is all that is necessary to add the new validation logic to our
 application. There is no need for creating new nodes, coming up with
 new node names and changing which nodes are given initial values.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_5"></a>6.4. Summary</h3></div></div></div><p>In this tutorial you learned how to create your own failure
 values. This was used to add further input validation to the budgeting

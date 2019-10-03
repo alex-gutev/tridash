@@ -3,23 +3,23 @@
 issue of invalid data being entered in the text fields, such as
 non-numeric data and negative numeric values.</p><p>Let’s try entering some non-numeric data in our existing application
 and see what happens.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial5/error1.png" align="middle" alt="foo entered in food, 10 entered in water and electricity. No total or message printed." /></div></div><p>If an invalid value is initially entered in one of the “food”,
- “electricity”, or “water” fields, no total is computed and
- likewise no message is displayed.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial5/error2.png" align="middle" alt="Water changed from 10 to foo, 20 and 10 entered in food and electricity. Total, color and message unchanged." /></div></div><p>If the value of one of the fields is changed from a valid to an
-invalid numeric value, such as “Water” in the snapshot above, the
-total is not recomputed, with the old total being displayed in the
-text field. Likewise the color and message are unchanged, even if the
-values of the “Budget” or other fields are changed. The new total is
-only computed when the invalid numeric value is replaced with a valid
-numeric value.</p><p>Now let’s try entering a non-numeric value for the budget, however
+ “electricity”, or “water” fields, no total is computed, the meter
+ is filled, and no status message is displayed.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial5/error2.png" align="middle" alt="Water changed from 10 to foo, 20 and 10 entered in food and electricity. Total, color and message unchanged." /></div></div><p>If the value of one of the fields is changed from a valid to an
+invalid numeric value, such as “Electricity” in the snapshot above,
+the total is not recomputed, with the old total being displayed in the
+text field. Likewise the meter and status message are unchanged, even
+if the values of the “Budget” or other fields are changed. The new
+total is only computed when the invalid numeric value is replaced with
+a valid numeric value.</p><p>Now let’s try entering a non-numeric value for the budget, however
 keeping the values of the other fields valid:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial5/error3.png" align="middle" alt="Budget changed from 100 to foo. Food changed from 10 to 90, water and electricity set to 10. New total (110) computed, color and message unchanged." /></div></div><p>Changing the budget to a non-numeric value does not result in the
 total, color or message being changed. However changing the values of
 the expense fields does result in the new total being computed and
-displayed. The color and message, however, remain unchanged.</p><p>Whilst the application is still functioning when non-numeric values
+displayed. The meter and status message, however, remain unchanged.</p><p>Whilst the application is still functioning when non-numeric values
 are entered in the text fields, and can quickly resume its normal
 operation when the invalid values are replaced with valid numeric
 values, there is no indication to the user that an invalid value has
 been entered. This can be misleading, as in the last snapshot, no
-matter how large of a total is entered, “Within Budget” is always
+matter how large of the total is entered, “Within Budget” is always
 displayed.</p><p>Negative values are treated as ordinary numeric values. Obviously
 these don’t make sense in our application, thus an error message
 should be displayed as well if a negative value is entered.</p><p>The following functionality has to be implemented:</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
@@ -31,7 +31,7 @@ Validate the numeric data, checking that the numbers entered are
 </li></ol></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_failures"></a>5.1. Failures</h3></div></div></div><p>A failure is a special type of value which indicates the absence of a
 value, or the failure to compute a value. If a meta-node expects one
 of its argument nodes to evaluate to a value, but it evaluates to a
-failure, it returns a failure.</p><p>The <code class="literal">to-real</code> meta-node returns a failure if its argument cannot be
+failure, the failure is returned immediately.</p><p>The <code class="literal">to-real</code> meta-node returns a failure if its argument cannot be
 converted to a real number. In this case, each of the instance nodes
 <code class="literal">to-real(budget)</code>, <code class="literal">to-real(food)</code>, <code class="literal">to-real(electricity)</code> and
 <code class="literal">to-real(water)</code>, evaluate to failures if the argument is a string,
@@ -43,14 +43,14 @@ failure.</p><p>When an HTML attribute is bound to a node, which evaluates to a
 failure, the value of the attribute is simply left as is. Thus, if the
 node <code class="literal">total</code> evaluates to a failure, due to an invalid value being
 entered for <span class="emphasis"><em>Food</em></span>, <span class="emphasis"><em>Electricity</em></span> or <span class="emphasis"><em>Water</em></span>, the <code class="literal">value</code> attribute of
-the <span class="emphasis"><em>Total</em></span> text field is not changed.</p><p>Similarly, if the <code class="literal">budget</code> node evaluates to a failure, due to an
-invalid value for <span class="emphasis"><em>Budget</em></span> being entered, the <code class="literal">color</code> node and the
-node storing the message evaluate to a failures. As a result the color
-and status message is not updated.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_handling_failures"></a>5.2. Handling Failures</h3></div></div></div><p>Failures can be handled using explicit contexts. A node context is
-simply the information about how a node’s value is computed, and what
-dependency node’s values are required. Each binding to a node, whether
+the <span class="emphasis"><em>Total</em></span> input field is not changed.</p><p>Similarly, if the <code class="literal">budget</code> node evaluates to a failure, due to an
+invalid value for <span class="emphasis"><em>Budget</em></span> being entered, the <code class="literal">color</code> node, <code class="literal">scale</code>
+node and the node storing the status message evaluate to failures. As
+a result the status message and meter is not updated.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_handling_failures"></a>5.2. Handling Failures</h3></div></div></div><p>Failures can be handled using explicit contexts. A node context is the
+information about how a node’s value is computed, and which of the
+dependency nodes' values are required. Each binding to a node, whether
 explicit or implicit creates a context.</p><p>The context to which a binding is established, can be set explicitly
-using the <code class="literal">@</code> macro <a href="#ftn.idm63609128336" class="footnote" id="idm63609128336"><sup class="footnote">[1]</sup></a>, from the <code class="literal">core</code>
+using the <code class="literal">@</code> macro <a href="#ftn.idm502142687712" class="footnote" id="idm502142687712"><sup class="footnote">[1]</sup></a>, from the <code class="literal">core</code>
 module.</p><p><strong><code class="literal">@</code> Macro Syntax. </strong>
 </p><pre class="screen">node @ context-id</pre><p>
 </p><p><code class="literal">node</code> is the node expression and <code class="literal">context-id</code> is the identifier of
@@ -62,10 +62,10 @@ value of the node is bound to the value of the source node of the
 first binding that is declared in the source code. However, if the
 source node evaluates to a failure, the value of the node is set to
 the value of the source node of the second binding. If the source node
-of the second binding fails, the node value is set to the source node
-of the third binding and so on. If the source nodes of all the
-context’s bindings evaluate to failures, the node evaluates to the
-failure of the last binding’s source node.</p><p><strong>Example. </strong>
+of the second binding evaluates to a failure, the node value is set to
+the value of source node of the third binding and so on. If the source
+nodes of all the context’s bindings evaluate to failures, the node
+evaluates to the failure value of the last binding’s source node.</p><p><strong>Example. </strong>
 </p><pre class="screen">a -&gt; x @ ctx
 b -&gt; x @ ctx
 c -&gt; x @ ctx</pre><p>
@@ -79,8 +79,8 @@ its argument node evaluates to a failure, otherwise returns false.</p><p><strong
     1 -&gt; self @ catch-failure
 }</pre><p>
 </p><p>The first declaration, in the function’s body, establishes the primary
-binding to the <code class="literal">self</code> node, which, if you recall from the previous
-tutorial, determines the value returned by the meta-node when an
+binding to the <code class="literal">self</code> node, if you recall from the previous
+tutorial it’s value is returned by the meta-node when an
 explicit binding to it is established. The primary binding ensures
 that the value of the <code class="literal">self</code> node is <span class="emphasis"><em>false</em></span> (<code class="literal">0</code>) if <code class="literal">x</code> does not
 evaluate to a failure.</p><p>The second declaration binds the <code class="literal">self</code> node to <span class="emphasis"><em>true</em></span> (<code class="literal">1</code>) if the
@@ -93,8 +93,8 @@ serves as an introduction to <span class="emphasis"><em>failure</em></span> valu
 message indicating when a non-numeric value is entered in the budget
 or expense text fields.</p><p>The first step is to detect failures in the nodes storing the budget
 and expense categories. For that, we’ll write a utility meta-node,
-<code class="literal">error?</code> which returns an error message if its argument node evaluates
-to a failure.</p><p><strong>Meta-Node <code class="literal">error?</code> </strong>
+<code class="literal">error-prompt</code> which returns an error message if its argument node evaluates
+to a failure.</p><p><strong>Meta-Node <code class="literal">error-prompt</code>. </strong>
 </p><pre class="screen">error?(thing) : {
     error-message &lt;- "Please enter a valid number"
     if (fails?(thing), error-message, "")
@@ -104,47 +104,58 @@ binds it to the error message string. The expression in the last line
 of the body, which serves as the return value of the meta-node,
 evaluates to the error message (value of the <code class="literal">error-message</code> node) if
 the argument <code class="literal">thing</code> evaluates to a failure, determined using the
-<code class="literal">fails?</code> meta-node from the <code class="literal">core</code> module.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip: Meta-Node if"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left">Meta-Node <code class="literal">if</code></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">if</code> meta-node from the <code class="literal">core</code> module returns:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+<code class="literal">fails?</code> meta-node from the <code class="literal">core</code> module. Otherwise the expression
+evaluates to the empty string.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip: Meta-Node if"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left">Meta-Node <code class="literal">if</code></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">if</code> meta-node from the <code class="literal">core</code> module returns:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
 its second argument if its first argument is true.
 </li><li class="listitem">
 its third argument if the first argument is false.
 </li></ul></div></td></tr></table></div><p>We’d like to display the error messages next to each text field, which
 has an invalid value, thus we’ll change the body of the HTML file to
-the following:</p><pre class="programlisting">&lt;p&gt;
-    &lt;label&gt;Budget: &lt;input value="&lt;?@ to-real(budget) ?&gt;" /&gt;&lt;/label&gt;
-    &lt;?@ error?(budget) ?&gt;
-&lt;/p&gt;
-&lt;h2&gt;Expenses:&lt;/h2&gt;
-&lt;p&gt;
-    &lt;label&gt;Food: &lt;input value="&lt;?@ to-real(food) ?&gt;" /&gt;&lt;/label&gt;
-    &lt;?@ error?(food) ?&gt;
-&lt;/p&gt;
-&lt;p&gt;
-    &lt;label&gt;Electricity: &lt;input value="&lt;?@ to-real(electricity) ?&gt;" /&gt;&lt;/label&gt;
-    &lt;?@ error?(electricity) ?&gt;
-&lt;/p&gt;
-&lt;p&gt;
-    &lt;label&gt;Water: &lt;input value="&lt;?@ to-real(water) ?&gt;" /&gt;&lt;/label&gt;
-    &lt;?@ error?(water) ?&gt;
-&lt;/p&gt;</pre><p>We’ve added an <code class="literal">error?</code> meta-node instance next to each text input
-field. Each instance evaluates to the error message if the node, bound
-to the field’s value, evaluates to a failure. Recall, the nodes bound
-to the value attributes evaluate to failures if the <code class="literal">to-real</code>
+the following:</p><pre class="programlisting">&lt;label for="budget"&gt;&lt;strong&gt;Budget:&lt;/strong&gt;&lt;/label&gt;
+&lt;div&gt;
+  &lt;input id="budget" value="&lt;?@ to-real(budget) ?&gt;"/&gt;
+  &lt;?@ error-prompt(budget) ?&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;hr&gt;
+&lt;div&gt;
+  &lt;label for="food"&gt;Food:&lt;/label&gt;
+  &lt;div&gt;
+    &lt;input id="food" value="&lt;?@ to-real(food) ?&gt;" /&gt;
+    &lt;?@ error-prompt(food) ?&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div&gt;
+  &lt;label for="electricity"&gt;Electricity:&lt;/label&gt;
+  &lt;div&gt;
+    &lt;input id="electricity" value="&lt;?@ to-real(electricity) ?&gt;" /&gt;
+    &lt;?@ error-prompt(electricity) ?&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div&gt;
+  &lt;label for="water"&gt;Water:&lt;/label&gt;
+  &lt;div&gt;
+    &lt;input id="water" value="&lt;?@ to-real(water) ?&gt;" /&gt;
+    &lt;?@ error-prompt(water) ?&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre><p>We’ve added an <code class="literal">error-prompt</code> meta-node instance next to each text
+input field. Each instance evaluates to the error message if the node,
+bound to the field’s value, evaluates to a failure. Recall, the nodes
+bound to the value attributes evaluate to failures if the <code class="literal">to-real</code>
 meta-node fails to parse a real number from the string value.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_4"></a>Let’s try it out</h4></div></div></div><p>Build and run the application. Enter some non-numeric value in some of
 the text input fields.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial5/snap1.png" align="middle" alt="Snapshot: Error message displayed next to food and electricity fields, with invalid numeric values." /></div></div><p>Notice the error messages displayed next to the input fields with
 non-numeric values.</p><p>Now try changing the input fields back to numeric values.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial5/snap2.png" align="middle" alt="Snapshot: All fields changed to valid numbers. Total recomputed." /></div></div><p>The error messages disappear and the application resumes its normal
-operation, computing the new total and adjusting the color.</p><p>This fixes the first issue with our application. As an exercise you
-can try to make the background of the text fields change to "red" if
-non-numeric values are entered in them.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>To change the background color of an element, bind to the
-<code class="literal">style.backgroundColor</code> subnode of the element’s node.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_initial_value"></a>5.4. Initial Value</h3></div></div></div><p>The issue with no feedback being displayed, in case of non-numeric
+operation, computing the new total and adjusting the meter.</p><p>This fixes the first issue with our application. As an exercise you
+can try to make the text color of the input fields change to "red" if
+non-numeric values are entered in them.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_initial_values"></a>5.4. Initial Values</h3></div></div></div><p>The issue with no feedback being displayed, in case of non-numeric
 values being entered in the text input fields, is fixed, however until
 a value is entered in each field, no total or status message is
-displayed, nor is any error message displayed. The nodes <code class="literal">budget</code>,
-<code class="literal">food</code>, <code class="literal">electricity</code> and <code class="literal">water</code> have not been given initial
-values. When a node is not given initial values, its initial value is
-a failure. This results in the computation of the total.</p><p>A node may be given an initial value, which is set as soon as the
+displayed. The nodes <code class="literal">budget</code>, <code class="literal">food</code>, <code class="literal">electricity</code> and <code class="literal">water</code> have
+not been given initial values. When a node is not given an initial
+value, its initial value is a failure. This results in the node
+<code class="literal">total</code> evaluating to a failure.</p><p>A node may be given an initial value, which is set as soon as the
 application is launched. The setting of the initial value is treated
-as an ordinary value change from the nodes previous value, which is a
+as an ordinary value change from the node’s previous value, which is a
 <span class="emphasis"><em>failure</em></span> value. Binding a node to a constant value, without an
 explicit context, is interpreted as setting its initial value.</p><pre class="screen">0 -&gt; x</pre><p>In the example, above, node <code class="literal">x</code> is given the initial value <code class="literal">0</code>. Nodes
 can also be given initial values which involve more complex
@@ -158,11 +169,11 @@ is an example of a constant node.</p></td></tr></table></div><p>Let’s give eac
 0 -&gt; food
 0 -&gt; electricity
 0 -&gt; water</pre><p>When running the application all text fields will be initialized to
-the value <code class="literal">0</code>.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial5/snap4.png" align="middle" alt="Initial State Snapshot: All fields initialized to 0. Total (0) and Budget Exceeded displayed in red" /></div></div><p>Since we gave initial values to all the nodes, and there is an
+the value <code class="literal">0</code>.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial5/snap3.png" align="middle" alt="Initial State Snapshot: All fields initialized to 0. Total (0) and Budget Exceeded displayed in red" /></div></div><p>Since we gave initial values to all the nodes, and there is an
 implicit two-way binding between these nodes and the contents of the
-text fields, the contents of the text fields are immediately
+text fields, the contents of the text input fields are immediately
 initialized to <code class="literal">0</code>. This demonstrates that the setting of the initial
-node value is treated the same as any other node value change.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_4"></a>5.5. Summary</h3></div></div></div><p>In this tutorial you were introduced to <span class="emphasis"><em>failure</em></span> values and how to
+node values is treated the same as any other node value change.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_4"></a>5.5. Summary</h3></div></div></div><p>In this tutorial you were introduced to <span class="emphasis"><em>failure</em></span> values and how to
 handle failures with explicit contexts. Additionally you also learned
-how to give nodes initial values.</p></div><div class="footnotes"><br /><hr style="width:100; text-align:left;margin-left: 0" /><div id="ftn.idm63609128336" class="footnote"><p><a href="#idm63609128336" class="simpara"><sup class="simpara">[1] </sup></a>The <code class="literal">@</code> macro expands to a functor
+how to give nodes initial values.</p></div><div class="footnotes"><br /><hr style="width:100; text-align:left;margin-left: 0" /><div id="ftn.idm502142687712" class="footnote"><p><a href="#idm502142687712" class="simpara"><sup class="simpara">[1] </sup></a>The <code class="literal">@</code> macro expands to a functor
 expression with the special <code class="literal">:context</code> operator</p></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s04.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s06.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
