@@ -45,9 +45,10 @@ identifiers, meaning node identifiers may even contain symbols such as
 
 === Bindings ===
 
-A node can be bound to another node, in which changes in the node's
-value. Bindings can be established explicitly using the `->` operator,
-or implicitly (_more on this in the next section_).
+A node can be bound to another node in which case its value is
+automatically updated when the value of the node, to which it is
+bound, changes. Bindings can be established explicitly using the `->`
+operator, or implicitly (_more on this in the next section_).
 
 .Example
 --------------------------------------------------
@@ -58,12 +59,12 @@ In the example, above, a binding is established between node `a` and
 node `b`. The result is that when the value of `a` changes, the value
 of `b` is automatically updated to match the value of `a`. This kind
 of binding is known as a simple binding since a node is simply set to
-the value of another node. Node `a` is referred to as a dependency
+the value of another node. Node `a` is referred to as a 'dependency'
 node of `b`, since `b`'s value depends on the value of `a`, and `b` is
-referred to as an observer node of `a` since it actively observes its
+referred to as an 'observer' node of `a` since it actively observes its
 value.
 
-The binding established in the example, above, is one-way, since data
+The binding established in the example, above, is one-way since data
 flows only from `a` to `b` and not from `b` to `a`. This means that
 the value of `b` is updated when the value of `a` changes however the
 value of `a` is not updated when the value of `b` changes.
@@ -135,10 +136,10 @@ The first declaration (the first line) binds the
 `self.input-name.value` node to the `name` node.
 
 The node `self.input-name` is a special node that references the
-`input` element, with id `input-name`, further in the file. HTML
-elements can be referenced from within Tridash code, in the same HTML
-file, by `self.<id>` where `<id>` is the id of the
-element.
+`input` element, with id `input-name`, in the HTML file. HTML elements
+can be referenced from within Tridash code, in the same HTML file,
+using the expression `self.<id>` where `<id>` is substituted with the
+id of the element.
 
 The `.` operator is a special operator for referencing subnodes of
 nodes, these will be explained in detail later. The subnode identifier
@@ -158,14 +159,14 @@ to the text entered.
 
 In the second declaration, the `name` node is bound to the
 `self.span-name.textContent` node. `self.span-name` references the
-HTML `span` element with ID `span-name`, further down the file, with
-the node `self.span-name.textContent` referencing the `textContent`
-attribute, i.e. the content, of the element. The result of this
-binding is that whenever the value of the `name` node changes, its
-value is displayed in the `span` element. As mentioned earlier, the
-value of the `name` node is automatically set to the text entered in
-the `input` element, thus the value entered in the `input` element is
-displayed in the `span` element.
+HTML `span` element with ID `span-name`, with the node
+`self.span-name.textContent` referencing the `textContent` attribute,
+i.e. the content, of the element. The result of this binding is that
+whenever the value of the `name` node changes, its value is displayed
+in the `span` element. As mentioned earlier, the value of the `name`
+node is automatically set to the text entered in the `input` element,
+thus the value entered in the `input` element is displayed in the
+`span` element.
 
 The application we've just written, simply prompts the user for
 his/her name and displays ``Hello'' followed by the user's name
@@ -286,8 +287,8 @@ code. In the example, above, they have been omitted.
 == Functional Bindings ==
 
 The bindings in the previous tutorial were pretty boring and
-limited. Whatever was entered in the text field was simply displayed,
-verbatim, below it. In-fact, this functionality is already offered by
+limited. Whatever was entered in the text field was simply displayed
+below it, verbatim. In-fact, this functionality is already offered by
 many web frameworks and GUI toolkits. The real power of the Tridash
 language comes from the ability to specify arbitrary functions in
 bindings which are dependent on the values of more than a single
@@ -297,8 +298,8 @@ interfaces/subclasses in a lower-level language.
 
 === Simple Budgeting Application ===
 
-In this tutorial we'll be implementing a very basic budgeting
-application with the following desired features:
+In this tutorial, and the following tutorials, we'll be implementing a
+very basic budgeting application with the following desired features:
 
   - Allocate amounts to spend on a number of predefined expense
     categories.
@@ -338,10 +339,23 @@ Begin with the following `ui.html` file:
     </head>
     <body>
       <h1>Budget App</h1>
-      <p><label>Food: <input value="<?@ to-real(food) ?>" /></label></p>
-      <p><label>Electricity: <input value="<?@ to-real(electricity) ?>" /></label></p>
-      <p><label>Water: <input value="<?@ to-real(water) ?>" /></label></p>
-      <p><label><strong>Total:</strong> <input value="<?@ total ?>" readonly></label></p>
+      <div>
+	<label for="food">Food:</label>
+	<div><input id="food" value="<?@ to-real(food) ?>" /></div>
+      </div>
+      <div>
+	<label for="electricity">Electricity:</label>
+	<div><input id="electricity" value="<?@ to-real(electricity) ?>" /></div>
+      </div>
+      <div>
+	<label for="water">Water:</label>
+	<div><input id="water" value="<?@ to-real(water) ?>" /></div>
+      </div>
+      <hr>
+      <div>
+	<label for="total"><strong>Total:</strong></label>
+	<div><input id="total" value="<?@ total ?>" readonly/></div>
+      </div>
     </body>
 </html>
 --------------------------------------------------
@@ -350,11 +364,11 @@ A lot is going on here, lets focus on the body of the HTML file for
 now.
 
 The body defines an interface with three text input fields for
-entering the amount allocated to ``Food'', ``Electricity'' and ``Water''
-expenses, and a fourth readonly text field for displaying the total
-amount allocated. Each field is bound, using implicit bindings, to the
-nodes `to-real(food)`, `to-real(electricity)`, `to-real(water)` and `total`
-respectively.
+entering the amounts allocated to ``Food'', ``Electricity'' and
+``Water'' expenses, and a fourth readonly text field for displaying
+the total amount allocated. Each field is bound, using implicit
+bindings, to the nodes `to-real(food)`, `to-real(electricity)`,
+`to-real(water)` and `total` respectively.
 
 The `total` node is a simple node, similar to the nodes seen in the
 previous tutorial.
@@ -377,7 +391,7 @@ simply converts its single argument, the node `food`, to a real
 (floating-point) numeric value. With the `to-real` operator a two-way
 binding is established between the argument and the functor node. The
 result of this is that if another node (not the argument) is bound to
-the functor node, `node -> real(argument)`, its value is converted to
+the functor node, `node -> to-real(argument)`, its value is converted to
 a real value and the value of the argument node is updated to it.
 
 The value of the input element, in which the amount allocated to food
@@ -424,7 +438,7 @@ the text field displaying the total amount allocated to all
 expenses. Thus whenever the total amount allocated changes, the new
 total is displayed in the text field next to ``Total:''. The total
 amount, itself, is updated, whenever the amount in one of the
-``Food:'', ``Electricity:'' or ``Water:'' text fields is changed by
+``Food'', ``Electricity'' or ``Water'' text fields is changed by
 the user.
 
 ==== Build Configuration File ====
@@ -482,18 +496,19 @@ numbers in the text fields:
 
 image::images/tutorial2/snap1.png["Snapshot: 100, 300, 500 entered in expense fields. 900 displayed in total.", align="center"]
 
-Notice that the total is computed and displayed in the text field next
-to ``Total:''.
+Notice that the total is computed and displayed in the ``Total:''
+field.
 
 NOTE: You will only see a total computed once you have entered a valid
 number in each field.
 
-Now try changing some of the amounts allocated:
+Now try changing some of the amounts allocated (_remember to press
+enter after you've changed a value_):
 
 image::images/tutorial2/snap2.png["Snapshot: Electricity changed to 350. New total 950 displayed.", align="center"]
 
 Notice that the total amount allocated is automatically recomputed and
-the new total is displayed in the total field.
+the new total is displayed in the ``Total'' field.
 
 === Inline Functional Bindings ===
 
@@ -504,10 +519,8 @@ the total `input` element.
 
 [source, html]
 --------------------------------------------------
-<label>
-  <strong>Total:</strong>
-  <input value="<?@ food + electricity + water ?>" readonly>
-</label>
+<label for="total"><strong>Total:</strong></label>
+<div><input id="total" value="<?@ food + electricity + water ?>" readonly/></div>
 --------------------------------------------------
 
 This shows that inline node declarations can contain any valid node
@@ -525,7 +538,7 @@ compute the node's new value.
 
 In this tutorial we'll implement the third feature of our simple
 budgeting application, namely specifying the budget and displaying a
-message if the total expenses exceed the budget. In essence this
+message, indicating whether the budget was exceeded. In essence this
 tutorial demonstrates conditional bindings.
 
 
@@ -556,10 +569,10 @@ the condition node and `value` is the corresponding value node. The
 last argument may also be of the form `value`, that is there is no
 condition node, in which case it becomes the default or else value.
 
-The value of the `case` functor is the value of the value node
-corresponding to the first condition node which has a 'true' value, any
-non-zero value, or the value of the default node, if any, when all
-condition nodes have a 'false' (zero) value.
+The `case` functor node evaluates to the value of the value node
+corresponding to the first condition node which has a 'true' value
+(any non-zero value), or the value of the default node, if any, when
+all condition nodes have a 'false' (zero) value.
 
 .Example
 --------------------------------------------------
@@ -570,16 +583,15 @@ case(
 )
 --------------------------------------------------
 
-If the node `a > b` evaluates to true the value of the `case` node
-becomes the value of `a - b`, otherwise if `b > a` evaluates to true
-the value of the `case` node becomes the value of `b - a`. If neither
-`a > b` nor `b > a` evaluate to true the value of the case node
-becomes `0`.
+If the node `a > b` evaluates to true, the `case` node evaluates to
+the value of `a - b`, otherwise if `b > a` evaluates to true, the
+`case` node evaluates to the value of `b - a`. If neither `a > b` nor
+`b > a` evaluate to true, the `case` node evaluates to `0`.
 
 If the default value node is omitted and no condition node evaluates
-to 'true', the `case` node evaluates to a failure value (_you will go
-in detail about failure values in a later tutorial which introduces
-error handling_).
+to 'true', the `case` node evaluates to a failure value (_you will
+learn about failure values in a later tutorial which introduces error
+handling_).
 
 
 === Budget Application Version 2.0 ===
@@ -597,26 +609,27 @@ if inline declarations are used:
 
 [source, html]
 --------------------------------------------------
-<input value="<?@ to-real(budget) @>"/>
+<input id="total" value="<?@ to-real(budget) @>"/>
 --------------------------------------------------
 
-Next we'll need to display the message somewhere. A paragraph `p`
-element, below the total, will do. We'll use inline declarations to
+Next we'll need to display the status message somewhere. Let's place
+it next to the total `input` element. We'll use inline declarations to
 make the code more succinct, however the logic can be placed in a
 Tridash code tag as well.
 
-Add the following underneath the element displaying the total:
+Add the following next to the `input` element in which the total is
+displayed:
 
 [source, html]
 --------------------------------------------------
-<p>
+<span>
   <?@
     case(
       total < budget : "Within budget.",
       "Budget exceeded!!!"
     )
   @>
-</p>
+</span>
 --------------------------------------------------
 
 To simplify the code the node `total` is bound to the total sum
@@ -638,9 +651,8 @@ the following contents:
 food + electricity + water -> total
 --------------------------------------------------
 
-And modify the input element displaying the total, next to ``Total:'',
-to be bound to the node `total` instead of `food + electricity +
-water`.
+And modify the input element next to ``Total:'', to be bound to the
+node `total` instead of `food + electricity + water`.
 
 [source, html]
 --------------------------------------------------
@@ -651,7 +663,7 @@ Now we have a working application which should display the message
 ``Within budget.'', if the total is within the budget, and ``Budget
 exceeded!!!'', if the budget has been exceeded.
 
-Here's the full `ui.html` file:
+Full `ui.html` source code:
 
 .ui.html
 [source, html]
@@ -668,26 +680,42 @@ Here's the full `ui.html` file:
         <title>Budget App</title>
     </head>
     <body>
-      <h1>Budget</h1>
-      <p><label>Budget: <input value="<?@ to-real(budget) ?>" /></label></p>
-      <h2>Expenses:</h2>
-      <p><label>Food: <input value="<?@ to-real(food) ?>" /></label></p>
-      <p><label>Electricity: <input value="<?@ to-real(electricity) ?>" /></label></p>
-      <p><label>Water: <input value="<?@ to-real(water) ?>" /></label></p>
-      <p><label><strong>Total:</strong> <input value="<?@ total ?>" readonly></label></p>
+      <h1>Budget App</h1>
+      <div>
+	<label for="budget"><strong>Budget:</strong></label>
+	<div><input id="budget" value="<?@ to-real(budget) ?>"/></div>
+      </div>
       <hr>
-      <p>
-        <?@
-           case(
-             total < budget : "Within budget.",
-             "Budget exceeded!!!"
-           )
-        ?>
-      </p>
+      <div>
+	<label for="food">Food:</label>
+	<div><input id="food" value="<?@ to-real(food) ?>" /></div>
+      </div>
+      <div>
+	<label for="electricity">Electricity:</label>
+	<div><input id="electricity" value="<?@ to-real(electricity) ?>" /></div>
+      </div>
+      <div>
+	<label for="water">Water:</label>
+	<div><input id="water" value="<?@ to-real(water) ?>" /></div>
+      </div>
+      <hr>
+      <div>
+	<label for="total"><strong>Total:</strong></label>
+	<div>
+	  <input id="total" value="<?@ total ?>" readonly/>
+	  <span>
+            <?@
+             case(
+                 total < budget : "Within budget.",
+                 "Budget exceeded!!!"
+             )
+             ?>
+	  </span>
+	</div>
+      </div>
     </body>
 </html>
 --------------------------------------------------
-
 
 ==== Let's try it out ====
 
@@ -699,9 +727,9 @@ numbers in the budget and expenses fields:
 
 image::images/tutorial3/snap1.png["Snapshot: 100 entered in budget and all expense fields. Total 300, Budget Exceeded!!! displayed.", align="center"]
 
-Notice that the message below the total says ``Budget Exceeded!!!''
-since the total of 300 did indeed exceed the budget of 100, with the
-numbers in the snapshot above.
+Notice that the status message, next to the total, says ``Budget
+Exceeded!!!''  since the total of 300 did indeed exceed the budget of
+100, with the numbers in the snapshot above.
 
 Now try increasing the budget:
 
@@ -714,7 +742,7 @@ the condition nodes change.
 Now try increasing some of the expenses, in order for the total to
 exceed the budget again:
 
-image::images/tutorial3/snap3.png["Snapshot: Expense total increased to 500. Budget Exceeded!!! displayed.", align="center"]
+image::images/tutorial3/snap3.png["Snapshot: Expense total increased to 500. Budget Exceeded displayed.", align="center"]
 
 The message changes back to ``Budget Exceeded!!!''.
 
@@ -723,27 +751,30 @@ The message changes back to ``Budget Exceeded!!!''.
 
 Whilst the application we've implemented so far demonstrates the power
 of functional bindings, it is rather lacking in that whether the
-budget has been exceeded or not is only indicated by a simple text
-message. The message has to be read in full to determine whether the
-budget was exceeded, and changes in the message are hard to
-notice. Some visual cues such as the message and total changing color
-when the budget is exceeded would be helpful.
+budget has been exceeded or not is only indicated by text. The text
+has to be read in full to determine whether the budget was exceeded,
+and changes from 'within budget' to 'budget exceeded', and vice versa,
+are hard to notice. Some visual indications, such as the background of
+the total changing color, when the budget is exceeded, would be
+helpful.
 
-As an improvement of the application, we would like the total sum and
-message to be displayed in [red]#red# if the total exceeds the budget and in
-[green]#green# if it is within the budget.
+As an improvement of the application, we would like the background
+color of the element, which displays the total, and the text color of
+the status message to change to [red]#red# if the total exceeds the
+budget, and change to [green]#green# if it is within the budget.
 
 Let's start off by giving an id to the `input` element, which displays
-the total, and the paragraph element, which displays the message so
-that they can be referenced from Tridash code. The `input` element,
-next to ``Total:'', is given the id `input-total` and the paragraph
-element, in which the message is displayed, is given the id `message`.
+the total, and the `span` element, which displays the status message,
+so that they can be referenced from Tridash code. The `input` element,
+next to ``Total:'', is given the id `total` and the `span`
+element, in which the status message is displayed, is given the id
+`status`.
 
-Let's create a node `color` to store the color in which the total sum
-and message will be displayed. It should have the value `"green"` when
-the total is within the budget and the value `"red"` when the total
-exceeds the budget. This can be achieved by binding to a `case`
-functor node.
+Let's create a node `color` to store the background color of the total
+and text color of the status message. It should have the value
+`"green"` when the total is within the budget and the value `"red"`
+when the total exceeds the budget. This can be achieved by binding to
+a `case` functor node.
 
 NOTE: The values `"green"` and `"red"` are strings, storing CSS color
 names.
@@ -761,22 +792,29 @@ The value of the `case` functor node is `"green"` if `total` is less
 than `budget` and `"red"` otherwise. The case functor node is bound to
 the `color` node.
 
-The `color` node somehow has to be bound to the text color if the
-`input-total` input element and the `message` paragraph element. The
-text color is a style attribute of the elements. All style attributes
-are grouped under a single subnode `style` of the HTML element node
-(as is done when referencing style attributes from JavaScript). The
-text color itself is the `color` style attribute, thus is referenced
-by the `color` subnode of the `style` subnode of the HTML element,
-`style.color`.
+The `color` node somehow has to be bound to the background color of
+the `total` `input` element and the text color of the `status` `span`
+element. The text and background colors are style attributes of the
+elements. All style attributes are grouped under a single subnode
+`style` of the HTML element node (as is done when referencing style
+attributes from JavaScript). The background color is controlled by the
+`backgroundColor` attribute, referenced using `style.backgroundColor`
+and the text color is controlled by the `color` style attribute,
+referenced using `style.color`.
 
-The `color` node is bound to the `color` style attribute of the
-elements with the following (add to the Tridash code tag):
+The `color` node is bound to the style attributes of the elements with
+the following (add to the Tridash code tag):
 
 --------------------------------------------------
-color -> self.input-total.style.color
-color -> self.message.style.color
+color -> self.total.style.backgroundColor
+color -> self.status.style.color
 --------------------------------------------------
+
+Additionally we would like the text, in the `total` element, to be
+displayed in white in order to be legible. We can achieve this using
+inline CSS or CSS classes, however we can also bind the text color of
+the element to the constant `"white"`. This is useful if later on, we
+would like the text color to change dynamically as well.
 
 Full `ui.html` code:
 
@@ -793,8 +831,10 @@ Full `ui.html` code:
      "red"
  ) -> color
 
- color -> self.input-total.style.color
- color -> self.message.style.color
+ color -> self.total.style.backgroundColor
+ color -> self.status.style.color
+
+ "white" -> self.total.style.color
 ?>
 
 <!doctype html>
@@ -803,22 +843,39 @@ Full `ui.html` code:
         <title>Budget App</title>
     </head>
     <body>
-      <h1>Budget</h1>
-      <p><label>Budget: <input value="<?@ to-real(budget) ?>" /></label></p>
-      <h2>Expenses:</h2>
-      <p><label>Food: <input value="<?@ to-real(food) ?>" /></label></p>
-      <p><label>Electricity: <input value="<?@ to-real(electricity) ?>" /></label></p>
-      <p><label>Water: <input value="<?@ to-real(water) ?>" /></label></p>
-      <p><label><strong>Total:</strong> <input id="input-total" value="<?@ total ?>" readonly></label></p>
+      <h1>Budget App</h1>
+      <div>
+	<label for="budget"><strong>Budget:</strong></label>
+	<div><input id="budget" value="<?@ to-real(budget) ?>"/></div>
+      </div>
       <hr>
-      <p id="message">
-        <?@
-           case(
-             total < budget : "Within budget.",
-             "Budget exceeded!!!"
-           )
-        ?>
-      </p>
+      <div>
+	<label for="food">Food:</label>
+	<div><input id="food" value="<?@ to-real(food) ?>" /></div>
+      </div>
+      <div>
+	<label for="electricity">Electricity:</label>
+	<div><input id="electricity" value="<?@ to-real(electricity) ?>" /></div>
+      </div>
+      <div>
+	<label for="water">Water:</label>
+	<div><input id="water" value="<?@ to-real(water) ?>" /></div>
+      </div>
+      <hr>
+      <div>
+	<label for="total"><strong>Total:</strong></label>
+	<div>
+	  <input id="total" value="<?@ total ?>" readonly/>
+	  <span id="status">
+            <?@
+             case(
+                 total < budget : "Within budget.",
+                 "Budget exceeded!!!"
+             )
+             ?>
+	  </span>
+	</div>
+      </div>
     </body>
 </html>
 --------------------------------------------------
@@ -830,16 +887,16 @@ exceeds the budget.
 
 image::images/tutorial3/snap4.png["Snapshot: 100 entered in budget and expense fields. Total and Budget Exceeded!!! displayed in red.", align="center"]
 
-The message and total are now shown in red which provides an immediate
-visual cue that the budget has been exceeded.
+The status message and total are now shown in red which provides an
+immediate visual indication that the budget has been exceeded.
 
 Now increase the budget, or decrease the expenses:
 
 image::images/tutorial3/snap5.png["Snapshot: Budget increased to 400. Total and Within Budget displayed in green.", align="center"]
 
 The color of the message and total is immediately changed to green,
-which provides a noticeable indication that the situation has changed,
-the budget has no longer been exceeded.
+which provides a noticeable indication that the budget has no longer
+been exceeded.
 
 
 === Summary ===
@@ -885,22 +942,19 @@ Nodes created within the body of a meta-node are local to the
 meta-node, meaning they can only be referenced from within it even if
 the same node identifier occurs in an expression in the global
 scope. Local nodes are created for each of the arguments, and for
-nodes which appear as the target of the binding. Node expression which
+nodes which appear as the target of a binding. Node expressions which
 appear in source position primarily reference local nodes, however if
-no local node is found the enclosing scope of the meta-node is
+no local node is found, the enclosing scope of the meta-node is
 searched. This differs from global node expressions, in which nodes
 are automatically created if no node with that identifier exists.
 
-Functor nodes, with the meta-node as the operator, evaluate to the
-value of the last node in the `declarations` list comprising the
-body. The curly braces `{` and `}` are optional if the meta-node body
-consists of a single declaration.
+Meta-nodes return the value of the last node in the `declarations`
+list comprising the body. The curly braces `{` and `}` are optional if
+the meta-node body consists of a single declaration.
 
-Alternatively an explicit binding to the meta-node, which is
-referenced by the `self` node, can be established. In that case the
-value of the expression, with the meta-node as the operator, is the
-value of the node to which the `self` node is bound, rather than the
-last node in the body.
+Alternatively an explicit binding to the `self` node, can be
+established. In that case, the return value of the meta-node, is the
+value of the `self` node, rather than the last node in the body.
 
 ==== Examples ====
 
@@ -953,24 +1007,27 @@ factorial(n) : {
 --------------------------------------------------
 
 
-=== Color Scale ===
+=== Budget Meter ===
 
-Our current application displays some nice visual cues, in the form of
-color, which allow us to see, at a glance, whether the budget has been
-exceeded. However the visual cues are still quite limited, giving only
-a binary indication of whether the budget was exceeded or not. It
-would be nice if besides showing whether the budget is exceeded, the
-color also indicates how much of the budget has been used.
+Our current application displays some nice visual indications, in the
+form of color, which allow us to see, at a glance, whether the budget
+has been exceeded. However the visual indications are still quite
+limited, giving only a binary indication of whether the budget was
+exceeded or not. It would be nice if there is also a visual indication
+of how close the total is to the budget.
 
-In this tutorial we'll enhance the budget application by displaying
-the total in a color that is between green and red depending on how
-close the total amount is to the budget.
+In this tutorial we'll enhance the budget application by displaying a
+meter, which directly indicates how close the total is to the
+budget. Additionally we'd also like the meter to be displayed in a
+color that is between green and red proportional to how much the total
+is between zero and the budget.
 
 
-==== Interpolation ====
+==== Color Interpolation ====
 
-Our goal is to linearly interpolate the color green and red depending
-on where the total amount allocated lies between zero and the
+Let's first begin with computing the color of the meter. Our goal is
+to linearly interpolate a color between green and red depending on
+where the total amount allocated lies between zero and the
 budget. This is where meta-nodes will come in handy.
 
 We'll start off by writing a linear interpolation meta-node `lerp`.
@@ -1002,7 +1059,7 @@ The next step is to compute the interpolation coefficient `alpha`
 based on where the total sum lies between zero and the budget.
 
 To make sure that the interpolation coefficient is between 0 and 1,
-we'll write a `clamp` meta-node, which clamps a value to a given
+we'll write a `clamp` meta-node, for clamping a value to a given
 range:
 
 --------------------------------------------------
@@ -1034,13 +1091,104 @@ make-hsl(
    lerp(120, 0, scale),
    90,
    45
-) -> color
+) -> meter-color
 --------------------------------------------------
 
 The hue is linearly interpolated between [green]#green# `120` and
 [red]#red# `0`, depending on where the total lies between `0` and the
 `budget`.
 
+==== Creating the Meter ====
+
+Now we'll actually create the meter. We need two block elements, one
+which displays a border containing the meter and another element which
+displays the portion of the meter that is filled.
+
+Add the following HTML elements below the ``Total'' field.
+
+[source, html]
+--------------------------------------------------
+<div class="meter-box">
+  <div id="meter" class="meter-bar"></div>
+</div>
+--------------------------------------------------
+
+Add the following `style` tag, which contains the style attributes of
+the `meter-box` and `meter-bar` classes, within the `<head>...</head>`
+tag:
+
+[source,html]
+--------------------------------------------------
+<style>
+ .meter-box {
+     margin-top: 5px;
+     width: 200px;
+     height: 1em;
+     border: 1px solid black;
+  }
+ .meter-bar {
+     height: 100%;
+ }
+</style>
+--------------------------------------------------
+
+The `meter-box` class, applied to the block element which serve as the
+container, gives the element a width, height and a border. The
+`meter-bar` class, applied to the element which displays the filled
+portion, specifies that the filled portion should take up `100%` of
+the vertical space within the container.
+
+The meter should be filled proportionally to how close the value of
+`total` is to the value of `budget`. The proportion is already given
+by the value of the `scale` node. To implement the 'filling' of the
+meter, we simply need to bind the `scale` node to the `width` style
+attribute of the `meter` element.
+
+This is achieved with the following:
+
+--------------------------------------------------
+format("%s%%", scale * 100) -> self.meter.style.width
+--------------------------------------------------
+
+The `scale` is multiplied by `100` to convert it to a percentage, and
+`format` is used to convert the numeric value to a string with a `%`
+appended to it. This specifies that the width of the meter should be a
+percentage, given by `scale`, of the width of its parent container.
+
+Finally we need to bind `meter-color`, which stores the interpolated
+color, to the background color of the meter.
+
+--------------------------------------------------
+meter-color -> self.meter.style.backgroundColor
+--------------------------------------------------
+
+This is the full code that needs to be added to the Tridash code tag,
+to implement the meter:
+
+--------------------------------------------------
+lerp(a, b, alpha) : a + alpha * (b - a)
+
+clamp(x, min, max) :
+    case (
+        x < min : min,
+        x > max : max,
+        x
+    )
+
+make-hsl(h, s, l) :
+    format("hsl(%s,%s%%,%s%%)", h, s, l)
+
+clamp((total + 1) / (budget + 1), 0, 1) -> scale
+
+make-hsl(
+    lerp(120, 0, scale),
+    90,
+    45
+) -> meter-color
+
+format("%s%%", scale * 100) -> self.meter.style.width
+meter-color -> self.meter.style.backgroundColor
+--------------------------------------------------
 
 ==== Let's try it out ====
 
@@ -1051,35 +1199,32 @@ Enter some initial values for the budget and expense totals. Start off
 with low expense totals such that the total expenses are well within
 the budget:
 
-image::images/tutorial4/snap1.png["Snapshot: Budget set to 100, Expenses set to 10. Total (30) and within budget message displayed in bright green.", align="center"]
+image::images/tutorial4/snap1.png["Snapshot: Budget 100, Total 30. Meter 1/3 filled, displayed in bright green.", align="center"]
 
-The color of the total and message is a bright green as in the
-previous tutorial.
+The filled portion is roughly a third of the meter and is displayed in
+a bright green.
 
 Now start increasing the expenses to bring the total closer to the
 budget:
 
-image::images/tutorial4/snap2.png["Snapshot: Total, 50, and within budget message displayed in yellow.", align="center"]
+image::images/tutorial4/snap2.png["Snapshot: Total 50. Meter half filled, displayed in yellow.", align="center"]
 
-image::images/tutorial4/snap3.png["Snapshot: Total, 60, and within budget message displayed in orange.", align="center"]
+image::images/tutorial4/snap3.png["Snapshot: Total 70. Meter more than half filled, displayed in orange.", align="center"]
 
-The color of the text message gradually starts changing to red the
-closer the total expenses are to the budget.
+The meter gradually fills up and starts changing to red the closer the
+total expenses are to the budget.
 
 Now finally increase the expenses till the total exceeds the budget:
 
-image::images/tutorial4/snap4.png["Snapshot: Total, 120, and budget exceeded message displayed in bright red.", align="center"]
+image::images/tutorial4/snap4.png["Snapshot: Total, 120. Meter filled, displayed in bright red.", align="center"]
 
-The color of the total and message changes to a bright red as in the
-previous tutorial.
-
+The mete is fully filled and displayed in a bright red color.
 
 === Summary ===
 
 In this tutorial you learned how to create your own functions,
-referred to as meta-nodes, which can be used later in functor node
-expressions. Furthermore, the functions were written in the same
-language as the binding declarations.
+referred to as meta-nodes, which can be used in functor node
+expressions.
 
 TIP: Functions are referred to as meta-nodes since they are nodes,
 themselves, which describe how the values of other nodes, referred to
@@ -1098,18 +1243,18 @@ and see what happens.
 image::images/tutorial5/error1.png["foo entered in food, 10 entered in water and electricity. No total or message printed.", align="center"]
 
 If an invalid value is initially entered in one of the ``food'',
- ``electricity'', or ``water'' fields, no total is computed and
- likewise no message is displayed.
+ ``electricity'', or ``water'' fields, no total is computed, the meter
+ is filled, and no status message is displayed.
 
 image::images/tutorial5/error2.png["Water changed from 10 to foo, 20 and 10 entered in food and electricity. Total, color and message unchanged.", align="center"]
 
 If the value of one of the fields is changed from a valid to an
-invalid numeric value, such as ``Water'' in the snapshot above, the
-total is not recomputed, with the old total being displayed in the
-text field. Likewise the color and message are unchanged, even if the
-values of the ``Budget'' or other fields are changed. The new total is
-only computed when the invalid numeric value is replaced with a valid
-numeric value.
+invalid numeric value, such as ``Electricity'' in the snapshot above,
+the total is not recomputed, with the old total being displayed in the
+text field. Likewise the meter and status message are unchanged, even
+if the values of the ``Budget'' or other fields are changed. The new
+total is only computed when the invalid numeric value is replaced with
+a valid numeric value.
 
 Now let's try entering a non-numeric value for the budget, however
 keeping the values of the other fields valid:
@@ -1119,14 +1264,14 @@ image::images/tutorial5/error3.png["Budget changed from 100 to foo. Food changed
 Changing the budget to a non-numeric value does not result in the
 total, color or message being changed. However changing the values of
 the expense fields does result in the new total being computed and
-displayed. The color and message, however, remain unchanged.
+displayed. The meter and status message, however, remain unchanged.
 
 Whilst the application is still functioning when non-numeric values
 are entered in the text fields, and can quickly resume its normal
 operation when the invalid values are replaced with valid numeric
 values, there is no indication to the user that an invalid value has
 been entered. This can be misleading, as in the last snapshot, no
-matter how large of a total is entered, ``Within Budget'' is always
+matter how large of the total is entered, ``Within Budget'' is always
 displayed.
 
 Negative values are treated as ordinary numeric values. Obviously
@@ -1146,7 +1291,7 @@ The following functionality has to be implemented:
 A failure is a special type of value which indicates the absence of a
 value, or the failure to compute a value. If a meta-node expects one
 of its argument nodes to evaluate to a value, but it evaluates to a
-failure, it returns a failure.
+failure, the failure is returned immediately.
 
 The `to-real` meta-node returns a failure if its argument cannot be
 converted to a real number. In this case, each of the instance nodes
@@ -1164,19 +1309,19 @@ When an HTML attribute is bound to a node, which evaluates to a
 failure, the value of the attribute is simply left as is. Thus, if the
 node `total` evaluates to a failure, due to an invalid value being
 entered for 'Food', 'Electricity' or 'Water', the `value` attribute of
-the 'Total' text field is not changed.
+the 'Total' input field is not changed.
 
 Similarly, if the `budget` node evaluates to a failure, due to an
-invalid value for 'Budget' being entered, the `color` node and the
-node storing the message evaluate to a failures. As a result the color
-and status message is not updated.
+invalid value for 'Budget' being entered, the `color` node, `scale`
+node and the node storing the status message evaluate to failures. As
+a result the status message and meter is not updated.
 
 
 === Handling Failures ===
 
-Failures can be handled using explicit contexts. A node context is
-simply the information about how a node's value is computed, and what
-dependency node's values are required. Each binding to a node, whether
+Failures can be handled using explicit contexts. A node context is the
+information about how a node's value is computed, and which of the
+dependency nodes' values are required. Each binding to a node, whether
 explicit or implicit creates a context.
 
 The context to which a binding is established, can be set explicitly
@@ -1200,10 +1345,10 @@ value of the node is bound to the value of the source node of the
 first binding that is declared in the source code. However, if the
 source node evaluates to a failure, the value of the node is set to
 the value of the source node of the second binding. If the source node
-of the second binding fails, the node value is set to the source node
-of the third binding and so on. If the source nodes of all the
-context's bindings evaluate to failures, the node evaluates to the
-failure of the last binding's source node.
+of the second binding evaluates to a failure, the node value is set to
+the value of source node of the third binding and so on. If the source
+nodes of all the context's bindings evaluate to failures, the node
+evaluates to the failure value of the last binding's source node.
 
 .Example
 --------------------------------------------------
@@ -1229,8 +1374,8 @@ fails?(x) : {
 --------------------------------------------------
 
 The first declaration, in the function's body, establishes the primary
-binding to the `self` node, which, if you recall from the previous
-tutorial, determines the value returned by the meta-node when an
+binding to the `self` node, if you recall from the previous
+tutorial it's value is returned by the meta-node when an
 explicit binding to it is established. The primary binding ensures
 that the value of the `self` node is 'false' (`0`) if `x` does not
 evaluate to a failure.
@@ -1253,10 +1398,10 @@ or expense text fields.
 
 The first step is to detect failures in the nodes storing the budget
 and expense categories. For that, we'll write a utility meta-node,
-`error?` which returns an error message if its argument node evaluates
+`error-prompt` which returns an error message if its argument node evaluates
 to a failure.
 
-.Meta-Node `error?`
+.Meta-Node `error-prompt`
 --------------------------------------------------
 error?(thing) : {
     error-message <- "Please enter a valid number"
@@ -1269,7 +1414,8 @@ binds it to the error message string. The expression in the last line
 of the body, which serves as the return value of the meta-node,
 evaluates to the error message (value of the `error-message` node) if
 the argument `thing` evaluates to a failure, determined using the
-`fails?` meta-node from the `core` module.
+`fails?` meta-node from the `core` module. Otherwise the expression
+evaluates to the empty string.
 
 [TIP]
 .Meta-Node `if`
@@ -1286,29 +1432,40 @@ the following:
 
 [source,html]
 --------------------------------------------------
-<p>
-    <label>Budget: <input value="<?@ to-real(budget) ?>" /></label>
-    <?@ error?(budget) ?>
-</p>
-<h2>Expenses:</h2>
-<p>
-    <label>Food: <input value="<?@ to-real(food) ?>" /></label>
-    <?@ error?(food) ?>
-</p>
-<p>
-    <label>Electricity: <input value="<?@ to-real(electricity) ?>" /></label>
-    <?@ error?(electricity) ?>
-</p>
-<p>
-    <label>Water: <input value="<?@ to-real(water) ?>" /></label>
-    <?@ error?(water) ?>
-</p>
+<label for="budget"><strong>Budget:</strong></label>
+<div>
+  <input id="budget" value="<?@ to-real(budget) ?>"/>
+  <?@ error-prompt(budget) ?>
+</div>
+</div>
+<hr>
+<div>
+  <label for="food">Food:</label>
+  <div>
+    <input id="food" value="<?@ to-real(food) ?>" />
+    <?@ error-prompt(food) ?>
+  </div>
+</div>
+<div>
+  <label for="electricity">Electricity:</label>
+  <div>
+    <input id="electricity" value="<?@ to-real(electricity) ?>" />
+    <?@ error-prompt(electricity) ?>
+  </div>
+</div>
+<div>
+  <label for="water">Water:</label>
+  <div>
+    <input id="water" value="<?@ to-real(water) ?>" />
+    <?@ error-prompt(water) ?>
+  </div>
+</div>
 --------------------------------------------------
 
-We've added an `error?` meta-node instance next to each text input
-field. Each instance evaluates to the error message if the node, bound
-to the field's value, evaluates to a failure. Recall, the nodes bound
-to the value attributes evaluate to failures if the `to-real`
+We've added an `error-prompt` meta-node instance next to each text
+input field. Each instance evaluates to the error message if the node,
+bound to the field's value, evaluates to a failure. Recall, the nodes
+bound to the value attributes evaluate to failures if the `to-real`
 meta-node fails to parse a real number from the string value.
 
 
@@ -1327,29 +1484,26 @@ Now try changing the input fields back to numeric values.
 image::images/tutorial5/snap2.png["Snapshot: All fields changed to valid numbers. Total recomputed.", align="center"]
 
 The error messages disappear and the application resumes its normal
-operation, computing the new total and adjusting the color.
+operation, computing the new total and adjusting the meter.
 
 This fixes the first issue with our application. As an exercise you
-can try to make the background of the text fields change to "red" if
+can try to make the text color of the input fields change to "red" if
 non-numeric values are entered in them.
 
-TIP: To change the background color of an element, bind to the
-`style.backgroundColor` subnode of the element's node.
 
-
-=== Initial Value ===
+=== Initial Values ===
 
 The issue with no feedback being displayed, in case of non-numeric
 values being entered in the text input fields, is fixed, however until
 a value is entered in each field, no total or status message is
-displayed, nor is any error message displayed. The nodes `budget`,
-`food`, `electricity` and `water` have not been given initial
-values. When a node is not given initial values, its initial value is
-a failure. This results in the computation of the total.
+displayed. The nodes `budget`, `food`, `electricity` and `water` have
+not been given initial values. When a node is not given an initial
+value, its initial value is a failure. This results in the node
+`total` evaluating to a failure.
 
 A node may be given an initial value, which is set as soon as the
 application is launched. The setting of the initial value is treated
-as an ordinary value change from the nodes previous value, which is a
+as an ordinary value change from the node's previous value, which is a
 'failure' value. Binding a node to a constant value, without an
 explicit context, is interpreted as setting its initial value.
 
@@ -1383,13 +1537,13 @@ Add the following to the Tridash code tag in the `ui.html` file:
 When running the application all text fields will be initialized to
 the value `0`.
 
-image::images/tutorial5/snap4.png["Initial State Snapshot: All fields initialized to 0. Total (0) and Budget Exceeded displayed in red", align="center"]
+image::images/tutorial5/snap3.png["Initial State Snapshot: All fields initialized to 0. Total (0) and Budget Exceeded displayed in red", align="center"]
 
 Since we gave initial values to all the nodes, and there is an
 implicit two-way binding between these nodes and the contents of the
-text fields, the contents of the text fields are immediately
+text fields, the contents of the text input fields are immediately
 initialized to `0`. This demonstrates that the setting of the initial
-node value is treated the same as any other node value change.
+node values is treated the same as any other node value change.
 
 
 === Summary ===
@@ -1413,8 +1567,8 @@ text input fields.
 
 Conditional bindings allow a binding between two nodes to be active
 only if a 'condition' node evaluates to true. Conditional bindings are
-declared by declaring a binding with the bind node expression as the
-target of the binding.
+declared by declaring a binding with the bind expression as the target
+of the binding.
 
 .Conditional Binding Declaration
 --------------------------------------------------
@@ -1467,13 +1621,13 @@ and `water` nodes to evaluate to failures not only if non-numeric data
 is entered in the text fields but also if negative numbers are
 entered.
 
-We'll create a simple `validate` meta-node which converts its argument
-to a real number and checks that the real value is greater than or
-equal to `0`. For this we'll use conditional bindings.
+We'll create a simple `valid-amount` meta-node which converts its
+argument to a real number and checks that the real value is greater
+than or equal to `0`. For this we'll use conditional bindings.
 
-.Meta-Node `validate`
+.Meta-Node `valid-amount`
 --------------------------------------------------
-validate(value) : {
+valid-amount(value) : {
     x <- real(value)
     x >= 0 -> x -> self
 }
@@ -1486,6 +1640,10 @@ NOTE: `x` is a local node as it appears as the target of a binding.
 
 TIP: The `real` meta-node performs the same function as the `to-real`
 meta-node.
+
+TIP: `<-` is the same as `->` only with arguments reversed, that is
+the target of the binding is on the left hand side and the source on
+the right hand side.
 
 The second declaration conditionally binds `x` to the `self` node if
 `x` is greater than or equal to `0` (`x >= 0`). As a result the return
@@ -1501,23 +1659,35 @@ fields are created to the following:
 
 [source, html]
 --------------------------------------------------
-<p>
-    <label>Budget: <input value="<?@ in-budget ?>" /></label>
-    <?@ error?(budget) ?>
-</p>
-<h2>Expenses:</h2>
-<p>
-    <label>Food: <input value="<?@ in-food ?>" /></label>
-    <?@ error?(food) ?>
-</p>
-<p>
-    <label>Electricity: <input value="<?@ in-electricity ?>" /></label>
-    <?@ error?(electricity) ?>
-</p>
-<p>
-    <label>Water: <input value="<?@ in-water ?>" /></label>
-    <?@ error?(water) ?>
-</p>
+<div>
+  <label for="budget">Budget:</label>
+  <div>
+    <input id="budget" value="<?@ in-budget ?>"/>
+    <?@ error-prompt(budget) ?>
+  </div>
+</div>
+<hr>
+<div>
+  <label for="food">Food:</label>
+  <div>
+    <input id="food" value="<?@ in-food ?>" />
+    <?@ error-prompt(food) ?>
+  </div>
+</div>
+<div>
+  <label for="electricity">Electricity:</label>
+  <div>
+    <input id="electricity" value="<?@ in-electricity ?>" />
+    <?@ error-prompt(electricity) ?>
+  </div>
+</div>
+<div>
+  <label for="water">Water:</label>
+  <div>
+    <input id="water" value="<?@ in-water ?>" />
+    <?@ error-prompt(water) ?>
+  </div>
+</div>
 --------------------------------------------------
 
 Also make sure that the initial values are given to the `in-...` nodes
@@ -1534,7 +1704,7 @@ initial values, to the following:
 0 -> in-electricity
 --------------------------------------------------
 
-Now we need to bind `validate` instances of those node to the
+Now we need to bind `valid-amount` instances of those nodes to the
 `budget`, `food`, `electricity` and `water` nodes.
 
 Add the following to the Tridash code tag:
@@ -1542,11 +1712,25 @@ Add the following to the Tridash code tag:
 --------------------------------------------------
 # Validation
 
-validate(in-budget) -> budget
-validate(in-food) -> food
-validate(in-electricity) -> electricity
-validate(in-water) -> water
+valid-amount(in-budget) -> budget
+valid-amount(in-food) -> food
+valid-amount(in-electricity) -> electricity
+valid-amount(in-water) -> water
 --------------------------------------------------
+
+Additionally let's change the error message to indicate that negative
+numbers are invalid. Change the `error-prompt` meta-node to the
+following:
+
+--------------------------------------------------
+error-prompt(thing) : {
+    error-message <- "Please enter a valid number \u{2265} 0!"
+    if (fails?(thing), error-message, "")
+}
+--------------------------------------------------
+
+NOTE: `\u{2265}` represents the unicode character with code 2265 which
+is the character `≥`.
 
 ==== Let's try it out ====
 
@@ -1556,8 +1740,8 @@ the fields:
 image::images/tutorial6/snap1.png["Snapshot: -30 entered in Electricity. Error message displayed next to it.", align="center"]
 
 The error message was displayed next to the field where a negative
-value was entered, in this case electricity. The total unchanged,
-status message and color were left unchanged.
+value was entered, in this case electricity. The total, status message
+and meter were left unchanged.
 
 === Meta-Node Instances as Targets ===
 
@@ -1566,11 +1750,11 @@ make a lot of changes to our code:
 
  - New nodes had to be created to store the raw string input values.
  - We had to change which nodes are given initial values.
- - The `validate` instances had to be explicitly bound to the nodes
+ - The `valid-amount` instances had to be explicitly bound to the nodes
    which store the parsed numeric values.
 
 Most of the new code we've added is repetitive boilerplate, we're
-creating an instance of the `validate` meta-node for each input
+creating an instance of the `valid-amount` meta-node for each input
 field's value and binding it to the corresponding node storing the
 parsed value. Recall that we didn't have to do this when converting
 the field values to real-numbers, we could simply write `to-real(...)`
@@ -1578,7 +1762,7 @@ in the inline node expressions, within the value attributes, and be
 done with it. It was mentioned `to-real` was a special meta-node in
 that an instance of it can also appear as the target of a binding,
 whereas ordinarily that would trigger a compilation error. It turns
-out we can also make any the `validate` node special by setting a
+out we can also make the `valid-amount` node special by setting a
 `target-node` attribute.
 
 Node attributes are arbitrary key-value pairs associated with each
@@ -1615,14 +1799,14 @@ the meta-node stored in the `target-node` attribute.
 :attribute(to-real, target-node, real)
 
 # results in a binding equivalent to the following
-# real(to-real(y)) -> x
+# real(x) -> y
 
 x -> to-real(y)
 --------------------------------------------------
 
 In the example above, the `target-node` attribute of `to-real` is set
 to the meta-node `real`. The binding declaration, in the last line,
-results in the node `to-real(y)` being bound to `x`, with the function
+results in the node `to-real(y)` being bound to `y`, with the function
 `real` being the function of the binding. As a result `y` is bound to
 the value of `x` converted to a `real` value.
 
@@ -1633,46 +1817,65 @@ it appears as the target of a binding, is to perform pattern matching
 on the argument, _pattern matching will be introduced in a later
 tutorial_.
 
-To apply this to our application, we'll give the `validate` meta-node
-a `target-node` attribute so that it can be used directly inline, in
-the value attributes of the HTML input fields. We need the `validate`
-meta-node to perform the same function, when it appears as the target
-thus we'll simply set the `target-node` attribute of `validate` to
-itself.
+To apply this to our application, we'll give the `valid-amount`
+meta-node a `target-node` attribute so that it can be used directly
+inline, in the value attributes of the HTML input fields. We need the
+`valid-amount` meta-node to perform the same function, when it appears
+as a binding target thus we'll simply set the `target-node` attribute
+of `valid-amount` to itself.
 
 NOTE: This section builds on the code from the previous tutorial, with
-the definition of `validate` added to it. It does not include the
-modifications made at the end of <<_simple_validation>>.
+the definition of `valid-amount` added to it, and the modifications to
+the `error-prompt` meta-node. It does not include the remaining
+modifications made in <<_simple_validation>>.
 
 Add the following after the definition of `validate` in the Tridash code tag.
 
 --------------------------------------------------
-:attribute(validate, target-node, validate)
+:attribute(valid-amount, target-node, valid-amount)
 --------------------------------------------------
 
 NOTE: When the `target-node` attribute is set, the meta-node is looked
 up as the `:attribute` declaration is processed.
 
-As a result we can simply replace `to-real(...)` with `validate(...)`
+As a result we can simply replace `to-real(...)` with `valid-amount(...)`
 in the inline declarations, within the value attributes of the HTML
 input elements. This will be equivalent to the code we wrote at the
 end of <<_simple_validation>>.
 
 Change the text input fields HTML code to the following:
 
+[source, html]
 --------------------------------------------------
-<p>
-    <label>Food: <input value="<?@ validate(food) ?>" /></label>
-    <?@ error?(food) ?>
-</p>
-<p>
-    <label>Electricity: <input value="<?@ validate(electricity) ?>" /></label>
-    <?@ error?(electricity) ?>
-</p>
-<p>
-    <label>Water: <input value="<?@ validate(water) ?>" /></label>
-    <?@ error?(water) ?>
-</p>
+<div>
+  <label for="budget">Budget:</label>
+  <div>
+    <input id="budget" value="<?@ valid-amount(budget) ?>"/>
+    <?@ error-prompt(budget) ?>
+  </div>
+</div>
+<hr>
+<div>
+  <label for="food">Food:</label>
+  <div>
+    <input id="food" value="<?@ valid-amount(food) ?>" />
+    <?@ error-prompt(food) ?>
+  </div>
+</div>
+<div>
+  <label for="electricity">Electricity:</label>
+  <div>
+    <input id="electricity" value="<?@ valid-amount(electricity) ?>" />
+    <?@ error-prompt(electricity) ?>
+  </div>
+</div>
+<div>
+  <label for="water">Water:</label>
+  <div>
+    <input id="water" value="<?@ valid-amount(water) ?>" />
+    <?@ error-prompt(water) ?>
+  </div>
+</div>
 --------------------------------------------------
 
 That is all that is necessary to add the new validation logic to our
@@ -1853,7 +2056,7 @@ lerp-color(c1, c2, alpha) : {
 --------------------------------------------------
 
 Finally let's change the `make-hsl` function to take a single
-argument, which is expected to be a dictionary with the color
+argument, which is expected to be a dictionary of the color
 components.
 
 IMPORTANT: If a subnode of a `parent` node, which does not evaluate to
@@ -1870,8 +2073,9 @@ performed inside a meta-node rather than having it littered all over
 the global scope. We'll create a meta-node `compute-color` which takes
 as arguments the total expenses and budget and computes the
 interpolated color. The two colors are not passed as arguments, rather
-they are stored in the global meta-nodes `in-budget-color`, the within
-budget color, and `out-budget-color`, the budget exceeded color.
+they are stored in the global meta-nodes `in-budget-color`, the
+'within budget' color, and `out-budget-color`, the 'budget exceeded'
+color.
 
 --------------------------------------------------
 compute-color(total, budget) : {
@@ -1940,8 +2144,8 @@ It isn't clear which arguments of the `lerp` meta-node correspond to
 the within budget color and the budget exceeded color. Someone who
 isn't familiar with the color interpolation logic might not know what
 `lerp` is and may accidentally introduce a
-bug. Furthermore in the previous version the ``Within budget'' and
-``Budget exceeded'' messages couldn't have different values for the
+bug. Furthermore in the previous version the 'within budget' and
+'budget exceeded' colors couldn't have different values for the
 saturation and luminance components.
 
 
@@ -2036,63 +2240,65 @@ binding declarations):
 
 [source,html]
 --------------------------------------------------
-<details>
+<details style="margin-top: 5px">
   <summary>Preferences</summary>
-  <div>
-    <strong>Within Budget Color:</strong>
-    <div
-      style="display: inline-block; width: 2em; height: 2em; vertical-align: middle"
-      id="in-budget-preview">
-    </div>
-    <p>
-    Hue:
-    <input
-      id="in-budget-hue"
-      type="range" min="0" max="360"
-      value="<?@ to-int(in-budget-color.hue) ?>" />
-    </p>
-    <p>
-    Saturation:
-    <input
-      id="in-budget-saturation" type="range" min="0" max="100"
-      value="<?@ to-int(in-budget-color.saturation) ?>" />
-    </p>
-    <p>
-    Luminance:
-    <input
-      id="in-budget-luminance"
-      type="range" min="0" max="100"
-      value="<?@ to-int(in-budget-color.luminance) ?>" />
-    </p>
+  <strong>Within Budget Color:</strong>
+  <div
+    style="display: inline-block; width: 2em; height: 2em; vertical-align: middle"
+    id="in-budget-preview">
   </div>
+
   <div>
-    <strong>Budget Exceeded Color:</strong>
-    <div
-      style="display: inline-block; width: 2em; height: 2em; vertical-align: middle"
-      id="out-budget-preview">
+    <label for="in-budget-hue">Hue:</label>
+    <div>
+      <input
+        id="in-budget-hue"
+        type="range" min="0" max="360"
+        value="<?@ to-int(in-budget-color.hue) ?>" />
     </div>
-    </strong>
-    <p>
-    Hue:
-    <input
-      id="out-budget-hue"
-      type="range" min="0" max="360"
-      value="<?@ to-int(out-budget-color.hue) ?>">
-    </p>
-    <p>
-    Saturation:
-    <input
-      id="out-budget-saturation"
-      type="range" min="0" max="100"
-      value="<?@ to-int(out-budget-color.saturation) ?>">
-    </p>
-    <p>
-    Luminance:
-    <input
-      id="out-budget-luminance"
-      type="range" min="0" max="100"
-      value="<?@ to-int(out-budget-color.luminance) ?>">
-    </p>
+
+    <label for="in-budget-saturation">Saturation:</label>
+    <div>
+      <input
+        id="in-budget-saturation"
+        type="range" min="0" max="100"
+        value="<?@ to-int(in-budget-color.saturation) ?>" />
+    </div>
+    <label for="in-budget-luminance">Luminance:</label>
+    <div>
+      <input
+        id="in-budget-luminance"
+        type="range" min="0" max="100"
+        value="<?@ to-int(in-budget-color.luminance) ?>" />
+    </div>
+  </div>
+
+  <strong>Budget Exceeded Color:</strong>
+  <div
+    style="display: inline-block; width: 2em; height: 2em; vertical-align: middle"
+    id="out-budget-preview"></div>
+  <div>
+    <label for="out-budget-hue">Hue:</label>
+    <div>
+      <input
+        id="out-budget-hue"
+        type="range" min="0" max="360"
+        value="<?@ to-int(out-budget-color.hue) ?>" />
+    </div>
+    <label for="out-budget-saturation">Saturation:</label>
+    <div>
+      <input
+        id="out-budget-saturation"
+        type="range" min="0" max="100"
+        value="<?@ to-int(out-budget-color.saturation) ?>" />
+    </div>
+    <label for="out-budget-luminance">Luminance:</label>
+    <div>
+      <input
+         id="out-budget-luminance"
+         type="range" min="0" max="100"
+         value="<?@ to-int(out-budget-color.luminance) ?>" />
+    </div>
   </div>
 </details>
 --------------------------------------------------
@@ -2106,7 +2312,7 @@ preferences by clicking on the triangle next to ``Preferences''.
 image::images/tutorial7/snap2.png["Initial Snapshot: Color preview boxes display colors and color component sliders set to values of color components.", align="center"]
 
 Now try changing some of the color components. Also try this while the
-total sum is between 0 and the budget in order to demonstrate the
+total sum is between 0 and the budget in order to demonstrate that the
 color interpolation is performed after each change.
 
 image::images/tutorial7/snap3.png["Snapshot: Color Within budget color changed to blue. Total and message color recomputed.", align="center"]
@@ -2116,9 +2322,9 @@ image::images/tutorial7/snap3.png["Snapshot: Color Within budget color changed t
 
 You have probably noticed a rather annoying aspect of this
 interface. The colors are not updated while the sliders are being
-dragging but only after they are released. This is analogous to the
-expense input fields: the total is only updated after the enter has
-been pressed or keyboard focus leaves the field, rather than being
+dragged but only after they are released. This is analogous to the
+expense input fields: the total is only updated after the enter key
+has been pressed or keyboard focus leaves the field, rather than being
 updated after each keystroke.
 
 For the expense input fields this is the desired behaviour, however
@@ -2131,9 +2337,10 @@ The `urgent` attribute of HTML nodes controls whether the node's value
 is updated after each change in the element or only after changes are
 committed by the user.
 
-To set the `urgent` attribute of the sliders, first give each slider
-an ID so that it can be referenced from Tridash code. Let's give the
-following id's to the sliders:
+To set the `urgent` attribute of the sliders, we have to give each
+slider an ID (which has already been down) so that it can be
+referenced from Tridash code. The following IDs have been given to the
+slider `input` elements.
 
   - `in-budget-hue` -- Within budget hue.
   - `in-budget-saturation` -- Within budget saturation.
@@ -2208,9 +2415,8 @@ thought of as hidden arguments.
 We used outer-node references to store our color preferences in global
 nodes, which are referenced from within the `compute-color`
 meta-node. `compute-color` is responsible for computing the
-interpolated color. Further on you learned about node attributes and
-how the `urgent` attribute influences when changes in HTML nodes are
-propagated.
+interpolated color. Further on you learned about how the `urgent`
+attribute influences when changes in HTML nodes are propagated.
 
 
 == Modules and Organization ==
@@ -2267,36 +2473,58 @@ Let's also extract the application logic into another file called `app.trd`:
 
 .app.trd
 --------------------------------------------------
-# Application Logic
+### Application Logic
 
-validate(thing) : {
+## Input Validation
+
+valid-amount(thing) : {
     x <- real(thing)
     x >= 0 -> x -> self
 }
 
-:attribute(validate, target-node, validate)
+:attribute(valid-amount, target-node, valid-amount)
 
+## Error Handling
+
+error-prompt(thing) : {
+    error-message <- "Please enter a valid number \u{2265} 0!"
+    if (fails?(thing), error-message, "")
+}
+
+## Colour Interpolation
 
 compute-color(total, budget) : {
     clamp((total + 1) / (budget + 1), 0, 1) -> scale
-    make-hsl(lerp-color(..(in-budget-color), ..(out-budget-color), scale))
+    make-hsl(lerp-color(in-budget-color, out-budget-color, scale))
 }
+
+## Initial Values
+
+0 -> budget
+0 -> food
+0 -> water
+0 -> electricity
+
+## Computing Total
 
 food + electricity + water -> total
 
-compute-color(total, budget) -> color
+make-hsl(
+    case(
+        total < budget : in-budget-color,
+        out-budget-color
+    )
+) -> color
 
 
-# Error Handling
+clamp((total + 1) / (budget + 1), 0, 1) -> scale
 
-error?(thing) : {
-    "Please enter a valid number" -> error-message
-    if (fails?(thing), error-message, "")
-}
+compute-color(total, budget) -> meter-color
 --------------------------------------------------
 
-This leaves only the setting of the initial values for the budget,
-expenses, the colors and the error message in the `ui.html`.
+The only code left inside the `ui.html` file is the binding of the
+colors to the various style properties of the elements, the setting of
+the default colours and the `urgent` attribute declarations.
 
 Now we need to add these sources to the build configuration file.
 
@@ -2341,7 +2569,7 @@ identifier `x` in module `mod1` is a distinct node from the node `x`
 in `mod2`, even though the two nodes have the same identifiers.
 
 NOTE: We've already made use of a builtin module, the `core` module,
-which contains the `int`, `real``, `to-real` meta-nodes, as well as
+which contains the `int`, `real`, `to-real` meta-nodes, as well as
 the arithmetic and comparison operators.
 
 
@@ -2372,7 +2600,7 @@ x -> node2
 The first reference to the node `x` occurs in module `mod1` thus a
 node `x` is added to `mod1`. The second referenced occurs in module
 `mod2` thus the node is added to `mod2`. The two nodes `x` are
-distinct even though they share the same identifiers.
+distinct even though they share the same identifier.
 
 If no module is specified the node references occur in a nameless
 `init` module. The current module is reset to the `init` module prior
@@ -2445,7 +2673,7 @@ It has two forms:
 
 .Example
 --------------------------------------------------
-# Short form: Import all nodes from mod1
+# Short form: Import all nodes exported from mod1
 :import(mod1)
 
 # Long form: Only import nodes x, y, z
@@ -2453,7 +2681,7 @@ It has two forms:
 --------------------------------------------------
 
 IMPORTANT: The short form only imports those nodes which are exported
-from the mode not all nodes.
+from the module not all nodes.
 
 NOTE: The long form allows you to choose which nodes are imported into
 the current module. You can list any node in the module, not just an
@@ -2492,8 +2720,8 @@ mod1.@(x, y)
 ==== Exporting Nodes ====
 
 We mentioned that the short form of the `:import` operator imports all
-nodes from the module. The `:export` operator is used to export nodes
-from the current module.
+nodes which are exported from the module. Nodes are exported from the
+current module using the `:export` operator.
 
 --------------------------------------------------
 :module(mod1)
@@ -2502,7 +2730,7 @@ from the current module.
 :export(x, y, z)
 --------------------------------------------------
 
-Importing mod1 by the short form, `:import(mod1)`, will import nodes
+Importing `mod1` by the short form, `:import(mod1)`, will import nodes
 `x`, `y` and `z` (and other nodes listed in other `:export`
 declarations) into the module.
 
@@ -2543,8 +2771,8 @@ includes the arithmetic and comparison operators as well as the
 special operators, `->`, `:`, `.`, which are originally from the
 `builtin` module.
 
-Add the following declaration new the bottom of the file to export the
-meta-nodes from the module:
+Add the following declaration near the bottom of the file to export
+the meta-nodes from the module:
 
 --------------------------------------------------
 :export(lerp, clamp, Color, lerp-color, make-hsl)
@@ -2564,7 +2792,7 @@ Add the following to the top of the `app.trd` file:
 IMPORTANT: We have to import both the `core` module and `util` module.
 
 It doesn't make sense to keep the UI in a separate module from the
-application logic, as the UI is designed specifically for the
+application logic, as the UI is designed specifically for this
 application, thus we'll add the HTML nodes to the `budget-app`
 module. To do so we need to add `:module(budget-app)` to the top of
 the Tridash code tag at the beginning of the `ui.html` file. There is
@@ -2612,7 +2840,7 @@ we've significantly improved the organization of the code.
 === Infix Operators ===
 
 _This section contains a detailed explanation of registering your own
-infix operators. We will not being making any enhancements to the
+infix operators. We will not be making any enhancements to the
 budgeting application in this section._
 
 
@@ -2708,8 +2936,8 @@ list:
 
 ==== Registering your own infix operators ====
 
-Node identifiers can be registered as infix operators using the `:op`
-operator.
+Node identifiers can be registered as infix operators using a special
+`:op` declaration.
 
 --------------------------------------------------
 :op(id, precedence, [left | right])
