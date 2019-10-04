@@ -56,7 +56,7 @@
     (cons (id-symbol "not") '("!" . t))
 
     (cons (id-symbol "fail") "Tridash.fail")
-    (cons (id-symbol "fail-type") "Tridash.fail-type")
+    (cons (id-symbol "fail-type") "Tridash.fail_type")
     (cons (id-symbol "catch") "Tridash.make_catch_thunk")
 
     (cons (id-symbol "member") "Tridash.member")
