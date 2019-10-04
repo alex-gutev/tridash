@@ -203,7 +203,7 @@
       (otherwise
        (prog1 source
          (when add-function
-           (add-function source (context target :init))))))))
+           (add-constant-function source target)))))))
 
 
 ;;; Adding Dependencies
@@ -247,6 +247,7 @@
          (context node context-id)
          fail-test)))))
 
+
 (defun add-function (expression context &optional test)
   "Adds EXPRESSION to the value function of CONTEXT. If CONTEXT does
    not have a value function function, its VALUE-FUNCTION slot is set
@@ -260,6 +261,22 @@
           (if value-function
               (catch-expression value-function expression test)
               expression))))
+
+(defgeneric add-constant-function (constant node)
+  (:documentation
+   "Adds the constant CONSTANT to the init context of NODE."))
+
+(defmethod add-constant-function (constant node)
+  (add-function constant (context node :init)))
+
+(defmethod add-constant-function (constant (proxy context-node))
+  "Adds CONSTANT to the value function of the context given by the
+   CONTEXT-ID slot of PROXY."
+
+  (with-slots (node fail-test context-id) proxy
+    (add-function constant
+                  (context node context-id)
+                  fail-test)))
 
 
 ;;; Adding Observers

@@ -756,6 +756,81 @@
                 1
                 nil))))))
 
+    (subtest "With Test Function"
+      (subtest "Node Source"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core);"
+                 "test-type(x) : x = 1"
+
+                 "a < 3 -> ((a + b) -> :context(output, ctx, test-type))"
+                 "a < 4 -> ((a - b) -> :context(output, ctx, test-type))"
+                 "b -> :context(output, ctx)")
+
+          (with-nodes ((b "b") (output "output") (test-type "test-type")
+
+                       (cond1 (:bind ((":in" "core" "+") "a" "b") "output"))
+                       (cond2 (:bind ((":in" "core" "-") "a" "b") "output"))
+
+                       (a+b ((":in" "core" "+") "a" "b"))
+                       (a-b ((":in" "core" "-") "a" "b")))
+              modules
+
+            (let ((ctx (id-symbol "ctx"))
+                  (*strict-test* nil))
+
+              (has-value-function
+               ((cond1 :context ctx) (a+b :context ctx)
+                (cond2 :context ctx) (a-b :context ctx)
+                (b :context ctx))
+
+               output
+
+               `(:catch
+                    (:catch
+                        (if ,cond1 ,a+b (:fail nil))
+                      (if ,cond2 ,a-b (:fail nil))
+                      ,(meta-node-ref test-type))
+                  ,b
+                  nil))))))
+
+      (subtest "Constant Source"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core);"
+                 "test-type(x) : x = 1"
+
+                 "a < 3 -> ((a + b) -> :context(output, ctx))"
+                 "1 -> :context(output, ctx, test-type)"
+                 "a < 4 -> ((a - b) -> :context(output, ctx))")
+
+          (with-nodes ((output "output") (test-type "test-type")
+
+                       (cond1 (:bind ((":in" "core" "+") "a" "b") "output"))
+                       (cond2 (:bind ((":in" "core" "-") "a" "b") "output"))
+
+                       (a+b ((":in" "core" "+") "a" "b"))
+                       (a-b ((":in" "core" "-") "a" "b")))
+              modules
+
+            (let ((ctx (id-symbol "ctx"))
+                  (*strict-test* nil))
+
+              (has-value-function
+               ((cond1 :context ctx) (a+b :context ctx)
+                (cond2 :context ctx) (a-b :context ctx))
+
+               output
+
+               `(:catch
+                    (:catch
+                        (if ,cond1 ,a+b (:fail nil))
+                      1
+                      ,(meta-node-ref test-type))
+
+                  (if ,cond2 ,a-b (:fail nil))
+                  nil)))))))
+
     (subtest "In Source of Binding"
       ;; Test that the :context operator has no effect in source
       ;; position.
