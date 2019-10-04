@@ -96,4 +96,4 @@ fail-type?(x, type) : {
 
 ### Export Declarations
 
-:export(fails?, ?, !!, !-)
+:export(fail, fails?, fail-type, fail-type?, ?, !!, !-)
