@@ -33,7 +33,8 @@
 (defun node-index (node)
   "Returns the index of NODE within the node table variable."
 
-  (ensure-get node *node-ids* (length *node-ids*)))
+  (with-slots (node-ids) *backend-state*
+   (ensure-get node node-ids (length node-ids))))
 
 (defparameter *node-path* #'access-node
   "Function which takes a node as an argument and returns an
@@ -143,8 +144,9 @@
          (name meta-node)))
 
     (meta-node
-     (ensure-get meta-node *meta-node-ids*
-                 (mkstr "metanode" (length *meta-node-ids*))))))
+     (with-slots (meta-node-ids) *backend-state*
+       (ensure-get meta-node meta-node-ids
+                   (mkstr "metanode" (length meta-node-ids)))))))
 
 
 (defun meta-node-call (meta-node operands)
@@ -706,16 +708,18 @@
 (defun type-node-path (node)
   "Return an expression which references the type node NODE."
 
-  (if (memberp node *node-ids*)
-      (node-path node)
-      (js-element +type-node-table+ (ensure-get node *type-node-ids* (length *type-node-ids*)))))
+  (with-slots (node-ids type-node-ids) *backend-state*
+    (if (memberp node node-ids)
+        (node-path node)
+        (js-element +type-node-table+ (ensure-get node type-node-ids (length type-node-ids))))))
 
-(defun create-type-nodes ()
+(defun create-type-nodes (state)
   "Generate the node creation code for the type nodes, stored in
-  *TYPE-NODE-IDS*."
+   TYPE-NODE-IDS slot of the backend state STATE."
 
-  (let ((*node-path* #'type-node-path))
-    (foreach #'create-node (map-keys *type-node-ids*))))
+  (with-slots (type-node-ids) state
+    (let ((*node-path* #'type-node-path))
+      (foreach #'create-node (map-keys type-node-ids)))))
 
 
 ;;; Literal Values

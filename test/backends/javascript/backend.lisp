@@ -61,14 +61,9 @@
                 :+catch-thunk-class+
                 :+resolve-function+
 
-                :*node-ids*
-                :*node-link-indices*
-                :*meta-node-ids*
-                :*context-ids*
-                :*context-counter*
-                :*initial-values*
+                :js-backend-state
+                :*backend-state*
                 :*output-code*
-                :*type-node-ids*
 
                 :make-code-array
                 :meta-node-id
@@ -251,13 +246,7 @@
   "Evaluates the forms in BODY in an environment in which the
    backend's state has been initialized with mocked values."
 
-  `(let ((*node-ids* (make-hash-map))
-         (*node-link-indices* (make-hash-map))
-         (*meta-node-ids* (make-hash-map))
-         (*context-ids* (make-hash-map))
-         (*context-counter* 0)
-         (*initial-values* nil)
-         (*type-node-ids* (make-hash-map)))
+  `(let ((*backend-state* (make-instance 'js-backend-state)))
      ,@body))
 
 (defun mock-meta-nodes% (names)

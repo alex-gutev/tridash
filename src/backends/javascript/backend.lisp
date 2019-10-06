@@ -23,28 +23,61 @@
 
 ;;;; Backend State
 
-(defvar *node-ids* nil
-  "Hash-table mapping node-objects to their indices within the node
-   table object.")
+(defclass js-backend-state ()
+  ((node-ids
+    :initform (make-hash-map)
+    :accessor node-ids
+    :documentation
+    "Map from `NODE' objects to their indices within the node table
+     object.")
 
-(defvar *node-link-indices* nil
-  "Hash-table storing the dependency indices of each dependency of
-   each node context. Each key is a `NODE-CONTEXT' object and the
-   corresponding value is a hash-table mapping `NODE-LINK' objects (of
-   the dependency node) to their dependency index.")
+   (meta-node-ids
+    :initform (make-hash-map)
+    :accessor meta-node-ids
+    :documentation
+    "Map from `META-NODE' objects to global meta-node function
+     identifiers.")
 
-(defvar *meta-node-ids*
-  "Hash-table mapping `META-NODE' objects to global meta-node function
-   identifiers.")
+   (type-node-ids
+    :initform (make-hash-map)
+    :accessor type-node-ids
+    :documentation
+    "Map from `NODE' objects, serving as Tridash types, to their
+     indices within the Tridash type node table.")
 
-(defvar *context-ids* nil
-  "Hash-table containing the context identifiers of each context of
-   each node. Each key is a `NODE' object and the corresponding value
-   is a hash-table mapping context identifiers to their JS
-   identifiers.")
+   (node-link-indices
+    :initform (make-hash-map)
+    :accessor node-link-indices
+    :documentation
+    "Map storing the dependency indices of each dependency of each
+     node context. Each key is a `NODE-CONTEXT' object and the
+     corresponding value is a map from `NODE-LINK' objects (of the
+     dependency node) to their dependency indices.")
 
-(defvar *context-counter* 0
-  "Counter for generating globally unique context identifiers")
+   (context-ids
+    :initform (make-hash-map)
+    :accessor context-ids
+    :documentation
+    "Map storing the context identifiers of each context of each
+     node. Each key is a `NODE' object and the corresponding value is
+     a map from context identifiers to their JS identifiers.")
+
+   (context-counter
+    :initform 0
+    :accessor context-counter
+    :documentation
+    "Counter for generating globally unique context identifiers.")
+
+   (initial-values
+    :initform nil
+    :accessor initial-values
+    :documentation
+    "List of initial node values to set. Each element is a list where
+     the first element is the node path and the second element is the
+     initial value.")))
+
+(defvar *backend-state* nil
+  "Special variable storing the `JS-BACKEND-STATE' object.")
 
 (defvar *current-node* nil
   "The node whose definition code is currently being generated.")
@@ -54,10 +87,6 @@
    been generated. The mapped value is a list containing the name of
    the variable in which the value of the expression is stored and a
    thunk which computes the expression's value.")
-
-(defvar *type-node-ids* nil
-  "Map mapping nodes, serving as Tridash types, to their indices
-   within the Tridash type node table.")
 
 
 ;;; Code Generation Flags
@@ -90,11 +119,6 @@
 (defvar *output-code* nil
   "Array into which the output JavaScript AST nodes are added.")
 
-(defvar *initial-values* nil
-  "List of initial node values to set. Each element is a list where
-   the first element is the node path and the second element is the
-   initial value.")
-
 (defun make-code-array ()
   "Creates an empty array suitable for pushing JavaScript AST nodes to
    it."
@@ -118,13 +142,7 @@
         (*runtime-library-path* (runtime-path options))
         (*runtime-link-type* (parse-linkage-type (get "runtime-linkage" options))))
 
-    (let ((*node-ids* (make-hash-map))
-          (*node-link-indices* (make-hash-map))
-          (*meta-node-ids* (make-hash-map))
-          (*context-ids* (make-hash-map))
-          (*context-counter* 0)
-          (*initial-values* nil)
-          (*type-node-ids* (make-hash-map))
+    (let ((*backend-state* (make-instance 'js-backend-state))
           (defs (make-code-array))
           (bindings (make-code-array)))
 
@@ -174,19 +192,20 @@
   "Prints the JavaScript code represented by the AST nodes in CODE to
    *STANDARD-OUTPUT*."
 
-  (with-hash-keys ((type "type") (main-ui "main-ui")) options
-    (match type
-      ((cl:equalp "html")
-       (->>
-        (get-root-node main-ui)
-        (create-html-file
-         (lexical-block (list code (make-html-set-initial-values *initial-values*))))))
+  (with-slots (initial-values) *backend-state*
+    (with-hash-keys ((type "type") (main-ui "main-ui")) options
+      (match type
+        ((cl:equalp "html")
+         (->>
+          (get-root-node main-ui)
+          (create-html-file
+           (lexical-block (list code (make-html-set-initial-values initial-values))))))
 
-      (_
-       (-<> (make-set-initial-values *initial-values*)
-            (list code <>)
-            (lexical-block)
-            (output-code))))))
+        (_
+         (-<> (make-set-initial-values initial-values)
+              (list code <>)
+              (lexical-block)
+              (output-code)))))))
 
 (defun get-root-node (node)
   "Gets the root HTML node specified by NODE."
@@ -234,14 +253,15 @@
 (defun global-context-id ()
   "Returns a new unique global context identifier."
 
-  (prog1 *context-counter*
-    (incf *context-counter*)))
+  (with-slots (context-counter) *backend-state*
+    (prog1 context-counter
+      (incf context-counter))))
 
 (defun context-js-id (node context-id)
   "Returns the JavaScript context identifier for the context with
    identifier CONTEXT-ID of NODE."
 
-  (let ((ids (ensure-get node *context-ids* (make-hash-map))))
+  (let ((ids (ensure-get node (context-ids *backend-state*) (make-hash-map))))
     (case context-id
       (:input
        (js-string "input"))
@@ -269,7 +289,7 @@
     (let ((*output-code* defs))
       (create-nodes nodes)
       (create-meta-nodes meta-nodes)
-      (create-type-nodes))
+      (create-type-nodes *backend-state*))
 
     (let ((*output-code* bindings))
       (init-nodes nodes))))
@@ -309,11 +329,12 @@
     (store-in-public-nodes node path)
 
     ;; If the node has an INIT context, add its initial value to
-    ;; *INITIAL-VALUES* and ensure it has an input context.
+    ;; INITIAl-VALUES of *BACKEND-STATE* and ensure it has an input
+    ;; context.
 
     (awhen (cdr (get-init-context node))
       (context node :input)
-      (push (list path (value-function it)) *initial-values*))
+      (push (list path (value-function it)) (initial-values *backend-state*)))
 
     (foreach (rcurry #'create-context node) (contexts node))))
 
@@ -374,7 +395,8 @@
 
 (defun establish-dependency-indices (context)
   "Establishes the indices of the operands of the `NODE-CONTEXT'
-   CONTEXT, and adds them to *NODE-LINK-INDICES*."
+   CONTEXT, and adds them to the node link indices map of
+   *BACKEND-STATE*."
 
   (foreach (curry #'dependency-index context) (map-keys (operands context))))
 
@@ -382,7 +404,7 @@
   "Returns the index of the operand (of CONTEXT). If OPERAND does not have an index,
    a new index is assigned to it."
 
-  (let ((operands (ensure-get context *node-link-indices* (make-hash-map))))
+  (let ((operands (ensure-get context (node-link-indices *backend-state*) (make-hash-map))))
     (ensure-get operand operands (length operands))))
 
 
