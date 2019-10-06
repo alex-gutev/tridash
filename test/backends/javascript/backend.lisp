@@ -68,6 +68,7 @@
                 :*context-counter*
                 :*initial-values*
                 :*output-code*
+                :*type-node-ids*
 
                 :make-code-array
                 :meta-node-id
@@ -255,7 +256,8 @@
          (*meta-node-ids* (make-hash-map))
          (*context-ids* (make-hash-map))
          (*context-counter* 0)
-         (*initial-values* nil))
+         (*initial-values* nil)
+         (*type-node-ids* (make-hash-map)))
      ,@body))
 
 (defun mock-meta-nodes% (names)
@@ -911,7 +913,29 @@
               ((context () (node-ref f)))
 
             (test-compute-function context
-              (js-return f)))))))
+              (js-return f))))))
+
+    (subtest "Raw Ordinary Node References"
+      (mock-backend-state
+        (let ((node1 (make-instance 'node :name 'node1))
+              (node2 (make-instance 'node :name 'node2)))
+          (mock-meta-nodes (list)
+            (mock-contexts
+                ((context () (functor list (node-ref node1) (functor list (node-ref node2) (node-ref node1)) (node-ref node2))))
+
+              (test-compute-function context
+                (-<> (js-call list
+                              (js-element "Tridash.type_nodes" 1)
+                              (js-element "Tridash.type_nodes" 0))
+                     js-return
+                     thunk
+                     (js-call list
+                              (js-element "Tridash.type_nodes" 0)
+                              <>
+                              (js-element "Tridash.type_nodes" 1))
+                     js-return
+                     thunk
+                     js-return))))))))
 
   (subtest "Invoking Nodes as Meta-Nodes"
     (subtest "As Return Value"

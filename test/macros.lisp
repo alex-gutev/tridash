@@ -1011,7 +1011,17 @@
 
         (with-nodes ((test "test")) modules
           (is (bool-value (resolve (call-tridash-meta-node test '(1)))) nil)
-          (ok (bool-value (resolve (call-tridash-meta-node test '(-1)))))))))
+          (ok (bool-value (resolve (call-tridash-meta-node test '(-1))))))))
+
+    (subtest "Failure Types"
+      (with-module-table modules
+        (build-core-module modules)
+        (build-source-file "./test/inputs/macros/failure-types.trd" modules)
+
+        (with-nodes ((check-range "check-range")) modules
+          (is (call-meta-node check-range '(2 1 3)) "")
+          (is (call-meta-node check-range '(0 1 3)) "Error: below minimum!")
+          (is (call-meta-node check-range '(10 2 7)) "Error: above maximum!")))))
 
   (subtest "Common Sub-Expressions"
     (subtest "One Expression-Block"

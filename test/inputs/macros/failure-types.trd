@@ -1,0 +1,25 @@
+## Tests that failure types, defined by raw node references, work in
+## the macro system.
+
+:import(core, <-, case, <, >, @, !-)
+
+## These two node declarations are necessary since node references,
+## within a meta-node, result in the global scope being searched.
+Type-Below-Min
+Type-Above-Max
+
+check-range(x, l, h) : {
+    Below-Min <- &(Type-Below-Min)
+    Above-Max <- &(Type-Above-Max)
+
+    check(x) :
+        case(x < l : fail(Below-Min),
+             x > h : fail(Above-Max),
+             x)
+
+    value <- check(x)
+
+    value !- "" -> self @ c
+    "Error: below minimum!" -> self @ catch(c, Below-Min)
+    "Error: above maximum!" -> self @ catch(c, Above-Max)
+}

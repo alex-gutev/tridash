@@ -687,6 +687,10 @@
 
 ;;; Node References
 
+(defconstant +type-node-table+ "Tridash.type_nodes"
+  "Expression referencing JS object storing nodes which serve as
+   types.")
+
 (defmethod make-expression ((ref node-ref) &key)
   "Compiles raw node references. Currently generates an expression
    which references the raw Node object or meta-node function."
@@ -694,7 +698,24 @@
   (with-struct-slots node-ref- (node) ref
     (typecase node
       (meta-node
-       (values nil (meta-node-id node))))))
+       (values nil (meta-node-id node)))
+
+      (node
+       (values nil (type-node-path node))))))
+
+(defun type-node-path (node)
+  "Return an expression which references the type node NODE."
+
+  (if (memberp node *node-ids*)
+      (node-path node)
+      (js-element +type-node-table+ (ensure-get node *type-node-ids* (length *type-node-ids*)))))
+
+(defun create-type-nodes ()
+  "Generate the node creation code for the type nodes, stored in
+  *TYPE-NODE-IDS*."
+
+  (let ((*node-path* #'type-node-path))
+    (foreach #'create-node (map-keys *type-node-ids*))))
 
 
 ;;; Literal Values

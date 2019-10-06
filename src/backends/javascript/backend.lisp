@@ -55,6 +55,10 @@
    the variable in which the value of the expression is stored and a
    thunk which computes the expression's value.")
 
+(defvar *type-node-ids* nil
+  "Map mapping nodes, serving as Tridash types, to their indices
+   within the Tridash type node table.")
+
 
 ;;; Code Generation Flags
 
@@ -120,6 +124,7 @@
           (*context-ids* (make-hash-map))
           (*context-counter* 0)
           (*initial-values* nil)
+          (*type-node-ids* (make-hash-map))
           (defs (make-code-array))
           (bindings (make-code-array)))
 
@@ -263,7 +268,8 @@
   (with-slots (nodes meta-nodes) table
     (let ((*output-code* defs))
       (create-nodes nodes)
-      (create-meta-nodes meta-nodes))
+      (create-meta-nodes meta-nodes)
+      (create-type-nodes))
 
     (let ((*output-code* bindings))
       (init-nodes nodes))))
@@ -300,11 +306,7 @@
       (append-code
        (js-call "=" (js-member path "name") (js-string (name node)))))
 
-    (awhen (attribute :public-name node)
-      (append-code
-       (-<> (js-member +tridash-namespace+ "nodes")
-            (js-element (js-string it))
-            (js-call "=" <> path))))
+    (store-in-public-nodes node path)
 
     ;; If the node has an INIT context, add its initial value to
     ;; *INITIAL-VALUES* and ensure it has an input context.

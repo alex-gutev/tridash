@@ -40,6 +40,14 @@ exports.CatchThunk = CatchThunk;
 exports.resolve = resolve;
 
 
+/* Node Tables */
+
+/* Public Nodes Table */
+exports.nodes = {};
+/* Type Nodes Table */
+exports.type_nodes = {};
+
+
 /* Functions */
 
 exports.eq = eq;
