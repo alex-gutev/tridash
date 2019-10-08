@@ -3201,7 +3201,7 @@ source -> target @ context-id catch type
 --------------------------------------------------
 --
 
-Are new improved `error-prompt` meta-node can thus be written using
+The new improved `error-prompt` meta-node can thus be written using
 explicit `catch` contexts. The following bindings need to be
 established:
 
@@ -3267,12 +3267,13 @@ case(
 )
 --------------------------------------------------
 
-We have to repeat `x` in both cases, first in the value and then in
-the condition. If we happen to change `x` in the first case, we'd have
-to update the second case as well. If `x` is a complex node expression
-we'd have to either repeat the whole expression in the second case,
-which is prone to bugs if it is not typed out correctly, or it has to
-be factored out in another node.
+We have to repeat `x` in both cases, in the value expression of the
+first case and in the condition expression of the second case. If we
+happen to change `x` in the first case, we'd have to update the second
+case as well. If `x` is a complex node expression we'd have to either
+repeat the whole expression in the second case, which can lead to a
+bug if it is not typed out correctly. To avoid the repetition, the
+node expression has to be factored out in another node.
 
 With explicit `catch` contexts we can implement this error handling
 logic with the following bindings:
