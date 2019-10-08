@@ -111,4 +111,4 @@
 # Export operators imported from the `builtin` module.
 
 :export(:, ., &, c, .., prog)
-:export(if)
+:export(if, catch)
