@@ -1258,7 +1258,7 @@
                ":attribute(c, input, 1)"
                ":attribute(y, input, 1)")
 
-        (is-error (build "make-list(a, b, c) -> output") semantic-error))))
+        (is-error (build "make-list(a, b, c) -> output") macro-outer-node-error))))
 
   (subtest "Building a Meta-Node Multiple Times"
     (with-module-table modules
