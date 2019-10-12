@@ -99,7 +99,7 @@
     (let ((node-table (flatten-modules (map-values modules))))
       ;; Update all meta-node instances to pass outer-nodes
       (foreach (rcurry #'update-meta-node-instances nil)
-               (remove-if-not #'node? (nodes node-table)))
+               (nodes node-table))
 
       (finish-build node-table)
       node-table)))
