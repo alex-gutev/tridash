@@ -97,12 +97,11 @@
     (foreach (compose #'build-meta-nodes #'meta-nodes) (map-values modules))
 
     (let ((node-table (flatten-modules (map-values modules))))
-      ;; Determine outer node references
-      (foreach #'outer-node-references (meta-nodes node-table))
-      (foreach #'add-outer-node-operands (meta-nodes node-table))
+      ;; Update all meta-node instances to pass outer-nodes
+      (foreach (rcurry #'update-meta-node-instances nil)
+               (remove-if-not #'node? (nodes node-table)))
 
       (finish-build node-table)
-
       node-table)))
 
 (defun flatten-modules (modules)
@@ -176,9 +175,12 @@
   (let ((*meta-node* meta-node))
     (with-slots (name definition) meta-node
       (when (typep definition 'module)
-        ;; Add referenced outer-nodes as operands of each instance of each
-        ;; meta-node.
-        (foreach #'add-outer-node-operands (meta-nodes definition))
+        ;; Determine the meta-node's outer node references
+        (outer-node-references meta-node)
+
+        ;; Update all meta-node instances to pass outer nodes
+        (foreach (rcurry #'update-meta-node-instances meta-node)
+                 (remove-if-not #'node? (map-values (nodes definition))))
 
         (setf definition (flatten-meta-node definition))
 
@@ -817,7 +819,9 @@
       ((node node))
       operands
 
-    (node-ref (process-declaration (unwrap-declaration node) module :level *level*))))
+    (node-ref
+     (process-declaration (unwrap-declaration node) module
+                          :add-outer nil :level *level*))))
 
 
 ;;; Subnodes
@@ -1003,18 +1007,7 @@
            (if (meta-node? meta-node)
                meta-node
                (add-binding meta-node instance :context context :add-function nil)))
-          (setf value-function))
-
-    (add-to-instances instance meta-node context value-function)))
-
-(defun add-to-instances (instance meta-node context expression)
-  "Adds the meta-node instance INSTANCE, at context CONTEXT, to the
-   list of instances of META-NODE. EXPRESSION is the expression in
-   which META-NODE is referenced."
-
-  (when (meta-node? meta-node)
-    (nadjoin (instance instance context *meta-node* expression)
-             (instances meta-node))))
+          (setf value-function))))
 
 (defun make-arguments (meta-node module arguments)
   "Creates the argument list for a functor expression."

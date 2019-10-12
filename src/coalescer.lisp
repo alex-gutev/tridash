@@ -267,7 +267,7 @@
         (used (make-hash-set)))
 
     (labels ((visit-node (node)
-               "Visits NODE and marks all meta-nodes, appearing with
+               "Visits NODE and marks all meta-nodes, appearing within
                 the value-function of each context, as used."
 
                (unless (visited? node)
@@ -277,18 +277,6 @@
                      (foreach (map-values (contexts node))))
 
                  (foreach #'visit-node (map-keys (observers node)))))
-
-             (visit-meta-node (node)
-               "Visits `META-NODE' NODE and marks all meta-nodes,
-                appearing with the meta-node's function as used."
-
-               (unless (visited? node)
-                 (nadjoin node visited)
-                 (-> node
-                     contexts
-                     first
-                     cdr
-                     visit-context)))
 
              (visit-context (context)
                "Visits the context CONTEXT and marks the meta-nodes
@@ -326,6 +314,18 @@
                (nadjoin meta-node used)
                (visit-meta-node meta-node))
 
+             (visit-meta-node (node)
+               "Visits `META-NODE' NODE and marks all meta-nodes,
+                appearing within the meta-node's function as used."
+
+               (unless (visited? node)
+                 (nadjoin node visited)
+                 (-> node
+                     contexts
+                     first
+                     cdr
+                     visit-context)))
+
              (visit-if-no-remove (meta-node)
                "Adds META-NODE to the USED set if it has the
                 :NO-REMOVE attribute set to true."
@@ -335,6 +335,7 @@
 
       (foreach #'visit-node nodes)
       (foreach #'visit-if-no-remove meta-nodes)
+
       used)))
 
 (defun fold-constant-nodes (nodes)

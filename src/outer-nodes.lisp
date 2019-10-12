@@ -20,7 +20,28 @@
 
 (in-package :tridash.frontend)
 
-(defun outer-node-references (meta-node &optional (visited (make-hash-set)))
+(defun outer-node-references (meta-node)
+  "Returns the list of outer nodes referenced by META-NODE.
+
+   Updates the meta-node's operand list if it has not been updated
+   already."
+
+  (find-outer-node-references meta-node)
+
+  (with-slots (outer-nodes operands definition attributes) meta-node
+    (unless (find +outer-node-argument+ operands :key #'ensure-car)
+      (let* ((nodes (coerce outer-nodes 'alist))
+             (names (map #'cdr nodes)))
+
+        (setf (get :outer-nodes attributes)
+              (map #'car nodes))
+
+        (appendf operands names)
+        (add-operand-nodes names definition)))
+
+    (get :outer-nodes attributes)))
+
+(defun find-outer-node-references (meta-node &optional (visited (make-hash-set)))
   "Augments the set of outer-nodes, referenced from within META-NODE,
    with the set of outer-nodes, referenced by each meta-node used
    within the definition of META-NODE. Also augments the outer node
@@ -36,7 +57,7 @@
 
                (unless (visited? meta-node)
                  (multiple-value-bind (refs complete?)
-                     (outer-node-references meta-node visited)
+                     (find-outer-node-references meta-node visited)
 
                    (when complete?
                      (erase meta-node-references meta-node))
@@ -57,7 +78,7 @@
 
                (let* ((module (home-module node)))
                  (unless (>= (depth module) (depth definition))
-                   (ensure-get node outer-nodes (cons module (outer-node-name meta-node))))))
+                   (ensure-get node outer-nodes (outer-node-name meta-node)))))
 
              (visited? (meta-node)
                (memberp meta-node visited)))
@@ -72,74 +93,76 @@
 
         (when (typep definition 'module)
           (foreach #'add-outer-node refs)
-          (foreach (rcurry #'outer-node-references visited) (meta-nodes definition))))
+          (foreach (rcurry #'find-outer-node-references visited) (meta-nodes definition))))
 
       (values outer-nodes (emptyp meta-node-references)))))
 
-(defun add-outer-node-operands (meta-node)
-  "Appends the outer nodes referenced by META-NODE to the operands
-   list of META-NODE and updates all instances to pass the values of
-   the nodes as arguments."
+(defun update-meta-node-instances (node meta-node)
+  "Updates each `FUNCTOR-EXPRESSION' and `META-NODE-REF' in each
+   context of NODE, to pass outer nodes as arguments.
 
-  (labels ((update-instances (nodes)
-             "Updates each instance of META-NODE to pass the values of
-              each node in NODES as additional arguments."
+   META-NODE is the meta-node in which NODE is contained."
 
-             (foreach (rcurry #'update-instance nodes) (instances meta-node)))
+  (let (context-id)
+    (declare (special context-id))
+    (labels
+        ((update-context (context)
+           "Update the VALUE-FUNCTION of the `NODE-CONTEXT' CONTEXT."
 
-           (update-instance (instance nodes)
-             "Binds each node in NODES to INSTANCE and appends the
-              values of NODES to the argument list of the meta-node,
-              within the value function of INSTANCE. If INSTANCE is
-              located inside another meta-node, the local nodes which
-              reference NODES are bound to INSTANCE instead of NODES
-              themselves."
+           (destructuring-bind (context-id . context) context
+             (declare (special context-id))
+             (with-slots (value-function) context
+               (setf value-function
+                     (update-expression value-function)))))
 
-             (with-struct-slots instance- (node context meta-node expression) instance
-               (update-context node context expression (operand-nodes nodes meta-node))))
+         (update-expression (expression)
+           (match expression
+             ((functor-expression- (meta-node (and (type meta-node) meta-node)) arguments)
+              (map-expression!
+               #'update-expression
 
-           (update-context (node context-id expression operands)
-             "Adds OPERANDS as operands to the context, of NODE, with
-              identifier CONTEXT-ID, and appends them to the context's
-              value function."
+               (functor-expression
+                meta-node
+                (append arguments (outer-node-links meta-node)))))
 
-             (->>
-              (bind-operands node operands :context context-id)
-              (update-expression expression)))
+             ((meta-node-ref node optional)
+              (map-expression!
+               #'update-expression
 
-           (update-expression (expression operands)
-             "Adds the outer node operands OPERANDS to the expression
-              EXPRESSION."
+               (meta-node-ref node
+                              :optional optional
+                              :outer-nodes (outer-node-links node))))
 
-             (ematch expression
-               ((functor-expression- (arguments (place arguments)))
-                (appendf arguments operands))
+             (_
+              (map-expression! #'update-expression expression))))
 
-               ((meta-node-ref- (outer-nodes (place outer-nodes)))
-                (appendf outer-nodes operands))))
+         (outer-node-links (meta-node)
+           "Bind each outer node, referenced by META-NODE, to NODE and
+            return the list of the binding `NODE-LINK' objects."
 
-           (operand-nodes (nodes meta-node)
-             "Returns the nodes local to META-NODE which reference the
-              outer nodes NODES. If META-NODE is NIL, NODES is
-              returned directly."
+           (-<> meta-node
+                outer-node-references
+                ;; outer-nodes
+                ;; map-keys
+                operand-nodes
+                (bind-operands node <> :context context-id)))
 
-             (if meta-node
-                 (with-slots (outer-nodes definition) meta-node
-                   (map
-                    (lambda (node)
-                      ;; If node not found in outer node
-                      ;; references, assume it is defined in the
-                      ;; meta-node's node table.
-                      (if-let ((name (get node outer-nodes)))
-                        (ensure-node name definition)
-                        node))
-                    nodes))
-                 nodes)))
+         (operand-nodes (nodes)
+           "Returns the nodes local to META-NODE which reference the
+            outer nodes NODES. If META-NODE is NIL, NODES is returned
+            directly."
 
-    (with-slots (outer-nodes operands definition) meta-node
-      (unless (find +outer-node-argument+ operands :key #'ensure-car)
-        (let ((names (map-values outer-nodes)))
-          (appendf operands names)
-          (add-operand-nodes names definition))
+           (if meta-node
+               (with-slots (outer-nodes definition) meta-node
+                 (map
+                  (lambda (node)
+                    ;; If node not found in outer node
+                    ;; references, assume it is defined in the
+                    ;; meta-node's node table.
+                    (if-let ((name (get node outer-nodes)))
+                      (ensure-node name definition)
+                      node))
+                  nodes))
+               nodes)))
 
-        (update-instances (map-keys outer-nodes))))))
+      (foreach #'update-context (contexts node)))))

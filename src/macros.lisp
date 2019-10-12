@@ -297,16 +297,17 @@
            (next args)))
 
     (rest
-     (and (list (list (eql +rest-argument+) _)) args)
+     (and (list* (list (eql +rest-argument+) _) _) args)
      :from required
 
      (cons '&optional (next args)))
 
     (rest
-     (list (list (eql +rest-argument+) arg))
+     (cons (list (eql +rest-argument+) arg) args)
 
-     (list
-      (list (get-operand-var arg) '(empty-list))))
+     (cons
+      (list (get-operand-var arg) '(empty-list))
+      (next args)))
 
     (outer
      (and (cons (cons (eql +outer-node-argument+) _) _) args)

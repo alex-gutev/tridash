@@ -159,13 +159,10 @@
 
   (typecase operand
     (meta-node
-     (aprog1
-         (-<>> (optional-operand-values operand)
-               (map (rcurry #'post-process-node (home-module node)))
-               (bind-operands node <> :context context)
-               (meta-node-ref operand :optional))
-
-       (add-to-instances node operand context it)))
+     (-<>> (optional-operand-values operand)
+           (map (rcurry #'post-process-node (home-module node)))
+           (bind-operands node <> :context context)
+           (meta-node-ref operand :optional)))
 
     (module
      (error 'module-node-reference-error :node operand))
