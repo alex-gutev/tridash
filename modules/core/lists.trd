@@ -66,6 +66,14 @@ list!(..(xs)) : {
     every?(!!, xs) -> xs -> self
 }
 
+## Failure type indicating an empty list.
+
+Empty <- &(Empty-List)
+
+## Failure value with the type indicating an empty list.
+
+Empty! <- fail(Empty)
+
 
 ### Element Access
 
@@ -95,7 +103,7 @@ append(list1, list2) : {
     result <- cons(current, append(rest, list2))
 
     list1 !- result -> self @ append-list
-    list2 -> self @ append-list catch &(Empty)
+    list2 -> self @ append-list catch Empty
 }
 
 
@@ -118,7 +126,7 @@ foldl'(x, f, list) : {
     result <- foldl'(f(x, head(list)), f, tail(list))
 
     list !- result -> self @ fold
-    x -> self @ fold catch &(Empty)
+    x -> self @ fold catch Empty
 }
 
 
@@ -157,7 +165,7 @@ foldr(f, l, :(x)) : {
         result <- f(current, fold(rest))
 
         rest !- result -> self @ fold
-        current -> self @ fold catch &(Empty)
+        current -> self @ fold catch Empty
     }
 
     fold(if(?(x), append(l, list(x)), l))

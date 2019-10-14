@@ -68,7 +68,7 @@ Pattern(condition, :(binding)) : {
     condition -> self.condition
 
     binding -> self.bindings @ binding
-    Empty() -> self.bindings @ binding
+    Empty! -> self.bindings @ binding
 }
 
 ## Creates the node declarations implementing the Pattern `pattern`.
@@ -114,7 +114,7 @@ make-pattern(place, pattern) : {
         pattern != '(_) ->
             list(make-match-bind(place, pattern)) -> self.bindings @ make-binding
 
-        Empty() -> self.bindings @ make-binding
+        Empty! -> self.bindings @ make-binding
     }
 
     # Body
@@ -167,9 +167,14 @@ constant?(x) : {
 }
 
 
-## Creates a failure with type &(Match-Fail).
+## Failure type indicating that a pattern failed to match.
 
-Match-Fail() : fail(&(Match-Fail))
+Match-Fail <- &(Match-Fail)
+
+## Failure value with the type indicating that a pattern failed to
+## match.
+
+Match-Fail! <- fail(Match-Fail)
 
 ## Generates a binding `src -> target`, with `target` in the `match`
 ## context which is activated on failures with type `&(Match-Fail)`.
@@ -178,7 +183,7 @@ Match-Fail() : fail(&(Match-Fail))
 ## target : The target of the binding.
 
 make-match-bind(src, target) : {
-    context <- list('(catch), '(match), list(&(&), &(Match-Fail)))
+    context <- list('(catch), '(match), list(&(&), Match-Fail))
     ctarget <- list(&(@), target, context)
 
     list(&(->), src, ctarget)
@@ -190,7 +195,7 @@ make-match-bind(src, target) : {
 ## condition : The pattern condition
 
 fail-match(condition) :
-    if (?(condition) and condition, 1, Match-Fail())
+    if (?(condition) and condition, 1, Match-Fail!)
 
 
 ### Pattern Matchers
@@ -286,24 +291,21 @@ match-cons(place, pattern) : {
 target-list(source, expression) :
     make-pattern-declarations(match-list(source, expression))
 
-match-list(place, pattern) : {
-    make-cons(head, tail) :
-        list(&(cons), head, tail)
+match-list(place, expression) : {
+    args <- tail(expression)
+    empty-pattern <- list(list(&(fails?), &(Empty)))
 
-    cons-pattern <- foldr(make-cons, tail(pattern), list(&(Empty)))
-    make-pattern(place, cons-pattern)
+    pattern <-
+        cons(
+            &(list*),
+            append(args, empty-pattern)
+        )
+
+    make-pattern(place, pattern)
 }
 
 :attribute(list, target-transform, target-list)
 :attribute(list, matcher, match-list)
-
-
-## Empty List
-
-match-Empty(place, pattern) :
-    Pattern(list(&(fail-type?), place, list(&(&), &(Empty))))
-
-:attribute(Empty, matcher, match-Empty)
 
 
 ## List*
@@ -325,8 +327,14 @@ match-list*(place, pattern) : {
 
 ## Fails?
 
-match-fails?(place, pattern) :
-    Pattern(list(&(fails?), place))
+match-fails?(place, pattern) : {
+    type <- head(tail(pattern))
+
+    if(?(type),
+       Pattern(list(&(fail-type?), place, type)),
+       Pattern(list(&(fails?), place))
+      )
+}
 
 :attribute(fails?, matcher, match-fails?)
 
