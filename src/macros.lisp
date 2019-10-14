@@ -119,7 +119,6 @@
   (unless (external-meta-node? meta-node)
     (unless (typep (definition meta-node) 'flat-node-table)
       (build-meta-node meta-node)
-
       (finish-build-meta-node meta-node)
 
       (build-referenced-meta-nodes meta-node))
@@ -307,7 +306,7 @@
        (handler-case
            (tridash->cl
             (constant-node-value
-             (car (find arg (outer-nodes meta-node) :key #'cdr))))
+             (car (find arg (outer-nodes meta-node) :key (compose #'name #'cdr)))))
 
          (not-constant-context ()
            `(error 'macro-outer-node-error :meta-node ,meta-node))))
@@ -607,13 +606,9 @@
   "Group the arguments in ARGS, which correspond to the rest
    arguments, in a single list."
 
-  (let ((max-args (cdr (meta-node-arity meta-node))))
-    (if (null max-args)
-        (group-rest-args
-         args
-         (position +rest-argument+ (operands meta-node) :key #'ensure-car))
-
-        args)))
+  (aif (position +rest-argument+ (operands meta-node) :key #'ensure-car)
+       (group-rest-args args it)
+       args))
 
 (defun group-rest-args (args n)
   "Returns a list in which the elements after the N'th element of ARGS

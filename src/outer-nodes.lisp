@@ -21,7 +21,8 @@
 (in-package :tridash.frontend)
 
 (defun outer-node-references (meta-node)
-  "Returns the list of outer nodes referenced by META-NODE.
+  "Returns the list of outer nodes referenced by META-NODE, as they
+   appear in the operands list.
 
    Updates the meta-node's operand list if it has not been updated
    already."
@@ -30,11 +31,11 @@
     (unless (find +outer-node-argument+ operands :key #'ensure-car)
       (find-outer-node-references meta-node)
 
-      (let* ((nodes (coerce outer-nodes 'alist))
-             (names (map #'cdr nodes)))
+      (let* ((refs (coerce outer-nodes 'alist))
+             (names (map (compose #'name #'cdr) refs)))
 
         (setf (get :outer-nodes attributes)
-              (map #'car nodes))
+              (map #'car refs))
 
         (appendf operands names)
         (add-operand-nodes names definition)))
@@ -111,14 +112,14 @@
                      (map-into a #'car b)
                      a))
 
-               (add-outer-node (node)
+               (add-outer-ref (node)
                  "Adds NODE to the OUTER-NODES set of META-NODE if it
                   is not defined within a sub-module of the definition
                   of META-NODE."
 
                  (let* ((module (home-module node)))
                    (unless (>= (depth module) (depth definition))
-                     (ensure-get node outer-nodes (outer-node-name meta-node)))))
+                     (add-outer-node node definition meta-node))))
 
                (visited? (meta-node)
                  (memberp meta-node visited)))
@@ -129,7 +130,7 @@
                             :initial-value (hash-set))))
 
           (when (typep definition 'module)
-            (foreach #'add-outer-node refs)
+            (foreach #'add-outer-ref refs)
             (foreach (rcurry #'find-outer-node-references visited) (meta-nodes definition))))
 
         (values outer-nodes (emptyp meta-node-references))))))
@@ -196,9 +197,7 @@
                     ;; If node not found in outer node
                     ;; references, assume it is defined in the
                     ;; meta-node's node table.
-                    (if-let ((name (get node outer-nodes)))
-                      (ensure-node name definition)
-                      node))
+                    (or (get node outer-nodes) node))
                   nodes))
                nodes)))
 

@@ -298,7 +298,7 @@
                  (or
                   (match x
                     ((list 'outer arg _)
-                     (position (get arg (outer-nodes node-b)) (operands node-b))))
+                     (position (name (get arg (outer-nodes node-b))) (operands node-b))))
                   0))
 
                (extract-expression (x)
@@ -490,7 +490,7 @@
          (get-operand-node (operand)
            (ematch operand
              ((list var (list 'outer node))
-              `(,var (get ,node (outer-nodes ,g!meta-node))))
+              `(,var (name (get ,node (outer-nodes ,g!meta-node)))))
 
              ((list var name)
               `(,var ',(node-id name))))))
@@ -2559,7 +2559,7 @@
                   (outer-node node))
 
                  ((type node)
-                  (get arg outer-nodes)))))
+                  (name (get arg outer-nodes))))))
 
       (-<> (map #'get-arg-pos outers)
            (sort :key #'cdr)

@@ -740,12 +740,13 @@
 
       (lookup-node (unwrap-declaration node) outer-module))))
 
-(defun add-outer-node (outer-node module)
-  "Adds a reference to NODE to the meta-node currently being
-   built (the value of *META-NODE*)."
+(defun add-outer-node (outer-node module &optional (meta-node *meta-node*))
+  "Adds OUTER-NODE to the OUTER-NODES set of META-NODE and creates a
+   local node in MODULE."
 
-  (-> (outer-node outer-node *meta-node*)
-      (ensure-node module t)))
+  (ensure-get outer-node (outer-nodes meta-node)
+    (-> (outer-node-name meta-node)
+        (ensure-node module t))))
 
 
 ;;; Bindings
