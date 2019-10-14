@@ -57,21 +57,17 @@
   "Creates the macro-node function, which compiles META-NODE to a CL
    function, calls the function and processes the result."
 
-  (let ((num-args (1- (length (operands meta-node))))
-        (max-args (cdr (meta-node-arity meta-node))))
+  (lambda (operator operands module)
+    (declare (ignore operator))
 
-    (lambda (operator operands module)
-      (declare (ignore operator))
+    (let ((*tridash-call-reason* :macro)
+          (operands (map #'unwrap-declaration operands)))
+      (check-arity meta-node operands)
 
-      (let ((*tridash-call-reason* :macro)
-            (operands (map #'unwrap-declaration operands)))
-        (check-arity meta-node operands)
-
-        (-<> (group-rest-args operands num-args)
-             (if (null max-args) <> operands)
-             (call-tridash-meta-node meta-node <>)
-             resolve
-             (process-macro-expansion module))))))
+      (-<> (make-rest-args meta-node operands)
+           (call-tridash-meta-node meta-node <>)
+           resolve
+           (process-macro-expansion module)))))
 
 
 ;;;; Calling Tridash Meta-Nodes from CL
@@ -90,12 +86,7 @@
 
   (check-arity meta-node args)
 
-  (let* ((max-args (cdr (meta-node-arity meta-node)))
-         (value
-          (-<>> (position +rest-argument+ (operands meta-node) :key #'ensure-car)
-                (group-rest-args args)
-                (if (null max-args) <> args)
-                (call-next-method meta-node))))
+  (let ((value (call-next-method meta-node (make-rest-args meta-node args))))
     (if resolve
         (resolve value)
         value)))
@@ -608,8 +599,21 @@
    meta-node's argument list."
 
   (if (null (cdr (meta-node-arity meta-node)))
-      `(group-rest-args ,args ,(1- (length (operands meta-node))))
+      `(make-rest-args ',meta-node ,args)
       args))
+
+
+(defun make-rest-args (meta-node args)
+  "Group the arguments in ARGS, which correspond to the rest
+   arguments, in a single list."
+
+  (let ((max-args (cdr (meta-node-arity meta-node))))
+    (if (null max-args)
+        (group-rest-args
+         args
+         (position +rest-argument+ (operands meta-node) :key #'ensure-car))
+
+        args)))
 
 (defun group-rest-args (args n)
   "Returns a list in which the elements after the N'th element of ARGS
