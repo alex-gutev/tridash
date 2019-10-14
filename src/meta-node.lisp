@@ -41,7 +41,7 @@
      which it is bound.")
 
    (meta-node-references
-    :initform (make-hash-set)
+    :initform nil
     :accessor meta-node-references
     :documentation
     "Set of meta-nodes of which there are instances in the

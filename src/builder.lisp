@@ -315,11 +315,7 @@
   (when (meta-node? node)
     ;; Signal error if meta-node appears in target position.
     (when *source-node*
-      (error 'target-node-error :node node))
-
-    ;; Add NODE to the meta-node references of *META-NODE*
-    (when (and *meta-node* (/= node *meta-node*))
-      (nadjoin node (meta-node-references *meta-node*))))
+      (error 'target-node-error :node node)))
 
   ;; If inside a meta-node and node referenced is from an outer
   ;; module, add it to the outer-nodes set of the meta-node.
@@ -1018,7 +1014,7 @@
 
      (labels ((match-arguments (operands arguments)
                 (multiple-value-match (values operands arguments)
-                  (((list (list (eql +rest-argument+) _))
+                  (((list* (list (eql +rest-argument+) _) _)
                     _)
                    (list (argument-list arguments)))
 

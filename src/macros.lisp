@@ -92,7 +92,8 @@
 
   (let* ((max-args (cdr (meta-node-arity meta-node)))
          (value
-          (-<>> (group-rest-args args (1- (length (operands meta-node))))
+          (-<>> (position +rest-argument+ (operands meta-node) :key #'ensure-car)
+                (group-rest-args args)
                 (if (null max-args) <> args)
                 (call-next-method meta-node))))
     (if resolve
@@ -134,9 +135,6 @@
   (unless (external-meta-node? meta-node)
     (unless (typep (definition meta-node) 'flat-node-table)
       (build-meta-node meta-node)
-
-      ;; Determine the meta-node's referenced outer-nodes
-      (outer-node-references meta-node)
 
       (finish-build-meta-node meta-node)
 

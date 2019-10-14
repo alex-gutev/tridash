@@ -258,6 +258,7 @@
    :build-parsed-nodes
    :build-node
    :finish-build-graph
+   :finish-build-meta-node
 
    :build-program
    :build-source-file

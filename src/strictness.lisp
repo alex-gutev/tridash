@@ -88,6 +88,8 @@
    strictness has not yet been computed, computes it by
    ANALYZE-META-NODE and stores it in the :STRICTNESS attribute."
 
+  (finish-build-meta-node meta-node)
+
   (or (attribute :strictness meta-node)
       (setf (attribute :strictness meta-node)
             (analyze-meta-node meta-node))))
