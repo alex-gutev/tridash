@@ -116,13 +116,6 @@
   (let ((f (or (meta-node-cl-function meta-node)
                (compile-meta-node-function meta-node))))
 
-    (with-slots (outer-nodes operands) meta-node
-      ;; Check that all values are provided for all the outer-nodes
-      ;; referenced by the meta-node.
-      (when (and (not (emptyp outer-nodes))
-                 (< (length args) (length operands)))
-        (error 'macro-outer-node-error :meta-node meta-node)))
-
     (apply f args)))
 
 
@@ -317,7 +310,90 @@
      (cons (and (cons (eql +outer-node-argument+) _) arg) rest)
      :from (optional outer rest)
 
-     (cons (get-operand-var arg) (next rest)))))
+     (cons
+      (list
+       (get-operand-var arg)
+       (handler-case
+           (tridash->cl
+            (constant-node-value
+             (car (find arg (outer-nodes meta-node) :key #'cdr))))
+
+         (not-constant-context ()
+           `(error 'macro-outer-node-error :meta-node ,meta-node))))
+      (next rest)))))
+
+
+(define-condition not-constant-context ()
+  ()
+
+  (:documentation
+   "Condition which indicates that a node or context does not have a
+    constant value."))
+
+(defun constant-node-value (node)
+  "Returns the value expression of NODE if it has a constant value. If
+   it does not have a constant value the condition
+   `not-constant-context' is signalled.
+
+   A node is considered to have a constant value if it is not an input
+   node one of the following is satisfied:
+
+   - It has a single context with no operands, or at least one of the
+     operands of the remaining contexts does not have a constant
+     value.
+
+   - One of its contexts has operands which all have constant
+     values. The rest of the contexts must have at least one operand
+     which does not have a constant value."
+
+  (labels ((context-value (context)
+             (if (emptyp (operands context))
+                 (value-function context)
+
+                 (replace-dependencies
+                  (value-function context)
+                  (map
+                   (lambda (operand)
+                     (cons (car operand) (constant-node-value (car operand))))
+
+                   (operands context)))))
+
+           (replace-dependencies (expression operands)
+             (typecase expression
+               (node-link
+                (get (node-link-node expression) operands))
+
+               (otherwise
+                (map-expression! (rcurry #'replace-dependencies operands) expression)))))
+
+    (with-slots (contexts) node
+      (when (input-node? node)
+        (error 'not-constant-context))
+
+      (nlet-tail get-value
+          ((contexts (map-values contexts))
+           (value nil)
+           (found 0))
+
+        (when (> found 1)
+          (error 'not-constant-context))
+
+        (cond
+          (contexts
+           (handler-case
+               (get-value
+                (rest contexts)
+                (context-value (first contexts))
+                (incf found))
+
+             (not-constant-context ()
+               (get-value (rest contexts) value found))))
+
+          ((= found 1)
+           value)
+
+          (t
+           (error 'not-constant-context)))))))
 
 
 (defgeneric tridash->cl (expression &key &allow-other-keys)
