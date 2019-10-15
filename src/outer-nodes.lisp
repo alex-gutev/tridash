@@ -20,120 +20,131 @@
 
 (in-package :tridash.frontend)
 
-(defun outer-node-references (meta-node)
-  "Returns the list of outer nodes referenced by META-NODE, as they
-   appear in the operands list.
+(defgeneric outer-node-references (meta-node)
+  (:documentation
+   "Returns the list of outer nodes referenced by META-NODE, as they
+    appear in the operands list.
 
-   Updates the meta-node's operand list if it has not been updated
-   already."
+    Updates the meta-node's operand list if it has not been updated
+    already.")
 
+  (:method ((meta-node external-meta-node))
+    nil))
+
+(defmethod outer-node-references ((meta-node meta-node))
   (with-slots (outer-nodes operands definition attributes) meta-node
     (unless (find +outer-node-argument+ operands :key #'ensure-car)
       (find-outer-node-references meta-node)
 
       (let* ((refs (coerce outer-nodes 'alist))
-             (names (map (compose #'name #'cdr) refs)))
+             (local-nodes (map #'cdr refs)))
 
         (setf (get :outer-nodes attributes)
               (map #'car refs))
 
-        (appendf operands names)
-        (add-operand-nodes names definition)))
+        (appendf operands (map (curry #'cons +outer-node-argument+) local-nodes))))
 
     (get :outer-nodes attributes)))
 
-(defun referenced-meta-nodes (meta-node)
-  "Returns the set of `META-NODES' which are used in the definition of
-   META-NODE."
+(defun used-meta-nodes (nodes)
+  "Returns the set of `META-NODES' which are used in the value
+   functions of the nodes in NODES"
 
-  (with-slots (definition meta-node-references) meta-node
-    (unless meta-node-references
-      (let ((meta-nodes (make-hash-set)))
-        (labels
-            ((walk-node (node)
-               (when (node? node)
-                 (foreach #'walk-context (map-values (contexts node)))))
+  (let ((meta-nodes (make-hash-set)))
+    (labels
+        ((walk-node (node)
+           (when (node? node)
+             (foreach #'walk-context (map-values (contexts node)))))
 
-             (walk-context (context)
-               (walk-expression #'add-used-meta-nodes (value-function context)))
+         (walk-context (context)
+           (walk-expression #'add-used-meta-nodes (value-function context)))
 
-             (add-used-meta-nodes (expression)
-               (match expression
-                 ((functor-expression- (meta-node (and (type meta-node) meta-node)))
-                  (add-meta-node meta-node))
+         (add-used-meta-nodes (expression)
+           (match expression
+             ((functor-expression- (meta-node (and (type meta-node) meta-node)))
+              (add-meta-node meta-node))
 
-                 ((meta-node-ref- node)
-                  (add-meta-node node))
+             ((meta-node-ref- node)
+              (add-meta-node node))
 
-                 (_ t)))
+             (_ t)))
 
-             (add-meta-node (node)
-               (unless (= node meta-node)
-                 (nadjoin node meta-nodes))))
+         (add-meta-node (node)
+           (nadjoin node meta-nodes)))
 
-          (when (typep definition 'module)
-            (foreach #'walk-node (map-values (nodes (definition meta-node)))))
+      (foreach #'walk-node nodes)
+      meta-nodes)))
 
-          (setf meta-node-references meta-nodes))))
+(defgeneric find-outer-node-references (meta-node &optional visited)
+  (:documentation
+   "Augments the set of outer-nodes, referenced from within META-NODE,
+    with the set of outer-nodes, referenced by each meta-node used
+    within the definition of META-NODE. Also augments the outer node
+    references of the meta-node's nested in it. The first return value
+    is the new set of outer nodes and the second return value is true
+    if the set is complete otherwise it is NIL.")
 
-    meta-node-references))
+  (:method ((meta-node meta-node-spec) &optional (visited (make-hash-set)))
+    (build-meta-node meta-node)
+    (find-outer-node-references meta-node visited))
 
-(defun find-outer-node-references (meta-node &optional (visited (make-hash-set)))
-  "Augments the set of outer-nodes, referenced from within META-NODE,
-   with the set of outer-nodes, referenced by each meta-node used
-   within the definition of META-NODE. Also augments the outer node
-   references of the meta-node's nested in it. The first return value
-   is the new set of outer nodes and the second return value is true
-   if the set is complete otherwise it is NIL."
+  (:method ((meta-node external-meta-node) &optional visited)
+    (declare (ignore visited))
+    nil)
+
+  (:method ((meta-node final-meta-node) &optional visited)
+    (declare (ignore visited))
+
+    (values (outer-nodes meta-node) t)))
+
+(defmethod find-outer-node-references ((meta-node built-meta-node) &optional (visited (make-hash-set)))
 
   (nadjoin meta-node visited)
 
-  (with-slots (definition outer-nodes) meta-node
-    ;; Ensure meta-node has been built
-    (build-meta-node meta-node)
+  ;; Ensure meta-node has been built
+  (build-meta-node meta-node)
 
-    (let ((meta-node-references (referenced-meta-nodes meta-node)))
-      (labels ((outer-node-refs (meta-node)
-                 "Returns the OUTER-NODES set of META-NODES."
+  (with-slots (definition meta-node-references outer-nodes) meta-node
+    (labels ((outer-node-refs (meta-node)
+               "Returns the OUTER-NODES set of META-NODES."
 
-                 (unless (visited? meta-node)
-                   (multiple-value-bind (refs complete?)
-                       (find-outer-node-references meta-node visited)
+               (unless (visited? meta-node)
+                 (multiple-value-bind (refs complete?)
+                     (find-outer-node-references meta-node visited)
 
-                     (when complete?
-                       (erase meta-node-references meta-node))
+                   (when complete?
+                     (erase meta-node-references meta-node))
 
-                     refs)))
+                   refs)))
 
-               (union-refs (a b)
-                 "Merges the OUTER-NODES set B into A."
+             (union-refs (a b)
+               "Merges the OUTER-NODES set B into A."
 
-                 (if b
-                     (map-into a #'car b)
-                     a))
+               (if b
+                   (map-into a #'car b)
+                   a))
 
-               (add-outer-ref (node)
-                 "Adds NODE to the OUTER-NODES set of META-NODE if it
-                  is not defined within a sub-module of the definition
-                  of META-NODE."
+             (add-outer-ref (node)
+               "Adds NODE to the OUTER-NODES set of META-NODE if it is
+                not defined within a sub-module of the definition of
+                META-NODE."
 
-                 (let* ((module (home-module node)))
-                   (unless (>= (depth module) (depth definition))
-                     (add-outer-node node definition meta-node))))
+               (let* ((module (home-module node)))
+                 (unless (>= (depth module) (depth definition))
+                   (add-outer-node node definition meta-node))))
 
-               (visited? (meta-node)
-                 (memberp meta-node visited)))
+             (visited? (meta-node)
+               (memberp meta-node visited)))
 
-        ;; Get all outer-node references
-        (let ((refs (reduce #'union-refs meta-node-references
-                            :key #'outer-node-refs
-                            :initial-value (hash-set))))
+      ;; Get all outer-node references
+      (let ((refs (reduce #'union-refs meta-node-references
+                          :key #'outer-node-refs
+                          :initial-value (hash-set))))
 
-          (when (typep definition 'module)
-            (foreach #'add-outer-ref refs)
-            (foreach (rcurry #'find-outer-node-references visited) (meta-nodes definition))))
+        (foreach #'add-outer-ref refs)
+        (foreach (rcurry #'find-outer-node-references visited) (meta-nodes definition)))
 
-        (values outer-nodes (emptyp meta-node-references))))))
+      (values outer-nodes (emptyp meta-node-references)))))
 
 (defun update-meta-node-instances (node meta-node)
   "Updates each `FUNCTOR-EXPRESSION' and `META-NODE-REF' in each

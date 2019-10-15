@@ -664,7 +664,7 @@
               (accumulate call-args (first op-values))
               (make-args rest (rest op-values)))
 
-             ((list* (type symbol) rest)
+             ((list* (type (or symbol node)) rest)
               (let ((var (var-name)))
                 (accumulate call-args var)
                 (accumulate fn-args var))

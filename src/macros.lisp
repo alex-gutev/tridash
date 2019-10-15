@@ -112,20 +112,28 @@
 
 ;;;; Compiling CL function from Meta-Node
 
-(defun compile-meta-node-function (meta-node)
-  "Compiles the META-NODE meta-node to a CL function. Stores the
-   compiled CL function in the :CL-FUNCTION attribute."
+(defgeneric compile-meta-node-function (meta-node)
+  (:documentation
+   "Compiles the META-NODE meta-node to a CL function. Stores the
+    compiled CL function in the :CL-FUNCTION attribute.")
 
-  (unless (external-meta-node? meta-node)
-    (unless (typep (definition meta-node) 'flat-node-table)
-      (build-meta-node meta-node)
-      (finish-build-meta-node meta-node)
+  (:method ((meta-node meta-node-spec))
+    (build-meta-node meta-node)
+    (compile-meta-node-function meta-node))
 
-      (build-referenced-meta-nodes meta-node))
+  (:method ((meta-node external-meta-node))
+    nil))
 
-    (or (meta-node-cl-function meta-node)
-        (setf (meta-node-cl-function meta-node)
-              (compile nil (tridash->cl-function meta-node))))))
+(defmethod compile-meta-node-function ((meta-node built-meta-node))
+  (finish-build-meta-node meta-node)
+  (build-referenced-meta-nodes meta-node)
+
+  (compile-meta-node-function meta-node))
+
+(defmethod compile-meta-node-function ((meta-node final-meta-node))
+  (or (meta-node-cl-function meta-node)
+      (setf (meta-node-cl-function meta-node)
+            (compile nil (tridash->cl-function meta-node)))))
 
 (defun build-referenced-meta-nodes (meta-node)
   "Compile each meta-node used by META-NODE to a CL Function."
@@ -139,13 +147,12 @@
               (compile-meta-node-function node)))
            t))
 
-    (unless (external-meta-node? meta-node)
-      (->> meta-node
-           contexts
-           first
-           cdr
-           value-function
-           (walk-expression #'build-meta-nodes)))))
+    (->> meta-node
+         contexts
+         first
+         cdr
+         value-function
+         (walk-expression #'build-meta-nodes))))
 
 (defun meta-node-cl-function (meta-node)
   "Returns the compiled CL function of the meta-node."
@@ -254,10 +261,10 @@
     :start 'required
 
     (required
-     (cons (and (type symbol) arg) args)
+     (cons (and (type node) arg) args)
      :from required
 
-     (cons (get-operand-var arg) (next args)))
+     (cons (get-operand-var (name arg)) (next args)))
 
     (optional
      (and (cons (list* (eql +optional-argument+) _) _)
@@ -274,7 +281,7 @@
      (when (has-nodes? value)
        (error 'macro-outer-node-error))
 
-     (cons (list (get-operand-var arg) (tridash->cl value))
+     (cons (list (get-operand-var (name arg)) (tridash->cl value))
            (next args)))
 
     (rest
@@ -287,7 +294,7 @@
      (cons (list (eql +rest-argument+) arg) args)
 
      (cons
-      (list (get-operand-var arg) '(empty-list))
+      (list (get-operand-var (name arg)) '(empty-list))
       (next args)))
 
     (outer
@@ -297,16 +304,16 @@
      (cons '&optional (next args)))
 
     (outer
-     (cons (and (cons (eql +outer-node-argument+) _) arg) rest)
+     (cons (cons (eql +outer-node-argument+) node) rest)
      :from (optional outer rest)
 
      (cons
       (list
-       (get-operand-var arg)
+       (get-operand-var (name node))
        (handler-case
            (tridash->cl
             (constant-node-value
-             (car (find arg (outer-nodes meta-node) :key (compose #'name #'cdr)))))
+             (car (find node (outer-nodes meta-node) :key #'cdr))))
 
          (not-constant-context ()
            `(error 'macro-outer-node-error :meta-node ,meta-node))))
@@ -526,9 +533,9 @@
                        (call-tridash-meta-node
                         ,node
 
-                        ,(if outer-nodes
-                             `(append (list ,@vars) (list ,@(map #'tridash->cl outer-nodes)))
-                             `(list ,@vars)))))))))))))
+                        (list ,@vars
+                              ,@(when outer-nodes
+                                  (map #'tridash->cl outer-nodes))))))))))))))
 
 (defun destructure-meta-node-args (operands optional)
   "Creates the destructuring lambda-list for the meta-node argument
@@ -547,7 +554,7 @@
                  ((list* (list* (eql +rest-argument+) _) _)
                   (make-rest))
 
-                 ((list* (type symbol) args)
+                 ((list* (not (type cons)) args)
                   (let ((var (gensym)))
                     (accumulate lambda-list var)
                     (accumulate vars var))

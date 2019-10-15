@@ -24,48 +24,83 @@
 
 
 (defclass meta-node (node)
+  ()
+
+  (:documentation
+   "Base class representing a meta-node."))
+
+(defclass meta-node-spec (meta-node)
   ((operands
     :initarg :operands
     :initform nil
     :accessor operands
     :documentation
-    "List containing the symbols naming the meta-node's operands.")
-
-   (outer-nodes
-    :initform (make-hash-map)
-    :accessor outer-nodes
-    :documentation
-    "Map of nodes (found in outer node tables) referenced from the
-     meta-node's definition. Each key is the outer `NODE' object with
-     the corresponding value being the name of the local node to
-     which it is bound.")
-
-   (meta-node-references
-    :initform nil
-    :accessor meta-node-references
-    :documentation
-    "Set of meta-nodes of which there are instances in the
-     meta-node's definition.")
+    "List containing the symbols naming the local nodes to which the
+     values of the arguments are bound.")
 
    (definition
     :initarg :definition
     :initform nil
     :accessor definition
     :documentation
-    "The graph corresponding to the body of the meta-node. Prior to
-     the graph being built the list of node declarations, making up
-     the body, are stored in this slot. After the meta-node's
-     definition is built, this slot contains a `FLAT-NODE-TABLE'
-     containing the nodes in the meta-node's body."))
+    "List of the node declarations comprising the body."))
 
   (:documentation
-   "Stores the definition of a meta-node."))
+   "Represents a meta-node which has not been built yet. Contains all
+    declarations necessary for building the body."))
 
-(defclass external-meta-node (meta-node)
+(defclass built-meta-node (meta-node)
+  ((operands
+    :initarg :operands
+    :initform nil
+    :accessor operands
+    :documentation
+    "List containing the local nodes to which the values of the
+     arguments are bound.")
+
+   (outer-nodes
+    :initform (make-hash-map)
+    :accessor outer-nodes
+    :documentation
+    "Map mapping nodes, declared in an outer node table, to the
+     corresponding local nodes within the definition.")
+
+   (meta-node-references
+    :initform nil
+    :accessor meta-node-references
+    :documentation
+    "Set of meta-nodes used within the definition.")
+
+   (definition
+    :initarg :definition
+    :initform nil
+    :accessor definition
+    :documentation
+    "The `MODULE' storing the nodes comprising the definition."))
+
+  (:documentation
+   "Represents a meta-node which has been built, however the final
+    processing steps have not been performed."))
+
+(defclass final-meta-node (built-meta-node)
   ()
 
   (:documentation
-   "Node stub for a meta-node which is defined externally."))
+   "Represents a meta-node which has been built with all the final
+    processing steps performed."))
+
+(defclass external-meta-node (meta-node)
+  ((operands
+    :initarg :operands
+    :initform nil
+    :accessor operands
+    :documentation
+    "List containing the symbols naming the local nodes to which the
+     values of the arguments are bound."))
+
+  (:documentation
+   "Represents a meta-node which is defined externally, not in Tridash
+    source code."))
 
 
 ;;; Utilities
@@ -220,17 +255,30 @@
 
 ;;; Operands
 
-(defun operand-node-names (meta-node)
-  "Returns the names of the operand nodes of META-NODE."
+(defgeneric operand-node-names (meta-node)
+  (:documentation
+   "Returns the names of the operand nodes of META-NODE.")
 
-  (map
-   (lambda (operand)
-     (match operand
-       ((or (list* (eql +optional-argument+) name _)
-            (list (eql +rest-argument+) name)
-            name)
-        name)))
-   (operands meta-node)))
+  (:method ((meta-node meta-node))
+    (map
+     (lambda (operand)
+       (match operand
+         ((or (list* (eql +optional-argument+) name _)
+              (list (eql +rest-argument+) name)
+              name)
+          name)))
+     (operands meta-node)))
+
+  (:method ((meta-node built-meta-node))
+    (map
+     (lambda (operand)
+       (match operand
+         ((cons (eql +outer-node-argument+) node)
+          (name node))
+
+         (_ (name operand))))
+
+     (call-next-method))))
 
 (defun optional-operand-values (meta-node)
   "Returns the default values for the optional arguments of

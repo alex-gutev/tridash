@@ -298,7 +298,7 @@
                  (or
                   (match x
                     ((list 'outer arg _)
-                     (position (name (get arg (outer-nodes node-b))) (operands node-b))))
+                     (position (cons +outer-node-argument+ (get arg (outer-nodes node-b))) (operands node-b))))
                   0))
 
                (extract-expression (x)
@@ -1037,9 +1037,6 @@
 
             (is (operands add) (decls '!\x '!\y))
             (is (operands sub) (decls '!\x '!\y))
-
-            (is (definition add) nil)
-            (is (definition sub) nil)
 
             (test-node-function add-ab add add a b)
             (test-node-function sub-ab sub sub a b))))
@@ -2559,7 +2556,7 @@
                   (outer-node node))
 
                  ((type node)
-                  (name (get arg outer-nodes))))))
+                  (cons +outer-node-argument+ (get arg outer-nodes))))))
 
       (-<> (map #'get-arg-pos outers)
            (sort :key #'cdr)

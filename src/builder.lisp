@@ -167,25 +167,33 @@
     ;; Remove unused meta-nodes
     (setf meta-nodes (remove-unused-meta-nodes nodes meta-nodes))))
 
-(defun finish-build-meta-node (meta-node)
-  "Performs the final build steps (node coalescing, etc.) in the
-   definition of META-NODE. The DEFINITION of META-NODE is converted
-   to a `FLAT-NODE-TABLE'."
+(defgeneric finish-build-meta-node (meta-node)
+  (:documentation
+   "Performs the final build steps (node coalescing, etc.) in the
+    definition of META-NODE. The DEFINITION of META-NODE is converted
+    to a `FLAT-NODE-TABLE'.")
 
+  (:method ((meta-node final-meta-node))
+    nil)
+
+  (:method ((meta-node external-meta-node))
+    nil))
+
+(defmethod finish-build-meta-node ((meta-node built-meta-node))
   (let ((*meta-node* meta-node))
     (with-slots (name definition) meta-node
-      (when (typep definition 'module)
-        ;; Determine the meta-node's outer node references
-        (outer-node-references meta-node)
+      ;; Determine the meta-node's outer node references
+      (outer-node-references meta-node)
 
-        ;; Update all meta-node instances to pass outer nodes
-        (foreach (rcurry #'update-meta-node-instances meta-node)
-                 (remove-if-not #'node? (map-values (nodes definition))))
+      ;; Update all meta-node instances to pass outer nodes
+      (foreach (rcurry #'update-meta-node-instances meta-node)
+               (remove-if-not #'node? (map-values (nodes definition))))
 
-        (setf definition (flatten-meta-node definition))
+      (change-class meta-node 'final-meta-node
+                    :definition (flatten-meta-node definition))
 
-        (nadjoin meta-node (nodes definition))
-        (finish-build definition)))))
+      (nadjoin meta-node (nodes definition))
+      (finish-build definition))))
 
 
 ;;;; Build Meta-Nodes
@@ -195,17 +203,29 @@
 
   (foreach #'build-meta-node meta-nodes))
 
-(defun build-meta-node (meta-node)
+(defgeneric build-meta-node (meta-node)
+  (:documentation
+   "Builds the definition of META-NODE, and converts it to a
+    `BUILT-META-NODE' object.")
+
+  (:method ((meta-node built-meta-node))
+    meta-node)
+
+  (:method ((meta-node external-meta-node))
+    meta-node))
+
+(defmethod build-meta-node :before ((meta-node meta-node))
+  ;; Check that META-NODE is not being built again before it has
+  ;; finished being built the first time.
+  (when (get :building (attributes meta-node))
+    (error 'compile-meta-node-loop-error :meta-node meta-node)))
+
+(defmethod build-meta-node ((meta-node meta-node-spec))
   "Builds the definition of META-NODE, from the declarations contained
    in its DEFINITION slot. The value of DEFINITION is replaced with
    the `MODULE' object containing the nodes in the definition."
 
-  (with-slots (name definition attributes) meta-node
-    ;; Check that META-NODE is not being built again before it has
-    ;; finished being built the first time.
-    (when (get :building attributes)
-      (error 'compile-meta-node-loop-error :meta-node meta-node))
-
+  (with-slots (name definition operands attributes) meta-node
     ;; Mark META-NODE as currently being built
     (setf (get :building attributes) t)
 
@@ -216,32 +236,49 @@
                      (typep definition 'module)
                      (typep definition 'flat-node-table))
 
-           (let* ((module (make-inner-module (home-module meta-node)))
+           (let* ((body (definition meta-node))
+                  (module (make-inner-module (home-module meta-node)))
                   (value-node (make-self-node module))
                   (*meta-node* meta-node)
                   (*current-module* module)
                   (*functor-module* module))
 
-             (add-operand-nodes (operand-node-names meta-node) module)
+             (change-class meta-node 'built-meta-node
+                           :operands (add-operand-nodes operands module)
+                           :definition module)
 
              (let* ((*create-nodes* nil)
-                    (last-node (at-source (process-node-list definition module :top-level t))))
-               (make-meta-node-function meta-node value-node last-node)
-               (setf definition module)
+                    (last-node (at-source (process-node-list body module :top-level t))))
 
+               (make-meta-node-function meta-node value-node last-node)
                (add-binding value-node meta-node :add-function t)
+
+               (let ((used (used-meta-nodes (map-values (nodes definition)))))
+                 (erase used meta-node)
+                 (setf (meta-node-references meta-node) used))
 
                (build-meta-nodes (meta-nodes definition)))))
 
       (setf (get :building attributes) nil))))
 
-(defun add-operand-nodes (names module)
-  "Creates a node for each element in NAMES, the element being the
-   node name, and adds the nodes to MODULE The nodes are added to the
-   input nodes of MODULE."
+(defun add-operand-nodes (operands module)
+  "Creates nodes, in MODULE, for each operand in OPERANDS. Returns the
+   operands list with the operand symbols replaced by the created
+   local nodes."
 
-  (dolist (name names)
-    (add-input (ensure-node name module t) module)))
+  (flet ((add-operand (operand)
+           (match operand
+             ((list* type name value)
+              (-<> (aprog1
+                       (ensure-node name module t)
+                     (add-input it module))
+                   (list* type <> value)))
+
+             (name
+              (aprog1
+                  (ensure-node name module t)
+                (add-input it module))))))
+    (map #'add-operand operands)))
 
 (defun make-self-node (module)
   "Create the self node. MODULE is the `MODULE' containing the
@@ -326,6 +363,16 @@
            (not (in-home-module? node module)))
       (add-outer-node node module)
       node))
+
+(defun add-outer-node (outer-node module &optional (meta-node *meta-node*))
+  "Adds OUTER-NODE to the OUTER-NODES set of META-NODE and creates a
+   local node in MODULE."
+
+  (ensure-get outer-node (outer-nodes meta-node)
+    (aprog1 (-> (outer-node-name meta-node)
+                (ensure-node module t))
+
+      (add-input it module))))
 
 
 (defmethod process-declaration ((n null) (module t) &key)
@@ -596,7 +643,7 @@
 
       (add-meta-node
        name
-       (make-instance 'meta-node
+       (make-instance 'meta-node-spec
                       :name name
                       :operands (parse-operands (map #'unwrap-declaration args) module)
                       :definition body)
@@ -739,14 +786,6 @@
         args
 
       (lookup-node (unwrap-declaration node) outer-module))))
-
-(defun add-outer-node (outer-node module &optional (meta-node *meta-node*))
-  "Adds OUTER-NODE to the OUTER-NODES set of META-NODE and creates a
-   local node in MODULE."
-
-  (ensure-get outer-node (outer-nodes meta-node)
-    (-> (outer-node-name meta-node)
-        (ensure-node module t))))
 
 
 ;;; Bindings

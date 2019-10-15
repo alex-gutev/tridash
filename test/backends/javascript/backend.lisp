@@ -257,27 +257,27 @@
          (match operand
            ((or (list 'optional symb value)
                 (list 'optional symb))
-            (list +optional-argument+ symb value))
+            (list +optional-argument+ (make-instance 'node :name symb) value))
 
            ((list 'rest symb)
-            (list +rest-argument+ symb))
+            (list +rest-argument+ (make-instance 'node :name symb)))
 
            ((list 'outer node)
             (list +outer-node-argument+ node))
 
-           (_ operand)))
+           (_ (make-instance 'node :name operand))))
 
        (make-meta-node (opts)
          (match opts
            ((list name operands strict-operands)
             (aprog1
-                (make-instance 'meta-node
+                (make-instance 'final-meta-node
                                :name name
                                :operands (map #'make-operand operands))
               (setf (attribute :strictness it)
                     (list* 'or strict-operands))))
            (name
-            (make-instance 'meta-node :name name)))))
+            (make-instance 'final-meta-node :name name)))))
     (map #'make-meta-node names)))
 
 (defmacro mock-meta-nodes ((&rest names) &body body)

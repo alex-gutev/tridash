@@ -129,12 +129,12 @@
            (match operand
              ((or (list 'optional symb value)
                   (list 'optional symb))
-              (list +optional-argument+ symb value))
+              (list +optional-argument+ (make-instance 'node :name symb) value))
 
              ((list 'rest symb)
-              (list +rest-argument+ symb))
+              (list +rest-argument+ (make-instance 'node :name symb)))
 
-             (_ operand)))
+             (_ (make-instance 'node :name operand))))
 
          (operand-node (operand)
            (match operand
@@ -146,7 +146,7 @@
 
              (_ operand))))
 
-    `(let ((self (make-instance 'meta-node
+    `(let ((self (make-instance 'final-meta-node
                                 :name 'test-meta-node
                                 :operands ',(map #'make-operand operands)))
            ,@(map #`(,a1 (node-link (make-instance 'node :name ',a1)))

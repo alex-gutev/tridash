@@ -214,6 +214,8 @@
 
    ;; Meta-node
    :meta-node
+   :built-meta-node
+   :final-meta-node
    :external-meta-node
 
    :operands
