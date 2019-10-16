@@ -85,21 +85,26 @@
 # `context` : A symbol serving as the explicit context identifier.
 
 @(node, context) : {
-    test-equal(x) : {
-        test(y) : x = y
-        test
-    }
-
     catch? <- cons?(context) and head(context) = '(catch)
     catch-type <- head(tail(tail(context)))
 
-    test-fn <- list(&(test-equal), catch-type)
+    test-fn <- list(&(test-equal-function), catch-type)
 
     context-id <- if(catch?, head(tail(context)), context)
     catch-expr <- list('(:context), node, context-id, test-fn)
     expr <- list('(:context), node, context-id)
 
     if(catch?, catch-expr, expr)
+}
+
+# Returns a meta-node which takes a single argument and returns true
+# if that argument is equal, by `=`, to `x`.
+#
+# x : The value to compare the meta-node argument to.
+
+test-equal-function(x) : {
+    test(y) : y = x
+    test
 }
 
 :attribute(@, macro, 1)

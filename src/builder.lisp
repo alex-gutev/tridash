@@ -392,6 +392,17 @@
 (defmethod process-declaration ((node node) (module t) &key)
   "Returns the node."
 
+  (labels ((in-module (module)
+             (or (in-home-module? node module)
+                 (aand (outer-module module)
+                       (in-module it)))))
+
+    ;; Ensure that NODE is either defined in the global scope or an
+    ;; enclosing scope.
+    (unless (or (global-module? (home-module node))
+                (in-module module))
+      (error 'node-reference-out-scope-error :node node)))
+
   node)
 
 

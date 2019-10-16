@@ -127,6 +127,20 @@
           (node err) (name (module err))))
 
 
+(define-condition node-reference-out-scope-error (semantic-error)
+  ((node :initarg :node
+         :reader node
+         :documentation
+         "The node which was referenced."))
+
+  (:documentation
+   "Error condition: A node was referenced outside its enclosing
+    scope."))
+
+(defmethod print-object ((e node-reference-out-scope-error) stream)
+  (format stream "~a referenced outside its scope." (node e)))
+
+
 ;;;; Name Collision Errors
 
 (define-condition node-exists-error (semantic-error)
