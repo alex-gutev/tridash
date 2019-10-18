@@ -44,6 +44,7 @@
            :analyze-expression
            :meta-node-strictness
            :strict-arguments
+           :strict-outer-operands
            :strict?))
 
 (in-package :tridash.frontend.strictness)
@@ -83,6 +84,21 @@
           (curry #'strict?)
           (map <> (operand-node-names meta-node)))))
 
+(defun strict-outer-operands (meta-node)
+  "Determines which outer-node operands, of META-NODE, should be
+   evaluated strictly. Returns a map, mapping outer nodes to the
+   values t, if the outer node should be evaluated strictly, or nil,
+   if it should be evaluated lazily."
+
+  (let ((strictness (meta-node-strictness meta-node)))
+    (map
+     (lambda (outer-node)
+       (destructuring-bind (node . local-node) outer-node
+         (cons
+          node
+          (strict? strictness (name local-node)))))
+     (outer-nodes meta-node))))
+
 (defun meta-node-strictness (meta-node)
   "Returns the strictness expression of META-NODE's operands. If the
    strictness has not yet been computed, computes it by
@@ -94,10 +110,15 @@
       (setf (attribute :strictness meta-node)
             (analyze-meta-node meta-node))))
 
-(defun analyze-meta-node (meta-node)
-  "Analyze strictness of META-NODE's operands. The strictness
-   expression of the operands is returned."
+(defgeneric analyze-meta-node (meta-node)
+  (:documentation
+   "Analyze strictness of META-NODE's operands. The strictness
+    expression of the operands is returned.")
 
+  (:method ((meta-node external-meta-node))
+    nil))
+
+(defmethod analyze-meta-node ((meta-node final-meta-node))
   (labels ((replace-operands (expression)
              (match expression
                ((eql meta-node)
@@ -111,7 +132,11 @@
 
     ;; Initially set all arguments to strict in case of recursive
     ;; calls
-    (setf (attribute :strictness meta-node) (list* 'or (operand-node-names meta-node)))
+    (setf (attribute :strictness meta-node)
+          (list* 'or
+                 (append
+                  (operand-node-names meta-node)
+                  (outer-node-operand-names meta-node))))
 
     (replace-operands (analyze meta-node))))
 
@@ -160,21 +185,41 @@
    operator is not a `META-NODE', the arguments are assumed to be
    non-strict and NIL is returned."
 
-  (with-struct-slots functor-expression- (meta-node arguments) functor
+  (with-struct-slots functor-expression- (meta-node arguments outer-nodes) functor
     (typecase meta-node
       (meta-node
-       (analyze-functor meta-node (map #'analyze-expression arguments)))
+       (analyze-functor
+        meta-node
+        (map #'analyze-expression arguments)
+
+        (map
+         (lambda (outer-node)
+           (destructuring-bind (node . expression) outer-node
+             (cons
+              node
+              (analyze-expression expression))))
+         outer-nodes)))
 
       (otherwise
        (analyze-expression meta-node)))))
 
-(defun analyze-functor (meta-node arguments)
+(defun analyze-functor (meta-node arguments outer-nodes)
   "Analyze the strictness of a `META-NODE' functor expression with
    operator META-NODE and operands ARGUMENTS. The strictness
    expression of META-NODE is returned with the operands replaced with
-   the corresponding expressions in ARGUMENTS."
+   the corresponding expressions in ARGUMENTS. The outer-node operands
+   are replaced with the corresponding expressions in OUTER-NODES."
 
   (let ((values (alist-hash-map (pairlis (operand-node-names meta-node) arguments))))
+    (foreach
+     (lambda (node)
+       (destructuring-bind (node . expression) node
+         (-> (get node (outer-nodes meta-node))
+             name
+             (get values)
+             (setf expression))))
+     outer-nodes)
+
     (labels ((walk (expression)
                (match expression
                  ((list* (and (or 'or 'and) op) args)

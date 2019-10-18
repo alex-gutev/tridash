@@ -33,47 +33,13 @@
 
 (defmethod outer-node-references ((meta-node meta-node))
   (with-slots (outer-nodes operands definition attributes) meta-node
-    (unless (find +outer-node-argument+ operands :key #'ensure-car)
+    (unless (get :outer-operands attributes)
       (find-outer-node-references meta-node)
 
-      (let* ((refs (coerce outer-nodes 'alist))
-             (local-nodes (map #'cdr refs)))
+      (setf (get :outer-operands attributes)
+            (coerce outer-nodes 'alist)))
 
-        (setf (get :outer-nodes attributes)
-              (map #'car refs))
-
-        (appendf operands (map (curry #'cons +outer-node-argument+) local-nodes))))
-
-    (get :outer-nodes attributes)))
-
-(defun used-meta-nodes (nodes)
-  "Returns the set of `META-NODES' which are used in the value
-   functions of the nodes in NODES"
-
-  (let ((meta-nodes (make-hash-set)))
-    (labels
-        ((walk-node (node)
-           (when (node? node)
-             (foreach #'walk-context (map-values (contexts node)))))
-
-         (walk-context (context)
-           (walk-expression #'add-used-meta-nodes (value-function context)))
-
-         (add-used-meta-nodes (expression)
-           (match expression
-             ((functor-expression- (meta-node (and (type meta-node) meta-node)))
-              (add-meta-node meta-node))
-
-             ((meta-node-ref- node)
-              (add-meta-node node))
-
-             (_ t)))
-
-         (add-meta-node (node)
-           (nadjoin node meta-nodes)))
-
-      (foreach #'walk-node nodes)
-      meta-nodes)))
+    (map #'car (get :outer-operands attributes))))
 
 (defgeneric find-outer-node-references (meta-node &optional visited)
   (:documentation
@@ -98,11 +64,7 @@
     (values (outer-nodes meta-node) t)))
 
 (defmethod find-outer-node-references ((meta-node built-meta-node) &optional (visited (make-hash-set)))
-
   (nadjoin meta-node visited)
-
-  ;; Ensure meta-node has been built
-  (build-meta-node meta-node)
 
   (with-slots (definition meta-node-references outer-nodes) meta-node
     (labels ((outer-node-refs (meta-node)
@@ -141,10 +103,46 @@
                           :key #'outer-node-refs
                           :initial-value (hash-set))))
 
-        (foreach #'add-outer-ref refs)
-        (foreach (rcurry #'find-outer-node-references visited) (meta-nodes definition)))
+        ;; Kludge: The meta-node may have already been fully built if
+        ;; it is used by another node in its definition
+        ;;
+        ;; To resolve this issue all meta-nodes used by META-NODE, and
+        ;; all their used meta-nodes, should be fully built.
+        (unless (typep meta-node 'final-meta-node)
+          (foreach #'add-outer-ref refs)
+          (foreach (rcurry #'find-outer-node-references visited) (meta-nodes definition))))
 
       (values outer-nodes (emptyp meta-node-references)))))
+
+(defun used-meta-nodes (nodes)
+  "Returns the set of `META-NODES' which are used in the value
+   functions of the nodes in NODES"
+
+  (let ((meta-nodes (make-hash-set)))
+    (labels
+        ((walk-node (node)
+           (when (node? node)
+             (foreach #'walk-context (map-values (contexts node)))))
+
+         (walk-context (context)
+           (walk-expression #'add-used-meta-nodes (value-function context)))
+
+         (add-used-meta-nodes (expression)
+           (match expression
+             ((functor-expression- (meta-node (and (type meta-node) meta-node)))
+              (add-meta-node meta-node))
+
+             ((meta-node-ref- node)
+              (add-meta-node node))
+
+             (_ t)))
+
+         (add-meta-node (node)
+           (nadjoin node meta-nodes)))
+
+      (foreach #'walk-node nodes)
+      meta-nodes)))
+
 
 (defun update-meta-node-instances (node meta-node)
   "Updates each `FUNCTOR-EXPRESSION' and `META-NODE-REF' in each
@@ -172,7 +170,9 @@
 
                (functor-expression
                 meta-node
-                (append arguments (outer-node-links meta-node)))))
+                arguments
+                :outer-nodes
+                (outer-node-links meta-node))))
 
              ((meta-node-ref node optional)
               (map-expression!
@@ -189,12 +189,13 @@
            "Bind each outer node, referenced by META-NODE, to NODE and
             return the list of the binding `NODE-LINK' objects."
 
-           (-<> meta-node
-                outer-node-references
-                ;; outer-nodes
-                ;; map-keys
-                operand-nodes
-                (bind-operands node <> :context context-id)))
+           ;; Determine outer node references
+           (outer-node-references meta-node)
+
+           (let* ((nodes (coerce (outer-nodes meta-node) 'alist))
+                  (links (bind-operands node (operand-nodes (map #'car nodes)) :context context-id)))
+
+             (alist-hash-map (pairlis (map #'car nodes) links))))
 
          (operand-nodes (nodes)
            "Returns the nodes local to META-NODE which reference the

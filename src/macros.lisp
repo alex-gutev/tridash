@@ -35,137 +35,8 @@
    they are compiled to a fail thunk.")
 
 
-;;;; Macro Attributes
-
-(defmethod process-attribute (node (attribute (eql (id-symbol "MACRO"))) value (module t))
-  "Sets the internal :MACRO-FUNCTION attribute to a function that
-   compiles the META-NODE to a CL function, calls it and calls
-   PROCESS-DECLARATION on the result."
-
-  (when (bool-value value)
-    (setf (node-macro-function node)
-          (make-macro-function node))
-    value))
-
-(defmethod process-attribute ((node t) (attribute (eql (id-symbol "TARGET-TRANSFORM"))) value module)
-  (process-operator-node value module))
-
-
-;;;; Macro Function
-
-(defun make-macro-function (meta-node)
-  "Creates the macro-node function, which compiles META-NODE to a CL
-   function, calls the function and processes the result."
-
-  (lambda (operator operands module)
-    (declare (ignore operator))
-
-    (let ((*tridash-call-reason* :macro)
-          (operands (map #'unwrap-declaration operands)))
-      (check-arity meta-node operands)
-
-      (-<> (make-rest-args meta-node operands)
-           (call-tridash-meta-node meta-node <>)
-           resolve
-           (process-macro-expansion module)))))
-
-
-;;;; Calling Tridash Meta-Nodes from CL
-
-(defgeneric call-meta-node (meta-node args &key &allow-other-keys)
-  (:documentation
-   "Calls the `META-NODE' META-NODE with arguments ARGS. Arity checks
-    are performed and the rest arguments are grouped into a single
-    list. Can be used to call both `META-NODE's and
-    `EXTERNAL-META-NODE's."))
-
-(defmethod call-meta-node :around ((meta-node meta-node) args &key (resolve t))
-  "Performs arity checking and calls groups the rest arguments into a
-   single list, before calling the next method with the new argument
-   list."
-
-  (check-arity meta-node args)
-
-  (let ((value (call-next-method meta-node (make-rest-args meta-node args))))
-    (if resolve
-        (resolve value)
-        value)))
-
-(defmethod call-meta-node ((meta-node meta-node) args &key)
-  (call-tridash-meta-node meta-node args))
-
-(defmethod call-meta-node ((meta-node external-meta-node) args &key)
-  (apply (external-meta-node-cl-function (name meta-node)) args))
-
-
-(defun call-tridash-meta-node (meta-node args)
-  "Calls the meta-node META-NODE with arguments ARGS. If the meta-node
-   has been compiled to a CL function, the function is called
-   otherwise it is compiled to a CL function by
-   COMPILE-META-NODE-FUNCTION."
-
-  (let ((f (or (meta-node-cl-function meta-node)
-               (compile-meta-node-function meta-node))))
-
-    (apply f args)))
-
-
-;;;; Compiling CL function from Meta-Node
-
-(defgeneric compile-meta-node-function (meta-node)
-  (:documentation
-   "Compiles the META-NODE meta-node to a CL function. Stores the
-    compiled CL function in the :CL-FUNCTION attribute.")
-
-  (:method ((meta-node meta-node-spec))
-    (build-meta-node meta-node)
-    (compile-meta-node-function meta-node))
-
-  (:method ((meta-node external-meta-node))
-    nil))
-
-(defmethod compile-meta-node-function ((meta-node built-meta-node))
-  (finish-build-meta-node meta-node)
-  (build-referenced-meta-nodes meta-node)
-
-  (compile-meta-node-function meta-node))
-
-(defmethod compile-meta-node-function ((meta-node final-meta-node))
-  (or (meta-node-cl-function meta-node)
-      (setf (meta-node-cl-function meta-node)
-            (compile nil (tridash->cl-function meta-node)))))
-
-(defun build-referenced-meta-nodes (meta-node)
-  "Compile each meta-node used by META-NODE to a CL Function."
-
-  (flet ((build-meta-nodes (expression)
-           (match expression
-             ((and (type meta-node) meta-node)
-              (compile-meta-node-function meta-node))
-
-             ((meta-node-ref- node)
-              (compile-meta-node-function node)))
-           t))
-
-    (->> meta-node
-         contexts
-         first
-         cdr
-         value-function
-         (walk-expression #'build-meta-nodes))))
-
-(defun meta-node-cl-function (meta-node)
-  "Returns the compiled CL function of the meta-node."
-
-  (get :cl-function (attributes meta-node)))
-
-(defun (setf meta-node-cl-function) (fn meta-node)
-  "Sets the compiled CL function of META-NODE to FN."
-
-  (setf (get :cl-function (attributes meta-node)) fn))
-
-
-;;;; Error Conditions
+
+;;; Error Conditions
 
 (define-condition unsupported-meta-node-error (semantic-error)
   ((node-name :initarg :node-name
@@ -208,7 +79,131 @@
           (meta-node e)))
 
 
-;;;; Compiling Tridash Expressions to CL
+
+;;; Calling Tridash Meta-Nodes from CL
+
+(defun make-macro-function (meta-node)
+  "Creates the macro-node function, which compiles META-NODE to a CL
+   function, calls the function and processes the result."
+
+  (lambda (operator operands module)
+    (declare (ignore operator))
+
+    (let ((*tridash-call-reason* :macro)
+          (operands (map #'unwrap-declaration operands)))
+      (check-arity meta-node operands)
+
+      (-<> (make-rest-args meta-node operands)
+           (call-tridash-meta-node meta-node <>)
+           resolve
+           (process-macro-expansion module)))))
+
+
+(defgeneric call-meta-node (meta-node args &key &allow-other-keys)
+  (:documentation
+   "Calls the `META-NODE' META-NODE with arguments ARGS. Arity checks
+    are performed and the rest arguments are grouped into a single
+    list. Can be used to call both `META-NODE's and
+    `EXTERNAL-META-NODE's."))
+
+(defmethod call-meta-node :around ((meta-node meta-node) args &key (resolve t))
+  "Performs arity checking and calls groups the rest arguments into a
+   single list, before calling the next method with the new argument
+   list."
+
+  (check-arity meta-node args)
+
+  (let ((value (call-next-method meta-node (make-rest-args meta-node args))))
+    (if resolve
+        (resolve value)
+        value)))
+
+(defmethod call-meta-node ((meta-node meta-node) args &key)
+  (call-tridash-meta-node meta-node args))
+
+(defmethod call-meta-node ((meta-node external-meta-node) args &key)
+  (apply (external-meta-node-cl-function (name meta-node)) args))
+
+
+(defun call-tridash-meta-node (meta-node args)
+  "Calls the meta-node META-NODE with arguments ARGS. If the meta-node
+   has been compiled to a CL function, the function is called
+   otherwise it is compiled to a CL function by
+   COMPILE-META-NODE-FUNCTION."
+
+  (apply (compile-meta-node-function meta-node) args))
+
+
+
+;;; Compiling Meta-Nodes to CL Functions
+
+(defun compile-meta-node-function (meta-node)
+  "Compiles META-NODE to a CL function."
+
+  (or (meta-node-cl-function meta-node)
+      (setf (meta-node-cl-function meta-node)
+            (compile nil (tridash->cl-function meta-node)))))
+
+(defun meta-node-cl-function (meta-node)
+  "Returns the compiled CL function of the meta-node."
+
+  (get :cl-function (attributes meta-node)))
+
+(defun (setf meta-node-cl-function) (fn meta-node)
+  "Sets the compiled CL function of META-NODE to FN."
+
+  (setf (get :cl-function (attributes meta-node)) fn))
+
+
+(defun build-used-meta-nodes (meta-node &optional (visited (make-hash-set)))
+  "Builds each meta-node which is used by META-NODE"
+
+  (unless (memberp meta-node visited)
+    (nadjoin meta-node visited)
+
+    (unless (external-meta-node? meta-node)
+      (foreach
+       (lambda (meta-node)
+         (build-meta-node meta-node)
+         (build-used-meta-nodes meta-node visited))
+
+       (->> meta-node
+            definition
+            used-meta-nodes-in-definition)))))
+
+(defun finish-build-used-meta-nodes (meta-node &optional (visited (make-hash-set)))
+  "Peforms the final built steps for META-NODE and each meta-node used
+   by META-NODE."
+
+  (unless (memberp meta-node visited)
+    (nadjoin meta-node visited)
+
+    (unless (external-meta-node? meta-node)
+      (finish-build-meta-node meta-node)
+
+      (->> meta-node
+           definition
+           used-meta-nodes-in-definition
+           (foreach (rcurry #'finish-build-used-meta-nodes visited))))))
+
+(defgeneric used-meta-nodes-in-definition (definition)
+  (:documentation
+   "Returns the meta-nodes used in the meta-node definition DEFINITION.")
+
+  (:method ((definition module))
+    (->> definition
+         nodes
+         map-values
+         used-meta-nodes))
+
+  (:method ((definition flat-node-table))
+    (->> definition
+         nodes
+         used-meta-nodes)))
+
+
+
+;;; Compiling Tridash Expressions to CL
 
 (defvar *tridash-cl-functions* (make-hash-map)
   "Map mapping Tridash meta-node identifiers to the corresponding CL
@@ -222,8 +217,18 @@
    computes the block's value.")
 
 
+;;; Function Creation
+
 (defun tridash->cl-function (meta-node)
   "Returns a CL LAMBDA expression which is compiled from META-NODE."
+
+  (build-meta-node meta-node)
+  (build-used-meta-nodes meta-node)
+
+  ;; Finish build will not perform any final build steps unless there
+  ;; are still some meta-nodes, used by META-NODE, which have not been
+  ;; built yet.
+  (finish-build-used-meta-nodes meta-node)
 
   (let ((*current-meta-node* meta-node)
         (*operand-vars* (make-hash-map))
@@ -234,6 +239,7 @@
              (ensure-get operand *operand-vars* (gensym (mkstr operand)))))
 
       (foreach #'add-operand (operand-node-names meta-node))
+      (foreach #'add-operand (outer-node-operand-names meta-node))
 
       (let ((main (->
                    (contexts meta-node)
@@ -298,26 +304,33 @@
       (next args)))
 
     (outer
-     (and (cons (cons (eql +outer-node-argument+) _) _) args)
+     nil
      :from required
 
-     (cons '&optional (next args)))
+     (awhen (next nil)
+       (cons '&optional (next nil))))
 
     (outer
-     (cons (cons (eql +outer-node-argument+) node) rest)
-     :from (optional outer rest)
+     nil
 
-     (cons
-      (list
-       (get-operand-var (name node))
-       (handler-case
-           (tridash->cl
-            (constant-node-value
-             (car (find node (outer-nodes meta-node) :key #'cdr))))
+     (map
+      (lambda (node)
+        (list
+         (->> meta-node
+              outer-nodes
+              (get node)
+              name
+              get-operand-var)
 
-         (not-constant-context ()
-           `(error 'macro-outer-node-error :meta-node ,meta-node))))
-      (next rest)))))
+         (handler-case
+             ;;FIXME: Potential issue if the outer-node has been
+             ;;coalesced
+             (tridash->cl (constant-node-value node))
+
+           (not-constant-context ()
+             `(error 'macro-outer-node-error :meta-node ,meta-node)))))
+
+      (outer-node-references meta-node)))))
 
 
 (define-condition not-constant-context ()
@@ -393,6 +406,8 @@
            (error 'not-constant-context)))))))
 
 
+;;; Thunks
+
 (defgeneric tridash->cl (expression &key &allow-other-keys)
   (:documentation
    "Compiles the Tridash expression EXPR to a CL expression. If the
@@ -419,6 +434,8 @@
         ((list (or 'quote 'function) _) t))))
 
 
+;;; Argument and Node Referneces
+
 (defmethod tridash->cl ((link node-link) &key)
   "Returns the variable corresponding to the linked node by looking up
    the node's identifier in *OPERAND-VARS*"
@@ -430,6 +447,41 @@
   (node-ref-node ref))
 
 
+;;; Object Expressions
+
+(defmethod tridash->cl ((object object-expression) &key)
+  "Generates a CL expression that creates a `HASH-MAP'."
+
+  (flet ((make-entry (pair)
+           (let ((*return-nil* nil))
+             (destructuring-bind (key value) pair
+               `(cons ',key ,(tridash->cl value :thunk t))))))
+
+    `(alist-hash-map (list ,@(map #'make-entry (object-expression-entries object))))))
+
+;;; Expression Blocks
+
+(defmethod tridash->cl ((block expression-block) &key)
+  (with-struct-slots expression-block- (expression count) block
+    (acond
+      ((= count 1)
+       (tridash->cl expression :thunk nil))
+
+      ((get block *expression-blocks*)
+       (first it))
+
+      (t
+       (let ((var (gensym))
+             (expr (tridash->cl expression :thunk t)))
+
+         (setf (get block *expression-blocks*)
+               (list var expr))
+
+         var)))))
+
+
+;;; Functor Expressions and Meta-Node References
+
 (defmethod tridash->cl ((functor functor-expression) &key)
   "If the operator of the functor is an `EXTERNAL-META-NODE',
    generates a CL expression which calls the corresponding CL
@@ -440,7 +492,7 @@
    If the operator is a `META-NODE', generates a
    CALL-TRIDASH-META-NODE expression."
 
-  (with-struct-slots functor-expression- (meta-node arguments)
+  (with-struct-slots functor-expression- (meta-node arguments outer-nodes)
       functor
 
     (match meta-node
@@ -451,9 +503,10 @@
 
       ((type meta-node)
        (let ((*return-nil* nil))
-         (->> (make-meta-node-arguments meta-node arguments)
-              (list* 'list)
-              (list 'call-tridash-meta-node meta-node))))
+         (-<>> (make-meta-node-arguments meta-node arguments)
+               (append <> (make-outer-operands meta-node outer-nodes))
+               (list* 'list)
+               (list 'call-tridash-meta-node meta-node))))
 
       (_
        `(call-node ,(tridash->cl meta-node :thunk nil)
@@ -482,33 +535,19 @@
 
   (tridash.frontend.strictness::strict-arguments meta-node))
 
-(defmethod tridash->cl ((object object-expression) &key)
-  "Generates a CL expression that creates a `HASH-MAP'."
+(defun make-outer-operands (meta-node outer-nodes)
+  (let ((strict (tridash.frontend.strictness:strict-outer-operands meta-node)))
+    (map
+     (lambda (node)
+       (tridash->cl (get node outer-nodes) :thunk (not (get node strict))))
+     (outer-node-references meta-node))))
 
-  (flet ((make-entry (pair)
-           (let ((*return-nil* nil))
-             (destructuring-bind (key value) pair
-               `(cons ',key ,(tridash->cl value :thunk t))))))
+(defun external-meta-node-cl-function (name)
+  "Returns the name of the CL function implementing the
+   `EXTERNAL-META-NODE' with name NAME."
 
-    `(alist-hash-map (list ,@(map #'make-entry (object-expression-entries object))))))
-
-(defmethod tridash->cl ((block expression-block) &key)
-  (with-struct-slots expression-block- (expression count) block
-    (acond
-      ((= count 1)
-       (tridash->cl expression :thunk nil))
-
-      ((get block *expression-blocks*)
-       (first it))
-
-      (t
-       (let ((var (gensym))
-             (expr (tridash->cl expression :thunk t)))
-
-         (setf (get block *expression-blocks*)
-               (list var expr))
-
-         var)))))
+  (or (get name *tridash-cl-functions*)
+      (error 'unsupported-meta-node-error :node-name name)))
 
 
 (defmethod tridash->cl ((ref meta-node-ref) &key)
@@ -516,7 +555,7 @@
       ref
 
     (with-gensyms (args)
-      (let ((apply-args (make-meta-node-arg-list node args)))
+      (let ((apply-args (make-meta-node-ref-arguments node args)))
         `#'(lambda (&rest ,args)
              (check-arity ,node ,args)
 
@@ -533,9 +572,7 @@
                        (call-tridash-meta-node
                         ,node
 
-                        (list ,@vars
-                              ,@(when outer-nodes
-                                  (map #'tridash->cl outer-nodes))))))))))))))
+                        (list ,@vars ,@(make-outer-operands node outer-nodes)))))))))))))
 
 (defun destructure-meta-node-args (operands optional)
   "Creates the destructuring lambda-list for the meta-node argument
@@ -599,7 +636,7 @@
          t))
    expression))
 
-(defun make-meta-node-arg-list (meta-node args)
+(defun make-meta-node-ref-arguments (meta-node args)
   "Makes the argument list to be passed to the `META-NODE', inside a
    `META-NODE-REF'. ARGS is the name of the variable storing the
    meta-node's argument list."
@@ -607,7 +644,6 @@
   (if (null (cdr (meta-node-arity meta-node)))
       `(make-rest-args ',meta-node ,args)
       args))
-
 
 (defun make-rest-args (meta-node args)
   "Group the arguments in ARGS, which correspond to the rest
@@ -639,11 +675,16 @@
     (collector-sequence c)))
 
 
+;;; Argument List
+
 (defmethod tridash->cl ((list argument-list) &key)
   (with-struct-slots argument-list- (arguments) list
     (if arguments
         (list* 'list (map #'tridash->cl (argument-list-arguments list)))
         '(empty-list))))
+
+
+;;; Literals
 
 (defmethod tridash->cl ((literal null) &key)
   (unless *return-nil*
@@ -656,15 +697,9 @@
 
     (_ `',literal)))
 
-(defun external-meta-node-cl-function (name)
-  "Returns the name of the CL function implementing the
-   `EXTERNAL-META-NODE' with name NAME."
 
-  (or (get name *tridash-cl-functions*)
-      (error 'unsupported-meta-node-error :node-name name)))
-
-
-;;;; Macro-Writing
+
+;;; Macro-Writing
 
 (defmethod process-functor ((operator (eql +quote-operator+)) args module)
   "Returns the raw argument unprocessed."
@@ -676,3 +711,19 @@
       args
 
     thing))
+
+
+;;; Macro Attributes
+
+(defmethod process-attribute (node (attribute (eql (id-symbol "MACRO"))) value (module t))
+  "Sets the internal :MACRO-FUNCTION attribute to a function that
+   compiles the META-NODE to a CL function, calls it and calls
+   PROCESS-DECLARATION on the result."
+
+  (when (bool-value value)
+    (setf (node-macro-function node)
+          (make-macro-function node))
+    value))
+
+(defmethod process-attribute ((node t) (attribute (eql (id-symbol "TARGET-TRANSFORM"))) value module)
+  (process-operator-node value module))

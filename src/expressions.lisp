@@ -33,12 +33,17 @@
 
   node)
 
-(defstruct (functor-expression (:constructor functor-expression (meta-node arguments)))
+(defstruct (functor-expression (:constructor functor-expression (meta-node arguments &key (outer-nodes (make-hash-map)))))
   "Represents a functor expression with a META-NODE applied to
-   ARGUMENTS."
+   ARGUMENTS.
+
+   OUTER-NODES is the map mapping the outer `NODE' objects, referenced
+   by META-NODE, to the corresponding expressions which compute their
+   values."
 
   meta-node
-  arguments)
+  arguments
+  outer-nodes)
 
 (defstruct (object-expression (:constructor object-expression (&optional entries)))
   "Represents a create dictionary object expression with entries
@@ -58,11 +63,14 @@
   expression
   (count 1))
 
-(defstruct (meta-node-ref (:constructor meta-node-ref (node &key optional outer-nodes)))
-  "Represents a meta-node reference. NODE is the `META-NODE' object,
-   OPTIONAL is the list of default values for the optional arguments
-   and OUTER-NODES is the list of outer nodes referenced by the
-   meta-node."
+(defstruct (meta-node-ref (:constructor meta-node-ref (node &key optional (outer-nodes (make-hash-map)))))
+  "Represents a meta-node reference. NODE is the `META-NODE' object.
+
+   OPTIONAL is the list of default values for the optional arguments.
+
+   OUTER-NODES is the map mapping the outer `NODE' objects, referenced
+   by META-NODE, to the corresponding expressions which compute their
+   values."
 
   node
   optional
@@ -86,8 +94,10 @@
       (call-next-method)))
 
   (:method (fn (call functor-expression))
-    (walk-expression fn (functor-expression-meta-node call))
-    (foreach (curry #'walk-expression fn) (functor-expression-arguments call)))
+    (with-struct-slots functor-expression- (meta-node arguments outer-nodes) call
+      (walk-expression fn meta-node)
+      (foreach (curry #'walk-expression fn) arguments)
+      (foreach (curry #'walk-expression fn) (map-values outer-nodes))))
 
   (:method (fn (object object-expression))
     (foreach (compose (curry #'walk-expression fn) #'second)
@@ -97,11 +107,17 @@
     (walk-expression fn (expression-block-expression block)))
 
   (:method (fn (ref meta-node-ref))
-    (foreach (curry #'walk-expression fn) (meta-node-ref-optional ref))
-    (foreach (curry #'walk-expression fn) (meta-node-ref-outer-nodes ref)))
+    (with-struct-slots meta-node-ref- (optional outer-nodes) ref
+      (foreach (curry #'walk-expression fn) optional)
+      (foreach (curry #'walk-expression fn) (map-values outer-nodes))))
 
   (:method (fn (list argument-list))
     (foreach (curry #'walk-expression fn) (argument-list-arguments list)))
+
+  (:method (fn (link node-link))
+    (with-struct-slots node-link- (node) link
+      (unless (node? node)
+        (walk-expression fn node))))
 
   (:method ((fn t) (expr t))
     nil))
@@ -117,9 +133,16 @@
     identity of an expression block needs to be preserved." )
 
   (:method (fn (call functor-expression))
-    (functor-expression
-     (funcall fn (functor-expression-meta-node call))
-     (map fn (functor-expression-arguments call))))
+    (with-struct-slots functor-expression- (meta-node arguments outer-nodes) call
+      (functor-expression
+       (funcall fn meta-node)
+       (map fn arguments)
+
+       :outer-nodes
+       (map
+        (lambda (ref)
+          (cons (car ref) (funcall fn (cdr ref))))
+        outer-nodes))))
 
   (:method (fn (object object-expression))
     (flet ((map-entry (entry)
@@ -134,14 +157,18 @@
       (setf expression (funcall fn expression))))
 
   (:method (fn (ref meta-node-ref))
-    (meta-node-ref
-     (meta-node-ref-node ref)
+    (with-struct-slots meta-node-ref- (node optional outer-nodes) ref
+      (meta-node-ref
+       node
 
-     :optional
-     (map fn (meta-node-ref-optional ref))
+       :optional
+       (map fn optional)
 
-     :outer-nodes
-     (map fn (meta-node-ref-outer-nodes ref))))
+       :outer-nodes
+       (map
+        (lambda (ref)
+          (cons (car ref) (funcall fn (cdr ref))))
+        outer-nodes))))
 
   (:method (fn (list argument-list))
     (->> list

@@ -253,7 +253,12 @@
   "Returns a list of `EXTERNAL-META-NODE's with names NAMES."
 
   (labels
-      ((make-operand (operand)
+      ((split-args (args)
+         (aif (position :outer args)
+              (values (subseq args 0 it) (subseq args (1+ it)))
+              (values args nil)))
+
+       (make-operand (operand)
          (match operand
            ((or (list 'optional symb value)
                 (list 'optional symb))
@@ -262,20 +267,29 @@
            ((list 'rest symb)
             (list +rest-argument+ (make-instance 'node :name symb)))
 
-           ((list 'outer node)
-            (list +outer-node-argument+ node))
-
            (_ (make-instance 'node :name operand))))
+
+       (make-outer-operand (operand)
+         (cons operand (make-instance 'node :name operand)))
 
        (make-meta-node (opts)
          (match opts
            ((list name operands strict-operands)
-            (aprog1
-                (make-instance 'final-meta-node
-                               :name name
-                               :operands (map #'make-operand operands))
-              (setf (attribute :strictness it)
-                    (list* 'or strict-operands))))
+
+
+            (multiple-value-bind (operands outer-nodes)
+                (split-args operands)
+
+              (aprog1
+                  (make-instance 'final-meta-node
+                                 :name name
+                                 :operands (map #'make-operand operands))
+
+                (setf (outer-nodes it)
+                      (map-to 'hash-map #'make-outer-operand outer-nodes))
+
+                (setf (attribute :strictness it)
+                      (list* 'or strict-operands)))))
            (name
             (make-instance 'final-meta-node :name name)))))
     (map #'make-meta-node names)))
@@ -476,7 +490,54 @@
               (js-return
                (thunk
                 (js-return
-                 (js-call f (d a) (thunk (js-return (js-call "Tridash.Empty")))))))))))))
+                 (js-call f (d a) (thunk (js-return (js-call "Tridash.Empty"))))))))))))
+
+    (subtest "With Outer Node References"
+      (subtest "Simple Node Reference"
+        (mock-backend-state
+          (mock-meta-nodes ((f (a :outer b) (a b)))
+
+            (mock-contexts
+                ((context (a b)
+                          (->> (alist-hash-map `((b . ,b)))
+                               (functor-expression f (list a) :outer-nodes))))
+
+              (test-compute-function context
+                (js-return
+                 (thunk
+                  (js-return
+                   (js-call f (d a) (d b))))))))))
+
+      (subtest "Complex Expression"
+        (subtest "Strict Argument"
+          (mock-backend-state
+            (mock-meta-nodes ((f (a :outer b) (a b)) +)
+
+              (mock-contexts
+                  ((context (a b c)
+                            (->> (alist-hash-map `((b . ,(functor + b c))))
+                                 (functor-expression f (list a) :outer-nodes))))
+
+                (test-compute-function context
+                  (js-return
+                   (thunk
+                    (js-return
+                     (js-call f (d a) (js-call + (d b) (d c)))))))))))
+
+        (subtest "Lazy Argument"
+          (mock-backend-state
+            (mock-meta-nodes ((f (a :outer b) (a)) +)
+
+              (mock-contexts
+                  ((context (a b c)
+                            (->> (alist-hash-map `((b . ,(functor + b c))))
+                                 (functor-expression f (list a) :outer-nodes))))
+
+                (test-compute-function context
+                  (js-return
+                   (thunk
+                    (js-return
+                     (js-call f (d a) (thunk (js-return (js-call + (d b) (d c))))))))))))))))
 
   (subtest "Conditionals"
     (subtest "Simple If Statements"
@@ -847,10 +908,10 @@
 
     (subtest "With Outer Nodes"
       (mock-backend-state
-        (mock-meta-nodes (map (f (a (outer x)) (a x)))
+        (mock-meta-nodes (map (f (a :outer x) (a x)))
           (mock-contexts
               ((context (a b)
-                        (functor map (meta-node-ref f :outer-nodes (list b)) a)))
+                        (functor map (meta-node-ref f :outer-nodes (alist-hash-map `((x . ,b)))) a)))
 
             (test-compute-function context
               (js-return
@@ -867,11 +928,13 @@
 
     (subtest "With Optional Rest and Outer Node Operands"
       (mock-backend-state
-        (mock-meta-nodes (map (f (a (optional b) (rest c) (outer d)) (a d)))
+        (mock-meta-nodes (map (f (a (optional b) (rest c) :outer d) (a d)))
           (mock-contexts
               ((context (a b)
                         (functor map
-                                 (meta-node-ref f :optional (list 1) :outer-nodes (list b))
+                                 (meta-node-ref f
+                                                :optional (list 1)
+                                                :outer-nodes (alist-hash-map `((d . ,b))))
                                  a)))
 
             (test-compute-function context
@@ -1443,6 +1506,31 @@
                (list
                 (js-return
                  (js-call f ($ x) (js-call "Tridash.Empty"))))))))))
+
+    (subtest "Outer Nodes"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core)"
+               "inc(x) : x + delta"
+
+               ":attribute(inc, no-remove, 1)"
+               ":attribute(delta, input, 1)")
+
+        (with-nodes ((inc "inc")) (finish-build)
+          (mock-backend-state
+            (test-meta-node-function inc
+              (js-function
+               (meta-node-id inc)
+               '(($ x) ($ delta))
+
+               (list
+                (protected
+                 (js-return
+                  (js-call
+                   "+"
+
+                   (js-call "Tridash.check_number" (resolve ($ x)))
+                   (js-call "Tridash.check_number" (resolve ($ delta)))))))))))))
 
     (subtest "Primitive Functions"
       (subtest "Arithmetic"

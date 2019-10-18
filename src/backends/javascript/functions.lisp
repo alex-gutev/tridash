@@ -204,7 +204,8 @@
    nodes."
 
   (with-slots (contexts) meta-node
-    (let* ((operands (operand-node-names meta-node))
+    (let* ((operands (append (operand-node-names meta-node)
+                             (outer-node-operand-names meta-node)))
            (context (cdr (first contexts)))
            (op-vars (make-operand-ids operands)))
 
@@ -427,17 +428,22 @@
 
 (defmethod make-expression ((expression functor-expression) &key)
   (with-accessors ((meta-node functor-expression-meta-node)
-                   (arguments functor-expression-arguments))
+                   (arguments functor-expression-arguments)
+                   (outer-nodes functor-expression-outer-nodes))
       expression
 
-    (make-functor-expression meta-node arguments)))
+    (make-functor-expression meta-node arguments outer-nodes)))
 
-(defgeneric make-functor-expression (operator arguments)
+(defgeneric make-functor-expression (operator arguments outer-nodes)
   (:documentation
    "Generates code for a functor expression consisting of OPERATOR
-    applied to ARGUMENTS."))
+    applied to ARGUMENTS. OUTER-NODES is a map mapping the outer nodes
+    to the corresponding Tridash expressions which compute their
+    values."))
 
-(defmethod make-functor-expression ((meta-node external-meta-node) arguments)
+(defmethod make-functor-expression ((meta-node external-meta-node) arguments outer-nodes)
+  (declare (ignore outer-nodes))
+
   (match (name meta-node)
     ((eql (id-symbol "if"))
      (make-if-expression arguments))
@@ -464,14 +470,21 @@
           (subseq arguments 0 first-nil)
           arguments))))
 
-(defmethod make-functor-expression ((meta-node meta-node) arguments)
-  (make-operands
-   arguments
-   (strict-arguments meta-node)
-   (lambda (expressions)
-     (make-meta-node-call meta-node expressions))))
+(defmethod make-functor-expression ((meta-node meta-node) arguments outer-nodes)
+  (let ((strict-outer-nodes (strict-outer-operands meta-node)))
+    (make-operands
+     (append arguments (outer-node-operands meta-node outer-nodes))
 
-(defmethod make-functor-expression (operator arguments)
+     (append
+      (strict-arguments meta-node)
+      (map (rcurry #'get strict-outer-nodes) (outer-node-references meta-node)))
+
+     (lambda (expressions)
+       (make-meta-node-call meta-node expressions)))))
+
+(defmethod make-functor-expression (operator arguments outer-nodes)
+  (declare (ignore outer-nodes))
+
   (make-operands
    (cons operator arguments)
    (list t)
@@ -619,7 +632,7 @@
     (with-struct-slots meta-node-ref- (node optional outer-nodes)
         ref
 
-      (if (or optional outer-nodes (find-if #'rest-arg? (operands node)))
+      (if (or optional (not (emptyp outer-nodes)) (find-if #'rest-arg? (operands node)))
           (make-ref-function ref)
           (values nil (meta-node-id node))))))
 
@@ -630,61 +643,67 @@
   (with-struct-slots meta-node-ref- (node optional outer-nodes)
       ref
 
-    (make-operands
-     (append optional outer-nodes)
-     nil
+    (let ((operands (append optional (outer-node-operands node outer-nodes))))
+      (make-operands
+       operands
+       nil
 
-     (lambda (op-values)
-       (let ((fn-args (make-collector nil))
-             (call-args (make-collector nil))
-             (rest-arg nil))
+       (lambda (op-values)
+         (let ((fn-args (make-collector nil))
+               (call-args (make-collector nil))
+               (rest-arg nil))
 
-         (nlet-tail make-args
-             ((operands (operands node))
-              (op-values op-values))
+           (nlet-tail make-args
+               ((operands (operands node))
+                (op-values op-values))
 
-           (ematch operands
-             ((list* (list (eql +optional-argument+) _ _) rest)
-              (let ((var (var-name)))
-                (accumulate call-args var)
-                (accumulate fn-args (js-call "=" var (first op-values))))
+             (ematch operands
+               ((list* (list (eql +optional-argument+) _ _) rest)
+                (let ((var (var-name)))
+                  (accumulate call-args var)
+                  (accumulate fn-args (js-call "=" var (first op-values))))
 
-              (make-args rest (rest op-values)))
+                (make-args rest (rest op-values)))
 
-             ((list* (list (eql +rest-argument+) _) rest)
-              (let ((var (var-name)))
-                (setf rest-arg var)
+               ((list* (list (eql +rest-argument+) _) rest)
+                (let ((var (var-name)))
+                  (setf rest-arg var)
 
-                (accumulate call-args var)
-                (accumulate fn-args (js-call "..." var)))
+                  (accumulate call-args var)
+                  (accumulate fn-args (js-call "..." var)))
 
-              (make-args rest op-values))
+                (make-args rest op-values))
 
-             ((list* (cons (eql +outer-node-argument+) _) rest)
-              (accumulate call-args (first op-values))
-              (make-args rest (rest op-values)))
+               ((list* (type (or symbol node)) rest)
+                (let ((var (var-name)))
+                  (accumulate call-args var)
+                  (accumulate fn-args var))
 
-             ((list* (type (or symbol node)) rest)
-              (let ((var (var-name)))
-                (accumulate call-args var)
-                (accumulate fn-args var))
+                (make-args rest op-values))
 
-              (make-args rest op-values))
+               (nil
+                (extend call-args op-values))))
 
-             (nil)))
+           (values
+            nil
+            (js-lambda
+             (collector-sequence fn-args)
+             (list
+              (when rest-arg
+                (js-if
+                 (js-call "===" (js-member rest-arg "length") 0)
+                 (js-call "=" rest-arg (empty-list))))
 
-         (values
-          nil
-          (js-lambda
-           (collector-sequence fn-args)
-           (list
-            (when rest-arg
-              (js-if
-               (js-call "===" (js-member rest-arg "length") 0)
-               (js-call "=" rest-arg (empty-list))))
+              (js-return
+               (make-js-call (meta-node-id node) (collector-sequence call-args))))))))))))
 
-            (js-return
-             (make-js-call (meta-node-id node) (collector-sequence call-args)))))))))))
+(defun outer-node-operands (meta-node outer-nodes)
+  "Generates the JS expressions which compute the values of the outer
+   node operands OUTER-NODES of the meta-node META-NODE. Returns a
+   list of JS expressions which should be appended to the main
+   argument list."
+
+  (map (rcurry #'get outer-nodes) (outer-node-references meta-node)))
 
 
 ;;; Node References

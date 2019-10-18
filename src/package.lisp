@@ -175,6 +175,7 @@
    :functor-expression-p
    :functor-expression-meta-node
    :functor-expression-arguments
+   :functor-expression-outer-nodes
 
    :if-expression
    :member-expression
@@ -219,12 +220,16 @@
    :external-meta-node
 
    :operands
+   :outer-nodes
    :definition
 
    :meta-node?
    :external-meta-node?
 
    :operand-node-names
+   :outer-node-operand-names
+   :outer-node-references
+
    :+optional-argument+
    :+rest-argument+
    :+outer-node-argument+

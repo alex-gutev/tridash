@@ -245,14 +245,28 @@
   (unless *strict-test*
     (value-fn-equal (node-link-node a) b)))
 
-(defmethod value-fn-equal ((a functor-expression) (b list))
-  (match* (a b)
-    (((functor-expression- (meta-node op-a) (arguments args-a))
-      (list* op-b args-b))
+(defmethod value-fn-equal ((got functor-expression) (exp list))
+  (flet ((split-args (args)
+           (aif (position :outer args)
+                (values (subseq args 0 it) (subseq args (1+ it)))
+                (values args nil))))
 
-     (and (value-fn-equal op-a op-b)
-          (= (length args-a) (length args-b))
-          (every #'value-fn-equal args-a args-b)))))
+    (match* (got exp)
+      (((functor-expression- (meta-node got-op) (arguments got-args) (outer-nodes got-outer-nodes))
+        (list* exp-op exp-args))
+
+       (multiple-value-bind (exp-args exp-outer-nodes) (split-args exp-args)
+         (and (value-fn-equal got-op exp-op)
+
+              (= (length got-args) (length exp-args))
+              (every #'value-fn-equal got-args exp-args)
+
+              (= (length got-outer-nodes) (length exp-outer-nodes))
+              (every
+               (lambda (outer-node)
+                 (value-fn-equal (get (car outer-node) got-outer-nodes)
+                                 (cdr outer-node)))
+               exp-outer-nodes)))))))
 
 (defmethod value-fn-equal ((a object-expression) (b list))
   (flet ((field= (a b)
@@ -279,46 +293,30 @@
 (defmethod value-fn-equal ((a expression-block) b)
   (value-fn-equal (expression-block-expression a) b))
 
-(defmethod value-fn-equal ((a meta-node-ref) (b meta-node-ref))
+(defmethod value-fn-equal ((got meta-node-ref) (exp meta-node-ref))
   (with-struct-slots meta-node-ref-
-      ((node-a node)
-       (optional-a optional)
-       (outer-nodes-a outer-nodes))
-      a
+      ((got-node node)
+       (got-optional optional)
+       (got-outer-nodes outer-nodes))
+      got
 
     (with-struct-slots meta-node-ref-
-        ((node-b node)
-         (optional-b optional)
-         (outer-nodes-b outer-nodes))
-        b
+        ((exp-node node)
+         (exp-optional optional)
+         (exp-outer-nodes outer-nodes))
+        exp
 
-      (labels ((position-in-args (x)
-                 "Get position of X in arguments list of NODE-B."
+      (and (= got-node exp-node)
 
-                 (or
-                  (match x
-                    ((list 'outer arg _)
-                     (position (cons +outer-node-argument+ (get arg (outer-nodes node-b))) (operands node-b))))
-                  0))
+           (= (length got-optional) (length exp-optional))
+           (every #'value-fn-equal got-optional exp-optional)
 
-               (extract-expression (x)
-                 "Extract the actual expression which is to be compared."
-
-                 (match x
-                   ((list 'outer _ expr)
-                    expr)
-                   (_ x))))
-
-        (and (= node-a node-b)
-
-             (= (length optional-a) (length optional-b))
-             (every #'value-fn-equal optional-a optional-b)
-
-             (= (length outer-nodes-a) (length outer-nodes-b))
-
-             (->> (stable-sort outer-nodes-b :key #'position-in-args)
-                  (map #'extract-expression)
-                  (every #'value-fn-equal outer-nodes-a)))))))
+           (= (length got-outer-nodes) (length exp-outer-nodes))
+           (every
+            (lambda (outer-node)
+              (value-fn-equal (get (car outer-node) got-outer-nodes)
+                              (cdr outer-node)))
+            exp-outer-nodes)))))
 
 (defmethod value-fn-equal ((a argument-list) (b argument-list))
   (with-struct-slots argument-list- ((args-a arguments))
@@ -453,7 +451,7 @@
     `(let ,(map #'make-binding deps)
        ,@body)))
 
-(defmacro! has-value-function ((&rest deps) o!node function &rest test-args)
+(defmacro! has-value-function ((&rest deps) o!node &body (function &rest test-args))
   "Tests that the value function of NODE is equal to FUNCTION.
 
    DEPS is a list of the dependency nodes which are passed to
@@ -470,7 +468,7 @@
      (let ((,g!context (node-link-context ,(ensure-car (first deps)))))
        (test-value-function ,g!node ,g!context ,function ,@test-args))))
 
-(defmacro! test-meta-node (o!meta-node (&rest operands) function &rest test-args)
+(defmacro! test-meta-node (o!meta-node (&rest operands) &body (function &rest test-args))
   "Test that various properties of a meta-node are correct, namely
    that its definition has been built, its subgraph contains the
    implicit self-node and that its value-function is correct.
@@ -2530,40 +2528,6 @@
 
           (is-error (finish-build) 'ambiguous-context-error))))))
 
-
-(defun make-function-call (fn args outers)
-  "Creates a meta-node function call expression where FN is the
-   meta-node, ARGS is the list of the `NODE-LINK' objects
-   corresponding to the explicit operands of the meta-node and OUTERS
-   is the list of `NODE-LINK' objects corresponding to the outer node
-   referenced by the meta-node."
-
-  (with-slots (operands outer-nodes) fn
-    (labels ((get-arg-pos (arg)
-               (match arg
-                 ((cons outer-node link)
-                  (cons link (find-pos outer-node)))
-
-                 (_
-                  (cons arg (find-pos arg)))))
-
-             (find-pos (arg)
-               (position (outer-node arg) operands))
-
-             (outer-node (arg)
-               (ematch arg
-                 ((node-link- node)
-                  (outer-node node))
-
-                 ((type node)
-                  (cons +outer-node-argument+ (get arg outer-nodes))))))
-
-      (-<> (map #'get-arg-pos outers)
-           (sort :key #'cdr)
-           (map #'car <>)
-           (append args <>)
-           (list* fn <>)))))
-
 (subtest "Test Building Meta-Node Definitions"
   (subtest "Simple Functions"
     (subtest "Single Module"
@@ -2670,7 +2634,7 @@
             (with-nodes ((iter "iter")) (definition fact)
               (test-meta-node fact ((n "n")) `(,iter ,n 1))
               (test-meta-node iter ((n "n") (acc "acc"))
-                              `(,if (,< ,n 2) ,acc (,iter (,- ,n 1) (,* ,n ,acc))))
+                `(,if (,< ,n 2) ,acc (,iter (,- ,n 1) (,* ,n ,acc))))
 
               (test-not-nodes (definition fact)
                               "m" '("iter" "m" 1))
@@ -2707,7 +2671,7 @@
                 table
 
               (test-meta-node fib ((n "n"))
-                              `(,if (,> ,n 1) (,+ (,fib1 ,n) (,fib2 ,n)) 1))
+                `(,if (,> ,n 1) (,+ (,fib1 ,n) (,fib2 ,n)) 1))
 
               (test-meta-node fib1 ((n "n")) `(,fib (,- ,n 1)))
               (test-meta-node fib2 ((n "n")) `(,fib (,- ,n 2)))
@@ -2759,7 +2723,7 @@
                 table
 
               (test-meta-node fib ((n "n"))
-                              `(,if (,> ,n 1) (,+ (,fib1 ,n) (,fib2 ,n)) 1))
+                `(,if (,> ,n 1) (,+ (,fib1 ,n) (,fib2 ,n)) 1))
 
               (test-meta-node fib1 ((n "n")) `(,fib (,- ,n 1)))
               (test-meta-node fib2 ((n "n")) `(,fib (,- ,n 2)))
@@ -2794,8 +2758,8 @@
         (let ((table (finish-build)))
           (with-nodes ((person "Person")) table
             (test-meta-node person ((name "name") (surname "surname"))
-                            `(:object (,(id-symbol "first") ,name)
-                                      (,(id-symbol "last") ,surname)))))))
+              `(:object (,(id-symbol "first") ,name)
+                        (,(id-symbol "last") ,surname)))))))
 
     (subtest "Multiple Contexts"
       (with-module-table modules
@@ -2847,12 +2811,16 @@
                            (in1 "in1") (in2 "in2") (out1 "out1") (out2 "out2"))
                   table
 
-                (test-meta-node addy ((a "a") (y (outer y))) `(,+ ,a ,y))
-                (test-meta-node addx ((a "a") (x (outer x)) (y (outer y)))
-                                `(,addy (,+ ,x ,a) ,y))
+                (test-meta-node addy ((a "a") (y (outer y)))
+                  `(,+ ,a ,y))
+                (test-meta-node addx ((a "a") (x (outer x)) (dy (outer y)))
+                  `(,addy (,+ ,x ,a) :outer (,y . ,dy)))
 
-                (has-value-function (in2 y) out2 `(,addy ,in2 ,y))
-                (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y)))))))
+                (has-value-function (in2 (dy y)) out2
+                  `(,addy ,in2 :outer (,y . ,dy)))
+
+                (has-value-function (in1 (dx x) (dy y)) out1
+                  `(,addx ,in1 :outer (,x . ,dx) (,y . ,dy)))))))
 
         (subtest "Implicit"
           (with-module-table modules
@@ -2881,12 +2849,16 @@
                            (in1 "in1") (in2 "in2") (out1 "out1") (out2 "out2"))
                   table
 
-                (test-meta-node addy ((a "a") (y (outer y))) `(,+ ,a ,y))
-                (test-meta-node addx ((a "a") (x (outer x)) (y (outer y)))
-                                `(,addy (,+ ,x ,a) ,y))
+                (test-meta-node addy ((a "a") (y (outer y)))
+                  `(,+ ,a ,y))
+                (test-meta-node addx ((a "a") (x (outer x)) (dy (outer y)))
+                  `(,addy (,+ ,x ,a) :outer (,y . ,dy)))
 
-                (has-value-function (in2 y) out2 `(,addy ,in2 ,y))
-                (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y))))))))
+                (has-value-function (in2 (dy y)) out2
+                  `(,addy ,in2 :outer (,y . ,dy)))
+
+                (has-value-function (in1 (dx x) (dy y)) out1
+                  `(,addx ,in1 :outer (,x . ,dx) (,y . ,dy))))))))
 
       (subtest "Multiple Modules"
         (with-module-table modules
@@ -2924,12 +2896,16 @@
                          (out1 "out1") (out2 "out2"))
                 table
 
-              (test-meta-node addy ((a "a") (y (outer y))) `(,+ ,a ,y))
-              (test-meta-node addx ((a "a") (x (outer x)) (y (outer y)))
-                              `(,addy (,+ ,x ,a) ,y))
+              (test-meta-node addy ((a "a") (y (outer y)))
+                `(,+ ,a ,y))
+              (test-meta-node addx ((a "a") (x (outer x)) (dy (outer y)))
+                `(,addy (,+ ,x ,a) :outer (,y . ,dy)))
 
-              (has-value-function (in2 y) out2 `(,addy ,in2 ,y))
-              (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y))))))
+              (has-value-function (in2 (dy y)) out2
+                `(,addy ,in2 :outer (,y . ,dy)))
+
+              (has-value-function (in1 (dx x) (dy y)) out1
+                `(,addx ,in1 :outer (,x . ,dx) (,y . ,dy))))))
 
         (subtest "Subnodes of outer nodes."
           (with-module-table modules
@@ -2963,10 +2939,15 @@
                            (out1 "out1"))
                   table
 
-                (test-meta-node addx ((a "a") (x (outer dict.x))) `(,+ ,a ,x))
+                (test-meta-node addx ((a "a") (x (outer dict.x)))
+                  `(,+ ,a ,x))
 
-                (has-value-function (in2 dict.x) out1 `(,addx ,in2 ,dict.x))
-                (has-value-function (dict.x) dict `(:object (,(id-symbol "x") ,dict.x)))
+                (has-value-function (in2 (x dict.x)) out1
+                  `(,addx ,in2 :outer (,dict.x . ,x)))
+
+                (has-value-function (dict.x) dict
+                  `(:object (,(id-symbol "x") ,dict.x)))
+
                 (test-simple-binding in1 dict.x)))))))
 
     (subtest "Outer-Node References from Mutually Recursive Functions"
@@ -2998,12 +2979,16 @@
                   table
 
                 (test-meta-node addy ((a "a") (in-x (outer x)) (in-y (outer y)))
-                                (make-function-call addx `((,+ ,a ,in-y)) `((,x . ,in-x) (,y . ,in-y))))
-                (test-meta-node addx ((a "a") (in-x (outer x)) (in-y (outer y)))
-                                (make-function-call addy `((,+ ,in-x ,a)) `((,x . ,in-x) (,y . ,in-y))))
+                  `(,addx (,+ ,a ,in-y) :outer (,x . ,in-x) (,y . ,in-y)))
 
-                (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y)))
-                (has-value-function (in2 x y) out2 (make-function-call addy (list in2) (list x y)))))))
+                (test-meta-node addx ((a "a") (in-x (outer x)) (in-y (outer y)))
+                  `(,addy (,+ ,in-x ,a) :outer (,x . ,in-x) (,y . ,in-y)))
+
+                (has-value-function (in1 (dx x) (dy y)) out1
+                  `(,addx ,in1 :outer (,x . ,dx) (,y . ,dy)))
+
+                (has-value-function (in2 (dx x) (dy y)) out2
+                  `(,addy ,in2 :outer (,x . ,dx) (,y . ,dy)))))))
 
         (subtest "Implicit"
           (with-module-table modules
@@ -3032,12 +3017,16 @@
                   table
 
                 (test-meta-node addy ((a "a") (in-x (outer x)) (in-y (outer y)))
-                                (make-function-call addx `((,+ ,a ,in-y)) `((,x . ,in-x) (,y . ,in-y))))
-                (test-meta-node addx ((a "a") (in-x (outer x)) (in-y (outer y)))
-                                (make-function-call addy `((,+ ,in-x ,a)) `((,x . ,in-x) (,y . ,in-y))))
+                  `(,addx (,+ ,a ,in-y) :outer (,x . ,in-x) (,y . ,in-y)))
 
-                (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y)))
-                (has-value-function (in2 x y) out2 (make-function-call addy (list in2) (list x y))))))))
+                (test-meta-node addx ((a "a") (in-x (outer x)) (in-y (outer y)))
+                  `(,addy (,+ ,in-x ,a) :outer (,x . ,in-x) (,y . ,in-y)))
+
+                (has-value-function (in1 (dx x) (dy y)) out1
+                  `(,addx ,in1 :outer (,x . ,dx) (,y . ,dy)))
+
+                (has-value-function (in2 (dx x) (dy y)) out2
+                  `(,addy ,in2 :outer (,x . ,dx) (,y . ,dy))))))))
 
       (subtest "Multiple Modules"
         (with-module-table modules
@@ -3076,12 +3065,16 @@
                 table
 
               (test-meta-node addy ((a "a") (in-x (outer x)) (in-y (outer y)))
-                              (make-function-call addx `((,+ ,a ,in-y)) `((,x . ,in-x) (,y . ,in-y))))
-              (test-meta-node addx ((a "a") (in-x (outer x)) (in-y (outer y)))
-                              (make-function-call addy `((,+ ,in-x ,a)) `((,x . ,in-x) (,y . ,in-y))))
+                `(,addx (,+ ,a ,in-y) :outer (,x . ,in-x) (,y . ,in-y)))
 
-              (has-value-function (in1 x y) out1 (make-function-call addx (list in1) (list x y)))
-              (has-value-function (in2 x y) out2 (make-function-call addy (list in2) (list x y))))))))
+              (test-meta-node addx ((a "a") (in-x (outer x)) (in-y (outer y)))
+                `(,addy (,+ ,in-x ,a) :outer (,x . ,in-x) (,y . ,in-y)))
+
+              (has-value-function (in1 (dx x) (dy y)) out1
+                `(,addx ,in1 :outer (,x . ,dx) (,y . ,dy)))
+
+              (has-value-function (in2 (dx x) (dy y)) out2
+                `(,addy ,in2 :outer (,x . ,dx) (,y . ,dy))))))))
 
     (subtest "Outer-Node References from Nested Functions"
       (subtest "Single Module"
@@ -3115,17 +3108,20 @@
                   table
 
                 (with-nodes ((iter "iter") (end "end")) (definition count)
-                  (test-meta-node count ((end "end") (in-start (outer start)))
-                                  (make-function-call iter '(0 0) `((,start . ,in-start) ,end)))
+
+                  (test-meta-node count ((in-end "end") (in-start (outer start)))
+                    `(,iter 0 0 :outer (,start . ,in-start) (,end . ,in-end)))
 
                   (test-meta-node
-                   iter
-                   ((n "n") (acc "acc") (in-start (outer start)) (in-end (outer end)))
-                   `(,if (,< ,n ,in-end)
-                         ,(make-function-call iter `((,+ ,n 1) (,+ ,acc ,n)) `((,start . ,in-start) (,end . ,in-end)))
-                         (,+ ,in-start ,acc))))
+                      iter
+                      ((n "n") (acc "acc") (in-start (outer start)) (in-end (outer end)))
 
-                (has-value-function (in start) out (make-function-call count (list in) (list start)))))))
+                    `(,if (,< ,n ,in-end)
+                          (,iter (,+ ,n 1) (,+ ,acc ,n) :outer (,start . ,in-start) (,end . ,in-end))
+                          (,+ ,in-start ,acc))))
+
+                (has-value-function (in (in-start start)) out
+                  `(,count ,in :outer (,start . ,in-start)))))))
 
         (subtest "Implicit"
           (with-module-table modules
@@ -3157,17 +3153,20 @@
                   table
 
                 (with-nodes ((iter "iter") (end "end")) (definition count)
-                  (test-meta-node count ((end "end") (in-start (outer start)))
-                                  (make-function-call iter '(0 0) `((,start . ,in-start) ,end)))
+
+                  (test-meta-node count ((in-end "end") (in-start (outer start)))
+                    `(,iter 0 0 :outer (,start . ,in-start) (,end . ,in-end)))
 
                   (test-meta-node
-                   iter
-                   ((n "n") (acc "acc") (in-start (outer start)) (in-end (outer end)))
-                   `(,if (,< ,n ,in-end)
-                         ,(make-function-call iter `((,+ ,n 1) (,+ ,acc ,n)) `((,start . ,in-start) (,end . ,in-end)))
-                         (,+ ,in-start ,acc))))
+                      iter
+                      ((n "n") (acc "acc") (in-start (outer start)) (in-end (outer end)))
 
-                (has-value-function (in start) out (make-function-call count (list in) (list start))))))))
+                    `(,if (,< ,n ,in-end)
+                          (,iter (,+ ,n 1) (,+ ,acc ,n) :outer (,start . ,in-start) (,end . ,in-end))
+                          (,+ ,in-start ,acc))))
+
+                (has-value-function (in (in-start start)) out
+                  `(,count ,in :outer (,start . ,in-start))))))))
 
       (subtest "Multiple Modules"
         (with-module-table modules
@@ -3202,17 +3201,20 @@
                 table
 
               (with-nodes ((iter "iter") (end "end")) (definition count)
-                (test-meta-node count ((end "end") (in-start (outer start)))
-                                (make-function-call iter '(0 0) `((,start . ,in-start) ,end)))
+
+                (test-meta-node count ((in-end "end") (in-start (outer start)))
+                  `(,iter 0 0 :outer (,start . ,in-start) (,end . ,in-end)))
 
                 (test-meta-node
-                 iter
-                 ((n "n") (acc "acc") (in-start (outer start)) (in-end (outer end)))
-                 `(,if (,< ,n ,in-end)
-                       ,(make-function-call iter `((,+ ,n 1) (,+ ,acc ,n)) `((,start . ,in-start) (,end . ,in-end)))
-                       (,+ ,in-start ,acc))))
+                    iter
+                    ((n "n") (acc "acc") (in-start (outer start)) (in-end (outer end)))
 
-              (has-value-function (in start) out (make-function-call count (list in) (list start))))))))
+                  `(,if (,< ,n ,in-end)
+                        (,iter (,+ ,n 1) (,+ ,acc ,n) :outer (,start . ,in-start) (,end . ,in-end))
+                        (,+ ,in-start ,acc))))
+
+              (has-value-function (in (in-start start)) out
+                `(,count ,in :outer (,start . ,in-start))))))))
 
     (subtest "Optional Argument Default Values"
       (subtest "With Default Values"
@@ -3235,15 +3237,15 @@
                          (delta "delta") (in "in") (out "out"))
                 table
 
-              (test-meta-node
-               fact
-               ((n "n") (delta (outer delta)))
+              (test-meta-node fact
+                  ((n "n") (in-delta (outer delta)))
 
-               `(,if (,< ,n ,1)
-                     1
-                     (,* ,n (,fact (,dec ,n ,delta) ,delta))))
+                `(,if (,< ,n ,1)
+                      1
+                      (,* ,n (,fact (,dec ,n ,in-delta) :outer (,delta . ,in-delta)))))
 
-              (has-value-function (in delta) out `(,fact ,in ,delta))))))
+              (has-value-function (in (in-delta delta)) out
+                `(,fact ,in :outer (,delta . ,in-delta)))))))
 
       (subtest "Without Default Values"
         (with-module-table modules
@@ -3265,13 +3267,10 @@
                          (in "in") (out "out"))
                 table
 
-              (test-meta-node
-               fact
-               ((n "n"))
-
-               `(,if (,< ,n ,1)
-                     1
-                     (,* ,n (,fact (,dec ,n 1)))))
+              (test-meta-node fact ((n "n"))
+                `(,if (,< ,n ,1)
+                      1
+                      (,* ,n (,fact (,dec ,n 1)))))
 
               (has-value-function (in) out `(,fact ,in))))))))
 
@@ -3291,10 +3290,10 @@
               table
 
             (test-meta-node
-             1+-all
-             ((list "list"))
+                1+-all
+                ((list "list"))
 
-             `(,map ,(meta-node-ref 1+) ,list))
+              `(,map ,(meta-node-ref 1+) ,list))
 
             (has-value-function (in) out `(,1+-all ,in))))))
 
@@ -3314,15 +3313,14 @@
                        (x "x") (in "in") (out "out"))
               table
 
-            (test-meta-node x+ ((n "n") (x (outer x))) `(,add ,n ,x))
+            (test-meta-node x+ ((n "n") (x (outer x)))
+              `(,add ,n ,x))
 
-            (test-meta-node
-             x+-all
-             ((list "list") (x (outer x)))
+            (test-meta-node x+-all ((list "list") (in-x (outer x)))
+              `(,map ,(meta-node-ref x+ :outer-nodes `((,x . ,in-x))) ,list))
 
-             `(,map ,(meta-node-ref x+ :outer-nodes (list x)) ,list))
-
-            (has-value-function (in x) out `(,x+-all ,in ,x))))))
+            (has-value-function (in (in-x x)) out
+              `(,x+-all ,in :outer (,x . ,in-x)))))))
 
     (subtest "Referencing Meta-Nodes With Outer Nodes From Nested Meta-Nodes"
       (subtest "Case 1"
@@ -3341,20 +3339,20 @@
                          (x "x") (in "in") (out "out"))
                 table
 
-              (test-meta-node x+ ((n "n") (x (outer x))) `(,add ,n ,x))
+              (test-meta-node x+ ((n "n") (x (outer x)))
+                `(,add ,n ,x))
 
               (with-nodes ((add-x "add-x"))
                   (definition x+-all)
 
-                (test-meta-node add-x ((n "n") (x (outer x))) `(,x+ ,n ,x))
+                (test-meta-node add-x ((n "n") (in-x (outer x)))
+                  `(,x+ ,n :outer (,x . ,in-x)))
 
-                (test-meta-node
-                 x+-all
-                 ((list "list") (x (outer x)))
+                (test-meta-node x+-all ((list "list") (in-x (outer x)))
+                  `(,map ,(meta-node-ref add-x :outer-nodes `((,x . ,in-x))) ,list)))
 
-                 `(,map ,(meta-node-ref add-x :outer-nodes (list x)) ,list)))
-
-              (has-value-function (in x) out `(,x+-all ,in ,x))))))
+              (has-value-function (in (in-x x)) out
+                `(,x+-all ,in :outer (,x . ,in-x)))))))
 
       (subtest "Case 2"
         (with-module-table modules
@@ -3372,24 +3370,20 @@
                          (x "x") (in "in") (out "out"))
                 table
 
-              (test-meta-node x+ ((n "n") (x (outer x))) `(,add ,n ,x))
+              (test-meta-node x+ ((n "n") (x (outer x)))
+                `(,add ,n ,x))
 
               (with-nodes ((add-x "add-x"))
                   (definition x+-all)
 
-                (test-meta-node
-                 add-x
-                 ((n "n") (x (outer x)))
+                (test-meta-node add-x ((n "n") (in-x (outer x)))
+                  `(,map ,(meta-node-ref x+ :outer-nodes `((,x . ,in-x))) ,n))
 
-                 `(,map ,(meta-node-ref x+ :outer-nodes (list x)) ,n))
+                (test-meta-node x+-all ((list "list") (in-x (outer x)))
+                  `(,add-x ,list :outer (,x . ,in-x))))
 
-                (test-meta-node
-                 x+-all
-                 ((list "list") (x (outer x)))
-
-                 `(,add-x ,list ,x)))
-
-              (has-value-function (in x) out `(,x+-all ,in ,x)))))))
+              (has-value-function (in (in-x x)) out
+                `(,x+-all ,in :outer (,x . ,in-x))))))))
 
     (subtest "Cyclic Meta-Node References"
       (with-module-table modules
@@ -3408,32 +3402,19 @@
 		       (x "x") (y "y") (in "in") (output "output"))
 	      table
 
-            (test-meta-node
-	     add-x
-	     ((xs "xs") (xin (outer x)) (yin (outer y)))
+            (test-meta-node add-x ((xs "xs") (xin (outer x)) (yin (outer y)))
+              `(,map
+                ,(meta-node-ref add-y :outer-nodes `((,x . ,xin) (,y . ,yin)))
+                ,(argument-list (list xs xin))))
 
-             (-<>> `((outer ,y ,yin) (outer ,x ,xin))
-                   (meta-node-ref add-y :outer-nodes)
-                   (list map <> (argument-list (list xs xin)))))
-
-            (test-meta-node
-	     add-y
-	     ((xs "xs") (xin (outer x)) (yin (outer y)))
-
-             (-<>> `((outer ,x ,xin) (outer ,y ,yin))
-                   (meta-node-ref add-x :outer-nodes)
-                   (list map <> (argument-list (list xs yin)))))
+            (test-meta-node add-y ((xs "xs") (xin (outer x)) (yin (outer y)))
+              `(,map
+                ,(meta-node-ref add-x :outer-nodes `((,x . ,xin) (,y . ,yin)))
+                ,(argument-list (list xs yin))))
 
 	    (let ((x-out x) (y-out y))
-	      (has-value-function
-	       (in x y)
-	       output
-
-               (make-function-call
-                add-x
-                (list in)
-                (list (cons x-out x)
-                      (cons y-out y)))))))))
+	      (has-value-function (in x y) output
+                `(,add-x ,in :outer (,x-out . ,x) (,y-out . ,y))))))))
 
     (subtest "As Source of Binding"
       (subtest "Without Outer Nodes"
@@ -3473,7 +3454,8 @@
                          (x "x") (in "in") (out "out"))
                 table
 
-              (has-value-function (in x) out `(,map ,(meta-node-ref add-x :outer-nodes (list x)) ,in)))))))
+              (has-value-function (in (x-in x)) out
+                `(,map ,(meta-node-ref add-x :outer-nodes `((,x . ,x-in))) ,in)))))))
 
     (subtest "Referencing Meta-Nodes with Optional Arguments"
       (subtest "With constant default values"
@@ -3496,16 +3478,16 @@
               (finish-build)
 
             (test-meta-node
-             inc-all
-             ((xs "xs"))
+                inc-all
+                ((xs "xs"))
 
-             `(,map ,(meta-node-ref inc :optional '(1)) ,xs))
+              `(,map ,(meta-node-ref inc :optional '(1)) ,xs))
 
             (has-value-function
-             (input)
-             output
+                (input)
+                output
 
-             `(,inc-all ,input)))))
+              `(,inc-all ,input)))))
 
       (subtest "With node default values"
         (with-module-table modules
@@ -3527,17 +3509,11 @@
                        (output "output"))
               (finish-build)
 
-            (test-meta-node
-             inc-all
-             ((xs "xs") (delta (outer delta)))
+            (test-meta-node inc-all ((xs "xs") (delta (outer delta)))
+              `(,map ,(meta-node-ref inc :optional (list delta)) ,xs))
 
-             `(,map ,(meta-node-ref inc :optional (list delta)) ,xs))
-
-            (has-value-function
-             (input delta)
-             output
-
-             `(,inc-all ,input ,delta)))))))
+            (has-value-function (input (in-delta delta)) output
+              `(,inc-all ,input :outer (,delta . ,in-delta))))))))
 
   (subtest "Node Auto Creation"
     ;; The previous tests already test automatic node

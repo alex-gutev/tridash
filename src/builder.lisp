@@ -180,8 +180,8 @@
     nil))
 
 (defmethod finish-build-meta-node ((meta-node built-meta-node))
-  (let ((*meta-node* meta-node))
-    (with-slots (name definition) meta-node
+  (with-slots (name definition attributes) meta-node
+    (let ((*meta-node* meta-node))
       ;; Determine the meta-node's outer node references
       (outer-node-references meta-node)
 
@@ -197,6 +197,23 @@
 
 
 ;;;; Build Meta-Nodes
+
+(defvar *restricted-meta-nodes* (make-hash-set)
+  "Set of meta-nodes which may not be used in a macro function or
+   target transform.")
+
+(defmacro! restrict-meta-node (o!meta-node &body body)
+  "Evaluates the forms in BODY with META-NODE added to
+   *RESTRICTED-META-NODES*. This prevents the meta-node from being used
+   inside a macro or target-transform function, during the evaluation
+   of BODY."
+
+  `(progn
+     (when (memberp ,g!meta-node *restricted-meta-nodes*)
+       (error 'compile-meta-node-loop-error :meta-node ,g!meta-node))
+
+     (let ((*restricted-meta-nodes* (adjoin ,g!meta-node *restricted-meta-nodes*)))
+       ,@body)))
 
 (defun build-meta-nodes (meta-nodes)
   "Builds the definitions of the meta-nodes in META-NODES."
@@ -214,11 +231,12 @@
   (:method ((meta-node external-meta-node))
     meta-node))
 
-(defmethod build-meta-node :before ((meta-node meta-node))
-  ;; Check that META-NODE is not being built again before it has
-  ;; finished being built the first time.
-  (when (get :building (attributes meta-node))
-    (error 'compile-meta-node-loop-error :meta-node meta-node)))
+(defmethod build-meta-node :around ((meta-node meta-node))
+  "Adds META-NODE to the restricted meta-nodes set, while invoking the
+   next method."
+
+  (restrict-meta-node meta-node
+    (call-next-method)))
 
 (defmethod build-meta-node ((meta-node meta-node-spec))
   "Builds the definition of META-NODE, from the declarations contained
@@ -226,40 +244,28 @@
    the `MODULE' object containing the nodes in the definition."
 
   (with-slots (name definition operands attributes) meta-node
-    ;; Mark META-NODE as currently being built
-    (setf (get :building attributes) t)
+    (let* ((body (definition meta-node))
+           (module (make-inner-module (home-module meta-node)))
+           (value-node (make-self-node module))
+           (*meta-node* meta-node)
+           (*current-module* module)
+           (*functor-module* module))
 
-    (unwind-protect
-         ;; Check that META-NODE is not an `EXTERNAL-META-NODE' and that it
-         ;; has not been built already
-         (unless (or (external-meta-node? meta-node)
-                     (typep definition 'module)
-                     (typep definition 'flat-node-table))
+      (change-class meta-node 'built-meta-node
+                    :operands (add-operand-nodes operands module)
+                    :definition module)
 
-           (let* ((body (definition meta-node))
-                  (module (make-inner-module (home-module meta-node)))
-                  (value-node (make-self-node module))
-                  (*meta-node* meta-node)
-                  (*current-module* module)
-                  (*functor-module* module))
+      (let* ((*create-nodes* nil)
+             (last-node (at-source (process-node-list body module :top-level t))))
 
-             (change-class meta-node 'built-meta-node
-                           :operands (add-operand-nodes operands module)
-                           :definition module)
+        (make-meta-node-function meta-node value-node last-node)
+        (add-binding value-node meta-node :add-function t)
 
-             (let* ((*create-nodes* nil)
-                    (last-node (at-source (process-node-list body module :top-level t))))
+        (let ((used (used-meta-nodes (map-values (nodes definition)))))
+          (erase used meta-node)
+          (setf (meta-node-references meta-node) used))
 
-               (make-meta-node-function meta-node value-node last-node)
-               (add-binding value-node meta-node :add-function t)
-
-               (let ((used (used-meta-nodes (map-values (nodes definition)))))
-                 (erase used meta-node)
-                 (setf (meta-node-references meta-node) used))
-
-               (build-meta-nodes (meta-nodes definition)))))
-
-      (setf (get :building attributes) nil))))
+        (build-meta-nodes (meta-nodes definition))))))
 
 (defun add-operand-nodes (operands module)
   "Creates nodes, in MODULE, for each operand in OPERANDS. Returns the

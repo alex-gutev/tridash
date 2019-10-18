@@ -436,11 +436,15 @@
       (union-meta-nodes all-meta-nodes meta-nodes)
       (foreach (compose #'append-code #'create-meta-node) all-meta-nodes))))
 
-(defun create-meta-node (meta-node)
-  "Generates the meta-node function of META-NODE."
+(defgeneric create-meta-node (meta-node)
+  (:documentation
+   "Generates the meta-node function of META-NODE.")
 
-  (let ((*current-node* meta-node))
-    (when (not (external-meta-node? meta-node))
+  (:method ((meta-node external-meta-node))
+    nil)
+
+  (:method ((meta-node final-meta-node))
+    (let ((*current-node* meta-node))
       (create-function-meta-node meta-node))))
 
 

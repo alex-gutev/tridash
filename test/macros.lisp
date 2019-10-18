@@ -154,7 +154,7 @@
 
        ;; Create an empty `FLAT-NODE-TABLE' to mark meta-node as
        ;; already built
-       (setf (definition self) (make-instance 'flat-node-table))
+       (setf (definition self) (make-instance 'flat-node-table :nodes (make-hash-set)))
        (setf (value-function (context self nil))
              ,expression)
 
@@ -1241,10 +1241,10 @@
             (finish-build)
 
           (has-value-function
-           (x y z)
-           output
+              (x y z)
+              output
 
-           `(,list ,(argument-list (list x y z)))))))
+            `(,list ,(argument-list (list x y z)))))))
 
     (subtest "Rest Arguments and Outer Nodes"
       (with-module-table modules
@@ -1276,10 +1276,13 @@
 		   (fact "fact") (+ "+"))
 	  (finish-build)
 
-	(has-value-function (in) output `(,+ (,fact ,in) 6))
+	(has-value-function (in) output
+          `(,+ (,fact ,in) 6))
 
 	(with-nodes ((iter "iter") (n "n")) (definition fact)
-	  (has-value-function (n) fact `(,iter ,n 1 1))))))
+          (let ((start (car (first (outer-nodes iter)))))
+	    (has-value-function (n) fact
+              `(,iter ,n 1 :outer (,start . 1))))))))
 
   (subtest "Errors"
     (subtest "Compilation Loops"

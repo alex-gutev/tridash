@@ -103,17 +103,6 @@
     source code."))
 
 
-;;; Utilities
-
-(defun process-meta-node (fn)
-  "Returns a function of one argument, a meta-node, that applies FN on
-   the definition of the meta-node. If the definition of the meta-node
-   is NIL, FN is not applied on it."
-
-  (lambda (meta-node)
-    (awhen (definition meta-node)
-      (funcall fn it))))
-
 (defun external-meta-node (name operands &optional attributes)
   "Creates an `EXTERNAL-META-NODE' with name NAME, operand identifiers
    OPERANDS. ATTRIBUTES is a list of attributes to add to the node
@@ -245,12 +234,8 @@
 
   (unique-node-name (outer-nodes meta-node) +outer-node-argument+))
 
-(defun outer-node (node meta-node)
-  "Returns the name of the local node, in META-NODE, which is bound to
-   the outer node NODE"
-
-  (with-slots (outer-nodes) meta-node
-    (ensure-get node outer-nodes (outer-node-name meta-node))))
+(defmethod outer-nodes ((meta-node external-meta-node))
+  (make-hash-map))
 
 
 ;;; Operands
@@ -270,15 +255,17 @@
      (operands meta-node)))
 
   (:method ((meta-node built-meta-node))
-    (map
-     (lambda (operand)
-       (match operand
-         ((cons (eql +outer-node-argument+) node)
-          (name node))
+    (map #'name (call-next-method))))
 
-         (_ (name operand))))
+(defun outer-node-operand-names (meta-node)
+  "Returns the names of the outer node operands, in the order they
+   should appear in the argument list, following the last argument."
 
-     (call-next-method))))
+  (map
+   (lambda (node)
+     (name (get node (outer-nodes meta-node))))
+   (outer-node-references meta-node)))
+
 
 (defun optional-operand-values (meta-node)
   "Returns the default values for the optional arguments of
