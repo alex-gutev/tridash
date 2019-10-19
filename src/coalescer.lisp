@@ -1,7 +1,7 @@
 ;;;; coalescer.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018  Alexander Gutev
+;;;; Copyright (C) 2018-2019  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -24,9 +24,8 @@
 (in-readtable cut-syntax)
 
 
-;;;; Coalescing
-
-;;; Coalescing Nodes
+
+;;; Node Coalescing
 
 (defun coalesce-all (table)
   "Perform all coalescing steps on the `FLAT-NODE-TABLE' TABLE:
@@ -228,7 +227,8 @@
   (map-expression! #'coalesce-links-in-expression expression))
 
 
-;;;; Constant Folding and Removing Redundant Nodes
+
+;;; Constant Folding and Removing Redundant Nodes
 
 (defun remove-unreachable-nodes (input-nodes nodes)
   "Removes all unreachable nodes from NODES. An unreachable node is a
@@ -338,53 +338,154 @@
 
       used)))
 
+
 (defun fold-constant-nodes (nodes)
   "Removes all constant nodes, from the set NODES, and replaces links
    to the nodes with the constant values. Constant nodes are nodes
    which only have an :INIT context."
 
-  (labels ((value-node? (node)
-             (unless (input-node? node)
-               (let ((contexts (remove-if (curry #'coalescable? node)
-                                          (map-values (contexts node)))))
-                 (and (= (length contexts) 1)
-                      (constant-context? (first contexts))
-                      (value-function (first contexts))))))
+  (foreach #'fold-value (remove-if-not #'value-node? nodes)))
 
-           (coalescable? (node context)
-             (with-slots (observers) node
-               (with-slots (operands) context
-                 (unless (or (emptyp operands)
-                             (emptyp observers))
-                   (-> (rcurry #'memberp operands)
-                       (every (map-keys observers)))))))
+(defun value-node? (node)
+  "Returns true if NODE is a constant node."
+
+  (flet ((coalescable? (node context)
+           (with-slots (observers) node
+             (with-slots (operands) context
+               (unless (or (emptyp operands)
+                           (emptyp observers))
+                 (-> (rcurry #'memberp operands)
+                     (every (map-keys observers)))))))
 
            (constant-context? (context)
-             (emptyp (operands context)))
+             (emptyp (operands context))))
 
-           (fold-value (node)
-             (awhen (value-node? node)
-               (with-slots (observers) node
-                 (unless (emptyp observers)
-                   (replace-dependency it node)
+    (unless (input-node? node)
+      (let ((contexts (remove-if (curry #'coalescable? node)
+                                 (map-values (contexts node)))))
+        (and (= (length contexts) 1)
+             (constant-context? (first contexts))
+             (value-function (first contexts)))))))
 
-                   (foreach #'fold-value (map-keys observers))
-                   (clear (observers node))
-                   (clear (contexts node))))))
+(defun fold-value (node)
+  "If NODE is a constant node, replace the `NODE-LINK's, in its
+   observer nodes, with its constant value. The contexts and observers
+   of NODE are cleared in order for it to be removed during the
+   removal of unreachable nodes."
 
-           (replace-dependency (value node)
-             (doseq ((obs . link) (observers node))
-               (erase (dependencies obs) node)
-               (erase (observers obs) node)
+  (flet ((replace-dependency (value node)
+           (doseq ((obs . link) (observers node))
+             (erase (dependencies obs) node)
+             (erase (observers obs) node)
 
-               (setf (node-link-node link) value)
+             (setf (node-link-node link) value)
 
-               (let ((context (context obs (node-link-context link))))
-                 (erase (operands context) node)))))
+             (let ((context (context obs (node-link-context link))))
+               (fold-constant-outer-node-operands context)
+               (erase (operands context) node)))))
 
-    (foreach #'fold-value (remove-if-not #'value-node? nodes))))
+    (awhen (value-node? node)
+      (with-slots (observers) node
+        (unless (emptyp observers)
+          (replace-dependency it node)
+
+          (foreach #'fold-value (map-keys observers))
+          (clear (observers node))
+          (clear (contexts node)))))))
 
 
+;;; Folding Constant Outer Node References
+
+(defun fold-constant-outer-node-operands (context)
+  "Marks outer nodes as constants, in the meta-nodes from which they
+   are referenced, in each meta-node instance of the value function of
+   CONTEXT."
+
+  (labels ((fold-in-expression (expression)
+             (match expression
+               ((functor-expression- (meta-node (and (type meta-node) meta-node))
+                                     (arguments (place arguments))
+                                     (outer-nodes (place outer-nodes)))
+
+                (setf outer-nodes (mark-constants meta-node outer-nodes)))
+
+               ((meta-node-ref- node outer-nodes)
+                (setf outer-nodes (mark-constants node outer-nodes))))
+             t)
+
+           (mark-constants (meta-node outer-nodes)
+             (remove-if (curry #'mark-argument meta-node) outer-nodes))
+
+           (mark-argument (meta-node outer-node)
+             (destructuring-bind (node . expression) outer-node
+               (when (constant-expression? expression)
+                 (mark-constant-outer-node meta-node node expression)
+                 t)))
+
+           (constant-expression? (expression)
+             (walk-expression
+              (lambda (expression)
+                (match expression
+                  ((node-link- (node (type node)))
+                   (return-from constant-expression? nil)))
+                t)
+              expression)
+             t))
+
+    (walk-expression #'fold-in-expression (value-function context))))
+
+(defgeneric mark-constant-outer-node (meta-node node value)
+  (:documentation
+   "Marks the local node, which is bound to the value of the outer
+    node NODE as a constant node with value VALUE."))
+
+(defmethod mark-constant-outer-node ((meta-node built-meta-node) node value)
+  (with-slots (definition outer-nodes attributes) meta-node
+    (when-let ((local-node (get node outer-nodes)))
+      (with-slots (input-nodes) definition
+        (when (input-node? local-node)
+          ;; Remove node from inputs
+          (erase input-nodes local-node)
+          (erase (contexts local-node) :input)
+
+          (setf (attribute :input local-node) nil)
+          (setf (value-function (context local-node :init)) value)
+
+          local-node)))))
+
+(defmethod mark-constant-outer-node ((meta-node final-meta-node) node value)
+  (declare (ignore value))
+
+  (with-slots (outer-nodes attributes definition) meta-node
+    (with-slots (nodes input-nodes) definition
+      (awhen (call-next-method)
+        (erase outer-nodes node)
+
+        (slet (get :outer-operands attributes)
+          (setf it (remove node it :key #'car)))
+
+        (fold-value it)
+
+        ;; Remove constant nodes which have been folded
+        (remove-unreachable-nodes input-nodes nodes)
+
+        ;; Coalesce node links, pointing to expressions rather than
+        ;; nodes, which are a result of folding the current node.
+        (coalesce-node-links nodes)))))
+
+
+(defun remove-constant-outer-nodes (meta-node)
+  "Removes constant nodes from the outer node references of
+   META-NODE."
+
+  (with-slots (outer-nodes attributes) meta-node
+    (setf outer-nodes (remove-if-not #'input-node? outer-nodes :key #'cdr))
+
+    (slet (get :outer-operands attributes)
+      (setf it (remove-if-not #'input-node? it :key #'cdr)))))
+
+
+
 ;;;; Structure Checking
 
 (defun check-structure (input-nodes)

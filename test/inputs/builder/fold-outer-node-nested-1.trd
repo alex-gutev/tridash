@@ -1,0 +1,17 @@
+## Tests folding of constant outer nodes which are referenced from
+## within a meta-node that is nested in another meta-node.
+
+:extern(add, a, b)
+
+f(x, y) : {
+    inc(n) : add(n, delta)
+
+    add(inc(x), inc(y))
+}
+
+5 -> delta
+
+f(x, y) -> z
+
+:attribute(x, input, 1)
+:attribute(y, input, 1)

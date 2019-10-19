@@ -1280,9 +1280,8 @@
           `(,+ (,fact ,in) 6))
 
 	(with-nodes ((iter "iter") (n "n")) (definition fact)
-          (let ((start (car (first (outer-nodes iter)))))
-	    (has-value-function (n) fact
-              `(,iter ,n 1 :outer (,start . 1))))))))
+          (has-value-function (n) fact
+            `(,iter ,n 1))))))
 
   (subtest "Errors"
     (subtest "Compilation Loops"

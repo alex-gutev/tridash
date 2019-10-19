@@ -193,7 +193,9 @@
                     :definition (flatten-meta-node definition))
 
       (nadjoin meta-node (nodes definition))
-      (finish-build definition))))
+      (finish-build definition)
+
+      (remove-constant-outer-nodes meta-node))))
 
 
 ;;;; Build Meta-Nodes

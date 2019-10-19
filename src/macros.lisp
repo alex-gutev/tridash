@@ -323,8 +323,11 @@
               get-operand-var)
 
          (handler-case
-             ;;FIXME: Potential issue if the outer-node has been
-             ;;coalesced
+             ;; There is no issue if the outer node is coalesced as
+             ;; that can only happen if the outer-node is defined in
+             ;; an enclosing, non-global, scope of META-NODE. In that
+             ;; case, however, a value will be provided for the
+             ;; outer-node as an argument anyway.
              (tridash->cl (constant-node-value node))
 
            (not-constant-context ()

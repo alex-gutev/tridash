@@ -3272,7 +3272,244 @@
                       1
                       (,* ,n (,fact (,dec ,n 1)))))
 
-              (has-value-function (in) out `(,fact ,in))))))))
+              (has-value-function (in) out `(,fact ,in)))))))
+
+    (subtest "Constant Folding"
+      (subtest "Constant Outer Nodes"
+        (with-module-table modules
+          (build ":extern(add, a, b)"
+
+                 "inc(n) : add(n, delta)"
+                 "1 -> delta"
+
+                 "inc(x) -> y"
+                 ":attribute(x, input, 1)")
+
+          (let ((table (finish-build)))
+            (with-nodes ((add "add") (inc "inc")
+                         (x "x") (y "y"))
+                table
+
+              (test-not-nodes table "delta")
+
+              (test-meta-node
+               inc
+               ((n "n"))
+
+               `(,add ,n 1))
+
+              (has-value-function (x) y `(,inc ,x))))))
+
+      (subtest "Functor Outer Nodes"
+        (with-module-table modules
+          (build ":extern(add, a, b)"
+
+                 "inc(n) : add(n, delta)"
+                 "add(1, 3) -> delta"
+
+                 "inc(x) -> y"
+                 ":attribute(x, input, 1)")
+
+          (let ((table (finish-build)))
+            (with-nodes ((add "add") (inc "inc")
+                         (x "x") (y "y"))
+                table
+
+              (test-not-nodes table "delta" '("add" 1 3))
+
+              (test-meta-node
+               inc
+               ((n "n"))
+
+               `(,add ,n (,add 1 3)))
+
+              (has-value-function (x) y `(,inc ,x))))))
+
+      (subtest "Functor of Constant Nodes"
+        (with-module-table modules
+          (build ":extern(add, a, b)"
+
+                 "inc(n) : add(n, delta)"
+                 "add(2, 3) -> const"
+                 "add(1, const) -> delta"
+
+                 "inc(x) -> y"
+                 ":attribute(x, input, 1)")
+
+          (let ((table (finish-build)))
+            (with-nodes ((add "add") (inc "inc")
+                         (x "x") (y "y"))
+                table
+
+              (test-not-nodes table
+                              "delta" "const"
+                              '("add" 1 "const")
+                              '("add" 2 3))
+
+              (test-meta-node
+               inc
+               ((n "n"))
+
+               `(,add ,n (,add 1 (,add 2 3))))
+
+              (has-value-function (x) y `(,inc ,x))))))
+
+      (subtest "In Functor"
+        (with-module-table modules
+          (build ":extern(add, a, b)"
+
+                 "inc(n) : add(n, delta)"
+                 "add(2, 3) -> const"
+                 "add(1, const) -> delta"
+
+                 "add(inc(x), z) -> y"
+
+                 ":attribute(x, input, 1)"
+                 ":attribute(z, input, 1)")
+
+          (let ((table (finish-build)))
+            (with-nodes ((add "add") (inc "inc")
+                         (x "x") (y "y") (z "z"))
+                table
+
+              (test-not-nodes table
+                              "delta" "const"
+                              '("add" 1 "const") '("add" 2 3))
+
+              (test-meta-node
+               inc
+               ((n "n"))
+
+               `(,add ,n (,add 1 (,add 2 3))))
+
+              (has-value-function (x z) y `(,add (,inc ,x) ,z))))))
+
+      (subtest "In Nested Node"
+        (with-module-table modules
+          (build-source-file #p"./test/inputs/builder/fold-outer-node-nested-1.trd" modules)
+
+          (with-nodes ((add "add") (f "f")
+                       (x "x") (y "y") (z "z"))
+              (finish-build)
+
+            (with-nodes ((inc "inc")) (definition f)
+              (test-meta-node inc ((n "n"))
+                `(,add ,n 5))
+
+              (test-meta-node f ((x "x") (y "y"))
+                `(,add (,inc ,x) (,inc ,y)))
+
+              (has-value-function (x y) z
+                `(,f ,x ,y))))))
+
+      (subtest "Functor of Constant Outer Node In Nested Node"
+        (with-module-table modules
+          (build-source-file #p"./test/inputs/builder/fold-outer-node-nested-2.trd" modules)
+
+          (with-nodes ((add "add") (f "f")
+                       (x "x") (y "y") (z "z"))
+              (finish-build)
+
+            (with-nodes ((inc "inc")) (definition f)
+              (test-not-nodes (definition f) "d" '("add" "delta" 1))
+
+              (test-meta-node inc ((n "n"))
+                `(,add ,n (,add 1 1)))
+
+              (test-meta-node f ((x "x") (y "y"))
+                `(,add (,inc ,x) (,inc ,y)))
+
+              (has-value-function (x y) z
+                `(,f ,x ,y))))))
+
+      (subtest "Outer-Nodes of Meta-node used in Multiple Other Meta-nodes"
+        (with-module-table modules
+          (build ":extern(add, a, b)"
+
+                 "inc(n) : add(n, delta)"
+
+                 "f(x, y) : add(inc(x), inc(y))"
+                 "g(x, y) : inc(add(x, y))"
+
+                 "10 -> delta"
+
+                 "f(x, y) -> out1"
+                 "g(x, y) -> out2"
+
+                 ":attribute(x, input, 1)"
+                 ":attribute(y, input, 1)")
+
+          (with-nodes ((add "add")
+                       (inc "inc") (f "f") (g "g")
+                       (x "x") (y "y")
+                       (out1 "out1") (out2 "out2"))
+              (finish-build)
+
+            (test-meta-node inc ((n "n"))
+              `(,add ,n 10))
+
+            (test-meta-node f ((x "x") (y "y"))
+              `(,add (,inc ,x) (,inc ,y)))
+
+            (test-meta-node g ((x "x") (y "y"))
+              `(,inc (,add ,x ,y)))
+
+            (has-value-function (x y) out1
+              `(,f ,x ,y))
+
+            (has-value-function (x y) out2
+              `(,g ,x ,y)))))
+
+      (subtest "Outer-Nodes of Compiled Meta-Node"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core)"
+
+                 "1 -> delta"
+                 "inc(n) : n + delta"
+
+                 "mac(x) : inc(x)"
+                 ":attribute(mac, macro, 1)"
+
+                 "inc(x) + mac(2) -> y"
+                 ":attribute(x, input, 1)")
+
+          (with-nodes ((+ "+") (inc "inc")
+                       (x "x") (y "y"))
+              (finish-build)
+
+            (test-meta-node inc ((n "n"))
+              `(,+ ,n 1))
+
+            (has-value-function (x) y
+              `(,+ (,inc ,x) 3)))))
+
+      (subtest "Outer-Nodes in Meta-Node References"
+        (with-module-table modules
+          (build ":extern(add, a, b)"
+                 ":extern(map, f, list)"
+
+                 "1 -> delta"
+                 "inc(n) : add(n, 1)"
+
+                 "inc-all(l) : map(inc, l)"
+
+                 "inc-all(x) -> y"
+                 ":attribute(x, input, 1)")
+
+          (with-nodes ((add "add") (map "map")
+                       (inc "inc") (inc-all "inc-all")
+                       (x "x") (y "y"))
+              (finish-build)
+
+            (test-meta-node inc ((n "n"))
+              `(,add ,n 1))
+
+            (test-meta-node inc-all ((l "l"))
+              `(,map ,(meta-node-ref inc) ,l))
+
+            (has-value-function (x) y
+              `(,inc-all ,x)))))))
 
   (subtest "Meta-Node References"
     (subtest "Referencing Meta-Nodes Without Outer Nodes"
