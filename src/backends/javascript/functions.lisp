@@ -89,7 +89,7 @@
     (cons (id-symbol "head") "Tridash.head")
     (cons (id-symbol "tail") "Tridash.tail")
     (cons (id-symbol "cons?") "Tridash.is_cons")
-    (cons (id-symbol "Empty") "Tridash.Empty")
+    (cons (id-symbol "Empty-List") "Tridash.Empty")
 
     (cons (id-symbol "string-at") "Tridash.string_at")
     (cons (id-symbol "string-concat") "Tridash.string_concat")))
