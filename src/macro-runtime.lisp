@@ -24,6 +24,9 @@
 (defconstant +empty-list+ (get :empty-list *core-meta-nodes*)
   "Meta-Node representing the empty list failure type.")
 
+(defconstant +fail-type-no-value+ (get :no-value *core-meta-nodes*)
+  "Failure type indicating no value was provided.")
+
 
 ;;;; Thunks
 

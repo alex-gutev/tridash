@@ -814,15 +814,19 @@
       (subtest "Without Default Values"
         (with-module-table modules
           (build-core-module)
-          (build ":import(core, +)"
+          (build ":import(core, +, fail-type?)"
                  "inc(n, :(d)) : n + d"
 
                  "f(x) : inc(x)"
-                 "g(x) : inc(x, 2)")
+                 "g(x) : inc(x, 2)"
 
-          (with-nodes ((f "f") (g "g")) modules
+                 "h(x) : fail-type?(inc(x), &(No-Value%))")
+
+          (with-nodes ((f "f") (g "g") (h "h")) modules
             (is-error (call-meta-node f (list 3)) tridash-fail)
-            (is (call-meta-node g (list 5)) 7))))
+            (is (call-meta-node g (list 5)) 7)
+
+            (ok (call-meta-node h (list 2))))))
 
       (subtest "With Default Values"
         (with-module-table modules
@@ -871,22 +875,43 @@
           (is (resolve (call-tridash-meta-node g '(3))) 4))))
 
     (subtest "With Optional Arguments"
-      (with-module-table modules
-        (build-core-module)
-        (build ":import(core)"
-               "apply(f, x) : f(x)"
-               "apply2(f, x, y) : f(x, y)"
-               "1+(n, d : 1) : n + d"
+      (subtest "With Default Values"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core)"
+                 "apply(f, x) : f(x)"
+                 "apply2(f, x, y) : f(x, y)"
+                 "1+(n, d : 1) : n + d"
 
-               "f(a) : apply(1+, a)"
-               "g(a, b) : apply2(1+, a, b)")
+                 "f(a) : apply(1+, a)"
+                 "g(a, b) : apply2(1+, a, b)")
 
-        (with-nodes ((f "f") (g "g")) modules
-          (is (resolve (call-tridash-meta-node f '(0))) 1)
-          (is (resolve (call-tridash-meta-node f '(1))) 2)
+          (with-nodes ((f "f") (g "g")) modules
+            (is (resolve (call-tridash-meta-node f '(0))) 1)
+            (is (resolve (call-tridash-meta-node f '(1))) 2)
 
-          (is (resolve (call-tridash-meta-node g '(1 2))) 3)
-          (is (resolve (call-tridash-meta-node g '(5 3))) 8))))
+            (is (resolve (call-tridash-meta-node g '(1 2))) 3)
+            (is (resolve (call-tridash-meta-node g '(5 3))) 8))))
+
+      (subtest "Without Default Values"
+        (with-module-table modules
+          (build-core-module)
+          (build ":import(core)"
+                 "apply(f, x) : f(x)"
+                 "apply2(f, x, y) : f(x, y)"
+                 "1+(n, :(d)) : n + d"
+
+                 "f(a) : apply(1+, a)"
+                 "g(a, b) : apply2(1+, a, b)"
+                 "h(x) : fail-type?(apply(1+, x), &(No-Value%))")
+
+          (with-nodes ((f "f") (g "g") (h "h")) modules
+            (is-error (resolve (call-tridash-meta-node f '(0))) tridash-fail)
+
+            (is (resolve (call-tridash-meta-node g '(1 2))) 3)
+            (is (resolve (call-tridash-meta-node g '(5 3))) 8)
+
+            (ok (resolve (call-tridash-meta-node h '(1))))))))
 
     (subtest "With Rest Arguments"
       (with-module-table modules

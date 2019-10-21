@@ -92,3 +92,8 @@ exports.check_string = check_string;
 
 exports.get_symbol = get_symbol;
 exports.member = member;
+
+
+/* Builtin Failure Types */
+
+exports.NoValue = NoValue;

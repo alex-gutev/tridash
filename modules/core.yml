@@ -36,7 +36,7 @@ sources:
   - core/operators.trd
   - core/external.trd
   - core/primitives.trd
-  - core/util.trd
+  - core/failures.trd
   - core/lists.trd
   - core/introspection.trd
   - core/pattern-match.trd

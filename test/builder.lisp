@@ -119,7 +119,7 @@
   (build-source-file #p"./modules/core/operators.trd" modules)
   (build-source-file #p"./modules/core/external.trd" modules)
   (build-source-file #p"./modules/core/primitives.trd" modules)
-  (build-source-file #p"./modules/core/util.trd" modules)
+  (build-source-file #p"./modules/core/failures.trd" modules)
   (build-source-file #p"./modules/core/lists.trd" modules)
   (build-source-file #p"./modules/core/introspection.trd" modules)
   (build-source-file #p"./modules/core/pattern-match.trd" modules)

@@ -457,3 +457,10 @@ function member(dict, key) {
         return new Thunk(() => { throw e; });
     }
 }
+
+
+/* Builtin Failure Types */
+
+function NoValue() {
+    return fail(NoValue);
+}

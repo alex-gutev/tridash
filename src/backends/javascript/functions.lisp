@@ -749,7 +749,7 @@
   (values nil literal))
 
 (defmethod make-expression ((null null) &key)
-  (values nil (js-call "Tridash.fail")))
+  (values nil (js-call "Tridash.fail" "Tridash.NoValue")))
 
 
 ;;;; Arguments

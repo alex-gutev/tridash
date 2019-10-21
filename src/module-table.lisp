@@ -100,7 +100,9 @@
      (:fail ((,+optional-argument+ type)))
      (:fail-type (thing) ((:strictness thing)))
 
-     ((:empty-list "Empty-List") ())))
+     ;; Failure Types
+     ((:empty-list "Empty-List") ())
+     ((:no-value "No-Value%") ())))
 
   "Map of meta-nodes which comprise the language primitives.")
 

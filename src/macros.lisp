@@ -287,7 +287,10 @@
      (when (has-nodes? value)
        (error 'macro-outer-node-error))
 
-     (cons (list (get-operand-var (name arg)) (tridash->cl value))
+     (cons (list (get-operand-var (name arg))
+                 (if value
+                     (tridash->cl value)
+                     (fail-thunk +fail-type-no-value+)))
            (next args)))
 
     (rest
@@ -691,7 +694,7 @@
 
 (defmethod tridash->cl ((literal null) &key)
   (unless *return-nil*
-    (fail-thunk)))
+    (fail-thunk +fail-type-no-value+)))
 
 (defmethod tridash->cl (literal &key)
   (match literal

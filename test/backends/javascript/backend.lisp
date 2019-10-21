@@ -466,7 +466,7 @@
               (js-return
                (thunk
                 (js-return
-                 (js-call f (d a) (thunk (js-return (js-call "Tridash.fail"))))))))))))
+                 (js-call f (d a) (thunk (js-return (js-call "Tridash.fail" "Tridash.NoValue"))))))))))))
 
     (subtest "Rest Arguments"
       (mock-backend-state
