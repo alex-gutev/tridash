@@ -2020,6 +2020,285 @@
                     (js-return
                      (js-call "Tridash.is_nan" ($ x))))))))))))
 
+    (subtest "Meta-Node References"
+      (subtest "External Meta-Nodes"
+        (subtest "Meta-Node: +"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core, map, +)"
+                   "f(l) : map(+, l)")
+            (finish-build)
+
+            (with-nodes ((f "f") (map "map")) modules
+              (mock-backend-state
+                (test-meta-node-function f
+                  (js-function
+                   (meta-node-id f)
+                   '(($ l))
+
+                   (list
+                    (js-return
+                     (js-call
+                      map
+
+                      (js-lambda
+                       '(($ a) ($ b))
+                       (list
+                        (js-return
+                         (js-call "+"
+                                  (js-call "Tridash.check_number" (resolve ($ a)))
+                                  (js-call "Tridash.check_number" (resolve ($ b)))))))
+
+                      ($ l))))))))))
+
+        (subtest "Meta-Node: -"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core, map, -)"
+                   "f(l) : map(-, l)")
+            (finish-build)
+
+            (with-nodes ((f "f") (map "map")) modules
+              (mock-backend-state
+                (test-meta-node-function f
+                  (js-function
+                   (meta-node-id f)
+                   '(($ l))
+
+                   (list
+                    (js-return
+                     (js-call map "Tridash.sub_neg" ($ l))))))))))
+
+        (subtest "Meta-Node: *"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core, map, *)"
+                   "f(l) : map(*, l)")
+            (finish-build)
+
+            (with-nodes ((f "f") (map "map")) modules
+              (mock-backend-state
+                (test-meta-node-function f
+                  (js-function
+                   (meta-node-id f)
+                   '(($ l))
+
+                   (list
+                    (js-return
+                     (js-call
+                      map
+
+                      (js-lambda
+                       '(($ a) ($ b))
+                       (list
+                        (js-return
+                         (js-call "*"
+                                  (js-call "Tridash.check_number" (resolve ($ a)))
+                                  (js-call "Tridash.check_number" (resolve ($ b)))))))
+
+                      ($ l))))))))))
+
+        (subtest "Meta-Node: /"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core, map, /)"
+                   "f(l) : map(/, l)")
+            (finish-build)
+
+            (with-nodes ((f "f") (map "map")) modules
+              (mock-backend-state
+                (test-meta-node-function f
+                  (js-function
+                   (meta-node-id f)
+                   '(($ l))
+
+                   (list
+                    (js-return
+                     (js-call
+                      map
+
+                      (js-lambda
+                       '(($ a) ($ b))
+                       (list
+                        (js-return
+                         (js-call "/"
+                                  (js-call "Tridash.check_number" (resolve ($ a)))
+                                  (js-call "Tridash.check_number" (resolve ($ b)))))))
+
+                      ($ l))))))))))
+
+        (subtest "Meta-Node: %"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core, map, %)"
+                   "f(l) : map(%, l)")
+            (finish-build)
+
+            (with-nodes ((f "f") (map "map")) modules
+              (mock-backend-state
+                (test-meta-node-function f
+                  (js-function
+                   (meta-node-id f)
+                   '(($ l))
+
+                   (list
+                    (js-return
+                     (js-call
+                      map
+
+                      (js-lambda
+                       '(($ a) ($ b))
+                       (list
+                        (js-return
+                         (js-call "%"
+                                  (js-call "Tridash.check_number" (resolve ($ a)))
+                                  (js-call "Tridash.check_number" (resolve ($ b)))))))
+
+                      ($ l))))))))))
+
+        (subtest "Meta-Node: <"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core, map, <)"
+                   "f(l) : map(<, l)")
+            (finish-build)
+
+            (with-nodes ((f "f") (map "map")) modules
+              (mock-backend-state
+                (test-meta-node-function f
+                  (js-function
+                   (meta-node-id f)
+                   '(($ l))
+
+                   (list
+                    (js-return
+                     (js-call
+                      map
+
+                      (js-lambda
+                       '(($ a) ($ b))
+                       (list
+                        (js-return
+                         (js-call "<"
+                                  (js-call "Tridash.check_number" (resolve ($ a)))
+                                  (js-call "Tridash.check_number" (resolve ($ b)))))))
+
+                      ($ l))))))))))
+
+        (subtest "Meta-Node: >"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core, map, >)"
+                   "f(l) : map(>, l)")
+            (finish-build)
+
+            (with-nodes ((f "f") (map "map")) modules
+              (mock-backend-state
+                (test-meta-node-function f
+                  (js-function
+                   (meta-node-id f)
+                   '(($ l))
+
+                   (list
+                    (js-return
+                     (js-call
+                      map
+
+                      (js-lambda
+                       '(($ a) ($ b))
+                       (list
+                        (js-return
+                         (js-call ">"
+                                  (js-call "Tridash.check_number" (resolve ($ a)))
+                                  (js-call "Tridash.check_number" (resolve ($ b)))))))
+
+                      ($ l))))))))))
+
+        (subtest "Meta-Node: <="
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core, map, <=)"
+                   "f(l) : map(<=, l)")
+            (finish-build)
+
+            (with-nodes ((f "f") (map "map")) modules
+              (mock-backend-state
+                (test-meta-node-function f
+                  (js-function
+                   (meta-node-id f)
+                   '(($ l))
+
+                   (list
+                    (js-return
+                     (js-call
+                      map
+
+                      (js-lambda
+                       '(($ a) ($ b))
+                       (list
+                        (js-return
+                         (js-call "<="
+                                  (js-call "Tridash.check_number" (resolve ($ a)))
+                                  (js-call "Tridash.check_number" (resolve ($ b)))))))
+
+                      ($ l))))))))))
+
+        (subtest "Meta-Node: >="
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core, map, >=)"
+                   "f(l) : map(>=, l)")
+            (finish-build)
+
+            (with-nodes ((f "f") (map "map")) modules
+              (mock-backend-state
+                (test-meta-node-function f
+                  (js-function
+                   (meta-node-id f)
+                   '(($ l))
+
+                   (list
+                    (js-return
+                     (js-call
+                      map
+
+                      (js-lambda
+                       '(($ a) ($ b))
+                       (list
+                        (js-return
+                         (js-call ">="
+                                  (js-call "Tridash.check_number" (resolve ($ a)))
+                                  (js-call "Tridash.check_number" (resolve ($ b)))))))
+
+                      ($ l))))))))))
+
+        (subtest "Meta-Node: !"
+          (with-module-table modules
+            (build-core-module)
+            (build ":import(core, map, not)"
+                   "f(l) : map(not, l)")
+            (finish-build)
+
+            (with-nodes ((f "f") (map "map")) modules
+              (mock-backend-state
+                (test-meta-node-function f
+                  (js-function
+                   (meta-node-id f)
+                   '(($ l))
+
+                   (list
+                    (js-return
+                     (js-call
+                      map
+
+                      (js-lambda
+                       '(($ x))
+                       (list
+                        (js-return
+                         (js-call "!" (resolve ($ x))))))
+
+                      ($ l))))))))))))
+
     (subtest "Errors"
       (subtest "Undefined External Meta-Nodes"
         (with-module-table modules
@@ -2029,6 +2308,7 @@
           (finish-build)
 
           (with-nodes ((g "g")) modules
-            (is-error (create-meta-node g) undefined-external-meta-node-error)))))))
+            (mock-backend-state
+              (is-error (create-meta-node g) undefined-external-meta-node-error))))))))
 
 (finalize)

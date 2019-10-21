@@ -30,6 +30,31 @@
 
 /* Comparison */
 
+
+/* Arithmetic */
+
+/**
+ * Returns a - b or -a if b == undefined.
+ */
+function sub_neg(a, b) {
+    try {
+        a = resolve(a);
+        b = resolve(b);
+
+        if (b === undefined) {
+            return -a;
+        }
+
+        return a - b;
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
+
+
+/* Comparison */
+
 function eq(ta, tb) {
     try {
         var a = resolve(ta);

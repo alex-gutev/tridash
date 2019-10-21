@@ -611,9 +611,20 @@
     (with-struct-slots meta-node-ref- (node optional outer-nodes)
         ref
 
-      (if (or optional (not (emptyp outer-nodes)) (find-if #'rest-arg? (operands node)))
-          (make-ref-function ref)
-          (values nil (meta-node-id node))))))
+      (let ((js-name (meta-node-id node)))
+        (cond
+          ((= (ensure-car js-name) "-")
+           (values nil "Tridash.sub_neg"))
+
+          ((or optional
+               (not (emptyp outer-nodes))
+               (find-if #'rest-arg? (operands node))
+               (consp js-name))
+
+           (make-ref-function ref))
+
+          (t
+           (values nil (meta-node-id node))))))))
 
 (defun make-ref-function (ref)
   "Creates a JavaScript anonymous function which executes the
@@ -673,8 +684,9 @@
                  (js-call "===" (js-member rest-arg "length") 0)
                  (js-call "=" rest-arg (empty-list))))
 
-              (js-return
-               (make-js-call (meta-node-id node) (collector-sequence call-args))))))))))))
+              (let ((*return-variable* nil))
+                (multiple-value-call #'add-to-block
+                  (make-meta-node-call node (collector-sequence call-args)))))))))))))
 
 (defun outer-node-operands (meta-node outer-nodes)
   "Generates the JS expressions which compute the values of the outer

@@ -50,6 +50,8 @@ exports.type_nodes = {};
 
 /* Functions */
 
+exports.sub_neg = sub_neg;
+
 exports.eq = eq;
 exports.neq = neq;
 
