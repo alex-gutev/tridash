@@ -38,7 +38,7 @@
 
 ;;; Error Conditions
 
-(define-condition unsupported-meta-node-error (semantic-error)
+(define-condition unsupported-meta-node-error (undefined-external-meta-node-error)
   ((node-name :initarg :node-name
               :reader node-name
               :documentation "Name of the unsupported meta-node"))

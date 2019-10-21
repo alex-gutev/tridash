@@ -2018,6 +2018,17 @@
 
                    (list
                     (js-return
-                     (js-call "Tridash.is_nan" ($ x))))))))))))))
+                     (js-call "Tridash.is_nan" ($ x))))))))))))
+
+    (subtest "Errors"
+      (subtest "Undefined External Meta-Nodes"
+        (with-module-table modules
+          (build-core-module)
+          (build ":extern(f, a)"
+                 "g(x) : f(x)")
+          (finish-build)
+
+          (with-nodes ((g "g")) modules
+            (is-error (create-meta-node g) undefined-external-meta-node-error)))))))
 
 (finalize)

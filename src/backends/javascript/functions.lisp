@@ -49,53 +49,27 @@
 
 ;;; Call Meta-Node Expressions
 
-(defconstant +js-primitive-operators+
+(defconstant +js-function-type-checks+
   (alist-hash-map
-   (list
-    (cons (id-symbol "and") "Tridash.and")
-    (cons (id-symbol "or") "Tridash.or")
-    (cons (id-symbol "not") '("!" . t))
+   '(("+" :real :real)
+     ("-" :real :real)
+     ("*" :real :real)
+     ("/" :real :real)
+     ("%" :real :real)
+     ("<" :real :real)
+     (">" :real :real)
+     ("<=" :real :real)
+     (">=" :real :real)
 
-    (cons (id-symbol "fail") "Tridash.fail")
-    (cons (id-symbol "fail-type") "Tridash.fail_type")
-    (cons (id-symbol "catch") "Tridash.make_catch_thunk")
+     ("!" . t)))
 
-    (cons (id-symbol "member") "Tridash.member")
-
-    (cons (id-symbol "+") '("+" (:real :real)))
-    (cons (id-symbol "-") '("-" (:real :real)))
-    (cons (id-symbol "*") '("*" (:real :real)))
-    (cons (id-symbol "/") '("/" (:real :real)))
-    (cons (id-symbol "%") '("%" (:real :real)))
-    (cons (id-symbol "<") '("<" (:real :real)))
-    (cons (id-symbol ">") '(">" (:real :real)))
-    (cons (id-symbol "<=") '("<=" (:real :real)))
-    (cons (id-symbol ">=") '(">=" (:real :real)))
-    (cons (id-symbol "=") "Tridash.eq")
-    (cons (id-symbol "!=") "Tridash.neq")
-
-    (cons (id-symbol "int") "Tridash.cast_int")
-    (cons (id-symbol "real") "Tridash.cast_real")
-    (cons (id-symbol "string") "Tridash.cast_string")
-
-    (cons (id-symbol "int?") "Tridash.is_int")
-    (cons (id-symbol "real?") "Tridash.is_real")
-    (cons (id-symbol "string?") "Tridash.is_string")
-
-    (cons (id-symbol "inf?") "Tridash.is_inf")
-    (cons (id-symbol "NaN?") "Tridash.is_nan")
-
-    (cons (id-symbol "cons") "Tridash.cons")
-    (cons (id-symbol "head") "Tridash.head")
-    (cons (id-symbol "tail") "Tridash.tail")
-    (cons (id-symbol "cons?") "Tridash.is_cons")
-    (cons (id-symbol "Empty-List") "Tridash.Empty")
-
-    (cons (id-symbol "string-at") "Tridash.string_at")
-    (cons (id-symbol "string-concat") "Tridash.string_concat")))
-
-  "Map mapping tridash primitive operators to their corresponding
-   JavaScript primitive operators.")
+  "Map mapping JS function names to a list indicating the type checks
+   which should be performed for the arguments passed to that
+   function, where the type is one of the keys in
+   +TYPE-CHECK-FUNCTIONS+. A mapped value of T, as opposed to a list,
+   indicates that no type checking should be performed however the
+   function call should be surround in a try-catch block to catch any
+   failures occurring from resolving the arguments.")
 
 (defconstant +type-check-functions+
   (alist-hash-map
@@ -139,14 +113,19 @@
 
   (etypecase meta-node
     (external-meta-node
-     (or (get (name meta-node) +js-primitive-operators+)
-         (attribute :public-name meta-node)
-         (name meta-node)))
+     (if-let (js-name (attribute :js-name meta-node))
+       (aif (get js-name +js-function-type-checks+)
+            (cons js-name it)
+            js-name)
+
+       (error 'undefined-external-meta-node-error
+              :backend "JavaScript"
+              :meta-node meta-node)))
 
     (meta-node
      (with-slots (meta-node-ids) *backend-state*
        (ensure-get meta-node meta-node-ids
-                   (mkstr "metanode" (length meta-node-ids)))))))
+         (mkstr "metanode" (length meta-node-ids)))))))
 
 
 (defun meta-node-call (meta-node operands)
@@ -163,7 +142,7 @@
       (->> (map #'resolve-expression operands)
            (make-js-call name))))
 
-    ((list name types)
+    ((cons name types)
      (protect
       nil
 

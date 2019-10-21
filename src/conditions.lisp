@@ -21,8 +21,8 @@
 
 (in-package :tridash.frontend)
 
-
-;;;; Base Error Condition Class
+
+;;; Base Error Condition Class
 
 (defvar *declaration-stack* nil
   "List of declarations currently being processed. The tail of the
@@ -51,8 +51,8 @@
   (format stream "Semantic Error: ")
   (call-next-method))
 
-
-;;;; Node Reference Errors
+
+;;; Node Reference Errors
 
 (define-condition not-node-error (semantic-error)
   ((node :initarg :node
@@ -140,8 +140,8 @@
 (defmethod print-object ((e node-reference-out-scope-error) stream)
   (format stream "~a referenced outside its scope." (node e)))
 
-
-;;;; Name Collision Errors
+
+;;; Name Collision Errors
 
 (define-condition node-exists-error (semantic-error)
   ((node-name :initarg :node-name
@@ -176,8 +176,8 @@
 (defmethod print-object ((e redefine-special-operator-error) stream)
   (format stream "Identifier `~a` is reserved for special operators." (name e)))
 
-
-;;;; Module Errors
+
+;;; Module Errors
 
 (define-condition non-existent-module-error (semantic-error)
   ((module-name :initarg :module-name
@@ -220,8 +220,8 @@
   (format stream "Cannot import node `~a` from module `~a` into module `~a` as there is already a node with the same name."
           (node-name e) (name (source e)) (name (module e))))
 
-
-;;;; Special Node/Operator Errors
+
+;;; Special Node/Operator Errors
 
 (define-condition invalid-arguments-error (semantic-error)
   ((operator :initarg :operator
@@ -269,8 +269,8 @@
 (defmethod print-object ((e special-operator-reference-error) stream)
   (format stream "`~a` declarations may only appear at top-level." (operator e)))
 
-
-;;;; Node Binding Errors
+
+;;; Node Binding Errors
 
 (define-condition target-node-error (semantic-error)
   ((node :initarg :node
@@ -286,8 +286,8 @@
   (format stream "`~a` cannot appear as the target of a binding."
           (display-node (unwrap-declaration (node err)))))
 
-
-;;;; Arity Errors
+
+;;; Arity Errors
 
 (define-condition arity-error (semantic-error)
   ((meta-node :initarg :meta-node
@@ -340,8 +340,8 @@
 (defmethod print-object ((e invalid-operand-list-error) stream)
   (format stream "Invalid operand list: ~a" (display-args (operands e))))
 
-
-;;;; Graph Structure Errors
+
+;;; Graph Structure Errors
 
 (define-condition ambiguous-context-error (semantic-error)
   ((node :initarg :node
@@ -400,8 +400,26 @@
           (display-node (dependency e))
           (display-node (node e))))
 
+
+;;; Miscellaneous Errors
 
-;;;; Printing Utility Functions
+(define-condition undefined-external-meta-node-error (semantic-error)
+  ((backend :initarg :backend
+            :reader backend)
+
+   (meta-node :initarg :meta-node
+              :reader meta-node))
+
+  (:documentation
+   "Error condition: The backend does not provide a definition for an
+    external meta-node."))
+
+(defmethod print-object ((e undefined-external-meta-node-error) stream)
+  (format stream "The current backend does not provided a definition for ~a."
+          (meta-node e)))
+
+
+;;; Printing Utility Functions
 
 (defun display-node (node)
   "Returns a string displaying NODE and its type."

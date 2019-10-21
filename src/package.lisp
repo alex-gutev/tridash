@@ -292,6 +292,7 @@
    :ambiguous-meta-node-context-error
    :node-cycle-error
    :dependency-not-reachable-error
+   :undefined-external-meta-node-error
    :unsupported-meta-node-error
    :macro-outer-node-error
    :arity-error

@@ -43,3 +43,4 @@ sources:
   - core/types.trd
   - core/macros.trd
   - core/strings.trd
+  - core/js-backend.trd
