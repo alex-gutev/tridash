@@ -95,13 +95,14 @@ core_module_sources = \
 	modules/core/operators.trd \
 	modules/core/external.trd \
 	modules/core/primitives.trd \
-	modules/core/util.trd \
+	modules/core/failures.trd \
 	modules/core/lists.trd \
 	modules/core/introspection.trd \
 	modules/core/pattern-match.trd \
 	modules/core/types.trd \
 	modules/core/macros.trd \
-	modules/core/strings.trd
+	modules/core/strings.trd \
+	modules/core/js-backend.trd
 
 build.lisp: build.lisp.in
 	$(SED) -e 's|@datadir[@]|$(pkgdatadir)|g' $< > $@
