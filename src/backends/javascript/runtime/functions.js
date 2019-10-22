@@ -38,14 +38,14 @@
  */
 function sub_neg(a, b) {
     try {
-        a = resolve(a);
+        a = check_number(resolve(a));
         b = resolve(b);
 
         if (b === undefined) {
             return -a;
         }
 
-        return a - b;
+        return a - check_number(b);
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -133,7 +133,7 @@ function fail_type(value) {
             return e.type;
     }
 
-    return fail();
+    return fail(TridashTypeError);
 }
 
 function make_catch_thunk(try_value, catch_value, test) {
@@ -282,7 +282,7 @@ function head(list) {
             return l.array.length > l.start ? l.array[l.start] : Empty();
         }
         else {
-            return l === null ? Empty() : fail();
+            return l === null ? Empty() : fail(TridashTypeError);
         }
     }
     catch (e) {
@@ -309,7 +309,7 @@ function tail(list) {
                 Empty();
         }
         else {
-            return l === null ? Empty() : fail();
+            return l === null ? Empty() : fail(TridashTypeError);
         }
     }
     catch (e) {
@@ -385,7 +385,7 @@ function check_number(value) {
         return value;
     }
 
-    throw new Fail();
+    throw new Fail(TridashTypeError);
 }
 
 /**
@@ -403,7 +403,7 @@ function check_value(value) {
         return value;
     }
 
-    throw new Fail();
+    throw new Fail(TridashTypeError);
 }
 
 function check_string(value) {
@@ -411,7 +411,7 @@ function check_string(value) {
         return value;
     }
 
-    throw new Fail();
+    throw new Fail(TridashTypeError);
 }
 
 
@@ -463,4 +463,8 @@ function member(dict, key) {
 
 function NoValue() {
     return fail(NoValue);
+}
+
+function TridashTypeError() {
+    return fail(TridashTypeError);
 }

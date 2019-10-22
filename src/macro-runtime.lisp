@@ -20,6 +20,8 @@
 
 (in-package :tridash.frontend)
 
+
+;;; Failure Types
 
 (defconstant +empty-list+ (get :empty-list *core-meta-nodes*)
   "Meta-Node representing the empty list failure type.")
@@ -27,8 +29,11 @@
 (defconstant +fail-type-no-value+ (get :no-value *core-meta-nodes*)
   "Failure type indicating no value was provided.")
 
+(defconstant +fail-type-type-error+ (get :type-error *core-meta-nodes*)
+  "Failure type indicating a type error.")
 
-;;;; Thunks
+
+;;; Thunks
 
 (defstruct thunk
   "A thunks stores a function which evaluates to a value. The function
@@ -160,8 +165,8 @@
 
     (_ try)))
 
-
-;;;; Failures
+
+;;; Failures
 
 (define-condition tridash-fail ()
   ((fail-type
@@ -198,8 +203,8 @@
         (fail-thunk))
     (tridash-fail (c) (fail-type c))))
 
-
-;;;; Definition Macros
+
+;;; Definition Macros
 
 (defmacro define-tridash-function% (name (&rest lambda-list) &body body)
   "Defines an externally defined Tridash function, with name NAME,
@@ -247,8 +252,8 @@
      `(define-tridash-function% ,name ,lambda-list
         (catch-failures ,@body)))))
 
-
-;;;; Core Functions
+
+;;; Core Functions
 
 (deftype tridash-value ()
   `(or string symbol number))
@@ -271,8 +276,10 @@
     `(let ,(map #'make-binding vars)
        (if (and ,@(map #'make-check-type vars))
            (progn ,@body)
-           (error 'tridash-fail)))))
+           (error 'tridash-fail :fail-type +fail-type-type-error+)))))
 
+
+;;; External Meta-Node Implementations
 
 ;;; Conditionals
 
@@ -354,6 +361,7 @@
 (define-tridash-function / ((a number) (b number)) /)
 (define-tridash-function % ((a number) (n number)) rem)
 
+
 ;;; Comparison
 
 (define-tridash-function < ((a number) (b number)) <)
@@ -379,7 +387,10 @@
     (string
      (handler-case
          (parse-integer x)
-       (error () (error 'tridash-fail))))))
+       (error () (error 'tridash-fail))))
+
+    (otherwise
+     (fail-thunk +fail-type-type-error+))))
 
 (define-tridash-function |real| (x)
   (typecase (resolve% x)
@@ -387,7 +398,10 @@
     (string
      (handler-case
          (parse-number:parse-real-number x)
-       (error () (error 'tridash-fail))))))
+       (error () (error 'tridash-fail))))
+
+    (otherwise
+     (fail-thunk +fail-type-type-error+))))
 
 
 ;;; Type Predicates
@@ -406,20 +420,17 @@
   (atypecase (resolve% list)
     (cons (car it))
     (null (empty-list))
-    (otherwise (fail-thunk))))
+    (otherwise (fail-thunk +fail-type-type-error+))))
 
 (define-tridash-function |tail| (list)
   (atypecase (resolve% list)
     (cons
      (or (cdr it) (empty-list)))
     (null (empty-list))
-    (otherwise (fail-thunk))))
+    (otherwise (fail-thunk +fail-type-type-error+))))
 
 (define-tridash-function |cons?| (thing)
   (consp (resolve% thing)))
-
-(define-tridash-function |Empty| ()
-  (empty-list))
 
 (defun empty-list ()
   "Returns a `THUNK' which signals a `TRIDASH-FAIL' condition with the
@@ -437,7 +448,7 @@
   (let ((module (or (resolve% module) *current-module*)))
 
     (unless (typep module 'module)
-      (error 'tridash-fail))
+      (error 'tridash-fail +fail-type-type-error+))
 
     (handler-case
         (let ((*create-nodes* nil))

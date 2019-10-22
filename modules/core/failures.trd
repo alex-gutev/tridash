@@ -101,6 +101,12 @@ fail-type?(x, type) : {
 &(No-Value%) -> No-Value
 fail(No-Value) -> No-Value!
 
+## Failure type indicating that an argument to a meta-node is of an
+## incorrect type.
+
+&(Type-Error%) -> Type-Error
+fail(Type-Error) -> Type-Error!
+
 
 ### Export Declarations
 

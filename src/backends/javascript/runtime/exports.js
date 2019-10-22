@@ -97,3 +97,4 @@ exports.member = member;
 /* Builtin Failure Types */
 
 exports.NoValue = NoValue;
+exports.TypeError = TridashTypeError;

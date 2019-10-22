@@ -102,7 +102,8 @@
 
      ;; Failure Types
      ((:empty-list "Empty-List") ())
-     ((:no-value "No-Value%") ())))
+     ((:no-value "No-Value%") ())
+     ((:type-error "Type-Error%") ())))
 
   "Map of meta-nodes which comprise the language primitives.")
 
