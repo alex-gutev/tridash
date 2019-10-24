@@ -21,18 +21,6 @@
 (in-package :tridash.frontend)
 
 
-;;; Failure Types
-
-(defconstant +empty-list+ (get :empty-list *core-meta-nodes*)
-  "Meta-Node representing the empty list failure type.")
-
-(defconstant +fail-type-no-value+ (get :no-value *core-meta-nodes*)
-  "Failure type indicating no value was provided.")
-
-(defconstant +fail-type-type-error+ (get :type-error *core-meta-nodes*)
-  "Failure type indicating a type error.")
-
-
 ;;; Thunks
 
 (defstruct thunk
@@ -328,7 +316,10 @@
          (apply operator args))
 
         (meta-node
-         (call-meta-node operator args))))))
+         (handler-case
+             (call-meta-node operator args)
+
+           (arity-error () (fail-arity-error))))))))
 
 
 ;;; Boolean Expressions

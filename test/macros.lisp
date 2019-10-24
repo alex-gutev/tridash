@@ -61,6 +61,8 @@
                 :group-rest-args
 
                 :check-arity
+                :correct-arity?%
+                :fail-arity-error
 
                 :+optional-argument+
                 :+rest-argument+))
@@ -326,8 +328,9 @@
 
                (list
                 #'(lambda (&rest $args)
-                    (check-arity ,not $args)
-                    (apply #'!|not| $args))
+                    (if (correct-arity?% '(1 . 1) (length $args))
+                        (apply #'!|not| $args)
+                        (fail-arity-error)))
                 $x)))))))
 
     (subtest "If Meta-Node"
@@ -345,8 +348,9 @@
 
                (list
                 #'(lambda (&rest $args)
-                    (check-arity ,if $args)
-                    (apply #'!|if| $args))
+                    (if (correct-arity?% '(2 . 3) (length $args))
+                        (apply #'!|if| $args)
+                        (fail-arity-error)))
                 $x $y $z)))))))
 
     (subtest "And Meta-Node"
@@ -364,8 +368,9 @@
 
                (list
                 #'(lambda (&rest $args)
-                    (check-arity ,and $args)
-                    (apply #'!|and| $args))
+                    (if (correct-arity?% '(2 . 2) (length $args))
+                        (apply #'!|and| $args)
+                        (fail-arity-error)))
                 $x $y)))))))
 
     (subtest "Or Meta-Node"
@@ -383,8 +388,9 @@
 
                (list
                 #'(lambda (&rest $args)
-                    (check-arity ,or $args)
-                    (apply #'!|or| $args))
+                    (if (correct-arity?% '(2 . 2) (length $args))
+                        (apply #'!|or| $args)
+                        (fail-arity-error)))
                 $x $y)))))))
 
     (subtest "Tridash Meta-Node"
@@ -402,10 +408,10 @@
              ,apply
              (list
               #'(lambda (&rest $args)
-                  (check-arity ,f $args)
-
-                  (destructuring-bind ($x2) $args
-                    (call-tridash-meta-node ,f (list $x2))))
+                  (if (correct-arity?% '(1 . 1) (length $args))
+                      (destructuring-bind ($x2) $args
+                        (call-tridash-meta-node ,f (list $x2)))
+                      (fail-arity-error)))
               $x))))))
 
     (subtest "Meta-Node with Optional Arguments"
@@ -422,10 +428,10 @@
              ,apply
              (list
               #'(lambda (&rest $args)
-                  (check-arity ,f $args)
-
-                  (destructuring-bind ($x2 &optional ($y 1) ($z 2)) $args
-                    (call-tridash-meta-node ,f (list $x2 $y $z))))
+                  (if (correct-arity?% '(1 . 3) (length $args))
+                      (destructuring-bind ($x2 &optional ($y 1) ($z 2)) $args
+                        (call-tridash-meta-node ,f (list $x2 $y $z)))
+                      (fail-arity-error)))
               $x))))))
 
     (subtest "Meta-Node with Rest Arguments"
@@ -442,10 +448,11 @@
              ,apply
              (list
               #'(lambda (&rest $args)
-                  (check-arity ,f $args)
-                  (destructuring-bind ($x2 $y &rest $xs &aux ($rest (or $xs (empty-list))))
-                      $args
-                    (call-tridash-meta-node ,f (list $x2 $y $rest))))
+                  (if (correct-arity?% '(2) (length $args))
+                      (destructuring-bind ($x2 $y &rest $xs &aux ($rest (or $xs (empty-list))))
+                          $args
+                        (call-tridash-meta-node ,f (list $x2 $y $rest)))
+                      (fail-arity-error)))
               $x))))))
 
     (subtest "Invoking Nodes"

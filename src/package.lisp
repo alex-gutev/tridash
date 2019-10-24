@@ -234,6 +234,8 @@
    :+rest-argument+
    :+outer-node-argument+
 
+   :meta-node-arity
+
    ;; Operators
    :+bind-operator+
 

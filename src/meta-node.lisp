@@ -301,6 +301,15 @@
         (<= min (length arguments) max)
         (<= min (length arguments)))))
 
+(defun correct-arity?% (arity num-args)
+  "Returns true if NUM-ARGS is a valid number of arguments for the
+   meta-node with arity ARITY."
+
+  (destructuring-bind (min . max) arity
+    (if max
+        (<= min num-args max)
+        (<= min num-args))))
+
 (defun meta-node-arity (meta-node)
   "Returns a CONS where the CAR is the minimum number of arguments and
    the CDR is the maximum number of arguments, NIL if there is no

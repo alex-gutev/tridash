@@ -87,10 +87,6 @@
 
 ;;;; Builtin Module Definition
 
-;;; The 'builtin' module contains a few macro nodes such as the "case"
-;;; meta-node. Eventually a macro-system will be developed and these
-;;; will be specified in Tridash code.
-
 (defparameter *core-meta-nodes*
   (external-meta-nodes
    `((if (cond then (,+optional-argument+ else)) ((:strictness (or cond (and then else)))))
@@ -106,7 +102,9 @@
      ((:type-error "Type-Error%") ())
 
      (:invalid-integer "Invalid-Integer%")
-     (:invalid-real "Invalid-Real%")))
+     (:invalid-real "Invalid-Real%")
+
+     (:arity-error "Arity-Error%")))
 
   "Map of meta-nodes which comprise the language primitives.")
 

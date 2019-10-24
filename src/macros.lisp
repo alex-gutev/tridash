@@ -22,6 +22,24 @@
 
 (in-readtable lol-syntax)
 
+
+;;; Failure Types
+
+(defconstant +empty-list+ (get :empty-list *core-meta-nodes*)
+  "Meta-Node representing the empty list failure type.")
+
+(defconstant +fail-type-no-value+ (get :no-value *core-meta-nodes*)
+  "Failure type indicating no value was provided.")
+
+(defconstant +fail-type-type-error+ (get :type-error *core-meta-nodes*)
+  "Failure type indicating a type error.")
+
+(defconstant +fail-type-arity-error+ (get :arity-error *core-meta-nodes*)
+  "Failure type indicating an incorrect number of arguments were
+   passed to a meta-node.")
+
+
+;;; Macro Compiler State
 
 (defvar *operand-vars* nil
   "The operands list of the meta-node currently being compiled to
@@ -563,22 +581,27 @@
     (with-gensyms (args)
       (let ((apply-args (make-meta-node-ref-arguments node args)))
         `#'(lambda (&rest ,args)
-             (check-arity ,node ,args)
+             (if (correct-arity?% ',(meta-node-arity node) (length ,args))
+                 ,(ematch node
+                    ((external-meta-node name)
+                     `(apply #',(external-meta-node-cl-function name) ,apply-args))
 
-             ,(ematch node
-                ((external-meta-node name)
-                 `(apply #',(external-meta-node-cl-function name) ,apply-args))
+                    ((type meta-node)
+                     (let ((*return-nil* nil))
+                       (multiple-value-bind (lambda-list vars)
+                           (destructure-meta-node-args (operands node) optional)
 
-                ((type meta-node)
-                 (let ((*return-nil* nil))
-                   (multiple-value-bind (lambda-list vars)
-                       (destructure-meta-node-args (operands node) optional)
+                         `(destructuring-bind ,lambda-list ,args
+                            (call-tridash-meta-node
+                             ,node
 
-                     `(destructuring-bind ,lambda-list ,args
-                       (call-tridash-meta-node
-                        ,node
+                             (list ,@vars ,@(make-outer-operands node outer-nodes))))))))
+                 (fail-arity-error)))))))
 
-                        (list ,@vars ,@(make-outer-operands node outer-nodes)))))))))))))
+(defun fail-arity-error ()
+  "Returns a failure of type `Arity-Error'."
+
+  (fail-thunk +fail-type-arity-error+))
 
 (defun destructure-meta-node-args (operands optional)
   "Creates the destructuring lambda-list for the meta-node argument

@@ -850,7 +850,7 @@
   (subtest "Meta-Node References"
     (subtest "Without Outer Nodes"
       (mock-backend-state
-        (mock-meta-nodes (map f)
+        (mock-meta-nodes (map (f (x) (x)))
           (mock-contexts
               ((context (a)
                         (functor map (meta-node-ref f) a)))
@@ -859,7 +859,20 @@
               (js-return
                (thunk
                 (js-return
-                 (js-call map f (d a))))))))))
+                 (js-call
+                  map
+
+                  (js-lambda
+                   '(($ x))
+
+                   (list
+                    (js-if
+                     (js-call "!==" (js-member "arguments" "length") 1)
+                     (js-return (js-call "Tridash.ArityError")))
+
+                    (js-return (js-call f ($ x)))))
+
+                  (d a))))))))))
 
     (subtest "With Optional Arguments"
       (mock-backend-state
@@ -878,6 +891,13 @@
                   (js-lambda
                    (list ($ n) (js-call "=" ($ d) (d b)))
                    (list
+                    (js-if
+                     (js-call
+                      "||"
+                      (js-call "<" (js-member "arguments" "length") 1)
+                      (js-call ">" (js-member "arguments" "length") 2))
+                     (js-return (js-call "Tridash.ArityError")))
+
                     (js-return
                      (js-call 1+ ($ a) ($ d)))))
 
@@ -899,6 +919,10 @@
                   (js-lambda
                    (list ($ x) (js-call "..." ($ xs)))
                    (list
+                    (js-if
+                     (js-call "<" (js-member "arguments" "length") 1)
+                     (js-return (js-call "Tridash.ArityError")))
+
                     (js-if (js-call "===" (js-member ($ xs) "length") 0)
                            (js-call "=" ($ xs) (js-call "Tridash.Empty")))
 
@@ -922,6 +946,10 @@
                   (js-lambda
                    '(($ a))
                    (list
+                    (js-if
+                     (js-call "!==" (js-member "arguments" "length") 1)
+                     (js-return (js-call "Tridash.ArityError")))
+
                     (js-return
                      (js-call f ($ a) (d b)))))
                   (d a))))))))))
@@ -949,6 +977,10 @@
                     ($ a) (js-call "=" ($ b) 1) (js-call "..." ($ c)))
 
                    (list
+                    (js-if
+                     (js-call "<" (js-member "arguments" "length") 1)
+                     (js-return (js-call "Tridash.ArityError")))
+
                     (js-if (js-call "===" (js-member ($ c) "length") 0)
                            (js-call "=" ($ c) (js-call "Tridash.Empty")))
 
@@ -2043,7 +2075,12 @@
 
                       (js-lambda
                        '(($ a) ($ b))
+
                        (list
+                        (js-if
+                         (js-call "!==" (js-member "arguments" "length") 2)
+                         (js-return (js-call "Tridash.ArityError")))
+
                         (js-return
                          (js-call "+"
                                   (js-call "Tridash.check_number" (resolve ($ a)))
@@ -2090,7 +2127,12 @@
 
                       (js-lambda
                        '(($ a) ($ b))
+
                        (list
+                        (js-if
+                         (js-call "!==" (js-member "arguments" "length") 2)
+                         (js-return (js-call "Tridash.ArityError")))
+
                         (js-return
                          (js-call "*"
                                   (js-call "Tridash.check_number" (resolve ($ a)))
@@ -2119,7 +2161,12 @@
 
                       (js-lambda
                        '(($ a) ($ b))
+
                        (list
+                        (js-if
+                         (js-call "!==" (js-member "arguments" "length") 2)
+                         (js-return (js-call "Tridash.ArityError")))
+
                         (js-return
                          (js-call "/"
                                   (js-call "Tridash.check_number" (resolve ($ a)))
@@ -2148,7 +2195,12 @@
 
                       (js-lambda
                        '(($ a) ($ b))
+
                        (list
+                        (js-if
+                         (js-call "!==" (js-member "arguments" "length") 2)
+                         (js-return (js-call "Tridash.ArityError")))
+
                         (js-return
                          (js-call "%"
                                   (js-call "Tridash.check_number" (resolve ($ a)))
@@ -2177,7 +2229,12 @@
 
                       (js-lambda
                        '(($ a) ($ b))
+
                        (list
+                        (js-if
+                         (js-call "!==" (js-member "arguments" "length") 2)
+                         (js-return (js-call "Tridash.ArityError")))
+
                         (js-return
                          (js-call "<"
                                   (js-call "Tridash.check_number" (resolve ($ a)))
@@ -2206,7 +2263,12 @@
 
                       (js-lambda
                        '(($ a) ($ b))
+
                        (list
+                        (js-if
+                         (js-call "!==" (js-member "arguments" "length") 2)
+                         (js-return (js-call "Tridash.ArityError")))
+
                         (js-return
                          (js-call ">"
                                   (js-call "Tridash.check_number" (resolve ($ a)))
@@ -2235,7 +2297,12 @@
 
                       (js-lambda
                        '(($ a) ($ b))
+
                        (list
+                        (js-if
+                         (js-call "!==" (js-member "arguments" "length") 2)
+                         (js-return (js-call "Tridash.ArityError")))
+
                         (js-return
                          (js-call "<="
                                   (js-call "Tridash.check_number" (resolve ($ a)))
@@ -2264,7 +2331,12 @@
 
                       (js-lambda
                        '(($ a) ($ b))
+
                        (list
+                        (js-if
+                         (js-call "!==" (js-member "arguments" "length") 2)
+                         (js-return (js-call "Tridash.ArityError")))
+
                         (js-return
                          (js-call ">="
                                   (js-call "Tridash.check_number" (resolve ($ a)))
@@ -2293,7 +2365,12 @@
 
                       (js-lambda
                        '(($ x))
+
                        (list
+                        (js-if
+                         (js-call "!==" (js-member "arguments" "length") 1)
+                         (js-return (js-call "Tridash.ArityError")))
+
                         (js-return
                          (js-call "!" (resolve ($ x))))))
 

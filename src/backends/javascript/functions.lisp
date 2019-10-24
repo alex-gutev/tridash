@@ -604,27 +604,13 @@
   "Generates an expression which returns a function that invokes the
    meta-node referenced by REF."
 
-  (flet ((rest-arg? (thing)
-           (match thing
-             ((list (eql +rest-argument+) _) t))))
+  (with-struct-slots meta-node-ref- (node optional outer-nodes)
+      ref
 
-    (with-struct-slots meta-node-ref- (node optional outer-nodes)
-        ref
-
-      (let ((js-name (meta-node-id node)))
-        (cond
-          ((= (ensure-car js-name) "-")
-           (values nil "Tridash.sub_neg"))
-
-          ((or optional
-               (not (emptyp outer-nodes))
-               (find-if #'rest-arg? (operands node))
-               (consp js-name))
-
-           (make-ref-function ref))
-
-          (t
-           (values nil (meta-node-id node))))))))
+    (let ((js-name (meta-node-id node)))
+      (if (= (ensure-car js-name) "-")
+          (values nil "Tridash.sub_neg")
+          (make-ref-function ref)))))
 
 (defun make-ref-function (ref)
   "Creates a JavaScript anonymous function which executes the
@@ -678,7 +664,10 @@
             nil
             (js-lambda
              (collector-sequence fn-args)
+
              (list
+              (make-arity-check node)
+
               (when rest-arg
                 (js-if
                  (js-call "===" (js-member rest-arg "length") 0)
@@ -687,6 +676,29 @@
               (let ((*return-variable* nil))
                 (multiple-value-call #'add-to-block
                   (make-meta-node-call node (collector-sequence call-args)))))))))))))
+
+(defun make-arity-check (meta-node)
+  "Generates code which checks that the correct number of arguments
+   are supplied to META-NODE. This assumes that the arguments are
+   stored in the `length' property of the `arguments' object. The
+   generated code returns a failure of type `Arity-Error' if an
+   incorrect number of arguments are supplied."
+
+  (destructuring-bind (min . max) (meta-node-arity meta-node)
+    (js-if
+     (cond
+       ((= min max)
+        (js-call "!==" (js-member "arguments" "length") min))
+
+       ((null max)
+        (js-call "<" (js-member "arguments" "length") min))
+
+       (t
+        (js-call "||"
+                 (js-call "<" (js-member "arguments" "length") min)
+                 (js-call ">" (js-member "arguments" "length") max))))
+
+     (js-return (js-call "Tridash.ArityError")))))
 
 (defun outer-node-operands (meta-node outer-nodes)
   "Generates the JS expressions which compute the values of the outer

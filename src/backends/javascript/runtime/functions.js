@@ -37,6 +37,10 @@
  * Returns a - b or -a if b == undefined.
  */
 function sub_neg(a, b) {
+    if (arguments.length < 1 || arguments.length > 2) {
+        return ArityError();
+    }
+
     try {
         a = check_number(resolve(a));
         b = resolve(b);
@@ -475,4 +479,8 @@ function InvalidInteger() {
 
 function InvalidReal() {
     return fail(InvalidReal);
+}
+
+function ArityError() {
+    return fail(ArityError);
 }

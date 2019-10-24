@@ -119,6 +119,12 @@ fail(Invalid-Integer) -> Invalid-Integer!
 &(Invalid-Real%) -> Invalid-Real
 fail(Invalid-Real) -> Invalid-Real!
 
+## Failure type indicating that a meta-node was invoked with an
+## incorrect number of arguments.
+
+&(Arity-Error%) -> Arity-Error
+fail(Arity-Error) -> Arity-Error!
+
 
 ### Export Declarations
 
