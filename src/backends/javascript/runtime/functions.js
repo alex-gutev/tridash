@@ -163,7 +163,7 @@ function cast_int(x) {
     try {
         var intx = parseInt(resolve(x));
 
-        return !isNaN(intx) ? intx : fail();
+        return !isNaN(intx) ? intx : fail(InvalidInteger);
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -173,7 +173,7 @@ function cast_real(x) {
     try {
         var realx = parseFloat(resolve(x));
 
-        return !isNaN(realx) ? realx : fail();
+        return !isNaN(realx) ? realx : fail(InvalidReal);
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -467,4 +467,12 @@ function NoValue() {
 
 function TridashTypeError() {
     return fail(TridashTypeError);
+}
+
+function InvalidInteger() {
+    return fail(InvalidInteger);
+}
+
+function InvalidReal() {
+    return fail(InvalidReal);
 }

@@ -664,6 +664,60 @@ describe('Builtin Functions', function() {
     });
 
     describe('Type casts', function() {
+        describe('Tridash.cast_int', function() {
+            it('Should return integer argument directly', function() {
+                assert.equal(tridash.cast_int(5), 5);
+
+                // Test that thunks are resolved
+                assert.equal(tridash.cast_int(new tridash.Thunk(() => 6)), 6);
+            });
+            it('Should return truncated real argument', function() {
+                assert.equal(tridash.cast_int(4.5), 4);
+            });
+            it('Should parse integer from string', function() {
+                assert.equal(tridash.cast_int('18'), 18);
+            });
+            it('Should return failure if integer could not be parsed from string', function() {
+                assert.throws(() => tridash.resolve(tridash.cast_int('foo')), test_fail_type(tridash.InvalidInteger));
+            });
+            it('Should return failures as thunks', function() {
+                var f = tridash.fail();
+                var res = tridash.cast_int(f);
+
+                assert.ok(res);
+                assert.throws(() => tridash.resolve(res), tridash.Fail);
+            });
+        });
+
+        describe('Tridash.cast_real', function() {
+            it('Should return integer argument directly', function() {
+                assert.equal(tridash.cast_real(5), 5);
+
+                // Test that thunks are resolved
+                assert.equal(tridash.cast_real(new tridash.Thunk(() => 6)), 6);
+            });
+            it('Should return real argument directly', function() {
+                assert.equal(tridash.cast_real(4.5), 4.5);
+            });
+            it('Should parse real from string', function() {
+                assert.equal(tridash.cast_real('18'), 18);
+                assert.equal(tridash.cast_real('15.5'), 15.5);
+            });
+            it('Should return failure if integer could not be parsed from string', function() {
+                assert.throws(
+                    () => tridash.resolve(tridash.cast_real('foo')),
+                    test_fail_type(tridash.InvalidReal)
+                );
+            });
+            it('Should return failures as thunks', function() {
+                var f = tridash.fail();
+                var res = tridash.cast_real(f);
+
+                assert.ok(res);
+                assert.throws(() => tridash.resolve(res), tridash.Fail);
+            });
+        });
+
         describe('Tridash.cast_string', function() {
             it('Should return integer as string', function() {
                 assert.equal(tridash.cast_string(10), "10");
@@ -675,6 +729,16 @@ describe('Builtin Functions', function() {
 
             it('Should return string as string', function() {
                 assert.equal(tridash.cast_string("hello"), "hello");
+
+                // Test that thunks are resolved
+                assert.equal(tridash.cast_string(new tridash.Thunk(() => "foo")), "foo");
+            });
+            it('Should return failures as thunks', function() {
+                var f = tridash.fail();
+                var res = tridash.cast_string(f);
+
+                assert.ok(res);
+                assert.throws(() => tridash.resolve(res), tridash.Fail);
             });
         });
     });

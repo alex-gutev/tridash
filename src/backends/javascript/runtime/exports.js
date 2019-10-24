@@ -98,3 +98,5 @@ exports.member = member;
 
 exports.NoValue = NoValue;
 exports.TypeError = TridashTypeError;
+exports.InvalidInteger = InvalidInteger;
+exports.InvalidReal = InvalidReal;
