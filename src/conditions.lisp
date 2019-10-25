@@ -401,7 +401,7 @@
           (display-node (node e))))
 
 
-;;; Miscellaneous Errors
+;;; Meta-Node Errors
 
 (define-condition undefined-external-meta-node-error (semantic-error)
   ((backend :initarg :backend
@@ -417,6 +417,17 @@
 (defmethod print-object ((e undefined-external-meta-node-error) stream)
   (format stream "The current backend does not provided a definition for ~a."
           (meta-node e)))
+
+
+(define-condition meta-node-no-function-error (semantic-error)
+  ((meta-node :initarg :meta-node
+              :reader meta-node))
+
+  (:documentation
+   "Error condition: A meta-node without a value function was created."))
+
+(defmethod print-object ((e meta-node-no-function-error) stream)
+  (format stream "~a does not have a value function." (meta-node e)))
 
 
 ;;; Printing Utility Functions

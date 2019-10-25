@@ -305,7 +305,10 @@
        (add-binding last-node value-node :context nil))
 
       ((> (length contexts) 1)
-       (error 'ambiguous-meta-node-context-error :node meta-node)))))
+       (error 'ambiguous-meta-node-context-error :node meta-node))
+
+      ((emptyp (contexts value-node))
+       (error 'meta-node-no-function-error :meta-node meta-node)))))
 
 
 ;;;; Methods: Processing Declarations

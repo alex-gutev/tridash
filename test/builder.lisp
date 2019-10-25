@@ -3888,7 +3888,17 @@
 
         (let ((table (finish-build)))
           (with-nodes ((f "f")) table
-            (test-value-function f (car (first (contexts f))) 1)))))))
+            (test-value-function f (car (first (contexts f))) 1))))))
+
+  (subtest "Errors"
+    (subtest "Meta-Node Without Function."
+      (with-module-table modules
+        (build "f(x) : x -> z"
+
+               "f(in) -> out"
+               ":attribute(in, input, 1)")
+
+        (is-error (finish-build) meta-node-no-function-error)))))
 
 
 (finalize)

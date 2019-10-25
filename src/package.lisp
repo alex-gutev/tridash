@@ -296,6 +296,7 @@
    :dependency-not-reachable-error
    :undefined-external-meta-node-error
    :unsupported-meta-node-error
+   :meta-node-no-function-error
    :macro-outer-node-error
    :arity-error
    :invalid-operand-list-error
