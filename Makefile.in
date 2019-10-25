@@ -98,7 +98,8 @@ core_module_sources = \
 	modules/core/failures.trd \
 	modules/core/lists.trd \
 	modules/core/introspection.trd \
-	modules/core/pattern-match.trd \
+	modules/core/patterns.trd \
+	modules/core/patterns.yml \
 	modules/core/types.trd \
 	modules/core/macros.trd \
 	modules/core/strings.trd \
