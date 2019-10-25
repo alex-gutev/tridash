@@ -7,7 +7,7 @@
 
 get-matcher(id) : find-node(id)
 
-attribute-processor(matcher, get-matcher)
+:attribute-processor(matcher, get-matcher)
 
 
 f(x) : x

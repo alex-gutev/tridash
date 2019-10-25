@@ -35,7 +35,7 @@
 
 :module(core)
 
-attribute-processor(matcher, find-node)
+:attribute-processor(matcher, find-node)
 
 ### Utilities
 

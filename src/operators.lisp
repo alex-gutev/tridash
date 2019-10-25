@@ -69,7 +69,7 @@
 (defconstant +attribute-operator+ (id-symbol ":attribute")
   "Special operator for setting node attributes.")
 
-(defconstant +attribute-processor-operator+ :attribute-processor
+(defconstant +attribute-processor-operator+ (id-symbol ":attribute-processor")
   "Special operator for setting a meta-node to process a particular
    attribute.")
 

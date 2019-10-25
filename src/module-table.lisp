@@ -114,9 +114,7 @@
     (|.| ,+subnode-operator+ 1000 :left)
     (& ,+ref-operator+)
     (|..| ,+outer-operator+)
-    (prog ,+list-operator+)
-
-    (attribute-processor ,+attribute-processor-operator+))
+    (prog ,+list-operator+))
 
   "List of core macro nodes where each a element is a list with the
    first item being the node's identifier and the second item being

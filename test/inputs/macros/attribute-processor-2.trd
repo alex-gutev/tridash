@@ -4,7 +4,7 @@
 
 :extern(find-node, node)
 
-attribute-processor(matcher, find-node)
+:attribute-processor(matcher, find-node)
 
 
 f(x) : x
