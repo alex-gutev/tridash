@@ -129,3 +129,8 @@ fail(Arity-Error) -> Arity-Error!
 ### Export Declarations
 
 :export(fail, fails?, fail-type, fail-type?, ?, !!, !-)
+
+:export(No-Value, No-Value!,
+        Invalid-Integer, Invalid-Integer!,
+        Invalid-Real, Invalid-Real!,
+        Arity-Error, Arity-Error!)
