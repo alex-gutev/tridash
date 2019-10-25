@@ -106,3 +106,12 @@
 :attribute(fail-type, js-name, "Tridash.fail-type")
 
 :attribute(catch, js-name, "Tridash.make_catch_thunk")
+
+
+### Builtin Failure Types
+
+:attribute(No-Value%, js-name, "Tridash.NoValue")
+:attribute(Type-Error%, js-name,  "Tridash.TypeError")
+:attribute(Invalid-Integer%, js-name, "Tridash.InvalidInteger")
+:attribute(Invalid-Real%, js-name, "Tridash.InvalidReal")
+:attribute(Arity-Error%, js-name, "Tridash.ArityError");
