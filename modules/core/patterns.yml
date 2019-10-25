@@ -31,16 +31,5 @@
 # library, but you are not obliged to do so. If you do not wish to do
 # so, delete this exception statement from your version.
 
-
 sources:
-  - core/operators.trd
-  - core/external.trd
-  - core/primitives.trd
-  - core/failures.trd
-  - core/lists.trd
-  - core/introspection.trd
-  - core/patterns.trd
-  - core/types.trd
-  - core/macros.trd
-  - core/strings.trd
-  - core/js-backend.trd
+  - patterns.trd

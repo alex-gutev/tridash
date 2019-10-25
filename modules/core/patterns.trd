@@ -33,7 +33,8 @@
 
 ### Pattern Matching
 
-:module(core)
+:module(core/patterns)
+:import(core)
 
 :attribute-processor(matcher, find-node)
 
@@ -421,3 +422,16 @@ match-not(place, expression) : {
 
 :attribute(not, target-transform, target-not)
 :attribute(not, matcher, match-not)
+
+
+### Exports
+
+:export(get-matcher,
+        Pattern,
+        make-pattern-declarations,
+        make-pattern,
+        conditionalize-bindings,
+        combine-conditions,
+        Match-Fail, Match-Fail!,
+        make-match-bind,
+        fail-match)
