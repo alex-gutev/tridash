@@ -273,7 +273,7 @@ not-every?(f, xs) : {
 ### Export Declarations
 
 :export(
-    Empty,
+    Empty, Empty!,
     list, list*, list!,
     nth,
     append,
