@@ -1,0 +1,108 @@
+### Tridash Core Module
+### Copyright (C) 2019  Alexander Gutev
+###
+### This program is free software: you can redistribute it and/or modify
+### it under the terms of the GNU General Public License as published by
+### the Free Software Foundation, either version 3 of the License, or
+### (at your option) any later version.
+###
+### This program is distributed in the hope that it will be useful,
+### but WITHOUT ANY WARRANTY; without even the implied warranty of
+### MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+### GNU General Public License for more details.
+###
+### You should have received a copy of the GNU General Public License
+### along with this program.  If not, see <http://www.gnu.org/licenses/>.
+###
+### Linking this library statically or dynamically with other modules is
+### making a combined work based on this library. Thus, the terms and
+### conditions of the GNU General Public License cover the whole
+### combination.
+###
+### As a special exception, the copyright holders of this library give
+### you permission to link this library with independent modules to
+### produce an executable, regardless of the license terms of these
+### independent modules, and to copy and distribute the resulting
+### executable under terms of your choice, provided that you also meet,
+### for each linked independent module, the terms and conditions of the
+### license of that module. An independent module is a module which is
+### not derived from or based on this library. If you modify this
+### library, you may extend this exception to your version of the
+### library, but you are not obliged to do so. If you do not wish to do
+### so, delete this exception statement from your version.
+
+### External Function Names for JavaScript Backend
+
+:module(core)
+
+
+### Arithmetic Operators
+
+:attribute(+, js-name, "+")
+:attribute(-, js-name, "-")
+:attribute(*, js-name, "*")
+:attribute(/, js-name, "/")
+:attribute(%, js-name, "%")
+
+
+### Comparison Operators
+
+:attribute(<, js-name, "<")
+:attribute(<=, js-name, "<=")
+:attribute(>, js-name, ">")
+:attribute(>=, js-name, ">=")
+:attribute(=, js-name, "Tridash.eq")
+:attribute(!=, js-name, "Tridash.neq")
+
+
+### Logical Operators
+
+:attribute(and, js-name, "Tridash.and")
+:attribute(or, js-name, "Tridash.or")
+:attribute(not, js-name, "!")
+
+
+### Type Conversions
+
+:attribute(int, js-name, "Tridash.cast_int")
+:attribute(real, js-name, "Tridash.cast_real")
+:attribute(string, js-name, "Tridash.cast_string")
+
+
+### Type Checks
+
+:attribute(int?, js-name, "Tridash.is_int")
+:attribute(real?, js-name, "Tridash.is_real")
+:attribute(string?, js-name, "Tridash.is_string")
+
+:attribute(inf?, js-name, "Tridash.is_inf")
+:attribute(NaN?, js-name, "Tridash.is_nan")
+
+
+### Lists
+
+:attribute(cons, js-name, "Tridash.cons")
+:attribute(head, js-name, "Tridash.head")
+:attribute(tail, js-name, "Tridash.tail")
+:attribute(cons?, js-name, "Tridash.is_cons")
+
+:attribute(Empty-List, js-name, "Tridash.Empty")
+
+
+### Dictionaries
+
+:attribute(member, js-name, "Tridash.member")
+
+
+### Strings
+
+:attribute(string-at, js-name, "Tridash.string_at")
+:attribute(string-concat, js-name, "Tridash.string_concat")
+
+
+### Failures
+
+:attribute(fail, js-name, "Tridash.fail")
+:attribute(fail-type, js-name, "Tridash.fail-type")
+
+:attribute(catch, js-name, "Tridash.make_catch_thunk")
