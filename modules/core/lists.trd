@@ -164,11 +164,11 @@ foldr(f, l, :(x)) : {
 
         result <- f(current, fold(rest))
 
-        rest !- result -> self @ fold
-        current -> self @ fold catch Empty
+        if(fail-type?(rest, Empty), current, result)
     }
 
-    fold(if(?(x), append(l, list(x)), l))
+    arg-list <- if(fail-type?(x, No-Value), l, append(l, list(x)))
+    fold(arg-list)
 }
 
 

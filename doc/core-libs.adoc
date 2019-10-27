@@ -278,6 +278,7 @@ If at least one argument fails, then the entire functor node fails.
 
 (((Builtin Failure Types, Core Module, Failures)))
 
+[[node-no-value]]
 ==== Failure Type Node: `No-Value` ====
 
 (((No-Value, Core Module, Node)))
@@ -1084,11 +1085,11 @@ used as the initial first argument to the fold function `f`.
 Folds a list to a single value, starting from the last element.
 
 `f` is first applied on the last element of `list` and the value of
-`x`. If the `x` argument is not provided or `x` fails to evaluate to a
-value, `f` is first applied on the last two elements of
-`list`. Subsequently `f` is applied on the previous element of `list`
-and the result of the previous application, until the 'head' of list
-`list` is reached.
+`x`. If the `x` argument is not provided or `x` evaluates to a failure
+of type <<node-no-value, `No-Value`>>, `f` is first applied on the
+last two elements of `list`. Subsequently `f` is applied on the
+previous element of `list` and the result of the previous application,
+until the 'head' of list `list` is reached.
 
 If `list` only has a single element and `x` is not provided, the
 element is returned as is. If `l` is empty and `x` is provided, `x` is

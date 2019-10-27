@@ -944,7 +944,7 @@
                  "f(a) : apply(l, a)")
 
           (with-nodes ((f "f")) modules
-            (is-error (call-meta-node f '(1)) 'tridash-fail)))))
+            (is-error (call-meta-node f '(1)) tridash-fail)))))
 
     (subtest "With Optional Arguments and Outer Node References"
       (with-module-table modules
@@ -1510,7 +1510,7 @@
           (is (call-meta-node nth '((1 2 3) 0)) 1)
           (is (call-meta-node nth '((1 2 3) 1)) 2)
           (is (call-meta-node nth '((1 2 3) 2)) 3)
-          (is-error (call-meta-node nth '((1 2 3) 3)) 'tridash-fail)))
+          (is-error (call-meta-node nth '((1 2 3) 3)) tridash-fail)))
 
       (subtest "Meta-Node: append"
         (build ":import(core, append)")
@@ -1559,6 +1559,15 @@
         (with-nodes ((foldr "foldr") (list "list")) modules
           (is (call-meta-node foldr (list list '(1 2 3 4 5))) '(1 (2 (3 (4 5)))))
           (is (call-meta-node foldr (list list '(1 2 3 4 5) 6)) '(1 (2 (3 (4 (5 6))))))
+
+          (handler-bind
+              ((tridash-fail
+                (lambda (c)
+                  (when (= (fail-type c) tridash.frontend::+empty-list+)
+                    (replace-failure nil)))))
+            (is (call-meta-node foldr (list list '(1 2 3 4 5) (empty-list)))
+                '(1 (2 (3 (4 (5 ())))))))
+
           (is (call-meta-node foldr (list list '(1))) 1)
           (is (call-meta-node foldr (list list (empty-list) 1)) 1)
           (is-error (call-meta-node foldr (list list (empty-list))) tridash-fail)
