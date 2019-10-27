@@ -1198,9 +1198,8 @@ argument. The argument identifiers, however, do not name local nodes.
 An external definition for the meta-node has to be provided, and
 linked with the generated code. In the JavaScript backend, instances
 of the meta-node are compiled to a call to the JavaScript function
-with the same name as the node identifier. If the `public-name`
-attribute of the meta-node is set, a call to the JavaScript function
-with the value of the attribute is generated instead.
+with the name stored in the `js-name` attribute. If the `js-name`
+attribute is not set, an error is triggered.
 
 
 === Higher-Order Meta-Nodes ===
@@ -1215,7 +1214,10 @@ other meta-nodes as an argument, or bound to another node.
 In a functor expression, in which the operator is not a meta-node but
 is an ordinary node, the function stored in the node's value is
 called. If the operator node does not evaluate to a function, the
-entire functor node fails to evaluate to a value, _see <<_failures>>_.
+entire functor node evaluates to a failure of type
+<<node-type-error,`Type-Error`>>, _see <<_failures>>_. If the function
+is invoked with more, or less, arguments than it expects,the functor
+node evaluates to a failure of type <<node-arity-error,`Arity-Error`>>
 
 .Example: Binding Meta-Node to other Nodes
 --------------------------------------------------
@@ -1376,6 +1378,11 @@ special declaration, thus can be referenced with the `&`
 operator. Special operators beginning with `:`, such as `:attribute`,
 `:op`, `:module` are actual special operators and cannot be referenced
 with `&`.
+
+When a raw node referenced occurs in code which is intended to be
+evaluated at runtime, rather than during macro expansion, the runtime
+node object, of the node, is referenced. The nature of this object is
+dependent on the backend.
 
 === Instances as Targets ===
 

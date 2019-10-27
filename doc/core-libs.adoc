@@ -22,7 +22,7 @@ The same symbol object is always returned for a given symbol name.
 [horizontal]
 `x`:: An atom node expression.
 
-
+[float]
 ===== Pattern Matching =====
 
 Matches the literal symbol `x`. _See <<pattern_matching>>_.
@@ -45,7 +45,7 @@ Returns `x` interpreted as a literal character.
 [horizontal]
 `x`:: The value to convert to a character.
 
-
+[float]
 ===== Pattern Matching =====
 
 Matches the character literal produced by the given argument. _See
@@ -60,7 +60,7 @@ Matches the character literal produced by the given argument. _See
 (((&, Core Module, Macro)))
 
 Returns the raw node object corresponding to the node with identifier
-`node`.
+`node`. _See <<node_references>>_.
 
 [horizontal]
 `node`:: The node identifier, which can be any valid node
@@ -211,11 +211,12 @@ Returns true if `x` fails to evaluate to a value.
 [horizontal]
 `x`:: The value to test for failure.
 
-
+[float]
 ===== Pattern Matching =====
 
-Matches if the source node evaluates to a failure. The argument `x` is
-ignored. _See <<pattern_matching>>_.
+Matches if the source node evaluates to a failure. If the argument `x`
+is provided matches only failures of type `x` otherwise matches any
+failure. _See <<pattern_matching>>_.
 
 
 [[meta-node-succeedsp]]
@@ -271,6 +272,75 @@ If at least one argument fails, then the entire functor node fails.
 
 [horizontal]
 `functor`:: The functor expression.
+
+
+=== Builtin Failure Types ===
+
+(((Builtin Failure Types, Core Module, Failures)))
+
+==== Failure Type Node: `No-Value` ====
+
+(((No-Value, Core Module, Node)))
+(((No-Value, Core Module, Failure Type)))
+(((No-Value!, Core Module, Node)))
+
+Optional meta-nodes arguments, for which no value is provided, are
+bound to a failure with this type.
+
+Node `No-Value!` is bound to a failure of this type.
+
+
+[[node-type-error]]
+==== Failure Type Node: `Type-Error` ====
+
+(((Type-Error, Core Module, Node)))
+(((Type-Error, Core Module, Failure Type)))
+(((Type-Error!, Core Module, Node)))
+
+A failure of this type is returned when an argument to a meta-node is
+not of the expected type.
+
+Node `Type-Error!` is bound to a failure of this type.
+
+
+[[node-invalid-integer]]
+==== Failure Type Node: `Invalid-Integer` ====
+
+(((Invalid-Integer, Core Module, Node)))
+(((Invalid-Integer, Core Module, Failure Type)))
+(((Invalid-Integer!, Core Module, Node)))
+
+A failure of this type is returned by <<meta-node-int,`int`>> when a
+string, from which an integer cannot be parsed, is provided as an
+argument.
+
+Node `Invalid-Integer!` is bound to a failure of this type.
+
+[[node-invalid-real]]
+==== Failure Type Node: `Invalid-Real` ====
+
+(((Invalid-Real, Core Module, Node)))
+(((Invalid-Real, Core Module, Failure Type)))
+(((Invalid-Real!, Core Module, Node)))
+
+A failure of this type is returned by <<meta-node-int,`real`>> when a
+string, from which a real number cannot be parsed, is provided as an
+argument.
+
+Node `Invalid-Real!` is bound to a failure of this type.
+
+[[node-arity-error]]
+==== Failure Type Node: `Arity-Error` ====
+
+(((Arity-Error, Core Module, Node)))
+(((Arity-Error, Core Module, Failure Type)))
+(((Arity-Error!, Core Module, Node)))
+
+A failure of this type is returned when a meta-node is invoked
+indirectly, by a meta-node reference _see
+<<_higher_order_meta_nodes>>_, with an incorrect number of arguments.
+
+Node `Arity-Error!` is bound to a failure of this type.
 
 
 === Arithmetic ===
@@ -479,7 +549,7 @@ Returns the value of `y` if `x` evaluates to true.
 NOTE: Registered as an infix operator with precedence *25* and *left*
 associativity.
 
-
+[float]
 ===== Pattern Matching =====
 
 Matches if both the nested patterns in `x` and `y` match the source
@@ -503,7 +573,7 @@ the value of `y`.
 NOTE: Registered as an infix operator with precedence *20* and *left*
 associativity.
 
-
+[float]
 ===== Pattern Matching =====
 
 Matches if at least one of the nested patterns in `x` and `y` match
@@ -527,7 +597,7 @@ Returns true if `x` evaluates to false.
 [horizontal]
 `x`:: A value.
 
-
+[float]
 ===== Pattern Matching =====
 
 Matches if the nested pattern `x` does not match. The bindings
@@ -620,19 +690,19 @@ Converts `x` to an *integer* value.
       truncated.
     - If `x` is a *string*, attempts to parse an integer from
       `x`. Returns the parsed value if successful otherwise
-      returns a failure.
+      returns a failure of type <<node-invalid-integer,`Invalid-Integer`>>.
 
-If `x` is neither of the above returns a failure.
+If `x` is neither of the above returns a failure of type
+<<node-type-error,`Type-Error`>>.
 
 [horizontal]
 `x`:: The value to convert to an integer.
 
-
+[float]
 ===== Pattern Matching =====
 
 Matches if the source node is an *integer*, in which case `x` is
 matched to the integer value. _See <<pattern_matching>>_.
-
 
 
 [[meta-node-real]]
@@ -645,19 +715,19 @@ Converts `x` to a *real* number value.
     - If `x` is an *integer* or *real* returns `x`.
     - If `x` is a *string*, attempts to parse a real number from
       `x`. Returns the parsed value if successful otherwise
-      returns a failure.
+      returns a failure of type <<node-invalid-real,`Invalid-Real`>>.
 
-If `x` is neither of the above returns a failure.
+If `x` is neither of the above returns a failure of type
+<<node-type-error,`Type-Error`>>.
 
 [horizontal]
 `x`:: The value to convert to a real.
 
-
+[float]
 ===== Pattern Matching =====
 
 Matches if the source node is a *real*, in which case `x` is matched
 to the real value. _See <<pattern_matching>>_.
-
 
 
 [[meta-node-string]]
@@ -670,7 +740,7 @@ Converts `x` to a *string*.
 [horizontal]
 `x`:: The value to convert to a string.
 
-
+[float]
 ===== Pattern Matching =====
 
 Matches if the source node is a *string*, in which case `x` is matched
@@ -801,8 +871,8 @@ stores the first element of the list and the 'tail' stores the list of
 remaining elements. Neither the 'head' nor the 'tail' are evaluated
 until they are actually referenced and used.
 
-The end of list is represented by a failure with the type being a node
-reference to the meta-node <<meta-node-Empty, `Empty`>> (`&(Empty)`).
+The end of list is represented by a failure of type `Empty`, see
+<<node-Empty, `Empty`>>.
 
 
 [[meta-node-cons]]
@@ -817,8 +887,7 @@ the list of remaining elements.
 `head`:: The first element of the list.
 `tail`:: The list containing the remaining elements after the first.
 
-
-
+[float]
 ===== Pattern Matching =====
 
 Matches if the source node is a non-empty list, in which case `head`
@@ -867,21 +936,16 @@ NOTE: Does not return true if `thing` is an empty list.
 `list`:: The list.
 
 
-[[meta-node-Empty]]
-==== Meta-Node: Empty() ====
+[[node-Empty]]
+==== Failure Type Node: Empty ====
 
-(((Empty, Core Module, Meta-Node)))
+(((Empty, Core Module, Node)))
+(((Empty, Core Module, Failure Type)))
+(((Empty!, Core Module, Node)))
 
-Returns a failure with type indicating an empty list.
+Failure type indicating an empty list.
 
-NOTE: The failure type is `&(Empty)`, _see <<node_references>>_.
-
-
-===== Pattern Matching =====
-
-Matches the empty list. _See <<pattern_matching>>_.
-
-NOTE: This is effectively a constant pattern.
+Node `Empty!` is bound to a failure of this type.
 
 
 [[meta-node-list]]
@@ -894,7 +958,7 @@ Creates a list with elements `xs`.
 [horizontal]
 `xs`:: The list elements.
 
-
+[float]
 ===== Pattern Matching =====
 
 Matches if the source node is a list of the same size as `xs`, in
@@ -915,7 +979,7 @@ containing the remaining elements.
 `xs`:: The list elements, with the last argument being the list
 containing the remaining elements.
 
-
+[float]
 ===== Pattern Matching =====
 
 Matches if the source node is a list of at least one less elements
@@ -946,7 +1010,7 @@ failure is returned.
 
 Retrieves the element of a list at a particular index.
 
-Returns a failure of type <<meta-node-Empty, `Empty`>> if `n` is
+Returns a failure of type <<node-Empty, `Empty`>> if `n` is
 greater than the number of elements in `list`.
 
 [horizontal]
@@ -1254,7 +1318,7 @@ meta-node to return a value that is equivalent to the value of the
 source node. When there are such values, the pattern is said to have
 'matched'. If there is no possible value for at least one argument
 node, all argument nodes should evaluate to failures of type
-<<match-fail, `&(Match-Fail)`>>. In this case the pattern has not
+<<match-fail, `Match-Fail`>>. In this case the pattern has not
 'matched'
 
 .Example
@@ -1278,7 +1342,8 @@ x -> list(y, z)
 In the example, above, `y` is bound to the first element of `x` and
 `z` is bound to the second element of `x` if `x` is a list of two
 elements. These bindings will result in a list, equivalent to `x`,
-being produced when they are passed to the `list` meta-node.
+being produced when `y` and `z` are passed as arguments to the `list`
+meta-node.
 
 ==== Nested Patterns ====
 
@@ -1325,9 +1390,8 @@ node. These patterns 'match' when the source node is equal, by
 result in any bindings being established however they do affect the
 condition of the pattern in which they are nested.
 
-IMPORTANT: Constant patterns may only be used as arguments to a
-meta-node instance, of which at least one of the arguments is not a
-constant pattern.
+IMPORTANT: Constant patterns may only be used when nested inside a
+non-constant pattern.
 
 Constant values include any literal constants, such as numbers,
 strings as well as character literals, produced by the <<macro-node-c,
@@ -1381,7 +1445,7 @@ nodes if they are patterns themselves.
 
 `bindings`:: List of bindings established by the pattern. If there are
 no bindings established by the pattern, then this entry should be set
-to the empty list, _see <<meta-node-Empty, `Empty`>>.
+to the empty list, _see <<node-Empty, `Empty`>>_.
 +
 --
 IMPORTANT: The bindings should not be conditioned on `condition` as
@@ -1433,21 +1497,15 @@ may thus appear within patterns.
  - <<meta-node-real, `real`>>
  - <<meta-node-string, `string`>>
  - <<meta-node-cons, `cons`>>
- - <<meta-node-Empty, `Empty`>>
  - <<meta-node-list, `list`>>
  - <<meta-node-list-star, `list*`>>
 
 
-==== Utilities ====
+=== Module: core/patterns ===
 
 (((Pattern Matching Utilities, Core Module, Pattern Matching)))
 
-The following meta-nodes are utilities for creating and processing
-patterns.
-
-CAUTION: Currently these utilities are not exported from the `core`
-module, thus they have to be imported manually if they are to be used
-in another module.
+This module contains utilities for creating and processing patterns.
 
 
 [[meta-node-Pattern]]
@@ -1503,7 +1561,7 @@ not a `meta-node` with a `matcher`, a `Pattern` with a single binding
 
 (((combine-conditions, Core Module, Meta-Node)))
 
-Returns an expression which is the conjunction of two expression, by
+Returns an expression which is the conjunction of two expressions, by
 <<meta-node-and, `and`>>.
 
 `c1`:: The first condition, on the left hand side of the `and`.
@@ -1528,13 +1586,15 @@ Returns a list where each binding in `bindings` is conditioned on
 `bindings`:: List of bindings to condition.
 
 [[match-fail]]
-==== Meta-Node: Match-Fail() ====
+==== Failure Type Node: Match-Fail ====
 
-(((Match-Fail, Core Module, Meta-Node)))
+(((Match-Fail, Core Module, Failure Type)))
+(((Match-Fail, Core Module, Node)))
+(((Match-Fail!, Core Module, Node)))
 
-Returns a failure with the type `&(Match-Fail)`.
+Failure type indicating that a pattern failed to match.
 
-This failure type is used to indicate that a pattern failed to match.
+Node `Match-Fail!` is bound to a failure of this type.
 
 
 ==== Meta-Node: fail-match(condition) ====
@@ -1542,7 +1602,7 @@ This failure type is used to indicate that a pattern failed to match.
 (((fail-match, Core Module, Meta-Node)))
 
 If `condition` evaluates to false or to a failure, returns a failure
-with type <<match-fail,`&(Match-Fail)`>>, otherwise returns 'true'.
+of type <<match-fail,`Match-Fail`>>, otherwise returns 'true'.
 
 `condition`:: The pattern condition.
 
@@ -1552,7 +1612,8 @@ with type <<match-fail,`&(Match-Fail)`>>, otherwise returns 'true'.
 (((make-match-bind, Core Module, Meta-Node)))
 
 Generates a binding `src -> target`, with `target` in the `match`
-context which is activated on failures with type <<match-fail,`&(Match-Fail)`>>.
+context which is activated on failures of type
+<<match-fail,`Match-Fail`>>.
 
 `src`:: The source of the binding.
 `target`:: The target of the binding.
