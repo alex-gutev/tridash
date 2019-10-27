@@ -303,6 +303,18 @@ not of the expected type.
 Node `Type-Error!` is bound to a failure of this type.
 
 
+==== Failure Type Node: `Index-Out-Bounds` ====
+
+(((Index-Out-Bounds, Core Module, Node)))
+(((Index-Out-Bounds, Core Module, Failure Type)))
+(((Index-Out-Bounds!, Core Module, Node)))
+
+A failure of this type is returned when attempting to access an
+element at an index that is outside the bounds of the list or string.
+
+Node `Index-Out-Bounds!` is bound to a failure of this type.
+
+
 [[node-invalid-integer]]
 ==== Failure Type Node: `Invalid-Integer` ====
 

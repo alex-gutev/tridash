@@ -112,6 +112,7 @@
 
 :attribute(No-Value%, js-name, "Tridash.NoValue")
 :attribute(Type-Error%, js-name,  "Tridash.TypeError")
+:attribute(Index-Out-Bounds%, js-name, "Tridash.IndexOutBounds")
 :attribute(Invalid-Integer%, js-name, "Tridash.InvalidInteger")
 :attribute(Invalid-Real%, js-name, "Tridash.InvalidReal")
-:attribute(Arity-Error%, js-name, "Tridash.ArityError");
+:attribute(Arity-Error%, js-name, "Tridash.ArityError")

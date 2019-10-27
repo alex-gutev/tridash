@@ -49,7 +49,7 @@ string->list(string) : {
         tail <- convert(string, pos + 1)
 
         head !- cons(head, tail) -> self @ make-list
-        Empty! -> self @ make-list
+        Empty! -> self @ make-list catch Index-Out-Bounds
     }
 
     convert(string, 0)

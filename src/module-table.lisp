@@ -100,6 +100,7 @@
      ((:empty-list "Empty-List") ())
      ((:no-value "No-Value%") ())
      ((:type-error "Type-Error%") ())
+     ((:index-out-bounds "Index-Out-Bounds%") ())
 
      (:invalid-integer "Invalid-Integer%")
      (:invalid-real "Invalid-Real%")

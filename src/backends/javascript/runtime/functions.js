@@ -352,9 +352,10 @@ function Char(chr) {
 function string_at(tstr, tindex) {
     try {
         var str = check_string(resolve(tstr));
-        var index = check_number(resolve(tindex));
+        var index = check_integer(resolve(tindex));
 
-        return index < str.length ? new Char(str.charAt(index)) : fail();
+        return index >= 0 && index < str.length ?
+            new Char(str.charAt(index)) : fail(IndexOutBounds);
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -393,6 +394,22 @@ function check_number(value) {
 }
 
 /**
+ * Checks that @a value is an integer.
+ *
+ * @param value The value to check.
+ *
+ * @return @a value if it is an integer, otherwise throws a 'Fail'
+ *   exception.
+ */
+function check_integer(value) {
+    if (is_integer(value)) {
+        return value;
+    }
+
+    throw new Fail(TridashTypeError);
+}
+
+/**
  * Checks that @a value is a number or string.
  *
  * @param value The value to check.
@@ -410,6 +427,14 @@ function check_value(value) {
     throw new Fail(TridashTypeError);
 }
 
+/**
+ * Checks that @a value is a string.
+ *
+ * @param value The value to check.
+ *
+ * @return @a value if it is a string, otherwise throws a 'Fail'
+ *   exception.
+ */
 function check_string(value) {
     if (typeof value === 'string') {
         return value;
@@ -471,6 +496,10 @@ function NoValue() {
 
 function TridashTypeError() {
     return fail(TridashTypeError);
+}
+
+function IndexOutBounds() {
+    return fail(IndexOutBounds);
 }
 
 function InvalidInteger() {

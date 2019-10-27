@@ -38,6 +38,10 @@
   "Failure type indicating an incorrect number of arguments were
    passed to a meta-node.")
 
+(defconstant +fail-type-index-out-bounds+ (get :index-out-bounds *core-meta-nodes*)
+  "Failure type indicating that an index is out of the bounds of a
+   list or string.")
+
 
 ;;; Macro Compiler State
 

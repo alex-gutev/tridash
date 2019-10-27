@@ -786,9 +786,27 @@ describe('Builtin Functions', function() {
             it('Should fail if not given a string and integer', function() {
                 var thunk1 = tridash.string_at(0,0);
                 var thunk2 = tridash.string_at("hello", "world");
+                var thunk3 = tridash.string_at("hello", 1.5);
 
                 assert.throws(() => { tridash.resolve(thunk1); }, test_fail_type(tridash.TypeError));
                 assert.throws(() => { tridash.resolve(thunk2); }, test_fail_type(tridash.TypeError));
+                assert.throws(() => { tridash.resolve(thunk3); }, test_fail_type(tridash.TypeError));
+            });
+
+            it('Should fail if index is less than 0', function() {
+                assert.throws(() => {
+                    tridash.resolve(tridash.string_at("hello", -1));
+                }, test_fail_type(tridash.IndexOutBounds));
+            });
+
+            it('Should fail if index is greater than or equal to string length', function() {
+                assert.throws(() => {
+                    tridash.resolve(tridash.string_at("hello", 5));
+                }, test_fail_type(tridash.IndexOutBounds));
+
+                assert.throws(() => {
+                    tridash.resolve(tridash.string_at("hello", 10));
+                }, test_fail_type(tridash.IndexOutBounds));
             });
         });
 

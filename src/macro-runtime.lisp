@@ -458,8 +458,8 @@
 
 (define-tridash-function |string-at| (string n)
   (check-tridash-types ((string string) (n integer))
-    (unless (< n (length string))
-      (error 'tridash-fail))
+    (unless (< -1 n (length string))
+      (error 'tridash-fail :fail-type +fail-type-index-out-bounds+))
 
     (char string n)))
 
