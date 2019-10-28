@@ -20,6 +20,6 @@ check-range(x, l, h) : {
     value <- check(x)
 
     value !- "" -> self @ c
-    "Error: below minimum!" -> self @ catch(c, Below-Min)
-    "Error: above maximum!" -> self @ catch(c, Above-Max)
+    "Error: below minimum!" -> self @ when(c, Below-Min)
+    "Error: above maximum!" -> self @ when(c, Above-Max)
 }

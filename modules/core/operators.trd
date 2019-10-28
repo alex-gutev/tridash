@@ -47,7 +47,7 @@
 :op(., 1000, left)
 :op(@, 800, left)
 
-:op(catch, 850, left)
+:op(when, 850, left)
 
 :op(!-, 15, right)
 

@@ -85,7 +85,7 @@
 # `context` : A symbol serving as the explicit context identifier.
 
 @(node, context) : {
-    catch? <- cons?(context) and head(context) = '(catch)
+    catch? <- cons?(context) and head(context) = '(when)
     catch-type <- head(tail(tail(context)))
 
     test-fn <- list(&(test-equal-function), catch-type)
@@ -108,7 +108,11 @@ test-equal-function(x) : {
 }
 
 :attribute(@, macro, 1)
-:export(@)
+
+when(..(args)) :
+    fail("`when` may only appear within the context operand to the `@` operator.")
+
+:export(@, when)
 
 
 ### Builtin Operators

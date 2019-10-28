@@ -185,7 +185,7 @@ Match-Fail! <- fail(Match-Fail)
 ## target : The target of the binding.
 
 make-match-bind(src, target) : {
-    context <- list('(catch), '(match), list(&(&), Match-Fail))
+    context <- list('(when), '(match), list(&(&), Match-Fail))
     ctarget <- list(&(@), target, context)
 
     list(&(->), src, ctarget)

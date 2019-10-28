@@ -49,7 +49,7 @@ string->list(string) : {
         tail <- convert(string, pos + 1)
 
         head !- cons(head, tail) -> self @ make-list
-        Empty! -> self @ make-list catch Index-Out-Bounds
+        Empty! -> self @ make-list when Index-Out-Bounds
     }
 
     convert(string, 0)
@@ -74,7 +74,7 @@ list->string(list) : {
         rest <- convert(tail, current)
 
         list !- rest -> self @ convert
-        acc -> self @ convert catch Empty
+        acc -> self @ convert when Empty
     }
 
     strings <- map(string, list)

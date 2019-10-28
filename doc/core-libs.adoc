@@ -119,7 +119,7 @@ When the `@` expression appears as the target of a binding, the binding
 to `node` is established in the context with identifier `context`,
 _see <<_contexts>>_.
 
-`context` may also be a functor of the form `catch(context-id, type)`,
+`context` may also be a functor of the form `when(context-id, type)`,
 where `context-id` is the context identifier and `type` is a node, of
 which the value is interpreted as a failure type. In this case the
 binding will only be activated if the failure type, of the previous
@@ -128,10 +128,10 @@ binding in the context, is equal to `type` by <<meta-node-eq,
 
 [horizontal]
 `node`:: The node.
-`context`:: The context identifier, or catch expression, _see above_.
+`context`:: The context identifier, or `when` expression, _see above_.
 
 NOTE: Registered as an infix operator with precedence *800* and *left*
-associativity. The `catch` symbol is also registered as an infix
+associativity. The `when` symbol is also registered as an infix
 operator with precedence *850* and *left* associativity.
 
 
@@ -1657,7 +1657,7 @@ value for a `target-transform` function. _See <<_instances_as_targets>>_.
 | Operator | Precedence | Associativity
 
 | `.`       | 1000       | left
-| `catch`   | 850        | left
+| `when`    | 850        | left
 | `@`       | 800        | left
 | `*`       | 200        | left
 | `/`       | 200        | left
