@@ -63,18 +63,24 @@
 (defun resolve-list (list)
   "Returns a list where each element of LIST is resolved by RESOLVE."
 
-  (loop
-     for items = list then
-       (handler-case
-           (resolve% (rest items))
-         (tridash-fail (c)
-           (if (= (fail-type c) +empty-list+)
-               nil
-               (error c))))
+  (let ((resolving-head?))
+    (declare (special resolving-head?))
 
-     while items
-     collect
-       (resolve (car items))))
+    (handler-bind
+        ((tridash-fail
+          (lambda (c)
+            (when (and (not resolving-head?)
+                       (= (fail-type c) +empty-list+))
+              (replace-failure nil)))))
+
+      (loop
+         for items = list then (resolve% (rest items))
+         while items
+         collect
+
+           (let ((resolving-head? t))
+             (declare (special resolving-head?))
+             (resolve (car items)))))))
 
 
 (defun resolve% (thing)
@@ -317,7 +323,7 @@
 
         (meta-node
          (handler-case
-             (call-meta-node operator args)
+             (call-meta-node operator args :resolve nil)
 
            (arity-error () (fail-arity-error))))))))
 
