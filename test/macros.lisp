@@ -1680,7 +1680,8 @@
   (subtest "Introspection"
     (with-module-table modules
       (build-core-module)
-      (build ":import(core, node?, find-node, get-attribute, +)")
+      (build ":import(core/introspection, node?, find-node, get-attribute)"
+             ":import(core, +)")
 
       (subtest "Meta-Node: node?"
         (build "x")

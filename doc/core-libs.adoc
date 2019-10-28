@@ -1266,9 +1266,10 @@ replaced with a `%`.
 
 (((Introspection Utilities, Core Module)))
 
-The meta-nodes in this section provide functionality for introspecting
-the nodes comprising a program. These meta-nodes may only be used from
-within macro nodes during compilation, and not during runtime.
+The `core/introspection` module provides utility meta-nodes for
+introspecting the nodes comprising a program. These meta-nodes may
+only be used within macro nodes, during macro expansion, as runtime
+definitions are not available.
 
 [[meta-node-nodep]]
 ==== Meta-Node: `node?(thing)` ====

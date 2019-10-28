@@ -36,8 +36,10 @@
 ### The meta-nodes in this module may be only used by macro
 ### meta-nodes. As runtime definitions are not available.
 
-:module(core)
+:module(core/introspection)
+:import(core)
 
+### Introspection Meta-Nodes
 
 :extern(node?, thing)
 :attribute(node?, strictness, thing)

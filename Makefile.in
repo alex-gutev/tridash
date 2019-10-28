@@ -98,6 +98,7 @@ core_module_sources = \
 	modules/core/failures.trd \
 	modules/core/lists.trd \
 	modules/core/introspection.trd \
+	modules/core/introspection.yml \
 	modules/core/patterns.trd \
 	modules/core/patterns.yml \
 	modules/core/types.trd \

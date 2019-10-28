@@ -35,6 +35,7 @@
 
 :module(core/patterns)
 :import(core)
+:import(core/introspection)
 
 :attribute-processor(matcher, find-node)
 
