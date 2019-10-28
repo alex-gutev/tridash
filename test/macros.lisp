@@ -1324,7 +1324,37 @@
                ":attribute(test, macro, 1)")
 
         (with-nodes ((test "test")) modules
-          (is-error (call-meta-node test '(1 2)) compile-meta-node-loop-error))))))
+          (is-error (call-meta-node test '(1 2)) compile-meta-node-loop-error))))
+
+    (subtest "Malformed Lists"
+      (with-module-table modules
+	(build-core-module)
+        (build ":import(core)"
+
+	       "mac(x, y) : cons(x, y)"
+	       ":attribute(mac, macro, 1)"
+
+               "f(x) : x"
+               "target-f(s, expr) : cons(s, head(tail(expr)))"
+               ":attribute(f, target-transform, target-f)")
+
+        (is-error (build "mac(1, 2)") tridash-fail)
+        (is-error (build "a -> f(b)") tridash-fail)))
+
+    (subtest "Returning Empty List"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core)"
+
+               "mac(x) : list(x, Empty!)"
+               ":attribute(mac, macro, 1)"
+
+               "f(x) : x"
+               "target-f(s, expr) : list(s, Empty!)"
+               ":attribute(f, target-transform, target-f)")
+
+        (is-error (build "mac(a)") tridash-fail)
+        (is-error (build "x -> f(y)") tridash-fail)))))
 
 (subtest "Target Node Transforms"
   (subtest "Single Argument"

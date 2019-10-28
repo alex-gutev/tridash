@@ -74,7 +74,10 @@
               (replace-failure nil)))))
 
       (loop
-         for items = list then (resolve% (rest items))
+         for items = list then
+           (aprog1 (resolve% (rest items))
+             (unless (listp it)
+               (error 'tridash-fail :fail-type +fail-type-type-error+)))
          while items
          collect
 
