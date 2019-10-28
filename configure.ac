@@ -34,6 +34,12 @@ AC_PATH_PROG(INSTALL_INFO, [install-info])
 AC_ARG_VAR(INSTALL_INFO, [Path to install-info program])
 
 
+dnl Variables
+
+AC_ARG_VAR(LISP_FLAGS, [Additional flags to pass to the lisp compiler])
+AC_ARG_VAR(LISP_TEST_FLAGS, [Flags to pass to the lisp environment when testing])
+
+
 dnl Output
 
 AC_SUBST([PACKAGE], AC_PACKAGE_TARNAME)

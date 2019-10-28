@@ -3,6 +3,10 @@
 LISP = @LISP@
 SED = @SED@
 
+## Flags
+
+LISP_FLAGS = @LISP_FLAGS@
+LISP_TEST_FLAGS = @LISP_TEST_FLAGS@
 
 ## Path to Documentation Converters
 
@@ -110,7 +114,7 @@ build.lisp: build.lisp.in
 	$(SED) -e 's|@datadir[@]|$(pkgdatadir)|g' $< > $@
 
 tridashc: build.lisp $(sources)
-	$(LISP) --load $(srcdir)/tridash.asd --load $<
+	$(LISP) $(LISP_FLAGS) --load $(srcdir)/tridash.asd --load $<
 
 
 # JS Runtime Library
@@ -263,7 +267,7 @@ check: check-compiler check-runtime
 
 check-compiler:
 	cd $(srcdir); \
-	$(LISP) --load tridash.asd --load test/script.lisp
+	$(LISP) $(LISP_FLAGS) $(LISP_TEST_FLAGS) --load tridash.asd --load test/script.lisp
 
 
 check-runtime: $(srcdir)/test/backends/javascript/runtime/tridash.js
