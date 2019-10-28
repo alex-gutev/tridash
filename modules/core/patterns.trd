@@ -69,8 +69,8 @@ get-matcher(node) :
 Pattern(condition, :(binding)) : {
     condition -> self.condition
 
-    binding -> self.bindings @ binding
-    Empty! -> self.bindings @ binding
+    binding -> @(self.bindings)
+    Empty! -> @(self.bindings)
 }
 
 ## Creates the node declarations implementing the Pattern `pattern`.
@@ -114,16 +114,16 @@ make-pattern(place, pattern) : {
 
     make-binding-pattern(place, pattern) : {
         pattern != '(_) ->
-            list(make-match-bind(place, pattern)) -> self.bindings @ make-binding
+            list(make-match-bind(place, pattern)) -> @(self.bindings)
 
-        Empty! -> self.bindings @ make-binding
+        Empty! -> @(self.bindings)
     }
 
     # Body
 
-    make-functor-pattern(place, pattern) -> self @ make-pattern
-    make-constant-pattern(place, pattern) -> self @ make-pattern
-    make-binding-pattern(place, pattern) -> self @ make-pattern
+    make-functor-pattern(place, pattern) -> @(self)
+    make-constant-pattern(place, pattern) -> @(self)
+    make-binding-pattern(place, pattern) -> @(self)
 }
 
 
@@ -140,8 +140,8 @@ conditionalize-bindings(condition, bindings) : {
     conditionalize(binding) :
         list(&(->), list(&(fail-match), condition), binding)
 
-    condition !- map(conditionalize, bindings) -> self @ conditionalize
-    bindings -> self @ conditionalize
+    condition !- map(conditionalize, bindings) -> @(self)
+    bindings -> @(self)
 }
 
 
@@ -154,9 +154,9 @@ conditionalize-bindings(condition, bindings) : {
 ## c2 : The second condition which is to be tested.
 
 combine-conditions(c1, c2) : {
-    ?(c1) and ?(c2) -> list(&(and), c1, c2) -> self @ combine
-    c1 -> self @ combine
-    c2 -> self @ combine
+    ?(c1) and ?(c2) -> list(&(and), c1, c2) -> @(self)
+    c1 -> @(self)
+    c2 -> @(self)
 }
 
 

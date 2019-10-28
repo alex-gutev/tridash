@@ -61,8 +61,8 @@ case(..(cases)) : {
     make-case(case, else) : {
         case -> list('(:), condition, value)
 
-        list!(&(if), condition, value, else) -> self @ make-case
-        case -> self @ make-case
+        list!(&(if), condition, value, else) -> @(self)
+        case -> @(self)
     }
 
     foldr(make-case, cases, list(&(fail)))

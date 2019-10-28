@@ -48,8 +48,8 @@ string->list(string) : {
         head <- string-at(string, pos)
         tail <- convert(string, pos + 1)
 
-        head !- cons(head, tail) -> self @ make-list
-        Empty! -> self @ make-list when Index-Out-Bounds
+        head !- cons(head, tail) -> @(self)
+        Empty! -> self @ when(Index-Out-Bounds)
     }
 
     convert(string, 0)
@@ -73,8 +73,8 @@ list->string(list) : {
         current <- string-concat(acc, head)
         rest <- convert(tail, current)
 
-        list !- rest -> self @ convert
-        acc -> self @ convert when Empty
+        list !- rest -> @(self)
+        acc -> self @ when(Empty)
     }
 
     strings <- map(string, list)
@@ -106,10 +106,10 @@ format(string, ..(args)) : {
 
         args -> cons(arg, rest-args)
 
-        substitute !- cons(arg, format-chars(rest-chars, rest-args)) -> self @ format
-        char !- cons(char, format-chars(rest-chars, args)) -> self @ format
+        substitute !- cons(arg, format-chars(rest-chars, rest-args)) -> @(self)
+        char !- cons(char, format-chars(rest-chars, args)) -> @(self)
 
-        Empty! -> self @ format
+        Empty! -> @(self)
     }
 
     chars <- string->list(string)

@@ -84,17 +84,48 @@
 # `node`    : The node identifier.
 # `context` : A symbol serving as the explicit context identifier.
 
-@(node, context) : {
-    catch? <- cons?(context) and head(context) = '(when)
-    catch-type <- head(tail(tail(context)))
+@(node, context : :quote(default)) : {
+    # Flag for whether context is a when context with an explicit
+    # failure type
 
-    test-fn <- list(&(test-equal-function), catch-type)
+    when? <- cons?(context) and head(context) = '(when)
 
-    context-id <- if(catch?, head(tail(context)), context)
-    catch-expr <- list('(:context), node, context-id, test-fn)
+    # Failure Type
+
+    :context(fail-type, default) <- head(tail(tail(context)))
+    :context(fail-type, default) <- head(tail(context))
+
+    # Failure test function if failure type given.
+
+    test-fn <- list(&(test-equal-function), fail-type)
+
+
+    # Context identifier when context is a `when` context
+
+    :context(when-context-id, default) <-
+        if(cons?(tail(tail(context))), head(tail(context)))
+
+    :context(when-context-id, default) <-
+        :quote(default)
+
+    # Context identifier
+
+    context-id <- if(when?, when-context-id, context)
+
+
+    # Context expression with test function
+
+    expr-with-test <- list('(:context), node, context-id, test-fn)
+
+    # Context expression without test function
+
     expr <- list('(:context), node, context-id)
 
-    if(catch?, catch-expr, expr)
+
+    # Return expression with test function, if context is a `when`
+    # context, otherwise return expression without test function
+
+    if(when?, expr-with-test, expr)
 }
 
 # Returns a meta-node which takes a single argument and returns true

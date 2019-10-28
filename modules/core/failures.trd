@@ -45,8 +45,8 @@
 ## Evaluates to true if `x` fails, false otherwise.
 
 fails?(x) : {
-    x and 0 -> self @ catch-fail
-    1 -> self @ catch-fail
+    x and 0 -> @(self)
+    1 -> @(self)
 }
 
 ## Checks whether `x` fails with failure type `type`
@@ -58,8 +58,8 @@ fails?(x) : {
 ## otherwise.
 
 fail-type?(x, type) : {
-    fail-type(x) = type -> self @ catch-fail
-    0 -> self @ catch-fail
+    fail-type(x) = type -> @(self)
+    0 -> @(self)
 }
 
 ## Checks whether `x` evaluates to a value.

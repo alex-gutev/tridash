@@ -102,8 +102,8 @@ append(list1, list2) : {
 
     result <- cons(current, append(rest, list2))
 
-    list1 !- result -> self @ append-list
-    list2 -> self @ append-list when Empty
+    list1 !- result -> @(self)
+    list2 -> self @ when(Empty)
 }
 
 
@@ -125,8 +125,8 @@ append(list1, list2) : {
 foldl'(x, f, list) : {
     result <- foldl'(f(x, head(list)), f, tail(list))
 
-    list !- result -> self @ fold
-    x -> self @ fold when Empty
+    list !- result -> @(self)
+    x -> self @ when(Empty)
 }
 
 
@@ -207,8 +207,8 @@ filter(f, list) : {
     current <- head(list)
     rest <- filter(f, tail(list))
 
-    f(current) -> cons(current, rest) -> result @ filter
-    rest -> result @ filter
+    f(current) -> cons(current, rest) -> @(result)
+    rest -> @(result)
 
     list !- result -> self
 }
