@@ -94,6 +94,11 @@ exports.get_symbol = get_symbol;
 exports.member = member;
 
 
+/* Functional Utilities */
+
+exports.mapply = mapply;
+
+
 /* Builtin Failure Types */
 
 exports.NoValue = NoValue;

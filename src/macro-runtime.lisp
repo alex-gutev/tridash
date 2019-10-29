@@ -475,3 +475,24 @@
 (define-tridash-function |string-concat| (str1 str2)
   (check-tridash-types ((str1 string) (str2 string))
     (concatenate-to 'string str1 str2)))
+
+
+;;; Functions
+
+(define-tridash-function |apply%| (f args)
+  (flet ((resolve-list (list)
+           (handler-bind
+               ((tridash-fail
+                 (lambda (c)
+                   (when (= (fail-type c) +empty-list+)
+                     (replace-failure nil)))))
+
+             (loop
+                for items = (check-tridash-types ((list list)) list)
+                then (let ((rem (cdr items)))
+                       (check-tridash-types ((rem list)) rem))
+
+                while items
+                collect (car items)))))
+
+    (call-node f (resolve-list args))))

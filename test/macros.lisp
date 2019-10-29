@@ -867,7 +867,7 @@
     (subtest "No Outer-Node references"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)"
+        (build ":import(core, +, not)"
                "apply(f, x) : f(x)"
                "1+(n) : n + 1"
 
@@ -885,7 +885,7 @@
       (subtest "With Default Values"
         (with-module-table modules
           (build-core-module)
-          (build ":import(core)"
+          (build ":import(core, +)"
                  "apply(f, x) : f(x)"
                  "apply2(f, x, y) : f(x, y)"
                  "1+(n, d : 1) : n + d"
@@ -903,7 +903,7 @@
       (subtest "Without Default Values"
         (with-module-table modules
           (build-core-module)
-          (build ":import(core)"
+          (build ":import(core, +, fail-type?)"
                  "apply(f, x) : f(x)"
                  "apply2(f, x, y) : f(x, y)"
                  "1+(n, :(d)) : n + d"
@@ -923,7 +923,7 @@
     (subtest "With Rest Arguments"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)"
+        (build ":import(core, +, cons)"
                "apply3(f, x, y, z) : f(x, y, z)"
                "apply(f, x) : f(x)"
                "l(x, ..(xs)) : cons(x + 1, xs)"
@@ -959,7 +959,7 @@
     (subtest "External Meta-Nodes"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)"
+        (build ":import(core, -)"
                "apply(f, x) : f(x)"
                "apply2(f, x, y) : f(x, y)"
 
@@ -976,7 +976,7 @@
     (subtest "Errors"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)"
+        (build ":import(core, +)"
                "apply(f, x) : f(x)"
 
                "x+(n) : n + ..(x)"
@@ -1923,6 +1923,42 @@
               "Coverage: 15% of 200.")
 
           (is (call-meta-node format '("%s" "abc")) "abc")
-          (is (call-meta-node format '("%s%%" 35)) "35%"))))))
+          (is (call-meta-node format '("%s%%" 35)) "35%")))))
+
+  (subtest "Functional Programming Utilities"
+    (subtest "Meta-node: apply"
+      (with-module-table modules
+        (build-core-module)
+
+        (build ":import(core, apply, list, cons, +)"
+
+               "f(x, y) : apply(list, x + y, list(x, y))"
+               "g(x, ..(xs)) : apply(list, x, xs)"
+               "h(x) : apply(list, list(x))"
+               "u(x) : apply(list)"
+
+               "e1(x, y) : apply(list, x, y)"
+               "e2(x, y) : apply(list, 1, cons(x, y))"
+               "e3(x) : apply(1, list(x))")
+
+        (with-nodes ((f "f") (g "g") (h "h") (u "u")
+                     (e1 "e1") (e2 "e2") (e3 "e3"))
+            modules
+
+          (is (call-meta-node f '(1 2)) '(3 1 2))
+          (is (call-meta-node g '(1 2 3 4)) '(1 2 3 4))
+          (is (call-meta-node h '(3)) '(3))
+
+          (handler-bind
+              ((tridash-fail
+                (lambda (c)
+                  (when (= (fail-type c) tridash.frontend::+empty-list+)
+                    (replace-failure nil)))))
+
+            (is (call-meta-node u '(1)) '()))
+
+          (is-error (call-meta-node e1 '(5 6)) tridash-fail)
+          (is-error (call-meta-node e2 '(7 8)) tridash-fail)
+          (is-error (call-meta-node e3 '(9)) tridash-fail))))))
 
 (finalize)

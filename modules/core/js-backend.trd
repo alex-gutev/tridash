@@ -88,6 +88,8 @@
 
 :attribute(Empty-List, js-name, "Tridash.Empty")
 
+:attribute(apply%, js-name, "Tridash.mapply");
+
 
 ### Dictionaries
 

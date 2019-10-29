@@ -140,6 +140,12 @@
 :attribute(string-concat, strictness, or(str1, str2))
 
 
+### Functions
+
+:extern(apply%, f, args)
+:attribute(apply%, strictness, or(f, args))
+
+
 ### Export Declarations
 
 :export(+, -, *, /,

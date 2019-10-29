@@ -270,6 +270,12 @@ not-every?(f, xs) : {
 }
 
 
+### Function Application
+
+apply(f, ..(xs)) :
+    apply%(f, foldr(cons, xs))
+
+
 ### Export Declarations
 
 :export(
@@ -279,5 +285,6 @@ not-every?(f, xs) : {
     append,
     foldl', foldl, foldr,
     map, filter,
-    every?, some?, not-any?, not-every?
+    every?, some?, not-any?, not-every?,
+    apply
 )

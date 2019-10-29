@@ -90,8 +90,8 @@
       ("f" (t))))
 
   (subtest "Higher-Order Meta-Nodes"
-    (test-strictness ("apply(f, x, y) : f(x, y)")
-      ("apply" (t nil nil))))
+    (test-strictness ("my-apply(f, x, y) : f(x, y)")
+      ("my-apply" (t nil nil))))
 
   (subtest "Recursive Meta-Nodes"
     (subtest "Factorial"

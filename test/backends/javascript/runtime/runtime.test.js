@@ -931,4 +931,69 @@ describe('Builtin Functions', function() {
             });
         });
     });
+
+    describe('Functional Utilities', function() {
+        function add(a, b, c) {
+            return a + b + c;
+        };
+
+        function f() {
+            return "hello";
+        }
+
+        describe('Tridash.mapply', function() {
+            it('Applies a function on an array of arguments', function() {
+                assert.equal(tridash.mapply(add, [1, 2, 3]), 6);
+                assert.equal(tridash.mapply(add, new tridash.Thunk(() => [1, 2, 3])), 6);
+                assert.equal(tridash.mapply(new tridash.Thunk(() => add), new tridash.Thunk(() => [1, 2, 3])), 6);
+            });
+
+            it('Applies a function on a linked list of arguments', function() {
+                assert.equal(
+                    tridash.mapply(add, tridash.cons(4, tridash.cons(5, tridash.cons(6, null)))),
+                    15
+                );
+                assert.equal(
+                    tridash.mapply(
+                        add,
+                        new tridash.Thunk(() => tridash.cons(4, new tridash.Thunk(() => tridash.cons(5, tridash.cons(6, null)))))
+                    ),
+                    15
+                );
+            });
+
+            it('Applies a function on a SubArray of arguments', function() {
+                assert.equal(
+                    tridash.mapply(add, tridash.tail([1, 2, 3, 4])),
+                    9
+                );
+                assert.equal(
+                    tridash.mapply(add, new tridash.Thunk(() => tridash.tail([1, 2, 3, 4]))),
+                    9
+                );
+            });
+
+            it('Applies a function on an empty list', function() {
+                assert.equal(tridash.mapply(f, []), "hello");
+                assert.equal(tridash.mapply(f, tridash.Empty()), "hello");
+                assert.equal(tridash.mapply(f, tridash.tail([1])), "hello");
+                assert.equal(tridash.mapply(f, tridash.tail(tridash.cons(1, null))), "hello");
+                assert.equal(tridash.mapply(f, tridash.tail(tridash.cons(1, tridash.Empty()))), "hello");
+            });
+
+            it('Returns `TypeError` if first argument is not a function', function() {
+                assert.throws(() => tridash.resolve(tridash.mapply("x", [1, 2, 3])), test_fail_type(tridash.TypeError));
+                assert.throws(() => tridash.resolve(tridash.mapply(new tridash.Thunk(() => "x"), [1, 2, 3])), test_fail_type(tridash.TypeError));
+            });
+
+            it('Returns `TypeError` if second argument is not a list', function() {
+                assert.throws(() => tridash.resolve(tridash.mapply(add, 12)), test_fail_type(tridash.TypeError));
+            });
+
+            it('Returns `TypeError` if argument list is malformed', function() {
+                assert.throws(() => tridash.resolve(tridash.mapply(add, tridash.cons(1, 2))), test_fail_type(tridash.TypeError));
+                assert.throws(() => tridash.resolve(tridash.mapply(add, tridash.cons(1, new tridash.Thunk(() => 2)))), test_fail_type(tridash.TypeError));
+            });
+        });
+    });
 });

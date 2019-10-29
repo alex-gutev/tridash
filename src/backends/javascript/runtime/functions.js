@@ -488,6 +488,61 @@ function member(dict, key) {
 }
 
 
+/* Function Application */
+
+function mapply(f, args) {
+    function resolve_list(list) {
+        res = [];
+        list = resolve_list_thunk(list);
+
+        while(list) {
+            if (list instanceof ConsCell) {
+                res.push(list.head);
+                list = resolve_list_thunk(list.tail);
+            }
+            else if (list instanceof SubArray) {
+                res.push(...list.array.slice(list.start));
+                list = null;
+            }
+            else if (Array.isArray(list)) {
+                res.push(...list);
+                list = null;
+            }
+            else {
+                throw new Fail(TridashTypeError);
+            }
+        }
+
+        return res;
+    }
+
+    function resolve_list_thunk(list) {
+        try {
+            return resolve(list);
+        }
+        catch (e) {
+            if (e instanceof Fail && e.type == Empty)
+                return null;
+
+            throw e;
+        }
+    }
+
+    try {
+        f = resolve(f);
+
+        if (typeof f !== "function") {
+            return TridashTypeError();
+        }
+
+        return f.apply(null, resolve_list(args));
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
+
+
 /* Builtin Failure Types */
 
 function NoValue() {
