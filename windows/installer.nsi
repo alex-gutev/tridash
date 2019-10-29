@@ -46,13 +46,16 @@ Section "install"
   File "..\modules\core\operators.trd"
   File "..\modules\core\external.trd"
   File "..\modules\core\primitives.trd"
-  File "..\modules\core\util.trd"
+  File "..\modules\core\failures.trd"
   File "..\modules\core\lists.trd"
   File "..\modules\core\introspection.trd"
-  File "..\modules\core\pattern-match.trd"
+  File "..\modules\core\introspection.yml"
+  File "..\modules\core\patterns.trd"
+  File "..\modules\core\patterns.yml"
   File "..\modules\core\types.trd"
   File "..\modules\core\macros.trd"
   File "..\modules\core\strings.trd"
+  File "..\modules\core\js-backend.trd"
 
   # Copy Runtime Libraries
   setOutPath $INSTDIR\backends\javascript
