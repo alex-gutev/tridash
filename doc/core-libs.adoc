@@ -1183,6 +1183,27 @@ Returns true if `f` returns false for at least one element of `list`.
 `list`:: The list.
 
 
+=== Functions ===
+
+==== Meta-Node: `apply(f, ..(xs))`
+
+(((apply, Core Module, Meta-Node)))
+
+Applies a function on an argument list.
+
+The argument list, on which `f` is applied consist of each argument of
+`xs`, excluding the last, followed by each element of the last
+argument of `xs`.
+
+[horizontal]
+`f`:: The function to apply.
+`xs`:: The arguments to apply `f` on.
+
+CAUTION: If `f` is not a function or the last argument of `xs` is not
+a list, a failure of type <<node-type-error, `Type-Error`>>, is
+returned.
+
+
 === Strings ===
 
 (((Strings, Core Module)))
