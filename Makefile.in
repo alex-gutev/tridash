@@ -143,7 +143,7 @@ doc/tridashc.1: doc/tridashc.1.adoc
 doc_files = doc/tridash.adoc \
 	doc/syntax.adoc \
 	doc/semantics.adoc \
-	doc/core-libs.adoc \
+	doc/core.adoc \
 	doc/optimization.adoc
 
 # Info Documentation
