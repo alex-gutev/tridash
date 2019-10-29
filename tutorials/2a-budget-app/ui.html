@@ -1,0 +1,31 @@
+<?
+ :import(core)
+
+ food + electricity + water -> total
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Budget App</title>
+    </head>
+    <body>
+      <h1>Budget App</h1>
+      <div>
+	<label for="food">Food:</label>
+	<div><input id="food" value="<?@ to-real(food) ?>" /></div>
+      </div>
+      <div>
+	<label for="electricity">Electricity:</label>
+	<div><input id="electricity" value="<?@ to-real(electricity) ?>" /></div>
+      </div>
+      <div>
+	<label for="water">Water:</label>
+	<div><input id="water" value="<?@ to-real(water) ?>" /></div>
+      </div>
+      <hr>
+      <div>
+	<label for="total"><strong>Total:</strong></label>
+	<div><input id="total" value="<?@ total ?>" readonly/></div>
+      </div>
+    </body>
+</html>

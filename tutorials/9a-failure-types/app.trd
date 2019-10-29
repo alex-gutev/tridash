@@ -1,0 +1,62 @@
+### Application Logic
+
+:module(budget-app)
+
+:import(core)
+:import(util)
+
+## Input Validation
+
+valid-amount(thing) : {
+    x <- real(thing)
+
+    if(x >= 0, x, Negative-Amount!)
+}
+
+:attribute(valid-amount, target-node, valid-amount)
+
+Negative-Amount <- &(Negative-Amount)
+Negative-Amount! <- fail(Negative-Amount)
+
+
+## Error Handling
+
+error-prompt(thing) : {
+    thing !- "" -> self @ default
+
+    "Please enter a number \u{2265} 0!" ->
+	self @ default when Negative-Amount
+
+    "Please enter a valid number!" ->
+	self @ default
+}
+
+## Colour Interpolation
+
+compute-color(total, budget) : {
+    clamp((total + 1) / (budget + 1), 0, 1) -> scale
+    make-hsl(lerp-color(in-budget-color, out-budget-color, scale))
+}
+
+## Initial Values
+
+0 -> budget
+0 -> food
+0 -> water
+0 -> electricity
+
+## Computing Total
+
+food + electricity + water -> total
+
+make-hsl(
+    case(
+        total < budget : in-budget-color,
+        out-budget-color
+    )
+) -> color
+
+
+clamp((total + 1) / (budget + 1), 0, 1) -> scale
+
+compute-color(total, budget) -> meter-color

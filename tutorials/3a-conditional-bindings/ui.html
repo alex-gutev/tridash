@@ -1,0 +1,57 @@
+<?
+ :import(core)
+
+ food + electricity + water -> total
+
+ case(
+     total < budget : "green",
+     "red"
+ ) -> color
+
+ color -> self.total.style.backgroundColor
+ color -> self.status.style.color
+
+ "white" -> self.total.style.color
+?>
+
+<!doctype html>
+<html>
+    <head>
+        <title>Budget App</title>
+    </head>
+    <body>
+      <h1>Budget App</h1>
+      <div>
+	<label for="budget"><strong>Budget:</strong></label>
+	<div><input id="budget" value="<?@ to-real(budget) ?>"/></div>
+      </div>
+      <hr>
+      <div>
+	<label for="food">Food:</label>
+	<div><input id="food" value="<?@ to-real(food) ?>" /></div>
+      </div>
+      <div>
+	<label for="electricity">Electricity:</label>
+	<div><input id="electricity" value="<?@ to-real(electricity) ?>" /></div>
+      </div>
+      <div>
+	<label for="water">Water:</label>
+	<div><input id="water" value="<?@ to-real(water) ?>" /></div>
+      </div>
+      <hr>
+      <div>
+	<label for="total"><strong>Total:</strong></label>
+	<div>
+	  <input id="total" value="<?@ total ?>" readonly/>
+	  <span id="status">
+            <?@
+             case(
+                 total < budget : "Within budget.",
+                 "Budget exceeded!!!"
+             )
+             ?>
+	  </span>
+	</div>
+      </div>
+    </body>
+</html>

@@ -1,0 +1,121 @@
+<?
+ :import(core)
+
+ # Utility Meta-nodes
+
+ lerp(a, b, alpha) : a + alpha * (b - a)
+
+ clamp(x, min, max) :
+     case (
+         x < min : min,
+         x > max : max,
+         x
+     )
+
+ make-hsl(h, s, l) :
+     format("hsl(%s,%s%%,%s%%)", h, s, l)
+
+
+ # Application Logic
+
+ food + electricity + water -> total
+
+ case(
+     total < budget : "green",
+     "red"
+ ) -> color
+
+ color -> self.total.style.backgroundColor
+ color -> self.status.style.color
+
+ "white" -> self.total.style.color
+
+
+ clamp((total + 1) / (budget + 1), 0, 1) -> scale
+
+ make-hsl(
+     lerp(120, 0, scale),
+     90,
+     45
+ ) -> meter-color
+
+ format("%s%%", scale * 100) -> self.meter.style.width
+ meter-color -> self.meter.style.backgroundColor
+
+
+ # Error Handling
+
+ error-prompt(thing) : {
+     error-message <- "Please enter a valid number"
+     if (fails?(thing), error-message, "")
+ }
+?>
+
+<!doctype html>
+<html>
+    <head>
+      <title>Budget App</title>
+      <style>
+	.meter-box {
+	    margin-top: 5px;
+	    width: 200px;
+	    height: 1em;
+	    border: 1px solid black;
+	}
+	.meter-bar {
+	    height: 100%;
+	}
+      </style>
+    </head>
+    <body>
+    <body>
+      <h1>Budget App</h1>
+      <div>
+	<label for="budget"><strong>Budget:</strong></label>
+	<div>
+	  <input id="budget" value="<?@ to-real(budget) ?>"/>
+	  <?@ error-prompt(budget) ?>
+	</div>
+      </div>
+      <hr>
+      <div>
+	<label for="food">Food:</label>
+	<div>
+	  <input id="food" value="<?@ to-real(food) ?>" />
+	  <?@ error-prompt(food) ?>
+	</div>
+      </div>
+      <div>
+	<label for="electricity">Electricity:</label>
+	<div>
+	  <input id="electricity" value="<?@ to-real(electricity) ?>" />
+	  <?@ error-prompt(electricity) ?>
+	</div>
+      </div>
+      <div>
+	<label for="water">Water:</label>
+	<div>
+	  <input id="water" value="<?@ to-real(water) ?>" />
+	  <?@ error-prompt(water) ?>
+	</div>
+      </div>
+      <hr>
+      <div>
+	<label for="total"><strong>Total:</strong></label>
+	<div>
+	  <input id="total" value="<?@ total ?>" readonly/>
+	  <span id="status">
+            <?@
+             case(
+                 total < budget : "Within budget.",
+                 "Budget exceeded!!!"
+             )
+             ?>
+	  </span>
+	</div>
+      </div>
+      <div class="meter-box">
+	<div id="meter" class="meter-bar"></div>
+      </div>
+    </body>
+</html>
