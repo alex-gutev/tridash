@@ -3175,16 +3175,16 @@ failures of a specific type.
 The `@` macro allows a binding to an explicit context to be
 established. This binding is activated only if the source node of the
 previous binding evaluates to a failure value. If the identifier is
-however an expression of the `catch` operator, the binding will only
+however an expression of the `when` operator, the binding will only
 be activated if the source node of the previous binding evaluates to a
 failure with the type given in the second argument.
 
-.Explicit Context `catch` Syntax
+.Explicit Context `when` Syntax
 --------------------------------------------------
-source -> target @ catch(context-id, type)
+source -> target @ when(context-id, type)
 --------------------------------------------------
 
-The `context-id` argument to the `catch` expression is the explicit
+The `context-id` argument to the `when` expression is the explicit
 context identifier. The `type` argument is a node expression, of which
 the value is interpreted as a failure type. If the source node of the
 previous binding evaluates to a failure value with type equal to the
@@ -3193,16 +3193,16 @@ value of `type`, the node `target` is set to the value of
 
 [TIP]
 --
-`catch` is registered as an infix operator thus can be placed between
+`when` is registered as an infix operator thus can be placed between
 `context-id` and `type`.
 
 --------------------------------------------------
-source -> target @ context-id catch type
+source -> target @ context-id when type
 --------------------------------------------------
 --
 
 The new improved `error-prompt` meta-node can thus be written using
-explicit `catch` contexts. The following bindings need to be
+explicit `when` contexts. The following bindings need to be
 established:
 
 1. The `self` node should be bound to the empty string if the argument
@@ -3212,16 +3212,16 @@ returns the value of its second argument if the first argument does
 not evaluate to a failure, otherwise it returns the failure value.
 +
 --------------------------------------------------
-thing !- "" -> self @ catch-fail
+thing !- "" -> self @ default
 --------------------------------------------------
 
 2. The `self` node should be bound to a string prompting the user for
 a positive number, if `thing` evaluates to a failure with type
-`Negative-Amount`. This is where we use explicit `catch` contexts.
+`Negative-Amount`. This is where we use explicit `when` contexts.
 +
 --------------------------------------------------
 "Please enter a number \u{2265} 0!" ->
-    self @ catch-fail catch Negative-Amount
+    self @ default when Negative-Amount
 --------------------------------------------------
 
 3. The `self` node should be bound to the generic error string,
@@ -3230,27 +3230,27 @@ failure with a type other than `Negative-Amount`.
 +
 --------------------------------------------------
 "Please enter a valid number!" ->
-    self @ catch-fail
+    self @ default
 --------------------------------------------------
 
 Putting it all together, the improved implementation of `error-prompt`
 is the following:
 
-.Improved Implementation of `error-prompt` with explicit `catch` contexts
+.Improved Implementation of `error-prompt` with explicit `when` contexts
 --------------------------------------------------
 error-prompt(thing) : {
-    thing !- "" -> self @ catch-fail
+    thing !- "" -> self @ default
 
     "Please enter a number \u{2265} 0!" ->
-        self @ catch-fail catch Negative-Amount
+        self @ default when Negative-Amount
 
     "Please enter a valid number!" ->
-        self @ catch-fail
+        self @ default
 }
 --------------------------------------------------
 
 For this small application there is hardly any advantage in
-implementing `error-prompt` using explicit `catch` contexts rather
+implementing `error-prompt` using explicit `when` contexts rather
 than using a `case` expression. However let's imagine that instead of
 binding `self` to a constant, in the case of a failure of type
 `Negative-Amount`, it is bound to another node `x`. Let's say that `x`
@@ -3275,13 +3275,13 @@ repeat the whole expression in the second case, which can lead to a
 bug if it is not typed out correctly. To avoid the repetition, the
 node expression has to be factored out in another node.
 
-With explicit `catch` contexts we can implement this error handling
+With explicit `when` contexts we can implement this error handling
 logic with the following bindings:
 
 --------------------------------------------------
 ...
-x -> self @ catch-fail catch Negative-Amount
-y -> self @ catch-fail catch Some-Type
+x -> self @ default when Negative-Amount
+y -> self @ default when Some-Type
 ...
 --------------------------------------------------
 
@@ -3344,8 +3344,8 @@ user to enter a positive number.
 === Summary ===
 
 In this tutorial you learned how to associate a type with a failure
-value in order to identify the cause of the failure. You learned how
-to handle failures of a particular type.
+value in order to identify the cause of the failure. You also learned
+how to handle failures of a particular type.
 
 == What's Next? ==
 
