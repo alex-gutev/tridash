@@ -464,7 +464,7 @@ to the failure value of `c`.
 
 TIP: The `@` macro from the `core` module, which is a shorthand for the
 `:context` operator, is the preferred way of establishing bindings to
-explicit contexts in source code. _See <<core-module-bindings>>_.
+explicit contexts in source code. _See <<macro-node-context>>_.
 
 === Failures ===
 
@@ -596,11 +596,6 @@ failures are used to represent many classes of errors, such as type
 errors, out of range errors, no value errors, as well as representing
 special classes of values such as the empty list.
 
-NOTE: Currently failure types are only used, in the core language and
-module, to represent the empty list. In the remaining circumstances,
-in which failures are generated, there is no failure type. This will
-be rectified in the next release.
-
 [[conditional_binding_fail_type,Conditionally Active Bindings based on Failure Type]]
 ==== Conditionally Active Bindings based on Failure Type ====
 
@@ -614,7 +609,7 @@ binding fails with the same failure type as the preceding binding.
 TIP: The `@` macro, from the `core` module, contains a shorthand
 syntax for establishing a binding to an explicit context with a test
 function that compares the failure type to a given value. _See
-<<core-module-bindings>>_.
+<<macro-node-context>>_.
 
 === Input Nodes ===
 
@@ -890,7 +885,8 @@ preceding argument nodes of the meta-node.
 
 The `value` may be omitted, written in prefix form `:(name)`, in which
 case if the argument is omitted, the local argument node is set to a
-failure, _see <<_failures>>_.
+failure, _see <<_failures>>_, of type <<node-type-error,
+`Type-Error`>>.
 
 .Example
 --------------------------------------------------

@@ -107,24 +107,27 @@ NOTE: Registered as an infix operator with precedence *10* and *left*
 associativity.
 
 
-[[macro-node-context]]
-==== Macro-Node: `@(node, context)` ====
+[[macro-node-context, Macro-Node: @]]
+==== Macro-Node: `@(node, context : '(default))` ====
 
 (((@, Core Module, Macro)))
 
 Indicates an explicit context to which bindings, involving `node` as
 the 'target', should be established.
 
-When the `@` expression appears as the target of a binding, the binding
-to `node` is established in the context with identifier `context`,
-_see <<_contexts>>_.
+When the `@` expression appears as the target of a binding, the
+binding to `node` is established in the context with identifier
+`context`, _see <<_contexts>>_. The context identifier may be omitted
+in which case the identifier `default` is assumed.
 
 `context` may also be a functor of the form `when(context-id, type)`,
 where `context-id` is the context identifier and `type` is a node, of
 which the value is interpreted as a failure type. In this case the
 binding will only be activated if the failure type, of the previous
 binding in the context, is equal to `type` by <<meta-node-eq,
-`=`>>. _See <<conditional_binding_fail_type>>_.
+`=`>>. _See <<conditional_binding_fail_type>>_. If `context-id` is
+omitted, that is `context` is of the form `when(type)`, the identifier
+`default` is assumed.
 
 [horizontal]
 `node`:: The node.
@@ -1284,6 +1287,7 @@ replaced with a `%`.
 
 Retrieves the value of an entry in a dictionary.
 
+[horizontal]
 `dict`:: The dictionary.
 `key`:: The entry key.
 
