@@ -273,6 +273,22 @@ If at least one argument fails, then the entire functor node fails.
 [horizontal]
 `functor`:: The functor expression.
 
+==== Meta-Node: `catch(try, catch, :(test))` ====
+
+(((catch, Core Module, Meta-Node)))
+
+Returns the value of `try` if it does not evaluate to a failure. If
+`try` evaluates to a failure returns the value of `catch`.
+
+`try`:: The value, which is returned if it does not evaluate to a
+failure.
+
+`catch`:: The value, which is returned when `try` evaluates to a
+failure.
+
+`test`:: An optional function, which is applied on the failure type of
+`try`. If the function returns 'true', the value of `catch` is
+returned otherwise the value of `try` is returned.
 
 === Builtin Failure Types ===
 
@@ -1183,27 +1199,6 @@ Returns true if `f` returns false for at least one element of `list`.
 `list`:: The list.
 
 
-=== Functions ===
-
-==== Meta-Node: `apply(f, ..(xs))`
-
-(((apply, Core Module, Meta-Node)))
-
-Applies a function on an argument list.
-
-The argument list, on which `f` is applied consist of each argument of
-`xs`, excluding the last, followed by each element of the last
-argument of `xs`.
-
-[horizontal]
-`f`:: The function to apply.
-`xs`:: The arguments to apply `f` on.
-
-CAUTION: If `f` is not a function or the last argument of `xs` is not
-a list, a failure of type <<node-type-error, `Type-Error`>>, is
-returned.
-
-
 === Strings ===
 
 (((Strings, Core Module)))
@@ -1281,6 +1276,37 @@ replaced with a `%`.
 [horizontal]
 `string`:: The format string.
 `args`:: The arguments to substitute into the string.
+
+
+=== Dictionaries ===
+
+==== Meta-Node: `member(dict, key)` ====
+
+Retrieves the value of an entry in a dictionary.
+
+`dict`:: The dictionary.
+`key`:: The entry key.
+
+
+=== Functions ===
+
+==== Meta-Node: `apply(f, ..(xs))`
+
+(((apply, Core Module, Meta-Node)))
+
+Applies a function on an argument list.
+
+The argument list, on which `f` is applied consist of each argument of
+`xs`, excluding the last, followed by each element of the last
+argument of `xs`.
+
+[horizontal]
+`f`:: The function to apply.
+`xs`:: The arguments to apply `f` on.
+
+CAUTION: If `f` is not a function or the last argument of `xs` is not
+a list, a failure of type <<node-type-error, `Type-Error`>>, is
+returned.
 
 
 === Introspection ===
