@@ -10,8 +10,9 @@ language.
 Prior programming experience is not strictly necessary however is
 helpful.
 
-TIP: The full source code for these tutorials is available at
-https://github.com/alex-gutev/tridash-tutorials.
+TIP: The full source code for these tutorials is available in the
+tutorials directory of the Tridash source:
+https://github.com/alex-gutev/tridash/tree/master/tutorials.
 
 
 [[tutorial1]]
