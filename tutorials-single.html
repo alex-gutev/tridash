@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Tridash Tutorials</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /></head><body><div xml:lang="en" class="article" lang="en"><div class="titlepage"><div><div><h2 class="title"><a id="idm122300439232"></a>Tridash Tutorials</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Alexander</span> <span class="surname">Gutev</span></h3><code class="email">&lt;<a class="email" href="mailto:alex.gutev@gmail.com">alex.gutev@gmail.com</a>&gt;</code></div></div></div><hr /></div><div class="toc"><p><strong>Table of Contents</strong></p><dl class="toc"><dt><span class="section"><a href="#tutorial1">1. Hello Node</a></span></dt><dd><dl><dt><span class="section"><a href="#_nodes">1.1. Nodes</a></span></dt><dt><span class="section"><a href="#_bindings">1.2. Bindings</a></span></dt><dt><span class="section"><a href="#_first_application">1.3. First Application</a></span></dt><dt><span class="section"><a href="#_inline_node_declarations">1.4. Inline Node Declarations</a></span></dt></dl></dd><dt><span class="section"><a href="#_functional_bindings">2. Functional Bindings</a></span></dt><dd><dl><dt><span class="section"><a href="#_simple_budgeting_application">2.1. Simple Budgeting Application</a></span></dt><dt><span class="section"><a href="#_inline_functional_bindings">2.2. Inline Functional Bindings</a></span></dt><dt><span class="section"><a href="#_summary">2.3. Summary</a></span></dt></dl></dd><dt><span class="section"><a href="#_conditional_bindings">3. Conditional Bindings</a></span></dt><dd><dl><dt><span class="section"><a href="#_case_operator">3.1. Case Operator</a></span></dt><dt><span class="section"><a href="#_budget_application_version_2_0">3.2. Budget Application Version 2.0</a></span></dt><dt><span class="section"><a href="#_improvements">3.3. Improvements</a></span></dt><dt><span class="section"><a href="#_summary_2">3.4. Summary</a></span></dt></dl></dd><dt><span class="section"><a href="#tutorial4">4. Writing your own Functions</a></span></dt><dd><dl><dt><span class="section"><a href="#_definition_operator">4.1. Definition Operator</a></span></dt><dt><span class="section"><a href="#_budget_meter">4.2. Budget Meter</a></span></dt><dt><span class="section"><a href="#_summary_3">4.3. Summary</a></span></dt></dl></dd><dt><span class="section"><a href="#_error_handling">5. Error Handling</a></span></dt><dd><dl><dt><span class="section"><a href="#_failures">5.1. Failures</a></span></dt><dt><span class="section"><a href="#_handling_failures">5.2. Handling Failures</a></span></dt><dt><span class="section"><a href="#_error_feedback">5.3. Error Feedback</a></span></dt><dt><span class="section"><a href="#_initial_values">5.4. Initial Values</a></span></dt><dt><span class="section"><a href="#_summary_4">5.5. Summary</a></span></dt></dl></dd><dt><span class="section"><a href="#_failures_of_your_own">6. Failures of your own</a></span></dt><dd><dl><dt><span class="section"><a href="#_conditional_bindings_2">6.1. Conditional Bindings</a></span></dt><dt><span class="section"><a href="#_simple_validation">6.2. Simple Validation</a></span></dt><dt><span class="section"><a href="#_meta_node_instances_as_targets">6.3. Meta-Node Instances as Targets</a></span></dt><dt><span class="section"><a href="#_summary_5">6.4. Summary</a></span></dt></dl></dd><dt><span class="section"><a href="#_outer_node_references">7. Outer Node References</a></span></dt><dd><dl><dt><span class="section"><a href="#_referencing_non_local_nodes">7.1. Referencing Non-Local Nodes</a></span></dt><dt><span class="section"><a href="#_global_color_nodes">7.2. Global Color Nodes</a></span></dt><dt><span class="section"><a href="#_application_preferences_interface">7.3. Application Preferences Interface</a></span></dt><dt><span class="section"><a href="#_referencing_global_nodes">7.4. Referencing Global Nodes</a></span></dt><dt><span class="section"><a href="#_summary_6">7.5. Summary</a></span></dt></dl></dd><dt><span class="section"><a href="#_modules_and_organization">8. Modules and Organization</a></span></dt><dd><dl><dt><span class="section"><a href="#_multiple_source_files">8.1. Multiple Source Files</a></span></dt><dt><span class="section"><a href="#_modules_in_depth">8.2. Modules In Depth</a></span></dt><dt><span class="section"><a href="#_adding_modularity_to_our_application">8.3. Adding Modularity to our Application</a></span></dt><dt><span class="section"><a href="#_infix_operators">8.4. Infix Operators</a></span></dt><dt><span class="section"><a href="#_summary_7">8.5. Summary</a></span></dt></dl></dd><dt><span class="section"><a href="#_what_8217_s_next">9. What’s Next?</a></span></dt></dl></div><p>These set of tutorials cover the basics of the Tridash programming
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Tridash Tutorials</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /></head><body><div xml:lang="en" class="article" lang="en"><div class="titlepage"><div><div><h2 class="title"><a id="idm529718759456"></a>Tridash Tutorials</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Alexander</span> <span class="surname">Gutev</span></h3><code class="email">&lt;<a class="email" href="mailto:alex.gutev@gmail.com">alex.gutev@gmail.com</a>&gt;</code></div></div></div><hr /></div><div class="toc"><p><strong>Table of Contents</strong></p><dl class="toc"><dt><span class="section"><a href="#tutorial1">1. Hello Node</a></span></dt><dd><dl><dt><span class="section"><a href="#_nodes">1.1. Nodes</a></span></dt><dt><span class="section"><a href="#_bindings">1.2. Bindings</a></span></dt><dt><span class="section"><a href="#_first_application">1.3. First Application</a></span></dt><dt><span class="section"><a href="#_inline_node_declarations">1.4. Inline Node Declarations</a></span></dt></dl></dd><dt><span class="section"><a href="#_functional_bindings">2. Functional Bindings</a></span></dt><dd><dl><dt><span class="section"><a href="#_simple_budgeting_application">2.1. Simple Budgeting Application</a></span></dt><dt><span class="section"><a href="#_inline_functional_bindings">2.2. Inline Functional Bindings</a></span></dt><dt><span class="section"><a href="#_summary">2.3. Summary</a></span></dt></dl></dd><dt><span class="section"><a href="#_conditional_bindings">3. Conditional Bindings</a></span></dt><dd><dl><dt><span class="section"><a href="#_case_operator">3.1. Case Operator</a></span></dt><dt><span class="section"><a href="#_budget_application_version_2_0">3.2. Budget Application Version 2.0</a></span></dt><dt><span class="section"><a href="#_improvements">3.3. Improvements</a></span></dt><dt><span class="section"><a href="#_summary_2">3.4. Summary</a></span></dt></dl></dd><dt><span class="section"><a href="#tutorial4">4. Writing your own Functions</a></span></dt><dd><dl><dt><span class="section"><a href="#_definition_operator">4.1. Definition Operator</a></span></dt><dt><span class="section"><a href="#_budget_meter">4.2. Budget Meter</a></span></dt><dt><span class="section"><a href="#_summary_3">4.3. Summary</a></span></dt></dl></dd><dt><span class="section"><a href="#_error_handling">5. Error Handling</a></span></dt><dd><dl><dt><span class="section"><a href="#_failures">5.1. Failures</a></span></dt><dt><span class="section"><a href="#_handling_failures">5.2. Handling Failures</a></span></dt><dt><span class="section"><a href="#_error_feedback">5.3. Error Feedback</a></span></dt><dt><span class="section"><a href="#_initial_values">5.4. Initial Values</a></span></dt><dt><span class="section"><a href="#_summary_4">5.5. Summary</a></span></dt></dl></dd><dt><span class="section"><a href="#_failures_of_your_own">6. Failures of your own</a></span></dt><dd><dl><dt><span class="section"><a href="#_conditional_bindings_2">6.1. Conditional Bindings</a></span></dt><dt><span class="section"><a href="#_simple_validation">6.2. Simple Validation</a></span></dt><dt><span class="section"><a href="#_meta_node_instances_as_targets">6.3. Meta-Node Instances as Targets</a></span></dt><dt><span class="section"><a href="#_summary_5">6.4. Summary</a></span></dt></dl></dd><dt><span class="section"><a href="#_outer_node_references">7. Outer Node References</a></span></dt><dd><dl><dt><span class="section"><a href="#_referencing_non_local_nodes">7.1. Referencing Non-Local Nodes</a></span></dt><dt><span class="section"><a href="#_global_color_nodes">7.2. Global Color Nodes</a></span></dt><dt><span class="section"><a href="#_application_preferences_interface">7.3. Application Preferences Interface</a></span></dt><dt><span class="section"><a href="#_referencing_global_nodes">7.4. Referencing Global Nodes</a></span></dt><dt><span class="section"><a href="#_summary_6">7.5. Summary</a></span></dt></dl></dd><dt><span class="section"><a href="#_modules_and_organization">8. Modules and Organization</a></span></dt><dd><dl><dt><span class="section"><a href="#_multiple_source_files">8.1. Multiple Source Files</a></span></dt><dt><span class="section"><a href="#_modules_in_depth">8.2. Modules In Depth</a></span></dt><dt><span class="section"><a href="#_adding_modularity_to_our_application">8.3. Adding Modularity to our Application</a></span></dt><dt><span class="section"><a href="#_infix_operators">8.4. Infix Operators</a></span></dt><dt><span class="section"><a href="#_summary_7">8.5. Summary</a></span></dt></dl></dd><dt><span class="section"><a href="#_typing_failures">9. Typing Failures</a></span></dt><dd><dl><dt><span class="section"><a href="#_failure_types">9.1. Failure Types</a></span></dt><dt><span class="section"><a href="#_improved_error_reporting">9.2. Improved Error Reporting</a></span></dt><dt><span class="section"><a href="#_proper_failure_types">9.3. Proper Failure Types</a></span></dt><dt><span class="section"><a href="#_trying_it_out">9.4. Trying it Out</a></span></dt><dt><span class="section"><a href="#_summary_8">9.5. Summary</a></span></dt></dl></dd><dt><span class="section"><a href="#_what_8217_s_next">10. What’s Next?</a></span></dt></dl></div><p>These set of tutorials cover the basics of the Tridash programming
 language.</p><p>Prior programming experience is not strictly necessary however is
-helpful.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="tutorials/images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The full source code for these tutorials is available at
-<a class="ulink" href="https://github.com/alex-gutev/tridash-tutorials" target="_top">https://github.com/alex-gutev/tridash-tutorials</a>.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="tutorial1"></a>1. Hello Node</h2></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_nodes"></a>1.1. Nodes</h3></div></div></div><p>A Tridash program is made up of a number of components called nodes,
+helpful.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The full source code for these tutorials is available in the
+tutorials directory of the Tridash source:
+<a class="ulink" href="https://github.com/alex-gutev/tridash/tree/master/tutorials" target="_top">https://github.com/alex-gutev/tridash/tree/master/tutorials</a>.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="tutorial1"></a>1. Hello Node</h2></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_nodes"></a>1.1. Nodes</h3></div></div></div><p>A Tridash program is made up of a number of components called nodes,
 which are loosely analogous to variables in other languages. Each node
 holds a particular value, at a given moment in time, which comprises
 the node’s state.</p><p>Nodes are created the first time they are referenced. Most nodes are
@@ -18,7 +19,7 @@ non-digit character otherwise it is interpreted as a number.</p><p>The following
 <code class="literal">node1</code>
 </li><li class="listitem">
 <code class="literal">1node</code>
-</li></ul></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="tutorials/images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>There are few restrictions on the characters allowed in node
+</li></ul></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>There are few restrictions on the characters allowed in node
 identifiers, meaning node identifiers may even contain symbols such as
 <code class="literal">-</code>, <code class="literal">+</code>, <code class="literal">=</code>, <code class="literal">&gt;</code>, <code class="literal">?</code>, etc.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_bindings"></a>1.2. Bindings</h3></div></div></div><p>A node can be bound to another node in which case its value is
 automatically updated when the value of the node, to which it is
@@ -36,11 +37,11 @@ value.</p><p>The binding established in the example, above, is one-way since dat
 flows only from <code class="literal">a</code> to <code class="literal">b</code> and not from <code class="literal">b</code> to <code class="literal">a</code>. This means that
 the value of <code class="literal">b</code> is updated when the value of <code class="literal">a</code> changes however the
 value of <code class="literal">a</code> is not updated when the value of <code class="literal">b</code> changes.</p><p>If a binding in the reverse direction is also established:</p><pre class="screen">b -&gt; a</pre><p>the binding becomes a two-way binding and the value of each node is
-updated when the value of the other node changes.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="tutorials/images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The spaces between the node identifiers and the bind <code class="literal">-&gt;</code>
+updated when the value of the other node changes.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The spaces between the node identifiers and the bind <code class="literal">-&gt;</code>
 operator are mandatory since <code class="literal">a-&gt;b</code> is interpreted as a single node
 identifier.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_first_application"></a>1.3. First Application</h3></div></div></div><p>In this tutorial we will build a simple application which asks for the
 user’s name and displays a personalized “Hello” message.</p><p>This tutorial targets the JavaScript backend and makes use of HTML for
-the user interface.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Some knowledge of the basics of HTML, i.e. what tags, elements
+the user interface.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Some knowledge of the basics of HTML, i.e. what tags, elements
 and attributes are, is necessary to complete this tutorial.</p></td></tr></table></div><p>We’ll start off by creating an HTML file, called <code class="literal">hello-ui.html</code>, with
 the following contents:</p><p><strong>hello-ui.html. </strong>
 </p><pre class="programlisting">&lt;!doctype html&gt;
@@ -107,7 +108,7 @@ a comma <code class="literal">,</code>. In the command, above, <code class="lite
 <code class="literal">node-name</code> option sets the identifier of the node, with which, the
 contents of the HTML file can be referenced later. In effect, a
 special HTML component node <code class="literal">ui</code> is created, which serves to reference
-the HTML contents of the file.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">self</code> node, when occurring within an HTML file, references
+the HTML contents of the file.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">self</code> node, when occurring within an HTML file, references
 the HTML component node of the current file.</p></td></tr></table></div><p>The <code class="literal">-p option=value</code> command-line options sets various options
 related to the compilation output. The first option <code class="literal">type</code>, sets the
 type of output generated. In this case it is set to <code class="literal">html</code> in order to
@@ -120,10 +121,10 @@ set to <code class="literal">ui</code> which is the node name, given earlier in 
 option, of the HTML component node containing the contents of the
 <code class="literal">hello-ui.html</code> file.</p><p>If all went well a <code class="literal">hello.html</code> file should have been created in the
 same directory, after running the command.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_running_the_application"></a>Running The Application</h4></div></div></div><p>Open the <code class="literal">hello.html</code> file in a web-browser with JavaScript
-enabled. You should see something similar to the following:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial1/snap1.png" align="middle" alt="Snapshot: Name Prompt" /></div></div><p>Try entering some text in the text field, and press enter afterwards:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial1/snap2.png" align="middle" alt="Snapshot: &quot;John&quot; entered in text field.&quot;Hello John&quot; displayed below the prompt." /></div></div><p>Notice that the text entered appears next to the “Hello” message
+enabled. You should see something similar to the following:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial1/snap1.png" align="middle" alt="Snapshot: Name Prompt" /></div></div><p>Try entering some text in the text field, and press enter afterwards:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial1/snap2.png" align="middle" alt="Snapshot: &quot;John&quot; entered in text field.&quot;Hello John&quot; displayed below the prompt." /></div></div><p>Notice that the text entered appears next to the “Hello” message
 underneath the text field. This is due to the binding of the text
 field to the <code class="literal">name</code> node and the binding of the <code class="literal">name</code> node to the
-contents of the <code class="literal">span</code> element placed adjacent to the “Hello” text.</p><p>Now try changing the text entered in the text field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial1/snap3.png" align="middle" alt="Snapshot: &quot;John Doe&quot; entered in text field. &quot;Hello John Doe&quot; displayed below the prompt." /></div></div><p>The text next to “Hello” changes to match the contents of the text
+contents of the <code class="literal">span</code> element placed adjacent to the “Hello” text.</p><p>Now try changing the text entered in the text field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial1/snap3.png" align="middle" alt="Snapshot: &quot;John Doe&quot; entered in text field. &quot;Hello John Doe&quot; displayed below the prompt." /></div></div><p>The text next to “Hello” changes to match the contents of the text
 field. This demonstrates the automatic updating of a node’s state when
 the state of its dependency nodes changes.</p><p>When the state (the contents) of the text field changes, the state of
 the <code class="literal">name</code> node is updated to the text entered in the field, and the
@@ -281,10 +282,10 @@ options. In this case, the output options are the same as in the
 previous tutorial, <code class="literal">type=html</code> and <code class="literal">main-ui=ui</code>.</p><p>To build from a build configuration file run the following command:</p><pre class="screen">tridashc -b build.yml</pre><p>The <code class="literal">-b</code> option specifies the path to the build configuration file
 containing the build options. All other command line options are
 ignored when this option is specified.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_running_the_application_2"></a>Running the Application</h4></div></div></div><p>Open the <code class="literal">app.html</code> file in a web browser, and enter some
-numbers in the text fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial2/snap1.png" align="middle" alt="Snapshot: 100, 300, 500 entered in expense fields. 900 displayed in total." /></div></div><p>Notice that the total is computed and displayed in the “Total:”
-field.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>You will only see a total computed once you have entered a valid
+numbers in the text fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial2/snap1.png" align="middle" alt="Snapshot: 100, 300, 500 entered in expense fields. 900 displayed in total." /></div></div><p>Notice that the total is computed and displayed in the “Total:”
+field.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>You will only see a total computed once you have entered a valid
 number in each field.</p></td></tr></table></div><p>Now try changing some of the amounts allocated (<span class="emphasis"><em>remember to press
-enter after you’ve changed a value</em></span>):</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial2/snap2.png" align="middle" alt="Snapshot: Electricity changed to 350. New total 950 displayed." /></div></div><p>Notice that the total amount allocated is automatically recomputed and
+enter after you’ve changed a value</em></span>):</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial2/snap2.png" align="middle" alt="Snapshot: Electricity changed to 350. New total 950 displayed." /></div></div><p>Notice that the total amount allocated is automatically recomputed and
 the new total is displayed in the “Total” field.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_inline_functional_bindings"></a>2.2. Inline Functional Bindings</h3></div></div></div><p>The application built in this tutorial can be implemented more
 succinctly by replacing the <code class="literal">total</code> node with <code class="literal">food + electricity +
 water</code> in the inline node declaration within the <code class="literal">value</code> attribute of
@@ -298,7 +299,7 @@ budgeting application, namely specifying the budget and displaying a
 message, indicating whether the budget was exceeded. In essence this
 tutorial demonstrates conditional bindings.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_case_operator"></a>3.1. Case Operator</h3></div></div></div><p>Conditions are specified using the special <code class="literal">case</code> operator. The <code class="literal">case</code>
 operator is special in that it has a special syntax to make it more
-readable.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="tutorials/images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">case</code> operator is actually a macro-node, implemented in
+readable.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">case</code> operator is actually a macro-node, implemented in
 Tridash, which expands to a series of nested <code class="literal">if</code> functor
 expressions. You can see its source in the <code class="literal">modules/core/macros.trd</code>
 file of your Tridash installation.</p></td></tr></table></div><p>The syntax of the case operator is as follows:</p><pre class="screen">case(
@@ -344,7 +345,7 @@ displayed:</p><pre class="programlisting">&lt;span&gt;
   @&gt;
 &lt;/span&gt;</pre><p>To simplify the code the node <code class="literal">total</code> is bound to the total sum
 allocated. Alternatively the functor node <code class="literal">food + electricity + water</code>
-could have been used directly instead of the node <code class="literal">total</code>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>There is no difference in efficiency between using the <code class="literal">total</code>
+could have been used directly instead of the node <code class="literal">total</code>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>There is no difference in efficiency between using the <code class="literal">total</code>
 node or using the functor node directly. The value of a node is only
 computed once, whenever one of its arguments changes, even if it is
 referenced in more than one location. Moreover the value of a node is
@@ -404,12 +405,12 @@ exceeded!!!”, if the budget has been exceeded.</p><p>Full <code class="literal
 &lt;/html&gt;</pre><p>
 </p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out"></a>Let’s try it out</h4></div></div></div><p>Build the application, using the same build configuration file,
 <code class="literal">build.yml</code>, and build command from the previous tutorial.</p><p>Open the <code class="literal">app.html</code> file in a web browser, and enter some initial
-numbers in the budget and expenses fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial3/snap1.png" align="middle" alt="Snapshot: 100 entered in budget and all expense fields. Total 300, Budget Exceeded!!! displayed." /></div></div><p>Notice that the status message, next to the total, says “Budget
+numbers in the budget and expenses fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial3/snap1.png" align="middle" alt="Snapshot: 100 entered in budget and all expense fields. Total 300, Budget Exceeded!!! displayed." /></div></div><p>Notice that the status message, next to the total, says “Budget
 Exceeded!!!”  since the total of 300 did indeed exceed the budget of
-100, with the numbers in the snapshot above.</p><p>Now try increasing the budget:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial3/snap2.png" align="middle" alt="Snapshot: Budget increased to 400. Within Budget displayed." /></div></div><p>The message changes to “Within Budget.”. This demonstrates that the
+100, with the numbers in the snapshot above.</p><p>Now try increasing the budget:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial3/snap2.png" align="middle" alt="Snapshot: Budget increased to 400. Within Budget displayed." /></div></div><p>The message changes to “Within Budget.”. This demonstrates that the
 value of a <code class="literal">case</code> functor node is recomputed if the values of any of
 the condition nodes change.</p><p>Now try increasing some of the expenses, in order for the total to
-exceed the budget again:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial3/snap3.png" align="middle" alt="Snapshot: Expense total increased to 500. Budget Exceeded displayed." /></div></div><p>The message changes back to “Budget Exceeded!!!”.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_improvements"></a>3.3. Improvements</h3></div></div></div><p>Whilst the application we’ve implemented so far demonstrates the power
+exceed the budget again:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial3/snap3.png" align="middle" alt="Snapshot: Expense total increased to 500. Budget Exceeded displayed." /></div></div><p>The message changes back to “Budget Exceeded!!!”.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_improvements"></a>3.3. Improvements</h3></div></div></div><p>Whilst the application we’ve implemented so far demonstrates the power
 of functional bindings, it is rather lacking in that whether the
 budget has been exceeded or not is only indicated by text. The text
 has to be read in full to determine whether the budget was exceeded,
@@ -428,7 +429,7 @@ element, in which the status message is displayed, is given the id
 and text color of the status message. It should have the value
 <code class="literal">"green"</code> when the total is within the budget and the value <code class="literal">"red"</code>
 when the total exceeds the budget. This can be achieved by binding to
-a <code class="literal">case</code> functor node.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The values <code class="literal">"green"</code> and <code class="literal">"red"</code> are strings, storing CSS color
+a <code class="literal">case</code> functor node.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The values <code class="literal">"green"</code> and <code class="literal">"red"</code> are strings, storing CSS color
 names.</p></td></tr></table></div><p>Add the following to the Tridash code tag.</p><pre class="screen">case(
   total &lt; budget : "green",
   "red"
@@ -507,8 +508,8 @@ would like the text color to change dynamically as well.</p><p>Full <code class=
     &lt;/body&gt;
 &lt;/html&gt;</pre><p>
 </p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_2"></a>Let’s try it out</h4></div></div></div><p>Enter some values for the expenses and budget such that the total
-exceeds the budget.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial3/snap4.png" align="middle" alt="Snapshot: 100 entered in budget and expense fields. Total and Budget Exceeded!!! displayed in red." /></div></div><p>The status message and total are now shown in red which provides an
-immediate visual indication that the budget has been exceeded.</p><p>Now increase the budget, or decrease the expenses:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial3/snap5.png" align="middle" alt="Snapshot: Budget increased to 400. Total and Within Budget displayed in green." /></div></div><p>The color of the message and total is immediately changed to green,
+exceeds the budget.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial3/snap4.png" align="middle" alt="Snapshot: 100 entered in budget and expense fields. Total and Budget Exceeded!!! displayed in red." /></div></div><p>The status message and total are now shown in red which provides an
+immediate visual indication that the budget has been exceeded.</p><p>Now increase the budget, or decrease the expenses:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial3/snap5.png" align="middle" alt="Snapshot: Budget increased to 400. Total and Within Budget displayed in green." /></div></div><p>The color of the message and total is immediately changed to green,
 which provides a noticeable indication that the budget has no longer
 been exceeded.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_2"></a>3.4. Summary</h3></div></div></div><p>In this tutorial you learned how to create conditional bindings using
 the <code class="literal">case</code> operator which allows the value of a node to be
@@ -538,9 +539,9 @@ are automatically created if no node with that identifier exists.</p><p>Meta-nod
 list comprising the body. The curly braces <code class="literal">{</code> and <code class="literal">}</code> are optional if
 the meta-node body consists of a single declaration.</p><p>Alternatively an explicit binding to the <code class="literal">self</code> node, can be
 established. In that case, the return value of the meta-node, is the
-value of the <code class="literal">self</code> node, rather than the last node in the body.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_examples"></a>Examples</h4></div></div></div><pre class="screen"># Add two numbers <a id="CO1-1"></a><span><img src="tutorials/images/icons/callouts/1.png" alt="1" border="0" /></span>
+value of the <code class="literal">self</code> node, rather than the last node in the body.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_examples"></a>Examples</h4></div></div></div><pre class="screen"># Add two numbers <a id="CO1-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span>
 
-add(x, y) : x + y</pre><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO1-1"><span><img src="tutorials/images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+add(x, y) : x + y</pre><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO1-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
 This is a comment. Comments begin with a <code class="literal">#</code> character and extend
 till the end of the line. All content within a comment is discarded.
 </p></td></tr></table></div><p>In the example, above, a meta-node <code class="literal">add</code> is defined which takes two
@@ -582,9 +583,9 @@ to linearly interpolate a color between green and red depending on
 where the total amount allocated lies between zero and the
 budget. This is where meta-nodes will come in handy.</p><p>We’ll start off by writing a linear interpolation meta-node <code class="literal">lerp</code>.</p><pre class="screen">lerp(a, b, alpha) : lo + alpha * (b - a)</pre><p>The value returned by the meta-node is the fractional value, at the
 fraction <code class="literal">alpha</code>, between <code class="literal">a</code> and <code class="literal">b</code>.</p><p>Let’s write another handy meta-node for creating a CSS <code class="literal">hsl</code> color
-string out of hue, saturation and luminance components.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="tutorials/images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Interpolation is done in the HSL color space, rather than the RGB
+string out of hue, saturation and luminance components.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Interpolation is done in the HSL color space, rather than the RGB
 color space as it provides better results.</p></td></tr></table></div><pre class="screen">make-hsl(h, s, l) :
-    format("hsl(%s,%s%%,%s%%)", h, s, l)</pre><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="tutorials/images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">format</code> meta-node takes a format string, followed by a
+    format("hsl(%s,%s%%,%s%%)", h, s, l)</pre><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">format</code> meta-node takes a format string, followed by a
 variable number of arguments, and returns the format string with all
 <code class="literal">%s</code> placeholders replaced by the arguments. <code class="literal">%%</code> is replaced with a
 literal <code class="literal">%</code> character.</p></td></tr></table></div><p>The next step is to compute the interpolation coefficient <code class="literal">alpha</code>
@@ -596,7 +597,7 @@ range:</p><pre class="screen">clamp(x, min, max) :
       x &gt; max : max,
       x
    )</pre><p>Using the <code class="literal">clamp</code> meta-node, we compute the <code class="literal">alpha</code> coefficient
-clamped to the range [0, 1]:</p><pre class="screen">clamp((total + 1) / (budget + 1), 0, 1) -&gt; scale</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">1</code> was added to the total and budget to prevent division by
+clamped to the range [0, 1]:</p><pre class="screen">clamp((total + 1) / (budget + 1), 0, 1) -&gt; scale</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">1</code> was added to the total and budget to prevent division by
 zero in the case that <code class="literal">budget</code> is equal to <code class="literal">0</code>. This obviously does
 not work if <code class="literal">budget</code> is equal to <code class="literal">-1</code> however this will be handled in
 the following tutorials.</p></td></tr></table></div><p>And now finally we’ll compute the color making use of the <code class="literal">lerp</code>
@@ -659,26 +660,26 @@ format("%s%%", scale * 100) -&gt; self.meter.style.width
 meter-color -&gt; self.meter.style.backgroundColor</pre></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_3"></a>Let’s try it out</h4></div></div></div><p>Build the application and open the resulting <code class="literal">app.html</code> file in a web
 browser.</p><p>Enter some initial values for the budget and expense totals. Start off
 with low expense totals such that the total expenses are well within
-the budget:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial4/snap1.png" align="middle" alt="Snapshot: Budget 100, Total 30. Meter 1/3 filled, displayed in bright green." /></div></div><p>The filled portion is roughly a third of the meter and is displayed in
+the budget:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial4/snap1.png" align="middle" alt="Snapshot: Budget 100, Total 30. Meter 1/3 filled, displayed in bright green." /></div></div><p>The filled portion is roughly a third of the meter and is displayed in
 a bright green.</p><p>Now start increasing the expenses to bring the total closer to the
-budget:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial4/snap2.png" align="middle" alt="Snapshot: Total 50. Meter half filled, displayed in yellow." /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial4/snap3.png" align="middle" alt="Snapshot: Total 70. Meter more than half filled, displayed in orange." /></div></div><p>The meter gradually fills up and starts changing to red the closer the
-total expenses are to the budget.</p><p>Now finally increase the expenses till the total exceeds the budget:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial4/snap4.png" align="middle" alt="Snapshot: Total, 120. Meter filled, displayed in bright red." /></div></div><p>The mete is fully filled and displayed in a bright red color.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_3"></a>4.3. Summary</h3></div></div></div><p>In this tutorial you learned how to create your own functions,
+budget:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial4/snap2.png" align="middle" alt="Snapshot: Total 50. Meter half filled, displayed in yellow." /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial4/snap3.png" align="middle" alt="Snapshot: Total 70. Meter more than half filled, displayed in orange." /></div></div><p>The meter gradually fills up and starts changing to red the closer the
+total expenses are to the budget.</p><p>Now finally increase the expenses till the total exceeds the budget:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial4/snap4.png" align="middle" alt="Snapshot: Total, 120. Meter filled, displayed in bright red." /></div></div><p>The mete is fully filled and displayed in a bright red color.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_3"></a>4.3. Summary</h3></div></div></div><p>In this tutorial you learned how to create your own functions,
 referred to as meta-nodes, which can be used in functor node
-expressions.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="tutorials/images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Functions are referred to as meta-nodes since they are nodes,
+expressions.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Functions are referred to as meta-nodes since they are nodes,
 themselves, which describe how the values of other nodes, referred to
 as meta-node instances, are computed, hence the term meta-nodes.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_error_handling"></a>5. Error Handling</h2></div></div></div><p>In all the tutorials, till this point, we’ve completely ignored the
 issue of invalid data being entered in the text fields, such as
 non-numeric data and negative numeric values.</p><p>Let’s try entering some non-numeric data in our existing application
-and see what happens.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial5/error1.png" align="middle" alt="foo entered in food, 10 entered in water and electricity. No total or message printed." /></div></div><p>If an invalid value is initially entered in one of the “food”,
+and see what happens.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial5/error1.png" align="middle" alt="foo entered in food, 10 entered in water and electricity. No total or message printed." /></div></div><p>If an invalid value is initially entered in one of the “food”,
  “electricity”, or “water” fields, no total is computed, the meter
- is filled, and no status message is displayed.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial5/error2.png" align="middle" alt="Water changed from 10 to foo, 20 and 10 entered in food and electricity. Total, color and message unchanged." /></div></div><p>If the value of one of the fields is changed from a valid to an
+ is filled, and no status message is displayed.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial5/error2.png" align="middle" alt="Water changed from 10 to foo, 20 and 10 entered in food and electricity. Total, color and message unchanged." /></div></div><p>If the value of one of the fields is changed from a valid to an
 invalid numeric value, such as “Electricity” in the snapshot above,
 the total is not recomputed, with the old total being displayed in the
 text field. Likewise the meter and status message are unchanged, even
 if the values of the “Budget” or other fields are changed. The new
 total is only computed when the invalid numeric value is replaced with
 a valid numeric value.</p><p>Now let’s try entering a non-numeric value for the budget, however
-keeping the values of the other fields valid:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial5/error3.png" align="middle" alt="Budget changed from 100 to foo. Food changed from 10 to 90, water and electricity set to 10. New total (110) computed, color and message unchanged." /></div></div><p>Changing the budget to a non-numeric value does not result in the
+keeping the values of the other fields valid:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial5/error3.png" align="middle" alt="Budget changed from 100 to foo. Food changed from 10 to 90, water and electricity set to 10. New total (110) computed, color and message unchanged." /></div></div><p>Changing the budget to a non-numeric value does not result in the
 total, color or message being changed. However changing the values of
 the expense fields does result in the new total being computed and
 displayed. The meter and status message, however, remain unchanged.</p><p>Whilst the application is still functioning when non-numeric values
@@ -717,7 +718,7 @@ a result the status message and meter is not updated.</p></div><div class="secti
 information about how a node’s value is computed, and which of the
 dependency nodes' values are required. Each binding to a node, whether
 explicit or implicit creates a context.</p><p>The context to which a binding is established, can be set explicitly
-using the <code class="literal">@</code> macro <a href="#ftn.idm122299989760" class="footnote" id="idm122299989760"><sup class="footnote">[1]</sup></a>, from the <code class="literal">core</code>
+using the <code class="literal">@</code> macro <a href="#ftn.idm529718304800" class="footnote" id="idm529718304800"><sup class="footnote">[1]</sup></a>, from the <code class="literal">core</code>
 module.</p><p><strong><code class="literal">@</code> Macro Syntax. </strong>
 </p><pre class="screen">node @ context-id</pre><p>
 </p><p><code class="literal">node</code> is the node expression and <code class="literal">context-id</code> is the identifier of
@@ -772,7 +773,7 @@ of the body, which serves as the return value of the meta-node,
 evaluates to the error message (value of the <code class="literal">error-message</code> node) if
 the argument <code class="literal">thing</code> evaluates to a failure, determined using the
 <code class="literal">fails?</code> meta-node from the <code class="literal">core</code> module. Otherwise the expression
-evaluates to the empty string.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip: Meta-Node if"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="tutorials/images/icons/tip.png" /></td><th align="left">Meta-Node <code class="literal">if</code></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">if</code> meta-node from the <code class="literal">core</code> module returns:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+evaluates to the empty string.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip: Meta-Node if"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left">Meta-Node <code class="literal">if</code></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">if</code> meta-node from the <code class="literal">core</code> module returns:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
 its second argument if its first argument is true.
 </li><li class="listitem">
 its third argument if the first argument is false.
@@ -810,8 +811,8 @@ input field. Each instance evaluates to the error message if the node,
 bound to the field’s value, evaluates to a failure. Recall, the nodes
 bound to the value attributes evaluate to failures if the <code class="literal">to-real</code>
 meta-node fails to parse a real number from the string value.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_4"></a>Let’s try it out</h4></div></div></div><p>Build and run the application. Enter some non-numeric value in some of
-the text input fields.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial5/snap1.png" align="middle" alt="Snapshot: Error message displayed next to food and electricity fields, with invalid numeric values." /></div></div><p>Notice the error messages displayed next to the input fields with
-non-numeric values.</p><p>Now try changing the input fields back to numeric values.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial5/snap2.png" align="middle" alt="Snapshot: All fields changed to valid numbers. Total recomputed." /></div></div><p>The error messages disappear and the application resumes its normal
+the text input fields.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial5/snap1.png" align="middle" alt="Snapshot: Error message displayed next to food and electricity fields, with invalid numeric values." /></div></div><p>Notice the error messages displayed next to the input fields with
+non-numeric values.</p><p>Now try changing the input fields back to numeric values.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial5/snap2.png" align="middle" alt="Snapshot: All fields changed to valid numbers. Total recomputed." /></div></div><p>The error messages disappear and the application resumes its normal
 operation, computing the new total and adjusting the meter.</p><p>This fixes the first issue with our application. As an exercise you
 can try to make the text color of the input fields change to "red" if
 non-numeric values are entered in them.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_initial_values"></a>5.4. Initial Values</h3></div></div></div><p>The issue with no feedback being displayed, in case of non-numeric
@@ -830,13 +831,13 @@ expressions and even reference other nodes, provided they are constant
 nodes. Constant nodes are nodes with a constant value, that does not
 change throughout the execution of the application. In-effect constant
 nodes only have an initial value and do not depend on the values of
-other non-constant nodes.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">error-message</code> node, seen earlier in <a class="xref" href="#_error_feedback" title="5.3. Error Feedback">Section 5.3, “Error Feedback”</a>,
+other non-constant nodes.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">error-message</code> node, seen earlier in <a class="xref" href="#_error_feedback" title="5.3. Error Feedback">Section 5.3, “Error Feedback”</a>,
 is an example of a constant node.</p></td></tr></table></div><p>Let’s give each of the <code class="literal">budget</code>, <code class="literal">food</code>, <code class="literal">electricity</code> and
 <code class="literal">water</code> nodes an initial value of <code class="literal">0</code>.</p><p>Add the following to the Tridash code tag in the <code class="literal">ui.html</code> file:</p><pre class="screen">0 -&gt; budget
 0 -&gt; food
 0 -&gt; electricity
 0 -&gt; water</pre><p>When running the application all text fields will be initialized to
-the value <code class="literal">0</code>.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial5/snap3.png" align="middle" alt="Initial State Snapshot: All fields initialized to 0. Total (0) and Budget Exceeded displayed in red" /></div></div><p>Since we gave initial values to all the nodes, and there is an
+the value <code class="literal">0</code>.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial5/snap3.png" align="middle" alt="Initial State Snapshot: All fields initialized to 0. Total (0) and Budget Exceeded displayed in red" /></div></div><p>Since we gave initial values to all the nodes, and there is an
 implicit two-way binding between these nodes and the contents of the
 text fields, the contents of the text input fields are immediately
 initialized to <code class="literal">0</code>. This demonstrates that the setting of the initial
@@ -856,10 +857,10 @@ of the binding.</p><p><strong>Conditional Binding Declaration. </strong>
 the node <code class="literal">condition</code>. If <code class="literal">condition</code> evaluates to true, the binding <code class="literal">a
 -&gt; b</code> is active and thus node <code class="literal">b</code> evaluates to the value of <code class="literal">a</code>. If,
 however, <code class="literal">condition</code> evaluates to <span class="emphasis"><em>false</em></span>, <code class="literal">b</code> evaluates to a failure
-value.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>A conditional binding declaration may follow the main binding
-declaration, <code class="literal">a -&gt; b</code>, in the source code.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>When a conditional binding is declared, a node <code class="literal">a -&gt; b</code> is
+value.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>A conditional binding declaration may follow the main binding
+declaration, <code class="literal">a -&gt; b</code>, in the source code.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>When a conditional binding is declared, a node <code class="literal">a -&gt; b</code> is
 created which may be used to reference the status of the binding,
-i.e. is it active or inactive.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="tutorials/images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">-&gt;</code> operator has right associativity thus the parenthesis in
+i.e. is it active or inactive.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">-&gt;</code> operator has right associativity thus the parenthesis in
 the previous example are optional, however were added for clarity.</p></td></tr></table></div><p><strong>Example: Simple Conditional Binding. </strong>
 </p><pre class="screen">a &lt; 0 -&gt; (a -&gt; b)</pre><p>
 </p><p>In this example <code class="literal">b</code> is only bound to <code class="literal">a</code> if <code class="literal">a</code> is less than <code class="literal">0</code>,
@@ -884,8 +885,8 @@ than or equal to <code class="literal">0</code>. For this we’ll use conditiona
     x &gt;= 0 -&gt; x -&gt; self
 }</pre><p>
 </p><p>The first declaration binds the local node <code class="literal">x</code> to the argument <code class="literal">value</code>
-converted to a <code class="literal">real</code> number.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">x</code> is a local node as it appears as the target of a binding.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="tutorials/images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">real</code> meta-node performs the same function as the <code class="literal">to-real</code>
-meta-node.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="tutorials/images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">&lt;-</code> is the same as <code class="literal">-&gt;</code> only with arguments reversed, that is
+converted to a <code class="literal">real</code> number.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">x</code> is a local node as it appears as the target of a binding.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">real</code> meta-node performs the same function as the <code class="literal">to-real</code>
+meta-node.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">&lt;-</code> is the same as <code class="literal">-&gt;</code> only with arguments reversed, that is
 the target of the binding is on the left hand side and the source on
 the right hand side.</p></td></tr></table></div><p>The second declaration conditionally binds <code class="literal">x</code> to the <code class="literal">self</code> node if
 <code class="literal">x</code> is greater than or equal to <code class="literal">0</code> (<code class="literal">x &gt;= 0</code>). As a result the return
@@ -942,9 +943,9 @@ numbers are invalid. Change the <code class="literal">error-prompt</code> meta-n
 following:</p><pre class="screen">error-prompt(thing) : {
     error-message &lt;- "Please enter a valid number \u{2265} 0!"
     if (fails?(thing), error-message, "")
-}</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">\u{2265}</code> represents the unicode character with code 2265 which
+}</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">\u{2265}</code> represents the unicode character with code 2265 which
 is the character <code class="literal">≥</code>.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_5"></a>Let’s try it out</h4></div></div></div><p>Build and run the application, and enter negative values in some of
-the fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial6/snap1.png" align="middle" alt="Snapshot: -30 entered in Electricity. Error message displayed next to it." /></div></div><p>The error message was displayed next to the field where a negative
+the fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial6/snap1.png" align="middle" alt="Snapshot: -30 entered in Electricity. Error message displayed next to it." /></div></div><p>The error message was displayed next to the field where a negative
 value was entered, in this case electricity. The total, status message
 and meter were left unchanged.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_meta_node_instances_as_targets"></a>6.3. Meta-Node Instances as Targets</h3></div></div></div><p>Whilst we’ve fixed the second issue with our application, we had to
 make a lot of changes to our code:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
@@ -982,7 +983,7 @@ The attribute key. Interpreted as a literal symbol
 </span></dt><dd>
 The value to set the attribute to. Like <code class="literal">attribute</code> this
   is interpreted as a literal rather than a node expression.
-</dd></dl></div><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="tutorials/images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Attributes do not form part of a node’s runtime state thus
+</dd></dl></div><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Attributes do not form part of a node’s runtime state thus
 cannot be bound to the values of other nodes.</p></td></tr></table></div><p>The <code class="literal">target-node</code> attribute, when set on a meta-node <code class="literal">m</code>, stores a
 meta-node which is used as the binding’s function, when an instance of
 <code class="literal">m</code> appears as the target of a binding. When an instance of the
@@ -1000,7 +1001,7 @@ x -&gt; to-real(y)</pre><p>
 to the meta-node <code class="literal">real</code>. The binding declaration, in the last line,
 results in the node <code class="literal">to-real(y)</code> being bound to <code class="literal">y</code>, with the function
 <code class="literal">real</code> being the function of the binding. As a result <code class="literal">y</code> is bound to
-the value of <code class="literal">x</code> converted to a <code class="literal">real</code> value.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">to-real</code> performs the same function as <code class="literal">real</code>, however a
+the value of <code class="literal">x</code> converted to a <code class="literal">real</code> value.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">to-real</code> performs the same function as <code class="literal">real</code>, however a
 separate node is created in order to give it a different <code class="literal">target-node</code>
 attribute. The behaviour of the <code class="literal">real</code> meta-node, when an instance of
 it appears as the target of a binding, is to perform pattern matching
@@ -1010,10 +1011,10 @@ meta-node a <code class="literal">target-node</code> attribute so that it can be
 inline, in the value attributes of the HTML input fields. We need the
 <code class="literal">valid-amount</code> meta-node to perform the same function, when it appears
 as a binding target thus we’ll simply set the <code class="literal">target-node</code> attribute
-of <code class="literal">valid-amount</code> to itself.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This section builds on the code from the previous tutorial, with
+of <code class="literal">valid-amount</code> to itself.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This section builds on the code from the previous tutorial, with
 the definition of <code class="literal">valid-amount</code> added to it, and the modifications to
 the <code class="literal">error-prompt</code> meta-node. It does not include the remaining
-modifications made in <a class="xref" href="#_simple_validation" title="6.2. Simple Validation">Section 6.2, “Simple Validation”</a>.</p></td></tr></table></div><p>Add the following after the definition of <code class="literal">validate</code> in the Tridash code tag.</p><pre class="screen">:attribute(valid-amount, target-node, valid-amount)</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>When the <code class="literal">target-node</code> attribute is set, the meta-node is looked
+modifications made in <a class="xref" href="#_simple_validation" title="6.2. Simple Validation">Section 6.2, “Simple Validation”</a>.</p></td></tr></table></div><p>Add the following after the definition of <code class="literal">validate</code> in the Tridash code tag.</p><pre class="screen">:attribute(valid-amount, target-node, valid-amount)</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>When the <code class="literal">target-node</code> attribute is set, the meta-node is looked
 up as the <code class="literal">:attribute</code> declaration is processed.</p></td></tr></table></div><p>As a result we can simply replace <code class="literal">to-real(...)</code> with <code class="literal">valid-amount(...)</code>
 in the inline declarations, within the value attributes of the HTML
 input elements. This will be equivalent to the code we wrote at the
@@ -1059,12 +1060,12 @@ are only created when a node expression appears as the target of a
 binding. Referencing a node with the same identifier as a node
 declared at the global scope, when there is no local node with the
 same identifier, references the global node.</p><p><strong>Example. </strong>
-</p><pre class="screen">x                <a id="CO2-1"></a><span><img src="tutorials/images/icons/callouts/1.png" alt="1" border="0" /></span>
+</p><pre class="screen">x                <a id="CO2-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span>
 
-addx(y) : x + y  <a id="CO2-2"></a><span><img src="tutorials/images/icons/callouts/2.png" alt="2" border="0" /></span></pre><p>
-</p><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO2-1"><span><img src="tutorials/images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+addx(y) : x + y  <a id="CO2-2"></a><span><img src="images/icons/callouts/2.png" alt="2" border="0" /></span></pre><p>
+</p><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO2-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
 Global node <code class="literal">x</code> declaration.
-</p></td></tr><tr><td width="5%" valign="top" align="left"><p><a href="#CO2-2"><span><img src="tutorials/images/icons/callouts/2.png" alt="2" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+</p></td></tr><tr><td width="5%" valign="top" align="left"><p><a href="#CO2-2"><span><img src="images/icons/callouts/2.png" alt="2" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
 References global node <code class="literal">x</code> as there is no local node with that identifier.
 </p></td></tr></table></div><p>What actually happens behind the scenes, when an outer node is
 referenced, is that an additional argument is added to the <code class="literal">addx</code>
@@ -1082,15 +1083,15 @@ nested meta-node.</p><pre class="screen">add(x, y) : {
   addx(y)
 }</pre><p>In this example the outer node <code class="literal">x</code>, referenced from within the <code class="literal">addx</code>
 meta-node is the node <code class="literal">x</code>, the first argument node, in the scope of
-the body of the <code class="literal">add</code> meta-node.</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="tutorials/images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>If no node is found, either local or in enclosing scope, a
-compilation error is triggered.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip: .. Operator"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="tutorials/images/icons/tip.png" /></td><th align="left"><code class="literal">..</code> Operator</th></tr><tr><td align="left" valign="top"><p>The <code class="literal">..(x)</code> operator can be used to explicitly reference a node <code class="literal">x</code>
+the body of the <code class="literal">add</code> meta-node.</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>If no node is found, either local or in enclosing scope, a
+compilation error is triggered.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip: .. Operator"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"><code class="literal">..</code> Operator</th></tr><tr><td align="left" valign="top"><p>The <code class="literal">..(x)</code> operator can be used to explicitly reference a node <code class="literal">x</code>
 from the enclosing scope. This is useful when there is a need to
 reference a global node which has the same identifier as a local node.</p><p><strong>Example. </strong>
-</p><pre class="screen">x                   <a id="CO3-1"></a><span><img src="tutorials/images/icons/callouts/1.png" alt="1" border="0" /></span>
-add(x) : x + ..(x)  <a id="CO3-2"></a><span><img src="tutorials/images/icons/callouts/2.png" alt="2" border="0" /></span></pre><p>
-</p><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO3-1"><span><img src="tutorials/images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+</p><pre class="screen">x                   <a id="CO3-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span>
+add(x) : x + ..(x)  <a id="CO3-2"></a><span><img src="images/icons/callouts/2.png" alt="2" border="0" /></span></pre><p>
+</p><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO3-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
 Global node <code class="literal">x</code> declaration.
-</p></td></tr><tr><td width="5%" valign="top" align="left"><p><a href="#CO3-2"><span><img src="tutorials/images/icons/callouts/2.png" alt="2" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+</p></td></tr><tr><td width="5%" valign="top" align="left"><p><a href="#CO3-2"><span><img src="images/icons/callouts/2.png" alt="2" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
 <code class="literal">..(x)</code> references the global <code class="literal">x</code> node.
 </p></td></tr></table></div></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_global_color_nodes"></a>7.2. Global Color Nodes</h3></div></div></div><p>So far we have a basic working budgeting application. However the
 colors used to indicate <span class="emphasis"><em>within budget</em></span> and <span class="emphasis"><em>budget exceeded</em></span> are
@@ -1122,17 +1123,17 @@ The parent <code class="literal">node</code>, which can be any node expression.
 <p>
 The entry key, which is interpreted as a literal symbol.
 </p>
-</td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">.</code> operator is lexically special in that spaces are not
+</td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">.</code> operator is lexically special in that spaces are not
 required between its arguments.</p></td></tr></table></div><p>Meta-Nodes which return dictionary values can be created by binding to
 subnodes of the <code class="literal">self</code> node.</p><p><strong>Example: Meta-Node Returning Dictionary. </strong>
 </p><pre class="screen">Person(first, last) : {
-    first -&gt; self.first  <a id="CO4-1"></a><span><img src="tutorials/images/icons/callouts/1.png" alt="1" border="0" /></span>
-    last -&gt; self.last    <a id="CO4-2"></a><span><img src="tutorials/images/icons/callouts/2.png" alt="2" border="0" /></span>
+    first -&gt; self.first  <a id="CO4-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span>
+    last -&gt; self.last    <a id="CO4-2"></a><span><img src="images/icons/callouts/2.png" alt="2" border="0" /></span>
 }</pre><p>
-</p><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO4-1"><span><img src="tutorials/images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+</p><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO4-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
 Binding subnode <code class="literal">first</code> of <code class="literal">self</code> to argument node <code class="literal">first</code>. Sets
 the value of the entry with key <code class="literal">first</code> of the dictionary.
-</p></td></tr><tr><td width="5%" valign="top" align="left"><p><a href="#CO4-2"><span><img src="tutorials/images/icons/callouts/2.png" alt="2" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+</p></td></tr><tr><td width="5%" valign="top" align="left"><p><a href="#CO4-2"><span><img src="images/icons/callouts/2.png" alt="2" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
 Binding subnode <code class="literal">last</code> of <code class="literal">self</code> to argument node <code class="literal">last</code>. Sets the
 value of the entry with key <code class="literal">last</code> of the dictionary.
 </p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_encapsulating_colors"></a>Encapsulating Colors</h4></div></div></div><p>Let’s create a <code class="literal">Color</code> meta-node that takes the hue, saturation and
@@ -1152,7 +1153,7 @@ meta-node we implemented in <a class="xref" href="#tutorial4" title="4. Writing
     )
 }</pre><p>Finally let’s change the <code class="literal">make-hsl</code> function to take a single
 argument, which is expected to be a dictionary of the color
-components.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="tutorials/images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>If a subnode of a <code class="literal">parent</code> node, which does not evaluate to
+components.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>If a subnode of a <code class="literal">parent</code> node, which does not evaluate to
 a dictionary, is referenced or the dictionary does not contain an
 entry with the subnode key, the subnode evaluates to a failure.</p></td></tr></table></div><pre class="screen">make-hsl(c) :
     format("hsl(%s,%s%%,%s%%)", c.hue, c.saturation, c.luminance)</pre><p>To further clean up the code, the interpolation of the colors will be
@@ -1165,7 +1166,7 @@ they are stored in the global meta-nodes <code class="literal">in-budget-color</
 color.</p><pre class="screen">compute-color(total, budget) : {
     clamp((total + 1) / (budget + 1), 0, 1) -&gt; scale
     make-hsl(lerp-color(in-budget-color, out-budget-color), scale)
-}</pre><p>The global nodes are referenced directly from within the meta-node.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This a rather contrived example since the two colors could have
+}</pre><p>The global nodes are referenced directly from within the meta-node.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This a rather contrived example since the two colors could have
 easily been passed as arguments, and in-fact it would have resulted in
 cleaner and more reusable code. However this example suffices in
 demonstrating outer node references.</p></td></tr></table></div><p>Finally let’s give the <code class="literal">in-budget-color</code> and <code class="literal">out-budget-color</code> nodes
@@ -1173,7 +1174,7 @@ initial values:</p><pre class="screen"># Set initial value of in-budget-color to
 Color(120, 90, 45) -&gt; in-budget-color
 
 # Set initial value of out-budget-color to red
-Color(0, 90, 45) -&gt; out-budget-color</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The initial value declarations can be placed before or after the
+Color(0, 90, 45) -&gt; out-budget-color</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The initial value declarations can be placed before or after the
 <code class="literal">compute-color</code> meta-node definition. It makes no difference.</p></td></tr></table></div><p>The <code class="literal">in-budget-color</code> node was given an initial green color value
 (Hue = 120) and the <code class="literal">out-budget-color</code> node was given an initial red
 color value (Hue = 0).</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_6"></a>Let’s try it out</h4></div></div></div><p>There is no change in the behavior of the application between this
@@ -1181,7 +1182,7 @@ tutorial and the previous tutorial however there is a change in the
 structuring of the code. Try changing the two colors and play around
 with the saturation and luminance values. <span class="emphasis"><em>Remember to recompile after
 each change.</em></span></p><pre class="screen"># Set in-budget-color to blue
-Color(240, 100, 50) -&gt; in-budget-color</pre><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial7/snap1.png" align="middle" alt="Snapshot: Within budget color changed to blue." /></div></div><p>This version of the application does not present any new features over
+Color(240, 100, 50) -&gt; in-budget-color</pre><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial7/snap1.png" align="middle" alt="Snapshot: Within budget color changed to blue." /></div></div><p>This version of the application does not present any new features over
 the previous version however presents a significant improvement in the
 maintainability of the code. In this version, the location in the
 code, in which the colors are defined is clearly visible. Changing the
@@ -1217,7 +1218,7 @@ For the <span class="emphasis"><em>saturation</em></span> and <span class="empha
 done by binding to the <code class="literal">value</code> attribute of the sliders using inline
 declarations. For example, this will bind the <span class="emphasis"><em>hue</em></span> slider to the <span class="emphasis"><em>hue</em></span>
 component of the "Within budget" color:</p><pre class="programlisting">&lt;input type="range" min="0" max="360" value="&lt;?@ to-int(in-budget-color.hue) ?&gt;"&gt;</pre><p>The value of the slider is bound to <code class="literal">to-int(in-budget-color.hue)</code> in
-order to convert its value to an integer.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="tutorials/images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">to-int</code> meta-node is similar in functionality to the
+order to convert its value to an integer.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">to-int</code> meta-node is similar in functionality to the
 <code class="literal">to-real</code> meta-node but converts its argument to an integer.</p></td></tr></table></div><p>This interface is enough to allow us to change the colors directly
 from the application, however its missing a preview of the
 colors. Let’s add another two elements and bind their background
@@ -1300,10 +1301,10 @@ binding declarations):</p><pre class="programlisting">&lt;details style="margin-
          value="&lt;?@ to-int(out-budget-color.luminance) ?&gt;" /&gt;
     &lt;/div&gt;
   &lt;/div&gt;
-&lt;/details&gt;</pre><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="tutorials/images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">details</code> element simply allows the user to show and hide the
-preferences by clicking on the triangle next to “Preferences”.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_7"></a>Let’s try it out</h4></div></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial7/snap2.png" align="middle" alt="Initial Snapshot: Color preview boxes display colors and color component sliders set to values of color components." /></div></div><p>Now try changing some of the color components. Also try this while the
+&lt;/details&gt;</pre><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">details</code> element simply allows the user to show and hide the
+preferences by clicking on the triangle next to “Preferences”.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_7"></a>Let’s try it out</h4></div></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial7/snap2.png" align="middle" alt="Initial Snapshot: Color preview boxes display colors and color component sliders set to values of color components." /></div></div><p>Now try changing some of the color components. Also try this while the
 total sum is between 0 and the budget in order to demonstrate that the
-color interpolation is performed after each change.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial7/snap3.png" align="middle" alt="Snapshot: Color Within budget color changed to blue. Total and message color recomputed." /></div></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_urgent_attribute"></a>Urgent Attribute</h4></div></div></div><p>You have probably noticed a rather annoying aspect of this
+color interpolation is performed after each change.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial7/snap3.png" align="middle" alt="Snapshot: Color Within budget color changed to blue. Total and message color recomputed." /></div></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_urgent_attribute"></a>Urgent Attribute</h4></div></div></div><p>You have probably noticed a rather annoying aspect of this
 interface. The colors are not updated while the sliders are being
 dragged but only after they are released. This is analogous to the
 expense input fields: the total is only updated after the enter key
@@ -1359,7 +1360,7 @@ meta-node1(x):
       :use(mod)
 
       # Reference global node x
-      mod.x  <a id="CO5-1"></a><span><img src="tutorials/images/icons/callouts/1.png" alt="1" border="0" /></span></pre><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO5-1"><span><img src="tutorials/images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+      mod.x  <a id="CO5-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></pre><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO5-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
 References the node <code class="literal">x</code> defined at the global scope, not the <code class="literal">x</code>
 argument node to <code class="literal">meta-node1</code>.
 </p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_6"></a>7.5. Summary</h3></div></div></div><p>In this tutorial you learned how to reference nodes declared outside a
@@ -1456,7 +1457,7 @@ clamp((total + 1) / (budget + 1), 0, 1) -&gt; scale
 compute-color(total, budget) -&gt; meter-color</pre><p>
 </p><p>The only code left inside the <code class="literal">ui.html</code> file is the binding of the
 colors to the various style properties of the elements, the setting of
-the default colours and the <code class="literal">urgent</code> attribute declarations.</p><p>Now we need to add these sources to the build configuration file.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="tutorials/images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>If we are building using the command line directly, we’d simply
+the default colours and the <code class="literal">urgent</code> attribute declarations.</p><p>Now we need to add these sources to the build configuration file.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>If we are building using the command line directly, we’d simply
 list <code class="literal">util.trd</code> and <code class="literal">app.trd</code> in the compile command.</p></td></tr></table></div><p><strong>build.yml. </strong>
 </p><pre class="screen">sources:
   - util.trd
@@ -1482,7 +1483,7 @@ in another application without the fear that some node is going to
 clash with other nodes in the application.</p><p>Modules are means of separating nodes into different namespaces. A
 module is a namespace in which nodes are contained. A node with
 identifier <code class="literal">x</code> in module <code class="literal">mod1</code> is a distinct node from the node <code class="literal">x</code>
-in <code class="literal">mod2</code>, even though the two nodes have the same identifiers.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>We’ve already made use of a builtin module, the <code class="literal">core</code> module,
+in <code class="literal">mod2</code>, even though the two nodes have the same identifiers.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>We’ve already made use of a builtin module, the <code class="literal">core</code> module,
 which contains the <code class="literal">int</code>, <code class="literal">real</code>, <code class="literal">to-real</code> meta-nodes, as well as
 the arithmetic and comparison operators.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_creating_modules"></a>Creating Modules</h4></div></div></div><p>Modules are created with the <code class="literal">:module</code> operator which has the
 following syntax:</p><pre class="screen">:module(module-name)</pre><p>This indicates that all node references, in the declarations following
@@ -1500,7 +1501,7 @@ node <code class="literal">x</code> is added to <code class="literal">mod1</code
 <code class="literal">mod2</code> thus the node is added to <code class="literal">mod2</code>. The two nodes <code class="literal">x</code> are
 distinct even though they share the same identifier.</p><p>If no module is specified the node references occur in a nameless
 <code class="literal">init</code> module. The current module is reset to the <code class="literal">init</code> module prior
-to processing each source file.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="tutorials/images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Module identifiers are distinct from node identifiers, thus
+to processing each source file.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Module identifiers are distinct from node identifiers, thus
 a node <code class="literal">mod</code> will not clash with a module <code class="literal">mod</code> unless the module is
 added as a symbol to the module containing the node <code class="literal">mod</code>. <span class="emphasis"><em>More on
 this in the next section</em></span>.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_using_modules"></a>Using Modules</h4></div></div></div><p>This is great but it is of little use if you can’t reference a node
@@ -1510,7 +1511,7 @@ occurs. Then you can reference a node <code class="literal">x</code> in <code cl
 <code class="literal">mod1</code>, <code class="literal">mod1.x</code>. In effect you can think of the <code class="literal">:use</code> operator as
 adding the module as a node to the current module however the values
 of modules cannot be referenced, and you cannot bind a module to a
-node.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This is also true for meta-nodes. To use a meta-node <code class="literal">f</code>
+node.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This is also true for meta-nodes. To use a meta-node <code class="literal">f</code>
 declared in <code class="literal">mod1</code>, simply reference it as a subnode of <code class="literal">mod1</code>:
 <code class="literal">mod1.f(a, b)</code>.</p></td></tr></table></div><p>This greatly increases the functionality of modules however sometimes
 it may become annoying to have to type out the full name of the module
@@ -1519,7 +1520,7 @@ names short however then you run the risk of module name
 collisions. The <code class="literal">:alias</code> operator allows you to control the symbol
 that is created in the current module, with which nodes in the module
 can be referenced.</p><pre class="screen">:alias(mod1, m)</pre><p>This adds the symbol <code class="literal">m</code>, with which nodes in <code class="literal">mod1</code> can be
-referenced. Nodes in <code class="literal">mod1</code> can then be referenced as subnodes of <code class="literal">m</code>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Both <code class="literal">:use</code> and <code class="literal">:alias</code> will trigger a compilation error if the
+referenced. Nodes in <code class="literal">mod1</code> can then be referenced as subnodes of <code class="literal">m</code>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Both <code class="literal">:use</code> and <code class="literal">:alias</code> will trigger a compilation error if the
 symbol, with which the module is referenced, already names a node in
 the current module.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_importing_nodes_from_other_modules"></a>Importing Nodes from Other Modules</h4></div></div></div><p>Sometimes you would like to explicitly add a node in another module to
 the current module, so that you don’t have to reference it as a
@@ -1537,8 +1538,8 @@ A long form in which the first argument is the module and the
 
 # Long form: Only import nodes x, y, z
 :import(mod1, x, y, z)</pre><p>
-</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="tutorials/images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The short form only imports those nodes which are exported
-from the module not all nodes.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The long form allows you to choose which nodes are imported into
+</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The short form only imports those nodes which are exported
+from the module not all nodes.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The long form allows you to choose which nodes are imported into
 the current module. You can list any node in the module, not just an
 exported node.</p></td></tr></table></div><p><code class="literal">:import</code> also has a side-effect in that if an imported node, whether
 imported by the long or short form, is registered as an infix
@@ -1573,7 +1574,7 @@ symbol has not been created in the current module using <code class="literal">:u
 <code class="literal">:module</code> operator, and <code class="literal">node</code> is the node expression which is
 processed in <code class="literal">module</code>.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_adding_modularity_to_our_application"></a>8.3. Adding Modularity to our Application</h3></div></div></div><p>Let’s group the utility meta-nodes in their own <code class="literal">util</code> module. Add the
 following declaration to the top of the <code class="literal">util.trd</code> file:</p><pre class="screen">:module(util)
-:import(core) <a id="CO6-1"></a><span><img src="tutorials/images/icons/callouts/1.png" alt="1" border="0" /></span></pre><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO6-1"><span><img src="tutorials/images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+:import(core) <a id="CO6-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></pre><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO6-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
 Imports all nodes from the <code class="literal">core</code> module into <code class="literal">util</code>. This
 includes the arithmetic and comparison operators as well as the
 special operators, <code class="literal">-&gt;</code>, <code class="literal">:</code>, <code class="literal">.</code>, which are originally from the
@@ -1582,7 +1583,7 @@ special operators, <code class="literal">-&gt;</code>, <code class="literal">:</
 the meta-nodes from the module:</p><pre class="screen">:export(lerp, clamp, Color, lerp-color, make-hsl)</pre><p>Lets keep the main application logic in a <code class="literal">budget-app</code> module.</p><p>Add the following to the top of the <code class="literal">app.trd</code> file:</p><pre class="screen">:module(budget-app)
 
 :import(core)
-:import(util)</pre><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="tutorials/images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>We have to import both the <code class="literal">core</code> module and <code class="literal">util</code> module.</p></td></tr></table></div><p>It doesn’t make sense to keep the UI in a separate module from the
+:import(util)</pre><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>We have to import both the <code class="literal">core</code> module and <code class="literal">util</code> module.</p></td></tr></table></div><p>It doesn’t make sense to keep the UI in a separate module from the
 application logic, as the UI is designed specifically for this
 application, thus we’ll add the HTML nodes to the <code class="literal">budget-app</code>
 module. To do so we need to add <code class="literal">:module(budget-app)</code> to the top of
@@ -1629,14 +1630,14 @@ operator. This is due to <code class="literal">*</code> having a greater precede
 containing multiple instances of the same infix operator. The <code class="literal">+</code>
 operator has left associativity:</p><p>Thus the following infix expression:</p><pre class="screen">x + y + z</pre><p>is parsed to the following expression in prefix notation:</p><pre class="screen">+(+(x, y), z)</pre><p>i.e. it is equivalent to</p><pre class="screen">(x + y) + z</pre><p>If the <code class="literal">+</code> operator were to have right associativity, the expression
 would be parsed to the following:</p><pre class="screen">+(x, +(y, z))</pre><p>Below is a table showing the precedence and associativity of some of
-the builtin operators.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="tutorials/images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Visit the file in <code class="literal">&lt;prefix&gt;/share/tridash/modules/core/operators.trd</code> to see the full
+the builtin operators.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Visit the file in <code class="literal">&lt;prefix&gt;/share/tridash/modules/core/operators.trd</code> to see the full
 list:</p></td></tr></table></div><div class="informaltable"><table class="informaltable" cellpadding="4px" style="border-collapse: collapse;border-top: 3px solid #527bbd; border-bottom: 3px solid #527bbd; border-left: 3px solid #527bbd; border-right: 3px solid #527bbd; "><colgroup><col class="col_1" /><col class="col_2" /><col class="col_3" /></colgroup><thead><tr><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"> Operator </th><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"> Precedence </th><th style="border-bottom: 1px solid #527bbd; " align="left" valign="top"> Associativity</th></tr></thead><tbody><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">-&gt;</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>10</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>right</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">or</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>20</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">and</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>25</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">+</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>100</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">-</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>100</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">*</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>200</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">/</code></p></td><td style="border-right: 1px solid #527bbd; " align="right" valign="top"><p>200</p></td><td style="" align="left" valign="top"><p>left</p></td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_registering_your_own_infix_operators"></a>Registering your own infix operators</h4></div></div></div><p>Node identifiers can be registered as infix operators using a special
 <code class="literal">:op</code> declaration.</p><pre class="screen">:op(id, precedence, [left | right])</pre><p>The first argument is the identifier. The second argument is the
 operator precedence as a number and the final argument is the symbol
 <code class="literal">left</code> or <code class="literal">right</code> for left or right associativity. If the third
 argument is omitted it defaults to <code class="literal">left</code>.</p><p>This declaration adds an infix operator to the operator table of the
 current module. In the declarations, following the <code class="literal">:op</code> declaration,
-<code class="literal">id</code> can be placed in infix position.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="tutorials/images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">id</code> can be any valid identifier, not just an identifier
+<code class="literal">id</code> can be placed in infix position.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">id</code> can be any valid identifier, not just an identifier
 consisting only of special symbols. However, as a result, a space is
 required in between the operator and its operands.</p></td></tr></table></div><p>It is not checked whether <code class="literal">id</code> actually names an existing
 node, however using it in infix position only makes sense if
@@ -1676,7 +1677,219 @@ Add nodes to exported nodes of current module.
 </span></dt><dd>
 reference a node in another module for which there is no
     symbol in the current module.
-</dd></dl></div></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_what_8217_s_next"></a>9. What’s Next?</h2></div></div></div><p>These tutorials have covered most of the basic functionality of the
+</dd></dl></div></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_typing_failures"></a>9. Typing Failures</h2></div></div></div><p>We’ve now implemented a basic application, with error handling and
+customization of the user interface.</p><p>At a glance the error handling logic of our current application, looks
+sufficient. However, the error messages are not very informative as
+the same messages are displayed regardless of the cause of the
+error. A more informative error message would tell the user that the
+value entered is not a number, if a number could not be parsed from
+the value or that the number entered was invalid in the case of
+negative valued inputs.</p><p>This is difficult to achieve with our current error handling logic, as
+we only check for failures but have no way of knowing what the cause
+of the failure is. All we know is that a failure is returned, by
+<code class="literal">real</code>, if a number could not be parsed from the string value and a
+failure is returned by <code class="literal">valid-amount</code> if the parsed number is
+negative. This is where <span class="emphasis"><em>failure types</em></span> come in handy.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_failure_types"></a>9.1. Failure Types</h3></div></div></div><p>Each failure value has a type associated with it, which serves to
+identify the cause of the failure.</p><p>By default failures created by conditional bindings, when the
+<span class="emphasis"><em>condition</em></span> node evaluates to false, have no type. The <code class="literal">fail</code>
+meta-node from the <code class="literal">core</code> module can be used to create a failure value
+with a given type, provided as the argument.</p><p><strong>Meta-node <code class="literal">fail</code>. </strong>
+</p><pre class="screen">fail(type)</pre><p>
+</p><p>The <code class="literal">type</code> argument is optional. If it is omitted then a failure with
+no type is created.</p><p>The type of a failure can be retrieved using the <code class="literal">fail-type</code> meta-node
+from the <code class="literal">core</code> module.</p><p><strong>Meta-node <code class="literal">fail-type</code>. </strong>
+</p><pre class="screen">fail-type(x)</pre><p>
+</p><p>The type of the failure value <code class="literal">x</code> is returned. If <code class="literal">x</code> does not
+evaluate to a failure or evaluates to a failure with no type, a
+failure is returned.</p><p>A couple of other utility meta-nodes are:</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+<code class="literal">fail-type?(x, type)</code>
+</span></dt><dd>
+Returns true if <code class="literal">x</code> is a failure value with a
+type equal to <code class="literal">type</code>.
+</dd><dt><span class="term">
+<code class="literal">fails?</code>
+</span></dt><dd>
+Returns true if <code class="literal">x</code> evaluates to a failure, false
+otherwise.
+</dd></dl></div><p>With these meta-nodes a more informative error message can be
+produced.</p><p><strong>Example: Creating Failures with Types. </strong>
+</p><pre class="screen"># Checks that a value is within the range [l, h]
+check-range(x, l, h) : {
+    case(
+        x &lt; l : fail(1)
+        x &gt; h : fail(2)
+        x
+    )
+}
+
+...
+
+value &lt;- check-range(input, 0, 10)
+
+case(
+    fail-type?(value, 1) : "Error: less than 0"
+    fail-type?(value, 2) : "Error: greater than 10"
+    fails?(value) : "Error: something else"
+    ""
+) -&gt; error-message</pre><p>
+</p><p>The <code class="literal">check-range</code> meta-node checks whether a number is within a given
+range. If the number falls below the minimum a failure value with type
+<code class="literal">1</code> is returned. If the number falls above the maximum a failure value
+with type <code class="literal">2</code> is returned, otherwise the value itself is returned.</p><p>The <code class="literal">fail-type?</code> meta-node is used to check whether the node <code class="literal">value</code>
+evaluates to a failure of type <code class="literal">1</code> or <code class="literal">2</code>, in which case the
+<code class="literal">error-message</code> node is bound to a message indicating that the number
+is below the minimum or above the maximum. The <code class="literal">fails?</code> meta-node
+checks whether <code class="literal">value</code> evaluates to a failure of another type, in
+which case <code class="literal">error-message</code> is bound to a generic error message. If
+<code class="literal">value</code> does not evaluate to a failure, <code class="literal">error-message</code> is bound to
+the empty string.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_improved_error_reporting"></a>9.2. Improved Error Reporting</h3></div></div></div><p>To improve the error reporting of our application, we first need to
+modify the <code class="literal">valid-amount</code> meta-node to return a failure with a unique
+type that indicates when a negative amount is entered in an <code class="literal">input</code>
+element.</p><p>Let’s assign an integer constant, which will be used as the failure
+type to indicate a negative amount. We’ll bind the constant <code class="literal">-1</code> to a
+constant node <code class="literal">Negative-Amount</code>, and we’ll also create another node
+<code class="literal">Negative-Amount!</code> which is bound to a failure value with type
+<code class="literal">Negative-Amount</code>.</p><p><strong>Negative Amount Failure Type. </strong>
+</p><pre class="screen">Negative-Amount &lt;- -1
+Negative-Amount! &lt;- fail(Negative-Amount)</pre><p>
+</p><p>Now we need to modify the <code class="literal">valid-amount</code> meta-node to return a
+<code class="literal">Negative-Amount</code> failure if the parsed value is less than
+zero. Currently conditional bindings are used to return the parsed
+value only if it is greater than zero, and to return a failure value
+otherwise. We can use explicit contexts to return a failure value if
+the previous conditional binding resulted in a failure however it is
+simpler to use an <code class="literal">if</code> or <code class="literal">case</code> expression.</p><p><strong>Improved <code class="literal">valid-amount</code> meta-node. </strong>
+</p><pre class="screen">valid-amount(thing) : {
+    x &lt;- real(thing)
+
+    if(x &gt;= 0, x, Negative-Amount!)
+}</pre><p>
+</p><p>We these modifications it is now possible to distinguish failures
+caused by a non-numeric value being entered from failures caused by a
+negative value being entered. Thus we can now change <code class="literal">error-prompt</code> to
+return a more informative error message.</p><p>There are three cases that need to be handled. The body of
+<code class="literal">error-prompt</code> can be summarized into the following steps:</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
+Check whether the value, passed to <code class="literal">error-prompt</code> is a failure
+value with type equal to <code class="literal">Negative-Amount</code>. If so, return a message
+that prompts for a positive number to be entered. This can be done
+with the <code class="literal">fail-type?</code> meta-node.
+</li><li class="listitem">
+Check whether the value passed to <code class="literal">error-prompt</code> is a failure
+value. If so, the message returned should prompt for a number to be
+entered. This can be done with the <code class="literal">fails?</code> meta-node.
+</li><li class="listitem">
+Return the empty string indicating no failure.
+</li></ol></div><p>An implementation of the improved <code class="literal">error-prompt</code> meta-node can be the
+following:</p><p><strong>Improved <code class="literal">error-prompt</code> meta-node. </strong>
+</p><pre class="screen">error-prompt(thing) : {
+    case(
+        fail-type?(thing, Negative-Amount) :
+            "Please enter a number \u{2265} 0!",
+        fails?(thing) :
+            "Please enter a valid number!",
+        ""
+    )
+}</pre><p>
+</p><p>However explicit contexts provide a specialized feature for activating
+bindings based on the failure type.</p><p>Up till this point we’ve seen how explicit contexts can be used to
+handle failures of any type. We can also use contexts to handle
+failures of a specific type.</p><p>The <code class="literal">@</code> macro allows a binding to an explicit context to be
+established. This binding is activated only if the source node of the
+previous binding evaluates to a failure value. If the identifier is
+however an expression of the <code class="literal">when</code> operator, the binding will only
+be activated if the source node of the previous binding evaluates to a
+failure with the type given in the second argument.</p><p><strong>Explicit Context <code class="literal">when</code> Syntax. </strong>
+</p><pre class="screen">source -&gt; target @ when(context-id, type)</pre><p>
+</p><p>The <code class="literal">context-id</code> argument to the <code class="literal">when</code> expression is the explicit
+context identifier. The <code class="literal">type</code> argument is a node expression, of which
+the value is interpreted as a failure type. If the source node of the
+previous binding evaluates to a failure value with type equal to the
+value of <code class="literal">type</code>, the node <code class="literal">target</code> is set to the value of
+<code class="literal">source</code>.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">when</code> is registered as an infix operator thus can be placed between
+<code class="literal">context-id</code> and <code class="literal">type</code>.</p><pre class="screen">source -&gt; target @ context-id when type</pre></td></tr></table></div><p>The new improved <code class="literal">error-prompt</code> meta-node can thus be written using
+explicit <code class="literal">when</code> contexts. The following bindings need to be
+established:</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p class="simpara">
+The <code class="literal">self</code> node should be bound to the empty string if the argument
+<code class="literal">thing</code> does not evaluate to a failure value. This can be achieved
+succinctly using the <code class="literal">!-</code> meta-node from the <code class="literal">core</code> module. <code class="literal">!-</code>
+returns the value of its second argument if the first argument does
+not evaluate to a failure, otherwise it returns the failure value.
+</p><pre class="screen">thing !- "" -&gt; self @ default</pre></li><li class="listitem"><p class="simpara">
+The <code class="literal">self</code> node should be bound to a string prompting the user for
+a positive number, if <code class="literal">thing</code> evaluates to a failure with type
+<code class="literal">Negative-Amount</code>. This is where we use explicit <code class="literal">when</code> contexts.
+</p><pre class="screen">"Please enter a number \u{2265} 0!" -&gt;
+    self @ default when Negative-Amount</pre></li><li class="listitem"><p class="simpara">
+The <code class="literal">self</code> node should be bound to the generic error string,
+prompting that a valid number is entered, if <code class="literal">thing</code> evaluates to a
+failure with a type other than <code class="literal">Negative-Amount</code>.
+</p><pre class="screen">"Please enter a valid number!" -&gt;
+    self @ default</pre></li></ol></div><p>Putting it all together, the improved implementation of <code class="literal">error-prompt</code>
+is the following:</p><p><strong>Improved Implementation of <code class="literal">error-prompt</code> with explicit <code class="literal">when</code> contexts. </strong>
+</p><pre class="screen">error-prompt(thing) : {
+    thing !- "" -&gt; self @ default
+
+    "Please enter a number \u{2265} 0!" -&gt;
+        self @ default when Negative-Amount
+
+    "Please enter a valid number!" -&gt;
+        self @ default
+}</pre><p>
+</p><p>For this small application there is hardly any advantage in
+implementing <code class="literal">error-prompt</code> using explicit <code class="literal">when</code> contexts rather
+than using a <code class="literal">case</code> expression. However let’s imagine that instead of
+binding <code class="literal">self</code> to a constant, in the case of a failure of type
+<code class="literal">Negative-Amount</code>, it is bound to another node <code class="literal">x</code>. Let’s say that <code class="literal">x</code>
+can also evaluate to a failure of type <code class="literal">Some-Type</code> and we want to
+handle this failure as well. With a <code class="literal">case</code> expression we’d need to
+explicitly handle the case when <code class="literal">x</code> evaluates to a failure of type
+<code class="literal">Some-Type</code>.</p><pre class="screen">case(
+    fail-type?(thing, Negative-Amount) : x,
+    fail-type?(x, Some-Type) : y,
+    ...
+)</pre><p>We have to repeat <code class="literal">x</code> in both cases, in the value expression of the
+first case and in the condition expression of the second case. If we
+happen to change <code class="literal">x</code> in the first case, we’d have to update the second
+case as well. If <code class="literal">x</code> is a complex node expression we’d have to either
+repeat the whole expression in the second case, which can lead to a
+bug if it is not typed out correctly. To avoid the repetition, the
+node expression has to be factored out in another node.</p><p>With explicit <code class="literal">when</code> contexts we can implement this error handling
+logic with the following bindings:</p><pre class="screen">...
+x -&gt; self @ default when Negative-Amount
+y -&gt; self @ default when Some-Type
+...</pre><p>Notice there is no repetition of <code class="literal">x</code> in the binding which is
+responsible for handling errors of type <code class="literal">Some-Type</code>. This reduces the
+amount of places where bugs can hide. Furthermore, this code is at a
+higher level where the emphasis is on handling <code class="literal">Some-Type</code> failures
+regardless of whether those failures originated from <code class="literal">x</code> or another
+node.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_proper_failure_types"></a>9.3. Proper Failure Types</h3></div></div></div><p>There is a flaw in our implementation of the improved error
+reporting. We used an arbitrary integer constant <code class="literal">-1</code> as the type of
+failure which is created when a negative value is entered. Whilst this
+works in this case, arbitrary integer constants, of different failure
+causes, can very easily clash. For example, it could be the case that
+the <code class="literal">real</code> meta-node returns a failure type of <code class="literal">-1</code> to indicate that a
+number could not be parsed from the input. Integer constants are not
+robust identifiers of failure causes, especially when combining
+multiple third party components.</p><p>Tridash includes a special operator <code class="literal">&amp;</code> for referencing the raw node
+object of a node rather than its value. This operator is used in
+meta-programming and macros, <span class="emphasis"><em>which will be introduced in a later
+tutorial</em></span>, however it can also be used to obtain a unique value which
+can be used as a failure type identifier. To create a unique failure
+type identifier, which guarantees that there will be no collisions
+with other types, we can simply bind <code class="literal">Negative-Amount</code> to the raw node
+reference of itself.</p><p>Replace the line of code, which binds <code class="literal">Negative-Amount</code> to <code class="literal">-1</code> with
+the following:</p><pre class="screen">Negative-Amount &lt;- &amp;(Negative-Amount)</pre><p>Now we have a robust failure type which uniquely identifies the
+failure caused by entering a negative number in an input field.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">Negative-Amount</code> is still a constant node as the node reference
+<code class="literal">&amp;(Negative-Amount)</code> constitutes a reference to the node object of
+<code class="literal">Negative-Amount</code>, which remains constant throughout the duration of
+the application, rather than a reference to the value of
+<code class="literal">Negative-Amount</code>.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_trying_it_out"></a>9.4. Trying it Out</h3></div></div></div><p>Build and run the application. Enter non-numeric values and negative
+amounts in some of the <code class="literal">input</code> elements.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial9/snap1.png" align="middle" alt="Snapshot of informative error messages" /></div></div><p>The error message, displayed next to the field where non-numeric data
+was entered, prompts the user for a valid number. The error message,
+next to the field where a negative number was entered, prompts the
+user to enter a positive number.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_8"></a>9.5. Summary</h3></div></div></div><p>In this tutorial you learned how to associate a type with a failure
+value in order to identify the cause of the failure. You also learned
+how to handle failures of a particular type.</p></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_what_8217_s_next"></a>10. What’s Next?</h2></div></div></div><p>These tutorials have covered most of the basic functionality of the
 language. More tutorials will be added, which cover advanced
 functionality such as:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
 Macro System
@@ -1697,5 +1910,5 @@ Accumulator nodes
 </li><li class="listitem">
 Hierarchical Modules
 </li></ul></div><p>In the meantime if you’d like to learn more about Tridash, you can
-explore the manual.</p></div><div class="footnotes"><br /><hr style="width:100; text-align:left;margin-left: 0" /><div id="ftn.idm122299989760" class="footnote"><p><a href="#idm122299989760" class="simpara"><sup class="simpara">[1] </sup></a>The <code class="literal">@</code> macro expands to a functor
+explore the manual.</p></div><div class="footnotes"><br /><hr style="width:100; text-align:left;margin-left: 0" /><div id="ftn.idm529718304800" class="footnote"><p><a href="#idm529718304800" class="simpara"><sup class="simpara">[1] </sup></a>The <code class="literal">@</code> macro expands to a functor
 expression with the special <code class="literal">:context</code> operator</p></div></div></div></body></html>

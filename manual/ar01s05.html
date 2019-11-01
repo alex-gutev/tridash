@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>5. Core Module</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.5 Reference Manual" /><link rel="prev" href="ar01s04.html" title="4. Modules" /><link rel="next" href="ar01s06.html" title="6. Optimizations" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s04.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s06.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_core_module"></a>5. Core Module</h2></div></div></div><p><a id="idm371436678288" class="indexterm"></a>
-<a id="idm371436677136" class="indexterm"></a>
-<a id="idm371436676144" class="indexterm"></a>
-<a id="idm371436674640" class="indexterm"></a>
-<a id="idm371436673392" class="indexterm"></a></p><p>The <code class="literal">core</code> module provides the language primitives and the standard
-library.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_literals_2"></a>5.1. Literals</h3></div></div></div><p><a id="idm371436670272" class="indexterm"></a>
-<a id="idm371436668768" class="indexterm"></a>
-<a id="idm371436667520" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-quote"></a>Macro-Node: <code class="literal">'(x)</code></h4></div></div></div><p><a id="idm371436665056" class="indexterm"></a>
-<a id="idm371436663552" class="indexterm"></a>
-<a id="idm371436662304" class="indexterm"></a></p><p>Interprets <code class="literal">x</code> as a literal symbol rather than a node declaration.</p><p>The same symbol object is always returned for a given symbol name.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>5. Core Module</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.6 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.6 Reference Manual" /><link rel="prev" href="ar01s04.html" title="4. Modules" /><link rel="next" href="ar01s06.html" title="6. Optimizations" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s04.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s06.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_core_module"></a>5. Core Module</h2></div></div></div><p><a id="idm382385863984" class="indexterm"></a>
+<a id="idm382385862784" class="indexterm"></a>
+<a id="idm382385861744" class="indexterm"></a>
+<a id="idm382385860160" class="indexterm"></a>
+<a id="idm382385858848" class="indexterm"></a></p><p>The <code class="literal">core</code> module provides the language primitives and the standard
+library.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_literals_2"></a>5.1. Literals</h3></div></div></div><p><a id="idm382385855440" class="indexterm"></a>
+<a id="idm382385853936" class="indexterm"></a>
+<a id="idm382385852640" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-quote"></a>Macro-Node: <code class="literal">'(x)</code></h4></div></div></div><p><a id="idm382385849920" class="indexterm"></a>
+<a id="idm382385848368" class="indexterm"></a>
+<a id="idm382385847072" class="indexterm"></a></p><p>Interprets <code class="literal">x</code> as a literal symbol rather than a node declaration.</p><p>The same symbol object is always returned for a given symbol name.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -16,9 +16,9 @@ library.</p><div class="section"><div class="titlepage"><div><div><h3 class="tit
 <p>
 An atom node expression.
 </p>
-</td></tr></tbody></table></div><div class="section"><div class="titlepage"><div><div><h5 class="title"><a id="_pattern_matching"></a>Pattern Matching</h5></div></div></div><p>Matches the literal symbol <code class="literal">x</code>. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.12. Pattern Matching">Pattern Matching</a></em></span>.</p></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-c"></a>Macro-Node: <code class="literal">c(x)</code></h4></div></div></div><p><a id="idm371436650256" class="indexterm"></a>
-<a id="idm371436648752" class="indexterm"></a>
-<a id="idm371436647504" class="indexterm"></a></p><p>Returns <code class="literal">x</code> interpreted as a literal character.</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+</td></tr></tbody></table></div><h5><a id="_pattern_matching"></a>Pattern Matching</h5><p>Matches the literal symbol <code class="literal">x</code>. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.15. Pattern Matching">Pattern Matching</a></em></span>.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-c"></a>Macro-Node: <code class="literal">c(x)</code></h4></div></div></div><p><a id="idm382385834416" class="indexterm"></a>
+<a id="idm382385832864" class="indexterm"></a>
+<a id="idm382385831568" class="indexterm"></a></p><p>Returns <code class="literal">x</code> interpreted as a literal character.</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
 If <code class="literal">x</code> is a symbol of one character, the character is returned.
 </li><li class="listitem">
 If <code class="literal">x</code> is a string, the first character in the string is returned.
@@ -33,13 +33,13 @@ If <code class="literal">x</code> is an integer in the range 0 — 9, the ch
 <p>
 The value to convert to a character.
 </p>
-</td></tr></tbody></table></div><div class="section"><div class="titlepage"><div><div><h5 class="title"><a id="_pattern_matching_2"></a>Pattern Matching</h5></div></div></div><p>Matches the character literal produced by the given argument. <span class="emphasis"><em>See
-<a class="xref" href="ar01s05.html#pattern_matching" title="5.12. Pattern Matching">Pattern Matching</a></em></span>.</p></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-ref"></a>Macro-Node: <code class="literal">&amp;(node)</code></h4></div></div></div><p><a id="idm371436631456" class="indexterm"></a>
-<a id="idm371436629952" class="indexterm"></a>
-<a id="idm371436628704" class="indexterm"></a></p><p><a id="idm371436627584" class="indexterm"></a>
-<a id="idm371436626080" class="indexterm"></a>
-<a id="idm371436624832" class="indexterm"></a></p><p>Returns the raw node object corresponding to the node with identifier
-<code class="literal">node</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div><h5><a id="_pattern_matching_2"></a>Pattern Matching</h5><p>Matches the character literal produced by the given argument. <span class="emphasis"><em>See
+<a class="xref" href="ar01s05.html#pattern_matching" title="5.15. Pattern Matching">Pattern Matching</a></em></span>.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-ref"></a>Macro-Node: <code class="literal">&amp;(node)</code></h4></div></div></div><p><a id="idm382385814976" class="indexterm"></a>
+<a id="idm382385813408" class="indexterm"></a>
+<a id="idm382385812112" class="indexterm"></a></p><p><a id="idm382385810960" class="indexterm"></a>
+<a id="idm382385809392" class="indexterm"></a>
+<a id="idm382385808096" class="indexterm"></a></p><p>Returns the raw node object corresponding to the node with identifier
+<code class="literal">node</code>. <span class="emphasis"><em>See <a class="xref" href="ar01s03.html#node_references" title="Node References"> Node References</a></em></span>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">node</code>
 </p>
@@ -49,11 +49,11 @@ The node identifier, which can be any valid node
 expression. The expression is processed in the module in which the
 macro node instance occurs.
 </p>
-</td></tr></tbody></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="core-module-bindings"></a>5.2. Bindings</h3></div></div></div><p><a id="idm371436615856" class="indexterm"></a>
-<a id="idm371436614352" class="indexterm"></a>
-<a id="idm371436613104" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-lbind"></a>Macro-Node: <code class="literal">-&gt;(source, target)</code></h4></div></div></div><p><a id="idm371436610640" class="indexterm"></a>
-<a id="idm371436608784" class="indexterm"></a>
-<a id="idm371436607536" class="indexterm"></a></p><p>Establishes a binding between node <code class="literal">source</code> and node <code class="literal">target</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="core-module-bindings"></a>5.2. Bindings</h3></div></div></div><p><a id="idm382385797920" class="indexterm"></a>
+<a id="idm382385796400" class="indexterm"></a>
+<a id="idm382385795104" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-lbind"></a>Macro-Node: <code class="literal">-&gt;(source, target)</code></h4></div></div></div><p><a id="idm382385792368" class="indexterm"></a>
+<a id="idm382385790480" class="indexterm"></a>
+<a id="idm382385789184" class="indexterm"></a></p><p>Establishes a binding between node <code class="literal">source</code> and node <code class="literal">target</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">source</code>
 </p>
@@ -70,9 +70,9 @@ The source node.
 The target node.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>10</strong></span> and <span class="strong"><strong>right</strong></span>
-associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-rbind"></a>Macro-Node: <code class="literal">&lt;-(target, source)</code></h4></div></div></div><p><a id="idm371436593872" class="indexterm"></a>
-<a id="idm371436592016" class="indexterm"></a>
-<a id="idm371436590768" class="indexterm"></a></p><p>Establishes a binding between node <code class="literal">source</code> and node <code class="literal">target</code>.</p><p>Same as <a class="link" href="ar01s05.html#macro-node-lbind" title="Macro-Node: -&gt;(source, target)"><code class="literal">-&gt;</code></a> however the argument order is reversed with the first
+associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-rbind"></a>Macro-Node: <code class="literal">&lt;-(target, source)</code></h4></div></div></div><p><a id="idm382385774752" class="indexterm"></a>
+<a id="idm382385772864" class="indexterm"></a>
+<a id="idm382385771568" class="indexterm"></a></p><p>Establishes a binding between node <code class="literal">source</code> and node <code class="literal">target</code>.</p><p>Same as <a class="link" href="ar01s05.html#macro-node-lbind" title="Macro-Node: -&gt;(source, target)"><code class="literal">-&gt;</code></a> however the argument order is reversed with the first
 argument being the target node and the second argument being the
 source node.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
@@ -91,16 +91,19 @@ The target node.
 The source node.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>10</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-context"></a>Macro-Node: <code class="literal">@(node, context)</code></h4></div></div></div><p><a id="idm371436575520" class="indexterm"></a>
-<a id="idm371436574016" class="indexterm"></a>
-<a id="idm371436572768" class="indexterm"></a></p><p>Indicates an explicit context to which bindings, involving <code class="literal">node</code> as
-the <span class="emphasis"><em>target</em></span>, should be established.</p><p>When the <code class="literal">@</code> expression appears as the target of a binding, the binding
-to <code class="literal">node</code> is established in the context with identifier <code class="literal">context</code>,
-<span class="emphasis"><em>see <a class="xref" href="ar01s02.html#_contexts" title="2.5. Contexts">Section 2.5, “Contexts”</a></em></span>.</p><p><code class="literal">context</code> may also be a functor of the form <code class="literal">catch(context-id, type)</code>,
+associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-context"></a>Macro-Node: <code class="literal">@(node, context : '(default))</code></h4></div></div></div><p><a id="idm382385755152" class="indexterm"></a>
+<a id="idm382385753600" class="indexterm"></a>
+<a id="idm382385752304" class="indexterm"></a></p><p>Indicates an explicit context to which bindings, involving <code class="literal">node</code> as
+the <span class="emphasis"><em>target</em></span>, should be established.</p><p>When the <code class="literal">@</code> expression appears as the target of a binding, the
+binding to <code class="literal">node</code> is established in the context with identifier
+<code class="literal">context</code>, <span class="emphasis"><em>see <a class="xref" href="ar01s02.html#_contexts" title="2.5. Contexts">Section 2.5, “Contexts”</a></em></span>. The context identifier may be omitted
+in which case the identifier <code class="literal">default</code> is assumed.</p><p><code class="literal">context</code> may also be a functor of the form <code class="literal">when(context-id, type)</code>,
 where <code class="literal">context-id</code> is the context identifier and <code class="literal">type</code> is a node, of
 which the value is interpreted as a failure type. In this case the
 binding will only be activated if the failure type, of the previous
-binding in the context, is equal to <code class="literal">type</code> by <a class="link" href="ar01s05.html#meta-node-eq" title="Meta-Node: =(a, b)"><code class="literal">=</code></a>. <span class="emphasis"><em>See <a class="xref" href="ar01s02.html#conditional_binding_fail_type" title="Conditionally Active Bindings based on Failure Type">Conditionally Active Bindings based on Failure Type</a></em></span>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+binding in the context, is equal to <code class="literal">type</code> by <a class="link" href="ar01s05.html#meta-node-eq" title="Meta-Node: =(a, b)"><code class="literal">=</code></a>. <span class="emphasis"><em>See <a class="xref" href="ar01s02.html#conditional_binding_fail_type" title="Conditionally Active Bindings based on Failure Type">Conditionally Active Bindings based on Failure Type</a></em></span>. If <code class="literal">context-id</code> is
+omitted, that is <code class="literal">context</code> is of the form <code class="literal">when(type)</code>, the identifier
+<code class="literal">default</code> is assumed.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">node</code>
 </p>
@@ -114,15 +117,15 @@ The node.
 </p>
 </td><td style="" valign="top">
 <p>
-The context identifier, or catch expression, <span class="emphasis"><em>see above</em></span>.
+The context identifier, or <code class="literal">when</code> expression, <span class="emphasis"><em>see above</em></span>.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>800</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity. The <code class="literal">catch</code> symbol is also registered as an infix
-operator with precedence <span class="strong"><strong>850</strong></span> and <span class="strong"><strong>left</strong></span> associativity.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_meta_node_definitions"></a>5.3. Meta-Node Definitions</h3></div></div></div><p><a id="idm371436548672" class="indexterm"></a>
-<a id="idm371436547168" class="indexterm"></a>
-<a id="idm371436545920" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-def"></a>Macro-Node: <code class="literal">:(id(args...), body)</code></h4></div></div></div><p><a id="idm371436543456" class="indexterm"></a>
-<a id="idm371436541952" class="indexterm"></a>
-<a id="idm371436540704" class="indexterm"></a></p><p>Defines a meta-node with identifier <code class="literal">id</code>, argument list <code class="literal">args</code> and
+associativity. The <code class="literal">when</code> symbol is also registered as an infix
+operator with precedence <span class="strong"><strong>850</strong></span> and <span class="strong"><strong>left</strong></span> associativity.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_meta_node_definitions"></a>5.3. Meta-Node Definitions</h3></div></div></div><p><a id="idm382385722288" class="indexterm"></a>
+<a id="idm382385720720" class="indexterm"></a>
+<a id="idm382385719424" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-def"></a>Macro-Node: <code class="literal">:(id(args...), body)</code></h4></div></div></div><p><a id="idm382385716752" class="indexterm"></a>
+<a id="idm382385715200" class="indexterm"></a>
+<a id="idm382385713904" class="indexterm"></a></p><p>Defines a meta-node with identifier <code class="literal">id</code>, argument list <code class="literal">args</code> and
 definition <code class="literal">body</code>. <span class="emphasis"><em>See <a class="xref" href="ar01s03.html" title="3. Meta-Nodes">Section 3, “Meta-Nodes”</a></em></span>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">id</code>
@@ -151,9 +154,9 @@ the definition consists of more than a single expression, it should be
 enclosed in braces, <span class="emphasis"><em>see <a class="link" href="ar01s01.html#_node_lists" title="1.3. Node Lists">Node Lists</a></em></span>.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>5</strong></span> and <span class="strong"><strong>right</strong></span>
-associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-outer"></a>Macro-Node: <code class="literal">..(node)</code></h4></div></div></div><p><a id="idm371436521792" class="indexterm"></a>
-<a id="idm371436520288" class="indexterm"></a>
-<a id="idm371436519040" class="indexterm"></a></p><p>Explicitly references a node defined in the enclosing scope of the
+associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-outer"></a>Macro-Node: <code class="literal">..(node)</code></h4></div></div></div><p><a id="idm382385694032" class="indexterm"></a>
+<a id="idm382385692480" class="indexterm"></a>
+<a id="idm382385691184" class="indexterm"></a></p><p>Explicitly references a node defined in the enclosing scope of the
 meta-node. <span class="emphasis"><em>See <a class="xref" href="ar01s03.html#_outer_node_references" title="3.3. Outer Node References">Section 3.3, “Outer Node References”</a></em></span>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">node</code>
@@ -162,18 +165,18 @@ meta-node. <span class="emphasis"><em>See <a class="xref" href="ar01s03.html#_ou
 <p>
 The node identifier, which can be any valid node expression.
 </p>
-</td></tr></tbody></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_failures_2"></a>5.4. Failures</h3></div></div></div><p><a id="idm371436510096" class="indexterm"></a>
-<a id="idm371436508592" class="indexterm"></a>
-<a id="idm371436507344" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-fail"></a>Meta-Node: <code class="literal">fail(:(type))</code></h4></div></div></div><p><a id="idm371436504880" class="indexterm"></a>
-<a id="idm371436503376" class="indexterm"></a>
-<a id="idm371436502128" class="indexterm"></a></p><p>Returns a failure with a given failure type.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+</td></tr></tbody></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_failures_2"></a>5.4. Failures</h3></div></div></div><p><a id="idm382385681888" class="indexterm"></a>
+<a id="idm382385680384" class="indexterm"></a>
+<a id="idm382385679104" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-fail"></a>Meta-Node: <code class="literal">fail(:(type))</code></h4></div></div></div><p><a id="idm382385676448" class="indexterm"></a>
+<a id="idm382385674880" class="indexterm"></a>
+<a id="idm382385673584" class="indexterm"></a></p><p>Returns a failure with a given failure type.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
 <code class="literal">type</code> (<span class="emphasis"><em>Optional</em></span>)
 </span></dt><dd>
 The failure type. If not provided the failure returned has no
 type.
-</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-fail-type"></a>Meta-Node: <code class="literal">fail-type(x)</code></h4></div></div></div><p><a id="idm371436496096" class="indexterm"></a>
-<a id="idm371436494592" class="indexterm"></a>
-<a id="idm371436493344" class="indexterm"></a></p><p>Returns the failure type of <code class="literal">x</code>.</p><p>Returns a failure if <code class="literal">x</code> does not evaluate to a failure or evaluates
+</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-fail-type"></a>Meta-Node: <code class="literal">fail-type(x)</code></h4></div></div></div><p><a id="idm382385667152" class="indexterm"></a>
+<a id="idm382385665600" class="indexterm"></a>
+<a id="idm382385664304" class="indexterm"></a></p><p>Returns the failure type of <code class="literal">x</code>.</p><p>Returns a failure if <code class="literal">x</code> does not evaluate to a failure or evaluates
 to a failure with no type.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
@@ -182,9 +185,9 @@ to a failure with no type.</p><div class="horizontal"><table class="horizontal" 
 <p>
 The value of which to return the failure type.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-failsp"></a>Meta-Node: <code class="literal">fails?(x)</code></h4></div></div></div><p><a id="idm371436483296" class="indexterm"></a>
-<a id="idm371436481792" class="indexterm"></a>
-<a id="idm371436480544" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> fails to evaluate to a value.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-failsp"></a>Meta-Node: <code class="literal">fails?(x)</code></h4></div></div></div><p><a id="idm382385653920" class="indexterm"></a>
+<a id="idm382385652352" class="indexterm"></a>
+<a id="idm382385651056" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> fails to evaluate to a value.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -192,10 +195,11 @@ The value of which to return the failure type.
 <p>
 The value to test for failure.
 </p>
-</td></tr></tbody></table></div><div class="section"><div class="titlepage"><div><div><h5 class="title"><a id="_pattern_matching_3"></a>Pattern Matching</h5></div></div></div><p>Matches if the source node evaluates to a failure. The argument <code class="literal">x</code> is
-ignored. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.12. Pattern Matching">Pattern Matching</a></em></span>.</p></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-succeedsp"></a>Meta-Node: <code class="literal">?(x)</code></h4></div></div></div><p><a id="idm371436468864" class="indexterm"></a>
-<a id="idm371436467360" class="indexterm"></a>
-<a id="idm371436466112" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> evaluates to a value, false if <code class="literal">x</code> fails to
+</td></tr></tbody></table></div><h5><a id="_pattern_matching_3"></a>Pattern Matching</h5><p>Matches if the source node evaluates to a failure. If the argument <code class="literal">x</code>
+is provided matches only failures of type <code class="literal">x</code> otherwise matches any
+failure. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.15. Pattern Matching">Pattern Matching</a></em></span>.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-succeedsp"></a>Meta-Node: <code class="literal">?(x)</code></h4></div></div></div><p><a id="idm382385638016" class="indexterm"></a>
+<a id="idm382385636464" class="indexterm"></a>
+<a id="idm382385635168" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> evaluates to a value, false if <code class="literal">x</code> fails to
 evaluate to a value.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
@@ -204,9 +208,9 @@ evaluate to a value.</p><div class="horizontal"><table class="horizontal" cellpa
 <p>
 The value to test for failure.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-fail-typep"></a>Meta-Node: <code class="literal">fail-type?(x, type)</code></h4></div></div></div><p><a id="idm371436456624" class="indexterm"></a>
-<a id="idm371436455120" class="indexterm"></a>
-<a id="idm371436453872" class="indexterm"></a></p><p>Tests for failure with a given type.</p><p>Returns true if <code class="literal">x</code> fails with failure type equal to <code class="literal">type</code>, by
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-fail-typep"></a>Meta-Node: <code class="literal">fail-type?(x, type)</code></h4></div></div></div><p><a id="idm382385625280" class="indexterm"></a>
+<a id="idm382385623712" class="indexterm"></a>
+<a id="idm382385622416" class="indexterm"></a></p><p>Tests for failure with a given type.</p><p>Returns true if <code class="literal">x</code> fails with failure type equal to <code class="literal">type</code>, by
 <a class="link" href="ar01s05.html#meta-node-eq" title="Meta-Node: =(a, b)"><code class="literal">=</code></a>. Returns false if the failure type of <code class="literal">x</code> is not
 equal to <code class="literal">type</code> or <code class="literal">x</code> does not fail.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
@@ -224,9 +228,9 @@ The value to check.
 <p>
 The failure type.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-test-fail-bind"></a>Meta-Node: <code class="literal">!-(test, value)</code></h4></div></div></div><p><a id="idm371436438768" class="indexterm"></a>
-<a id="idm371436437264" class="indexterm"></a>
-<a id="idm371436436016" class="indexterm"></a></p><p>Returns <code class="literal">value</code> if <code class="literal">test</code> does not fail. If <code class="literal">test</code> fails, the failure
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-test-fail-bind"></a>Meta-Node: <code class="literal">!-(test, value)</code></h4></div></div></div><p><a id="idm382385606400" class="indexterm"></a>
+<a id="idm382385604848" class="indexterm"></a>
+<a id="idm382385603552" class="indexterm"></a></p><p>Returns <code class="literal">value</code> if <code class="literal">test</code> does not fail. If <code class="literal">test</code> fails, the failure
 is returned.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">test</code>
@@ -243,9 +247,9 @@ The value which is checked for failure.
 <p>
 The value which should be returned if <code class="literal">test</code> does not fail.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-test-fail-functor"></a>Macro-Node: <code class="literal">!(functor)</code></h4></div></div></div><p><a id="idm371436422688" class="indexterm"></a>
-<a id="idm371436421184" class="indexterm"></a>
-<a id="idm371436419936" class="indexterm"></a></p><p>Tests that each argument of a functor expression does not fail, before
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-test-fail-functor"></a>Macro-Node: <code class="literal">!(functor)</code></h4></div></div></div><p><a id="idm382385589584" class="indexterm"></a>
+<a id="idm382385588032" class="indexterm"></a>
+<a id="idm382385586736" class="indexterm"></a></p><p>Tests that each argument of a functor expression does not fail, before
 evaluating the expression.</p><p>If at least one argument fails, then the entire functor node fails.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">functor</code>
@@ -254,10 +258,88 @@ evaluating the expression.</p><p>If at least one argument fails, then the entire
 <p>
 The functor expression.
 </p>
-</td></tr></tbody></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_arithmetic"></a>5.5. Arithmetic</h3></div></div></div><p><a id="idm371436411360" class="indexterm"></a>
-<a id="idm371436410112" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-plus"></a>Meta-Node: <code class="literal">+(x, y)</code></h4></div></div></div><p><a id="idm371436407648" class="indexterm"></a>
-<a id="idm371436406144" class="indexterm"></a>
-<a id="idm371436404896" class="indexterm"></a></p><p>Computes the sum of <code class="literal">x</code> and <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_meta_node_literal_catch_try_catch_test_literal"></a>Meta-Node: <code class="literal">catch(try, catch, :(test))</code></h4></div></div></div><p><a id="idm382385577456" class="indexterm"></a>
+<a id="idm382385575888" class="indexterm"></a>
+<a id="idm382385574592" class="indexterm"></a></p><p>Returns the value of <code class="literal">try</code> if it does not evaluate to a failure. If
+<code class="literal">try</code> evaluates to a failure returns the value of <code class="literal">catch</code>.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+<code class="literal">try</code>
+</span></dt><dd>
+The value, which is returned if it does not evaluate to a
+failure.
+</dd><dt><span class="term">
+<code class="literal">catch</code>
+</span></dt><dd>
+The value, which is returned when <code class="literal">try</code> evaluates to a
+failure.
+</dd><dt><span class="term">
+<code class="literal">test</code>
+</span></dt><dd>
+An optional function, which is applied on the failure type of
+<code class="literal">try</code>. If the function returns <span class="emphasis"><em>true</em></span>, the value of <code class="literal">catch</code> is
+returned otherwise the value of <code class="literal">try</code> is returned.
+</dd></dl></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_builtin_failure_types"></a>5.5. Builtin Failure Types</h3></div></div></div><p><a id="idm382385559376" class="indexterm"></a>
+<a id="idm382385557792" class="indexterm"></a>
+<a id="idm382385556496" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="node-no-value"></a>Failure Type Node: <code class="literal">No-Value</code></h4></div></div></div><p><a id="idm382385553856" class="indexterm"></a>
+<a id="idm382385552288" class="indexterm"></a>
+<a id="idm382385550992" class="indexterm"></a>
+<a id="idm382385549968" class="indexterm"></a>
+<a id="idm382385548400" class="indexterm"></a>
+<a id="idm382385547104" class="indexterm"></a>
+<a id="idm382385546080" class="indexterm"></a>
+<a id="idm382385544512" class="indexterm"></a>
+<a id="idm382385543216" class="indexterm"></a></p><p>Optional meta-nodes arguments, for which no value is provided, are
+bound to a failure of this type.</p><p>Node <code class="literal">No-Value!</code> is bound to a failure of this type.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="node-type-error"></a>Failure Type Node: <code class="literal">Type-Error</code></h4></div></div></div><p><a id="idm382385538736" class="indexterm"></a>
+<a id="idm382385537200" class="indexterm"></a>
+<a id="idm382385535904" class="indexterm"></a>
+<a id="idm382385534880" class="indexterm"></a>
+<a id="idm382385533312" class="indexterm"></a>
+<a id="idm382385532016" class="indexterm"></a>
+<a id="idm382385530992" class="indexterm"></a>
+<a id="idm382385529424" class="indexterm"></a>
+<a id="idm382385528128" class="indexterm"></a></p><p>A failure of this type is returned when an argument to a meta-node is
+not of the expected type.</p><p>Node <code class="literal">Type-Error!</code> is bound to a failure of this type.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_failure_type_node_literal_index_out_bounds_literal"></a>Failure Type Node: <code class="literal">Index-Out-Bounds</code></h4></div></div></div><p><a id="idm382385523488" class="indexterm"></a>
+<a id="idm382385505632" class="indexterm"></a>
+<a id="idm382385504352" class="indexterm"></a>
+<a id="idm382385503328" class="indexterm"></a>
+<a id="idm382385501744" class="indexterm"></a>
+<a id="idm382385500448" class="indexterm"></a>
+<a id="idm382385499424" class="indexterm"></a>
+<a id="idm382385497840" class="indexterm"></a>
+<a id="idm382385496544" class="indexterm"></a></p><p>A failure of this type is returned when attempting to access an
+element at an index that is outside the bounds of the list or string.</p><p>Node <code class="literal">Index-Out-Bounds!</code> is bound to a failure of this type.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="node-invalid-integer"></a>Failure Type Node: <code class="literal">Invalid-Integer</code></h4></div></div></div><p><a id="idm382385491984" class="indexterm"></a>
+<a id="idm382385490448" class="indexterm"></a>
+<a id="idm382385489152" class="indexterm"></a>
+<a id="idm382385488128" class="indexterm"></a>
+<a id="idm382385486560" class="indexterm"></a>
+<a id="idm382385485264" class="indexterm"></a>
+<a id="idm382385484240" class="indexterm"></a>
+<a id="idm382385482656" class="indexterm"></a>
+<a id="idm382385481360" class="indexterm"></a></p><p>A failure of this type is returned by <a class="link" href="ar01s05.html#meta-node-int" title="Meta-Node: int(x)"><code class="literal">int</code></a> when a
+string, from which an integer cannot be parsed, is provided as an
+argument.</p><p>Node <code class="literal">Invalid-Integer!</code> is bound to a failure of this type.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="node-invalid-real"></a>Failure Type Node: <code class="literal">Invalid-Real</code></h4></div></div></div><p><a id="idm382385475680" class="indexterm"></a>
+<a id="idm382385474112" class="indexterm"></a>
+<a id="idm382385472816" class="indexterm"></a>
+<a id="idm382385471792" class="indexterm"></a>
+<a id="idm382385470224" class="indexterm"></a>
+<a id="idm382385468928" class="indexterm"></a>
+<a id="idm382385467904" class="indexterm"></a>
+<a id="idm382385466336" class="indexterm"></a>
+<a id="idm382385465040" class="indexterm"></a></p><p>A failure of this type is returned by <a class="link" href="ar01s05.html#meta-node-int" title="Meta-Node: int(x)"><code class="literal">real</code></a> when a
+string, from which a real number cannot be parsed, is provided as an
+argument.</p><p>Node <code class="literal">Invalid-Real!</code> is bound to a failure of this type.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="node-arity-error"></a>Failure Type Node: <code class="literal">Arity-Error</code></h4></div></div></div><p><a id="idm382385459408" class="indexterm"></a>
+<a id="idm382385457840" class="indexterm"></a>
+<a id="idm382385456544" class="indexterm"></a>
+<a id="idm382385455520" class="indexterm"></a>
+<a id="idm382385453952" class="indexterm"></a>
+<a id="idm382385452656" class="indexterm"></a>
+<a id="idm382385451632" class="indexterm"></a>
+<a id="idm382385450064" class="indexterm"></a>
+<a id="idm382385448768" class="indexterm"></a></p><p>A failure of this type is returned when a meta-node is invoked
+indirectly, by a meta-node reference <span class="emphasis"><em>see
+<a class="xref" href="ar01s03.html#_higher_order_meta_nodes" title="3.5. Higher-Order Meta-Nodes">Section 3.5, “Higher-Order Meta-Nodes”</a></em></span>, with an incorrect number of arguments.</p><p>Node <code class="literal">Arity-Error!</code> is bound to a failure of this type.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_arithmetic"></a>5.6. Arithmetic</h3></div></div></div><p><a id="idm382385443632" class="indexterm"></a>
+<a id="idm382385442368" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-plus"></a>Meta-Node: <code class="literal">+(x, y)</code></h4></div></div></div><p><a id="idm382385439696" class="indexterm"></a>
+<a id="idm382385438144" class="indexterm"></a>
+<a id="idm382385436848" class="indexterm"></a></p><p>Computes the sum of <code class="literal">x</code> and <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -274,9 +356,9 @@ A number.
 A number.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>100</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-minus"></a>Meta-Node: <code class="literal">-(x, :(y))</code></h4></div></div></div><p><a id="idm371436391168" class="indexterm"></a>
-<a id="idm371436389664" class="indexterm"></a>
-<a id="idm371436388416" class="indexterm"></a></p><p>Computes the difference of <code class="literal">x</code> and <code class="literal">y</code>.</p><p>If <code class="literal">y</code> is not provided, returns the negation of <code class="literal">x</code>, i.e. <code class="literal">x</code>
+associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-minus"></a>Meta-Node: <code class="literal">-(x, :(y))</code></h4></div></div></div><p><a id="idm382385422640" class="indexterm"></a>
+<a id="idm382385421088" class="indexterm"></a>
+<a id="idm382385419792" class="indexterm"></a></p><p>Computes the difference of <code class="literal">x</code> and <code class="literal">y</code>.</p><p>If <code class="literal">y</code> is not provided, returns the negation of <code class="literal">x</code>, i.e. <code class="literal">x</code>
 multiplied by <code class="literal">-1</code>.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
 <code class="literal">x</code>
 </span></dt><dd>
@@ -286,9 +368,9 @@ A number.
 </span></dt><dd>
 A number.
 </dd></dl></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>100</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-multiply"></a>Meta-Node: <code class="literal">*(x, y)</code></h4></div></div></div><p><a id="idm371436374560" class="indexterm"></a>
-<a id="idm371436373056" class="indexterm"></a>
-<a id="idm371436371808" class="indexterm"></a></p><p>Computes the product of <code class="literal">x</code> and <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-multiply"></a>Meta-Node: <code class="literal">*(x, y)</code></h4></div></div></div><p><a id="idm382385405248" class="indexterm"></a>
+<a id="idm382385403696" class="indexterm"></a>
+<a id="idm382385402400" class="indexterm"></a></p><p>Computes the product of <code class="literal">x</code> and <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -305,9 +387,9 @@ A number.
 A number.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>200</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-divide"></a>Meta-Node: <code class="literal">/(x, y)</code></h4></div></div></div><p><a id="idm371436358080" class="indexterm"></a>
-<a id="idm371436356576" class="indexterm"></a>
-<a id="idm371436355328" class="indexterm"></a></p><p>Computes the quotient of <code class="literal">x</code> and <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-divide"></a>Meta-Node: <code class="literal">/(x, y)</code></h4></div></div></div><p><a id="idm382385388128" class="indexterm"></a>
+<a id="idm382385386576" class="indexterm"></a>
+<a id="idm382385385280" class="indexterm"></a></p><p>Computes the quotient of <code class="literal">x</code> and <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -324,9 +406,9 @@ A number.
 A number.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>200</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-rem"></a>Meta-Node: <code class="literal">%(x, y)</code></h4></div></div></div><p><a id="idm371436341600" class="indexterm"></a>
-<a id="idm371436340096" class="indexterm"></a>
-<a id="idm371436338848" class="indexterm"></a></p><p>Computes the remainder of the division of <code class="literal">x</code> by <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-rem"></a>Meta-Node: <code class="literal">%(x, y)</code></h4></div></div></div><p><a id="idm382385371104" class="indexterm"></a>
+<a id="idm382385369552" class="indexterm"></a>
+<a id="idm382385368256" class="indexterm"></a></p><p>Computes the remainder of the division of <code class="literal">x</code> by <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -343,10 +425,10 @@ A number.
 A number.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>200</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_comparison"></a>5.6. Comparison</h3></div></div></div><p><a id="idm371436325472" class="indexterm"></a>
-<a id="idm371436324224" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-lt"></a>Meta-Node: <code class="literal">&lt;(x, y)</code></h4></div></div></div><p><a id="idm371436321760" class="indexterm"></a>
-<a id="idm371436320256" class="indexterm"></a>
-<a id="idm371436319008" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is less than <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+associativity.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_comparison"></a>5.7. Comparison</h3></div></div></div><p><a id="idm382385354416" class="indexterm"></a>
+<a id="idm382385353120" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-lt"></a>Meta-Node: <code class="literal">&lt;(x, y)</code></h4></div></div></div><p><a id="idm382385350416" class="indexterm"></a>
+<a id="idm382385348848" class="indexterm"></a>
+<a id="idm382385347552" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is less than <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -363,9 +445,9 @@ A number.
 A number.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>50</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-lte"></a>Meta-Node: <code class="literal">&lt;=(x, y)</code></h4></div></div></div><p><a id="idm371436305280" class="indexterm"></a>
-<a id="idm371436303424" class="indexterm"></a>
-<a id="idm371436302176" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is less than or equal to <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-lte"></a>Meta-Node: <code class="literal">&lt;=(x, y)</code></h4></div></div></div><p><a id="idm382385333264" class="indexterm"></a>
+<a id="idm382385331344" class="indexterm"></a>
+<a id="idm382385330048" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is less than or equal to <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -382,9 +464,9 @@ A number.
 A number.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>50</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-gt"></a>Meta-Node: <code class="literal">&gt;(x, y)</code></h4></div></div></div><p><a id="idm371436288448" class="indexterm"></a>
-<a id="idm371436286944" class="indexterm"></a>
-<a id="idm371436285696" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is greater than <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-gt"></a>Meta-Node: <code class="literal">&gt;(x, y)</code></h4></div></div></div><p><a id="idm382385315808" class="indexterm"></a>
+<a id="idm382385314240" class="indexterm"></a>
+<a id="idm382385312944" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is greater than <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -401,9 +483,9 @@ A number.
 A number.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>50</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-gte"></a>Meta-Node: <code class="literal">&gt;=(x, y)</code></h4></div></div></div><p><a id="idm371436271968" class="indexterm"></a>
-<a id="idm371436270464" class="indexterm"></a>
-<a id="idm371436269216" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is greater than or equal to <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-gte"></a>Meta-Node: <code class="literal">&gt;=(x, y)</code></h4></div></div></div><p><a id="idm382385298688" class="indexterm"></a>
+<a id="idm382385297136" class="indexterm"></a>
+<a id="idm382385295840" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is greater than or equal to <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -420,9 +502,9 @@ A number.
 A number.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>50</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-eq"></a>Meta-Node: <code class="literal">=(a, b)</code></h4></div></div></div><p><a id="idm371436255488" class="indexterm"></a>
-<a id="idm371436253984" class="indexterm"></a>
-<a id="idm371436252736" class="indexterm"></a></p><p>Returns true if <code class="literal">a</code> is equal to <code class="literal">b</code>.</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-eq"></a>Meta-Node: <code class="literal">=(a, b)</code></h4></div></div></div><p><a id="idm382385281648" class="indexterm"></a>
+<a id="idm382385280096" class="indexterm"></a>
+<a id="idm382385278800" class="indexterm"></a></p><p>Returns true if <code class="literal">a</code> is equal to <code class="literal">b</code>.</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
 <span class="emphasis"><em>Numbers</em></span> are equal if they represent the same numeric
   value.
 </li><li class="listitem">
@@ -449,9 +531,9 @@ A value.
 A value.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>50</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-neq"></a>Meta-Node: <code class="literal">!=(a, b)</code></h4></div></div></div><p><a id="idm371436232752" class="indexterm"></a>
-<a id="idm371436231248" class="indexterm"></a>
-<a id="idm371436230000" class="indexterm"></a></p><p>Returns true if <code class="literal">a</code> is not equal to <code class="literal">b</code>.</p><p><span class="emphasis"><em>See <a class="link" href="ar01s05.html#meta-node-eq" title="Meta-Node: =(a, b)"><code class="literal">=</code></a> for the rules of equality</em></span>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+associativity.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-neq"></a>Meta-Node: <code class="literal">!=(a, b)</code></h4></div></div></div><p><a id="idm382385258224" class="indexterm"></a>
+<a id="idm382385256640" class="indexterm"></a>
+<a id="idm382385255344" class="indexterm"></a></p><p>Returns true if <code class="literal">a</code> is not equal to <code class="literal">b</code>.</p><p><span class="emphasis"><em>See <a class="link" href="ar01s05.html#meta-node-eq" title="Meta-Node: =(a, b)"><code class="literal">=</code></a> for the rules of equality</em></span>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -468,10 +550,10 @@ A value.
 A value.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>50</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_logical_operators"></a>5.7. Logical Operators</h3></div></div></div><p><a id="idm371436215024" class="indexterm"></a>
-<a id="idm371436213776" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-and"></a>Meta-Node: <code class="literal">and(x, y)</code></h4></div></div></div><p><a id="idm371436211312" class="indexterm"></a>
-<a id="idm371436209808" class="indexterm"></a>
-<a id="idm371436208560" class="indexterm"></a></p><p>Logical AND.</p><p>Returns the value of <code class="literal">y</code> if <code class="literal">x</code> evaluates to true.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+associativity.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_logical_operators"></a>5.8. Logical Operators</h3></div></div></div><p><a id="idm382385239632" class="indexterm"></a>
+<a id="idm382385238320" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-and"></a>Meta-Node: <code class="literal">and(x, y)</code></h4></div></div></div><p><a id="idm382385235664" class="indexterm"></a>
+<a id="idm382385234112" class="indexterm"></a>
+<a id="idm382385232816" class="indexterm"></a></p><p>Logical AND.</p><p>Returns the value of <code class="literal">y</code> if <code class="literal">x</code> evaluates to true.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -488,10 +570,10 @@ A value.
 A value.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>25</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h5 class="title"><a id="_pattern_matching_4"></a>Pattern Matching</h5></div></div></div><p>Matches if both the nested patterns in <code class="literal">x</code> and <code class="literal">y</code> match the source
-node. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.12. Pattern Matching">Pattern Matching</a></em></span>.</p></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-or"></a>Meta-Node: <code class="literal">or(x, y)</code></h4></div></div></div><p><a id="idm371436191056" class="indexterm"></a>
-<a id="idm371436189552" class="indexterm"></a>
-<a id="idm371436188304" class="indexterm"></a></p><p>Logical OR.</p><p>Returns the value of <code class="literal">x</code>, if it evaluates to true, otherwise returns
+associativity.</p></td></tr></table></div><h5><a id="_pattern_matching_4"></a>Pattern Matching</h5><p>Matches if both the nested patterns in <code class="literal">x</code> and <code class="literal">y</code> match the source
+node. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.15. Pattern Matching">Pattern Matching</a></em></span>.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-or"></a>Meta-Node: <code class="literal">or(x, y)</code></h4></div></div></div><p><a id="idm382385214496" class="indexterm"></a>
+<a id="idm382385212944" class="indexterm"></a>
+<a id="idm382385211648" class="indexterm"></a></p><p>Logical OR.</p><p>Returns the value of <code class="literal">x</code>, if it evaluates to true, otherwise returns
 the value of <code class="literal">y</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
@@ -509,13 +591,13 @@ A value.
 A value.
 </p>
 </td></tr></tbody></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Registered as an infix operator with precedence <span class="strong"><strong>20</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h5 class="title"><a id="_pattern_matching_5"></a>Pattern Matching</h5></div></div></div><p>Matches if at least one of the nested patterns in <code class="literal">x</code> and <code class="literal">y</code> match
+associativity.</p></td></tr></table></div><h5><a id="_pattern_matching_5"></a>Pattern Matching</h5><p>Matches if at least one of the nested patterns in <code class="literal">x</code> and <code class="literal">y</code> match
 the source node. Both the bindings generated by the patterns <code class="literal">x</code> and
 <code class="literal">y</code> are established if the corresponding pattern condition
-matches. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.12. Pattern Matching">Pattern Matching</a></em></span>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This is pattern matches even if not all its nested patterns have
-matched.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-not"></a>Meta-Node: <code class="literal">not(x)</code></h4></div></div></div><p><a id="idm371436168352" class="indexterm"></a>
-<a id="idm371436166848" class="indexterm"></a>
-<a id="idm371436165600" class="indexterm"></a></p><p>Logical NOT.</p><p>Returns true if <code class="literal">x</code> evaluates to false.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+matches. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.15. Pattern Matching">Pattern Matching</a></em></span>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This pattern matches even if not all its nested patterns have
+matched.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-not"></a>Meta-Node: <code class="literal">not(x)</code></h4></div></div></div><p><a id="idm382385190928" class="indexterm"></a>
+<a id="idm382385189408" class="indexterm"></a>
+<a id="idm382385188112" class="indexterm"></a></p><p>Logical NOT.</p><p>Returns true if <code class="literal">x</code> evaluates to false.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -523,13 +605,13 @@ matched.</p></td></tr></table></div></div></div><div class="section"><div class=
 <p>
 A value.
 </p>
-</td></tr></tbody></table></div><div class="section"><div class="titlepage"><div><div><h5 class="title"><a id="_pattern_matching_6"></a>Pattern Matching</h5></div></div></div><p>Matches if the nested pattern <code class="literal">x</code> does not match. The bindings
+</td></tr></tbody></table></div><h5><a id="_pattern_matching_6"></a>Pattern Matching</h5><p>Matches if the nested pattern <code class="literal">x</code> does not match. The bindings
 generated by <code class="literal">x</code> are not established by this pattern. <span class="emphasis"><em>See
-<a class="xref" href="ar01s05.html#pattern_matching" title="5.12. Pattern Matching">Pattern Matching</a></em></span>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Since this binding does not establish any bindings, it is
+<a class="xref" href="ar01s05.html#pattern_matching" title="5.15. Pattern Matching">Pattern Matching</a></em></span>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Since this binding does not establish any bindings, it is
 treated as a constant pattern and may only appear nested inside other
-patterns.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-if"></a>Meta-Node: <code class="literal">if(condition, true-value, :(false-value))</code></h4></div></div></div><p><a id="idm371436152224" class="indexterm"></a>
-<a id="idm371436150720" class="indexterm"></a>
-<a id="idm371436149472" class="indexterm"></a></p><p>Returns <code class="literal">true-value</code> if <code class="literal">condition</code> is true otherwise returns
+patterns.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-if"></a>Meta-Node: <code class="literal">if(condition, true-value, :(false-value))</code></h4></div></div></div><p><a id="idm382385174032" class="indexterm"></a>
+<a id="idm382385172480" class="indexterm"></a>
+<a id="idm382385171184" class="indexterm"></a></p><p>Returns <code class="literal">true-value</code> if <code class="literal">condition</code> is true otherwise returns
 <code class="literal">false-value</code>.</p><p>If <code class="literal">false-value</code> is not provided, a failure is returned if <code class="literal">condition</code>
 evaluates to false.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
 <code class="literal">condition</code>
@@ -544,9 +626,9 @@ Value to return if <code class="literal">condition</code> is true.
 </span></dt><dd>
 Value to return if <code class="literal">condition</code> is false. If
 not provided defaults to a failure.
-</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-case"></a>Macro-Node: <code class="literal">case(..(clauses))</code></h4></div></div></div><p><a id="idm371436134544" class="indexterm"></a>
-<a id="idm371436133040" class="indexterm"></a>
-<a id="idm371436131792" class="indexterm"></a></p><pre class="screen">&lt;clause&gt; = &lt;condition&gt; : &lt;value&gt;</pre><p>Expands to nested <a class="link" href="ar01s05.html#meta-node-if" title="Meta-Node: if(condition, true-value, :(false-value))"><code class="literal">if</code></a> expressions.</p><p>Each argument is a <code class="literal">clause</code> is of the form <code class="literal">condition : value</code>. The
+</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="macro-node-case"></a>Macro-Node: <code class="literal">case(..(clauses))</code></h4></div></div></div><p><a id="idm382385155360" class="indexterm"></a>
+<a id="idm382385153792" class="indexterm"></a>
+<a id="idm382385152496" class="indexterm"></a></p><pre class="screen">&lt;clause&gt; = &lt;condition&gt; : &lt;value&gt;</pre><p>Expands to nested <a class="link" href="ar01s05.html#meta-node-if" title="Meta-Node: if(condition, true-value, :(false-value))"><code class="literal">if</code></a> expressions.</p><p>Each argument is a <code class="literal">clause</code> is of the form <code class="literal">condition : value</code>. The
 <code class="literal">case</code> expression evaluates to the <code class="literal">value</code> corresponding to the first
 clause of which the <code class="literal">condition</code> node evaluates to true. The final
 clause may also be of the form <code class="literal">value</code>, in which case it becomes the
@@ -578,12 +660,12 @@ if(a &lt; b, a, if(b &gt;= a, b))</pre><p>
 # Is equivalent to:
 
 if(a &lt; b, -1, if(b &gt; a, 1, 0))</pre><p>
-</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_types"></a>5.8. Types</h3></div></div></div><p><a id="idm371436114016" class="indexterm"></a>
-<a id="idm371436112768" class="indexterm"></a>
-<a id="idm371436111776" class="indexterm"></a>
-<a id="idm371436110528" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-int"></a>Meta-Node: <code class="literal">int(x)</code></h4></div></div></div><p><a id="idm371436108064" class="indexterm"></a>
-<a id="idm371436106560" class="indexterm"></a>
-<a id="idm371436105312" class="indexterm"></a></p><p>Converts <code class="literal">x</code> to an <span class="strong"><strong>integer</strong></span> value.</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_types"></a>5.9. Types</h3></div></div></div><p><a id="idm382385133664" class="indexterm"></a>
+<a id="idm382385132416" class="indexterm"></a>
+<a id="idm382385131408" class="indexterm"></a>
+<a id="idm382385130112" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-int"></a>Meta-Node: <code class="literal">int(x)</code></h4></div></div></div><p><a id="idm382385127488" class="indexterm"></a>
+<a id="idm382385125936" class="indexterm"></a>
+<a id="idm382385124640" class="indexterm"></a></p><p>Converts <code class="literal">x</code> to an <span class="strong"><strong>integer</strong></span> value.</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
 If <code class="literal">x</code> is an <span class="strong"><strong>integer</strong></span> returns <code class="literal">x</code>.
 </li><li class="listitem">
 If <code class="literal">x</code> is a <span class="strong"><strong>real</strong></span> returns <code class="literal">x</code> with the fractional part
@@ -591,8 +673,9 @@ If <code class="literal">x</code> is a <span class="strong"><strong>real</strong
 </li><li class="listitem">
 If <code class="literal">x</code> is a <span class="strong"><strong>string</strong></span>, attempts to parse an integer from
       <code class="literal">x</code>. Returns the parsed value if successful otherwise
-      returns a failure.
-</li></ul></div><p>If <code class="literal">x</code> is neither of the above returns a failure.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+      returns a failure of type <a class="link" href="ar01s05.html#node-invalid-integer" title="Failure Type Node: Invalid-Integer"><code class="literal">Invalid-Integer</code></a>.
+</li></ul></div><p>If <code class="literal">x</code> is neither of the above returns a failure of type
+<a class="link" href="ar01s05.html#node-type-error" title="Failure Type Node: Type-Error"><code class="literal">Type-Error</code></a>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -600,16 +683,17 @@ If <code class="literal">x</code> is a <span class="strong"><strong>string</stro
 <p>
 The value to convert to an integer.
 </p>
-</td></tr></tbody></table></div><div class="section"><div class="titlepage"><div><div><h5 class="title"><a id="_pattern_matching_7"></a>Pattern Matching</h5></div></div></div><p>Matches if the source node is an <span class="strong"><strong>integer</strong></span>, in which case <code class="literal">x</code> is
-matched to the integer value. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.12. Pattern Matching">Pattern Matching</a></em></span>.</p></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-real"></a>Meta-Node: <code class="literal">real(x)</code></h4></div></div></div><p><a id="idm371436082912" class="indexterm"></a>
-<a id="idm371436081408" class="indexterm"></a>
-<a id="idm371436080160" class="indexterm"></a></p><p>Converts <code class="literal">x</code> to a <span class="strong"><strong>real</strong></span> number value.</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+</td></tr></tbody></table></div><h5><a id="_pattern_matching_7"></a>Pattern Matching</h5><p>Matches if the source node is an <span class="strong"><strong>integer</strong></span>, in which case <code class="literal">x</code> is
+matched to the integer value. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.15. Pattern Matching">Pattern Matching</a></em></span>.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-real"></a>Meta-Node: <code class="literal">real(x)</code></h4></div></div></div><p><a id="idm382385098768" class="indexterm"></a>
+<a id="idm382385097200" class="indexterm"></a>
+<a id="idm382385095904" class="indexterm"></a></p><p>Converts <code class="literal">x</code> to a <span class="strong"><strong>real</strong></span> number value.</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
 If <code class="literal">x</code> is an <span class="strong"><strong>integer</strong></span> or <span class="strong"><strong>real</strong></span> returns <code class="literal">x</code>.
 </li><li class="listitem">
 If <code class="literal">x</code> is a <span class="strong"><strong>string</strong></span>, attempts to parse a real number from
       <code class="literal">x</code>. Returns the parsed value if successful otherwise
-      returns a failure.
-</li></ul></div><p>If <code class="literal">x</code> is neither of the above returns a failure.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+      returns a failure of type <a class="link" href="ar01s05.html#node-invalid-real" title="Failure Type Node: Invalid-Real"><code class="literal">Invalid-Real</code></a>.
+</li></ul></div><p>If <code class="literal">x</code> is neither of the above returns a failure of type
+<a class="link" href="ar01s05.html#node-type-error" title="Failure Type Node: Type-Error"><code class="literal">Type-Error</code></a>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -617,10 +701,10 @@ If <code class="literal">x</code> is a <span class="strong"><strong>string</stro
 <p>
 The value to convert to a real.
 </p>
-</td></tr></tbody></table></div><div class="section"><div class="titlepage"><div><div><h5 class="title"><a id="_pattern_matching_8"></a>Pattern Matching</h5></div></div></div><p>Matches if the source node is a <span class="strong"><strong>real</strong></span>, in which case <code class="literal">x</code> is matched
-to the real value. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.12. Pattern Matching">Pattern Matching</a></em></span>.</p></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-string"></a>Meta-Node: <code class="literal">string(x)</code></h4></div></div></div><p><a id="idm371436059920" class="indexterm"></a>
-<a id="idm371436058416" class="indexterm"></a>
-<a id="idm371436057168" class="indexterm"></a></p><p>Converts <code class="literal">x</code> to a <span class="strong"><strong>string</strong></span>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div><h5><a id="_pattern_matching_8"></a>Pattern Matching</h5><p>Matches if the source node is a <span class="strong"><strong>real</strong></span>, in which case <code class="literal">x</code> is matched
+to the real value. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.15. Pattern Matching">Pattern Matching</a></em></span>.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-string"></a>Meta-Node: <code class="literal">string(x)</code></h4></div></div></div><p><a id="idm382385072144" class="indexterm"></a>
+<a id="idm382385070576" class="indexterm"></a>
+<a id="idm382385069280" class="indexterm"></a></p><p>Converts <code class="literal">x</code> to a <span class="strong"><strong>string</strong></span>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -628,10 +712,10 @@ to the real value. <span class="emphasis"><em>See <a class="xref" href="ar01s05.
 <p>
 The value to convert to a string.
 </p>
-</td></tr></tbody></table></div><div class="section"><div class="titlepage"><div><div><h5 class="title"><a id="_pattern_matching_9"></a>Pattern Matching</h5></div></div></div><p>Matches if the source node is a <span class="strong"><strong>string</strong></span>, in which case <code class="literal">x</code> is matched
-to the string value. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.12. Pattern Matching">Pattern Matching</a></em></span>.</p></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-to-int"></a>Meta-Node: <code class="literal">to-int(x)</code></h4></div></div></div><p><a id="idm371436044272" class="indexterm"></a>
-<a id="idm371436042768" class="indexterm"></a>
-<a id="idm371436041520" class="indexterm"></a></p><p>Converts <code class="literal">x</code> to an <span class="strong"><strong>integer</strong></span> value.</p><p>Same as <a class="link" href="ar01s05.html#meta-node-int" title="Meta-Node: int(x)"><code class="literal">int</code></a> however with the <code class="literal">target-node</code>
+</td></tr></tbody></table></div><h5><a id="_pattern_matching_9"></a>Pattern Matching</h5><p>Matches if the source node is a <span class="strong"><strong>string</strong></span>, in which case <code class="literal">x</code> is matched
+to the string value. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.15. Pattern Matching">Pattern Matching</a></em></span>.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-to-int"></a>Meta-Node: <code class="literal">to-int(x)</code></h4></div></div></div><p><a id="idm382385055744" class="indexterm"></a>
+<a id="idm382385054176" class="indexterm"></a>
+<a id="idm382385052880" class="indexterm"></a></p><p>Converts <code class="literal">x</code> to an <span class="strong"><strong>integer</strong></span> value.</p><p>Same as <a class="link" href="ar01s05.html#meta-node-int" title="Meta-Node: int(x)"><code class="literal">int</code></a> however with the <code class="literal">target-node</code>
 attribute set to <a class="link" href="ar01s05.html#meta-node-int" title="Meta-Node: int(x)"><code class="literal">int</code></a>. As such, in the following:</p><pre class="screen">a -&gt; to-int(b)</pre><p>Node <code class="literal">b</code> is set to the value of <code class="literal">a</code> converted to an integer.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
@@ -640,9 +724,9 @@ attribute set to <a class="link" href="ar01s05.html#meta-node-int" title="Meta-N
 <p>
 The value to convert.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-to-real"></a>Meta-Node: <code class="literal">to-real(x)</code></h4></div></div></div><p><a id="idm371436026992" class="indexterm"></a>
-<a id="idm371436025488" class="indexterm"></a>
-<a id="idm371436024240" class="indexterm"></a></p><p>Converts <code class="literal">x</code> to an <span class="strong"><strong>real</strong></span> number value.</p><p>Same as <a class="link" href="ar01s05.html#meta-node-real" title="Meta-Node: real(x)"><code class="literal">real</code></a> however with the <code class="literal">target-node</code>
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-to-real"></a>Meta-Node: <code class="literal">to-real(x)</code></h4></div></div></div><p><a id="idm382385037392" class="indexterm"></a>
+<a id="idm382385035824" class="indexterm"></a>
+<a id="idm382385034528" class="indexterm"></a></p><p>Converts <code class="literal">x</code> to an <span class="strong"><strong>real</strong></span> number value.</p><p>Same as <a class="link" href="ar01s05.html#meta-node-real" title="Meta-Node: real(x)"><code class="literal">real</code></a> however with the <code class="literal">target-node</code>
 attribute set to <a class="link" href="ar01s05.html#meta-node-real" title="Meta-Node: real(x)"><code class="literal">real</code></a>. As such, in the following:</p><pre class="screen">a -&gt; to-real(b)</pre><p>Node <code class="literal">b</code> is set to the value of <code class="literal">a</code> converted to a real number.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
@@ -651,9 +735,9 @@ attribute set to <a class="link" href="ar01s05.html#meta-node-real" title="Meta-
 <p>
 The value to convert.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-to-string"></a>Meta-Node: <code class="literal">to-string(x)</code></h4></div></div></div><p><a id="idm371436009712" class="indexterm"></a>
-<a id="idm371436008208" class="indexterm"></a>
-<a id="idm371436006960" class="indexterm"></a></p><p>Converts <code class="literal">x</code> to an <span class="strong"><strong>integer</strong></span> value.</p><p>Same as <a class="link" href="ar01s05.html#meta-node-string" title="Meta-Node: string(x)"><code class="literal">string</code></a> however with the <code class="literal">target-node</code>
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-to-string"></a>Meta-Node: <code class="literal">to-string(x)</code></h4></div></div></div><p><a id="idm382385018944" class="indexterm"></a>
+<a id="idm382385017376" class="indexterm"></a>
+<a id="idm382385016080" class="indexterm"></a></p><p>Converts <code class="literal">x</code> to an <span class="strong"><strong>integer</strong></span> value.</p><p>Same as <a class="link" href="ar01s05.html#meta-node-string" title="Meta-Node: string(x)"><code class="literal">string</code></a> however with the <code class="literal">target-node</code>
 attribute set to <a class="link" href="ar01s05.html#meta-node-string" title="Meta-Node: string(x)"><code class="literal">string</code></a>. As such, in the following:</p><pre class="screen">a -&gt; to-string(b)</pre><p>Node <code class="literal">b</code> is set to the value of <code class="literal">a</code> converted to a string.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
@@ -662,9 +746,9 @@ attribute set to <a class="link" href="ar01s05.html#meta-node-string" title="Met
 <p>
 The value to convert.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-intp"></a>Meta-Node: <code class="literal">int?(x)</code></h4></div></div></div><p><a id="idm371435992432" class="indexterm"></a>
-<a id="idm371435990928" class="indexterm"></a>
-<a id="idm371435989680" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is an <span class="strong"><strong>integer</strong></span>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-intp"></a>Meta-Node: <code class="literal">int?(x)</code></h4></div></div></div><p><a id="idm382385000464" class="indexterm"></a>
+<a id="idm382384998896" class="indexterm"></a>
+<a id="idm382384997600" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is an <span class="strong"><strong>integer</strong></span>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -672,9 +756,9 @@ The value to convert.
 <p>
 The value to test.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-realp"></a>Meta-Node: <code class="literal">real?(x)</code></h4></div></div></div><p><a id="idm371435980272" class="indexterm"></a>
-<a id="idm371435978768" class="indexterm"></a>
-<a id="idm371435977520" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is a <span class="strong"><strong>real</strong></span>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-realp"></a>Meta-Node: <code class="literal">real?(x)</code></h4></div></div></div><p><a id="idm382384987808" class="indexterm"></a>
+<a id="idm382384986240" class="indexterm"></a>
+<a id="idm382384984944" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is a <span class="strong"><strong>real</strong></span>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -682,9 +766,9 @@ The value to test.
 <p>
 The value to test.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-stringp"></a>Meta-Node: <code class="literal">string?(x)</code></h4></div></div></div><p><a id="idm371435968112" class="indexterm"></a>
-<a id="idm371435966608" class="indexterm"></a>
-<a id="idm371435965360" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is a <span class="strong"><strong>string</strong></span>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-stringp"></a>Meta-Node: <code class="literal">string?(x)</code></h4></div></div></div><p><a id="idm382384975120" class="indexterm"></a>
+<a id="idm382384973552" class="indexterm"></a>
+<a id="idm382384972256" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is a <span class="strong"><strong>string</strong></span>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -692,9 +776,9 @@ The value to test.
 <p>
 The value to test.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-infp"></a>Meta-Node: <code class="literal">inf?(x)</code></h4></div></div></div><p><a id="idm371435955952" class="indexterm"></a>
-<a id="idm371435954448" class="indexterm"></a>
-<a id="idm371435953200" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is either positive or negative infinity.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-infp"></a>Meta-Node: <code class="literal">inf?(x)</code></h4></div></div></div><p><a id="idm382384962448" class="indexterm"></a>
+<a id="idm382384960880" class="indexterm"></a>
+<a id="idm382384959584" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is either positive or negative infinity.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -702,9 +786,9 @@ The value to test.
 <p>
 The value to test.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-nanp"></a>Meta-Node: <code class="literal">NaN?(x)</code></h4></div></div></div><p><a id="idm371435944400" class="indexterm"></a>
-<a id="idm371435942896" class="indexterm"></a>
-<a id="idm371435941648" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is a <span class="strong"><strong>NaN</strong></span> value.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-nanp"></a>Meta-Node: <code class="literal">NaN?(x)</code></h4></div></div></div><p><a id="idm382384950432" class="indexterm"></a>
+<a id="idm382384948864" class="indexterm"></a>
+<a id="idm382384947568" class="indexterm"></a></p><p>Returns true if <code class="literal">x</code> is a <span class="strong"><strong>NaN</strong></span> value.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">x</code>
 </p>
@@ -712,14 +796,14 @@ The value to test.
 <p>
 The value to test.
 </p>
-</td></tr></tbody></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_lists"></a>5.9. Lists</h3></div></div></div><p><a id="idm371435916320" class="indexterm"></a>
-<a id="idm371435915072" class="indexterm"></a></p><p>Lists are represented by a special <code class="literal">cons</code> type, in which the <span class="emphasis"><em>head</em></span>
+</td></tr></tbody></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_lists"></a>5.10. Lists</h3></div></div></div><p><a id="idm382384938080" class="indexterm"></a>
+<a id="idm382384936816" class="indexterm"></a></p><p>Lists are represented by a special <code class="literal">cons</code> type, in which the <span class="emphasis"><em>head</em></span>
 stores the first element of the list and the <span class="emphasis"><em>tail</em></span> stores the list of
 remaining elements. Neither the <span class="emphasis"><em>head</em></span> nor the <span class="emphasis"><em>tail</em></span> are evaluated
-until they are actually referenced and used.</p><p>The end of list is represented by a failure with the type being a node
-reference to the meta-node <a class="link" href="ar01s05.html#meta-node-Empty" title="Meta-Node: Empty()"><code class="literal">Empty</code></a> (<code class="literal">&amp;(Empty)</code>).</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-cons"></a>Meta-Node: <code class="literal">cons(head, tail)</code></h4></div></div></div><p><a id="idm371435907600" class="indexterm"></a>
-<a id="idm371435906096" class="indexterm"></a>
-<a id="idm371435904848" class="indexterm"></a></p><p>Creates a list with the <code class="literal">head</code> as the first element and <code class="literal">tail</code> as
+until they are actually referenced and used.</p><p>The end of list is represented by a failure of type <code class="literal">Empty</code>, see
+<a class="link" href="ar01s05.html#node-Empty" title="Failure Type Node: Empty"><code class="literal">Empty</code></a>.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-cons"></a>Meta-Node: <code class="literal">cons(head, tail)</code></h4></div></div></div><p><a id="idm382384928832" class="indexterm"></a>
+<a id="idm382384927264" class="indexterm"></a>
+<a id="idm382384925968" class="indexterm"></a></p><p>Creates a list with the <code class="literal">head</code> as the first element and <code class="literal">tail</code> as
 the list of remaining elements.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">head</code>
@@ -736,11 +820,11 @@ The first element of the list.
 <p>
 The list containing the remaining elements after the first.
 </p>
-</td></tr></tbody></table></div><div class="section"><div class="titlepage"><div><div><h5 class="title"><a id="_pattern_matching_10"></a>Pattern Matching</h5></div></div></div><p>Matches if the source node is a non-empty list, in which case <code class="literal">head</code>
+</td></tr></tbody></table></div><h5><a id="_pattern_matching_10"></a>Pattern Matching</h5><p>Matches if the source node is a non-empty list, in which case <code class="literal">head</code>
 is matched to the <span class="emphasis"><em>head</em></span> of the list and tail is matched to the <span class="emphasis"><em>tail</em></span>
-of the list. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.12. Pattern Matching">Pattern Matching</a></em></span>.</p></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-head"></a>Meta-Node: head(list)</h4></div></div></div><p><a id="idm371435889632" class="indexterm"></a>
-<a id="idm371435888128" class="indexterm"></a>
-<a id="idm371435886880" class="indexterm"></a></p><p>Returns the <span class="emphasis"><em>head</em></span> (first element) of a list.</p><p>If <code class="literal">list</code> is not a list returns a failure value.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+of the list. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.15. Pattern Matching">Pattern Matching</a></em></span>.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-head"></a>Meta-Node: head(list)</h4></div></div></div><p><a id="idm382384909856" class="indexterm"></a>
+<a id="idm382384908304" class="indexterm"></a>
+<a id="idm382384907008" class="indexterm"></a></p><p>Returns the <span class="emphasis"><em>head</em></span> (first element) of a list.</p><p>If <code class="literal">list</code> is not a list returns a failure value.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">list</code>
 </p>
@@ -748,9 +832,9 @@ of the list. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#p
 <p>
 The list.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-tail"></a>Meta-Node: <code class="literal">tail(list)</code></h4></div></div></div><p><a id="idm371435877312" class="indexterm"></a>
-<a id="idm371435875808" class="indexterm"></a>
-<a id="idm371435874560" class="indexterm"></a></p><p>Returns the <span class="emphasis"><em>tail</em></span>, the list containing the elements after the first
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-tail"></a>Meta-Node: <code class="literal">tail(list)</code></h4></div></div></div><p><a id="idm382384897040" class="indexterm"></a>
+<a id="idm382384895472" class="indexterm"></a>
+<a id="idm382384894176" class="indexterm"></a></p><p>Returns the <span class="emphasis"><em>tail</em></span>, the list containing the elements after the first
 element, of a list.</p><p>If <code class="literal">list</code> is not a list returns a failure value.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">list</code>
@@ -759,9 +843,9 @@ element, of a list.</p><p>If <code class="literal">list</code> is not a list ret
 <p>
 The list.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-consp"></a>Meta-Node: <code class="literal">cons?(thing)</code></h4></div></div></div><p><a id="idm371435864784" class="indexterm"></a>
-<a id="idm371435863280" class="indexterm"></a>
-<a id="idm371435862032" class="indexterm"></a></p><p>Returns true if <code class="literal">thing</code> is a list of at least one element, false
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-consp"></a>Meta-Node: <code class="literal">cons?(thing)</code></h4></div></div></div><p><a id="idm382384884064" class="indexterm"></a>
+<a id="idm382384882496" class="indexterm"></a>
+<a id="idm382384881200" class="indexterm"></a></p><p>Returns true if <code class="literal">thing</code> is a list of at least one element, false
 otherwise.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Does not return true if <code class="literal">thing</code> is an empty list.</p></td></tr></table></div><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">list</code>
@@ -770,11 +854,17 @@ otherwise.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><tabl
 <p>
 The list.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-Empty"></a>Meta-Node: Empty()</h4></div></div></div><p><a id="idm371435852480" class="indexterm"></a>
-<a id="idm371435850976" class="indexterm"></a>
-<a id="idm371435849728" class="indexterm"></a></p><p>Returns a failure with type indicating an empty list.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The failure type is <code class="literal">&amp;(Empty)</code>, <span class="emphasis"><em>see <a class="xref" href="ar01s03.html#node_references" title="Node References"> Node References</a></em></span>.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h5 class="title"><a id="_pattern_matching_11"></a>Pattern Matching</h5></div></div></div><p>Matches the empty list. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.12. Pattern Matching">Pattern Matching</a></em></span>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This is effectively a constant pattern.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-list"></a>Meta-Node: <code class="literal">list(..(xs))</code></h4></div></div></div><p><a id="idm371435842272" class="indexterm"></a>
-<a id="idm371435840768" class="indexterm"></a>
-<a id="idm371435839520" class="indexterm"></a></p><p>Creates a list with elements <code class="literal">xs</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="node-Empty"></a>Failure Type Node: Empty</h4></div></div></div><p><a id="idm382384871168" class="indexterm"></a>
+<a id="idm382384869632" class="indexterm"></a>
+<a id="idm382384868336" class="indexterm"></a>
+<a id="idm382384867312" class="indexterm"></a>
+<a id="idm382384865744" class="indexterm"></a>
+<a id="idm382384864448" class="indexterm"></a>
+<a id="idm382384863424" class="indexterm"></a>
+<a id="idm382384861856" class="indexterm"></a>
+<a id="idm382384860560" class="indexterm"></a></p><p>Failure type indicating an empty list.</p><p>Node <code class="literal">Empty!</code> is bound to a failure of this type.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-list"></a>Meta-Node: <code class="literal">list(..(xs))</code></h4></div></div></div><p><a id="idm382384856256" class="indexterm"></a>
+<a id="idm382384854688" class="indexterm"></a>
+<a id="idm382384853392" class="indexterm"></a></p><p>Creates a list with elements <code class="literal">xs</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">xs</code>
 </p>
@@ -782,11 +872,11 @@ The list.
 <p>
 The list elements.
 </p>
-</td></tr></tbody></table></div><div class="section"><div class="titlepage"><div><div><h5 class="title"><a id="_pattern_matching_12"></a>Pattern Matching</h5></div></div></div><p>Matches if the source node is a list of the same size as <code class="literal">xs</code>, in
+</td></tr></tbody></table></div><h5><a id="_pattern_matching_11"></a>Pattern Matching</h5><p>Matches if the source node is a list of the same size as <code class="literal">xs</code>, in
 which case each argument in <code class="literal">xs</code> is matched to the corresponding list
-element. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.12. Pattern Matching">Pattern Matching</a></em></span>.</p></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-list-star"></a>Meta-Node: <code class="literal">list*(..(xs))</code></h4></div></div></div><p><a id="idm371435827152" class="indexterm"></a>
-<a id="idm371435825648" class="indexterm"></a>
-<a id="idm371435824400" class="indexterm"></a></p><p>Creates a list containing, as elements, all the arguments in <code class="literal">xs</code>
+element. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#pattern_matching" title="5.15. Pattern Matching">Pattern Matching</a></em></span>.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-list-star"></a>Meta-Node: <code class="literal">list*(..(xs))</code></h4></div></div></div><p><a id="idm382384840400" class="indexterm"></a>
+<a id="idm382384838832" class="indexterm"></a>
+<a id="idm382384837536" class="indexterm"></a></p><p>Creates a list containing, as elements, all the arguments in <code class="literal">xs</code>
 excluding the last. The last argument in <code class="literal">xs</code> is treated as a list
 containing the remaining elements.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
@@ -797,13 +887,13 @@ containing the remaining elements.</p><div class="horizontal"><table class="hori
 The list elements, with the last argument being the list
 containing the remaining elements.
 </p>
-</td></tr></tbody></table></div><div class="section"><div class="titlepage"><div><div><h5 class="title"><a id="_pattern_matching_13"></a>Pattern Matching</h5></div></div></div><p>Matches if the source node is a list of at least one less elements
+</td></tr></tbody></table></div><h5><a id="_pattern_matching_12"></a>Pattern Matching</h5><p>Matches if the source node is a list of at least one less elements
 that the number of elements in <code class="literal">xs</code>. The arguments, excluding the
 last, are matched to the corresponding elements in the list with the
 last argument being matched to the remaining list elements. <span class="emphasis"><em>See
-<a class="xref" href="ar01s05.html#pattern_matching" title="5.12. Pattern Matching">Pattern Matching</a></em></span>.</p></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-list-bang"></a>Meta-Node: <code class="literal">list!(..(xs))</code></h4></div></div></div><p><a id="idm371435811328" class="indexterm"></a>
-<a id="idm371435809824" class="indexterm"></a>
-<a id="idm371435808576" class="indexterm"></a></p><p>Creates a list containing, as elements, all the arguments in <code class="literal">xs</code>.</p><p>Unlike <code class="literal">list</code>, if at least one of <code class="literal">xs</code> fails to evaluate to a value, a
+<a class="xref" href="ar01s05.html#pattern_matching" title="5.15. Pattern Matching">Pattern Matching</a></em></span>.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-list-bang"></a>Meta-Node: <code class="literal">list!(..(xs))</code></h4></div></div></div><p><a id="idm382384824032" class="indexterm"></a>
+<a id="idm382384822464" class="indexterm"></a>
+<a id="idm382384821168" class="indexterm"></a></p><p>Creates a list containing, as elements, all the arguments in <code class="literal">xs</code>.</p><p>Unlike <code class="literal">list</code>, if at least one of <code class="literal">xs</code> fails to evaluate to a value, a
 failure is returned.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">xs</code>
@@ -812,9 +902,9 @@ failure is returned.</p><div class="horizontal"><table class="horizontal" cellpa
 <p>
 The list elements.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-nth"></a>Meta-Node: <code class="literal">nth(list, n)</code></h4></div></div></div><p><a id="idm371435798064" class="indexterm"></a>
-<a id="idm371435796560" class="indexterm"></a>
-<a id="idm371435795312" class="indexterm"></a></p><p>Retrieves the element of a list at a particular index.</p><p>Returns a failure of type <a class="link" href="ar01s05.html#meta-node-Empty" title="Meta-Node: Empty()"><code class="literal">Empty</code></a> if <code class="literal">n</code> is
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-nth"></a>Meta-Node: <code class="literal">nth(list, n)</code></h4></div></div></div><p><a id="idm382384810256" class="indexterm"></a>
+<a id="idm382384808672" class="indexterm"></a>
+<a id="idm382384807376" class="indexterm"></a></p><p>Retrieves the element of a list at a particular index.</p><p>Returns a failure of type <a class="link" href="ar01s05.html#node-Empty" title="Failure Type Node: Empty"><code class="literal">Empty</code></a> if <code class="literal">n</code> is
 greater than the number of elements in <code class="literal">list</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">list</code>
@@ -831,9 +921,9 @@ The list.
 <p>
 The index of the element to retrieved.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-append"></a>Meta-Node: <code class="literal">append(list1, list2)</code></h4></div></div></div><p><a id="idm371435781840" class="indexterm"></a>
-<a id="idm371435780336" class="indexterm"></a>
-<a id="idm371435779088" class="indexterm"></a></p><p>Returns a list containing the elements of <code class="literal">list2</code> appended to
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-append"></a>Meta-Node: <code class="literal">append(list1, list2)</code></h4></div></div></div><p><a id="idm382384793280" class="indexterm"></a>
+<a id="idm382384791712" class="indexterm"></a>
+<a id="idm382384790416" class="indexterm"></a></p><p>Returns a list containing the elements of <code class="literal">list2</code> appended to
 <code class="literal">list1</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">list1</code>
@@ -850,9 +940,9 @@ The initial list.
 <p>
 The list which is appended onto <code class="literal">list1</code>.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-foldl1"></a>Meta-Node: <code class="literal">foldl'(x, f, list)</code></h4></div></div></div><p><a id="idm371435766544" class="indexterm"></a>
-<a id="idm371435765040" class="indexterm"></a>
-<a id="idm371435763792" class="indexterm"></a></p><p>Folds a list to a single value, starting from the first element.</p><p>The function <code class="literal">f</code> is first applied on <code class="literal">x</code> and the <a class="link" href="ar01s05.html#meta-node-head" title="Meta-Node: head(list)"><span class="emphasis"><em>head</em></span></a> of
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-foldl1"></a>Meta-Node: <code class="literal">foldl'(x, f, list)</code></h4></div></div></div><p><a id="idm382384777280" class="indexterm"></a>
+<a id="idm382384775712" class="indexterm"></a>
+<a id="idm382384774416" class="indexterm"></a></p><p>Folds a list to a single value, starting from the first element.</p><p>The function <code class="literal">f</code> is first applied on <code class="literal">x</code> and the <a class="link" href="ar01s05.html#meta-node-head" title="Meta-Node: head(list)"><span class="emphasis"><em>head</em></span></a> of
 <code class="literal">list</code>. Subsequently, <code class="literal">f</code> is applied on the result of the previous
 application and the next element of <code class="literal">list</code>, until the end of <code class="literal">list</code> is
 reached.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
@@ -879,9 +969,9 @@ Function of two arguments.
 <p>
 List to fold.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-foldl"></a>Meta-Node: <code class="literal">foldl(f, list)</code></h4></div></div></div><p><a id="idm371435744864" class="indexterm"></a>
-<a id="idm371435743360" class="indexterm"></a>
-<a id="idm371435742112" class="indexterm"></a></p><p>Folds a list to a single value, starting from the first element.</p><p>Same as <a class="link" href="ar01s05.html#meta-node-foldl1" title="Meta-Node: foldl'(x, f, list)"><code class="literal">foldl'</code></a> except the <a class="link" href="ar01s05.html#meta-node-head" title="Meta-Node: head(list)"><span class="emphasis"><em>head</em></span></a> of <code class="literal">list</code> is
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-foldl"></a>Meta-Node: <code class="literal">foldl(f, list)</code></h4></div></div></div><p><a id="idm382384754624" class="indexterm"></a>
+<a id="idm382384753056" class="indexterm"></a>
+<a id="idm382384751760" class="indexterm"></a></p><p>Folds a list to a single value, starting from the first element.</p><p>Same as <a class="link" href="ar01s05.html#meta-node-foldl1" title="Meta-Node: foldl'(x, f, list)"><code class="literal">foldl'</code></a> except the <a class="link" href="ar01s05.html#meta-node-head" title="Meta-Node: head(list)"><span class="emphasis"><em>head</em></span></a> of <code class="literal">list</code> is
 used as the initial first argument to the fold function <code class="literal">f</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">f</code>
@@ -898,14 +988,14 @@ Function of two arguments.
 <p>
 List to fold.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-foldr"></a>Meta-Node: <code class="literal">foldr(f, list, :(x))</code></h4></div></div></div><p><a id="idm371435727824" class="indexterm"></a>
-<a id="idm371435726320" class="indexterm"></a>
-<a id="idm371435725072" class="indexterm"></a></p><p>Folds a list to a single value, starting from the last element.</p><p><code class="literal">f</code> is first applied on the last element of <code class="literal">list</code> and the value of
-<code class="literal">x</code>. If the <code class="literal">x</code> argument is not provided or <code class="literal">x</code> fails to evaluate to a
-value, <code class="literal">f</code> is first applied on the last two elements of
-<code class="literal">list</code>. Subsequently <code class="literal">f</code> is applied on the previous element of <code class="literal">list</code>
-and the result of the previous application, until the <span class="emphasis"><em>head</em></span> of list
-<code class="literal">list</code> is reached.</p><p>If <code class="literal">list</code> only has a single element and <code class="literal">x</code> is not provided, the
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-foldr"></a>Meta-Node: <code class="literal">foldr(f, list, :(x))</code></h4></div></div></div><p><a id="idm382384736720" class="indexterm"></a>
+<a id="idm382384735152" class="indexterm"></a>
+<a id="idm382384733856" class="indexterm"></a></p><p>Folds a list to a single value, starting from the last element.</p><p><code class="literal">f</code> is first applied on the last element of <code class="literal">list</code> and the value of
+<code class="literal">x</code>. If the <code class="literal">x</code> argument is not provided or <code class="literal">x</code> evaluates to a failure
+of type <a class="link" href="ar01s05.html#node-no-value" title="Failure Type Node: No-Value"><code class="literal">No-Value</code></a>, <code class="literal">f</code> is first applied on the
+last two elements of <code class="literal">list</code>. Subsequently <code class="literal">f</code> is applied on the
+previous element of <code class="literal">list</code> and the result of the previous application,
+until the <span class="emphasis"><em>head</em></span> of list <code class="literal">list</code> is reached.</p><p>If <code class="literal">list</code> only has a single element and <code class="literal">x</code> is not provided, the
 element is returned as is. If <code class="literal">l</code> is empty and <code class="literal">x</code> is provided, <code class="literal">x</code> is
 returned as is.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
 <code class="literal">f</code>
@@ -920,9 +1010,9 @@ List to fold.
 </span></dt><dd>
 Second argument to the application of <code class="literal">f</code> on the
 last element of <code class="literal">list</code>.
-</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-map"></a>Meta-Node: <code class="literal">map(f, list)</code></h4></div></div></div><p><a id="idm371435703008" class="indexterm"></a>
-<a id="idm371435701504" class="indexterm"></a>
-<a id="idm371435700256" class="indexterm"></a></p><p>Applies a function on each element of a list.</p><p>Returns a list containing the result of applying <code class="literal">f</code> on each element
+</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-map"></a>Meta-Node: <code class="literal">map(f, list)</code></h4></div></div></div><p><a id="idm382384709312" class="indexterm"></a>
+<a id="idm382384707760" class="indexterm"></a>
+<a id="idm382384706464" class="indexterm"></a></p><p>Applies a function on each element of a list.</p><p>Returns a list containing the result of applying <code class="literal">f</code> on each element
 of <code class="literal">list</code> in turn.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">f</code>
@@ -939,9 +1029,9 @@ Function of one argument.
 <p>
 The list.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-filter"></a>Meta-Node: <code class="literal">filter(f, list)</code></h4></div></div></div><p><a id="idm371435687808" class="indexterm"></a>
-<a id="idm371435686304" class="indexterm"></a>
-<a id="idm371435685056" class="indexterm"></a></p><p>Filters elements from a list.</p><p>Returns a list containing only the elements of <code class="literal">list</code> for which the
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-filter"></a>Meta-Node: <code class="literal">filter(f, list)</code></h4></div></div></div><p><a id="idm382384693520" class="indexterm"></a>
+<a id="idm382384691952" class="indexterm"></a>
+<a id="idm382384690656" class="indexterm"></a></p><p>Filters elements from a list.</p><p>Returns a list containing only the elements of <code class="literal">list</code> for which the
 function <code class="literal">f</code> returns true.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">f</code>
@@ -960,9 +1050,9 @@ removed.
 <p>
 The list to filter.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-everyp"></a>Meta-Node: <code class="literal">every?(f, list)</code></h4></div></div></div><p><a id="idm371435672352" class="indexterm"></a>
-<a id="idm371435670848" class="indexterm"></a>
-<a id="idm371435669600" class="indexterm"></a></p><p>Returns true if <code class="literal">f</code> returns true for every element of <code class="literal">list</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-everyp"></a>Meta-Node: <code class="literal">every?(f, list)</code></h4></div></div></div><p><a id="idm382384677472" class="indexterm"></a>
+<a id="idm382384675904" class="indexterm"></a>
+<a id="idm382384674608" class="indexterm"></a></p><p>Returns true if <code class="literal">f</code> returns true for every element of <code class="literal">list</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">f</code>
 </p>
@@ -978,9 +1068,9 @@ Function of one argument.
 <p>
 The list.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-somep"></a>Meta-Node: <code class="literal">some?(f, list)</code></h4></div></div></div><p><a id="idm371435657664" class="indexterm"></a>
-<a id="idm371435656160" class="indexterm"></a>
-<a id="idm371435654912" class="indexterm"></a></p><p>Returns true if <code class="literal">f</code> returns true for at least one element of <code class="literal">list</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-somep"></a>Meta-Node: <code class="literal">some?(f, list)</code></h4></div></div></div><p><a id="idm382384662208" class="indexterm"></a>
+<a id="idm382384660640" class="indexterm"></a>
+<a id="idm382384659344" class="indexterm"></a></p><p>Returns true if <code class="literal">f</code> returns true for at least one element of <code class="literal">list</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">f</code>
 </p>
@@ -996,9 +1086,9 @@ Function of one argument.
 <p>
 The list.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-not-anyp"></a>Meta-Node: <code class="literal">not-any?(f, list)</code></h4></div></div></div><p><a id="idm371435642912" class="indexterm"></a>
-<a id="idm371435641408" class="indexterm"></a>
-<a id="idm371435640160" class="indexterm"></a></p><p>Returns true if <code class="literal">f</code> returns false for every element of <code class="literal">list</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-not-anyp"></a>Meta-Node: <code class="literal">not-any?(f, list)</code></h4></div></div></div><p><a id="idm382384646896" class="indexterm"></a>
+<a id="idm382384645328" class="indexterm"></a>
+<a id="idm382384644032" class="indexterm"></a></p><p>Returns true if <code class="literal">f</code> returns false for every element of <code class="literal">list</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">f</code>
 </p>
@@ -1014,9 +1104,9 @@ Function of one argument.
 <p>
 The list.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-not-everyp"></a>Meta-Node: <code class="literal">not-every?(f, list)</code></h4></div></div></div><p><a id="idm371435628160" class="indexterm"></a>
-<a id="idm371435626656" class="indexterm"></a>
-<a id="idm371435625408" class="indexterm"></a></p><p>Returns true if <code class="literal">f</code> returns false for at least one element of <code class="literal">list</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-not-everyp"></a>Meta-Node: <code class="literal">not-every?(f, list)</code></h4></div></div></div><p><a id="idm382384631584" class="indexterm"></a>
+<a id="idm382384630016" class="indexterm"></a>
+<a id="idm382384628720" class="indexterm"></a></p><p>Returns true if <code class="literal">f</code> returns false for at least one element of <code class="literal">list</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">f</code>
 </p>
@@ -1032,10 +1122,10 @@ Function of one argument.
 <p>
 The list.
 </p>
-</td></tr></tbody></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_strings_2"></a>5.10. Strings</h3></div></div></div><p><a id="idm371435613760" class="indexterm"></a>
-<a id="idm371435612512" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-string-at"></a>Meta-Node: <code class="literal">string-at(string, index)</code></h4></div></div></div><p><a id="idm371435610048" class="indexterm"></a>
-<a id="idm371435608544" class="indexterm"></a>
-<a id="idm371435607296" class="indexterm"></a></p><p>Returns the character at a given index in the string.</p><p>If the index is greater than the number of characters in this string,
+</td></tr></tbody></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_strings_2"></a>5.11. Strings</h3></div></div></div><p><a id="idm382384616672" class="indexterm"></a>
+<a id="idm382384615376" class="indexterm"></a></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-string-at"></a>Meta-Node: <code class="literal">string-at(string, index)</code></h4></div></div></div><p><a id="idm382384612704" class="indexterm"></a>
+<a id="idm382384611136" class="indexterm"></a>
+<a id="idm382384609840" class="indexterm"></a></p><p>Returns the character at a given index in the string.</p><p>If the index is greater than the number of characters in this string,
 returns a failure.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">string</code>
@@ -1052,9 +1142,9 @@ The string.
 <p>
 The index of the character.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-string-concat"></a>Meta-Node: <code class="literal">string-concat(string, str1, str2)</code></h4></div></div></div><p><a id="idm371435595856" class="indexterm"></a>
-<a id="idm371435594352" class="indexterm"></a>
-<a id="idm371435593104" class="indexterm"></a></p><p>Concatenates <code class="literal">str2</code> to the end of <code class="literal">str1</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-string-concat"></a>Meta-Node: <code class="literal">string-concat(string, str1, str2)</code></h4></div></div></div><p><a id="idm382384597984" class="indexterm"></a>
+<a id="idm382384596416" class="indexterm"></a>
+<a id="idm382384595120" class="indexterm"></a></p><p>Concatenates <code class="literal">str2</code> to the end of <code class="literal">str1</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">str1</code>
 </p>
@@ -1070,9 +1160,9 @@ The first string.
 <p>
 The string which is concatenated to <code class="literal">str1</code>.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-string-to-list"></a>Meta-Node: <code class="literal">string-&gt;list(string)</code></h4></div></div></div><p><a id="idm371435580496" class="indexterm"></a>
-<a id="idm371435578640" class="indexterm"></a>
-<a id="idm371435577392" class="indexterm"></a></p><p>Returns a list containing the characters in a string.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-string-to-list"></a>Meta-Node: <code class="literal">string-&gt;list(string)</code></h4></div></div></div><p><a id="idm382384581984" class="indexterm"></a>
+<a id="idm382384580080" class="indexterm"></a>
+<a id="idm382384578784" class="indexterm"></a></p><p>Returns a list containing the characters in a string.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">string</code>
 </p>
@@ -1080,9 +1170,9 @@ The string which is concatenated to <code class="literal">str1</code>.
 <p>
 The string.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-list-to-string"></a>Meta-Node: <code class="literal">list-&gt;string(list)</code></h4></div></div></div><p><a id="idm371435569072" class="indexterm"></a>
-<a id="idm371435567216" class="indexterm"></a>
-<a id="idm371435565968" class="indexterm"></a></p><p>Returns a string containing the concatenation of the elements in a list.</p><p>Each element of <code class="literal">list</code> is converted to a string and concatenated to
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-list-to-string"></a>Meta-Node: <code class="literal">list-&gt;string(list)</code></h4></div></div></div><p><a id="idm382384570144" class="indexterm"></a>
+<a id="idm382384568256" class="indexterm"></a>
+<a id="idm382384566960" class="indexterm"></a></p><p>Returns a string containing the concatenation of the elements in a list.</p><p>Each element of <code class="literal">list</code> is converted to a string and concatenated to
 the result string.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">list</code>
@@ -1091,9 +1181,9 @@ the result string.</p><div class="horizontal"><table class="horizontal" cellpadd
 <p>
 List of elements to concatenate.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-format"></a>Meta-Node: <code class="literal">format(string, ..(args))</code></h4></div></div></div><p><a id="idm371435556480" class="indexterm"></a>
-<a id="idm371435554976" class="indexterm"></a>
-<a id="idm371435553728" class="indexterm"></a></p><p>Creates a formatted string, in which placeholders are replaced by the
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-format"></a>Meta-Node: <code class="literal">format(string, ..(args))</code></h4></div></div></div><p><a id="idm382384557104" class="indexterm"></a>
+<a id="idm382384555536" class="indexterm"></a>
+<a id="idm382384554240" class="indexterm"></a></p><p>Creates a formatted string, in which placeholders are replaced by the
 arguments in <code class="literal">args</code>.</p><p>The sequence <code class="literal">%s</code> designates a placeholder which is to be replaced by
 an argument. The first placeholder is replaced by the first argument,
 the second with the second argument and so on. Each argument is
@@ -1115,12 +1205,51 @@ The format string.
 <p>
 The arguments to substitute into the string.
 </p>
-</td></tr></tbody></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_introspection"></a>5.11. Introspection</h3></div></div></div><p><a id="idm371435538512" class="indexterm"></a>
-<a id="idm371435537264" class="indexterm"></a></p><p>The meta-nodes in this section provide functionality for introspecting
-the nodes comprising a program. These meta-nodes may only be used from
-within macro nodes during compilation, and not during runtime.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-nodep"></a>Meta-Node: <code class="literal">node?(thing)</code></h4></div></div></div><p><a id="idm371435534048" class="indexterm"></a>
-<a id="idm371435532544" class="indexterm"></a>
-<a id="idm371435531296" class="indexterm"></a></p><p>Returns true if <code class="literal">thing</code> is a node object.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+</td></tr></tbody></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_dictionaries"></a>5.12. Dictionaries</h3></div></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_meta_node_literal_member_dict_key_literal"></a>Meta-Node: <code class="literal">member(dict, key)</code></h4></div></div></div><p>Retrieves the value of an entry in a dictionary.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+<p>
+<code class="literal">dict</code>
+</p>
+</td><td style="" valign="top">
+<p>
+The dictionary.
+</p>
+</td></tr><tr><td style="" valign="top">
+<p>
+<code class="literal">key</code>
+</p>
+</td><td style="" valign="top">
+<p>
+The entry key.
+</p>
+</td></tr></tbody></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_functions"></a>5.13. Functions</h3></div></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_meta_node_literal_apply_f_xs_literal"></a>Meta-Node: <code class="literal">apply(f, ..(xs))</code></h4></div></div></div><p><a id="idm382384525600" class="indexterm"></a>
+<a id="idm382384524032" class="indexterm"></a>
+<a id="idm382384522736" class="indexterm"></a></p><p>Applies a function on an argument list.</p><p>The argument list, on which <code class="literal">f</code> is applied consist of each argument of
+<code class="literal">xs</code>, excluding the last, followed by each element of the last
+argument of <code class="literal">xs</code>.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+<p>
+<code class="literal">f</code>
+</p>
+</td><td style="" valign="top">
+<p>
+The function to apply.
+</p>
+</td></tr><tr><td style="" valign="top">
+<p>
+<code class="literal">xs</code>
+</p>
+</td><td style="" valign="top">
+<p>
+The arguments to apply <code class="literal">f</code> on.
+</p>
+</td></tr></tbody></table></div><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>If <code class="literal">f</code> is not a function or the last argument of <code class="literal">xs</code> is not
+a list, a failure of type <a class="link" href="ar01s05.html#node-type-error" title="Failure Type Node: Type-Error"><code class="literal">Type-Error</code></a>, is
+returned.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_introspection"></a>5.14. Introspection</h3></div></div></div><p><a id="idm382384505856" class="indexterm"></a>
+<a id="idm382384504544" class="indexterm"></a></p><p>The <code class="literal">core/introspection</code> module provides utility meta-nodes for
+introspecting the nodes comprising a program. These meta-nodes may
+only be used within macro nodes, during macro expansion, as runtime
+definitions are not available.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-nodep"></a>Meta-Node: <code class="literal">node?(thing)</code></h4></div></div></div><p><a id="idm382384500560" class="indexterm"></a>
+<a id="idm382384498992" class="indexterm"></a>
+<a id="idm382384497696" class="indexterm"></a></p><p>Returns true if <code class="literal">thing</code> is a node object.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">thing</code>
 </p>
@@ -1128,9 +1257,9 @@ within macro nodes during compilation, and not during runtime.</p><div class="se
 <p>
 The thing to check whether it is a node.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_meta_node_literal_find_node_node_module_literal"></a>Meta-Node: <code class="literal">find-node(node, :(module))</code></h4></div></div></div><p><a id="idm371435522336" class="indexterm"></a>
-<a id="idm371435520832" class="indexterm"></a>
-<a id="idm371435519584" class="indexterm"></a></p><p>Looks-up a node in a module.</p><p>Returns the node object or a failure if no node is found.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_meta_node_literal_find_node_node_module_literal"></a>Meta-Node: <code class="literal">find-node(node, :(module))</code></h4></div></div></div><p><a id="idm382384488272" class="indexterm"></a>
+<a id="idm382384486704" class="indexterm"></a>
+<a id="idm382384485408" class="indexterm"></a></p><p>Looks-up a node in a module.</p><p>Returns the node object or a failure if no node is found.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
 <code class="literal">node</code>
 </span></dt><dd>
 The node to lookup, which can be any node expression.
@@ -1142,9 +1271,9 @@ node. Defaults to the current module, set by the last <code class="literal">:mod
 declaration that is processed.
 </dd></dl></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Currently there is no way to retrieve a module object, thus the
 <code class="literal">module</code> argument is not used. This functionality will be added in a
-future release.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_meta_node_literal_get_attribute_node_attribute_literal"></a>Meta-Node: <code class="literal">get-attribute(node, attribute)</code></h4></div></div></div><p><a id="idm371435508560" class="indexterm"></a>
-<a id="idm371435507056" class="indexterm"></a>
-<a id="idm371435505808" class="indexterm"></a></p><p>Retrieves the value of an attribute of a node.</p><p>Returns a failure if the attribute is not set.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+future release.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_meta_node_literal_get_attribute_node_attribute_literal"></a>Meta-Node: <code class="literal">get-attribute(node, attribute)</code></h4></div></div></div><p><a id="idm382384457696" class="indexterm"></a>
+<a id="idm382384456192" class="indexterm"></a>
+<a id="idm382384454896" class="indexterm"></a></p><p>Retrieves the value of an attribute of a node.</p><p>Returns a failure if the attribute is not set.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">node</code>
 </p>
@@ -1160,11 +1289,11 @@ The node object.
 <p>
 The attribute identifier.
 </p>
-</td></tr></tbody></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="pattern_matching"></a>5.12. Pattern Matching</h3></div></div></div><p><a id="idm371435494832" class="indexterm"></a>
-<a id="idm371435493584" class="indexterm"></a>
-<a id="idm371435492592" class="indexterm"></a>
-<a id="idm371435491088" class="indexterm"></a>
-<a id="idm371435489840" class="indexterm"></a></p><p>Pattern matching is provided by the core module in the form of
+</td></tr></tbody></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="pattern_matching"></a>5.15. Pattern Matching</h3></div></div></div><p><a id="idm382384443424" class="indexterm"></a>
+<a id="idm382384442112" class="indexterm"></a>
+<a id="idm382384441088" class="indexterm"></a>
+<a id="idm382384439488" class="indexterm"></a>
+<a id="idm382384438176" class="indexterm"></a></p><p>Pattern matching is provided by the core module in the form of
 bindings involving the meta-node instance, which is to be matched, as
 the target. The binding succeeds if the pattern matches, otherwise it
 fails.</p><p>A meta-node which supports pattern matching, has a <code class="literal">target-node</code> or
@@ -1175,7 +1304,7 @@ meta-node to return a value that is equivalent to the value of the
 source node. When there are such values, the pattern is said to have
 <span class="emphasis"><em>matched</em></span>. If there is no possible value for at least one argument
 node, all argument nodes should evaluate to failures of type
-<a class="link" href="ar01s05.html#match-fail" title="Meta-Node: Match-Fail()"><code class="literal">&amp;(Match-Fail)</code></a>. In this case the pattern has not
+<a class="link" href="ar01s05.html#match-fail" title="Failure Type Node: Match-Fail"><code class="literal">Match-Fail</code></a>. In this case the pattern has not
 <span class="emphasis"><em>matched</em></span></p><p><strong>Example. </strong>
 </p><pre class="screen">x -&gt; int(y)</pre><p>
 </p><p>In the example, above, <code class="literal">y</code> is bound to the value of <code class="literal">x</code> if it is an
@@ -1189,9 +1318,10 @@ node.</p><p><strong>Example. </strong>
 </p><p>In the example, above, <code class="literal">y</code> is bound to the first element of <code class="literal">x</code> and
 <code class="literal">z</code> is bound to the second element of <code class="literal">x</code> if <code class="literal">x</code> is a list of two
 elements. These bindings will result in a list, equivalent to <code class="literal">x</code>,
-being produced when they are passed to the <code class="literal">list</code> meta-node.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_nested_patterns"></a>Nested Patterns</h4></div></div></div><p><a id="idm371435469392" class="indexterm"></a>
-<a id="idm371435467888" class="indexterm"></a>
-<a id="idm371435466640" class="indexterm"></a></p><p>Patterns may be nested, that is an argument to a meta-node instance is
+being produced when <code class="literal">y</code> and <code class="literal">z</code> are passed as arguments to the <code class="literal">list</code>
+meta-node.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_nested_patterns"></a>Nested Patterns</h4></div></div></div><p><a id="idm382384414976" class="indexterm"></a>
+<a id="idm382384413424" class="indexterm"></a>
+<a id="idm382384412112" class="indexterm"></a></p><p>Patterns may be nested, that is an argument to a meta-node instance is
 itself a meta-node instance of which the operator meta-node supports
 pattern matching. When the arguments contain one or more nested
 patterns, the bindings to the argument nodes should only succeed if
@@ -1207,15 +1337,14 @@ for a particular argument is unimportant.</p><p><strong>Example. </strong>
 </p><pre class="screen">x -&gt; list(_, y)</pre><p>
 </p><p>In the example, above, <code class="literal">y</code> is bound to the second element of <code class="literal">x</code> if it
 is a list of two elements. The value of the first element of <code class="literal">x</code> is
-ignored completely.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_constant_patterns"></a>Constant Patterns</h4></div></div></div><p><a id="idm371435452064" class="indexterm"></a>
-<a id="idm371435450560" class="indexterm"></a>
-<a id="idm371435449312" class="indexterm"></a></p><p>Constant patterns comprise a constant value as opposed to a
+ignored completely.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_constant_patterns"></a>Constant Patterns</h4></div></div></div><p><a id="idm382384396880" class="indexterm"></a>
+<a id="idm382384395296" class="indexterm"></a>
+<a id="idm382384393984" class="indexterm"></a></p><p>Constant patterns comprise a constant value as opposed to a
 node. These patterns <span class="emphasis"><em>match</em></span> when the source node is equal, by
 <a class="link" href="ar01s05.html#meta-node-eq" title="Meta-Node: =(a, b)"><code class="literal">=</code></a>, to the constant value. Constant patterns do not
 result in any bindings being established however they do affect the
-condition of the pattern in which they are nested.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Constant patterns may only be used as arguments to a
-meta-node instance, of which at least one of the arguments is not a
-constant pattern.</p></td></tr></table></div><p>Constant values include any literal constants, such as numbers,
+condition of the pattern in which they are nested.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Constant patterns may only be used when nested inside a
+non-constant pattern.</p></td></tr></table></div><p>Constant values include any literal constants, such as numbers,
 strings as well as character literals, produced by the <a class="link" href="ar01s05.html#macro-node-c" title="Macro-Node: c(x)"><code class="literal">c</code></a> macro, and literal symbols, produced by the
 <a class="link" href="ar01s05.html#macro-node-quote" title="Macro-Node: '(x)"><code class="literal">'</code></a> macro.</p><p><strong>Example. </strong>
 </p><pre class="screen">x -&gt; list(1, y, z)</pre><p>
@@ -1231,12 +1360,12 @@ x -&gt; list(1, 2)</pre><p>
 as <code class="literal">1 + 1</code>, are only treated as constant patterns if the meta-node
 supports pattern matching. In this case the <code class="literal">+</code> meta-node does not
 support pattern matching, thus <code class="literal">1 + 1</code> is currently not treated as a
-constant pattern.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="matchers"></a>Matchers</h4></div></div></div><p><a id="idm371435430736" class="indexterm"></a>
-<a id="idm371435429232" class="indexterm"></a>
-<a id="idm371435427984" class="indexterm"></a>
-<a id="idm371435426992" class="indexterm"></a>
-<a id="idm371435425488" class="indexterm"></a>
-<a id="idm371435424240" class="indexterm"></a></p><p>The <code class="literal">matcher</code> node attribute stores a meta-node which is called to
+constant pattern.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="matchers"></a>Matchers</h4></div></div></div><p><a id="idm382384374240" class="indexterm"></a>
+<a id="idm382384372672" class="indexterm"></a>
+<a id="idm382384371360" class="indexterm"></a>
+<a id="idm382384370320" class="indexterm"></a>
+<a id="idm382384368736" class="indexterm"></a>
+<a id="idm382384367424" class="indexterm"></a></p><p>The <code class="literal">matcher</code> node attribute stores a meta-node which is called to
 construct the pattern for a given list of arguments. The <span class="emphasis"><em>matcher</em></span>
 meta-node is called with two arguments: the place to be matched, which
 should become the <span class="emphasis"><em>source</em></span> node of any bindings established by the
@@ -1253,13 +1382,13 @@ nodes if they are patterns themselves.
 </span></dt><dd><p class="simpara">
 List of bindings established by the pattern. If there are
 no bindings established by the pattern, then this entry should be set
-to the empty list, _see <a class="link" href="ar01s05.html#meta-node-Empty" title="Meta-Node: Empty()"><code class="literal">Empty</code></a>.
+to the empty list, <span class="emphasis"><em>see <a class="link" href="ar01s05.html#node-Empty" title="Failure Type Node: Empty"><code class="literal">Empty</code></a></em></span>.
 </p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The bindings should not be conditioned on <code class="literal">condition</code> as
 they will be conditioned later when the node declarations for the
 entire pattern (including the parent patterns) is constructed. <span class="emphasis"><em>See
 <a class="xref" href="ar01s02.html#conditional_bindings" title="Conditional Bindings"> Conditional Bindings</a></em></span>.</p></td></tr></table></div></dd></dl></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Pattern objects may be created with the <a class="link" href="ar01s05.html#meta-node-Pattern" title="Meta-Node: Pattern(condition, :(binding))"><code class="literal">Pattern</code></a> meta-node.</p></td></tr></table></div><p>All bindings, established by a pattern, should be established in an
 explicit context with identifier <code class="literal">match</code>, which is activated only on
-failures with type <a class="link" href="ar01s05.html#match-fail" title="Meta-Node: Match-Fail()"><code class="literal">&amp;(Match-Fail)</code></a>. This allows
+failures with type <a class="link" href="ar01s05.html#match-fail" title="Failure Type Node: Match-Fail"><code class="literal">&amp;(Match-Fail)</code></a>. This allows
 multiple patterns to be specified on a single node, with the node
 being set to the value corresponding to the binding of the first
 pattern that <span class="emphasis"><em>matches</em></span>.</p><p><strong>Example: Multiple Patterns. </strong>
@@ -1298,19 +1427,14 @@ may thus appear within patterns.</p><div class="itemizedlist"><ul class="itemize
 </li><li class="listitem">
 <a class="link" href="ar01s05.html#meta-node-cons" title="Meta-Node: cons(head, tail)"><code class="literal">cons</code></a>
 </li><li class="listitem">
-<a class="link" href="ar01s05.html#meta-node-Empty" title="Meta-Node: Empty()"><code class="literal">Empty</code></a>
-</li><li class="listitem">
 <a class="link" href="ar01s05.html#meta-node-list" title="Meta-Node: list(..(xs))"><code class="literal">list</code></a>
 </li><li class="listitem">
 <a class="link" href="ar01s05.html#meta-node-list-star" title="Meta-Node: list*(..(xs))"><code class="literal">list*</code></a>
-</li></ul></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_utilities"></a>Utilities</h4></div></div></div><p><a id="idm371435372384" class="indexterm"></a>
-<a id="idm371435370880" class="indexterm"></a>
-<a id="idm371435369632" class="indexterm"></a></p><p>The following meta-nodes are utilities for creating and processing
-patterns.</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Currently these utilities are not exported from the <code class="literal">core</code>
-module, thus they have to be imported manually if they are to be used
-in another module.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-Pattern"></a>Meta-Node: <code class="literal">Pattern(condition, :(binding))</code></h4></div></div></div><p><a id="idm371435365120" class="indexterm"></a>
-<a id="idm371435363616" class="indexterm"></a>
-<a id="idm371435362368" class="indexterm"></a></p><p>Creates a <code class="literal">Pattern</code> object. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#matchers" title="Matchers"> Matchers</a></em></span></p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+</li></ul></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_module_core_patterns"></a>5.16. Module: core/patterns</h3></div></div></div><p><a id="idm382384312768" class="indexterm"></a>
+<a id="idm382384311168" class="indexterm"></a>
+<a id="idm382384309856" class="indexterm"></a></p><p>This module contains utilities for creating and processing patterns.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-Pattern"></a>Meta-Node: <code class="literal">Pattern(condition, :(binding))</code></h4></div></div></div><p><a id="idm382384306704" class="indexterm"></a>
+<a id="idm382384305136" class="indexterm"></a>
+<a id="idm382384303840" class="indexterm"></a></p><p>Creates a <code class="literal">Pattern</code> object. <span class="emphasis"><em>See <a class="xref" href="ar01s05.html#matchers" title="Matchers"> Matchers</a></em></span></p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
 <code class="literal">condition</code>
 </span></dt><dd>
 The node expression which evaluates to true if the
@@ -1321,9 +1445,9 @@ pattern matches.
 List of binding expressions of the bindings
 established by the pattern. Defaults to the empty list if not
 provided.
-</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-get-matcher"></a>Meta-Node: <code class="literal">get-matcher(node)</code></h4></div></div></div><p><a id="idm371435353136" class="indexterm"></a>
-<a id="idm371435351632" class="indexterm"></a>
-<a id="idm371435350384" class="indexterm"></a></p><p>Returns the <span class="emphasis"><em>matcher</em></span> function, stored in the <code class="literal">matcher</code> attribute of a
+</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-get-matcher"></a>Meta-Node: <code class="literal">get-matcher(node)</code></h4></div></div></div><p><a id="idm382384293984" class="indexterm"></a>
+<a id="idm382384292416" class="indexterm"></a>
+<a id="idm382384291120" class="indexterm"></a></p><p>Returns the <span class="emphasis"><em>matcher</em></span> function, stored in the <code class="literal">matcher</code> attribute of a
 node.</p><p>Returns a failure if the node’s <code class="literal">matcher</code> attribute is not set.</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
 <p>
 <code class="literal">node</code>
@@ -1332,9 +1456,9 @@ node.</p><p>Returns a failure if the node’s <code class="literal">matcher</cod
 <p>
 The node object of which to retrieve the <span class="emphasis"><em>matcher</em></span>.
 </p>
-</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-make-pattern"></a>Meta-Node: <code class="literal">make-pattern(place, pattern)</code></h4></div></div></div><p><a id="idm371435339744" class="indexterm"></a>
-<a id="idm371435338240" class="indexterm"></a>
-<a id="idm371435336992" class="indexterm"></a></p><p>Creates the <code class="literal">Pattern</code> object for a pattern expression.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Can be used for any pattern, including constant patterns.</p></td></tr></table></div><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+</td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-make-pattern"></a>Meta-Node: <code class="literal">make-pattern(place, pattern)</code></h4></div></div></div><p><a id="idm382384279840" class="indexterm"></a>
+<a id="idm382384278272" class="indexterm"></a>
+<a id="idm382384276976" class="indexterm"></a></p><p>Creates the <code class="literal">Pattern</code> object for a pattern expression.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Can be used for any pattern, including constant patterns.</p></td></tr></table></div><div class="variablelist"><dl class="variablelist"><dt><span class="term">
 <code class="literal">place</code>
 </span></dt><dd>
 The place which should be matched to the pattern, i.e. the
@@ -1345,9 +1469,9 @@ source node of the bindings established by the pattern.
 The pattern expression.
 </dd></dl></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>If <code class="literal">pattern</code> is a functor expression of which the operator is
 not a <code class="literal">meta-node</code> with a <code class="literal">matcher</code>, a <code class="literal">Pattern</code> with a single binding
-<code class="literal">place -&gt; pattern</code>, and no <code class="literal">condition</code> is returned.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-combine-conditions"></a>Meta-Node: <code class="literal">combine-conditions(c1, c2)</code></h4></div></div></div><p><a id="idm371435323568" class="indexterm"></a>
-<a id="idm371435322064" class="indexterm"></a>
-<a id="idm371435320816" class="indexterm"></a></p><p>Returns an expression which is the conjunction of two expression, by
+<code class="literal">place -&gt; pattern</code>, and no <code class="literal">condition</code> is returned.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-combine-conditions"></a>Meta-Node: <code class="literal">combine-conditions(c1, c2)</code></h4></div></div></div><p><a id="idm382384262832" class="indexterm"></a>
+<a id="idm382384261248" class="indexterm"></a>
+<a id="idm382384259952" class="indexterm"></a></p><p>Returns an expression which is the conjunction of two expressions, by
 <a class="link" href="ar01s05.html#meta-node-and" title="Meta-Node: and(x, y)"><code class="literal">and</code></a>.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
 <code class="literal">c1</code>
 </span></dt><dd>
@@ -1358,9 +1482,9 @@ The first condition, on the left hand side of the <code class="literal">and</cod
 The second condition, on the right hand side of the <code class="literal">and</code>.
 </dd></dl></div><p>If <code class="literal">c1</code> evaluates to a failure, returns <code class="literal">c2</code>. If <code class="literal">c2</code> evaluates to a
 failure, returns <code class="literal">c1</code>.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This is useful for creating a condition which combines the
-conditions of multiple argument nodes.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-conditionalize-bindings"></a>Meta-Node: conditionalize-bindings(condition, bindings)</h4></div></div></div><p><a id="idm371435307568" class="indexterm"></a>
-<a id="idm371435306064" class="indexterm"></a>
-<a id="idm371435304816" class="indexterm"></a></p><p>Returns a list where each binding in <code class="literal">bindings</code> is conditioned on
+conditions of multiple argument nodes.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-conditionalize-bindings"></a>Meta-Node: conditionalize-bindings(condition, bindings)</h4></div></div></div><p><a id="idm382384245936" class="indexterm"></a>
+<a id="idm382384244352" class="indexterm"></a>
+<a id="idm382384243056" class="indexterm"></a></p><p>Returns a list where each binding in <code class="literal">bindings</code> is conditioned on
 <code class="literal">condition</code>. <span class="emphasis"><em>See <a class="xref" href="ar01s02.html#conditional_bindings" title="Conditional Bindings"> Conditional Bindings</a></em></span>.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
 <code class="literal">condition</code>
 </span></dt><dd>
@@ -1369,19 +1493,26 @@ The condition on which to condition the bindings.
 <code class="literal">bindings</code>
 </span></dt><dd>
 List of bindings to condition.
-</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="match-fail"></a>Meta-Node: Match-Fail()</h4></div></div></div><p><a id="idm371435295440" class="indexterm"></a>
-<a id="idm371435293936" class="indexterm"></a>
-<a id="idm371435292688" class="indexterm"></a></p><p>Returns a failure with the type <code class="literal">&amp;(Match-Fail)</code>.</p><p>This failure type is used to indicate that a pattern failed to match.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_meta_node_fail_match_condition"></a>Meta-Node: fail-match(condition)</h4></div></div></div><p><a id="idm371435289120" class="indexterm"></a>
-<a id="idm371435287616" class="indexterm"></a>
-<a id="idm371435286368" class="indexterm"></a></p><p>If <code class="literal">condition</code> evaluates to false or to a failure, returns a failure
-with type <a class="link" href="ar01s05.html#match-fail" title="Meta-Node: Match-Fail()"><code class="literal">&amp;(Match-Fail)</code></a>, otherwise returns <span class="emphasis"><em>true</em></span>.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="match-fail"></a>Failure Type Node: Match-Fail</h4></div></div></div><p><a id="idm382384233232" class="indexterm"></a>
+<a id="idm382384231696" class="indexterm"></a>
+<a id="idm382384230400" class="indexterm"></a>
+<a id="idm382384229376" class="indexterm"></a>
+<a id="idm382384227808" class="indexterm"></a>
+<a id="idm382384226512" class="indexterm"></a>
+<a id="idm382384225488" class="indexterm"></a>
+<a id="idm382384223920" class="indexterm"></a>
+<a id="idm382384222624" class="indexterm"></a></p><p>Failure type indicating that a pattern failed to match.</p><p>Node <code class="literal">Match-Fail!</code> is bound to a failure of this type.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_meta_node_fail_match_condition"></a>Meta-Node: fail-match(condition)</h4></div></div></div><p><a id="idm382384218704" class="indexterm"></a>
+<a id="idm382384217136" class="indexterm"></a>
+<a id="idm382384215840" class="indexterm"></a></p><p>If <code class="literal">condition</code> evaluates to false or to a failure, returns a failure
+of type <a class="link" href="ar01s05.html#match-fail" title="Failure Type Node: Match-Fail"><code class="literal">Match-Fail</code></a>, otherwise returns <span class="emphasis"><em>true</em></span>.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
 <code class="literal">condition</code>
 </span></dt><dd>
 The pattern condition.
-</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_meta_node_make_match_bind_src_target"></a>Meta-Node: make-match-bind(src, target)</h4></div></div></div><p><a id="idm371435279248" class="indexterm"></a>
-<a id="idm371435277744" class="indexterm"></a>
-<a id="idm371435276496" class="indexterm"></a></p><p>Generates a binding <code class="literal">src -&gt; target</code>, with <code class="literal">target</code> in the <code class="literal">match</code>
-context which is activated on failures with type <a class="link" href="ar01s05.html#match-fail" title="Meta-Node: Match-Fail()"><code class="literal">&amp;(Match-Fail)</code></a>.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_meta_node_make_match_bind_src_target"></a>Meta-Node: make-match-bind(src, target)</h4></div></div></div><p><a id="idm382384208144" class="indexterm"></a>
+<a id="idm382384206576" class="indexterm"></a>
+<a id="idm382384205280" class="indexterm"></a></p><p>Generates a binding <code class="literal">src -&gt; target</code>, with <code class="literal">target</code> in the <code class="literal">match</code>
+context which is activated on failures of type
+<a class="link" href="ar01s05.html#match-fail" title="Failure Type Node: Match-Fail"><code class="literal">Match-Fail</code></a>.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
 <code class="literal">src</code>
 </span></dt><dd>
 The source of the binding.
@@ -1389,12 +1520,12 @@ The source of the binding.
 <code class="literal">target</code>
 </span></dt><dd>
 The target of the binding.
-</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-make-pattern-declarations"></a>Meta-Node: make-pattern-declarations(pattern)</h4></div></div></div><p><a id="idm371435265888" class="indexterm"></a>
-<a id="idm371435264304" class="indexterm"></a>
-<a id="idm371435263008" class="indexterm"></a></p><p>Creates the node declarations implementing a pattern.</p><p>Returns a single node declaration.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="meta-node-make-pattern-declarations"></a>Meta-Node: make-pattern-declarations(pattern)</h4></div></div></div><p><a id="idm382384194432" class="indexterm"></a>
+<a id="idm382384192848" class="indexterm"></a>
+<a id="idm382384191552" class="indexterm"></a></p><p>Creates the node declarations implementing a pattern.</p><p>Returns a single node declaration.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
 <code class="literal">pattern</code>
 </span></dt><dd>
 The <code class="literal">Pattern</code> object for which to create the declarations.
 </dd></dl></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The declaration returned by this meta-node is a suitable return
-value for a <code class="literal">target-transform</code> function. <span class="emphasis"><em>See <a class="xref" href="ar01s03.html#_instances_as_targets" title="3.7. Instances as Targets">Section 3.7, “Instances as Targets”</a></em></span>.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_operator_table_2"></a>5.13. Operator Table</h3></div></div></div><p><a id="idm371435254064" class="indexterm"></a>
-<a id="idm371435252768" class="indexterm"></a></p><div class="informaltable"><table class="informaltable" cellpadding="4px" style="border-collapse: collapse;border-top: 3px solid #527bbd; border-bottom: 3px solid #527bbd; border-left: 3px solid #527bbd; border-right: 3px solid #527bbd; "><colgroup><col class="col_1" /><col class="col_2" /><col class="col_3" /></colgroup><thead><tr><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"> Operator </th><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"> Precedence </th><th style="border-bottom: 1px solid #527bbd; " align="right" valign="top"> Associativity</th></tr></thead><tbody><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">.</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>1000</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">catch</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>850</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">@</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>800</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">*</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>200</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">/</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>200</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">+</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>100</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">-</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>100</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">&lt;</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>50</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">&lt;=</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>50</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">&gt;</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>50</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">&gt;=</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>50</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">=</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>50</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">!=</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>50</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">and</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>25</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">or</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>20</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">!-</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>15</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>right</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">-&gt;</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>10</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>right</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">&lt;-</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>10</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">:</code></p></td><td style="border-right: 1px solid #527bbd; " align="right" valign="top"><p>5</p></td><td style="" align="right" valign="top"><p>right</p></td></tr></tbody></table></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s04.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s06.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
+value for a <code class="literal">target-transform</code> function. <span class="emphasis"><em>See <a class="xref" href="ar01s03.html#_instances_as_targets" title="3.7. Instances as Targets">Section 3.7, “Instances as Targets”</a></em></span>.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_operator_table_2"></a>5.17. Operator Table</h3></div></div></div><p><a id="idm382384182688" class="indexterm"></a>
+<a id="idm382384181392" class="indexterm"></a></p><div class="informaltable"><table class="informaltable" cellpadding="4px" style="border-collapse: collapse;border-top: 3px solid #527bbd; border-bottom: 3px solid #527bbd; border-left: 3px solid #527bbd; border-right: 3px solid #527bbd; "><colgroup><col class="col_1" /><col class="col_2" /><col class="col_3" /></colgroup><thead><tr><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"> Operator </th><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"> Precedence </th><th style="border-bottom: 1px solid #527bbd; " align="right" valign="top"> Associativity</th></tr></thead><tbody><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">.</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>1000</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">when</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>850</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">@</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>800</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">*</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>200</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">/</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>200</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">+</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>100</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">-</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>100</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">&lt;</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>50</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">&lt;=</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>50</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">&gt;</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>50</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">&gt;=</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>50</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">=</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>50</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">!=</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>50</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">and</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>25</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">or</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>20</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">!-</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>15</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>right</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">-&gt;</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>10</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>right</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">&lt;-</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>10</p></td><td style="border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">:</code></p></td><td style="border-right: 1px solid #527bbd; " align="right" valign="top"><p>5</p></td><td style="" align="right" valign="top"><p>right</p></td></tr></tbody></table></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s04.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s06.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
