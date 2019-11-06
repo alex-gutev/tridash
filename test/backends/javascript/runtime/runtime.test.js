@@ -1,5 +1,5 @@
 /**
- * functions.js
+ * runtime.test.js
  *
  * Tridash JavaScript runtime library Tests.
  *

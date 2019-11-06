@@ -1,0 +1,5 @@
+{
+    "scripts": {
+        "test": "mocha \"./runtime/*.test.js\""
+    }
+}

@@ -132,6 +132,14 @@ install-js-runtime:
 	$(MAKE) --directory=src/backends/javascript install installdir=$(DESTDIR)$(pkgdatadir)
 
 
+# WebAssembly Runtime Library
+
+wasm-runtime:
+	$(MAKE) --directory=src/backends/wasm/runtime
+
+clean-wasm-runtime:
+	$(MAKE) --directory=src/backends/wasm/runtime clean
+
 ## Documentation
 
 man: doc/tridashc.1
@@ -267,6 +275,9 @@ check-compiler:
 	$(LISP) $(LISP_FLAGS) $(LISP_TEST_FLAGS) --load tridash.asd --load test/script.lisp
 
 
+check-wasm-runtime:
+	$(MAKE) --directory=src/backends/wasm/runtime check
+
 ## Phony Targets
 
 .PHONY: all man js-runtime \
@@ -277,4 +288,5 @@ check-compiler:
 	install-js-runtime \
 	install-man install-info install-html install-pdf \
 	uninstall uninstall-info uninstall-html uninstall-pdf \
-	check check-compiler check-js-runtime
+	check check-compiler check-js-runtime \
+	wasm-runtime clean-wasm-runtime check-wasm-runtime

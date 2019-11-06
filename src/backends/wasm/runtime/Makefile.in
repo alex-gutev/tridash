@@ -1,0 +1,37 @@
+EMCC = @EMCC@
+WAT2WASM = @WAT2WASM@
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+
+VPATH = $(srcdir)
+
+
+# Compiling Runtime
+
+runtime.wasm: thunk.o
+	$(EMCC) -O2 $^ -o $@ -s SIDE_MODULE
+
+thunk.o: thunk.c thunk.h types.h
+	$(EMCC) -O2 $< -o $@ -c
+
+clean:
+	rm -f thunk.o
+	rm -f runtime.wasm
+
+
+# Testing
+
+wasm_test_inputs = $(top_srcdir)/test/backends/wasm/runtime/thunks.wasm
+
+check: $(top_srcdir)/test/backends/wasm/runtime/runtime.wasm $(wasm_test_inputs)
+	cd $(top_srcdir)/test/backends/wasm; npm test
+
+$(top_srcdir)/test/backends/wasm/runtime/runtime.wasm: runtime.wasm
+	cp $< $@
+
+
+$(top_srcdir)/test/backends/wasm/runtime/thunks.wasm: $(top_srcdir)/test/backends/wasm/runtime/thunks.wat
+	$(WAT2WASM) $^ -o $@
+
+.PHONY: clean check
