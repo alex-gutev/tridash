@@ -58,11 +58,15 @@
 
 ;;;; Print functions
 
-(defun output-code (ast-nodes)
+(defun output-code (ast-nodes &key (strip t))
   "Prints the JavaScript code represented by each AST node, in
-   AST-NODES, to *STANDARD-OUTPUT*."
+   AST-NODES, to *STANDARD-OUTPUT*.
 
-  (print-ast ast-nodes :semicolon t)
+   If :STRIP is T (the default), redundant AST nodes are stripped
+   prior to printing the code."
+
+  (-> (if strip (strip-redundant ast-nodes :strip-block t) ast-nodes)
+      (print-ast :semicolon t))
   nil)
 
 
@@ -405,3 +409,114 @@
    before the next token."
 
   (setf *print-newline* t))
+
+
+;;;; Removing Redundant AST Nodes
+
+(defgeneric strip-redundant (statement &key &allow-other-keys)
+  (:documentation
+   "Remove redundant AST nodes such as nested blocks which have no
+    semantic significance and statement lists.
+
+    If the :STRIP-BLOCK keyword argument is true and STATEMENT is a
+    `JS-BLOCK', its statements are returned."))
+
+
+;;; Expressions
+
+(defmethod strip-redundant ((call js-call) &key)
+  (make-js-call
+   (strip-redundant (js-call-operator call))
+   (mapcar #'strip-redundant (js-call-operands call))))
+
+(defmethod strip-redundant ((new js-new) &key)
+  (js-new
+   (strip-redundant (js-new-operator new))
+   (mapcar #'strip-redundant (js-new-operands new))))
+
+(defmethod strip-redundant ((element js-element) &key)
+  (js-element
+   (strip-redundant (js-element-object element))
+   (strip-redundant (js-element-element element))))
+
+(defmethod strip-redundant ((member js-member) &key)
+  (js-member
+   (strip-redundant (js-member-object member))
+   (js-member-field member)))
+
+
+;;; Object and Array Literals
+
+(defmethod strip-redundant ((array js-array) &key)
+  (js-array (mapcar #'strip-redundant (js-array-elements array))))
+
+(defmethod strip-redundant ((object js-object) &key)
+  (flet ((strip-redundant (field)
+           (destructuring-bind (key value) field
+             (list (strip-redundant key) (strip-redundant value)))))
+    (js-object (mapcar #'strip-redundant (js-object-fields object)))))
+
+
+;;; Blocks
+
+(defmethod strip-redundant ((if js-if) &key)
+  (js-if (strip-redundant (js-if-condition if))
+         (strip-redundant (js-if-then if))
+         (strip-redundant (js-if-else if))))
+
+(defmethod strip-redundant ((while js-while) &key)
+  (js-while (strip-redundant (js-while-condition while))
+            (strip-redundant (js-while-body while))))
+
+
+(defmethod strip-redundant ((block js-block) &key strip-block)
+  (let ((statements (strip-redundant (js-block-statements block))))
+    (cond
+      ((null (rest statements))
+       (first statements))
+
+      ((or strip-block (null statements))
+       statements)
+
+      (t (make-js-block statements)))))
+
+(defmethod strip-redundant ((statements list) &key)
+  (mappend (compose #'ensure-list (rcurry #'strip-redundant :strip-block t))
+           statements))
+
+(defmethod strip-redundant ((statements sequence) &key)
+  (strip-redundant (coerce statements 'list)))
+
+(defmethod strip-redundant ((str string) &key)
+  str)
+
+(defmethod strip-redundant ((function js-function) &key)
+  (js-function
+   (js-function-name function)
+   (mapcar #'strip-redundant (js-function-arguments function))
+   (strip-redundant (js-function-statements function))))
+
+(defmethod strip-redundant ((catch js-catch) &key)
+  (js-catch
+   (strip-redundant (js-catch-try catch))
+   (js-catch-var catch)
+   (strip-redundant (js-catch-catch catch))))
+
+
+;;; Statements
+
+(defmethod strip-redundant ((return js-return) &key)
+  (js-return (strip-redundant (js-return-value return))))
+
+(defmethod strip-redundant ((var js-var) &key)
+  (js-var (js-var-var var)
+          (strip-redundant (js-var-value var))))
+
+(defmethod strip-redundant ((throw js-throw) &key)
+  (js-throw (strip-redundant (js-throw-expression throw))))
+
+
+;;; Other
+
+(defmethod strip-redundant (thing &key)
+  thing)
