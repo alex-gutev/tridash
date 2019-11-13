@@ -322,9 +322,10 @@
    the value of BLOCK. The last element of the list is BLOCK, itself.
 
    Compiled `expression-block's of which the count does not equal the
-   reference within BLOCK, are not included in the list. The second
-   return value contains a map of such `VALUE-BLOCK's and the number
-   of times they are referenced within BLOCK."
+   number of references within BLOCK, are not included in the
+   list. The second return value contains a map of all such
+   `VALUE-BLOCK's and the number of times they are referenced within
+   BLOCK."
 
   (let ((flat-block nil)
         (block-map (make-hash-map)))

@@ -77,7 +77,12 @@
                                        (:file "symbols")
                                        (:file "backend")
                                        (:file "functions")
-                                       (:file "html"))))))
+                                       (:file "html")))
+
+                 (:module "backends/wasm"
+                          :serial t
+                          :components ((:file "package")
+                                       (:file "expressions"))))))
 
   :depends-on (:anaphora
                :iterate
@@ -95,8 +100,10 @@
                :cl-fad
                :unix-opts
                :trivial-gray-streams
+               :babel
 
                :generic-cl
+               :generic-cl.util
 
                ;; Plump dependencies
                :array-utils)
