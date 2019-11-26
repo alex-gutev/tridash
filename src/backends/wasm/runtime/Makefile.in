@@ -9,14 +9,18 @@ VPATH = $(srcdir)
 
 # Compiling Runtime
 
-runtime.wasm: thunk.o
+runtime.wasm: thunk.o memory.o
 	$(EMCC) -O2 $^ -o $@ -s SIDE_MODULE
 
 thunk.o: thunk.c thunk.h types.h
 	$(EMCC) -O2 $< -o $@ -c
 
+memory.o: memory.c memory.h types.h
+	$(EMCC) -fPIC -O2 $< -o $@ -c
+
 clean:
 	rm -f thunk.o
+	rm -f memory.o
 	rm -f runtime.wasm
 
 

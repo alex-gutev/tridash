@@ -55,7 +55,7 @@
 /**
  * Clears the non-tag bits of x.
  */
-#define PTR_TAG(x) ((x) & TAG_MASK)
+#define PTR_TAG(x) ((uintptr_t)(x) & TAG_MASK)
 
 
 //// Tag Types
@@ -141,6 +141,15 @@ enum tridash_type {
 
     TRIDASH_TYPE_INT = 2,
     TRIDASH_TYPE_FLOAT = 3,
+
+    /**
+     * Indicates object was copied to new heap during garbage
+     * collection.
+     *
+     * The pointer to the copied object is stored at the following
+     * word.
+     */
+    TRIDASH_TYPE_FORWARD = 4
 };
 
 
