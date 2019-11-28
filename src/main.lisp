@@ -356,7 +356,7 @@ Example: tridashc ui.trd : node-name=ui")
     (opts:exit 1)))
 
 (defmethod debugger-hook (condition prev-hook)
-  (format *debug-io* "~&~a~%" condition))
+  (format *error-output* "~&~a~%" condition))
 
 
 (defun pprint-table ()
@@ -412,10 +412,10 @@ Example: tridashc ui.trd : node-name=ui")
   (declare (ignore prev-hook))
 
   (with-slots (declaration-stack) condition
-    (format t "~&~a~%~%" condition)
+    (format *error-output* "~&~a~%~%" condition)
 
     (when *current-source-file*
-      (format t "File: ~a~%~%" *current-source-file*))
+      (format *error-output* "File: ~a~%~%" *current-source-file*))
 
     (print-declaration-stack declaration-stack)))
 
@@ -428,12 +428,12 @@ Example: tridashc ui.trd : node-name=ui")
       (node-declaration
        (destructuring-bind (line . column)
            (node-declaration-location decl)
-         (format t "In ~a at ~a:~a~%~%"
+         (format *error-output* "In ~a at ~a:~a~%~%"
                  (unwrap-declaration decl)
                  line column)))
 
       (otherwise
-       (format t "In ~a~%~%" (unwrap-declaration decl))))))
+       (format *error-output* "In ~a~%~%" (unwrap-declaration decl))))))
 
 
 ;;; Failures
@@ -478,11 +478,11 @@ Example: tridashc ui.trd : node-name=ui")
                    ""))))
 
     (with-slots (fail-type) condition
-      (format t "~&Failure in ~a~a.~%~%"
+      (format *error-output* "~&Failure in ~a~a.~%~%"
               (call-reason *tridash-call-reason*)
               (type-desc fail-type))
 
       (when *current-source-file*
-        (format t "File: ~a~%~%" *current-source-file*))
+        (format *error-output* "File: ~a~%~%" *current-source-file*))
 
       (print-declaration-stack *declaration-stack*))))
