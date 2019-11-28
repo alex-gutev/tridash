@@ -415,8 +415,8 @@
     external meta-node."))
 
 (defmethod print-object ((e undefined-external-meta-node-error) stream)
-  (format stream "The current backend does not provided a definition for ~a."
-          (meta-node e)))
+  (format stream "The ~a backend does not provided a definition for ~a."
+          (backend e) (meta-node e)))
 
 
 (define-condition meta-node-no-function-error (semantic-error)
