@@ -83,43 +83,46 @@
   arguments)
 
 
-(defgeneric walk-expression (fn expression)
+(defgeneric walk-expression (fn expression &key visited)
   (:documentation
    "Calls FN on each expression in the tree rooted at EXPRESSION. If
     FN returns NIL, FN is not called on the expressions contained in
     the expression passed as an argument.")
 
-  (:method :around (fn expr)
+  (:method :around (fn expr &key (visited (make-hash-set)))
     (when (funcall fn expr)
-      (call-next-method)))
+      (call-next-method fn expr :visited visited)))
 
-  (:method (fn (call functor-expression))
+  (:method (fn (call functor-expression) &key visited)
     (with-struct-slots functor-expression- (meta-node arguments outer-nodes) call
       (walk-expression fn meta-node)
-      (foreach (curry #'walk-expression fn) arguments)
-      (foreach (curry #'walk-expression fn) (map-values outer-nodes))))
+      (foreach (curry #'walk-expression fn :visited visited) arguments)
+      (foreach (curry #'walk-expression fn :visited visited) (map-values outer-nodes))))
 
-  (:method (fn (object object-expression))
-    (foreach (compose (curry #'walk-expression fn) #'second)
+  (:method (fn (object object-expression) &key visited)
+    (foreach (compose (curry #'walk-expression fn :visited visited) #'second)
              (object-expression-entries object)))
 
-  (:method (fn (block expression-block))
-    (walk-expression fn (expression-block-expression block)))
+  (:method (fn (block expression-block) &key visited)
+    (unless (memberp block visited)
+      (nadjoin block visited)
+      (walk-expression fn (expression-block-expression block))))
 
-  (:method (fn (ref meta-node-ref))
+  (:method (fn (ref meta-node-ref) &key visited)
     (with-struct-slots meta-node-ref- (optional outer-nodes) ref
-      (foreach (curry #'walk-expression fn) optional)
-      (foreach (curry #'walk-expression fn) (map-values outer-nodes))))
+      (foreach (curry #'walk-expression fn :visited visited) optional)
+      (foreach (curry #'walk-expression fn :visited visited) (map-values outer-nodes))))
 
-  (:method (fn (list argument-list))
-    (foreach (curry #'walk-expression fn) (argument-list-arguments list)))
+  (:method (fn (list argument-list) &key visited)
+    (foreach (curry #'walk-expression fn :visited visited) (argument-list-arguments list)))
 
-  (:method (fn (link node-link))
+  (:method (fn (link node-link) &key visited)
     (with-struct-slots node-link- (node) link
       (unless (node? node)
-        (walk-expression fn node))))
+        (walk-expression fn node :visited visited))))
 
-  (:method ((fn t) (expr t))
+  (:method ((fn t) (expr t) &key visited)
+    (declare (ignore visited))
     nil))
 
 (defgeneric map-expression! (fn expression)
@@ -154,7 +157,8 @@
 
   (:method (fn (block expression-block))
     (with-accessors ((expression expression-block-expression)) block
-      (setf expression (funcall fn expression))))
+      (setf expression (funcall fn expression))
+      block))
 
   (:method (fn (ref meta-node-ref))
     (with-struct-slots meta-node-ref- (node optional outer-nodes) ref

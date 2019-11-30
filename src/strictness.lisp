@@ -164,8 +164,15 @@
 
   nil)
 
+(defvar *parent-expression-blocks* nil
+  "List of `EXPRESSION-BLOCK' objects in which the expression
+   currently being analyzed is contained. The first element of the
+   list is the innermost `EXPRESSION_BLOCK' object.")
+
 (defmethod analyze-expression ((block expression-block))
-  (analyze-expression (expression-block-expression block)))
+  (unless (memberp block *parent-expression-blocks*)
+    (let ((*parent-expression-blocks* (cons block *parent-expression-blocks*)))
+      (analyze-expression (expression-block-expression block)))))
 
 
 ;;; Object and Member Expressions

@@ -587,6 +587,10 @@
          (values
           nil
           (aprog1 (var-name)
+
+            ;; Add variable name to expression-block table
+            (setf (get block *expression-blocks*) (list it))
+
             (->>
              (nth-value 1 (make-expression expression :thunk t))
              (list it)
