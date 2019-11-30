@@ -20,12 +20,19 @@
 
 (in-package :tridash.frontend)
 
-(defstruct (node-link (:constructor node-link (node &key context)))
+(in-readtable cut-syntax)
+
+
+(defstruct (node-link (:constructor node-link (node &key context two-way-p)))
   "Represents a reference to the value of NODE. CONTEXT is the
-   identifier of the context in which this expression appears."
+   identifier of the context in which this expression
+   appears. TWO-WAY-P is true if the link represents a two-way
+   binding, that is there is also a link in the opposite direction."
 
   node
-  context)
+  context
+
+  two-way-p)
 
 (defstruct (node-ref (:constructor node-ref (node)))
   "Represents a direct reference to NODE. A direct reference is a
@@ -51,6 +58,7 @@
 
   entries)
 
+
 (defstruct
     (expression-block (:constructor expression-block (expression &key count)))
 
@@ -62,6 +70,13 @@
 
   expression
   (count 1))
+
+(defstruct (cyclic-reference (:constructor cyclic-reference (expression)))
+  "Represents a reference to an expression in which this expression is
+   contained."
+
+  expression)
+
 
 (defstruct (meta-node-ref (:constructor meta-node-ref (node &key optional (outer-nodes (make-hash-map)))))
   "Represents a meta-node reference. NODE is the `META-NODE' object.
@@ -83,46 +98,43 @@
   arguments)
 
 
-(defgeneric walk-expression (fn expression &key visited)
+(defgeneric walk-expression (fn expression)
   (:documentation
    "Calls FN on each expression in the tree rooted at EXPRESSION. If
     FN returns NIL, FN is not called on the expressions contained in
     the expression passed as an argument.")
 
-  (:method :around (fn expr &key (visited (make-hash-set)))
+  (:method :around (fn expr)
     (when (funcall fn expr)
-      (call-next-method fn expr :visited visited)))
+      (call-next-method)))
 
-  (:method (fn (call functor-expression) &key visited)
+  (:method (fn (call functor-expression))
     (with-struct-slots functor-expression- (meta-node arguments outer-nodes) call
       (walk-expression fn meta-node)
-      (foreach (curry #'walk-expression fn :visited visited) arguments)
-      (foreach (curry #'walk-expression fn :visited visited) (map-values outer-nodes))))
+      (foreach (curry #'walk-expression fn) arguments)
+      (foreach (curry #'walk-expression fn) (map-values outer-nodes))))
 
-  (:method (fn (object object-expression) &key visited)
-    (foreach (compose (curry #'walk-expression fn :visited visited) #'second)
+  (:method (fn (object object-expression))
+    (foreach (compose (curry #'walk-expression fn) #'second)
              (object-expression-entries object)))
 
-  (:method (fn (block expression-block) &key visited)
-    (unless (memberp block visited)
-      (nadjoin block visited)
-      (walk-expression fn (expression-block-expression block))))
+  (:method (fn (block expression-block))
+    (walk-expression fn (expression-block-expression block)))
 
-  (:method (fn (ref meta-node-ref) &key visited)
+  (:method (fn (ref meta-node-ref))
     (with-struct-slots meta-node-ref- (optional outer-nodes) ref
-      (foreach (curry #'walk-expression fn :visited visited) optional)
-      (foreach (curry #'walk-expression fn :visited visited) (map-values outer-nodes))))
+      (foreach (curry #'walk-expression fn) optional)
+      (foreach (curry #'walk-expression fn) (map-values outer-nodes))))
 
-  (:method (fn (list argument-list) &key visited)
-    (foreach (curry #'walk-expression fn :visited visited) (argument-list-arguments list)))
+  (:method (fn (list argument-list))
+    (foreach (curry #'walk-expression fn) (argument-list-arguments list)))
 
-  (:method (fn (link node-link) &key visited)
+  (:method (fn (link node-link))
     (with-struct-slots node-link- (node) link
       (unless (node? node)
-        (walk-expression fn node :visited visited))))
+        (walk-expression fn node))))
 
-  (:method ((fn t) (expr t) &key visited)
-    (declare (ignore visited))
+  (:method ((fn t) (expr t))
     nil))
 
 (defgeneric map-expression! (fn expression)

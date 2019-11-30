@@ -164,6 +164,7 @@
    :node-link
    :node-link-node
    :node-link-context
+   :node-link-two-way-p
    :node-link-p
    :self
 
@@ -190,6 +191,10 @@
    :expression-block-p
    :expression-block-expression
    :expression-block-count
+
+   :cyclic-reference
+   :cyclic-reference-expression
+   :cyclic-reference-p
 
    :meta-node-ref
    :meta-node-ref-p

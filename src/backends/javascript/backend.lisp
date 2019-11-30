@@ -471,13 +471,13 @@
 (defun bind-observers (node context-id context)
   "Generates code which binds the `NODE' NODE to its observers."
 
-  (let* ((context-path (context-path node context-id)))
-
-    (doseq ((observer . link) (observers node))
-      (unless (get observer (operands context))
-        (with-accessors ((link-context node-link-context)) link
-          (append-code
-           (js-call
-            (js-member context-path "add_observer")
-            (context-path observer link-context)
-            (dependency-index (context observer link-context) node))))))))
+  (with-slots (operands) context
+    (let* ((context-path (context-path node context-id)))
+      (doseq ((observer . link) (observers node))
+        (with-struct-slots node-link- (context two-way-p) link
+          (unless (and two-way-p (get observer operands))
+            (append-code
+             (js-call
+              (js-member context-path "add_observer")
+              (context-path observer context)
+              (dependency-index (context observer context) node)))))))))

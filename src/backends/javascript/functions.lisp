@@ -602,6 +602,19 @@
   (meta-node? *current-node*))
 
 
+(defmethod make-expression ((cycle cyclic-reference) &key)
+  "Handles cyclic references. Returns the variable storing the value
+   of the referenced expression."
+
+  (with-struct-slots cyclic-reference- (expression) cycle
+    (check-type expression expression-block)
+
+    (let ((var (get expression *expression-blocks*)))
+      (assert var)
+
+      (values nil var))))
+
+
 ;;; Meta-Node References
 
 (defmethod make-expression ((ref meta-node-ref) &key)

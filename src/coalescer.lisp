@@ -162,7 +162,8 @@
                       (setf (node-link-node link)
                             (->> (node-link-context node-link)
                                  (context observer)
-                                 value-function))
+                                 value-function
+                                 cyclic-reference))
 
                       (erase (observers dependency) node))
 
@@ -239,6 +240,18 @@
          block))
 
       (_ link))))
+
+(defmethod coalesce-links-in-expression ((cycle cyclic-reference))
+  "Coalesces `NODE-LINK' objects in the EXPRESSION of the cyclic
+   reference CYCLE. Since the EXPRESSION part of the cyclic reference
+   has already been visited (as CYCLE is contained in it), the
+   `NODE-LINK' in it will already point to an `EXPRESSION-BLOCK'
+   object with which it will be replaced"
+
+  (-> cycle
+      cyclic-reference-expression
+      coalesce-links-in-expression
+      cyclic-reference))
 
 (defmethod coalesce-links-in-expression ((expression t))
   (map-expression! #'coalesce-links-in-expression expression))

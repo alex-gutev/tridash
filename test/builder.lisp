@@ -283,16 +283,24 @@
                    (sort entries-a :key (compose #'symbol-name #'first))
                    (sort entries-b :key (compose #'symbol-name #'first))))))))
 
-(defmethod value-fn-equal ((a expression-block) (b expression-block))
-  (match* (a b)
-    (((expression-block- (expression expr-a) (count count-a))
-      (expression-block- (expression expr-b) (count count-b)))
+(defvar *parent-expression-blocks* nil)
 
-     (and (value-fn-equal expr-a expr-b)
-          (= count-a count-b)))))
+(defmethod value-fn-equal ((a expression-block) (b expression-block))
+  (let ((*parent-expression-blocks* (acons a b *parent-expression-blocks*)))
+    (match* (a b)
+      (((expression-block- (expression expr-a) (count count-a))
+        (expression-block- (expression expr-b) (count count-b)))
+
+       (and (value-fn-equal expr-a expr-b)
+            (= count-a count-b))))))
 
 (defmethod value-fn-equal ((a expression-block) b)
   (value-fn-equal (expression-block-expression a) b))
+
+(defmethod value-fn-equal ((got cyclic-reference) (exp cyclic-reference))
+  (=
+   (cdr (assoc (cyclic-reference-expression got) *parent-expression-blocks*))
+   (cyclic-reference-expression exp)))
 
 (defmethod value-fn-equal ((got meta-node-ref) (exp meta-node-ref))
   (with-struct-slots meta-node-ref-
@@ -1889,15 +1897,80 @@
               table
 
             (has-value-function
-             (p p.fail) a
-             `(if (,not ,p.fail) (:member ,p ,(id-symbol "value")) (:fail nil)))
+                (p p.fail) a
+              `(if (,not ,p.fail) (:member ,p ,(id-symbol "value")) (:fail nil)))
 
             (has-value-function
-             (in2 p.fail) b
-             `(if ,p.fail ,in2 (:fail nil)))
+                (in2 p.fail) b
+              `(if ,p.fail ,in2 (:fail nil)))
 
             (has-value-function (in1) p `(,parse ,in1))
-            (is (length (contexts p)) 1 "Node p has a single context."))))))
+            (is (length (contexts p)) 1 "Node p has a single context.")))))
+
+    (subtest "Cycles"
+      (subtest "Non-Coalescable"
+        (with-module-table modules
+          (build ":extern(cons, a, b)"
+                 "cons(a, y) -> x"
+                 "cons(b, x) -> y"
+
+                 "x -> output"
+
+                 ":attribute(a, input, 1)"
+                 ":attribute(b, input, 1)"
+                 ":attribute(x, no-coalesce, 1)"
+                 ":attribute(y, no-coalesce, 2)")
+
+          (let ((table (finish-build)))
+            (test-not-nodes
+             table
+             '("cons" "a" "y")
+             '("cons" "b" "x"))
+
+            (with-nodes ((cons "cons")
+                         (a "a") (b "b")
+                         (x "x") (y "y")
+                         (output "output"))
+                table
+
+              (has-value-function (a y) x
+                `(,cons ,a ,y))
+
+              (has-value-function (b x) y
+                `(,cons ,b ,x))
+
+              (test-binding x output)))))
+
+      (subtest "Coalescable"
+        (with-module-table modules
+          (build ":extern(cons, a, b)"
+                 "cons(a, y) -> x"
+                 "cons(b, x) -> y"
+
+                 "x -> output"
+
+                 ":attribute(a, input, 1)"
+                 ":attribute(b, input, 1)")
+
+          (let ((table (finish-build)))
+            (test-not-nodes
+             table
+             "x" "y"
+             '("cons" "a" "y")
+             '("cons" "b" "x"))
+
+            (with-nodes ((cons "cons")
+                         (a "a") (b "b")
+                         (output "output"))
+                table
+
+              (let ((block (expression-block nil :count 2)))
+                (has-value-function (a b) output
+                  (progn
+                    (setf (expression-block-expression block)
+                          `(,cons ,a (,cons ,b ,(cyclic-reference block))))
+
+                    block)))))))))
 
   (subtest "Removing Unreachable Nodes"
     (with-module-table modules
@@ -1923,7 +1996,7 @@
       (with-module-table modules
         (build ":extern(add, x, y)"
                "a -> b; add(b, d) -> output"
-               "cc -> d"                 ; Unreachable Nodes
+               "cc -> d"                ; Unreachable Nodes
                ":attribute(a, input, 1)")
 
         (is-error (finish-build) 'dependency-not-reachable-error))))
@@ -1972,9 +2045,9 @@
               table
 
             (has-value-function
-             (a)
-             b
-             `(,map ,(meta-node-ref f) ,a))
+                (a)
+                b
+              `(,map ,(meta-node-ref f) ,a))
 
             (test-meta-node f ((z "z")) `(,1+ ,z)))))))
 
@@ -2060,13 +2133,13 @@
             table
 
           (has-value-function
-           (in) out
-           `(:object
-             (,(id-symbol "fail")
-               (,nan? ,(expression-block `(,parse ,in) :count 2)))
+              (in) out
+            `(:object
+              (,(id-symbol "fail")
+                (,nan? ,(expression-block `(,parse ,in) :count 2)))
 
-             (,(id-symbol "value")
-               ,(expression-block `(,parse ,in) :count 2)))))))
+              (,(id-symbol "value")
+                ,(expression-block `(,parse ,in) :count 2)))))))
 
     (with-module-table modules
       (build ":extern(add, x, y); :extern(even?, x)"
@@ -2094,8 +2167,8 @@
             table
 
           (has-value-function
-           (a d) out
-           `(,add (,add ,a ,(expression-block `(if (,even? (,add ,a ,1)) (,add ,a 1) (:fail nil)))) ,d))))))
+              (a d) out
+            `(,add (,add ,a ,(expression-block `(if (,even? (,add ,a ,1)) (,add ,a 1) (:fail nil)))) ,d))))))
 
   (subtest "Explicit Context"
     (subtest "Common Operands"
@@ -2115,16 +2188,16 @@
               table
 
             (has-value-function
-             (a b)
-             output
+                (a b)
+                output
 
-             `(:catch
-                  (:catch
-                      ,(expression-block
-                        `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
-                    ,(expression-block
-                      `(if (,> ,a 4) (,- ,a ,b) (:fail nil)))
-                    nil)
+              `(:catch
+                (:catch
+                 ,(expression-block
+                   `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
+                 ,(expression-block
+                   `(if (,> ,a 4) (,- ,a ,b) (:fail nil)))
+                 nil)
                 ,b
                 nil))))))
 
@@ -2147,12 +2220,12 @@
               table
 
             (has-value-function
-             (a b cc)
-             output
+                (a b cc)
+                output
 
-             `(:catch
-                  ,(expression-block
-                    `(if (,< ,a 3) ,cc (:fail nil)))
+              `(:catch
+                ,(expression-block
+                  `(if (,< ,a 3) ,cc (:fail nil)))
                 ,b
                 nil))))))
 
@@ -2172,12 +2245,12 @@
               table
 
             (has-value-function
-             (a b)
-             output
+                (a b)
+                output
 
-             `(:catch
-                  ,(expression-block
-                    `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
+              `(:catch
+                ,(expression-block
+                  `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
                 ,(expression-block
                   `(if (,< ,b 4) ,b (:fail nil)))
                 nil))))))
@@ -2199,12 +2272,12 @@
               table
 
             (has-value-function
-             (a b)
-             output
+                (a b)
+                output
 
-             `(:catch
-                  ,(expression-block
-                    `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
+              `(:catch
+                ,(expression-block
+                  `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
                 ,b
                 nil))))))
 
@@ -2225,12 +2298,12 @@
               table
 
             (has-value-function
-             (a b)
-             output
+                (a b)
+                output
 
-             `(:catch
-                  ,(expression-block
-                    `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
+              `(:catch
+                ,(expression-block
+                  `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
                 ,(expression-block
                   `(if (,< ,b 4) ,b (:fail nil)))
                 nil))))))
@@ -2252,11 +2325,11 @@
               table
 
             (has-value-function
-             (a b)
-             output
+                (a b)
+                output
 
-             `(:catch
-                  (if (,< ,a 3) (,+ ,a ,b) (:fail nil))
+              `(:catch
+                (if (,< ,a 3) (,+ ,a ,b) (:fail nil))
                 ,b
                 nil))))))))
 
@@ -2397,82 +2470,6 @@
            `(,add 1 ,y)))))))
 
 (subtest "Structure Checking"
-  (subtest "Cycle Checks"
-    (subtest "Simple Bindings"
-      (with-module-table modules
-        (build "a -> b"
-               "b -> cc"
-
-               "cc -> d"
-               "cc -> out2"
-
-               "d -> out1"
-               "d -> b"
-
-               ":attribute(a, input, 1)")
-
-        (is-error (finish-build) 'node-cycle-error))
-
-      (subtest "Cross-Module Bindings"
-        (with-module-table modules
-          (build ":module(m1)"
-                 ":import(builtin)"
-                 "a -> b"
-                 "b -> cc"
-
-                 ":attribute(a, input, 1)"
-
-                 ":module(m2)"
-                 ":import(builtin)"
-                 ":use(m1)"
-
-                 "m1.cc -> d"
-                 "m1.cc -> out2"
-
-                 "d -> out1"
-                 "d -> m1.b")
-
-          (is-error (finish-build) 'node-cycle-error))))
-
-    (subtest "Functional Bindings"
-      (with-module-table modules
-        (build ":extern(add, x, y)"
-               "add(a, b) -> cc"
-
-               "cc -> out1"
-               "cc -> d"
-
-               "d -> out2"
-               "d -> a"
-
-               ":attribute(a, input, 1)"
-               ":attribute(b, input, 1)")
-
-        (is-error (finish-build) 'node-cycle-error))
-
-      (subtest "Cross-Module Bindings"
-        (with-module-table modules
-          (build ":module(m1)"
-                 "a; cc"
-                 ":attribute(a, input, 1)"
-
-                 ":module(m2)"
-                 ":import(builtin)"
-                 ":use(m1)"
-
-                 ":extern(add, x, y)"
-                 "add(m1.a, b) -> m1.cc"
-
-                 "m1.cc -> out1"
-                 "m1.cc -> d"
-
-                 "d -> out2"
-                 "d -> m1.a"
-
-                 ":attribute(b, input, 1)")
-
-          (is-error (finish-build) 'node-cycle-error)))))
-
   (subtest "Ambiguous Context Checks"
     (subtest "Simple Bindings"
       (with-module-table modules
@@ -3801,36 +3798,6 @@
           (is-error (finish-build) 'non-existent-node-error)))))
 
   (subtest "Structure Checking"
-    (subtest "Cycle Checks"
-      (subtest "Simple Bindings"
-        (with-module-table modules
-          (build "f(a) : {
-                      a -> b
-                      b -> c
-                      c -> d
-                      c -> self.out2
-                      d -> self.out1
-                      d -> b
-                    }"
-                 ":attribute(f, no-remove, 1)")
-
-          (is-error (finish-build) 'node-cycle-error)))
-
-      (subtest "Functional Bindings"
-        (with-module-table modules
-          (build ":extern(add, x, y)"
-
-                 "f(a, b) : {
-                      add(a, b) -> c
-                      c -> self.out1
-                      c -> d
-                      d -> self.out2
-                      d -> a
-                    }"
-                 ":attribute(f, no-remove, 1)")
-
-          (is-error (finish-build) 'node-cycle-error))))
-
     (subtest "Ambiguous Context Checks"
       (subtest "Simple Bindings"
         (with-module-table modules

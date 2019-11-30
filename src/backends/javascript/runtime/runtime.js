@@ -297,7 +297,6 @@ Node.prototype.update = function() {
                 this.value = value;
                 this.update_value(value);
             })
-            .catch((e) => value.reject(e))
             .finally(this.update.bind(this));
     } else {
         this.running = false;
