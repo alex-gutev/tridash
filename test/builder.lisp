@@ -3767,14 +3767,17 @@
 
             (test-meta-node f ((x "x")) `(,int ,x))))))
 
+    (subtest "Atom Declarations"
+      (with-module-table modules
+        (build ":extern(add,a,b)"
+               "f(x) : { z; add(x,1) -> z; z; }"
+               ":attribute(f, no-remove, 1)")
+
+        (with-nodes ((f "f") (add "add")) (finish-build)
+          (test-meta-node f ((x "x"))
+            `(,add ,x 1)))))
+
     (subtest "Errors"
-      (subtest "Atom Declarations"
-        (with-module-table modules
-          (build "f(x) : z"
-                 ":attribute(f, no-remove, 1)")
-
-          (is-error (finish-build) 'non-existent-node-error)))
-
       (subtest "Operands"
         (with-module-table modules
           (build ":extern(add, x, y)"
