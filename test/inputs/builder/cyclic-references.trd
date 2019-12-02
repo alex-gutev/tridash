@@ -1,0 +1,12 @@
+:extern(cons, head, tail)
+
+f(a,b) : {
+    x; y
+
+    cons(a, y) -> x;
+    cons(b, x) -> y;
+
+    x
+}
+
+:attribute(f, no-remove, 1)

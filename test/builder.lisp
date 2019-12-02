@@ -3800,6 +3800,16 @@
 
           (is-error (finish-build) 'non-existent-node-error)))))
 
+  (subtest "Cyclic References"
+    (with-module-table modules
+      (build-source-file "./test/inputs/builder/cyclic-references.trd" modules)
+
+      (with-nodes ((f "f") (cons "cons")) (finish-build)
+        (test-meta-node f ((a "a") (b "b"))
+          (aprog1 (expression-block nil :count 2)
+            (setf (expression-block-expression it)
+                  `(,cons ,a (,cons ,b ,(cyclic-reference it)))))))))
+
   (subtest "Structure Checking"
     (subtest "Ambiguous Context Checks"
       (subtest "Simple Bindings"
