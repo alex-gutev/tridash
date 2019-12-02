@@ -609,7 +609,7 @@
   (with-struct-slots cyclic-reference- (expression) cycle
     (check-type expression expression-block)
 
-    (let ((var (get expression *expression-blocks*)))
+    (let ((var (first (get expression *expression-blocks*))))
       (assert var)
 
       (values nil var))))
