@@ -981,7 +981,8 @@ error is triggered.
 
 Local nodes are created if they appear as the target of a binding,
 whether implicit or explicit. This is the means by which local nodes,
-storing intermediate results are created.
+storing intermediate results are created. Local nodes are also created
+for each top-level atom node declaration, _See <<atom_nodes>>_.
 
 NOTE: The node creation rules inside meta-node definitions differ from
 the node creation rules at the global scope.
@@ -1031,6 +1032,21 @@ factorial(n) :
         1
     )
 --------------------------------------------------
+
+.Example: Local Node Declarations
+--------------------------------------------------
+cycle(a, b) : {
+    x; y;  # Declare local nodes `x` and `y` <1>
+
+    cons(a, y) -> x
+    cons(b, x) -> y
+
+    x
+}
+--------------------------------------------------
+
+<1> Top-level atom node declarations, resulting in the creation of
+local nodes `x` and `y`.
 
 ==== Self Node ====
 

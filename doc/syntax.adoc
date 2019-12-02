@@ -58,7 +58,7 @@ conventions:
 
     - `+` indicates one or more repetitions of the preceding rule.
 
-
+[[atom_nodes]]
 === Atom Nodes ===
 
 (((Atoms,Syntax,Nodes)))
