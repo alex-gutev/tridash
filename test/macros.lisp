@@ -700,6 +700,20 @@
          '(let nil
            (!|cons| $x (thunk (!|cons| $y $xs))))))))
 
+  (subtest "Cyclic References"
+    (with-core-nodes ("cons")
+      (test-compile-meta-node
+        (a b)
+        (aprog1 (expression-block nil :count 2)
+          (setf (expression-block-expression it)
+                (functor cons a (functor cons b (cyclic-reference it)))))
+
+        ($a $b)
+        '(let ($block)
+          (setf $block
+           (thunk (!|cons| $a (thunk (!|cons| $b $block)))))
+          $block))))
+
   (subtest "Errors"
     (subtest "Unsupported `EXTERNAL-META-NODE'"
       (with-external-meta-nodes ("not-a-function")
@@ -1075,6 +1089,14 @@
         (with-nodes ((f "f")) modules
           (is (call-meta-node f '(3 7)) -65)
           (is (call-meta-node f '(5 2)) 20)))))
+
+  (subtest "Cyclic References"
+    (with-module-table modules
+      (build-core-module)
+      (build-source-file "./test/inputs/macros/cyclic-references.trd" modules)
+
+      (with-nodes ((f "f")) modules
+        (is (call-meta-node f '(1 2)) '(1 2 1 2 1)))))
 
   (subtest "Errors"
     (subtest "Type Errors"

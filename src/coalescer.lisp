@@ -132,12 +132,12 @@
 
            (with-slots (dependencies) observer
              (let* ((context (first (map-values (contexts node))))
-                    (link (get node dependencies))
-                    (context-id (node-link-context link)))
+                    (node-link (get node dependencies))
+                    (context-id (node-link-context node-link)))
 
                (with-slots (operands value-function) (context observer context-id)
                  ;; Update link NODE -> OBSERVER to store VALUE-FUNCTION of NODE
-                 (setf (node-link-node link) (value-function context))
+                 (setf (node-link-node node-link) (value-function context))
 
                  ;; Remove NODE from DEPENDENCIES of OBSERVER
                  (erase dependencies node)
@@ -153,16 +153,32 @@
 
                      (setf (node-link-node old-link) link))
 
-                   ;; Add DEPENDENCY to dependencies of OBSERVER
-                   (setf (get dependency dependencies) link)
-                   (setf (get dependency operands) link)
-                   (setf (node-link-context link) context-id)
+                   (cond
+                     ((= dependency observer)
+                      ;; DEPENDENCY and OBSERVER are the same node.
+                      ;; The link (DEPENDENCY -> OBSERVER) has to be
+                      ;; replaced with the value function of OBSERVER.
 
-                   (with-slots (observers) dependency
-                     ;; Remove NODE from observers of DEPENDENCY
-                     (erase observers node)
-                     ;; Add OBSERVER to observers of DEPENDENCY
-                     (setf (get observer (observers dependency)) link)))))))
+                      (setf (node-link-node link)
+                            (->> (node-link-context node-link)
+                                 (context observer)
+                                 value-function
+                                 cyclic-reference))
+
+                      (erase (observers dependency) node))
+
+                     (t
+
+                      ;; Add DEPENDENCY to dependencies of OBSERVER
+                      (setf (get dependency dependencies) link)
+                      (setf (get dependency operands) link)
+                      (setf (node-link-context link) context-id)
+
+                      (with-slots (observers) dependency
+                        ;; Remove NODE from observers of DEPENDENCY
+                        (erase observers node)
+                        ;; Add OBSERVER to observers of DEPENDENCY
+                        (setf (get observer (observers dependency)) link)))))))))
 
          (remove-from-dependencies (node)
            "Removes NODE from the observer set of each of its
@@ -217,11 +233,25 @@
        node)
 
       ((not (type node))
-       (->> (coalesce-links-in-expression node)
-            expression-block
-            (setf node)))
+       (let ((expression node)
+             (block (setf node (expression-block nil))))
+         (setf (expression-block-expression block)
+               (coalesce-links-in-expression expression))
+         block))
 
       (_ link))))
+
+(defmethod coalesce-links-in-expression ((cycle cyclic-reference))
+  "Coalesces `NODE-LINK' objects in the EXPRESSION of the cyclic
+   reference CYCLE. Since the EXPRESSION part of the cyclic reference
+   has already been visited (as CYCLE is contained in it), the
+   `NODE-LINK' in it will already point to an `EXPRESSION-BLOCK'
+   object with which it will be replaced"
+
+  (-> cycle
+      cyclic-reference-expression
+      coalesce-links-in-expression
+      cyclic-reference))
 
 (defmethod coalesce-links-in-expression ((expression t))
   (map-expression! #'coalesce-links-in-expression expression))
@@ -510,17 +540,12 @@
                     (visit-observers node context)))
 
              (check-context (node new-context marker)
-               "Checks that if node is visited for a second time, it
-                is not part of a cycle and it is visited in the same
-                context."
+               "Checks that if node is visited for a second time it is
+                visited in the same context."
 
                (destructuring-bind (temp? old-context) marker
-                 (cond
-                   (temp?
-                    (error 'node-cycle-error :node node))
-
-                   ((/= old-context new-context)
-                    (error 'ambiguous-context-error :node node)))))
+                 (when (/= old-context new-context)
+                   (error 'ambiguous-context-error :node node))))
 
              (visit-observers (node context)
                "Visits the observers of NODE in the context CONTEXT."

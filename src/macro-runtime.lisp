@@ -451,7 +451,8 @@
       (error 'tridash-fail +fail-type-type-error+))
 
     (handler-case
-        (let ((*create-nodes* nil))
+        (let ((*create-nodes* nil)
+              (*create-top-level-nodes* nil))
           (at-source
             (process-declaration (resolve node) module :top-level t)))
 

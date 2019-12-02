@@ -587,6 +587,10 @@
          (values
           nil
           (aprog1 (var-name)
+
+            ;; Add variable name to expression-block table
+            (setf (get block *expression-blocks*) (list it))
+
             (->>
              (nth-value 1 (make-expression expression :thunk t))
              (list it)
@@ -596,6 +600,19 @@
   "Returns true if currently compiling a meta-node function."
 
   (meta-node? *current-node*))
+
+
+(defmethod make-expression ((cycle cyclic-reference) &key)
+  "Handles cyclic references. Returns the variable storing the value
+   of the referenced expression."
+
+  (with-struct-slots cyclic-reference- (expression) cycle
+    (check-type expression expression-block)
+
+    (let ((var (first (get expression *expression-blocks*))))
+      (assert var)
+
+      (values nil var))))
 
 
 ;;; Meta-Node References

@@ -204,6 +204,10 @@
   "Set of meta-nodes which may not be used in a macro function or
    target transform.")
 
+(defvar *create-top-level-nodes* nil
+  "If true, a node is created for each top-level node declaration
+   consisting of the node's identifier.")
+
 (defmacro! restrict-meta-node (o!meta-node &body body)
   "Evaluates the forms in BODY with META-NODE added to
    *RESTRICTED-META-NODES*. This prevents the meta-node from being used
@@ -258,6 +262,7 @@
                     :definition module)
 
       (let* ((*create-nodes* nil)
+             (*create-top-level-nodes* t)
              (last-node (at-source (process-node-list body module :top-level t))))
 
         (make-meta-node-function meta-node value-node last-node)
@@ -345,7 +350,8 @@
    MODULE does not already contain a node with that
    identifier. Returns the newly created, or existing, node."
 
-  (ensure-node name module))
+  (ensure-node name module (or *create-nodes*
+                               (and *create-top-level-nodes* (top-level?)))))
 
 (defmethod process-declaration :around (decl module &key top-level (add-outer t) ((:level *level*) (if top-level 0 (1+ *level*))) (add-stack t))
   "Processes the declaration with DECL added to the front of

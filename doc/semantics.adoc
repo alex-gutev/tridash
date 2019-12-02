@@ -369,15 +369,49 @@ In the case of a change in the value of `a` triggered by a change in
 the value of `b`, only the observer `c` of `a` will be notified of the
 change.
 
-[WARNING]
-==================================================
-Cycles, other than two-way bindings between a pair of nodes, will
-result in a compilation error.
+
+==== Cyclic Bindings ====
+
+Cyclic bindings are bindings between a set of nodes, such that there
+is a path, via bindings, from a node to itself, consisting of at least
+three nodes. The resulting value of the node contains a 'cyclic
+reference' to itself.
+
+IMPORTANT: A cycle comprising just a pair of nodes is interpreted as a
+two-way binding rather than a cyclic binding.
 
 .Example
 --------------------------------------------------
-a + 1 -> b
-b -> a
+cons(a, y) -> x
+cons(b, x) -> y
+--------------------------------------------------
+
+The cycle in this example involves the nodes:
+
+ - `x`
+ - `cons(b, x)`
+ - `y`
+ - `cons(a, y)`
+
+In this example the value function of `x` is effectively:
+
+--------------------------------------------------
+cons(a, cons(b, x))
+--------------------------------------------------
+
+where `x`, is substituted with a reference to the result of the
+evaluation of the expression, itself. This is well-formed since the
+arguments to the `cons` meta-node are evaluated lazily.
+
+[CAUTION]
+==================================================
+In order for a cyclic binding to have a meaningful result, the cyclic
+reference must be evaluated lazily. The following will result in an
+infinite loop, as the cyclic reference to `i`, in `i + 1`, is strictly
+evaluated. Currently there is no compiler warning or error.
+
+--------------------------------------------------
+i + 1 -> i
 --------------------------------------------------
 ==================================================
 
@@ -947,7 +981,8 @@ error is triggered.
 
 Local nodes are created if they appear as the target of a binding,
 whether implicit or explicit. This is the means by which local nodes,
-storing intermediate results are created.
+storing intermediate results are created. Local nodes are also created
+for each top-level atom node declaration, _See <<atom_nodes>>_.
 
 NOTE: The node creation rules inside meta-node definitions differ from
 the node creation rules at the global scope.
@@ -997,6 +1032,21 @@ factorial(n) :
         1
     )
 --------------------------------------------------
+
+.Example: Local Node Declarations
+--------------------------------------------------
+cycle(a, b) : {
+    x; y;  # Declare local nodes `x` and `y` <1>
+
+    cons(a, y) -> x
+    cons(b, x) -> y
+
+    x
+}
+--------------------------------------------------
+
+<1> Top-level atom node declarations, resulting in the creation of
+local nodes `x` and `y`.
 
 ==== Self Node ====
 

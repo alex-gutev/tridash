@@ -218,16 +218,23 @@
     value, if DEPENDENCY was already in the dependency set of NODE."))
 
 (defmethod add-dependency (dependency node &key context add-function)
-  (with-slots (dependencies) node
-    (multiple-value-return (link in-hash?)
-        (ensure-get dependency dependencies (node-link dependency :context context))
+  (with-slots (dependencies observers) node
+    (flet ((observer? (observer)
+             (aand (get observer observers)
+                   (setf (node-link-two-way-p it) t))))
 
-      (when (not in-hash?)
-        (let ((context (context node context)))
-          (with-slots (operands) context
-            (setf (get dependency operands) link)
-            (when add-function
-              (add-function link context))))))))
+      (multiple-value-return (link in-hash?)
+          (ensure-get dependency dependencies
+            (node-link dependency
+                       :context context
+                       :two-way-p (observer? dependency)))
+
+        (when (not in-hash?)
+          (let ((context (context node context)))
+            (with-slots (operands) context
+              (setf (get dependency operands) link)
+              (when add-function
+                (add-function link context)))))))))
 
 (defmethod add-dependency (dependency (proxy context-node) &key context add-function)
   "Adds the dependency to the node stored in the NODE slot of PROXY, in

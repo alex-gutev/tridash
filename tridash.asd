@@ -141,4 +141,5 @@
                   ((:test-file "backend"))))))
 
   :perform (asdf:test-op :after (op c)
-                         (funcall (intern #.(string :run) :prove) c :reporter :fiveam)))
+                         (let ((*print-circle* t))
+                           (funcall (intern #.(string :run) :prove) c :reporter :fiveam))))

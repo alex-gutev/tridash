@@ -90,6 +90,10 @@ function NodeContext(node, context_id) {
 
     /**
      * Array of observer node contexts.
+     *
+     * Each element is an array in which the first element is the
+     * observer node context, and the second element is the index of
+     * this node within the context's operands array.
      */
     this.observers = [];
 };
@@ -122,13 +126,7 @@ NodeContext.create = function(node, num_operands, context_id) {
  * @return The node context.
  */
 NodeContext.create_input = function(node, context_id) {
-    var context = NodeContext.create(node, 0, context_id);
-
-    context.compute_value = (value) => {
-        return context.compute([value]);
-    };
-
-    return context;
+    return NodeContext.create(node, 0, context_id);
 };
 
 /**
@@ -138,7 +136,7 @@ NodeContext.create_input = function(node, context_id) {
  * @param index Index within the operands array of @a context.
  */
 NodeContext.prototype.add_observer = function(context, index) {
-    this.observers.push(context);
+    this.observers.push([context, index]);
     context.operands[index] = this.node;
 };
 
@@ -160,24 +158,24 @@ function Reserve(context, start) {
     this.context = context;
 
     /**
-     * Promise indicating when the node may begin computing its value,
-     * however not necessarily all its dependency nodes have computed
-     * their values.
+     * Promise which is resolved when the entire path has been
+     * reserved. Once this promise is resolved `operands' is
+     * guaranteed to contain the updated value of each 'dirtied'
+     * operand node.
      */
     this.start = start;
 
     /**
-     * Promise which is resolved once all dependency nodes have
-     * computed their value, thus the context can definitely begin
-     * computing its value.
+     * Array of the values of the operand nodes
      */
-    this.all_deps = start;
+    this.operands = context.operands.map((n) => n.value);
 
     /**
-     * Promise which should be resolved by the node once it has
-     * computed its value.
+     * Thunk which computes the value of the node.
      */
-    this.next = new ValuePromise();
+    this.value = new Tridash.Thunk(() => {
+        return context.compute_value(this.operands);
+    });
 
 
     /**
@@ -197,31 +195,31 @@ function Reserve(context, start) {
 };
 
 /**
- * Adds a new dependency to the reserve object, for which the node
- * waits prior to computing its value.
- *
- * @param start Promise which is resolved once the dependency's value
- *   has been computed.
- */
-Reserve.prototype.add_dep = function(start) {
-    this.all_deps = this.all_deps.then(() => start);
-};
-
-/**
  * Reserves a path through the node (in the context).
  *
- * @param start Promise which once resolved, the node's dependency has
- *   computed its value.
+ * @param start Promise which once resolved, indicates that `reserve'
+ *   has been called for each dirtied operand node.
+ *
+ * @param index Index of the operand node within the context's
+ *   operands array.
+ *
+ * @param value The value of the operand (either immediate or a
+ *   thunk).
  *
  * @param visited Visited set.
+ *
+ * @return Promise which is resolved once the path through this node
+ *   has been resolved (the reserve object has been dequeued in the
+ *   node's update loop).
  */
-NodeContext.prototype.reserve = function(start, visited = {}) {
+NodeContext.prototype.reserve = function(start, index, value, visited = {}) {
     if (!visited[this.context_id]) {
         var reserve = new Reserve(this, start);
 
         visited[this.context_id] = reserve;
 
-        reserve.observers = this.reserveObservers(reserve.next.promise, visited);
+        reserve.operands[index] = value;
+        reserve.observers = this.reserveObservers(start, reserve.value, visited);
 
         this.node.reserve_queue.enqueue(reserve);
         this.node.add_update();
@@ -231,7 +229,7 @@ NodeContext.prototype.reserve = function(start, visited = {}) {
     else {
         reserve = visited[this.context_id];
 
-        reserve.add_dep(start);
+        reserve.operands[index] = value;
         return reserve.path.promise;
     }
 };
@@ -240,13 +238,21 @@ NodeContext.prototype.reserve = function(start, visited = {}) {
  * Reserves a path from a node, in this context, to the observer
  * nodes.
  *
- * @param start Promise which is resolved when the dependency node has
- *   computed its value.
+ * @param start Promise which once resolved, indicates that `reserve'
+ *   has been called for each dirtied operand node.
+ *
+ * @param start Promise which once resolved, indicates that `reserve'
+ *   has been called for each dirtied operand node.
  *
  * @param visited Visited set.
+ *
+ * @return Promise which is resolved when a path has been reserved
+ *   through each of the observers.
  */
-NodeContext.prototype.reserveObservers = function(start, visited) {
-    return Promise.all(this.observers.map((obs) => obs.reserve(start, visited)));
+NodeContext.prototype.reserveObservers = function(start, value, visited) {
+    return Promise.all(
+        this.observers.map(([obs, index]) => obs.reserve(start, index, value, visited))
+    );
 };
 
 
@@ -256,10 +262,13 @@ NodeContext.prototype.reserveObservers = function(start, visited) {
  * Computes the value of the node, using the context's value
  * computation function, with the current value of the operands.
  *
+ * @param operands Values (either immediate or thunks) of the operand
+ *   nodes.
+ *
  * @return The new value of the node.
  */
-NodeContext.prototype.compute_value = function() {
-    return this.compute(this.operands.map((n) => n.value));
+NodeContext.prototype.compute_value = function(operands) {
+    return this.compute(operands);
 };
 
 
@@ -279,20 +288,15 @@ Node.prototype.update = function() {
     var reserve = this.reserve_queue.dequeue();
 
     if (reserve) {
-        var {context, start, observers, next} = reserve;
+        var {context, start, observers, value} = reserve;
 
         reserve.path.resolve(true);
 
         observers.then(() => start)
-            .then(() => reserve.all_deps)
-            .then((value) => context.compute_value(value))
-            .then((value) => {
+            .then(() => {
                 this.value = value;
-
-                next.resolve(value);
                 this.update_value(value);
             })
-            .catch((e) => next.reject(e))
             .finally(this.update.bind(this));
     } else {
         this.running = false;
@@ -336,12 +340,14 @@ Node.prototype.add_watch = function(fn) {
  *
  * A path, throughout the entire graph, is reserved, starting at the
  * current node with the input context.
+ *
+ * @param value The value.
  */
 Node.prototype.set_value = function(value) {
     var start = new ValuePromise();
 
-    this.contexts["input"].reserve(start.promise);
-    start.resolve(value);
+    this.contexts["input"].reserve(start.promise, 0, value);
+    start.resolve(true);
 };
 
 /**
@@ -357,7 +363,7 @@ function set_values(node_values) {
     var visited = {};
 
     node_values.forEach(([node, value]) => {
-        node.contexts["input"].reserve(start.promise.then(() => value), visited);
+        node.contexts["input"].reserve(start.promise, 0, value, visited);
     });
 
     start.resolve(true);

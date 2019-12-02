@@ -20,12 +20,19 @@
 
 (in-package :tridash.frontend)
 
-(defstruct (node-link (:constructor node-link (node &key context)))
+(in-readtable cut-syntax)
+
+
+(defstruct (node-link (:constructor node-link (node &key context two-way-p)))
   "Represents a reference to the value of NODE. CONTEXT is the
-   identifier of the context in which this expression appears."
+   identifier of the context in which this expression
+   appears. TWO-WAY-P is true if the link represents a two-way
+   binding, that is there is also a link in the opposite direction."
 
   node
-  context)
+  context
+
+  two-way-p)
 
 (defstruct (node-ref (:constructor node-ref (node)))
   "Represents a direct reference to NODE. A direct reference is a
@@ -51,6 +58,7 @@
 
   entries)
 
+
 (defstruct
     (expression-block (:constructor expression-block (expression &key count)))
 
@@ -62,6 +70,13 @@
 
   expression
   (count 1))
+
+(defstruct (cyclic-reference (:constructor cyclic-reference (expression)))
+  "Represents a reference to an expression in which this expression is
+   contained."
+
+  expression)
+
 
 (defstruct (meta-node-ref (:constructor meta-node-ref (node &key optional (outer-nodes (make-hash-map)))))
   "Represents a meta-node reference. NODE is the `META-NODE' object.
@@ -154,7 +169,8 @@
 
   (:method (fn (block expression-block))
     (with-accessors ((expression expression-block-expression)) block
-      (setf expression (funcall fn expression))))
+      (setf expression (funcall fn expression))
+      block))
 
   (:method (fn (ref meta-node-ref))
     (with-struct-slots meta-node-ref- (node optional outer-nodes) ref

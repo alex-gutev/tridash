@@ -499,13 +499,25 @@
        (first it))
 
       (t
-       (let ((var (gensym))
-             (expr (tridash->cl expression :thunk t)))
+       (let ((var (gensym)))
+         ;; Add block variable to *EXPRESSION-BLOCKS* in order for it
+         ;; to be visible to cyclic references to the block with the
+         ;; expression itself.
+         (setf (get block *expression-blocks*) (list var))
 
+         ;; Compile expression and store in *EXPRESSION-BLOCKS*
          (setf (get block *expression-blocks*)
-               (list var expr))
+               (list var (tridash->cl expression :thunk t)))
 
          var)))))
+
+(defmethod tridash->cl ((cycle cyclic-reference) &key)
+  (with-struct-slots cyclic-reference- (expression) cycle
+    (check-type expression expression-block)
+
+    (let ((var (first (get expression *expression-blocks*))))
+      (assert var)
+      var)))
 
 
 ;;; Functor Expressions and Meta-Node References
