@@ -39,7 +39,10 @@
   (:import-from :tridash.frontend
                 :process-attribute)
 
-  (:export :analyze
+  (:export :*analyze-nodes*
+           :*return-blocks*
+
+           :analyze
            :analyze-meta-node
            :analyze-expression
            :meta-node-strictness
@@ -143,6 +146,15 @@
 
 ;;;; Strictness Analysis of Expressions
 
+(defvar *analyze-nodes* t
+  "If true linked nodes, by `NODE-LINK' objects, are analyzed for
+   strictness.")
+
+(defvar *return-blocks* nil
+  "If true the strictness expression, returned by ANALYZE-EXPRESSION,
+   includes each `EXPRESSION-BLOCK' object encountered.")
+
+
 (defgeneric analyze-expression (expression)
   (:documentation
    "Analyze the expression for strictness. The expression tree is
@@ -156,7 +168,10 @@
   "Analyzes a linked node for strictness by traversing the node by
    ANALYZE."
 
-  (analyze (node-link-node link)))
+  (with-struct-slots node-link- (node) link
+    (if *analyze-nodes*
+        (analyze node)
+        node)))
 
 (defmethod analyze-expression ((expression t))
   "Returns NIL for literals, as a literal is never equal to an input
@@ -165,7 +180,12 @@
   nil)
 
 (defmethod analyze-expression ((block expression-block))
-  (analyze-expression (expression-block-expression block)))
+  (let ((block-strictness
+         (analyze-expression (expression-block-expression block))))
+
+    (if *return-blocks*
+        `(or ,block ,block-strictness)
+        block-strictness)))
 
 
 ;;; Object and Member Expressions
