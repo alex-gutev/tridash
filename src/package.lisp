@@ -166,7 +166,6 @@
    :node-link-context
    :node-link-two-way-p
    :node-link-p
-   :self
 
    :node-ref
    :node-ref-p

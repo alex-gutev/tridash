@@ -88,6 +88,10 @@
    the variable in which the value of the expression is stored and a
    thunk which computes the expression's value.")
 
+(defparameter *node-path* 'access-node
+  "Function which takes a node as an argument and returns an
+   expression which references that node.")
+
 
 ;;; Code Generation Flags
 
@@ -246,6 +250,26 @@
           blocks
           (js-call (js-member +tridash-namespace+ "set_values")
                    (js-array expressions))))))))
+
+
+;;; Access Node Expressions
+
+(defun access-node (node)
+  "Returns an expression which references NODE."
+
+  (mkstr "node" (node-index node)))
+
+(defun node-index (node)
+  "Returns the index of NODE within the node table variable."
+
+  (with-slots (node-ids) *backend-state*
+   (ensure-get node node-ids (length node-ids))))
+
+(defun node-path (node)
+  "Returns an expression which references NODE, by calling the
+   function bound to *NODE-PATH*."
+
+  (funcall *node-path* node))
 
 
 ;;; Context Identifiers
