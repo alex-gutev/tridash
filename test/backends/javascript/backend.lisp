@@ -449,7 +449,7 @@
   (subtest "Function Calls"
     (subtest "Positional Arguments"
       (mock-backend-state
-        (mock-meta-nodes (f)
+        (mock-meta-nodes ((f (a b) (a b)))
           (mock-contexts
               ((context (a b) (functor f a b)))
 
@@ -458,7 +458,7 @@
 
     (subtest "Optional Argument with No Default"
       (mock-backend-state
-        (mock-meta-nodes (f)
+        (mock-meta-nodes ((f (a (optional b)) nil))
           (mock-contexts
               ((context (a) (functor f a nil)))
 
@@ -470,7 +470,7 @@
 
     (subtest "Rest Arguments"
       (mock-backend-state
-        (mock-meta-nodes (f)
+        (mock-meta-nodes ((f (a (rest b)) nil))
           (mock-contexts
               ((context (a b c) (functor f a (argument-list (list b c)))))
 
@@ -482,7 +482,7 @@
 
     (subtest "Empty Rest Argument List"
       (mock-backend-state
-        (mock-meta-nodes (f)
+        (mock-meta-nodes ((f (a (rest b)) nil))
           (mock-contexts
               ((context (a) (functor f a (argument-list nil))))
 
@@ -511,7 +511,8 @@
       (subtest "Complex Expression"
         (subtest "Strict Argument"
           (mock-backend-state
-            (mock-meta-nodes ((f (a :outer b) (a b)) +)
+            (mock-meta-nodes ((f (a :outer b) (a b))
+                              (+ (a b) (a b)))
 
               (mock-contexts
                   ((context (a b c)
@@ -526,7 +527,8 @@
 
         (subtest "Lazy Argument"
           (mock-backend-state
-            (mock-meta-nodes ((f (a :outer b) (a)) +)
+            (mock-meta-nodes ((f (a :outer b) (a))
+                              (+ (a b) (a b)))
 
               (mock-contexts
                   ((context (a b c)
@@ -542,7 +544,8 @@
   (subtest "Conditionals"
     (subtest "Simple If Statements"
       (mock-backend-state
-        (mock-meta-nodes (< -)
+        (mock-meta-nodes ((< (a b) (a b))
+                          (- (a b) (a b)))
           (mock-contexts
               ((context (a b)
                         (if-expression (functor < a b)
@@ -563,7 +566,9 @@
       (subtest "Function Call Arguments"
         (subtest "Strict Argument"
           (mock-backend-state
-            (mock-meta-nodes ((f (x y) (x)) < +)
+            (mock-meta-nodes ((f (x y) (x))
+                              (< (a b) (a b))
+                              (+ (a b) (a b)))
               (mock-contexts
                   ((context (a b c d)
                             (-<> (if-expression (functor < a 3)
@@ -594,7 +599,9 @@
 
         (subtest "Lazy Argument"
           (mock-backend-state
-            (mock-meta-nodes (f < +)
+            (mock-meta-nodes ((f (a b) nil)
+                              (< (a b) (a b))
+                              (+ (a b) (a b)))
               (mock-contexts
                   ((context (a b c d)
                             (-<> (if-expression (functor < a 3)
@@ -618,7 +625,8 @@
 
       (subtest "Nested in If Condition"
         (mock-backend-state
-          (mock-meta-nodes (< +)
+          (mock-meta-nodes ((< (a b) (a b))
+                            (+ (a b) (a b)))
             (mock-contexts
                 ((context (a b c d e)
                           (-<> (if-expression (functor < b c) b c)
@@ -669,7 +677,8 @@
     (subtest "Object Creation"
       (subtest "Simple Field Value Expressions"
         (mock-backend-state
-          (mock-meta-nodes (+ -)
+          (mock-meta-nodes ((+ (a b) (a b))
+                            (- (a b) (a b)))
             (mock-contexts
                 ((context (x y) (object ("sum" (functor + x y))
                                         ("difference" (functor - x y))
@@ -689,7 +698,7 @@
 
       (subtest "If Expressions in Field Values"
         (mock-backend-state
-          (mock-meta-nodes (<)
+          (mock-meta-nodes ((< (a b) (a b)))
             (mock-contexts
                 ((context (x y) (object ("min" (if-expression (functor < x y) x y))
                                         ("max" (if-expression (functor < y x) x y)))))
@@ -730,7 +739,7 @@
 
         (subtest "Lazy Argument"
           (mock-backend-state
-            (mock-meta-nodes (f)
+            (mock-meta-nodes ((f (x) nil))
               (mock-contexts
                   ((context (object) (functor f (member-expression object '|field|))))
 
@@ -745,7 +754,7 @@
 
       (subtest "Expression Member Access"
         (mock-backend-state
-          (mock-meta-nodes (f)
+          (mock-meta-nodes ((f (x) nil))
             (mock-contexts
                 ((context (a) (member-expression (functor f a) '\x)))
 
@@ -757,7 +766,7 @@
 
       (subtest "Expression Key"
         (mock-backend-state
-          (mock-meta-nodes (f)
+          (mock-meta-nodes ((f (x) nil))
             (mock-contexts
                 ((context (a) (member-expression a (functor f a))))
 
@@ -792,7 +801,7 @@
   (subtest "Conditional Bindings"
     (subtest "Throwing Fail Exception"
       (mock-backend-state
-        (mock-meta-nodes (<)
+        (mock-meta-nodes ((< (a b) (a b)))
           (mock-contexts
               ((context (a) (expression-block
                              (if-expression (functor < a 0) a (fail-expression)))))
@@ -808,7 +817,9 @@
 
   (subtest "Catch Expressions"
     (mock-backend-state
-      (mock-meta-nodes (< + -)
+      (mock-meta-nodes ((< (a b) (a b))
+                        (+ (a b) (a b))
+                        (- (a b) (a b)))
         (mock-contexts
             ((context (a b) (catch-expression
                              (expression-block
@@ -850,7 +861,8 @@
   (subtest "Meta-Node References"
     (subtest "Without Outer Nodes"
       (mock-backend-state
-        (mock-meta-nodes (map (f (x) (x)))
+        (mock-meta-nodes ((map (f l) nil)
+                          (f (x) (x)))
           (mock-contexts
               ((context (a)
                         (functor map (meta-node-ref f) a)))
@@ -876,7 +888,8 @@
 
     (subtest "With Optional Arguments"
       (mock-backend-state
-        (mock-meta-nodes (map (1+ (n (optional d)) (n d)))
+        (mock-meta-nodes ((map (f l) nil)
+                          (1+ (n (optional d)) (n d)))
           (mock-contexts
               ((context (a b)
                         (functor map (meta-node-ref 1+ :optional (list b)) a)))
@@ -905,7 +918,8 @@
 
     (subtest "With Rest Arguments"
       (mock-backend-state
-        (mock-meta-nodes (map (list (x (rest xs)) (x)))
+        (mock-meta-nodes ((map (f l) nil)
+                          (list (x (rest xs)) (x)))
           (mock-contexts
               ((context (a) (functor map (meta-node-ref list) a)))
 
@@ -932,7 +946,8 @@
 
     (subtest "With Outer Nodes"
       (mock-backend-state
-        (mock-meta-nodes (map (f (a :outer x) (a x)))
+        (mock-meta-nodes ((map (f l) nil)
+                          (f (a :outer x) (a x)))
           (mock-contexts
               ((context (a b)
                         (functor map (meta-node-ref f :outer-nodes (alist-hash-map `((x . ,b)))) a)))
@@ -956,7 +971,8 @@
 
     (subtest "With Optional Rest and Outer Node Operands"
       (mock-backend-state
-        (mock-meta-nodes (map (f (a (optional b) (rest c) :outer d) (a d)))
+        (mock-meta-nodes ((map (f l) nil)
+                          (f (a (optional b) (rest c) :outer d) (a d)))
           (mock-contexts
               ((context (a b)
                         (functor map
@@ -1003,14 +1019,15 @@
       (mock-backend-state
         (let ((node1 (make-instance 'node :name 'node1))
               (node2 (make-instance 'node :name 'node2)))
-          (mock-meta-nodes (list)
+          (mock-meta-nodes ((list (x y z) nil))
             (mock-contexts
-                ((context () (functor list (node-ref node1) (functor list (node-ref node2) (node-ref node1)) (node-ref node2))))
+                ((context () (functor list (node-ref node1) (functor list (node-ref node2) (node-ref node1) 0) (node-ref node2))))
 
               (test-compute-function context
                 (-<> (js-call list
                               (js-element "Tridash.type_nodes" 1)
-                              (js-element "Tridash.type_nodes" 0))
+                              (js-element "Tridash.type_nodes" 0)
+                              0)
                      js-return
                      thunk
                      (js-call list
@@ -1057,7 +1074,7 @@
 
       (subtest "Lazy Argument"
         (mock-backend-state
-          (mock-meta-nodes (func)
+          (mock-meta-nodes ((func (x y) nil))
             (mock-contexts
                 ((context (f x y) (functor func (functor f x) y)))
 
@@ -1072,7 +1089,7 @@
 
     (subtest "With Expression Operands"
       (mock-backend-state
-        (mock-meta-nodes (+)
+        (mock-meta-nodes ((+ (a b) (a b)))
           (mock-contexts
               ((context (f x y) (functor f (functor + x y))))
 
