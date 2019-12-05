@@ -193,7 +193,7 @@
         (js-call
          "="
          (apply #'js-members path "html_element" (append (ensure-list html-attribute) (list attribute)))
-         (resolve-expression (js-member (resolve-expression object) attribute)))))))
+         (resolve (js-member (resolve object) attribute)))))))
 
 
 (defparameter *html-events*

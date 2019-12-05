@@ -17,7 +17,8 @@
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 (defpackage :tridash.backend.js.ast
-  (:use :generic-cl)
+  (:use :generic-cl
+        :anaphora)
 
   (:import-from :let-over-lambda
                 :mkstr)
@@ -109,7 +110,9 @@
 
    :function-expression?
    :expression
-   :expressionp)
+   :expressionp
+
+   :map-js-node)
 
   (:documentation "Contains the JavaScript AST Definitions."))
 

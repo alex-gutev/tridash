@@ -201,3 +201,82 @@
    expression."
 
   (typep thing 'expression))
+
+
+;;; Mapping
+
+(defgeneric map-js-node (fn node)
+  (:documentation
+   "Applies a function (FN) on each subnode of an AST node (NODE)
+    which is either an expression or statement.")
+
+  (:method (fn (call js-call))
+    (make-js-call
+     (funcall fn (js-call-operator call))
+     (map fn (js-call-operands call))))
+
+  (:method (fn (new js-new))
+    (js-new
+     (funcall fn (js-new-operator new))
+     (map fn (js-new-operands new))))
+
+  (:method (fn (element js-element))
+    (js-element
+     (funcall fn (js-element-object element))
+     (funcall fn (js-element-element element))))
+
+  (:method (fn (member js-member))
+    (js-member
+     (funcall fn (js-member-object member))
+     (js-member-field member)))
+
+  (:method (fn (string js-string))
+    (declare (ignore fn))
+    string)
+
+  (:method (fn (array js-array))
+    (js-array
+     (map fn (js-array-elements array))))
+
+  (:method (fn (object js-object))
+    (js-object
+     (map
+      (lambda (field)
+        (list (first field) (funcall fn (second field))))
+      (js-object-fields object))))
+
+  (:method (fn (if-block js-if))
+    (js-if (funcall fn (js-if-condition if-block))
+           (funcall fn (js-if-then if-block))
+           (aand (js-if-else if-block) (funcall fn it))))
+
+  (:method (fn (block js-block))
+    (make-js-block (map fn (js-block-statements block))))
+
+  (:method (fn (while js-while))
+    (js-while
+     (funcall fn (js-while-condition while))
+     (funcall fn (js-while-body while))))
+
+  (:method (fn (function js-function))
+    (js-function (js-function-name function)
+                 (map fn (js-function-arguments function))
+                 (map fn (js-function-statements function))))
+
+  (:method (fn (try js-catch))
+    (js-catch (map fn (js-catch-try try))
+              (js-catch-var try)
+              (map fn (js-catch-catch try))))
+
+  (:method (fn (return js-return))
+    (js-return (funcall fn (js-return-value return))))
+
+  (:method (fn (throw js-throw))
+    (js-throw (funcall fn (js-throw-expression throw))))
+
+  (:method (fn (nodes list))
+    (map fn nodes))
+
+  (:method (fn thing)
+    (declare (ignore fn))
+    thing))

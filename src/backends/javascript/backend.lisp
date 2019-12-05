@@ -82,12 +82,6 @@
 (defvar *current-node* nil
   "The node whose definition code is currently being generated.")
 
-(defvar *expression-blocks* nil
-  "Set of `EXPRESSION-BLOCK' expressions for which code has already
-   been generated. The mapped value is a list containing the name of
-   the variable in which the value of the expression is stored and a
-   thunk which computes the expression's value.")
-
 (defparameter *node-path* 'access-node
   "Function which takes a node as an argument and returns an
    expression which references that node.")
@@ -227,29 +221,29 @@
 
   (when initial-values
     (make-onloaded-method
-     (let ((*expression-blocks* (make-hash-map)))
-       (list (make-set-initial-values initial-values))))))
+     (list (make-set-initial-values initial-values)))))
 
 (defun make-set-initial-values (initial-values)
   "Generates code which sets the initial values of the nodes and
    dispatches those values to their observer nodes."
 
   (when initial-values
-    (iter
-      (for (node init-value) in initial-values)
+    (let ((state (make-instance 'function-block-state)))
+      (iter
+        (for (node init-value) in initial-values)
 
-      (multiple-value-bind (block expression)
-          (make-expression init-value :return-variable (var-name))
+        (multiple-value-bind (block expression)
+            (compile-function init-value nil :return-value nil :state state)
 
-        (when block (collect block into blocks))
-        (collect (js-array (list node expression)) into expressions))
+          (when block (collect block into blocks))
+          (collect (js-array (list node expression)) into expressions))
 
-      (finally
-       (return
-         (list
-          blocks
-          (js-call (js-member +tridash-namespace+ "set_values")
-                   (js-array expressions))))))))
+        (finally
+         (return
+           (list
+            blocks
+            (js-call (js-member +tridash-namespace+ "set_values")
+                     (js-array expressions)))))))))
 
 
 ;;; Access Node Expressions

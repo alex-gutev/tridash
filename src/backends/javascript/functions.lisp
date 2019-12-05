@@ -211,9 +211,12 @@
    the corresponding `value-block' object and the number of references
    to the block's value.
 
-   COMMON-P is a flag indicate whether the value computed by this
+   COMMON-P is a flag indicating whether the value computed by this
    block is referenced by more than one block, i.e. is a compiled
-   `expression-block'."
+   `expression-block'.
+
+   PROTECT-P is a flag indicating whether the statements of this block
+   should be surrounded in a try/catch to capture failures."
 
   operands
 
@@ -224,36 +227,65 @@
 
   (blocks (make-hash-map))
 
-  common-p)
+  common-p
+  protect-p)
 
 (defvar *function-block-state* nil
   "Compilation state for the function currently being compiled.")
 
 
-(defun compile-function (expression get-input)
+(defun compile-function (expression get-input &key (return-value t) ((:state *function-block-state*) (make-instance 'function-block-state)))
   "Generates the body of the value computation function
    FUNCTION. GET-INPUT is a function which should return an expression
    that references the value of the dependency corresponding to the
-   `node-link' object passed as an argument."
+   `node-link' object passed as an argument.
 
-  (let* ((tridash.frontend.strictness:*analyze-nodes* nil)
-         (tridash.frontend.strictness:*return-blocks* t)
-         (*function-block-state*
-          (make-instance 'function-block-state
-                         :input get-input
-                         :strict-blocks (analyze-expression expression))))
+   If :RETURN-VALUE is T the last statement in the body is a return
+   statement that returns the value of EXPRESSION. If :RETURN-VALUE is
+   NIL the body does not contain a return statement and the expression
+   which references EXPRESSION's value is returned in the second value.
 
-    (let* ((block (compile-expression expression :protect *protect*))
-           (blocks (flatten-block block)))
+   The `function-block-state' can be specified using the :STATE
+   argument."
 
-      (inline-variables blocks)
-      (move-return-in-if block)
+  (setf (input *function-block-state*) get-input)
+  (setf (strict-blocks *function-block-state*)
+        (let ((tridash.frontend.strictness:*analyze-nodes* nil)
+              (tridash.frontend.strictness:*return-blocks* t))
+          (analyze-expression expression)))
 
-      (append
-       (extract-statements blocks)
-       (awhen (value-block-expression block)
-         (list
-          (js-return it)))))))
+  (make-function-body
+   (compile-expression expression :protect *protect*)
+   :return-value return-value))
+
+(defun make-function-body (block &key (replace-blocks t) (return-value t))
+  "Returns the list of statements making up the body of a function
+   with return value given by the `value-block' object BLOCK.
+
+   If REPLACE-BLOCKS is true (default) any references to
+   `value-block's, within the AST nodes, are replaced with their
+   corresponding expressions.
+
+   If :RETURN-VALUE is T the last statement in the body is a return
+   statement that returns the value of EXPRESSION. If :RETURN-VALUE is
+   NIL the body does not contain a return statement and the expression
+   which references EXPRESSION's value is returned in the second value."
+
+  (merge-protect-blocks block)
+  (inline-blocks block)
+  (move-return-in-if block)
+
+  (awhen (and return-value (value-block-expression block))
+    (appendf
+     (value-block-statements block)
+     (list
+      (js-return it))))
+
+  (values
+   (-> block
+       flatten-block
+       (extract-statements replace-blocks))
+   (replace-value-blocks (value-block-expression block))))
 
 (defun flatten-block (block)
   "Returns a list of all the blocks which are required for computing
@@ -288,18 +320,62 @@
 
      (list block))))
 
-(defun extract-statements (blocks)
-  "Returns the list of statements of each block in BLOCKS."
+(defun extract-statements (blocks &optional (replace-blocks t))
+  "Returns the list of statements of each block in BLOCKS.
 
-  (flet ((extract-statements (block)
-           (with-struct-slots value-block- (variable statements)
-               block
+   If REPLACE-BLOCKS is true (default) any references to
+   `value-block's, within the AST nodes, are replaced with their
+   corresponding expressions."
 
-             (if variable
-                 (list* (js-var variable) statements)
-                 statements))))
+  (labels ((extract-statements (block)
+             "Returns BLOCK's statements, with references to
+              `value-block's replaced and the statements wrapped in a
+              try/catch if necessary."
 
-    (map-extend #'extract-statements blocks)))
+             (with-struct-slots value-block- (protect-p statements)
+                 block
+
+               (let-if ((statements (replace-value-blocks statements) statements))
+                   replace-blocks
+
+                 (if protect-p
+                     (protect-block block statements)
+                     statements))))
+
+           (block-statements (block)
+             (let ((statements (extract-statements block)))
+               (aif (value-block-variable block)
+                    (list* (js-var it) statements)
+                    statements)))
+
+           (protect-block (block statements)
+             (with-struct-slots value-block- (variable)
+                 block
+
+               (when statements
+                 (let ((thunk (thunk (list (js-throw "e")))))
+                   (list
+                    (js-catch
+                     statements
+                     "e"
+
+                     (list
+                      (if variable
+                          (js-call "=" variable thunk)
+                          (js-return thunk))))))))))
+
+    (map-extend #'block-statements blocks)))
+
+(defun replace-value-blocks (node)
+  "Replaces references to `value-block' objects, with their
+   corresponding expressions in NODE."
+
+  (match node
+    ((value-block- expression)
+     (replace-value-blocks expression))
+
+    (_
+     (map-js-node #'replace-value-blocks node))))
 
 
 (defgeneric compile-expression (expression &key &allow-other-keys)
@@ -334,25 +410,17 @@
           block))))
 
 (defun make-thunk (block)
-  (let* ((blocks (flatten-block block))
-         (ref-blocks
+  (let* ((ref-blocks
           (remove-if
            (lambda (pair)
              (= (expression-block-count (first pair))
                 (second pair)))
            (value-block-blocks block))))
 
-    (inline-variables blocks)
-    (move-return-in-if block)
-
     (make-value-block
      :expression
      (thunk
-      (append
-       (extract-statements blocks)
-       (awhen (value-block-expression block)
-         (list
-          (js-return it)))))
+      (make-function-body block :replace-blocks nil))
 
      :blocks ref-blocks
      :operands (map #'second (map-values ref-blocks)))))
@@ -418,9 +486,10 @@
 
           (let* ((result (next-var))
                  (vblock
-                  (make-value-block :variable result
-                                    :expression result
-                                    :common-p t)))
+                  (make-value-block
+                   :variable result
+                   :expression result
+                   :common-p t)))
 
             (setf (get block blocks) vblock)
 
@@ -431,7 +500,6 @@
 
               (setf (value-block-operands vblock) (list value))
 
-
               (setf (value-block-blocks vblock)
                     (copy (value-block-blocks value)))
               (setf (get block (value-block-blocks vblock))
@@ -439,7 +507,7 @@
 
               (setf (value-block-statements vblock)
                     (list
-                     (js-call "=" result (value-block-expression value))))
+                     (js-call "=" result value)))
 
               vblock))))))
 
@@ -506,7 +574,8 @@
 ;;;; Meta-Node Operator
 
 (defmethod compile-functor-expression ((meta-node meta-node) arguments outer-nodes)
-  (let ((strict-outer-nodes (strict-outer-operands meta-node)))
+  (let ((strict-outer-nodes (strict-outer-operands meta-node))
+        (protected (protected-call? meta-node)))
 
     (multiple-value-bind (operands blocks)
         (compile-operands
@@ -514,7 +583,10 @@
 
          (append
           (strict-arguments meta-node)
-          (map (rcurry #'get strict-outer-nodes) (outer-node-references meta-node))))
+          (map (rcurry #'get strict-outer-nodes) (outer-node-references meta-node)))
+
+         :protect
+         (if protected *protect* t))
 
       (let ((result (next-var)))
         (make-value-block
@@ -522,11 +594,10 @@
          :expression result
          :operands operands
          :statements
-         (list
-          (->> (map #'value-block-expression operands)
-               (make-meta-node-call result meta-node)))
+         (list (make-meta-node-call result meta-node operands))
 
-         :blocks blocks)))))
+         :blocks blocks
+         :protect-p (and protected *protect*))))))
 
 
 ;;;; Node Operator
@@ -546,16 +617,12 @@
        :operands operands
        :statements
        (list
-        (destructuring-bind (fn &rest args)
-            (map #'value-block-expression operands)
+        (destructuring-bind (fn &rest args) operands
+          (->> (make-js-call (resolve fn) args)
+               (js-call "=" result))))
 
-          (protect
-           result
-
-           (->> (make-js-call (resolve fn) args)
-                (js-call "=" result)))))
-
-       :blocks blocks))))
+       :blocks blocks
+       :protect-p *protect*))))
 
 
 ;;;; Operands
@@ -588,18 +655,6 @@
 
       (values (map #'compile-operand operands strict-operands) blocks))))
 
-(defun protect (var &rest statements)
-  (if *protect*
-
-      (js-catch
-       statements
-
-       "e"
-       (list
-        (js-call "=" var (thunk (list (js-throw "e"))))))
-
-      statements))
-
 (defun resolve (expression)
   (js-call +resolve-function+ expression))
 
@@ -618,7 +673,7 @@
 
     (make-value-block
      :operands operands
-     :expression (js-array (map #'value-block-expression operands))
+     :expression (js-array operands)
 
      :blocks blocks)))
 
@@ -664,20 +719,14 @@
 
   (match (meta-node-id meta-node)
     ((cons name t)
-     (protect
-      var
-
-      (->> (map #'resolve operands)
-           (make-js-call name)
-           (js-call "=" var))))
+     (->> (map #'resolve operands)
+          (make-js-call name)
+          (js-call "=" var)))
 
     ((cons name types)
-     (protect
-      var
-
-      (->> (map #'make-type-check operands types)
-           (make-js-call name)
-           (js-call "=" var))))
+     (->> (map #'make-type-check operands types)
+          (make-js-call name)
+          (js-call "=" var)))
 
     ((or (cons name nil) name)
      (->> (make-js-call name operands)
@@ -705,6 +754,13 @@
 
   (funcall *meta-node-call* var meta-node operands))
 
+(defun protected-call? (meta-node)
+  "Returns true if the call to META-NODE should be wrapped in a
+   try/catch."
+
+  (and (external-meta-node? meta-node)
+       (consp (meta-node-id meta-node))))
+
 
 ;;; If Expressions
 
@@ -722,19 +778,16 @@
        :operands operands
 
        :statements
-       (destructuring-bind (cond then &optional else)
-           (map #'value-block-expression operands)
+       (destructuring-bind (cond then &optional else) operands
 
          (list
-          (protect
-           result
+          (js-if (resolve cond)
+                 (js-call "=" result then)
+                 (when else
+                   (js-call "=" result else)))))
 
-           (js-if (resolve cond)
-                  (js-call "=" result then)
-                  (when else
-                    (js-call "=" result else))))))
-
-       :blocks blocks))))
+       :blocks blocks
+       :protect-p *protect*))))
 
 
 ;;; Object Expressions
@@ -754,9 +807,12 @@
          :operands values
 
          :expression
-         (->> (map #'value-block-expression values)
-              (map #'list (map #'js-string keys))
-              js-object)
+         (js-object
+          (map #'list (map #'js-string keys) values))
+
+         ;; (->> values
+         ;;      (map #'list (map #'js-string keys))
+         ;;      js-object)
 
          :blocks blocks)))))
 
@@ -791,7 +847,7 @@
 
          :expression
 
-         (let ((op-values (map #'value-block-expression operands))
+         (let ((op-values operands)
                (fn-args (make-collector nil))
                (call-args (make-collector nil))
                (rest-arg nil))
@@ -955,60 +1011,37 @@
 
 ;;; Optimizations
 
-(defun inline-variables (blocks)
-  "Variables, which are assigned the result of a single expression,
-   and are only used in a single place, are replaced with that
-   expression."
+(defun inline-blocks (block)
+  "For each block, referenced by BLOCK (either indirectly or through
+   one of its operands), of which the statements comprise just an
+   assignment to the blocks variable, the block expression is replaced
+   with the result of the assignment and the block's variable and
+   statements are set to NIL."
 
-  (let ((replacements (make-hash-map)))
-    (labels
-        ((inline-statements (block)
-           (with-struct-slots value-block- (variable expression statements common-p)
-               block
+  (inline-block block)
+  (inline-operands block))
 
-             (match (strip-redundant statements :strip-block t)
-               ((or
-                 (guard
-                  (list
-                   (js-call- (operator (equal "="))
-                             (operands (list (equal variable) result))))
-                  (not common-p))
+(defun inline-operands (block)
+  (with-struct-slots value-block- (operands protect-p) block
+    (unless (value-block-common-p block)
+      (->> (remove-if #'value-block-protect-p operands)
+           (if protect-p operands)
+           (foreach #'inline-block)))
 
-                 (guard
-                  (list
-                   (js-call- (operator (equal "="))
-                             (operands (list (equal variable)
-                                             (and (type string) result)))))
-                  common-p))
+    (foreach #'inline-operands operands)))
 
-                (setf (get variable replacements) block)
+(defun inline-block (block)
+  (with-struct-slots value-block- (variable expression statements common-p)
+      block
 
-                (setf variable nil)
-                (setf expression result)
-                (setf statements nil)))))
+    (match (strip-redundant statements :strip-block t)
+      ((list
+        (js-call- (operator (equal "="))
+                  (operands (list (equal variable) result))))
 
-         (replace-in-block (block)
-           (with-struct-slots value-block- (expression statements)
-               block
-
-             (setf expression (replace-in-statement expression))
-             (setf statements (replace-in-statement statements))))
-
-         (replace-in-statement (statement)
-           (typecase statement
-             (string
-              (aif (get statement replacements)
-                   (value-block-expression it)
-                   statement))
-
-             (list
-              (map #'replace-in-statement statement))
-
-             (otherwise
-              (map-js-node #'replace-in-statement statement)))))
-
-      (foreach #'inline-statements blocks)
-      (foreach #'replace-in-block blocks))))
+       (setf expression result)
+       (setf statements nil)
+       (setf variable nil)))))
 
 (defun move-return-in-if (block)
   "If BLOCK consists of a single statement which is an if block, in
@@ -1066,3 +1099,37 @@
 
            (setf variable nil)
            (setf expression nil)))))))
+
+(defun merge-protect-blocks (block)
+  "Merges the protected operands (where PROTECT-P is true) of each
+   block referenced by BLOCK (either directly or indirectly through
+   its operands) into the statements of the block itself, if it is
+   also protected."
+
+  (labels ((merge-operands (block)
+             (with-struct-slots value-block- (operands statements protect-p)
+                 block
+
+               (foreach #'merge-operands operands)
+
+               (when protect-p
+                 (let ((protected (remove-if-not #'value-block-protect-p operands)))
+                   (foreach #'inline-block protected)
+
+                   (setf statements
+                         (append
+                          (map-extend #'operand-statements protected)
+                          statements))
+
+                   (setf operands
+                         (remove-if #'value-block-protect-p operands))))))
+
+           (operand-statements (operand)
+             (with-struct-slots value-block- (variable statements)
+                 operand
+
+               (if variable
+                   (list* (js-var variable) statements)
+                   statements))))
+
+    (merge-operands block)))
