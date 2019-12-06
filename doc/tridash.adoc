@@ -1,4 +1,4 @@
-= Tridash 0.6 Reference Manual =
+= Tridash 0.7 Reference Manual =
 Alexander Gutev <alex.gutev@gmail.com>
 :toclevels: 4
 :compat-mode: 1
