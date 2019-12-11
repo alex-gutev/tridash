@@ -107,7 +107,7 @@
             ((:strictness try)))
 
     (:fail ((,+optional-argument+ type))
-           ((:failure-propagation (t))))
+           ((:failure-propagation (type type))))
 
     (:fail-type (thing) ((:strictness thing)))
 

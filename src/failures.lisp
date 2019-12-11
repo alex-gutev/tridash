@@ -55,7 +55,7 @@
              (ematch condition
                (nil else)
 
-               ((list t) then)
+               (t then)
 
                ((list* 'or conditions)
                 (reduce #L(conditionalize %1 then %2) conditions :from-end t :initial-value else))
@@ -83,67 +83,86 @@
       (destructuring-bind (try catch &optional test)
           arguments
 
-        (let* ((try (replace-failure-expressions try catch)))
-          (-> try
-              failure-propagation
-              simplify-failure-propagation
-              (conditionalize catch try)
-              (catch-expression catch test)))))))
+        (flet ((test-type (type)
+                 ;; For testing purpose assume TEST is the failure type.
+                 ;; TODO: Compile TEST function and call it.
 
-(defun simplify-failure-propagation (expression)
+                 (= type test)))
+
+          (let* ((try (replace-failure-expressions try catch :type #'test-type)))
+            (-> try
+                failure-propagation
+                (simplify-failure-propagation :type #'test-type)
+                (conditionalize catch try)
+                (catch-expression catch test))))))))
+
+(defun simplify-failure-propagation (expression &key (type (constantly t)))
   "Simplifies a failure propagation expression, removing always true
-   or always false expressions."
+   or always false expressions.
 
-  (match expression
-    ((list* (or 'or 'and) expressions)
-     (let ((expressions
-            (->> (map #'simplify-failure-propagation expressions)
-                 (remove nil))))
-       (when expressions
-         (if (rest expressions)
-             (list* 'or expressions)
-             (first expressions)))))
+   TYPE is an optional predicate function which is applied on a
+   failure type, returned by a subexpression, to determine whether the
+   type is handled by the enclosing catch expression."
 
-    ((list* 'and expressions)
-     (let ((expressions
-            (->> (map #'simplify-failure-propagation expressions)
-                 (remove t))))
+  (flet ((simplify (expression)
+           (simplify-failure-propagation expression :type type)))
 
-       (when (every #'identity expressions)
-         (if (rest expressions)
-             (list* 'and expressions)
-             (first expressions)))))
+    (match expression
+      ((list* (or 'or 'and) expressions)
+       (let ((expressions
+              (->> (map #'simplify expressions)
+                   (remove nil))))
+         (when expressions
+           (if (rest expressions)
+               (list* 'or expressions)
+               (first expressions)))))
 
-    ((list 'if condition expression)
-     (awhen (simplify-failure-propagation expression)
-       (list 'if condition it)))
+      ((list* 'and expressions)
+       (let ((expressions
+              (->> (map #'simplify expressions)
+                   (remove t))))
 
-    (_ expression)))
+         (when (every #'identity expressions)
+           (if (rest expressions)
+               (list* 'and expressions)
+               (first expressions)))))
+
+      ((list 'if condition expression)
+       (awhen (simplify expression)
+         (list 'if condition it)))
+
+      ((list 'type type-value)
+       (funcall type type-value))
+
+      (_ expression))))
 
 
 ;;; Replacing Failures with Catch Values
 
-(defgeneric replace-failure-expressions (expression catch-value)
+(defgeneric replace-failure-expressions (expression catch-value &key type)
   (:documentation
    "Returns an expression where each sub-expression, of EXPRESSION,
     which generates a failure is replaced with CATCH-VALUE.
 
     The second return value is T if EXPRESSION itself was replaced,
-    NIL otherwise."))
+    NIL otherwise.
+
+    The TYPE function, if provided, is used to determine whether a
+    failure type ( is handled by the enclosing catch expression."))
 
 
 ;;;; Functor Expressions
 
-(defmethod replace-failure-expressions ((functor functor-expression) catch-value)
+(defmethod replace-failure-expressions ((functor functor-expression) catch-value &key (type (constantly t)))
   ;; Replace failure generating expressions only in those arguments in
   ;; which the meta-node returns failures.
 
   (labels ((map-arg (argument returns-fail?)
-             (multiple-value-bind (argument fails?)
-                 (->> (if returns-fail? catch-value (fail-expression))
-                      (replace-failure-expressions argument))
+             (multiple-value-bind (argument fail-type)
+                 (-<> (if returns-fail? catch-value :fail)
+                      (replace-failure-expressions argument <> :type type))
 
-               (cons argument fails?)))
+               (cons argument fail-type)))
 
            (map-outer-node (outer-node returns-fail?)
              (destructuring-bind (node . expression)
@@ -157,23 +176,26 @@
         (meta-node
 
          (let* ((arguments (map #'map-arg arguments (failure-return-operands meta-node)))
-                (outer-nodes (map #'map-outer-node outer-nodes (failure-return-outer-nodes meta-node)))
                 (fail-operands
                  (nconcatenate
-                  (map #'cddr outer-nodes)
-                  (pairlis (operand-node-names meta-node) (map #'cdr arguments))))
+                  (map #'map-outer-node outer-nodes (failure-return-outer-nodes meta-node))
+                  (pairlis (operand-node-names meta-node) arguments)))
 
                 (result
-                 (functor-expression
-                  meta-node
-                  (map #'first arguments)
+                 (functor-expression meta-node
+                                     (map #'first arguments)
 
-                  :outer-nodes
-                  (map #L(cons (first %1) (second %1)) outer-nodes))))
+                                     :outer-nodes
+                                     (map #L(cons (first %1) (second %1)) outer-nodes))))
 
-           (if (returns-failure? (meta-node-failure-propagation meta-node) fail-operands)
-               (values catch-value t)
-               (values result nil))))
+           (aif (returns-failure? (meta-node-failure-propagation meta-node) fail-operands :type type)
+                (values
+                 (if (= catch-value :fail)
+                     (fail-expression (second it))
+                     catch-value)
+                 it)
+
+                (values result nil))))
 
         (otherwise
          functor)))))
@@ -181,8 +203,8 @@
 
 ;;;; Literals
 
-(defmethod replace-failure-expressions (literal catch-value)
-  (declare (ignore catch-value))
+(defmethod replace-failure-expressions (literal catch-value &key type)
+  (declare (ignore catch-value type))
   (values literal nil))
 
 
@@ -340,13 +362,18 @@
    for that operand")
 
 
-(defun returns-failure? (expression operands)
-  "Returns true if the failure propagation expression (EXPRESSION)
-   indicates that a failure is always returned for given values of the
-   operands."
+(defun returns-failure? (expression operands &key (type #'identity))
+  "If the failure propagation expression (EXPRESSION) indicates that a
+   failure is always returned, for the given values of the operands, a
+   list is returned where the first element is T and the second
+   element is the deduced failure type. Otherwise NIL is returned.
+
+   The TYPE function, if provided, is used to determine whether a
+   failure type ( is handled by the
+   enclosing catch expression."
 
   (flet ((test? (expression)
-           (returns-failure? expression operands)))
+           (returns-failure? expression operands :type type)))
 
     (match expression
       ((list* 'or expressions)
@@ -358,8 +385,15 @@
       ((list 'if _ expression)
        (test? expression))
 
+      ((list 'type operand)
+       (let ((operand-value (first (get operand operands))))
+         (and (funcall type operand-value)
+              (list t operand-value))))
+
       (operand
-       (get operand operands operand)))))
+       (aand (cdr (get operand operands))
+             (funcall type (second it))
+             it)))))
 
 
 ;;;; Nodes
@@ -440,6 +474,9 @@
 
                   ((list 'if cond expression)
                    `(if ,(get cond values) ,(walk expression)))
+
+                  ((list 'type operand)
+                   (list 'type (get operand values)))
 
                   (operand
                    (get operand operand-propagation operand)))))
