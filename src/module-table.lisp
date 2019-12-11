@@ -88,8 +88,13 @@
 ;;;; Builtin Module Definition
 
 (defconstant +core-meta-nodes+
-  `((if (cond then (,+optional-argument+ else)) ((:strictness (or cond (and then else)))))
-    (:member (object key) ((:strictness (or object key))))
+  `((if (cond then (,+optional-argument+ else))
+        ((:strictness (or cond (and then else)))
+         (:failure-return (then else))
+         (:failure-propagation (or cond (and (if cond then) (if (not cond) else))))))
+
+    (:member (object key)
+             ((:strictness (or object key))))
 
     ;; Reference Old Values
     (:previous-value (node) ((:strictness node)))
@@ -98,8 +103,12 @@
     ((:symbol-equal "symbol-equal") (a b) ((:strictness (or a b))))
 
     ;; Failures
-    (:catch (try catch (,+optional-argument+ test)) ((:strictness try)))
-    (:fail ((,+optional-argument+ type)))
+    (:catch (try catch (,+optional-argument+ test))
+            ((:strictness try)))
+
+    (:fail ((,+optional-argument+ type))
+           ((:failure-propagation (t))))
+
     (:fail-type (thing) ((:strictness thing)))
 
     ;; Failure Types
