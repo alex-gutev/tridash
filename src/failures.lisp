@@ -42,99 +42,235 @@
 
 (in-readtable cut-syntax)
 
+
+;;; Failure Propagation Expressions
+
+(defstruct
+    (conditional-propagation
+      (:constructor conditional-propagation (condition then)))
+
+  "Represents a failure THEN which is propagated only when CONDITION
+   is true."
+
+  condition
+  then)
+
+(defstruct
+    (or-propagation
+      (:constructor or-propagation (operands)))
+
+  "Represents a failure which is propagated if at least one of
+   OPERANDS propagates a failure."
+
+  operands)
+
+(defstruct
+    (and-propagation
+      (:constructor and-propagation (operands)))
+
+  "Represents a failure which is propagated if all OPERANDS propagated
+   failures."
+
+  operands)
+
+(defstruct
+    (fail-with-type (:constructor fail-with-type (operand)))
+
+  "Represents a failure, which is always propagated, of a given
+   type. OPERAND may either be a failure type or the name of a
+   `meta-node' operand."
+
+  operand)
+
+(defstruct
+    (operand-propagation (:constructor operand-propagation (operand)))
+
+  "Represents a failure which is propagated from an operand OPERAND of
+   a `meta-node'."
+
+  operand)
+
+(defgeneric map-propagation-operands (fn expression)
+  (:documentation
+   "Returns a new failure propagation expression with FN applied on
+    each subexpression of EXPRESSION.")
+
+  (:method (fn (expression conditional-propagation))
+    (with-struct-slots conditional-propagation- (condition then)
+        expression
+
+      (conditional-propagation
+       (funcall fn condition)
+       (funcall fn then))))
+
+  (:method (fn (expression or-propagation))
+    (->> expression
+         or-propagation-operands
+         (map fn)
+         or-propagation))
+
+  (:method (fn (expression and-propagation))
+    (->> expression
+         and-propagation-operands
+         (map fn)
+         and-propagation))
+
+  (:method (fn (expression fail-with-type))
+    (->> expression
+         fail-with-type-operand
+         (funcall fn)
+         fail-with-type))
+
+  (:method (fn (expression operand-propagation))
+    (->> expression
+         operand-propagation-operand
+         (funcall fn)
+         operand-propagation))
+
+  (:method (fn (n null))
+    (declare (ignore fn))
+
+    nil))
+
+(defun parse-failure-propagation (expression)
+  "Converts a list representation of a failure propagation expression
+   to the structure representation."
+
+  (ematch expression
+    ((list 'if (list 'not (and (type symbol) condition)) then)
+     (conditional-propagation
+      (list 'not (operand-propagation condition))
+      (parse-failure-propagation then)))
+
+    ((list 'if (and (type symbol) condition) then)
+     (conditional-propagation
+      (operand-propagation condition)
+      (parse-failure-propagation then)))
+
+    ((list* 'or operands)
+     (or-propagation (map #'parse-failure-propagation operands)))
+
+    ((list* 'and operands)
+     (and-propagation (map #'parse-failure-propagation operands)))
+
+    ((list 'type (and (type symbol) operand))
+     (fail-with-type operand))
+
+    ((type symbol)
+     (operand-propagation expression))))
+
+
+;;; Optimization of Catch Expressions
+
 (defun optimize-expression (expression)
   "Replaces failures and catch expressions with conditional expressions."
 
-  (labels
-      ((conditionalize (condition then else)
-         "Returns an if expression with condition specified by the
-          failure propagation expression CONDITION, returning THEN if
-          true and ELSE if false."
+  (with-struct-slots functor-expression- (meta-node arguments)
+      expression
 
-         (aprog1
-             (ematch condition
-               (nil else)
+    (destructuring-bind (try catch &optional test)
+        arguments
 
-               (t then)
+      (flet ((test-type (type)
+               ;; For testing purpose assume TEST is the failure type.
+               ;; TODO: Compile TEST function and call it.
 
-               ((list* 'or conditions)
-                (reduce #L(conditionalize %1 then %2) conditions :from-end t :initial-value else))
+               (= type test)))
 
-               ((list* 'and conditions)
-                (reduce #L(conditionalize %1 %2 else) conditions :from-end t :initial-value then))
+        (let* ((try (replace-failure-expressions try catch :type #'test-type)))
+          (-> try
+              failure-propagation
+              (simplify-failure-propagation :type #'test-type)
+              (conditionalize catch try)
+              (catch-expression catch test)))))))
 
+(defgeneric simplify-failure-propagation (expression &key type)
+  (:documentation
+   "Simplifies a failure propagation expression, removing always true
+    or always false expressions.
 
-               ((list 'if (list 'not condition) expression)
-                (if-expression
-                 condition
-                 else
-                 (conditionalize expression then else)))
+    TYPE is an optional predicate function which is applied on a
+    failure type, returned by a subexpression, to determine whether
+    the type is handled by the enclosing catch expression.")
 
-               ((list 'if condition expression)
-                (if-expression
-                 condition
-
-                 (conditionalize expression then else)
-                 else))))))
-
-    (with-struct-slots functor-expression- (meta-node arguments)
+  (:method ((expression conditional-propagation) &key type)
+    (with-struct-slots conditional-propagation- (condition then)
         expression
 
-      (destructuring-bind (try catch &optional test)
-          arguments
+      (awhen (simplify-failure-propagation then :type type)
+        (conditional-propagation condition it))))
 
-        (flet ((test-type (type)
-                 ;; For testing purpose assume TEST is the failure type.
-                 ;; TODO: Compile TEST function and call it.
+  (:method ((expression or-propagation) &key type)
+    (let ((expressions
+           (->> expression
+                or-propagation-operands
+                (map (rcurry #'simplify-failure-propagation :type type))
+                (remove nil))))
+      (when expressions
+        (if (rest expressions)
+            (or-propagation expressions)
+            (first expressions)))))
 
-                 (= type test)))
+  (:method ((expression and-propagation) &key type)
+    (let ((expressions
+           (->> expression
+                and-propagation-operands
+                (map (rcurry #'simplify-failure-propagation :type type))
+                (remove nil))))
+      (when expressions
+        (if (rest expressions)
+            (and-propagation expressions)
+            (first expressions)))))
 
-          (let* ((try (replace-failure-expressions try catch :type #'test-type)))
-            (-> try
-                failure-propagation
-                (simplify-failure-propagation :type #'test-type)
-                (conditionalize catch try)
-                (catch-expression catch test))))))))
+  (:method ((expression fail-with-type) &key type)
+    (funcall type (fail-with-type-operand expression)))
 
-(defun simplify-failure-propagation (expression &key (type (constantly t)))
-  "Simplifies a failure propagation expression, removing always true
-   or always false expressions.
+  (:method (expression &key type)
+    (declare (ignore type))
+    expression))
 
-   TYPE is an optional predicate function which is applied on a
-   failure type, returned by a subexpression, to determine whether the
-   type is handled by the enclosing catch expression."
+(defgeneric conditionalize (condition then else)
+  (:documentation
+   "Returns an if expression with condition specified by the failure
+    propagation expression CONDITION, returning THEN if true and ELSE
+    if false.")
 
-  (flet ((simplify (expression)
-           (simplify-failure-propagation expression :type type)))
-
+  (:method ((expression conditional-propagation) then else)
     (match expression
-      ((list* (or 'or 'and) expressions)
-       (let ((expressions
-              (->> (map #'simplify expressions)
-                   (remove nil))))
-         (when expressions
-           (if (rest expressions)
-               (list* 'or expressions)
-               (first expressions)))))
+      ((conditional-propagation
+        (condition (list 'not condition))
+        (then expression))
 
-      ((list* 'and expressions)
-       (let ((expressions
-              (->> (map #'simplify expressions)
-                   (remove t))))
+       (if-expression
+        condition
 
-         (when (every #'identity expressions)
-           (if (rest expressions)
-               (list* 'and expressions)
-               (first expressions)))))
+        else
+        (conditionalize expression then else)))
 
-      ((list 'if condition expression)
-       (awhen (simplify expression)
-         (list 'if condition it)))
+      ((conditional-propagation condition (then expression))
+       (if-expression
+        condition
 
-      ((list 'type type-value)
-       (funcall type type-value))
+        (conditionalize expression then else)
+        else))))
 
-      (_ expression))))
+  (:method ((expression or-propagation) then else)
+    (-<> expression
+         or-propagation-operands
+         (reduce #L(conditionalize %1 then %2) <> :from-end t :initial-value else)))
+
+  (:method ((expression and-propagation) then else)
+    (-<> expression
+         and-propagation-operands
+         (reduce #L(conditionalize %1 %2 else) <> :from-end t :initial-value then)))
+
+  (:method ((n null) then else)
+    (declare (ignore then))
+    else)
+
+  (:method ((expression (eql t)) then else)
+    (declare (ignore else))
+    then))
 
 
 ;;; Replacing Failures with Catch Values
@@ -362,38 +498,41 @@
    for that operand")
 
 
-(defun returns-failure? (expression operands &key (type #'identity))
-  "If the failure propagation expression (EXPRESSION) indicates that a
-   failure is always returned, for the given values of the operands, a
-   list is returned where the first element is T and the second
-   element is the deduced failure type. Otherwise NIL is returned.
+(defgeneric returns-failure? (expression operands &key type)
+  (:documentation
+   "If the failure propagation expression (EXPRESSION) indicates that
+    a failure is always returned, for the given values of the
+    operands, a list is returned where the first element is T and the
+    second element is the deduced failure type. Otherwise NIL is
+    returned.
 
-   The TYPE function, if provided, is used to determine whether a
-   failure type ( is handled by the
-   enclosing catch expression."
+    The TYPE function, if provided, is used to determine whether a
+    failure type ( is handled by the enclosing catch expression.")
 
-  (flet ((test? (expression)
-           (returns-failure? expression operands :type type)))
+  (:method ((conditional conditional-propagation) operands &key (type #'identity))
+    (returns-failure? (conditional-propagation-then conditional) operands :type type))
 
-    (match expression
-      ((list* 'or expressions)
-       (some #'test? expressions))
+  (:method ((expression or-propagation) operands &key (type #'identity))
+    (some (rcurry #'returns-failure? operands :type type)
+          (or-propagation-operands expression)))
 
-      ((list* 'and expressions)
-       (every #'test? expressions))
+  (:method ((expression and-propagation) operands &key (type #'identity))
+    (every (rcurry #'returns-failure? operands :type type)
+           (and-propagation-operands expression)))
 
-      ((list 'if _ expression)
-       (test? expression))
+  (:method ((expression fail-with-type) operands &key (type #'identity))
+    (let ((operand-value
+           (-> expression
+               fail-with-type-operand
+               (get operands)
+               first)))
+      (and (funcall type operand-value)
+           (list t operand-value))))
 
-      ((list 'type operand)
-       (let ((operand-value (first (get operand operands))))
-         (and (funcall type operand-value)
-              (list t operand-value))))
-
-      (operand
-       (aand (cdr (get operand operands))
-             (funcall type (second it))
-             it)))))
+  (:method ((operand operand-propagation) operands &key (type #'identity))
+    (aand (cdr (get (operand-propagation-operand operand) operands))
+          (funcall type (second it))
+          it)))
 
 
 ;;;; Nodes
@@ -406,7 +545,7 @@
         node
         (-<> (curry #'context-failure-propagation node)
              (map-to 'list <> contexts)
-             (list* 'or <>)))))
+             or-propagation))))
 
 (defun context-failure-propagation (node context)
   "Returns the failure propagation expression for the value-function
@@ -464,24 +603,36 @@
     (let ((operand-propagation
            (map #L(cons (car %1) (failure-propagation (cdr %1))) values)))
 
-     (labels ((walk (expression)
-                (match expression
-                  ((list* (and (or 'or 'and) op) args)
-                   (list* op (map #'walk args)))
+      (labels ((replace-operands (expression)
+                 (match expression
+                   ((conditional-propagation-
+                     (condition
+                      (list 'not (operand-propagation- (operand condition))))
+                     then)
 
-                  ((list 'if (list 'not cond) expression)
-                   `(if (not ,(get cond values)) ,(walk expression)))
+                    (conditional-propagation
+                     (list 'not (get condition values))
+                     (replace-operands then)))
 
-                  ((list 'if cond expression)
-                   `(if ,(get cond values) ,(walk expression)))
+                   ((conditional-propagation-
+                     (condition
+                      (operand-propagation- (operand condition)))
+                     then)
 
-                  ((list 'type operand)
-                   (list 'type (get operand values)))
+                    (conditional-propagation
+                     (get condition values)
+                     (replace-operands then)))
 
-                  (operand
-                   (get operand operand-propagation operand)))))
+                   ((operand-propagation operand)
+                    (get operand operand-propagation))
 
-       (walk (meta-node-failure-propagation meta-node))))))
+                   ((fail-with-type operand)
+                    (fail-with-type (get operand values)))
+
+                   (_
+                    (map-propagation-operands #'replace-operands expression)))))
+
+       (replace-operands (meta-node-failure-propagation meta-node))))))
 
 (defgeneric meta-node-failure-propagation (meta-node)
   (:documentation
@@ -493,7 +644,9 @@
    set, sets it to the result of calling the next method."
 
   (slet (attribute :failure-propagation meta-node)
-    (or it (setf it (call-next-method)))))
+    (if (consp it)
+        (setf it (parse-failure-propagation it))
+        (or it (setf it (call-next-method))))))
 
 (defmethod meta-node-failure-propagation ((meta-node final-meta-node))
   (let ((*operand-failure-propagation* #'name))
@@ -504,7 +657,10 @@
 
 
 (defmethod failure-propagation ((list argument-list))
-  (list* 'or (map #'failure-propagation (argument-list-arguments list))))
+  (->> list
+       argument-list-arguments
+       (map #'failure-propagation)
+       or-propagation))
 
 
 ;;;; Expression Blocks
