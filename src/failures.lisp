@@ -36,7 +36,9 @@
                           :multiply)
 
   (:import-from :tridash.frontend
-                :process-attribute))
+                :process-attribute
+                :call-meta-node
+                :resolve))
 
 (in-package :tridash.frontend.failures)
 
@@ -171,18 +173,14 @@
     (destructuring-bind (try catch &optional test)
         arguments
 
-      (flet ((test-type (type)
-               ;; For testing purpose assume TEST is the failure type.
-               ;; TODO: Compile TEST function and call it.
-
-               (= type test)))
-
-        (let* ((try (replace-failure-expressions try catch :type #'test-type)))
+      (if-let (test-type (get-failure-test-function expression))
+        (let ((try (replace-failure-expressions try catch :type test-type)))
           (-> try
               failure-propagation
-              (simplify-failure-propagation :type #'test-type)
+              (simplify-failure-propagation :type test-type)
               (conditionalize catch try)
-              (catch-expression catch test)))))))
+              (catch-expression catch test)))
+        expression))))
 
 (defgeneric simplify-failure-propagation (expression &key type)
   (:documentation
@@ -271,6 +269,67 @@
   (:method ((expression (eql t)) then else)
     (declare (ignore else))
     then))
+
+
+(defun get-failure-test-function (catch-expression)
+  "Returns a predicate function, which returns true when the argument
+   passed to it is a failure type that is handled by the catch
+   expression."
+
+  (with-struct-slots functor-expression- (arguments)
+      catch-expression
+
+    (let ((test-function (last arguments)))
+      (if test-function
+          (build-test-function test-function)
+          (constantly t)))))
+
+(defun build-test-function (expression)
+  "Builds the failure type test function designated by EXPRESSION. If
+   the function cannot be built, due to EXPRESSION not being a
+   constant expression, NIL is returned."
+
+  (labels ((extract-value (type)
+             (match type
+               ((expression-block- expression)
+                (extract-value expression))
+
+               ((node-ref node)
+                node)
+
+               (_ type))))
+
+    (when (constant-expression? expression)
+      (let ((tmp
+             (make-instance 'built-meta-node
+                            :name nil
+                            :operands nil
+                            :definition
+                            (make-instance 'flat-node-table
+                                           :nodes (hash-set)
+                                           :meta-nodes (hash-set)
+                                           :input-nodes (hash-set)))))
+        (setf (value-function (context tmp nil)) expression)
+
+        (let ((fn (call-meta-node tmp nil)))
+          (lambda (type)
+            (handler-case
+                (when (constant-expression? type)
+                  (resolve
+                   (funcall fn (extract-value type))))
+              (tridash-fail () nil))))))))
+
+
+(defun constant-expression? (expression)
+  "Returns true if EXPRESSION is a constant expression."
+
+  (flet ((constant? (expression)
+           (when (node-link-p expression)
+             (return-from constant-expression? nil))
+           t))
+
+    (walk-expression #'constant? expression)
+    t))
 
 
 ;;; Replacing Failures with Catch Values
@@ -522,10 +581,10 @@
 
   (:method ((expression fail-with-type) operands &key (type #'identity))
     (let ((operand-value
-           (-> expression
-               fail-with-type-operand
-               (get operands)
-               first)))
+           (-<> expression
+                fail-with-type-operand
+                (get operands <> <>)
+                first)))
       (and (funcall type operand-value)
            (list t operand-value))))
 
@@ -623,16 +682,39 @@
                      (get condition values)
                      (replace-operands then)))
 
+                   ((conditional-propagation- condition then)
+                    (conditional-propagation
+                     (replace-condition condition)
+                     (replace-operands then)))
+
                    ((operand-propagation operand)
                     (get operand operand-propagation))
 
                    ((fail-with-type operand)
-                    (fail-with-type (get operand values)))
+                    (fail-with-type (get operand values operand)))
 
                    (_
-                    (map-propagation-operands #'replace-operands expression)))))
+                    (map-propagation-operands #'replace-operands expression))))
 
-       (replace-operands (meta-node-failure-propagation meta-node))))))
+               (replace-condition (expression)
+                 (match expression
+                   ((list 'not condition)
+                    (replace-expression condition))
+
+                   (_ (replace-expression expression))))
+
+               (replace-expression (expression)
+                 (match expression
+                   ((node-link node)
+                    (get (name node) values))
+
+                   ((expression-block- expression)
+                    (replace-expression expression))
+
+                   (_
+                    (map-expression! #'replace-expression expression)))))
+
+        (replace-operands (meta-node-failure-propagation meta-node))))))
 
 (defgeneric meta-node-failure-propagation (meta-node)
   (:documentation
