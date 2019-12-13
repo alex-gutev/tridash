@@ -591,7 +591,11 @@
   (:method ((operand operand-propagation) operands &key (type #'identity))
     (aand (cdr (get (operand-propagation-operand operand) operands))
           (funcall type (second it))
-          it)))
+          it))
+
+  (:method ((n null) operands &key (type #'identity))
+    (declare (ignore type))
+    nil))
 
 
 ;;;; Nodes
