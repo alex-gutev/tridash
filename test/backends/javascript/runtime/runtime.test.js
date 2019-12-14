@@ -62,92 +62,6 @@ describe('Lazy Evaluation', function() {
 	        assert.equal(times, 1);
 	    });
     });
-
-    describe('CatchThunk', function() {
-	    it('Tridash.resolve should return value returned by CatchThunk when no errors', function() {
-	        var thunk = new tridash.CatchThunk(() => 1 + 1, "error");
-
-	        assert.equal(tridash.resolve(thunk), 2);
-	    });
-
-	    it('Tridash.resolve should return catch value when error in CatchThunk.compute', function() {
-	        var thunk = new tridash.CatchThunk(() => {
-		        throw new tridash.Fail();
-		        return 1 + 1;
-	        }, "error 1");
-
-	        assert.equal(tridash.resolve(thunk), "error 1");
-	    });
-
-	    it('Catch value should also be resolved if it is a Thunk', function() {
-	        var thunk = new tridash.CatchThunk(() => {
-		        throw new tridash.Fail();
-	        }, new tridash.Thunk(() => 2 + 3));
-
-	        assert.equal(tridash.resolve(thunk), 5);
-	    });
-
-	    it('Catch value should also be resolved if it is a CatchThunk', function() {
-	        var thunk = new tridash.CatchThunk(() => {
-		        throw new tridash.Fail();
-	        }, new tridash.CatchThunk(() => 2 + 3, 0));
-
-	        assert.equal(tridash.resolve(thunk), 5);
-	    });
-
-	    it('If catch value is a CatchThunk, its handler should be called', function() {
-	        var thunk = new tridash.CatchThunk(() => {
-		        throw new tridash.Fail();
-	        }, new tridash.CatchThunk(() => {
-		        throw new tridash.Fail();
-	        }, 45));
-
-	        assert.equal(tridash.resolve(thunk), 45);
-	    });
-
-	    it('Chaining of CatchThunk catch values', function() {
-	        var catch1 = false;
-	        var catch2 = false;
-
-	        var thunk = new tridash.CatchThunk(() => {
-		        throw new tridash.Fail();
-	        }, new tridash.CatchThunk(() => {
-		        catch1 = true;
-		        throw new tridash.Fail();
-	        }, new tridash.CatchThunk(() => {
-		        catch2 = true;
-		        throw new tridash.Fail();
-	        }, new tridash.CatchThunk(() => 5, 4))));
-
-	        assert.equal(tridash.resolve(thunk), 5);
-
-	        assert(catch1, "First catch handler called");
-	        assert(catch2, "Second catch handler called");
-	    });
-
-	    it('Nested CatchThunk handlers are called starting from innermost handler', function() {
-	        var catch1 = false;
-
-	        var thunk = new tridash.CatchThunk(() => {
-		        return new tridash.CatchThunk(() => {
-		            return new tridash.CatchThunk(() => {
-			            return new tridash.Thunk(() => {
-			                throw new tridash.Fail();
-			            });
-		            }, new tridash.Thunk(() => {
-			            catch1 = true;
-
-			            return new tridash.Thunk(() => {
-			                throw new tridash.Fail();
-			            });
-		            }));
-		        }, 2);
-	        }, 1);
-
-	        assert.equal(tridash.resolve(thunk), 2);
-	        assert(catch1, "Inner-most handler called.");
-	    });
-    });
 });
 
 describe('Builtin Functions', function() {
@@ -759,7 +673,7 @@ describe('Builtin Functions', function() {
             it('Should return failures as Thunks', function() {
                 var res = tridash.member(new Tridash.Thunk(() => {
                     throw new tridash.Fail();
-                }, 'type'));
+                }), 'type');
 
                 assert(res, 'Returns a thunk instead of throwing exception');
                 assert.throws(() => tridash.resolve(res), tridash.Fail);
@@ -878,18 +792,18 @@ describe('Builtin Functions', function() {
                 var value = new tridash.Thunk(() => 'fail-value');
                 var test = (type) => type == 'my-type';
 
-                console.log(tridash.resolve(
-                    tridash.make_catch_thunk(tridash.fail('my-type'), value, test)));
-
                 assert.equal(
                     tridash.resolve(
-                        tridash.make_catch_thunk(tridash.fail('my-type'), value, test)),
-                    'fail-value'
+                        tridash.make_catch_thunk(tridash.fail('my-type'), value, test)
+                    ),
+                    'fail-value',
+                    'With type satisfying test function'
                 );
 
                 assert.throws(
                     () => tridash.resolve(tridash.make_catch_thunk(tridash.fail(), value, test)),
-                    tridash.Fail
+                    tridash.Fail,
+                    'With type not satisfying test function'
                 );
             });
 
@@ -897,22 +811,22 @@ describe('Builtin Functions', function() {
                 var value = new tridash.Thunk(() => 'fail-value');
                 var test = new tridash.Thunk(() => ((type) => type == 'my-type'));
 
-                console.log(tridash.resolve(
-                    tridash.make_catch_thunk(tridash.fail('my-type'), value, test)));
-
                 assert.equal(
                     tridash.resolve(
-                        tridash.make_catch_thunk(tridash.fail('my-type'), value, test)),
-                    'fail-value'
+                        tridash.make_catch_thunk(tridash.fail('my-type'), value, test)
+                    ),
+                    'fail-value',
+                    'With type satisfying test function'
                 );
 
                 assert.throws(
                     () => tridash.resolve(tridash.make_catch_thunk(tridash.fail(), value, test)),
-                    tridash.Fail
+                    tridash.Fail,
+                    'With type not satisfying test function'
                 );
             });
 
-            it('Should resolve CatchThunks in try_value', function() {
+            it('Should resolve thunks with handlers in try_value', function() {
                 var try1 = false;
                 var catch1 = false;
 

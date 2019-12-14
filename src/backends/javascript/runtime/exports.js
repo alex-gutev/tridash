@@ -36,7 +36,6 @@ exports.set_values = set_values;
 exports.Fail = Fail;
 
 exports.Thunk = Thunk;
-exports.CatchThunk = CatchThunk;
 exports.resolve = resolve;
 
 

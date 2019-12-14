@@ -140,24 +140,33 @@ function fail_type(value) {
     return fail(TridashTypeError);
 }
 
+/**
+ * Creates a thunk with a handler than returns @a catch_value.
+ *
+ * @param try_value The main value to return.
+ *
+ * @param catch_value The value to return if @a try_value evaluates to
+ *   a failure.
+ *
+ * @param test Failure type test function. Only failures for which
+ *   this function returns true are handled.
+ *
+ * @return The thunk.
+ */
 function make_catch_thunk(try_value, catch_value, test) {
-    if (test) {
-        var old_catch = catch_value;
+    test = test || (() => true);
 
-        catch_value = new Thunk(() => {
-            try {
-                test = resolve(test);
-                var type = fail_type(try_value);
+    var thunk = new Thunk(
+        () => try_value,
+        (e) => {
+            test = resolve(test);
+            return test(e.type) ? catch_value : new Thunk(() => { throw e; });
+        }
+    );
 
-                return test(type) ? old_catch : fail(type);
-            }
-            catch (e) {
-                return new Thunk(() => { throw e; });
-            }
-        });
-    }
+    return thunk;
+}
 
-    return combine_catch_thunk(try_value, catch_value);
 }
 
 
