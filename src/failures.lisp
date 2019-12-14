@@ -164,8 +164,12 @@
 
 ;;; Optimization of Catch Expressions
 
-(defun optimize-expression (expression)
-  "Replaces failures and catch expressions with conditional expressions."
+(defun optimize-catch-expression (expression)
+  "Replaces failure generating expression, within the TRY argument of
+   a catch functor expression, with the CATCH argument itself.
+
+   It is assumed that EXPRESSION is a `functor-expression' of the
+   builtin catch meta-node."
 
   (with-struct-slots functor-expression- (meta-node arguments)
       expression
@@ -173,14 +177,43 @@
     (destructuring-bind (try catch &optional test)
         arguments
 
-      (if-let (test-type (get-failure-test-function expression))
-        (let ((try (replace-failure-expressions try catch :type test-type)))
-          (-> try
-              failure-propagation
-              (simplify-failure-propagation :type test-type)
-              (conditionalize catch try)
-              (catch-expression catch test)))
+      (if-let (test-type (get-failure-test-function test))
+        (catch-expression
+         (optimize-fail-expressions try catch test-type)
+         catch
+         test)
+
         expression))))
+
+(defun optimize-fail-expressions (expression catch test-type)
+  "Replaces expressions, which generate a failure of a type for which
+   the predicate TEST-TYPE returns true, with CATCH."
+
+  (let ((try (optimize-catch-sub-expression expression catch test-type)))
+    (let ((try (replace-failure-expressions try catch :type test-type)))
+      (-> try
+          failure-propagation
+          (simplify-failure-propagation :type test-type)
+          (conditionalize catch try)))))
+
+(defun optimize-catch-sub-expression (expression catch test-type)
+  "If EXPRESSION is a catch expression, replaces failure generating
+   expressions, which generate failures of type satisfied by the
+   predicate TEST-TYPE, with CATCH, within the catch argument of
+   EXPRESSION."
+
+  (match expression
+    ((functor-expression-
+      (meta-node (eql (get :catch tridash.frontend::*core-meta-nodes*)))
+      (arguments (list sub-try sub-catch sub-test)))
+
+     (optimize-catch-expression
+      (catch-expression
+       sub-try
+       (optimize-expression sub-catch catch test-type)
+       sub-test)))
+
+    (_ expression)))
 
 (defgeneric simplify-failure-propagation (expression &key type)
   (:documentation
@@ -271,18 +304,14 @@
     then))
 
 
-(defun get-failure-test-function (catch-expression)
-  "Returns a predicate function, which returns true when the argument
-   passed to it is a failure type that is handled by the catch
-   expression."
+(defun get-failure-test-function (test-argument)
+  "Compiles the Tridash function designated by TEST-ARGUMENT to a CL
+   function."
 
-  (with-struct-slots functor-expression- (arguments)
-      catch-expression
-
-    (let ((test-function (last arguments)))
-      (if test-function
-          (build-test-function test-function)
-          (constantly t)))))
+  (let ((test-function test-argument))
+    (if test-function
+        (build-test-function test-function)
+        (constantly t))))
 
 (defun build-test-function (expression)
   "Builds the failure type test function designated by EXPRESSION. If
