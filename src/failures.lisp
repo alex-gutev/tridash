@@ -583,7 +583,7 @@
     (let ((operand-value
            (-<> expression
                 fail-with-type-operand
-                (get operands <> <>)
+                (get <> operands <>)
                 first)))
       (and (funcall type operand-value)
            (list t operand-value))))
@@ -703,7 +703,7 @@
                (replace-condition (expression)
                  (match expression
                    ((list 'not condition)
-                    (replace-expression condition))
+                    (list 'not (replace-expression condition)))
 
                    (_ (replace-expression expression))))
 
