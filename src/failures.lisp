@@ -190,15 +190,17 @@
    the predicate TEST-TYPE returns true, with CATCH."
 
   (let ((try (optimize-catch-sub-expression expression catch test-type)))
-    (let ((try (replace-failure-expressions
-                try
-                (uncatch-expression catch)
-                :type test-type)))
+    (let* ((catch (expression-block (uncatch-expression catch)))
+           (try (replace-failure-expressions
+                 try
+                 catch
+                 :type test-type)))
+
       (-> try
           failure-propagation
           (simplify-failure-propagation :type test-type)
           (conditionalize
-           (uncatch-expression catch)
+           catch
            try)))))
 
 (defun optimize-catch-sub-expression (expression catch test-type)
