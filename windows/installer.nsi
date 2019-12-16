@@ -6,7 +6,7 @@
 
 !define VERSIONMAJOR 0
 !define VERSIONMINOR 7
-!define VERSIONBUILD 0
+!define VERSIONBUILD 1
 
 !define HELPURL "https://alex-gutev.github.io/tridash/manual/"
 !define UPDATEURL "https://github.com/alex-gutev/tridash/releases/latest"
