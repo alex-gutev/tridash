@@ -210,7 +210,7 @@
      (optimize-catch-expression
       (catch-expression
        sub-try
-       (optimize-expression sub-catch catch test-type)
+       (optimize-fail-expressions sub-catch catch test-type)
        sub-test)))
 
     (_ expression)))
