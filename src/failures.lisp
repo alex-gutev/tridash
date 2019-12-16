@@ -36,6 +36,7 @@
                           :multiply)
 
   (:import-from :tridash.frontend
+                :*core-meta-nodes*
                 :process-attribute
                 :call-meta-node
                 :resolve))
@@ -43,6 +44,59 @@
 (in-package :tridash.frontend.failures)
 
 (in-readtable cut-syntax)
+
+
+;;; Optimization of Node Functions
+
+(defvar *operand-failure-return* #'identity
+  "Function of one argument (a `node' serving as the operand to an
+   expression) which should return the failure return set for that
+   node.")
+
+(defvar *operand-failure-propagation* #'identity
+  "Function of one argument (a `node' serving as the operand to an
+   expression) which should return the failure propagation expression
+   for that operand")
+
+
+(defun optimize-function (function)
+  "Optimizes failure propagation in all expressions of a node
+   function."
+
+  (let ((*operand-failure-propagation* (constantly nil)))
+    (labels ((optimize (expression)
+               (match expression
+                 ((functor-expression-
+                   (meta-node (eql (get :catch *core-meta-nodes*))))
+
+                  (optimize-catch-expression expression))
+
+                 (_
+                  (map-expression! #'optimize expression)))))
+
+      (aprog1 (optimize function)
+        (update-block-counts it)))))
+
+(defun update-block-counts (expression)
+  "Update the counts of each `EXPRESSION-BLOCK' in EXPRESSION to the
+   number of references to the block within EXPRESSION."
+
+  (let ((blocks (make-hash-map)))
+    (walk-expression
+     (lambda (expression)
+       (typecase expression
+         (expression-block
+          (zerop
+           (aprog1 (get expression blocks 0)
+             (setf (get expression blocks) (1+ it)))))
+
+         (t t)))
+     expression)
+
+    (foreach
+     (lambda (block)
+       (setf (expression-block-count (car block)) (cdr block)))
+     blocks)))
 
 
 ;;; Failure Propagation Expressions
@@ -441,12 +495,6 @@
 
 ;;; Failure Return Analysis
 
-(defvar *operand-failure-return* #'identity
-  "Function of one argument (a `node' serving as the operand to an
-   expression) which should return the failure return set for that
-   node.")
-
-
 ;;;; Nodes
 
 (defun node-failure-return (node)
@@ -586,12 +634,6 @@
 
 
 ;;; Failure Propagation Analysis
-
-(defvar *operand-failure-propagation* #'identity
-  "Function of one argument (a `node' serving as the operand to an
-   expression) which should return the failure propagation expression
-   for that operand")
-
 
 (defgeneric returns-failure? (expression operands &key type)
   (:documentation
