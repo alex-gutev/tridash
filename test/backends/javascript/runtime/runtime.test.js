@@ -801,8 +801,8 @@ describe('Builtin Functions', function() {
                 );
 
                 assert.throws(
-                    () => tridash.resolve(tridash.make_catch_thunk(tridash.fail(), value, test)),
-                    tridash.Fail,
+                    () => tridash.resolve(tridash.make_catch_thunk(tridash.fail('other-type'), value, test)),
+                    test_fail_type('other-type'),
                     'With type not satisfying test function'
                 );
             });
@@ -820,10 +820,18 @@ describe('Builtin Functions', function() {
                 );
 
                 assert.throws(
-                    () => tridash.resolve(tridash.make_catch_thunk(tridash.fail(), value, test)),
-                    tridash.Fail,
+                    () => tridash.resolve(tridash.make_catch_thunk(tridash.fail('other-type'), value, test)),
+                    test_fail_type('other-type'),
                     'With type not satisfying test function'
                 );
+            });
+
+            it('Should return failures in test function', function() {
+                var test = tridash.fail();
+                var catch1 = tridash.make_catch_thunk(tridash.fail(), 'catch-1', test);
+                var catch2 = tridash.make_catch_thunk(catch1, 'catch-2');
+
+                assert.equal(tridash.resolve(catch2), 'catch-2');
             });
 
             it('Should resolve thunks with handlers in try_value', function() {
@@ -842,6 +850,39 @@ describe('Builtin Functions', function() {
                 assert.equal(tridash.resolve(thunk), 24);
                 assert(try1, "First try_value resolved");
                 assert(catch1, "First catch_value resolved");
+            });
+        });
+
+        describe('Tridash.uncatch_thunk', function() {
+            it('Should return value when no error', function() {
+                var thunk1 = tridash.uncatch_thunk(1);
+                var thunk2 = tridash.uncatch_thunk(new tridash.Thunk(() => 1));
+
+                assert.equal(tridash.resolve(thunk1), 1, "Immediate Value");
+                assert.equal(tridash.resolve(thunk2), 1, "Thunk Value");
+            });
+
+            it('Errors should not be handled in uncatch thunk', function () {
+                var fail_thunk = tridash.uncatch_thunk(tridash.fail('type-x'));
+                var catch_thunk = tridash.make_catch_thunk(fail_thunk, 'failure');
+
+                assert.throws(() => tridash.resolve(catch_thunk), test_fail_type('type-x'));
+            });
+
+            it('Errors should be handled when surrounded in two handlers', function() {
+                var fail = tridash.uncatch_thunk(tridash.fail());
+                var catch1 = tridash.make_catch_thunk(fail, "failure 1");
+                var catch2 = tridash.make_catch_thunk(catch1, "failure 2");
+
+                assert.equal(tridash.resolve(catch2), "failure 2");
+            });
+
+            it('Errors should not be handled if uncatch thunks greater than or equal to number of handlers', function() {
+                var fail = tridash.uncatch_thunk(tridash.uncatch_thunk(tridash.fail('type-y')));
+                var catch1 = tridash.make_catch_thunk(fail, "failure 1");
+                var catch2 = tridash.make_catch_thunk(catch1, "failure 2");
+
+                assert.throws(() => tridash.resolve(catch2), test_fail_type('type-y'));
             });
         });
     });

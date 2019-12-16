@@ -159,14 +159,43 @@ function make_catch_thunk(try_value, catch_value, test) {
     var thunk = new Thunk(
         () => try_value,
         (e) => {
-            test = resolve(test);
-            return test(e.type) ? catch_value : new Thunk(() => { throw e; });
+            if (e.uncatch === 0) {
+                return new Thunk(() => {
+                    test = resolve(test);
+
+                    if (test(e.type))
+                        return catch_value;
+
+                    throw e;
+                });
+            }
+
+            return new Thunk(() => {
+                throw new Fail(e.type, e.uncatch - 1);
+            });
         }
     );
 
     return thunk;
 }
 
+/**
+ * Creates a thunk with a failure handler that increments the uncatch
+ * count of the failure.
+ *
+ * @param The primary value to return by the thunk.
+ *
+ * @param The thunk.
+ */
+function uncatch_thunk(thing) {
+    return new Thunk(
+        () => thing,
+        (e) => {
+            return new Thunk(() => {
+                throw new Fail(e.type, e.uncatch + 1);
+            });
+        }
+    );
 }
 
 

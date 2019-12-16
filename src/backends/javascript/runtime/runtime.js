@@ -383,7 +383,7 @@ function set_values(node_values) {
  */
 function Fail(type = null, uncatch = 0) {
     this.type = type;
-    this.uncatch = 0;
+    this.uncatch = uncatch;
 };
 
 
@@ -456,18 +456,8 @@ function resolve(thing) {
         }
         catch (e) {
             if (e instanceof Fail && handler) {
-                if (e.uncatch === 0) {
-                    thing = handler.handler(e);
-                    handler = handler.next;
-                }
-                else {
-                    handler = handler.next;
-
-                    var fail = new Fail(e.type);
-                    fail.uncatch = e.uncatch - 1;
-
-                    thing = new Thunk(() => { throw fail; });
-                }
+                thing = handler.handler(e);
+                handler = handler.next;
             }
             else {
                 throw e;

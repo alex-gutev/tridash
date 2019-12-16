@@ -61,6 +61,7 @@ exports.not = not;
 exports.fail = fail;
 exports.fail_type = fail_type;
 exports.make_catch_thunk = make_catch_thunk;
+exports.uncatch_thunk = uncatch_thunk;
 
 exports.cast_int = cast_int;
 exports.cast_real = cast_real;
