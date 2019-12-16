@@ -106,6 +106,8 @@
     (:catch (try catch (,+optional-argument+ test))
             ((:strictness try)))
 
+    (:uncatch (expression) ((:strictness expression)))
+
     (:fail ((,+optional-argument+ type))
            ((:failure-propagation (type type))))
 
@@ -260,3 +262,6 @@
 (defun catch-expression (try catch &optional test)
   (functor-expression (get :catch *core-meta-nodes*)
                       (list try catch test)))
+
+(defun uncatch-expression (expression)
+  (functor-expression (get :uncatch *core-meta-nodes*) (list expression)))

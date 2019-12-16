@@ -181,6 +181,7 @@
    :if-expression
    :member-expression
    :catch-expression
+   :uncatch-expression
    :fail-expression
 
    :object-expression
