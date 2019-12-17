@@ -733,10 +733,10 @@
              "min(x,y) : case(x < y : x, y)")
 
       (with-nodes ((min "min")) modules
-        (is (resolve (call-tridash-meta-node min '(2 10))) 2)
-        (is (resolve (call-tridash-meta-node min '(10 2))) 2)
-        (is (resolve (call-tridash-meta-node min '(-5.3 7.6))) -5.3)
-        (is (resolve (call-tridash-meta-node min '(1 1))) 1))))
+        (is (call-meta-node min '(2 10)) 2)
+        (is (call-meta-node min '(10 2)) 2)
+        (is (call-meta-node min '(-5.3 7.6)) -5.3)
+        (is (call-meta-node min '(1 1)) 1))))
 
   (subtest "Boolean Expressions"
     (subtest "If Expressions"
@@ -746,8 +746,8 @@
                "f(cond, x) : if(cond, x, 0)")
 
         (with-nodes ((f "f")) modules
-          (is (resolve (call-tridash-meta-node f '(1 10))) 10)
-          (is (resolve (call-tridash-meta-node f '(0 5))) 0))))
+          (is (call-meta-node f '(1 10)) 10)
+          (is (call-meta-node f '(0 5)) 0))))
 
     (subtest "And Expressions"
       (with-module-table modules
@@ -756,10 +756,10 @@
                "f(cond, x) : cond and x")
 
         (with-nodes ((f "f")) modules
-          (ok (bool-value (resolve (call-tridash-meta-node f '(1 10)))))
-          (is (bool-value (resolve (call-tridash-meta-node f '(0 5)))) nil)
-          (is (bool-value (resolve (call-tridash-meta-node f '(5 0)))) nil)
-          (is (bool-value (resolve (call-tridash-meta-node f '(0 0)))) nil))))
+          (ok (bool-value (call-meta-node f '(1 10))))
+          (is (bool-value (call-meta-node f '(0 5))) nil)
+          (is (bool-value (call-meta-node f '(5 0))) nil)
+          (is (bool-value (call-meta-node f '(0 0))) nil))))
 
     (subtest "Or Expressions"
       (with-module-table modules
@@ -768,10 +768,10 @@
                "f(cond, x) : cond or x")
 
         (with-nodes ((f "f")) modules
-          (ok (bool-value (resolve (call-tridash-meta-node f '(1 10)))))
-          (ok (bool-value (resolve (call-tridash-meta-node f '(0 5)))))
-          (ok (bool-value (resolve (call-tridash-meta-node f '(5 0)))))
-          (is (bool-value (resolve (call-tridash-meta-node f '(0 0)))) nil)))))
+          (ok (bool-value (call-meta-node f '(1 10))))
+          (ok (bool-value (call-meta-node f '(0 5))))
+          (ok (bool-value (call-meta-node f '(5 0))))
+          (is (bool-value (call-meta-node f '(0 0))) nil)))))
 
   (subtest "Multiple Nodes with CATCH-FAIL Expressions"
     (with-module-table modules
@@ -780,10 +780,10 @@
              "min(x,y) : { x < y -> (x -> :context(self,c)); y -> :context(self,c) }")
 
       (with-nodes ((min "min")) modules
-        (is (resolve (call-tridash-meta-node min '(2 10))) 2)
-        (is (resolve (call-tridash-meta-node min '(10 2))) 2)
-        (is (resolve (call-tridash-meta-node min '(-5.3 7.6))) -5.3)
-        (is (resolve (call-tridash-meta-node min '(1 1))) 1))))
+        (is (resolve (call-meta-node min '(2 10))) 2)
+        (is (resolve (call-meta-node min '(10 2))) 2)
+        (is (resolve (call-meta-node min '(-5.3 7.6))) -5.3)
+        (is (resolve (call-meta-node min '(1 1))) 1))))
 
   (subtest "Recursive Meta-Nodes"
     (with-module-table modules
@@ -792,9 +792,9 @@
              "fact(n) : { case(n < 2 : 1, n * fact(n - 1)) }")
 
       (with-nodes ((fact "fact")) modules
-        (is (resolve (call-tridash-meta-node fact '(3))) 6)
-        (is (resolve (call-tridash-meta-node fact '(5))) 120)
-        (is (resolve (call-tridash-meta-node fact '(0))) 1))))
+        (is (call-meta-node fact '(3)) 6)
+        (is (call-meta-node fact '(5)) 120)
+        (is (call-meta-node fact '(0)) 1))))
 
   (subtest "Tail-Recursive Meta-Nodes"
     (with-module-table modules
@@ -803,9 +803,9 @@
              "fact(n) : { iter(n,acc) : case(n < 2 : acc, iter(n - 1, n * acc)); iter(n, 1) }")
 
       (with-nodes ((fact "fact")) modules
-        (is (resolve (call-tridash-meta-node fact '(3))) 6)
-        (is (resolve (call-tridash-meta-node fact '(5))) 120)
-        (is (resolve (call-tridash-meta-node fact '(0))) 1))))
+        (is (call-meta-node fact '(3)) 6)
+        (is (call-meta-node fact '(5)) 120)
+        (is (call-meta-node fact '(0)) 1))))
 
   (subtest "Calling Other Meta-Nodes"
     (with-module-table modules
@@ -816,9 +816,9 @@
              "f(a, b) : 1-(a) * 1+(b)")
 
       (with-nodes ((f "f")) modules
-        (is (resolve (call-tridash-meta-node f '(1 5))) 0)
-        (is (resolve (call-tridash-meta-node f '(10 4))) 45)
-        (is (resolve (call-tridash-meta-node f '(4 10))) 33))))
+        (is (call-meta-node f '(1 5)) 0)
+        (is (call-meta-node f '(10 4)) 45)
+        (is (call-meta-node f '(4 10)) 33))))
 
   (subtest "Nested Meta-Nodes"
     (with-module-table modules
@@ -827,8 +827,8 @@
              "f(x, y, z) : { g(n) : n - sum; x + y -> sum; g(z) }")
 
       (with-nodes ((f "f")) modules
-        (is (resolve (call-tridash-meta-node f '(1 2 3))) 0)
-        (is (resolve (call-tridash-meta-node f '(2 3 7))) 2))))
+        (is (call-meta-node f '(1 2 3)) 0)
+        (is (call-meta-node f '(2 3 7)) 2))))
 
   (subtest "Rest and Optional Arguments"
     (subtest "Optional Arguments"
@@ -889,11 +889,11 @@
                "g(a) : apply(..(1+), a)")
 
         (with-nodes ((f "f") (g "g")) modules
-          (is (resolve (call-tridash-meta-node f '(0))) 1)
-          (is (resolve (call-tridash-meta-node f '(1))) 0)
+          (is (call-meta-node f '(0)) 1)
+          (is (call-meta-node f '(1)) 0)
 
-          (is (resolve (call-tridash-meta-node g '(1))) 2)
-          (is (resolve (call-tridash-meta-node g '(3))) 4))))
+          (is (call-meta-node g '(1)) 2)
+          (is (call-meta-node g '(3)) 4))))
 
     (subtest "With Optional Arguments"
       (subtest "With Default Values"
@@ -908,11 +908,11 @@
                  "g(a, b) : apply2(1+, a, b)")
 
           (with-nodes ((f "f") (g "g")) modules
-            (is (resolve (call-tridash-meta-node f '(0))) 1)
-            (is (resolve (call-tridash-meta-node f '(1))) 2)
+            (is (call-meta-node f '(0)) 1)
+            (is (call-meta-node f '(1)) 2)
 
-            (is (resolve (call-tridash-meta-node g '(1 2))) 3)
-            (is (resolve (call-tridash-meta-node g '(5 3))) 8))))
+            (is (call-meta-node g '(1 2)) 3)
+            (is (call-meta-node g '(5 3)) 8))))
 
       (subtest "Without Default Values"
         (with-module-table modules
@@ -927,12 +927,12 @@
                  "h(x) : fail-type?(apply(1+, x), &(No-Value%))")
 
           (with-nodes ((f "f") (g "g") (h "h")) modules
-            (is-error (resolve (call-tridash-meta-node f '(0))) tridash-fail)
+            (is-error (call-meta-node f '(0)) tridash-fail)
 
-            (is (resolve (call-tridash-meta-node g '(1 2))) 3)
-            (is (resolve (call-tridash-meta-node g '(5 3))) 8)
+            (is (call-meta-node g '(1 2)) 3)
+            (is (call-meta-node g '(5 3)) 8)
 
-            (ok (resolve (call-tridash-meta-node h '(1))))))))
+            (ok (call-meta-node h '(1)))))))
 
     (subtest "With Rest Arguments"
       (with-module-table modules
@@ -946,8 +946,8 @@
                "g(x) : apply(l, x)")
 
         (with-nodes ((f "f") (g "g")) modules
-          (is (resolve (call-tridash-meta-node f '(1 3 4))) '(2 3 4))
-          (is (resolve (call-tridash-meta-node g '(1))) '(2))))
+          (is (call-meta-node f '(1 3 4)) '(2 3 4))
+          (is (call-meta-node g '(1)) '(2))))
 
       (subtest "Empty Rest Arguments"
         (with-module-table modules
@@ -981,11 +981,11 @@
                "g(a, b) : apply2(-, a, b)")
 
         (with-nodes ((f "f") (g "g")) modules
-          (is (resolve (call-tridash-meta-node f '(1))) -1)
-          (is (resolve (call-tridash-meta-node f '(2))) -2)
+          (is (call-meta-node f '(1)) -1)
+          (is (call-meta-node f '(2)) -2)
 
-          (is (resolve (call-tridash-meta-node g '(3 2))) 1)
-          (is (resolve (call-tridash-meta-node g '(5 3))) 2))))
+          (is (call-meta-node g '(3 2)) 1)
+          (is (call-meta-node g '(5 3)) 2))))
 
     (subtest "Errors"
       (with-module-table modules
@@ -999,7 +999,7 @@
                "f(a) : apply(..(x+), a)")
 
         (with-nodes ((f "f")) modules
-          (is-error (resolve (call-tridash-meta-node f '(1))) semantic-error)))))
+          (is-error (call-meta-node f '(1)) semantic-error)))))
 
   (subtest "Primitive Functions"
     (subtest "Subtraction and Negation"
@@ -1010,8 +1010,8 @@
                "neg(x) : -(x)")
 
         (with-nodes ((sub "sub") (neg "neg")) modules
-          (is (call-tridash-meta-node sub '(5 2)) 3)
-          (is (call-tridash-meta-node neg '(5)) -5)))))
+          (is (call-meta-node sub '(5 2)) 3)
+          (is (call-meta-node neg '(5)) -5)))))
 
   (subtest "Objects"
     (with-module-table modules
@@ -1022,9 +1022,9 @@
       (with-nodes ((person "Person") (get-first "get-first") (get-last "get-last"))
           modules
 
-        (let ((p (call-tridash-meta-node person '("John" "Doe"))))
-          (is (call-tridash-meta-node get-first (list p)) "John")
-          (is (call-tridash-meta-node get-last (list p)) "Doe")))))
+        (let ((p (call-meta-node person '("John" "Doe"))))
+          (is (call-meta-node get-first (list p)) "John")
+          (is (call-meta-node get-last (list p)) "Doe")))))
 
   (subtest "Catching Failures"
     (subtest "In Operand"
@@ -1034,13 +1034,12 @@
                "fails(x) : { x and 0 -> :context(self, catch); 1 -> :context(self, catch) }")
 
         (with-nodes ((fails "fails")) modules
-          (is (bool-value (resolve (call-tridash-meta-node fails '(1)))) nil)
+          (is (bool-value (call-meta-node fails '(1))) nil)
 
           (ok
            (->> (thunk (error 'tridash-fail))
                 list
-                (call-tridash-meta-node fails)
-                resolve
+                (call-meta-node fails)
                 bool-value)))))
 
     (subtest "In Operator"
@@ -1056,8 +1055,8 @@
                "fails(x) : { x and 0 -> :context(self, catch); 1 -> :context(self, catch) }")
 
         (with-nodes ((test "test")) modules
-          (is (bool-value (resolve (call-tridash-meta-node test '(1)))) nil)
-          (ok (bool-value (resolve (call-tridash-meta-node test '(-1))))))))
+          (is (bool-value (call-meta-node test '(1))) nil)
+          (ok (bool-value (call-meta-node test '(-1)))))))
 
     (subtest "Failure Types"
       (with-module-table modules
@@ -1108,8 +1107,8 @@
                  "fails(x) : { x and 0 -> :context(self, catch); 1 -> :context(self, catch) }")
 
           (with-nodes ((1+ "1+")) modules
-            (is (bool-value (resolve (call-tridash-meta-node 1+ '(1)))) nil)
-            (ok (bool-value (resolve (call-tridash-meta-node 1+ '("hello"))))))))
+            (is (bool-value (call-meta-node 1+ '(1))) nil)
+            (ok (bool-value (call-meta-node 1+ '("hello")))))))
 
       (subtest "Objects"
         (with-module-table modules
@@ -1120,16 +1119,16 @@
 
           (with-nodes ((test "test")) modules
             (subtest "Non-Object Type"
-              (ok (bool-value (resolve (call-tridash-meta-node test '(1))))))
+              (ok (bool-value (call-meta-node test '(1)))))
 
             (subtest "Non-Existent Entry"
-              (ok (bool-value (resolve (call-tridash-meta-node test (list (make-hash-map)))))))
+              (ok (bool-value (call-meta-node test (list (make-hash-map))))))
 
             (subtest "Object with existing Entry"
               (is (->> (list (cons (id-symbol "key") 1))
                        alist-hash-map
                        list
-                       (call-tridash-meta-node test)
+                       (call-meta-node test)
                        bool-value)
                   nil))))))))
 
