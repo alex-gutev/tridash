@@ -173,7 +173,7 @@ function Reserve(context, start) {
     /**
      * Thunk which computes the value of the node.
      */
-    this.value = new Tridash.Thunk(() => {
+    this.value = new Thunk(() => {
         return context.compute_value(this.operands);
     });
 
