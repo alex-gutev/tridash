@@ -165,6 +165,7 @@
    :node-link-node
    :node-link-context
    :node-link-two-way-p
+   :node-link-weak-p
    :node-link-p
 
    :node-ref

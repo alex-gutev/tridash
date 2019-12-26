@@ -24,15 +24,22 @@
 
 
 (defstruct (node-link (:constructor node-link (node &key context two-way-p)))
-  "Represents a reference to the value of NODE. CONTEXT is the
-   identifier of the context in which this expression
-   appears. TWO-WAY-P is true if the link represents a two-way
-   binding, that is there is also a link in the opposite direction."
+  "Represents a reference to the value of NODE.
+
+   CONTEXT is the identifier of the context in which this expression
+   appears.
+
+   TWO-WAY-P is a flag which is true if the link represents a two-way
+   binding, that is there is also a link in the opposite direction.
+
+   WEAK-P is a flag which is true if the link does not cause the
+   observer node's context to be activated."
 
   node
   context
 
-  two-way-p)
+  two-way-p
+  weak-p)
 
 (defstruct (node-ref (:constructor node-ref (node)))
   "Represents a direct reference to NODE. A direct reference is a

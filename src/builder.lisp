@@ -888,6 +888,44 @@
                           :add-outer nil :level *level*))))
 
 
+(defmethod process-functor ((operator (eql +state-operator+)) operands module)
+  "Creates a state node, for a given state of a node, and binds it to
+   the node in the :STATE context. Returns the state node."
+
+  (match-syntax +state-operator+
+      ((node node) (optional (node state-id)))
+      operands
+
+    (let* ((state-id (unwrap-declaration state-id))
+           (node (process-declaration (unwrap-declaration node) module :level *level*))
+           (state (-> (canonicalize-functor operator (list node))
+                      (ensure-node *functor-module* t))))
+
+      (if state-id
+          ;; Create node for given state of NODE
+          (let* ((state-link (add-binding state node :context :state :add-function nil))
+                 (state-node
+                  (-> (canonicalize-functor operator (list node state-id))
+                      (ensure-node *functor-module* t))))
+
+            (ensure-binding (state-node node :context :state :add-function nil)
+                (link)
+
+              (setf (node-link-weak-p link) t)
+
+              ;; Create :STATE context
+              (let ((context (context node :state)))
+                (with-slots (value-function) context
+                  (setf value-function
+                        (-> (get :symbol-equal *core-meta-nodes*)
+                            (functor-expression (list state-link state-id))
+                            (if-expression link (or value-function :self)))))))
+
+            state-node)
+
+          ;; Return node storing NODE's state
+          state))))
+
 ;;; Subnodes
 
 (defmethod process-functor ((operator (eql +subnode-operator+)) operands module)

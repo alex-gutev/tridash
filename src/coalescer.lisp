@@ -87,7 +87,10 @@
 
          (remove-redundant-2-way-links (node)
            (when (= (length (contexts node)) 1)
-             (foreach (curry #'remove-observer node) (map-keys (dependencies node)))))
+             (foreach (curry #'remove-observer node) (map-keys (dependencies node)))
+
+             (doseq (link (map-values (dependencies node)))
+               (setf (node-link-two-way-p link) nil))))
 
 
          (eliminate-node (node)
@@ -116,11 +119,23 @@
            (or
             (and (may-coalesce? node)
                  (= (length (observers node)) 1)
+                 (strong-link? node)
                  (<= (length (contexts node)) 1))
 
             (and *meta-node*
                  (not (= node *meta-node*))
                  (emptyp (observers node)))))
+
+         (strong-link? (node)
+           "Returns true if NODE is bound to each of its observers via
+            a strong (not weak) binding."
+
+           (-> node
+               observers
+               first
+               cdr
+               node-link-weak-p
+               not))
 
          (merge-dependencies (node observer)
            "Merges the dependencies of NODE into the dependency set of

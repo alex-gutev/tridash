@@ -41,6 +41,10 @@
   "Operator for explicitly specifying the context to which bindings
    are established.")
 
+(defconstant +state-operator+ (id-symbol ":state")
+  "Operator for establishing a binding between different states of a
+   node.")
+
 
 ;;; Subnodes and Outer Nodes.
 

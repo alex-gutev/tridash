@@ -96,6 +96,9 @@
      (:fail ((,+optional-argument+ type)))
      (:fail-type (thing) ((:strictness thing)))
 
+     ;; Equality
+     ((:symbol-equal "symbol-equal") (a b) ((:strictness (or a b))))
+
      ;; Failure Types
      ((:empty-list "Empty-List") ())
      ((:no-value "No-Value%") ())
