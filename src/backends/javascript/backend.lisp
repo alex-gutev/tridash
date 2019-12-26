@@ -384,14 +384,96 @@
       (let ((node-path (node-path node))
             (context-path (context-path node id)))
 
-        (append-code
-         (lexical-block
-          (js-var "context" (make-context-expression node-path id context))
+        (multiple-value-bind (function uses-old-value?)
+            (create-compute-function context)
 
-          (awhen (create-compute-function context)
-            (js-call "=" (js-member "context" "compute") it))
+          (append-code
+           (lexical-block
+            (js-var "context" (make-context-expression node-path id context))
 
-          (js-call "=" context-path "context")))))))
+            (when function
+              (js-call "=" (js-member "context" "compute") function))
+
+            (when uses-old-value?
+              (make-save-old-value "context"))
+
+            (make-save-weak-operands context)
+
+            (js-call "=" context-path "context"))))))))
+
+(defun make-save-old-value (context)
+  "Generates code which overrides the `reserve' method of CONTEXT to
+   save its previous value in `old_value' prior to reserving the
+   path."
+
+  (lexical-block
+   (js-var "reserve" (js-member context "reserve"))
+
+   (js-call
+    "="
+
+    (js-member context "reserve")
+    (js-lambda
+     nil
+
+     (list
+
+      (-<> (js-member "reserve" "apply")
+           (js-call context "arguments")
+           (js-member "then")
+           (js-call
+            (js-lambda
+             nil
+             (list
+              (js-call "="
+                       (js-members context "node" "old_value")
+                       (js-members context "node" "value")))))
+           js-return))))))
+
+(defun make-save-weak-operands (context)
+  "Generates code which overrides the `reserve' method of CONTEXT to
+   save its operand, which are bound via a weak binding, in the
+   `weak_operands' array."
+
+  (labels ((weak-p (dependency)
+             (node-link-weak-p (cdr dependency)))
+
+           (save-operand (operand)
+             (js-call
+              "="
+
+              (js-element
+               (js-member "context" "weak_operands")
+               (dependency-index context (car operand)))
+
+              (js-member
+               (node-path (car operand))
+               "value"))))
+
+    (let ((weak-operands (remove-if-not #'weak-p (coerce (operands context) 'alist))))
+      (when weak-operands
+        (lexical-block
+         (js-var "reserve" (js-member "context" "reserve"))
+
+         (js-call
+          "="
+
+          (js-member "context" "reserve")
+          (js-lambda
+           nil
+
+           (list
+            (-<> (js-member "reserve" "apply")
+                 (js-call "context" "arguments")
+                 (js-member "then")
+                 (js-call
+                  (js-lambda
+                   nil
+                   (append
+                    (list
+                     (js-call "=" (js-member "context" "weak_operands") (js-array)))
+                    (map #'save-operand weak-operands))))
+                 js-return)))))))))
 
 
 (defun make-context-expression (node-path id context)
@@ -490,12 +572,55 @@
   "Generates code which binds the `NODE' NODE to its observers."
 
   (with-slots (operands) context
-    (let* ((context-path (context-path node context-id)))
-      (doseq ((observer . link) (observers node))
-        (with-struct-slots node-link- (context two-way-p) link
-          (unless (and two-way-p (get observer operands))
-            (append-code
-             (js-call
-              (js-member context-path "add_observer")
-              (context-path observer context)
-              (dependency-index (context observer context) node)))))))))
+    (let ((context-path (context-path node context-id)))
+      (labels ((reserve-observer (observer index weak-p)
+                 (-> (js-member observer "reserve")
+                     (js-call "start" index "value" "visited" (if weak-p "true" "false"))))
+
+               (observer-index (observer link)
+                 (-<>> link
+                       node-link-context
+                       (context observer)
+                       (dependency-index <> node)))
+
+               (observer-context (observer link)
+                 (->> link
+                      node-link-context
+                      (context-path observer)))
+
+               (make-reserve (observer)
+                 (destructuring-bind (observer . link) observer
+                   (reserve-observer
+                    (observer-context observer link)
+                    (observer-index observer link)
+                    (node-link-weak-p link))))
+
+               (two-way-p (observer)
+                 (and (node-link-two-way-p (cdr observer))
+                      (get (car observer) operands)))
+
+               (add-observer (observer)
+                 (js-call
+                  (js-member context-path "add_observer")
+                  (context-path (car observer)
+                                (node-link-context (cdr observer)))
+                  (observer-index (car observer) (cdr observer)))))
+
+
+        (let ((observers (coerce (remove-if #'two-way-p (observers node)) 'alist)))
+          (foreach #'append-code (map #'add-observer observers))
+
+          (append-code
+           (js-call
+            "="
+            (js-member context-path "reserveObservers")
+
+            (js-lambda
+             '("start" "value" "visited")
+
+             (list
+              (js-return
+               (js-call
+                (js-member "Promise" "all")
+                (js-array
+                 (map #'make-reserve observers)))))))))))))

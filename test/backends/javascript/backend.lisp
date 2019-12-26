@@ -642,10 +642,10 @@
                       (if-expression cond a :self)))
 
           (test-compute-function context
-            (js-var "old_value" (js-members "this" "node" "value"))
+            (js-var ($ self) "this")
             (js-if (resolve (d cond))
                    (js-return (d a))
-                   (js-return "old_value")))))))
+                   (js-return (js-members ($ self) "node" "old_value"))))))))
 
   (subtest "Objects"
     (subtest "Object Creation"

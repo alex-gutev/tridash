@@ -113,45 +113,63 @@
 
 (defun create-compute-function (context)
   "Generates the value computation function of CONTEXT. The anonymous
-   function expression is returned."
+   function expression is returned in the first value, with the second
+   return value being true if the CONTEXT reference the previous value
+   of the node."
 
   (symbol-macrolet ((values-var "values"))
     (let ((operands (make-hash-map))
-          (uses-old-value?))
+          (uses-old-value?)
+          (references-this?))
 
       (flet ((get-operand (operand)
-               (match operand
+               (ematch operand
                  ((eql :self)
                   (setf uses-old-value? t)
-                  (ensure-get :self operands
-                    (make-value-block :expression "old_value")))
+                  (setf references-this? t)
 
-                 (_
+                  (ensure-get :self operands
+                    (make-value-block
+                     :expression (js-members "self" "node" "old_value"))))
+
+                 ((node-link- weak-p)
+                  (when weak-p
+                    (setf references-this? t))
+
                   (ensure-get operand operands
                     (make-link-expression context operand values-var))))))
 
         (with-slots (value-function) context
           (let* ((*protect* nil)
                  (body (compile-function value-function #'get-operand)))
+
             (when value-function
-              (js-lambda
-               (list values-var)
+              (values
+               (js-lambda
+                (list values-var)
+                (append
+                 (when references-this?
+                   (list
+                    (js-var "self" "this")))
+                 body))
 
-               (list
-                (when uses-old-value?
-                  (js-var "old_value" (js-members "this" "node" "value")))
-
-                body)))))))))
+               uses-old-value?))))))))
 
 (defun make-link-expression (context link &optional (values-var "values"))
   "Creates an expression which references the node with `NODE-LINK'
    LINK linked to the context CONTEXT."
 
-  (->> link
-       node-link-node
-       (dependency-index context)
-       (js-element values-var)
-       (make-value-block :expression)))
+  (make-value-block
+   :expression
+
+   (js-element
+    (if (node-link-weak-p link)
+        (js-member "self" "weak_operands")
+        values-var)
+
+    (->> link
+         node-link-node
+         (dependency-index context)))))
 
 
 

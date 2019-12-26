@@ -54,6 +54,7 @@
 :attribute(=, js-name, "Tridash.eq")
 :attribute(!=, js-name, "Tridash.neq")
 
+:attribute(symbol-equal, js-name, "Tridash.eq")
 
 ### Logical Operators
 

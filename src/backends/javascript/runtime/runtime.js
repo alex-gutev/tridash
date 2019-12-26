@@ -191,7 +191,28 @@ function Reserve(context, start) {
      * Promise which is resolved when the path through all of the
      * context's observer nodes has been reserved.
      */
-    this.observers = null;
+    this.observers = true;
+
+    /**
+     * Flag for whether this reserve object has been queued to the
+     * node's observers.
+     */
+    this.queued = false;
+};
+
+/**
+ * Add this Reserve object to the reserve queue of @a node if it has
+ * not been queue already.
+ *
+ * @param node The node, the reserve queue, of which, to add this
+ *   Reserve object.
+ */
+Reserve.prototype.queue = function(node) {
+    if (!this.queued) {
+        node.reserve_queue.enqueue(this);
+        node.add_update();
+        this.queued = true;
+    }
 };
 
 /**
@@ -208,30 +229,39 @@ function Reserve(context, start) {
  *
  * @param visited Visited set.
  *
+ * @param weak True if the binding is a weak binding, in which case
+ *   the Reserve object is not added to the node's reserve queue.
+ *
  * @return Promise which is resolved once the path through this node
  *   has been resolved (the reserve object has been dequeued in the
  *   node's update loop).
  */
-NodeContext.prototype.reserve = function(start, index, value, visited = {}) {
+NodeContext.prototype.reserve = function(start, index, value, visited = {}, weak = false) {
     if (!visited[this.context_id]) {
         var reserve = new Reserve(this, start);
 
         visited[this.context_id] = reserve;
 
         reserve.operands[index] = value;
-        reserve.observers = this.reserveObservers(start, reserve.value, visited);
 
-        this.node.reserve_queue.enqueue(reserve);
-        this.node.add_update();
+        if (!weak) {
+            reserve.observers = this.reserveObservers(start, reserve.value, visited);
+            reserve.queue(this.node);
 
-        return reserve.path.promise;
+            return reserve.path.promise;
+        }
     }
     else {
         reserve = visited[this.context_id];
-
         reserve.operands[index] = value;
-        return reserve.path.promise;
+
+        if (!weak) {
+            reserve.queue(this.node);
+            return reserve.path.promise;
+        }
     }
+
+    return Promise.resolve(true);
 };
 
 /**
