@@ -147,4 +147,7 @@
                 :lol-syntax
                 :nlet-tail)
 
+  (:import-from :tridash.frontend
+                :*core-meta-nodes*)
+
   (:documentation "JavaScript Backend."))

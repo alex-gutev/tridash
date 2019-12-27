@@ -246,6 +246,10 @@
   (unless *strict-test*
     (value-fn-equal (node-link-node a) b)))
 
+(defmethod value-fn-equal ((a node-ref) (b node-ref))
+  (eq (node-ref-node a)
+      (node-ref-node b)))
+
 (defmethod value-fn-equal ((got functor-expression) (exp list))
   (flet ((split-args (args)
            (aif (position :outer args)
@@ -458,6 +462,7 @@
 	      (list var `(test-binding ,dep ,g!node))))))
 
     `(let ,(map #'make-binding deps)
+       (declare (ignorable ,@(map #'ensure-car deps)))
        ,@body)))
 
 (defmacro! has-value-function ((&rest deps) o!node &body (function &rest test-args))
@@ -564,10 +569,10 @@
 
         (let ((*strict-test* nil))
 	  (has-value-function
-	   ((b :context b) (b->cc :context b))
-	   cc
+	      ((b :context b) (b->cc :context b))
+	      cc
 
-	   `(if ,b->cc ,b (:fail nil)))))))
+	    `(if ,b->cc ,b (:fail nil)))))))
 
   (subtest "Functor Nodes"
     (subtest "Meta-Node Operators"
@@ -601,10 +606,10 @@
           (test-simple-binding fn-in2 output)
 
           (has-value-function
-           (fn in2)
-           fn-in2
+              (fn in2)
+              fn-in2
 
-           `(,fn ,in2)))))
+            `(,fn ,in2)))))
 
     (subtest "Non-Node Operators"
       (test-error non-node-operator-error "1(x, y)")
@@ -715,17 +720,17 @@
                 (*strict-test* nil))
 
             (has-value-function
-             ((cond1 :context ctx) (a+b :context ctx)
-              (cond2 :context ctx) (a-b :context ctx)
-              (b :context ctx))
+                ((cond1 :context ctx) (a+b :context ctx)
+                 (cond2 :context ctx) (a-b :context ctx)
+                 (b :context ctx))
 
-             output
+                output
 
-             `(:catch
-                  (:catch
-                      (if ,cond1 ,a+b (:fail nil))
-                    (if ,cond2 ,a-b (:fail nil))
-                    nil)
+              `(:catch
+                (:catch
+                 (if ,cond1 ,a+b (:fail nil))
+                 (if ,cond2 ,a-b (:fail nil))
+                 nil)
                 ,b
                 nil))))))
 
@@ -750,16 +755,16 @@
                 (*strict-test* nil))
 
             (has-value-function
-             ((cond1 :context ctx) (a+b :context ctx)
-              (cond2 :context ctx) (a-b :context ctx))
+                ((cond1 :context ctx) (a+b :context ctx)
+                 (cond2 :context ctx) (a-b :context ctx))
 
-             output
+                output
 
-             `(:catch
-                  (:catch
-                      (if ,cond1 ,a+b (:fail nil))
-                    (if ,cond2 ,a-b (:fail nil))
-                    nil)
+              `(:catch
+                (:catch
+                 (if ,cond1 ,a+b (:fail nil))
+                 (if ,cond2 ,a-b (:fail nil))
+                 nil)
                 1
                 nil))))))
 
@@ -787,17 +792,17 @@
                   (*strict-test* nil))
 
               (has-value-function
-               ((cond1 :context ctx) (a+b :context ctx)
-                (cond2 :context ctx) (a-b :context ctx)
-                (b :context ctx))
+                  ((cond1 :context ctx) (a+b :context ctx)
+                   (cond2 :context ctx) (a-b :context ctx)
+                   (b :context ctx))
 
-               output
+                  output
 
-               `(:catch
-                    (:catch
-                        (if ,cond1 ,a+b (:fail nil))
-                      (if ,cond2 ,a-b (:fail nil))
-                      ,(meta-node-ref test-type))
+                `(:catch
+                  (:catch
+                   (if ,cond1 ,a+b (:fail nil))
+                   (if ,cond2 ,a-b (:fail nil))
+                   ,(meta-node-ref test-type))
                   ,b
                   nil))))))
 
@@ -824,16 +829,16 @@
                   (*strict-test* nil))
 
               (has-value-function
-               ((cond1 :context ctx) (a+b :context ctx)
-                (cond2 :context ctx) (a-b :context ctx))
+                  ((cond1 :context ctx) (a+b :context ctx)
+                   (cond2 :context ctx) (a-b :context ctx))
 
-               output
+                  output
 
-               `(:catch
-                    (:catch
-                        (if ,cond1 ,a+b (:fail nil))
-                      1
-                      ,(meta-node-ref test-type))
+                `(:catch
+                  (:catch
+                   (if ,cond1 ,a+b (:fail nil))
+                   1
+                   ,(meta-node-ref test-type))
 
                   (if ,cond2 ,a-b (:fail nil))
                   nil)))))))
@@ -875,10 +880,10 @@
           (has-value-function (a) a.field `(:member ,a ,(id-symbol "field")))
 
           (has-value-function
-           ((a.field :context :object))
-           a
+              ((a.field :context :object))
+              a
 
-           `(:object (,(id-symbol "field") ,a.field))))))
+            `(:object (,(id-symbol "field") ,a.field))))))
 
     (subtest "Subnode Targets"
       ;; The :context operator has no effect when a subnode is
@@ -897,10 +902,10 @@
           (has-value-function (a) a.field `(:member ,a ,(id-symbol "field")))
 
           (has-value-function
-           ((a.field :context :object))
-           a
+              ((a.field :context :object))
+              a
 
-           `(:object (,(id-symbol "field") ,a.field)))))))
+            `(:object (,(id-symbol "field") ,a.field)))))))
 
   (subtest "Special Operators"
     (subtest ":op Operator - Registering Infix Operators"
@@ -1233,10 +1238,10 @@
                 modules
 
               (has-value-function
-               (a b cc)
-               add-abc
+                  (a b cc)
+                  add-abc
 
-               `(,add ,a ,(argument-list (list b cc))))
+                `(,add ,a ,(argument-list (list b cc))))
               (test-simple-binding add-abc x))))
 
         (subtest "Zero arguments"
@@ -1376,10 +1381,10 @@
                 modules
 
               (has-value-function
-               (a b cc)
-               add-abc
+                  (a b cc)
+                  add-abc
 
-               `(,add ,a ,(argument-list (list b cc))))
+                `(,add ,a ,(argument-list (list b cc))))
               (test-simple-binding add-abc x))))
 
         (subtest "Zero arguments"
@@ -1406,10 +1411,10 @@
             modules
 
           (has-value-function
-           (input)
-           map-input
+              (input)
+              map-input
 
-           `(,map ,(meta-node-ref add) ,input))
+            `(,map ,(meta-node-ref add) ,input))
 
           (test-simple-binding map-input output))))
 
@@ -1426,10 +1431,10 @@
             modules
 
           (has-value-function
-           (input delta)
-           map-input
+              (input delta)
+              map-input
 
-           `(,map ,(meta-node-ref inc :optional (list delta)) ,input))
+            `(,map ,(meta-node-ref inc :optional (list delta)) ,input))
 
           (test-simple-binding map-input output))))
 
@@ -1448,10 +1453,10 @@
           (test-value-function fn (init-context fn) (meta-node-ref add))
 
           (has-value-function
-           (input fn)
-           map-input
+              (input fn)
+              map-input
 
-           `(,map ,fn ,input))
+            `(,map ,fn ,input))
 
           (test-simple-binding map-input output))))
 
@@ -1527,6 +1532,74 @@
 
               (test-simple-binding x a.first :context x)
               (test-simple-binding y a.second :context y)))))))
+
+  (subtest "Node States"
+    (subtest "From any state transition"
+      (with-module-table modules
+        (build ":extern(not, x)"
+               "not(on) -> :state(on, toggle)"
+               "0 -> on"
+
+               "the-state -> :state(on)")
+
+        (with-nodes ((on "on")
+                     (state-on (":state" "on"))
+                     (toggle-state-on (":state" "on" "toggle"))
+                     (not-on ("not" "on"))
+                     (the-state "the-state")
+                     (if "if"))
+            modules
+
+          (let ((equal (get :symbol-equal tridash.frontend::*core-meta-nodes*))
+                (previous (get :previous-value tridash.frontend::*core-meta-nodes*)))
+
+            (has-value-function (state-on (toggle toggle-state-on))
+                on
+
+              `(,if (,equal ,state-on ,(id-symbol "toggle"))
+                    (,previous ,(node-ref toggle-state-on))
+                    (,previous ,(node-ref on))))
+
+            (test-value-function on :init 0)
+
+
+            (test-binding not-on toggle-state-on)
+            (test-binding the-state state-on)))))
+
+    (subtest "From specific state transition"
+      (with-module-table modules
+        (build ":extern(not, x)"
+               "not(on) -> :state(on, default, toggle)"
+               "0 -> on"
+
+               "the-state -> :state(on)")
+
+        (with-nodes ((on "on")
+                     (state-on (":state" "on"))
+                     (toggle-state-on (":state" "on" "default" "toggle"))
+                     (not-on ("not" "on"))
+                     (the-state "the-state")
+                     (if "if"))
+            modules
+
+          (let ((equal (get :symbol-equal tridash.frontend::*core-meta-nodes*))
+                (previous (get :previous-value tridash.frontend::*core-meta-nodes*)))
+
+            (has-value-function ((state state-on) (toggle toggle-state-on))
+                on
+
+              `(,if
+                (,if (,equal (,previous ,(node-ref state-on)) ,(id-symbol "default"))
+                     (,equal ,state ,(id-symbol "toggle"))
+                     0)
+
+                (,previous ,(node-ref toggle-state-on))
+                (,previous ,(node-ref on))))
+
+            (test-value-function on :init 0)
+
+            (test-binding not-on toggle-state-on)
+            (test-binding the-state state-on))))))
 
   (subtest "Modules"
     (with-module-table modules
@@ -1637,10 +1710,10 @@
 
                   (let ((*strict-test* nil))
 	            (has-value-function
-	             ((b :context b) (b->cc :context b))
-	             cc
+	                ((b :context b) (b->cc :context b))
+	                cc
 
-	             `(if ,b->cc ,b (:fail nil))))))))))
+	              `(if ,b->cc ,b (:fail nil))))))))))
 
       (subtest "Errors"
         (subtest "Module Semantics"
@@ -2331,7 +2404,91 @@
               `(:catch
                 (if (,< ,a 3) (,+ ,a ,b) (:fail nil))
                 ,b
-                nil))))))))
+                nil)))))))
+
+  (subtest "Node States"
+    (subtest "From any state transition"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core, not)"
+               "not(on) -> :state(on, toggle)"
+               "start -> on"
+
+               "the-state -> :state(on)"
+
+               ":attribute(start, input, 1)"
+               ":attribute(the-state, input, 1)")
+
+        (with-nodes ((on "on")
+                     (toggle-state-on (":state" "on" "toggle"))
+                     (the-state "the-state")
+                     (start "start")
+
+                     (if "if") (not "not"))
+
+            (finish-build modules)
+
+          (let ((equal (get :symbol-equal tridash.frontend::*core-meta-nodes*))
+                (previous (get :previous-value tridash.frontend::*core-meta-nodes*)))
+
+            (has-value-function (the-state (toggle toggle-state-on))
+                on
+
+              `(,if (,equal ,the-state ,(id-symbol "toggle"))
+                    (,previous ,(node-ref toggle-state-on))
+                    (,previous ,(node-ref on))))
+
+            (test-binding start on)
+
+
+            (has-value-function (on)
+                toggle-state-on
+              `(,not ,on))))))
+
+    (subtest "From specific state transition"
+      (with-module-table modules
+        (build-core-module)
+        (build ":import(core, not)"
+               "not(on) -> :state(on, default, toggle)"
+               "start -> on"
+
+               "the-state -> :state(on)"
+
+               ":attribute(start, input, 1)"
+               ":attribute(the-state, input, 1)")
+
+        (with-nodes ((on "on")
+                     (state-on (":state" "on"))
+                     (toggle-state-on (":state" "on" "default" "toggle"))
+                     (the-state "the-state")
+                     (start "start")
+
+                     (if "if") (not "not"))
+
+            (finish-build modules)
+
+          (let ((equal (get :symbol-equal tridash.frontend::*core-meta-nodes*))
+                (previous (get :previous-value tridash.frontend::*core-meta-nodes*)))
+
+            (has-value-function ((state state-on) (toggle toggle-state-on))
+                on
+
+              `(,if
+                (,if (,equal (,previous ,(node-ref state-on)) ,(id-symbol "default"))
+                     (,equal ,state ,(id-symbol "toggle"))
+                     0)
+
+                (,previous ,(node-ref toggle-state-on))
+                (,previous ,(node-ref on))))
+
+            (test-binding start on)
+
+
+            (has-value-function (on)
+                toggle-state-on
+              `(,not ,on))
+
+            (test-binding the-state state-on)))))))
 
 (subtest "Constant Folding"
   (subtest "Literal Constant Values"
@@ -2464,10 +2621,10 @@
 
         (with-nodes ((add "add") (y "y") (out "out")) table
           (has-value-function
-           (y)
-           out
+              (y)
+              out
 
-           `(,add 1 ,y)))))))
+            `(,add 1 ,y)))))))
 
 (subtest "Structure Checking"
   (subtest "Ambiguous Context Checks"

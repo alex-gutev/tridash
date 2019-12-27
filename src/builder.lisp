@@ -888,43 +888,102 @@
                           :add-outer nil :level *level*))))
 
 
+;;; States
+
 (defmethod process-functor ((operator (eql +state-operator+)) operands module)
   "Creates a state node, for a given state of a node, and binds it to
    the node in the :STATE context. Returns the state node."
 
   (match-syntax +state-operator+
-      ((node node) (optional (node state-id)))
+      ((node node) (optional (atom from-state)) (optional (atom to-state)))
       operands
 
-    (let* ((state-id (unwrap-declaration state-id))
-           (node (process-declaration (unwrap-declaration node) module :level *level*))
-           (state (-> (canonicalize-functor operator (list node))
-                      (ensure-node *functor-module* t))))
+    (let* ((node (process-declaration node module :level *level*))
+           (state-node
+            (-> (canonicalize-functor +state-operator+ (list node))
+                (ensure-node *functor-module* t))))
 
-      (if state-id
-          ;; Create node for given state of NODE
-          (let* ((state-link (add-binding state node :context :state :add-function nil))
-                 (state-node
-                  (-> (canonicalize-functor operator (list node state-id))
-                      (ensure-node *functor-module* t))))
+      (if from-state
+          (let* ((from-state (unwrap-declaration from-state))
+                 (to-state (unwrap-declaration to-state))
+                 (state-link
+                  (add-binding state-node node :context :state :add-function nil)))
 
-            (ensure-binding (state-node node :context :state :add-function nil)
-                (link)
+            (make-explicit-state-node node state-link from-state to-state))
 
-              (setf (node-link-weak-p link) t)
+          state-node))))
 
-              ;; Create :STATE context
-              (let ((context (context node :state)))
-                (with-slots (value-function) context
-                  (setf value-function
-                        (-> (get :symbol-equal *core-meta-nodes*)
-                            (functor-expression (list state-link state-id))
-                            (if-expression link (or value-function :self)))))))
+(defun make-explicit-state-node (node state-link from-state to-state)
+  "Creates a node which represents to the value of NODE when
+   transitioning from FROM-STATE to TO-STATE. If TO-STATE is NIL it is
+   assumed that the node represents the value of NODE when
+   transitioning to the state FROM-STATE.
 
-            state-node)
+   STATE-LINK is the `node-link' object corresponding to the
+   dependency node which stores the state of NODE."
 
-          ;; Return node storing NODE's state
-          state))))
+  (let ((state-node
+         (-<> (list* node from-state (ensure-list to-state))
+              (canonicalize-functor +state-operator+ <>)
+              (ensure-node *functor-module* t))))
+
+    (ensure-binding (state-node node :context :state :add-function nil)
+        (link)
+
+      (setf (node-link-weak-p link) t)
+
+      (let ((context (context node :state)))
+        (with-slots (value-function) context
+          (setf
+           value-function
+
+           (if-expression
+            (make-state-check state-link from-state to-state)
+            (previous-value state-node)
+
+            (or value-function (previous-value node)))))))
+
+    state-node))
+
+(defun make-state-check (state-link from-state to-state)
+  "Generate a Tridash expression which checks whether the state, given
+   by the `node-link' object STATE-LINK, corresponds to the transition
+   FROM-STATE to TO-STATE or whether the current state is FROM-STATE,
+   if TO-STATE is NIL."
+
+  (flet ((state-check (expression state)
+           (functor-expression
+            (get :symbol-equal *core-meta-nodes*)
+            (list expression state))))
+
+    (if to-state
+
+        (with-struct-slots node-link- ((state-node node)) state-link
+          (if-expression
+           (state-check (previous-value state-node) from-state)
+           (state-check state-link to-state)
+           0))
+
+        (state-check state-link from-state))))
+
+(defun previous-value (node &optional (coalescablep nil))
+  "Generate an expression which references the value of node prior to
+   the latest node value update.
+
+   If COALESCABLEP is T, NODE may be coalesced if it does not
+   reference its own previous value, otherwise it may not be
+   coalesced."
+
+  (if coalescablep
+      (setf (attribute :non-coalescable-self-reference node) t))
+
+  (setf (attribute :no-coalesce node) t)
+
+  (->> node
+       node-ref
+       list
+       (functor-expression (get :previous-value *core-meta-nodes*))))
+
 
 ;;; Subnodes
 

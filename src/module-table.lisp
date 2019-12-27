@@ -92,12 +92,16 @@
    `((if (cond then (,+optional-argument+ else)) ((:strictness (or cond (and then else)))))
      (:member (object key) ((:strictness (or object key))))
 
-     (:catch (try catch (,+optional-argument+ test)) ((:strictness try)))
-     (:fail ((,+optional-argument+ type)))
-     (:fail-type (thing) ((:strictness thing)))
+     ;; Reference Old Values
+     (:previous-value (node) ((:strictness node)))
 
      ;; Equality
      ((:symbol-equal "symbol-equal") (a b) ((:strictness (or a b))))
+
+     ;; Failures
+     (:catch (try catch (,+optional-argument+ test)) ((:strictness try)))
+     (:fail ((,+optional-argument+ type)))
+     (:fail-type (thing) ((:strictness thing)))
 
      ;; Failure Types
      ((:empty-list "Empty-List") ())

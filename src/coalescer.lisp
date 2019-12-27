@@ -122,9 +122,33 @@
                  (strong-link? node)
                  (<= (length (contexts node)) 1))
 
+            (and (attribute :non-coalescable-self-reference node)
+                 (no-self-references? node))
+
             (and *meta-node*
                  (not (= node *meta-node*))
                  (emptyp (observers node)))))
+
+         (no-self-references? (node)
+           (->> node
+                contexts
+                map-values
+                (notany (curry #'self-references node))))
+
+         (self-references (node context)
+           (walk-expression
+            (lambda (expression)
+              (match expression
+                ((functor-expression-
+                  (meta-node (eq (get :previous-value *core-meta-nodes*)))
+                  (arguments (list (eq node))))
+
+                 (return-from self-references nil))
+
+                (_ t)))
+
+            (value-function context))
+           t)
 
          (strong-link? (node)
            "Returns true if NODE is bound to each of its observers via

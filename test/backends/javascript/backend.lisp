@@ -633,19 +633,7 @@
                                 (js-return
                                  (d d)))))
 
-                       (js-return (d e)))))))))
-
-    (subtest "Old Value References"
-      (mock-backend-state
-        (mock-contexts
-            ((context (a cond)
-                      (if-expression cond a :self)))
-
-          (test-compute-function context
-            (js-var ($ self) "this")
-            (js-if (resolve (d cond))
-                   (js-return (d a))
-                   (js-return (js-members ($ self) "node" "old_value"))))))))
+                       (js-return (d e))))))))))
 
   (subtest "Objects"
     (subtest "Object Creation"

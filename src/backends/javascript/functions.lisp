@@ -113,31 +113,34 @@
 
 (defun create-compute-function (context)
   "Generates the value computation function of CONTEXT. The anonymous
-   function expression is returned in the first value, with the second
-   return value being true if the CONTEXT reference the previous value
-   of the node."
+   function expression is returned in the first value. The second
+   return value is a MAP mapping `node' objects, of which the context
+   references the previous value, to indices within the
+   'previous_values' array."
 
   (symbol-macrolet ((values-var "values"))
     (let ((operands (make-hash-map))
           (uses-old-value?)
-          (references-this?))
+          (references-this?)
+          (previous-nodes (make-hash-map)))
 
       (flet ((get-operand (operand)
                (ematch operand
-                 ((eql :self)
-                  (setf uses-old-value? t)
+                 ((type node-link)
+                  (ensure-get operand operands
+                    (make-link-expression context operand values-var)))
+
+                 ((list :previous-value (node-ref node))
                   (setf references-this? t)
 
-                  (ensure-get :self operands
+                  (ensure-get node operands
                     (make-value-block
-                     :expression (js-members "self" "node" "old_value"))))
+                     :expression
+                     (->> (ensure-get node previous-nodes
+                            (length previous-nodes))
 
-                 ((node-link- weak-p)
-                  (when weak-p
-                    (setf references-this? t))
-
-                  (ensure-get operand operands
-                    (make-link-expression context operand values-var))))))
+                          (js-element
+                           (js-member "self" "previous_values")))))))))
 
         (with-slots (value-function) context
           (let* ((*protect* nil)
@@ -153,7 +156,7 @@
                     (js-var "self" "this")))
                  body))
 
-               uses-old-value?))))))))
+               previous-nodes))))))))
 
 (defun make-link-expression (context link &optional (values-var "values"))
   "Creates an expression which references the node with `NODE-LINK'
@@ -163,9 +166,7 @@
    :expression
 
    (js-element
-    (if (node-link-weak-p link)
-        (js-member "self" "weak_operands")
-        values-var)
+    values-var
 
     (->> link
          node-link-node
@@ -562,15 +563,19 @@
 (defmethod compile-functor-expression ((meta-node external-meta-node) arguments outer-nodes)
   (declare (ignore outer-nodes))
 
-  (match (name meta-node)
-    ((eql (id-symbol "if"))
+  (match meta-node
+    ((eq (get 'if *core-meta-nodes*))
      (compile-if-expression arguments))
 
-    ((eql (id-symbol "member"))
+    ((eq (get :member *core-meta-nodes*))
      (destructuring-bind (object key) arguments
        (call-next-method
         meta-node
         (list object (if (symbolp key) (symbol-name key) key)))))
+
+    ((eq (get :previous-value *core-meta-nodes*))
+     (funcall (input *function-block-state*)
+              (list :previous-value (first arguments))))
 
     (_
      (call-next-method meta-node (remove-nil-arguments arguments)))))

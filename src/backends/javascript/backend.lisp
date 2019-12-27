@@ -384,7 +384,7 @@
       (let ((node-path (node-path node))
             (context-path (context-path node id)))
 
-        (multiple-value-bind (function uses-old-value?)
+        (multiple-value-bind (function previous-values)
             (create-compute-function context)
 
           (append-code
@@ -394,86 +394,50 @@
             (when function
               (js-call "=" (js-member "context" "compute") function))
 
-            (when uses-old-value?
-              (make-save-old-value "context"))
-
-            (make-save-weak-operands context)
+            (make-save-previous-node-values "context" previous-values)
 
             (js-call "=" context-path "context"))))))))
 
-(defun make-save-old-value (context)
+(defun make-save-previous-node-values (context previous-values)
   "Generates code which overrides the `reserve' method of CONTEXT to
-   save its previous value in `old_value' prior to reserving the
-   path."
+   store the values of nodes, of which the previous values are
+   referenced by CONTEXT's value function, in the 'previous_values'
+   array."
 
-  (lexical-block
-   (js-var "reserve" (js-member context "reserve"))
+  (labels ((save-node-value (node)
+             (destructuring-bind (node . index) node
+               (js-call
+                "="
 
-   (js-call
-    "="
+                (js-element
+                 (js-member context "previous_values")
+                 index)
 
-    (js-member context "reserve")
-    (js-lambda
-     nil
+                (js-member (node-path node) "value")))))
 
-     (list
+    (unless (emptyp previous-values)
+      (lexical-block
+       (js-var "reserve" (js-member context "reserve"))
 
-      (-<> (js-member "reserve" "apply")
-           (js-call context "arguments")
-           (js-member "then")
-           (js-call
-            (js-lambda
-             nil
-             (list
-              (js-call "="
-                       (js-members context "node" "old_value")
-                       (js-members context "node" "value")))))
-           js-return))))))
+       (js-call
+        "="
 
-(defun make-save-weak-operands (context)
-  "Generates code which overrides the `reserve' method of CONTEXT to
-   save its operand, which are bound via a weak binding, in the
-   `weak_operands' array."
+        (js-member context "reserve")
+        (js-lambda
+         nil
 
-  (labels ((weak-p (dependency)
-             (node-link-weak-p (cdr dependency)))
-
-           (save-operand (operand)
-             (js-call
-              "="
-
-              (js-element
-               (js-member "context" "weak_operands")
-               (dependency-index context (car operand)))
-
-              (js-member
-               (node-path (car operand))
-               "value"))))
-
-    (let ((weak-operands (remove-if-not #'weak-p (coerce (operands context) 'alist))))
-      (when weak-operands
-        (lexical-block
-         (js-var "reserve" (js-member "context" "reserve"))
-
-         (js-call
-          "="
-
-          (js-member "context" "reserve")
-          (js-lambda
-           nil
-
-           (list
-            (-<> (js-member "reserve" "apply")
-                 (js-call "context" "arguments")
-                 (js-member "then")
-                 (js-call
-                  (js-lambda
-                   nil
-                   (append
-                    (list
-                     (js-call "=" (js-member "context" "weak_operands") (js-array)))
-                    (map #'save-operand weak-operands))))
-                 js-return)))))))))
+         (list
+          (-<> (js-member "reserve" "apply")
+               (js-call context "arguments")
+               (js-member "then")
+               (js-call
+                (js-lambda
+                 nil
+                 (append
+                  (list
+                   (js-call "=" (js-member context "previous_values") (js-array)))
+                  (map-to 'list #'save-node-value previous-values))))
+               js-return))))))))
 
 
 (defun make-context-expression (node-path id context)

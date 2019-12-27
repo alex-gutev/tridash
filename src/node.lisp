@@ -423,28 +423,30 @@
            (erase (contexts node) context-id)
            t)
 
-          ((remove-operand-from-fn context value-function operand)
+          ((remove-operand-from-fn node context value-function operand)
            (when (emptyp (operands context))
              (erase (contexts node) context-id))
            t))))))
 
-(defgeneric remove-operand-from-fn (context fn operand)
+(defgeneric remove-operand-from-fn (node context fn operand)
   (:documentation
    "Tries to remove the operand from the multi-operand context
     CONTEXT. Returns true if the operand was removed, NIL if it cannot
     be removed.")
 
-  (:method ((context t) (fn t) (operand t))
+  (:method ((node t) (context t) (fn t) (operand t))
     nil))
 
-(defmethod remove-operand-from-fn (context (fn object-expression) operand)
-  (with-accessors ((node node-link-node)) operand
+(defmethod remove-operand-from-fn (node context (fn object-expression) operand)
+  (with-accessors ((operand-node node-link-node)) operand
     (with-accessors ((entries object-expression-entries)) fn
-      (awhen (first (find operand entries :key #'second))
-        (erase (operands context) node)
-        (setf node (member-expression :self it))
+      (when (get operand-node (observers node))
+        (awhen (first (find operand entries :key #'second))
 
-        t))))
+          (erase (operands context) operand-node)
+          (setf operand-node (previous-value node t))
+
+          t)))))
 
 
 (defun remove-context (node context-id)
