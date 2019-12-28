@@ -48,4 +48,5 @@ AS_MKDIR_P([doc])
 AS_MKDIR_P([src/backends/javascript/runtime])
 
 AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([src/backends/javascript/Makefile])
 AC_OUTPUT

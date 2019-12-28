@@ -1,0 +1,48 @@
+UGLIFYJS = @UGLIFYJS@
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+
+VPATH = $(srcdir)
+
+testdir = $(top_srcdir)/test/backends/javascript
+
+## Building Runtime Library
+
+runtime_sources = runtime/runtime.js \
+	runtime/queue.js \
+	runtime/functions.js \
+	runtime/exports.js
+
+runtime: runtime/tridash.min.js
+
+runtime/tridash.min.js: $(runtime_sources)
+	$(UGLIFYJS) --wrap Tridash -m -o $@ $^
+
+
+## Testing
+
+check: $(testdir)/runtime/tridash.js
+	cd $(testdir); npm test
+
+$(testdir)/runtime/tridash.js: runtime/tridash.min.js
+	cp $< $@
+	echo "module.exports=Tridash;" >> $@
+
+
+## Installation
+
+install: runtime/tridash.min.js
+	install -m 644 $< $(installdir)/backends/javascript
+
+
+## Cleaning
+
+clean:
+	rm -f runtime/tridash.min.js
+	rm -f $(testdir)/runtime/tridash.js
+
+
+## Phony Targets
+
+.PHONY: check clean install

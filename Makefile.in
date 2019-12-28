@@ -48,7 +48,7 @@ VPATH = $(srcdir)
 
 ## Build Targets
 
-all: tridashc js_runtime man info
+all: tridashc js-runtime man info
 
 plump_sources = plump/dom.lisp \
 	plump/entities.lisp \
@@ -119,17 +119,17 @@ tridashc: build.lisp $(sources)
 
 # JS Runtime Library
 
-js_runtime_sources = src/backends/javascript/runtime/runtime.js \
-	src/backends/javascript/runtime/queue.js \
-	src/backends/javascript/runtime/functions.js \
-	src/backends/javascript/runtime/exports.js
+js-runtime:
+	$(MAKE) --directory=src/backends/javascript runtime
 
-UGLIFYJS = @UGLIFYJS@
+check-js-runtime:
+	$(MAKE) --directory=src/backends/javascript check
 
-src/backends/javascript/runtime/tridash.min.js: $(js_runtime_sources)
-	$(UGLIFYJS) --wrap Tridash -m -o $@ $^
+clean-js-runtime:
+	$(MAKE) --directory=src/backends/javascript clean
 
-js_runtime: src/backends/javascript/runtime/tridash.min.js
+install-js-runtime:
+	$(MAKE) --directory=src/backends/javascript install installdir=$(DESTDIR)$(pkgdatadir)
 
 
 ## Documentation
@@ -179,7 +179,7 @@ pdf: doc/tridash.pdf
 
 ## Clean Targets
 
-clean: clean-docbook-temp
+clean: clean-docbook-temp clean-js-runtime
 	rm -f build.lisp
 	rm -f tridashc
 
@@ -217,9 +217,6 @@ install-module-build-config: modules/core.yml
 
 install-modules: $(core_module_sources)
 	install -m 644 $^ $(DESTDIR)$(pkgdatadir)/modules/core
-
-install-js-runtime: src/backends/javascript/runtime/tridash.min.js
-	install -m 644 $< $(DESTDIR)$(pkgdatadir)/backends/javascript
 
 install-data: install-module-build-config install-modules install-js-runtime
 
@@ -263,27 +260,21 @@ uninstall: uninstall-info uninstall-html uninstall-pdf
 
 ## Testing
 
-check: check-compiler check-runtime
+check: check-compiler check-js-runtime
 
 check-compiler:
 	cd $(srcdir); \
 	$(LISP) $(LISP_FLAGS) $(LISP_TEST_FLAGS) --load tridash.asd --load test/script.lisp
 
 
-check-runtime: $(srcdir)/test/backends/javascript/runtime/tridash.js
-	cd $(srcdir)/test/backends/javascript; npm test
-
-$(srcdir)/test/backends/javascript/runtime/tridash.js: src/backends/javascript/runtime/tridash.min.js
-	cp $< $@
-	echo "module.exports=Tridash;" >> $@
-
-
 ## Phony Targets
 
-.PHONY: all man js-runtime clean distclean maintainer-clean clean-info \
+.PHONY: all man js-runtime \
+	clean distclean maintainer-clean clean-info clean-js-runtime \
 	info html pdf \
 	install installdirs install-bin \
 	install-module-build-config install-modules install-data \
+	install-js-runtime \
 	install-man install-info install-html install-pdf \
 	uninstall uninstall-info uninstall-html uninstall-pdf \
-	check check-compiler check-runtime
+	check check-compiler check-js-runtime
