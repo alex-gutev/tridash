@@ -143,6 +143,8 @@ test-equal-function(x) : {
 when(..(args)) :
     fail("`when` may only appear within the context operand to the `@` operator.")
 
+:attribute(when, macro, 1)
+
 :export(@, when)
 
 
