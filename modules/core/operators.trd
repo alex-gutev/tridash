@@ -51,6 +51,9 @@
 
 :op(!-, 15, right)
 
+:op(::, 700, left)
+:op(=>, 750, left)
+
 
 ## Arithmetic Operators
 

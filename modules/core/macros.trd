@@ -93,6 +93,40 @@ case(..(cases)) : {
 :attribute(!, macro, 1)
 
 
+### Node States
+
+## References the state with identifier `state` of `node`.
+##
+## Bindings, involving the explicit state as the target, will only
+## take effect when the state of `node` changes to `state`.
+##
+## `state` may also be a functor of the form `=>(from-state,
+## to-state)` (or `from-state => to-state` since `=>` is registered as
+## an infix operator) in which case the bindings only take effect when
+## the state of `node` changes from the state with identifier
+## `from-state` to the state with identifier `to-state`.
+##
+## The state of `node` is controlled by binding to the node
+## `:state(node)`.
+##
+## `node`  : The node
+## `state` : The state
+
+::(node, state) : {
+    state -> list('(=>), from, to)
+
+    list!('(:state), node, from, to) -> @(self)
+    list('(:state), node, state) -> @(self)
+}
+
+=>(..(args)) :
+    fail("`=>` may only appear on the right hand side of the `::` operator.")
+
+:attribute(::, macro, 1)
+:attribute(=>, macro, 1)
+
+
 ### Export Declarations
 
 :export(case, !)
+:export(::, =>)
