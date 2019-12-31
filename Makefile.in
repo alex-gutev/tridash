@@ -122,7 +122,7 @@ tridashc: build.lisp $(sources)
 js-runtime:
 	$(MAKE) --directory=src/backends/javascript runtime
 
-check-js-runtime:
+check-js-runtime: tridashc
 	$(MAKE) --directory=src/backends/javascript check
 
 clean-js-runtime:

@@ -1,0 +1,25 @@
+## Tests bindings which are active only during a particular state
+## transition.
+
+:import(core)
+
+counter + 1 -> counter :: state1 => state2
+start -> counter
+
+:state(counter) <-
+    case(state = 1 : '(state1),
+         state = 2 : '(state2),
+         '(default))
+
+
+## Input Attributes
+
+:attribute(start, input, 1)
+:attribute(state, input, 1)
+
+
+## Public Name Attributes
+
+:attribute(start, public-name, "start")
+:attribute(counter, public-name, "counter")
+:attribute(state, public-name, "state")
