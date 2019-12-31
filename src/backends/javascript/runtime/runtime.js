@@ -168,7 +168,7 @@ function Reserve(context, start) {
     /**
      * Array of the values of the operand nodes
      */
-    this.operands = context.operands.map((n) => n.value);
+    this.operands = context.operands.map((n) => n.next_value);
 
     /**
      * Thunk which computes the value of the node.
@@ -177,10 +177,17 @@ function Reserve(context, start) {
         return context.compute_value(this.operands);
     });
 
+    /**
+     * Promise which is resolved when the value of this node is
+     * updated.
+     */
+    this.value_promise = new ValuePromise();
+
 
     /**
      * Promise indicating when the path through the node has been
-     * reserved.
+     * reserved, that is the update method, for this reserve, has been
+     * called.
      *
      * This promise should be reserved when the node has dequeued this
      * reserve object from the queue.
@@ -191,7 +198,13 @@ function Reserve(context, start) {
      * Promise which is resolved when the path through all of the
      * context's observer nodes has been reserved.
      */
-    this.observers = true;
+    this.observers = Promise.resolve(true);
+
+    /**
+     * Optional promise which for which the update loop waits to be
+     * resolved prior to updating its value.
+     */
+    this.preconditions = null;
 
     /**
      * Flag for whether this reserve object has been queued to the
@@ -209,11 +222,29 @@ function Reserve(context, start) {
  */
 Reserve.prototype.queue = function(node) {
     if (!this.queued) {
+        // Set next_value promise of node to indicate that the node's
+        // value is being updated.
+        node.next_value = this.value_promise.promise;
+
         node.reserve_queue.enqueue(this);
         node.add_update();
+
         this.queued = true;
     }
 };
+
+/**
+ * Adds a promise which is to be resolved prior to updating the node's
+ * value
+ *
+ * @param condition A promise.
+ */
+Reserve.prototype.add_precondition = function(condition) {
+    this.preconditions = this.preconditions ?
+        this.preconditions.then(() => condition) :
+        condition;
+};
+
 
 /**
  * Reserves a path through the node (in the context).
@@ -224,8 +255,10 @@ Reserve.prototype.queue = function(node) {
  * @param index Index of the operand node within the context's
  *   operands array.
  *
- * @param value The value of the operand (either immediate or a
- *   thunk).
+ * @param path Path promise of the dependency node.
+ *
+ * @param value Promise which is resolved with the value of the
+ *   operand when it is computed.
  *
  * @param visited Visited set.
  *
@@ -236,16 +269,23 @@ Reserve.prototype.queue = function(node) {
  *   has been resolved (the reserve object has been dequeued in the
  *   node's update loop).
  */
-NodeContext.prototype.reserve = function(start, index, value, visited = {}, weak = false) {
+NodeContext.prototype.reserve = function(start, index, path, value, visited = {}, weak = false) {
     if (!visited[this.context_id]) {
         var reserve = new Reserve(this, start);
 
         visited[this.context_id] = reserve;
 
-        reserve.operands[index] = value;
+        // Do not set weak operands as if they are part of a cycle,
+        // they may cause an infinite promise waiting chain.
+
+        // This assumes that operands which are weakly bound are not
+        // actually used within the context's value function.
+        reserve.operands[index] = weak ? null : value;
+
+        this.reserve_hook(reserve, index, path, true);
 
         if (!weak) {
-            reserve.observers = this.reserveObservers(start, reserve.value, visited);
+            reserve.observers = this.reserveObservers(start, reserve.value_promise.promise, reserve.path.promise, visited);
             reserve.queue(this.node);
 
             return reserve.path.promise;
@@ -253,9 +293,20 @@ NodeContext.prototype.reserve = function(start, index, value, visited = {}, weak
     }
     else {
         reserve = visited[this.context_id];
-        reserve.operands[index] = value;
+
+        // Do not set weak operands as if they are part of a cycle,
+        // they may cause an infinite promise waiting chain.
+
+        // This assumes that operands which are weakly bound are not
+        // actually used within the context's value function.
+        reserve.operands[index] = weak ? null : value;
+
+        this.reserve_hook(reserve, index, path, false);
 
         if (!weak) {
+            if (!this.queued)
+                reserve.observers = this.reserveObservers(start, reserve.value_promise.promise, reserve.path.promise, visited);
+
             reserve.queue(this.node);
             return reserve.path.promise;
         }
@@ -265,23 +316,43 @@ NodeContext.prototype.reserve = function(start, index, value, visited = {}, weak
 };
 
 /**
+ * Hook function which is called when 'reserve' is called.
+ *
+ * This allows a node to add preconditions to a reserve.
+ *
+ * @param reserve The reserve object.
+ *
+ * @param index Index of the dependency node within the operands
+ *   array.
+ *
+ * @param path Path promise of the dependency node.
+ *
+ * @param first If true the hook is called for the first time for this
+ *   reserve object.
+ */
+NodeContext.prototype.reserve_hook = function(reserve, index, path, first) {};
+
+/**
  * Reserves a path from a node, in this context, to the observer
  * nodes.
  *
  * @param start Promise which once resolved, indicates that `reserve'
  *   has been called for each dirtied operand node.
  *
- * @param start Promise which once resolved, indicates that `reserve'
- *   has been called for each dirtied operand node.
+ * @param value Promise which is resolved with the value of the node
+ *   when it is computed.
+ *
+ * @param path Promise which is resolved when the node's update loop
+ *   is run.
  *
  * @param visited Visited set.
  *
  * @return Promise which is resolved when a path has been reserved
  *   through each of the observers.
  */
-NodeContext.prototype.reserveObservers = function(start, value, visited) {
+NodeContext.prototype.reserveObservers = function(start, value, path, visited) {
     return Promise.all(
-        this.observers.map(([obs, index]) => obs.reserve(start, index, value, visited))
+        this.observers.map(([obs, index]) => obs.reserve(start, index, path, value, visited))
     );
 };
 
@@ -320,12 +391,29 @@ Node.prototype.update = function() {
     if (reserve) {
         var {context, start, observers, value} = reserve;
 
-        reserve.path.resolve(true);
-
         observers.then(() => start)
             .then(() => {
-                this.value = value;
-                this.update_value(value);
+                reserve.path.resolve(true);
+                return reserve.preconditions;
+            })
+            .then(() => {
+                // Wait for operand nodes to resolve. When resolved
+                // update node value.
+                var p = Promise.all(reserve.operands).then((operands) => {
+                    reserve.operands = operands;
+
+                    this.value = value;
+                    this.update_value(value);
+
+                    return value;
+                });
+
+                // Resolve node value promise with the operands nodes
+                // promise. This ensures that cyclic bindings will not
+                // result in a circular wait.
+                reserve.value_promise.resolve(p);
+
+                return p;
             })
             .finally(this.update.bind(this));
     } else {
@@ -376,7 +464,7 @@ Node.prototype.add_watch = function(fn) {
 Node.prototype.set_value = function(value) {
     var start = new ValuePromise();
 
-    this.contexts["input"].reserve(start.promise, 0, value);
+    this.contexts["input"].reserve(start.promise, 0, null, value);
     start.resolve(true);
 };
 
@@ -393,7 +481,7 @@ function set_values(node_values) {
     var visited = {};
 
     node_values.forEach(([node, value]) => {
-        node.contexts["input"].reserve(start.promise, 0, value, visited);
+        node.contexts["input"].reserve(start.promise, 0, null, value, visited);
     });
 
     start.resolve(true);

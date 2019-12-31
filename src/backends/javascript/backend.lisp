@@ -344,7 +344,8 @@
       (append-code
        (js-call "=" (js-member path "name") (js-string (name node)))))
 
-    (store-in-public-nodes node path)
+    (append-code
+     (store-in-public-nodes node path))
 
     ;; If the node has an INIT context, add its initial value to
     ;; INITIAl-VALUES of *BACKEND-STATE* and ensure it has an input
@@ -394,50 +395,63 @@
             (when function
               (js-call "=" (js-member "context" "compute") function))
 
-            (make-save-previous-node-values "context" previous-values)
+            (make-save-previous-node-values node context "context" previous-values)
 
             (js-call "=" context-path "context"))))))))
 
-(defun make-save-previous-node-values (context previous-values)
-  "Generates code which overrides the `reserve' method of CONTEXT to
-   store the values of nodes, of which the previous values are
-   referenced by CONTEXT's value function, in the 'previous_values'
-   array."
+(defun make-save-previous-node-values (node context var previous-values)
+  "Generates code which overrides the `reserve_hook' method of a
+   context to store the values of nodes, of which the previous values
+   are referenced by CONTEXT's value function, in the
+   'previous_values' array.
 
-  (labels ((save-node-value (node)
-             (destructuring-bind (node . index) node
-               (js-call
-                "="
+   NODE is the node to which CONTEXT belongs. VAR is the variable with
+   which the context is referenced. PREVIOUS-VALUES is the map of
+   nodes of which the previous-values are referenced."
 
-                (js-element
-                 (js-member context "previous_values")
-                 index)
+  (labels ((save-node-value (operand)
+             (destructuring-bind (operand . index) operand
 
-                (js-member (node-path node) "value")))))
+               (if (= operand node)
+                   (save-self index)
+
+                   (js-if
+                    (js-call "==" "index" (dependency-index context operand))
+                    (js-call
+                     (js-member "reserve" "add_precondition")
+                     (js-call
+                      (js-member "path" "then")
+                      (js-lambda
+                       nil
+
+                       (list
+                        (js-call
+                         "="
+
+                         (js-element
+                          (js-member var "previous_values")
+                          index)
+
+                         (js-member (node-path operand) "value"))))))))))
+
+           (save-self (index)
+             (js-if "first"
+                    (js-call "="
+                             (js-element (js-member var "previous_values") index)
+                             (js-member (node-path node) "value")))))
 
     (unless (emptyp previous-values)
-      (lexical-block
-       (js-var "reserve" (js-member context "reserve"))
+      (list
+       (js-call "=" (js-member var "previous_values") (js-array))
 
        (js-call
         "="
 
-        (js-member context "reserve")
+        (js-member var "reserve_hook")
         (js-lambda
-         nil
+         (list "reserve" "index" "path" "first")
 
-         (list
-          (-<> (js-member "reserve" "apply")
-               (js-call context "arguments")
-               (js-member "then")
-               (js-call
-                (js-lambda
-                 nil
-                 (append
-                  (list
-                   (js-call "=" (js-member context "previous_values") (js-array)))
-                  (map-to 'list #'save-node-value previous-values))))
-               js-return))))))))
+         (map-to 'list #'save-node-value previous-values)))))))
 
 
 (defun make-context-expression (node-path id context)
@@ -539,7 +553,8 @@
     (let ((context-path (context-path node context-id)))
       (labels ((reserve-observer (observer index weak-p)
                  (-> (js-member observer "reserve")
-                     (js-call "start" index "value" "visited" (if weak-p "true" "false"))))
+                     (js-call
+                      "start" index "path" "value" "visited" (if weak-p "true" "false"))))
 
                (observer-index (observer link)
                  (-<>> link
@@ -580,7 +595,7 @@
             (js-member context-path "reserveObservers")
 
             (js-lambda
-             '("start" "value" "visited")
+             '("start" "value" "path" "visited")
 
              (list
               (js-return
