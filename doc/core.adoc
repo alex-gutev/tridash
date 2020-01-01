@@ -138,6 +138,29 @@ associativity. The `when` symbol is also registered as an infix
 operator with precedence *850* and *left* associativity.
 
 
+[[macro-node-state]]
+==== Macro-Node: `::(node, state)` ====
+
+(((::, Core Module, Macro)))
+
+When appearing as the target of a binding, a binding is established to
+`node` which is only active when `node` is in the state with
+identifier `state`.
+
+`state` may also be a functor of the form `from => state`, in which
+case the binding is only active when the state of `node` changes from
+the state with identifier `from` to the state with identifier `to`.
+
+_See <<node-states>> for more information._
+
+[horizontal]
+`node`:: The node.
+`state`:: The state identifier or `=>` expression, _see above_.
+
+NOTE: Registered as an infix operator with precedence *700* and *left*
+associativity. The `=>` symbol is also registered as an infix operator
+with precedence *750* and *left* associativity.
+
 === Meta-Node Definitions ===
 
 (((Definitions, Core Module, Macros)))
@@ -1710,6 +1733,8 @@ value for a `target-transform` function. _See <<_instances_as_targets>>_.
 | `.`       | 1000       | left
 | `when`    | 850        | left
 | `@`       | 800        | left
+| `=>`      | 750        | left
+| `::`      | 700        | left
 | `*`       | 200        | left
 | `/`       | 200        | left
 | `+`       | 100        | left

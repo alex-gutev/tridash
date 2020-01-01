@@ -799,6 +799,136 @@ failure. _See <<_failures>>_.
 Accessing a non-existent entry, or accessing a subnode of a parent
 node which does not evaluate to a dictionary will result in a failure.
 
+
+[[node-states]]
+=== Node States ===
+
+(((Node States, Nodes, Bindings)))
+
+A binding can be established between the same node, as both the source
+and target of the binding, however in different 'states'. The binding
+thus acts as a state transition function which computes the value of
+the node in its current 'state' given its value in the previous 'state'.
+
+The special `:state` operator allows a binding to a particular state
+of a node to be established.
+
+.Syntax
+--------------------------------------------------
+:state(node, state-identifier)
+--------------------------------------------------
+
+where `node` is the node and `state-identifier` is a symbol
+identifying the state.
+
+When a `:state` expression appears as the target of a binding, the
+binding will only take effect when `node` switches to the state with
+identifier `state-identifier`. This allows `node` to appear in the
+source of the binding either directly or as part of a node expression,
+in which case the current value of `node` is referenced to compute its
+value in the new state.
+
+IMPORTANT: When a `:state` expression appears as the source of a
+binding, it reduces to a reference to the value of node. It is not a
+reference to the value of node in a particular state.
+
+The `:state` operator may also take an additional third argument, in
+which case the arguments are interpreted as follows:
+
+.Syntax: With Explicit 'From' and 'To' States
+--------------------------------------------------
+:state(node, from-state, to-state)
+--------------------------------------------------
+
+This specifies that the binding, of which the `:state` expression is a
+target, is only active when the state of `node` switches from the
+state with identifier `from-state` to the state with identifier
+`to-state`.
+
+The `state` of a node `n` is determined by the value of the special
+node `:state(n)`, to which bindings can be established. The value of
+`:state(n)` must be a symbol which is interpreted as a state
+identifier. The symbol may name a node state to which no bindings are
+established.
+
+IMPORTANT: Any value change of the node `:state(n)` is considered a
+change in the state of the node, even if the new state is identical to
+the previous state.
+
+Multiple bindings, to the same node state, can be declared however
+bindings declared later in the source file take priority over bindings
+declared earlier in the file.
+
+.Example 1: Simple Counter
+--------------------------------------------------
+counter + 1 -> :state(counter, increment)
+
+if (increment, '(increment), '(default)) -> :state(counter)
+--------------------------------------------------
+
+TIP: The `'` operator is a macro which returns its argument as a
+literal symbol, _see <<literal-symbols>>.
+
+The first declaration establishes the binding `counter + 1 ->
+counter`, which is active only when `counter` switches to the
+`increment` state. When `counter` switches to the `increment` state,
+its value is updated to its current value incremented by one.
+
+The second declaration establishes a binding to the node
+`:state(counter)`, the value of which determines the state of
+`counter`. When the node `increment` changes to true, the value of
+`:state(counter)`, and thus the state of `counter`, is `increment`
+resulting in the value of `counter` being incremented by one. When
+`increment` is false, the state of `counter` is `default` and thus the
+binding established by the first declaration has no effect.
+
+IMPORTANT: A change in the value of `increment` from true to true will
+result in a change in the state of `counter` from `increment` to
+`increment`. Even though the new state is identical to the previous
+state, it is still considered a change to the `increment` state and
+thus the value of `counter` is incremented. To avoid this use the
+three argument form of the `:state` operator which specifies both a
+'from' and 'to' state.
+
+.Example 2: Simple Counter with Explicit 'From' and 'To' States
+--------------------------------------------------
+counter + 1 -> :state(counter, default, increment)
+
+if (increment, '(increment), '(default)) -> :state(counter)
+--------------------------------------------------
+
+Using the three argument form of the `:state` operator, the first
+declaration establishes a binding, between `counter + 1` and
+`counter`, which is only active when the state of `counter` changes
+from `default` to `increment`. This differs from the previous example,
+in which the binding is active when the state of `counter` changes
+from any state to `increment`.
+
+In this example, the value of `counter` is not incremented if the
+state of `counter` changes from `increment` to `increment`, as the
+binding `counter + 1 -> counter` is only active when the state changes
+from `default` to `increment`.
+
+[TIP]
+==================================================
+The <<macro-node-state,`::`>> macro from the `core` module, which is
+registered as an infix operator, is the preferred shorthand for the
+`:state` operator. The shorthand for the two argument form is `node ::
+state` and the shorthand for the three argument form is `node :: from
+=> to`.
+
+The first declarations of the previous examples can thus be rewritten
+as follows:
+
+--------------------------------------------------
+# First Declaration of Example 1
+counter + 1 -> counter :: increment
+
+# First Declaration of Example 2
+counter + 1 -> counter :: default => increment
+--------------------------------------------------
+==================================================
+
 == Meta-Nodes ==
 
 (((Meta-Nodes, Nodes, Semantics)))
@@ -1340,6 +1470,7 @@ in the first element of the list.
 The return value of the meta-node function is processed as though it
 is a parsed node declaration appearing in source code.
 
+[[literal-symbols, Literal Symbols]]
 ==== Literal Symbols ====
 
 (((Literal Symbols, Macro-Nodes)))
