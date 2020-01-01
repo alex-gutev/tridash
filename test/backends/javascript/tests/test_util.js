@@ -30,23 +30,14 @@
  * Returns a promise which is resolved with the next value of @a node
  * when it is computed.
  *
- * This function adds a watch function to the node.
+ * If the node evaluates to a thunk it is resolved by the promise.
  *
  * @param node The Node
  *
  * @return The Promise
  */
 function node_value(node) {
-    var called = false;
-
-    return new Promise((resolve) => {
-        node.add_watch((value) => {
-            if (!called) {
-                called = true;
-                resolve(Tridash.resolve(value));
-            }
-        });
-    });
+    return Promise.resolve(node.next_value).then(Tridash.resolve);
 }
 
 exports.node_value = node_value;
