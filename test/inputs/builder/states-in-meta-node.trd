@@ -1,0 +1,10 @@
+:import(core)
+
+f(initial, state) : {
+    initial -> x
+    x + 1 -> x :: state1
+
+    state -> :state(x)
+
+    x
+}

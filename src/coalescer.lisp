@@ -27,10 +27,13 @@
 
 ;;; Node Coalescing
 
-(defun coalesce-all (table)
+(defun coalesce-all (table &key in-meta-node)
   "Perform all coalescing steps on the `FLAT-NODE-TABLE' TABLE:
    coalesce nodes, check structure, remove unreachable nodes and
-   coalesce `NODE-LINK' objects."
+   coalesce `NODE-LINK' objects.
+
+   The :IN-META-NODE is a flag for whether TABLE is the node table of
+   a meta-node."
 
   (with-slots (nodes input-nodes) table
     ;; Coalesce successive nodes with a single observer
@@ -38,7 +41,7 @@
 
     ;; Check for cycles and coalesce multiple contexts activated by a
     ;; common ancestor node.
-    (check-structure input-nodes)
+    (check-structure input-nodes :simultaneous in-meta-node)
 
     ;; Fold Constant Nodes
     (fold-constant-nodes nodes)
@@ -557,18 +560,22 @@
 
 ;;;; Structure Checking
 
-(defun check-structure (input-nodes)
-  "Checks the structure of all nodes ensuring there are no cycles and
-   no ambiguous contexts. If a cycle or ambiguous context is detected,
-   an error condition is signaled. INPUT-NODES is the set of all input
-   nodes."
+(defun check-structure (input-nodes &key simultaneous)
+  "Checks the structure of all nodes ensuring there are no no
+   ambiguous contexts. If an ambiguous context is detected, an error
+   condition is signaled. INPUT-NODES is the set of all input nodes.
+
+   If SIMULTANEOUS is true it is assumed that all nodes in INPUT-NODES
+   will be given a value simultaneously, as though they all have a
+   single common dependency."
 
   (let ((visited (make-hash-map)))
     (labels ((begin-walk (node)
                "Clears the visited set and begins the traversal at
                 NODE in the :INPUT context."
 
-               (clear visited)
+               (unless simultaneous
+                 (clear visited))
                (visit node (context node :input)))
 
              (visit (node context)
@@ -578,25 +585,21 @@
                     (check-context node context it)
                     (visit-observers node context)))
 
-             (check-context (node new-context marker)
+             (check-context (node new-context old-context)
                "Checks that if node is visited for a second time it is
                 visited in the same context."
 
-               (destructuring-bind (temp? old-context) marker
-                 (when (/= old-context new-context)
-                   (error 'ambiguous-context-error :node node))))
+               (when (/= old-context new-context)
+                 (error 'ambiguous-context-error :node node)))
 
              (visit-observers (node context)
                "Visits the observers of NODE in the context CONTEXT."
 
-               ;; Mark Temporarily
-               (setf (get node visited) (list t context))
+               ;; Mark
+               (setf (get node visited) context)
 
                (with-slots (operands) context
-                 (foreach #'visit-observer (remove-if (compose (rcurry #'memberp operands) #'car) (observers node))))
-
-               ;; Mark Permanently
-               (setf (car (get node visited)) nil))
+                 (foreach #'visit-observer (remove-if (compose (rcurry #'memberp operands) #'car) (observers node)))))
 
              (visit-observer (observer)
                (destructuring-bind (observer . link) observer

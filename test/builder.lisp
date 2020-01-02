@@ -4015,6 +4015,18 @@
                     }"
                  ":attribute(f, no-remove, 1)")
 
+          (is-error (finish-build) 'ambiguous-context-error)))
+
+      (subtest "Multiple Contexts Activated by Multiple Operands"
+        (with-module-table modules
+          (build "f(a, b) : { a -> c; b -> c; c }")
+
+          (is-error (finish-build) 'ambiguous-context-error)))
+
+      (subtest "Node States within meta-node"
+        (with-module-table modules
+          (build-core-module)
+          (build-source-file "./test/inputs/builder/states-in-meta-node.trd" modules)
           (is-error (finish-build) 'ambiguous-context-error)))))
 
   (subtest "Constant Functions"

@@ -152,14 +152,17 @@
 
     (foreach #'merge-node nodes)))
 
-(defun finish-build (node-table)
+(defun finish-build (node-table &key in-meta-node)
   "Performs node coalescing, removal of unreachable nodes, constant
    folding and structure checking. NODE-TABLE is the `FLAT-NODE-TABLE'
-   containing all nodes in all modules."
+   containing all nodes in all modules.
+
+   IN-META-NODE is a flag for whether NODE-TABLE is the node table of
+   a meta-node."
 
   (with-slots (nodes meta-nodes input-nodes) node-table
     ;; Node Coalescing
-    (coalesce-all node-table)
+    (coalesce-all node-table :in-meta-node in-meta-node)
 
     ;; Finish Building Meta-Node Subgraphs
     (foreach #'finish-build-meta-node (meta-nodes node-table))
@@ -193,7 +196,7 @@
                     :definition (flatten-meta-node definition))
 
       (nadjoin meta-node (nodes definition))
-      (finish-build definition)
+      (finish-build definition :in-meta-node t)
 
       (remove-constant-outer-nodes meta-node))))
 
