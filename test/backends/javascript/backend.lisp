@@ -1091,7 +1091,7 @@
         (build-core-module)
         (build "/import(core)")
         (build "add(x, y) : x + y"
-               "/attribute(add, no-remove, 1)")
+               "/attribute(add, removable, 0)")
         (finish-build)
 
         (with-nodes ((add "add")) modules
@@ -1365,7 +1365,7 @@
           (build-core-module)
           (build "/import(core)")
           (build "func(a, b) : (a + b) - (a + b)"
-                 "/attribute(func, no-remove, 1)")
+                 "/attribute(func, removable, 0)")
 
           (with-nodes ((func "func")) (finish-build modules)
 
@@ -1434,7 +1434,7 @@
         (build "/import(core)")
         (build "1+(n, d : 1) : n + d")
         (build "f(a) : 1+(a)"
-               "/attribute(f, no-remove, 1)")
+               "/attribute(f, removable, 0)")
 
         (with-nodes ((1+ "1+") (f "f"))
             (finish-build)
@@ -1470,8 +1470,8 @@
         (build "g(x, y, z) : f(x, y, z)")
         (build "h(x) : f(x)"
 
-               "/attribute(h, no-remove, 1)"
-               "/attribute(g, no-remove, 1)")
+               "/attribute(h, removable, 0)"
+               "/attribute(g, removable, 0)")
 
         (with-nodes ((f "f") (g "g") (h "h"))
             (finish-build)
@@ -1516,7 +1516,7 @@
         (build "/import(core)"
                "inc(x) : x + delta"
 
-               "/attribute(inc, no-remove, 1)"
+               "/attribute(inc, removable, 0)"
                "/attribute(delta, input, 1)")
 
         (with-nodes ((inc "inc")) (finish-build)

@@ -2057,10 +2057,10 @@
         (with-nodes ((a "a") (cc "cc")) table
           (test-simple-binding a cc))))
 
-    (subtest "NO-REMOVE Attribute"
+    (subtest "REMOVABLE Attribute"
       (with-module-table modules
         (build "some-special-node"
-               "/attribute(some-special-node, no-remove, 1)")
+               "/attribute(some-special-node, removable, 0)")
 
         (let ((table (finish-build)))
           (test-nodes table "some-special-node"))))
@@ -2689,7 +2689,7 @@
       (with-module-table modules
         (build "/external(add, x, y)"
                "1+(n) : add(n, 1)"
-               "/attribute(1+, no-remove, 1)")
+               "/attribute(1+, removable, 0)")
 
         (let ((table (finish-build)))
           (with-nodes ((add "add") (fn "1+")) table
@@ -2706,7 +2706,7 @@
                "/import(m1, add)"
 
                "1+(n) : add(n, 1)"
-               "/attribute(1+, no-remove, 1)")
+               "/attribute(1+, removable, 0)")
 
         (let ((table (finish-build)))
           (with-nodes ((add "add") (fn "1+")) table
@@ -2740,7 +2740,7 @@
                     )
                   }"
 
-               "/attribute(fact, no-remove, 1)")
+               "/attribute(fact, removable, 0)")
 
         (let ((table (finish-build)))
           (with-nodes ((if "if") (- "-") (* "*") (< "<") (fact "fact")) table
@@ -2782,7 +2782,7 @@
                     iter(m, 1)
                   }"
 
-               "/attribute(fact, no-remove, 1)")
+               "/attribute(fact, removable, 0)")
 
         (let ((table (finish-build)))
           (with-nodes ((if "if") (- "-") (* "*") (< "<") (fact "fact")) table
@@ -2908,7 +2908,7 @@
                   surname -> self.last
                 }"
 
-               "/attribute(Person, no-remove, 1)")
+               "/attribute(Person, removable, 0)")
 
         (let ((table (finish-build)))
           (with-nodes ((person "Person")) table
@@ -2921,7 +2921,7 @@
         (build-core-module)
         (build "/import(core)"
                "fn(x) : { x < 3 -> (x + 1 -> /context(self, c)); x + 2 -> /context(self, c) }"
-               "/attribute(fn, no-remove, 1)")
+               "/attribute(fn, removable, 0)")
 
         (let ((table (finish-build)))
           (with-nodes ((fn "fn") (< "<") (+ "+")) table
@@ -3916,7 +3916,7 @@
         (build "/external(int, x)"
                "/attribute(int, target-node, int)"
                "f(x) : { x -> int(y); y }"
-               "/attribute(f, no-remove, 1)")
+               "/attribute(f, removable, 0)")
 
         (let ((table (finish-build)))
           (with-nodes ((f "f") (int "int"))
@@ -3928,7 +3928,7 @@
       (with-module-table modules
         (build "/external(add,a,b)"
                "f(x) : { z; add(x,1) -> z; z; }"
-               "/attribute(f, no-remove, 1)")
+               "/attribute(f, removable, 0)")
 
         (with-nodes ((f "f") (add "add")) (finish-build)
           (test-meta-node f ((x "x"))
@@ -3939,21 +3939,21 @@
         (with-module-table modules
           (build "/external(add, x, y)"
                  "f(x) : add(x, y, z)"
-                 "/attribute(f, no-remove, 1)")
+                 "/attribute(f, removable, 0)")
 
           (is-error (finish-build) 'non-existent-node-error)))
 
       (subtest "Binding Source"
         (with-module-table modules
           (build "f(x) : z -> self"
-                 "/attribute(f, no-remove, 1)")
+                 "/attribute(f, removable, 0)")
 
           (is-error (finish-build) 'non-existent-node-error)))
 
       (subtest "Object Nodes"
         (with-module-table modules
           (build "f(x) : n.z"
-                 "/attribute(f, no-remove, 1)")
+                 "/attribute(f, removable, 0)")
 
           (is-error (finish-build) 'non-existent-node-error)))))
 
@@ -3979,7 +3979,7 @@
                       d -> e
                       e
                     }"
-                 "/attribute(f, no-remove, 1)")
+                 "/attribute(f, removable, 0)")
 
           (is-error (finish-build) 'ambiguous-context-error))
 
@@ -3988,7 +3988,7 @@
                       a -> self
                       b -> self
                     }"
-                 "/attribute(f, no-remove, 1)")
+                 "/attribute(f, removable, 0)")
 
           (is-error (finish-build) 'ambiguous-context-error)))
 
@@ -4001,7 +4001,7 @@
                       a -> c; c -> d
                       d
                     }"
-                 "/attribute(f, no-remove, 1)")
+                 "/attribute(f, removable, 0)")
 
           (is-error (finish-build) 'ambiguous-context-error))
 
@@ -4013,7 +4013,7 @@
                       b -> self
                       add(a, b) -> self
                     }"
-                 "/attribute(f, no-remove, 1)")
+                 "/attribute(f, removable, 0)")
 
           (is-error (finish-build) 'ambiguous-context-error)))
 
@@ -4033,7 +4033,7 @@
     (subtest "Ignored Arguments"
       (with-module-table modules
         (build "f(x) : 1"
-               "/attribute(f, no-remove, 1)")
+               "/attribute(f, removable, 0)")
 
         (let ((table (finish-build)))
           (with-nodes ((f "f")) table

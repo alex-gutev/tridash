@@ -314,7 +314,7 @@
 
              (sweep (node)
                (unless (or (visited? node)
-                           (attribute :no-remove node)
+                           (not (removable? node))
                            (meta-node? node))
                  (erase nodes node)
 
@@ -398,17 +398,22 @@
                      cdr
                      visit-context)))
 
-             (visit-if-no-remove (meta-node)
+             (visit-if-not-removable (meta-node)
                "Adds META-NODE to the USED set if it has the
-                :NO-REMOVE attribute set to true."
+                :REMOVABLE attribute set to false."
 
-               (when (attribute :no-remove meta-node)
+               (when (not (removable? meta-node))
                  (add-used-meta-node meta-node))))
 
       (foreach #'visit-node nodes)
-      (foreach #'visit-if-no-remove meta-nodes)
+      (foreach #'visit-if-not-removable meta-nodes)
 
       used)))
+
+(defun removable? (node)
+  "Returns true if it is permissible to remove NODE."
+
+  (bool-value (attribute :removable node t)))
 
 
 (defun fold-constant-nodes (nodes)

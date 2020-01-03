@@ -51,7 +51,7 @@
 
 (defmacro! test-strictness ((&rest source) &body tests)
   (flet ((make-attr-string (x)
-           (format nil "/attribute(~a, no-remove, 1)" x)))
+           (format nil "/attribute(~a, removable, 0)" x)))
 
     (let ((syms (map (compose #'gensym #'first) tests)))
       `(with-module-table ,g!modules

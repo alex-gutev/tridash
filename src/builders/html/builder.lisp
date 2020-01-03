@@ -95,7 +95,7 @@
    the node to create and ROOT-NODE is the root HTML node."
 
   (aprog1 (make-instance 'html-component-node :name name :element-node root-node)
-    (setf (attribute :no-remove it) t)))
+    (setf (attribute :removable it) nil)))
 
 (defun build-html-file (*html-file-path* *global-module-table*)
   "Extracts nodes from the HTML file at path FILE."
