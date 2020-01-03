@@ -33,7 +33,7 @@
 
 ### List Processing Meta-Nodes
 
-:module(core)
+/module(core)
 
 
 ### List Creation
@@ -278,7 +278,7 @@ apply(f, ..(xs)) :
 
 ### Export Declarations
 
-:export(
+/export(
     Empty, Empty!,
     list, list*, list!,
     nth,

@@ -1089,9 +1089,9 @@
     (subtest "Simple Function"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)")
+        (build "/import(core)")
         (build "add(x, y) : x + y"
-               ":attribute(add, no-remove, 1)")
+               "/attribute(add, no-remove, 1)")
         (finish-build)
 
         (with-nodes ((add "add")) modules
@@ -1118,7 +1118,7 @@
     (subtest "Recursive Meta-Nodes"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)")
+        (build "/import(core)")
         (build "fact(n) : case(n < 1 : 1, n * fact(n - 1))")
         (finish-build)
 
@@ -1168,7 +1168,7 @@
     (subtest "Tail Recursive Meta-Nodes"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)")
+        (build "/import(core)")
         (build "fact(n) : { iter(n, acc) : case(n < 1 : acc, iter(n - 1, n * acc)); iter(n, 1) }")
         (finish-build)
 
@@ -1241,7 +1241,7 @@
     (subtest "Mutually Recursive Meta-Nodes"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)")
+        (build "/import(core)")
         (build "fib(n) : case(n > 1 : fib1(n) + fib2(n), 1)")
         (build "fib1(n) : fib(n - 1)")
         (build "fib2(n) : fib(n - 2)")
@@ -1328,7 +1328,7 @@
     (subtest "Fail Expressions"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)")
+        (build "/import(core)")
         (build "validate(x) : x > 0 -> (x -> self)")
         (finish-build)
 
@@ -1363,9 +1363,9 @@
       (subtest "Strict Argument"
         (with-module-table modules
           (build-core-module)
-          (build ":import(core)")
+          (build "/import(core)")
           (build "func(a, b) : (a + b) - (a + b)"
-                 ":attribute(func, no-remove, 1)")
+                 "/attribute(func, no-remove, 1)")
 
           (with-nodes ((func "func")) (finish-build modules)
 
@@ -1431,10 +1431,10 @@
     (subtest "Optional Arguments"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)")
+        (build "/import(core)")
         (build "1+(n, d : 1) : n + d")
         (build "f(a) : 1+(a)"
-               ":attribute(f, no-remove, 1)")
+               "/attribute(f, no-remove, 1)")
 
         (with-nodes ((1+ "1+") (f "f"))
             (finish-build)
@@ -1465,13 +1465,13 @@
     (subtest "Rest Arguments"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)")
+        (build "/import(core)")
         (build "f(x, ..(xs)) : x + xs")
         (build "g(x, y, z) : f(x, y, z)")
         (build "h(x) : f(x)"
 
-               ":attribute(h, no-remove, 1)"
-               ":attribute(g, no-remove, 1)")
+               "/attribute(h, no-remove, 1)"
+               "/attribute(g, no-remove, 1)")
 
         (with-nodes ((f "f") (g "g") (h "h"))
             (finish-build)
@@ -1513,11 +1513,11 @@
     (subtest "Outer Nodes"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)"
+        (build "/import(core)"
                "inc(x) : x + delta"
 
-               ":attribute(inc, no-remove, 1)"
-               ":attribute(delta, input, 1)")
+               "/attribute(inc, no-remove, 1)"
+               "/attribute(delta, input, 1)")
 
         (with-nodes ((inc "inc")) (finish-build)
           (mock-backend-state
@@ -1540,7 +1540,7 @@
         (subtest "Add"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "add(x, y) : x + y")
             (finish-build)
 
@@ -1563,7 +1563,7 @@
         (subtest "Subtract"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "sub(x, y) : x - y")
             (finish-build)
 
@@ -1586,7 +1586,7 @@
         (subtest "Negate"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "neg(x) : -(x)")
             (finish-build)
 
@@ -1608,7 +1608,7 @@
         (subtest "Multiply"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "mul(x, y) : x * y")
             (finish-build)
 
@@ -1630,7 +1630,7 @@
         (subtest "Divide"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "div(x, y) : x / y")
             (finish-build)
 
@@ -1653,7 +1653,7 @@
         (subtest "Less Than"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "less?(x, y) : x < y")
             (finish-build)
 
@@ -1676,7 +1676,7 @@
         (subtest "Less Than or Equal"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "less=?(x, y) : x <= y")
             (finish-build)
 
@@ -1699,7 +1699,7 @@
         (subtest "Greater Than"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "greater?(x, y) : x > y")
             (finish-build)
 
@@ -1722,7 +1722,7 @@
         (subtest "Greater Than or Equal"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "greater=?(x, y) : x >= y")
             (finish-build)
 
@@ -1745,7 +1745,7 @@
         (subtest "Equal"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "equal?(x, y) : x = y")
             (finish-build)
 
@@ -1763,7 +1763,7 @@
         (subtest "Not Equal"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "not-equal?(x, y) : x != y")
             (finish-build)
 
@@ -1782,7 +1782,7 @@
         (subtest "And"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "my-and(x, y) : x + y and y - x")
             (finish-build)
 
@@ -1823,7 +1823,7 @@
         (subtest "Or"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "my-or(x, y) : x + y or y - x")
             (finish-build)
 
@@ -1862,7 +1862,7 @@
         (subtest "Not"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "my-not(x) : not(x)")
             (finish-build)
 
@@ -1881,7 +1881,7 @@
         (subtest "int"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "my-int(x) : int(x)")
             (finish-build)
 
@@ -1899,7 +1899,7 @@
         (subtest "real"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "my-real(x) : real(x)")
             (finish-build)
 
@@ -1917,7 +1917,7 @@
         (subtest "string"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "my-string(x) : string(x)")
             (finish-build)
 
@@ -1936,7 +1936,7 @@
         (subtest "int"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "is-int?(x) : int?(x)")
             (finish-build)
 
@@ -1954,7 +1954,7 @@
         (subtest "real"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "is-real?(x) : real?(x)")
             (finish-build)
 
@@ -1972,7 +1972,7 @@
         (subtest "string"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "is-string?(x) : string?(x)")
             (finish-build)
 
@@ -1990,7 +1990,7 @@
         (subtest "Is Infinity"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "is-inf?(x) : inf?(x)")
             (finish-build)
 
@@ -2008,7 +2008,7 @@
         (subtest "Is NaN"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core)")
+            (build "/import(core)")
             (build "is-nan?(x) : NaN?(x)")
             (finish-build)
 
@@ -2028,7 +2028,7 @@
         (subtest "Meta-Node: +"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core, map, +)"
+            (build "/import(core, map, +)"
                    "f(l) : map(+, l)")
             (finish-build)
 
@@ -2062,7 +2062,7 @@
         (subtest "Meta-Node: -"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core, map, -)"
+            (build "/import(core, map, -)"
                    "f(l) : map(-, l)")
             (finish-build)
 
@@ -2080,7 +2080,7 @@
         (subtest "Meta-Node: *"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core, map, *)"
+            (build "/import(core, map, *)"
                    "f(l) : map(*, l)")
             (finish-build)
 
@@ -2114,7 +2114,7 @@
         (subtest "Meta-Node: /"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core, map, /)"
+            (build "/import(core, map, /)"
                    "f(l) : map(/, l)")
             (finish-build)
 
@@ -2148,7 +2148,7 @@
         (subtest "Meta-Node: %"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core, map, %)"
+            (build "/import(core, map, %)"
                    "f(l) : map(%, l)")
             (finish-build)
 
@@ -2182,7 +2182,7 @@
         (subtest "Meta-Node: <"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core, map, <)"
+            (build "/import(core, map, <)"
                    "f(l) : map(<, l)")
             (finish-build)
 
@@ -2216,7 +2216,7 @@
         (subtest "Meta-Node: >"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core, map, >)"
+            (build "/import(core, map, >)"
                    "f(l) : map(>, l)")
             (finish-build)
 
@@ -2250,7 +2250,7 @@
         (subtest "Meta-Node: <="
           (with-module-table modules
             (build-core-module)
-            (build ":import(core, map, <=)"
+            (build "/import(core, map, <=)"
                    "f(l) : map(<=, l)")
             (finish-build)
 
@@ -2284,7 +2284,7 @@
         (subtest "Meta-Node: >="
           (with-module-table modules
             (build-core-module)
-            (build ":import(core, map, >=)"
+            (build "/import(core, map, >=)"
                    "f(l) : map(>=, l)")
             (finish-build)
 
@@ -2318,7 +2318,7 @@
         (subtest "Meta-Node: !"
           (with-module-table modules
             (build-core-module)
-            (build ":import(core, map, not)"
+            (build "/import(core, map, not)"
                    "f(l) : map(not, l)")
             (finish-build)
 
@@ -2351,7 +2351,7 @@
       (subtest "Undefined External Meta-Nodes"
         (with-module-table modules
           (build-core-module)
-          (build ":extern(f, a)"
+          (build "/external(f, a)"
                  "g(x) : f(x)")
           (finish-build)
 

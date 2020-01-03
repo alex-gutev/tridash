@@ -51,12 +51,12 @@
 
 (defmacro! test-strictness ((&rest source) &body tests)
   (flet ((make-attr-string (x)
-           (format nil ":attribute(~a, no-remove, 1)" x)))
+           (format nil "/attribute(~a, no-remove, 1)" x)))
 
     (let ((syms (map (compose #'gensym #'first) tests)))
       `(with-module-table ,g!modules
          (build-core-module)
-         (build ":import(core)" ,@source
+         (build "/import(core)" ,@source
                 ,@(map (compose #'make-attr-string #'first) tests))
 
          (with-nodes ,(map #'list syms (map #'first tests))
@@ -81,7 +81,7 @@
 
   (subtest "If and Catch Expressions"
     (test-strictness
-        ("f(a, b, c) : { a -> (b -> :context(self, c)); c -> :context(self, c) }")
+        ("f(a, b, c) : { a -> (b -> /context(self, c)); c -> /context(self, c) }")
 
       ("f" (t nil nil))))
 

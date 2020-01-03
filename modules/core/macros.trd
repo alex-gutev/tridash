@@ -33,7 +33,7 @@
 
 ### Utility Macros
 
-:module(core)
+/module(core)
 
 ## Evaluates to the value corresponding to the first condition node
 ## that evaluates to true.
@@ -67,7 +67,7 @@ case(..(cases)) : {
 
     foldr(make-case, cases, list(&(fail)))
 }
-:attribute(case, macro, 1)
+/attribute(case, macro, 1)
 
 ## Expands to a node which evaluates to the value of the functor node
 ## with operator `operator` and arguments `args`, only if all
@@ -90,7 +90,7 @@ case(..(cases)) : {
 
     list(&(if), test, cons(operator, args))
 }
-:attribute(!, macro, 1)
+/attribute(!, macro, 1)
 
 
 ### Node States
@@ -107,7 +107,7 @@ case(..(cases)) : {
 ## `from-state` to the state with identifier `to-state`.
 ##
 ## The state of `node` is controlled by binding to the node
-## `:state(node)`.
+## `/state(node)`.
 ##
 ## `node`  : The node
 ## `state` : The state
@@ -115,18 +115,18 @@ case(..(cases)) : {
 ::(node, state) : {
     state -> list('(=>), from, to)
 
-    list!('(:state), node, from, to) -> @(self)
-    list('(:state), node, state) -> @(self)
+    list!('(/state), node, from, to) -> @(self)
+    list('(/state), node, state) -> @(self)
 }
 
 =>(..(args)) :
     fail("`=>` may only appear on the right hand side of the `::` operator.")
 
-:attribute(::, macro, 1)
-:attribute(=>, macro, 1)
+/attribute(::, macro, 1)
+/attribute(=>, macro, 1)
 
 
 ### Export Declarations
 
-:export(case, !)
-:export(::, =>)
+/export(case, !)
+/export(::, =>)

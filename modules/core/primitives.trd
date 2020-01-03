@@ -33,8 +33,8 @@
 
 ### Language Primitives
 
-:module(core)
-:import(builtin)
+/module(core)
+/import(builtin)
 
 ### Quoting
 
@@ -45,10 +45,10 @@
 #
 # `thing` : The node declaration to be interpreted literally.
 
-'(thing) : list(:quote(:quote), thing)
-:attribute(', macro, 1)
+'(thing) : list(/quote(/quote), thing)
+/attribute(', macro, 1)
 
-:export(')
+/export(')
 
 
 ### Binding
@@ -59,9 +59,9 @@
 # `src`    : The source node of the binding.
 
 <-(target, src) : list(&(->), src, target)
-:attribute(<-, macro, 1)
+/attribute(<-, macro, 1)
 
-:export(->, <-)
+/export(->, <-)
 
 
 ## Contexts
@@ -84,7 +84,7 @@
 # `node`    : The node identifier.
 # `context` : A symbol serving as the explicit context identifier.
 
-@(node, context : :quote(default)) : {
+@(node, context : /quote(default)) : {
     # Flag for whether context is a when context with an explicit
     # failure type
 
@@ -92,8 +92,8 @@
 
     # Failure Type
 
-    :context(fail-type, default) <- head(tail(tail(context)))
-    :context(fail-type, default) <- head(tail(context))
+    /context(fail-type, default) <- head(tail(tail(context)))
+    /context(fail-type, default) <- head(tail(context))
 
     # Failure test function if failure type given.
 
@@ -102,11 +102,11 @@
 
     # Context identifier when context is a `when` context
 
-    :context(when-context-id, default) <-
+    /context(when-context-id, default) <-
         if(cons?(tail(tail(context))), head(tail(context)))
 
-    :context(when-context-id, default) <-
-        :quote(default)
+    /context(when-context-id, default) <-
+        /quote(default)
 
     # Context identifier
 
@@ -115,11 +115,11 @@
 
     # Context expression with test function
 
-    expr-with-test <- list('(:context), node, context-id, test-fn)
+    expr-with-test <- list('(/context), node, context-id, test-fn)
 
     # Context expression without test function
 
-    expr <- list('(:context), node, context-id)
+    expr <- list('(/context), node, context-id)
 
 
     # Return expression with test function, if context is a `when`
@@ -138,19 +138,19 @@ test-equal-function(x) : {
     test
 }
 
-:attribute(@, macro, 1)
+/attribute(@, macro, 1)
 
 when(..(args)) :
     fail("`when` may only appear within the context operand to the `@` operator.")
 
-:attribute(when, macro, 1)
+/attribute(when, macro, 1)
 
-:export(@, when)
+/export(@, when)
 
 
 ### Builtin Operators
 
 # Export operators imported from the `builtin` module.
 
-:export(:, ., &, c, .., prog)
-:export(if, catch)
+/export(:, ., &, c, .., prog)
+/export(if, catch)

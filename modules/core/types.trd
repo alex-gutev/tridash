@@ -33,7 +33,7 @@
 
 ### Utilities for converting between types
 
-:module(core)
+/module(core)
 
 ## Converts `x` to an integer.
 ##
@@ -44,7 +44,7 @@
 
 to-int(x) : int(x)
 
-:attribute(to-int, target-node, to-int)
+/attribute(to-int, target-node, to-int)
 
 
 ## Converts `x` to a real value.
@@ -56,7 +56,7 @@ to-int(x) : int(x)
 
 to-real(x) : real(x)
 
-:attribute(to-real, target-node, to-real)
+/attribute(to-real, target-node, to-real)
 
 
 ## Converts `x` to a string.
@@ -68,9 +68,9 @@ to-real(x) : real(x)
 
 to-string(x) : string(x)
 
-:attribute(to-string, target-node, to-string)
+/attribute(to-string, target-node, to-string)
 
 
 ### Export Declarations
 
-:export(to-int, to-real, to-string)
+/export(to-int, to-real, to-string)

@@ -353,9 +353,9 @@
 
 (subtest "Inline Functors"
   (html-file-test (modules "main" #p"test/builders/html/input/test4.html" :core t)
-    (with-nodes ((a ((":in" "core" "to-int") "a"))
-                 (b ((":in" "core" "to-int") "b"))
-                 (a+b ((":in" "core" "+") "a" "b")))
+    (with-nodes ((a (("/in" "core" "to-int") "a"))
+                 (b (("/in" "core" "to-int") "b"))
+                 (a+b (("/in" "core" "+") "a" "b")))
         modules
 
       (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
@@ -374,9 +374,9 @@
 (subtest "Multiple Inline Declarations"
   (subtest "In Attributes"
     (html-file-test (modules "main" #p"test/builders/html/input/test5.html" :core t)
-      (with-nodes ((a ((":in" "core" "to-int") "a"))
-                   (b ((":in" "core" "to-int") "b"))
-                   (a+b ((":in" "core" "+") "a" "b"))
+      (with-nodes ((a (("/in" "core" "to-int") "a"))
+                   (b (("/in" "core" "to-int") "b"))
+                   (a+b (("/in" "core" "+") "a" "b"))
                    (sum "sum"))
           modules
 
@@ -411,9 +411,9 @@
 
   (subtest "In SPAN elements"
     (html-file-test (modules "main" #p"test/builders/html/input/test6.html" :core t)
-      (with-nodes ((a ((":in" "core" "to-int") "a"))
-                   (b ((":in" "core" "to-int") "b"))
-                   (a+b ((":in" "core" "+") "a" "b"))
+      (with-nodes ((a (("/in" "core" "to-int") "a"))
+                   (b (("/in" "core" "to-int") "b"))
+                   (a+b (("/in" "core" "+") "a" "b"))
                    (sum "sum"))
           modules
 

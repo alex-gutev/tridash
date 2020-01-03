@@ -1,4 +1,4 @@
-:extern(cons, head, tail)
+/external(cons, head, tail)
 
 f(a,b) : {
     x; y
@@ -9,4 +9,4 @@ f(a,b) : {
     x
 }
 
-:attribute(f, no-remove, 1)
+/attribute(f, no-remove, 1)

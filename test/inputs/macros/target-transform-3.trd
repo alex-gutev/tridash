@@ -1,7 +1,7 @@
 ## Tests that an error is raised if the target transform meta-node is
 ## called with the incorrect number of arguments.
 
-:import(core, +, -, =, if, list, head, tail)
+/import(core, +, -, =, if, list, head, tail)
 
 add(x, y) : x + y
 
@@ -16,13 +16,13 @@ sub-right(source, expr, dummy) : {
     nth(operands, 0) -> left
     nth(operands, 1) -> right
 
-    list(:quote(->), list(:quote(-), source, left), right)
+    list(/quote(->), list(/quote(-), source, left), right)
 }
 
-:attribute(add, target-transform, sub-right)
+/attribute(add, target-transform, sub-right)
 
 
 in -> add(a, b)
 
-:attribute(in, input, 1)
-:attribute(a, input, 1)
+/attribute(in, input, 1)
+/attribute(a, input, 1)

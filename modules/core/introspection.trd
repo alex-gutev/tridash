@@ -36,21 +36,21 @@
 ### The meta-nodes in this module may be only used by macro
 ### meta-nodes. As runtime definitions are not available.
 
-:module(core/introspection)
-:import(core)
+/module(core/introspection)
+/import(core)
 
 ### Introspection Meta-Nodes
 
-:extern(node?, thing)
-:attribute(node?, strictness, thing)
+/external(node?, thing)
+/attribute(node?, strictness, thing)
 
-:extern(find-node, node, :(module))
-:attribute(find-node, strictness, or(node, module))
+/external(find-node, node, :(module))
+/attribute(find-node, strictness, or(node, module))
 
-:extern(get-attribute, node, attribute)
-:attribute(get-attribute, strictness, or(node, attribute))
+/external(get-attribute, node, attribute)
+/attribute(get-attribute, strictness, or(node, attribute))
 
 
 ### Export Declarations
 
-:export(node?, find-node, get-attribute)
+/export(node?, find-node, get-attribute)

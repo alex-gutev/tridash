@@ -33,89 +33,89 @@
 
 ### External Function Names for JavaScript Backend
 
-:module(core)
+/module(core)
 
 
 ### Arithmetic Operators
 
-:attribute(+, js-name, "+")
-:attribute(-, js-name, "-")
-:attribute(*, js-name, "*")
-:attribute(/, js-name, "/")
-:attribute(%, js-name, "%")
+/attribute(+, js-name, "+")
+/attribute(-, js-name, "-")
+/attribute(*, js-name, "*")
+/attribute(/, js-name, "/")
+/attribute(%, js-name, "%")
 
 
 ### Comparison Operators
 
-:attribute(<, js-name, "<")
-:attribute(<=, js-name, "<=")
-:attribute(>, js-name, ">")
-:attribute(>=, js-name, ">=")
-:attribute(=, js-name, "Tridash.eq")
-:attribute(!=, js-name, "Tridash.neq")
+/attribute(<, js-name, "<")
+/attribute(<=, js-name, "<=")
+/attribute(>, js-name, ">")
+/attribute(>=, js-name, ">=")
+/attribute(=, js-name, "Tridash.eq")
+/attribute(!=, js-name, "Tridash.neq")
 
-:attribute(symbol-equal, js-name, "Tridash.eq")
+/attribute(symbol-equal, js-name, "Tridash.eq")
 
 ### Logical Operators
 
-:attribute(and, js-name, "Tridash.and")
-:attribute(or, js-name, "Tridash.or")
-:attribute(not, js-name, "!")
+/attribute(and, js-name, "Tridash.and")
+/attribute(or, js-name, "Tridash.or")
+/attribute(not, js-name, "!")
 
 
 ### Type Conversions
 
-:attribute(int, js-name, "Tridash.cast_int")
-:attribute(real, js-name, "Tridash.cast_real")
-:attribute(string, js-name, "Tridash.cast_string")
+/attribute(int, js-name, "Tridash.cast_int")
+/attribute(real, js-name, "Tridash.cast_real")
+/attribute(string, js-name, "Tridash.cast_string")
 
 
 ### Type Checks
 
-:attribute(int?, js-name, "Tridash.is_int")
-:attribute(real?, js-name, "Tridash.is_real")
-:attribute(string?, js-name, "Tridash.is_string")
+/attribute(int?, js-name, "Tridash.is_int")
+/attribute(real?, js-name, "Tridash.is_real")
+/attribute(string?, js-name, "Tridash.is_string")
 
-:attribute(inf?, js-name, "Tridash.is_inf")
-:attribute(NaN?, js-name, "Tridash.is_nan")
+/attribute(inf?, js-name, "Tridash.is_inf")
+/attribute(NaN?, js-name, "Tridash.is_nan")
 
 
 ### Lists
 
-:attribute(cons, js-name, "Tridash.cons")
-:attribute(head, js-name, "Tridash.head")
-:attribute(tail, js-name, "Tridash.tail")
-:attribute(cons?, js-name, "Tridash.is_cons")
+/attribute(cons, js-name, "Tridash.cons")
+/attribute(head, js-name, "Tridash.head")
+/attribute(tail, js-name, "Tridash.tail")
+/attribute(cons?, js-name, "Tridash.is_cons")
 
-:attribute(Empty-List, js-name, "Tridash.Empty")
+/attribute(Empty-List, js-name, "Tridash.Empty")
 
-:attribute(apply%, js-name, "Tridash.mapply");
+/attribute(apply%, js-name, "Tridash.mapply");
 
 
 ### Dictionaries
 
-:attribute(member, js-name, "Tridash.member")
+/attribute(member, js-name, "Tridash.member")
 
 
 ### Strings
 
-:attribute(string-at, js-name, "Tridash.string_at")
-:attribute(string-concat, js-name, "Tridash.string_concat")
+/attribute(string-at, js-name, "Tridash.string_at")
+/attribute(string-concat, js-name, "Tridash.string_concat")
 
 
 ### Failures
 
-:attribute(fail, js-name, "Tridash.fail")
-:attribute(fail-type, js-name, "Tridash.fail-type")
+/attribute(fail, js-name, "Tridash.fail")
+/attribute(fail-type, js-name, "Tridash.fail-type")
 
-:attribute(catch, js-name, "Tridash.make_catch_thunk")
+/attribute(catch, js-name, "Tridash.make_catch_thunk")
 
 
 ### Builtin Failure Types
 
-:attribute(No-Value%, js-name, "Tridash.NoValue")
-:attribute(Type-Error%, js-name,  "Tridash.TypeError")
-:attribute(Index-Out-Bounds%, js-name, "Tridash.IndexOutBounds")
-:attribute(Invalid-Integer%, js-name, "Tridash.InvalidInteger")
-:attribute(Invalid-Real%, js-name, "Tridash.InvalidReal")
-:attribute(Arity-Error%, js-name, "Tridash.ArityError")
+/attribute(No-Value%, js-name, "Tridash.NoValue")
+/attribute(Type-Error%, js-name,  "Tridash.TypeError")
+/attribute(Index-Out-Bounds%, js-name, "Tridash.IndexOutBounds")
+/attribute(Invalid-Integer%, js-name, "Tridash.InvalidInteger")
+/attribute(Invalid-Real%, js-name, "Tridash.InvalidReal")
+/attribute(Arity-Error%, js-name, "Tridash.ArityError")

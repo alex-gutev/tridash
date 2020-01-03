@@ -1,7 +1,7 @@
 ## Tests that a target transform meta-node with rest arguments is
 ## called correctly.
 
-:import(core, +, -, =, if, list, head, tail)
+/import(core, +, -, =, if, list, head, tail)
 
 add(x, y) : x + y
 
@@ -16,13 +16,13 @@ sub-right(..(args)) : {
     nth(operands, 0) -> left
     nth(operands, 1) -> right
 
-    list(:quote(->), list(:quote(-), nth(args, 0), left), right)
+    list(/quote(->), list(/quote(-), nth(args, 0), left), right)
 }
 
-:attribute(add, target-transform, sub-right)
+/attribute(add, target-transform, sub-right)
 
 
 in -> add(a, b)
 
-:attribute(in, input, 1)
-:attribute(a, input, 1)
+/attribute(in, input, 1)
+/attribute(a, input, 1)

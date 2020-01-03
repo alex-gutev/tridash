@@ -2,7 +2,7 @@
 ## patterns. Additionally test that similar patterns, e.g. a list
 ## pattern that is a prefix of another pattern.
 
-:import(core, @, list, real, ', +, -)
+/import(core, @, list, real, ', +, -)
 
 calc3(exp) : {
     exp -> list('(add), real(add-x), real(add-y))

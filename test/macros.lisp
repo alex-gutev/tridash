@@ -729,7 +729,7 @@
   (subtest "Single Expression Functions"
     (with-module-table modules
       (build-core-module)
-      (build ":import(core)"
+      (build "/import(core)"
              "min(x,y) : case(x < y : x, y)")
 
       (with-nodes ((min "min")) modules
@@ -742,7 +742,7 @@
     (subtest "If Expressions"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)"
+        (build "/import(core)"
                "f(cond, x) : if(cond, x, 0)")
 
         (with-nodes ((f "f")) modules
@@ -752,7 +752,7 @@
     (subtest "And Expressions"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)"
+        (build "/import(core)"
                "f(cond, x) : cond and x")
 
         (with-nodes ((f "f")) modules
@@ -764,7 +764,7 @@
     (subtest "Or Expressions"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)"
+        (build "/import(core)"
                "f(cond, x) : cond or x")
 
         (with-nodes ((f "f")) modules
@@ -776,8 +776,8 @@
   (subtest "Multiple Nodes with CATCH-FAIL Expressions"
     (with-module-table modules
       (build-core-module)
-      (build ":import(core)"
-             "min(x,y) : { x < y -> (x -> :context(self,c)); y -> :context(self,c) }")
+      (build "/import(core)"
+             "min(x,y) : { x < y -> (x -> /context(self,c)); y -> /context(self,c) }")
 
       (with-nodes ((min "min")) modules
         (is (resolve (call-meta-node min '(2 10))) 2)
@@ -788,7 +788,7 @@
   (subtest "Recursive Meta-Nodes"
     (with-module-table modules
       (build-core-module)
-      (build ":import(core)"
+      (build "/import(core)"
              "fact(n) : { case(n < 2 : 1, n * fact(n - 1)) }")
 
       (with-nodes ((fact "fact")) modules
@@ -799,7 +799,7 @@
   (subtest "Tail-Recursive Meta-Nodes"
     (with-module-table modules
       (build-core-module)
-      (build ":import(core)"
+      (build "/import(core)"
              "fact(n) : { iter(n,acc) : case(n < 2 : acc, iter(n - 1, n * acc)); iter(n, 1) }")
 
       (with-nodes ((fact "fact")) modules
@@ -810,7 +810,7 @@
   (subtest "Calling Other Meta-Nodes"
     (with-module-table modules
       (build-core-module)
-      (build ":import(core)"
+      (build "/import(core)"
              "1-(n) : n - 1"
              "1+(n) : n + 1"
              "f(a, b) : 1-(a) * 1+(b)")
@@ -823,7 +823,7 @@
   (subtest "Nested Meta-Nodes"
     (with-module-table modules
       (build-core-module)
-      (build ":import(core)"
+      (build "/import(core)"
              "f(x, y, z) : { g(n) : n - sum; x + y -> sum; g(z) }")
 
       (with-nodes ((f "f")) modules
@@ -835,7 +835,7 @@
       (subtest "Without Default Values"
         (with-module-table modules
           (build-core-module)
-          (build ":import(core, +, fail-type?)"
+          (build "/import(core, +, fail-type?)"
                  "inc(n, :(d)) : n + d"
 
                  "f(x) : inc(x)"
@@ -852,7 +852,7 @@
       (subtest "With Default Values"
         (with-module-table modules
           (build-core-module)
-          (build ":import(core, +)"
+          (build "/import(core, +)"
                  "inc(n, d : 1) : n + d"
 
                  "f(x) : inc(x)"
@@ -865,7 +865,7 @@
     (subtest "Rest Arguments"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, and, fails?)"
+        (build "/import(core, and, fails?)"
                "check(..(xs)) : fails?(xs)"
 
                "f(x) : x and check()"
@@ -881,7 +881,7 @@
     (subtest "No Outer-Node references"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, +, not)"
+        (build "/import(core, +, not)"
                "apply(f, x) : f(x)"
                "1+(n) : n + 1"
 
@@ -899,7 +899,7 @@
       (subtest "With Default Values"
         (with-module-table modules
           (build-core-module)
-          (build ":import(core, +)"
+          (build "/import(core, +)"
                  "apply(f, x) : f(x)"
                  "apply2(f, x, y) : f(x, y)"
                  "1+(n, d : 1) : n + d"
@@ -917,7 +917,7 @@
       (subtest "Without Default Values"
         (with-module-table modules
           (build-core-module)
-          (build ":import(core, +, fail-type?)"
+          (build "/import(core, +, fail-type?)"
                  "apply(f, x) : f(x)"
                  "apply2(f, x, y) : f(x, y)"
                  "1+(n, :(d)) : n + d"
@@ -937,7 +937,7 @@
     (subtest "With Rest Arguments"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, +, cons)"
+        (build "/import(core, +, cons)"
                "apply3(f, x, y, z) : f(x, y, z)"
                "apply(f, x) : f(x)"
                "l(x, ..(xs)) : cons(x + 1, xs)"
@@ -963,7 +963,7 @@
     (subtest "With Optional Arguments and Outer Node References"
       (with-module-table modules
 	(build-core-module)
-	(build ":import(core, +)"
+	(build "/import(core, +)"
 	       "apply(f, x) : f(x)"
 	       "test(a, x) : { f(y, d : 1) : y + d + x; apply(f, a) }")
 
@@ -973,7 +973,7 @@
     (subtest "External Meta-Nodes"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, -)"
+        (build "/import(core, -)"
                "apply(f, x) : f(x)"
                "apply2(f, x, y) : f(x, y)"
 
@@ -990,7 +990,7 @@
     (subtest "Errors"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, +)"
+        (build "/import(core, +)"
                "apply(f, x) : f(x)"
 
                "x+(n) : n + ..(x)"
@@ -1005,7 +1005,7 @@
     (subtest "Subtraction and Negation"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, -)"
+        (build "/import(core, -)"
                "sub(a, b) : a - b"
                "neg(x) : -(x)")
 
@@ -1030,8 +1030,8 @@
     (subtest "In Operand"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, and)"
-               "fails(x) : { x and 0 -> :context(self, catch); 1 -> :context(self, catch) }")
+        (build "/import(core, and)"
+               "fails(x) : { x and 0 -> /context(self, catch); 1 -> /context(self, catch) }")
 
         (with-nodes ((fails "fails")) modules
           (is (bool-value (call-meta-node fails '(1))) nil)
@@ -1046,13 +1046,13 @@
       ;; Test that failures in the operator of a functor are caught.
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, and, >, -)"
+        (build "/import(core, and, >, -)"
                "neg(x) : -(x)"
 
                "getf(f, x) : { x > 0 -> (f -> self) }"
                "test(x) : fails((getf(neg, x))(x))"
 
-               "fails(x) : { x and 0 -> :context(self, catch); 1 -> :context(self, catch) }")
+               "fails(x) : { x and 0 -> /context(self, catch); 1 -> /context(self, catch) }")
 
         (with-nodes ((test "test")) modules
           (is (bool-value (call-meta-node test '(1))) nil)
@@ -1072,7 +1072,7 @@
     (subtest "One Expression-Block"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, +)"
+        (build "/import(core, +)"
                "f(x) : (x + 1) + (x + 1)")
 
         (with-nodes ((f "f")) modules
@@ -1082,7 +1082,7 @@
     (subtest "Two Expression-Block"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, *, +, -)"
+        (build "/import(core, *, +, -)"
                "f(x, y) : { x + 1 -> x1; y + 2 -> y2; (x1 + y2) * (x1 - y2) }")
 
         (with-nodes ((f "f")) modules
@@ -1102,9 +1102,9 @@
       (subtest "Arithmetic Functions"
         (with-module-table modules
           (build-core-module)
-          (build ":import(core, +, and)"
+          (build "/import(core, +, and)"
                  "1+(x) : fails(x + 1)"
-                 "fails(x) : { x and 0 -> :context(self, catch); 1 -> :context(self, catch) }")
+                 "fails(x) : { x and 0 -> /context(self, catch); 1 -> /context(self, catch) }")
 
           (with-nodes ((1+ "1+")) modules
             (is (bool-value (call-meta-node 1+ '(1))) nil)
@@ -1113,9 +1113,9 @@
       (subtest "Objects"
         (with-module-table modules
           (build-core-module)
-          (build ":import(core, and)"
+          (build "/import(core, and)"
                  "test(x) : fails(x.key)"
-                 "fails(x) : { x and 0 -> :context(self, catch); 1 -> :context(self, catch) }")
+                 "fails(x) : { x and 0 -> /context(self, catch); 1 -> /context(self, catch) }")
 
           (with-nodes ((test "test")) modules
             (subtest "Non-Object Type"
@@ -1136,18 +1136,18 @@
   (subtest "Compile-Time Computations"
     (with-module-table modules
       (build-core-module)
-      (build ":import(core)"
+      (build "/import(core)"
 
              "square(x) : x * x"
-             ":attribute(square, macro, 1)"
+             "/attribute(square, macro, 1)"
 
              "a * square(3) -> b")
 
       (test-not-nodes modules
-                      '((":in" "core" "*") "a" ("square" 3))
+                      '(("/in" "core" "*") "a" ("square" 3))
                       '("square" 3))
 
-      (with-nodes ((a "a") (a*9 ((":in" "core" "*") "a" 9))
+      (with-nodes ((a "a") (a*9 (("/in" "core" "*") "a" 9))
                    (b "b")
                    (* "*"))
           modules
@@ -1159,17 +1159,17 @@
     (subtest "Quoted Expressions"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)"
+        (build "/import(core)"
 
-               "square(x) : list(:quote(*), x, x)"
-               ":attribute(square, macro, 1)"
+               "square(x) : list(/quote(*), x, x)"
+               "/attribute(square, macro, 1)"
 
                "square(a) -> b")
 
         (test-not-nodes modules '("square" "a"))
 
         (with-nodes ((a "a") (b "b")
-                     (a*a ((":in" "core" "*") "a" "a"))
+                     (a*a (("/in" "core" "*") "a" "a"))
                      (* "*"))
             modules
 
@@ -1179,17 +1179,17 @@
     (subtest "Meta-Node References"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)"
+        (build "/import(core)"
 
                "square(x) : list(&(*), x, x)"
-               ":attribute(square, macro, 1)"
+               "/attribute(square, macro, 1)"
 
                "square(a) -> b")
 
         (test-not-nodes modules '("square" "a"))
 
         (with-nodes ((a "a") (b "b")
-                     (a*a ((":in" "core" "*") "a" "a"))
+                     (a*a (("/in" "core" "*") "a" "a"))
                      (* "*"))
             modules
 
@@ -1199,20 +1199,20 @@
   (subtest "Macros in Macros"
     (with-module-table modules
       (build-core-module)
-      (build ":import(core, ->, list, *)"
+      (build "/import(core, ->, list, *)"
 
-             "'(x) : list(:quote(:quote), x)"
-             ":attribute(', macro, 1)"
+             "'(x) : list(/quote(/quote), x)"
+             "/attribute(', macro, 1)"
 
              "square(x) : list('(*), x, x)"
-             ":attribute(square, macro, 1)"
+             "/attribute(square, macro, 1)"
 
              "square(a) -> b")
 
       (test-not-nodes modules '("square" "a"))
 
       (with-nodes ((a "a") (b "b")
-                   (a*a ((":in" "core" "*") "a" "a"))
+                   (a*a (("/in" "core" "*") "a" "a"))
                    (* "*"))
           modules
 
@@ -1222,21 +1222,21 @@
   (subtest "Macros with Multiple Arguments"
     (with-module-table modules
       (build-core-module)
-      (build ":import(core, list, ->, if)"
+      (build "/import(core, list, ->, if)"
 
-             "'(x) : list(:quote(:quote), x)"
-             ":attribute(', macro, 1)"
+             "'(x) : list(/quote(/quote), x)"
+             "/attribute(', macro, 1)"
 
              "!-(a, b) : list('(if), a, b)"
-             ":attribute(!-, macro, 1)"
-             ":op(!-, 25, left)"
+             "/attribute(!-, macro, 1)"
+             "/operator(!-, 25, left)"
 
              "a !- b -> out")
 
       (test-not-nodes modules '("!-" "a" "b"))
 
       (with-nodes ((a "a") (b "b") (out "out")
-                   (a!-b ((":in" "builtin" "if") "a" "b"))
+                   (a!-b (("/in" "builtin" "if") "a" "b"))
                    (if "if"))
           modules
 
@@ -1247,10 +1247,10 @@
     (subtest "Required Only"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, *, list)"
+        (build "/import(core, *, list)"
 
-               "square(x) : list(:quote(*), x, x)"
-               ":attribute(square, macro, 1)")
+               "square(x) : list(/quote(*), x, x)"
+               "/attribute(square, macro, 1)")
 
         (is-error (build "square(x, y) -> out") arity-error)))
 
@@ -1258,35 +1258,35 @@
       (subtest "Not Enough"
         (with-module-table modules
           (build-core-module)
-          (build ":import(core, +, list)"
+          (build "/import(core, +, list)"
 
-                 "add3(x, y, z : 1) : list(:quote(+), x, list(:quote(+), y, z))"
-                 ":attribute(add3, macro, 1)")
+                 "add3(x, y, z : 1) : list(/quote(+), x, list(/quote(+), y, z))"
+                 "/attribute(add3, macro, 1)")
 
           (is-error (build "add3(x)") arity-error)))
 
       (subtest "Too Many"
         (with-module-table modules
           (build-core-module)
-          (build ":import(core, +, list)"
+          (build "/import(core, +, list)"
 
-                 "1+(n, d : 1) : list(:quote(+), x, d)"
-                 ":attribute(1+, macro, 1)")
+                 "1+(n, d : 1) : list(/quote(+), x, d)"
+                 "/attribute(1+, macro, 1)")
 
           (is-error (build "1+(x, y, z)") arity-error))))
 
     (subtest "Rest Arguments"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, cons, list)"
-               "make-list(x, ..(xs)) : cons(:quote(list), cons(x, xs))"
-               ":attribute(make-list, macro, 1)"
+        (build "/import(core, cons, list)"
+               "make-list(x, ..(xs)) : cons(/quote(list), cons(x, xs))"
+               "/attribute(make-list, macro, 1)"
 
                "make-list(x, y, z) -> output"
 
-               ":attribute(x, input, 1)"
-               ":attribute(y, input, 1)"
-               ":attribute(z, input, 1)")
+               "/attribute(x, input, 1)"
+               "/attribute(y, input, 1)"
+               "/attribute(z, input, 1)")
 
         (with-nodes ((x "x") (y "y") (z "z")
                      (list "list")
@@ -1302,28 +1302,28 @@
     (subtest "Rest Arguments and Outer Nodes"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, cons, list)"
-               "make-list(x, ..(xs)) : cons(:quote(list), cons(x, cons(y, xs)))"
-               ":attribute(make-list, macro, 1)"
+        (build "/import(core, cons, list)"
+               "make-list(x, ..(xs)) : cons(/quote(list), cons(x, cons(y, xs)))"
+               "/attribute(make-list, macro, 1)"
 
-               ":attribute(a, input, 1)"
-               ":attribute(b, input, 1)"
-               ":attribute(c, input, 1)"
-               ":attribute(y, input, 1)")
+               "/attribute(a, input, 1)"
+               "/attribute(b, input, 1)"
+               "/attribute(c, input, 1)"
+               "/attribute(y, input, 1)")
 
         (is-error (build "make-list(a, b, c) -> output") macro-outer-node-error))))
 
   (subtest "Building a Meta-Node Multiple Times"
     (with-module-table modules
       (build-core-module)
-      (build ":import(core, if, -, +, *, <)"
+      (build "/import(core, if, -, +, *, <)"
 	     "fact(n) : { 1 -> start; iter(n, acc) : if(n < start, acc, iter(n - 1, acc * n)); iter(n,1) }"
 
 	     "eval-fact(n) : fact(n)"
-	     ":attribute(eval-fact, macro, 1)"
+	     "/attribute(eval-fact, macro, 1)"
 
 	     "fact(in) + eval-fact(3) -> output"
-	     ":attribute(in, input, 1)")
+	     "/attribute(in, input, 1)")
 
       (with-nodes ((in "in") (output "output")
 		   (fact "fact") (+ "+"))
@@ -1340,9 +1340,9 @@
     (subtest "Compilation Loops"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, list)"
+        (build "/import(core, list)"
                "test(x,y) : list(&(->), x, test(x,y))"
-               ":attribute(test, macro, 1)")
+               "/attribute(test, macro, 1)")
 
         (with-nodes ((test "test")) modules
           (is-error (call-meta-node test '(1 2)) compile-meta-node-loop-error))))
@@ -1350,14 +1350,14 @@
     (subtest "Malformed Lists"
       (with-module-table modules
 	(build-core-module)
-        (build ":import(core)"
+        (build "/import(core)"
 
 	       "mac(x, y) : cons(x, y)"
-	       ":attribute(mac, macro, 1)"
+	       "/attribute(mac, macro, 1)"
 
                "f(x) : x"
                "target-f(s, expr) : cons(s, head(tail(expr)))"
-               ":attribute(f, target-transform, target-f)")
+               "/attribute(f, target-transform, target-f)")
 
         (is-error (build "mac(1, 2)") tridash-fail)
         (is-error (build "a -> f(b)") tridash-fail)))
@@ -1365,14 +1365,14 @@
     (subtest "Returning Empty List"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core)"
+        (build "/import(core)"
 
                "mac(x) : list(x, Empty!)"
-               ":attribute(mac, macro, 1)"
+               "/attribute(mac, macro, 1)"
 
                "f(x) : x"
                "target-f(s, expr) : list(s, Empty!)"
-               ":attribute(f, target-transform, target-f)")
+               "/attribute(f, target-transform, target-f)")
 
         (is-error (build "mac(a)") tridash-fail)
         (is-error (build "x -> f(y)") tridash-fail)))))
@@ -1475,7 +1475,7 @@
     (subtest "Meta-Node: fails?"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, fails?)")
+        (build "/import(core, fails?)")
 
         (with-nodes ((fails? "fails?")) modules
           (is (bool-value (call-meta-node fails? '(1))) nil)
@@ -1493,7 +1493,7 @@
     (subtest "Meta-Node: ?"
       (with-module-table modules
         (build-core-module)
-        (build ":import(core, ?)")
+        (build "/import(core, ?)")
 
         (with-nodes ((? "?")) modules
           (ok (bool-value (call-meta-node ? '(1))))
@@ -1520,7 +1520,7 @@
       (build-core-module)
 
       (subtest "Meta-Node: list"
-        (build ":import(core, list, +)")
+        (build "/import(core, list, +)")
 
         (with-nodes ((list "list")) modules
           (is (call-meta-node list '(1 2 3)) '(1 2 3))
@@ -1530,14 +1530,14 @@
           (ok (resolve% (call-tridash-meta-node list (list (list (fail-thunk) 1 2)))))))
 
       (subtest "Meta-Node: list*"
-        (build ":import(core, list*)")
+        (build "/import(core, list*)")
 
         (with-nodes ((list* "list*")) modules
           (is (call-meta-node list* '(1 2 (3 4 5))) '(1 2 3 4 5))
           (is (call-meta-node list* '((1 2 3))) '(1 2 3))))
 
       (subtest "Meta-Node: list!"
-        (build ":import(core, list!)")
+        (build "/import(core, list!)")
 
         (with-nodes ((list! "list!")) modules
           (is (call-meta-node list! '(1 2 3)) '(1 2 3))
@@ -1555,7 +1555,7 @@
            tridash-fail)))
 
       (subtest "Meta-Node: nth"
-        (build ":import(core, nth)")
+        (build "/import(core, nth)")
 
         (with-nodes ((nth "nth")) modules
           (is (call-meta-node nth '((1 2 3) 0)) 1)
@@ -1564,7 +1564,7 @@
           (is-error (call-meta-node nth '((1 2 3) 3)) tridash-fail)))
 
       (subtest "Meta-Node: append"
-        (build ":import(core, append)")
+        (build "/import(core, append)")
 
         (with-nodes ((append "append")) modules
           (is (call-meta-node append '((1 2 3) (4 5 6))) '(1 2 3 4 5 6))
@@ -1575,7 +1575,7 @@
           (is-error (call-meta-node append (list (fail-thunk) '(1 2 3))) tridash-fail)))
 
       (subtest "Meta-Node: foldl'"
-        (build ":import(core, foldl', /)")
+        (build "/import(core, foldl', /)")
 
         (with-nodes ((foldl "foldl'") (/ "/")) modules
           ;; Use division '/' as it is non-commutative. This ensures
@@ -1590,7 +1590,7 @@
           (is-error (call-meta-node foldl (list 24 / (fail-thunk))) tridash-fail)))
 
       (subtest "Meta-Node: foldl"
-        (build ":import(core, foldl, /)")
+        (build "/import(core, foldl, /)")
 
         (with-nodes ((foldl "foldl") (/ "/")) modules
           ;; Use division '/' as it is non-commutative. This ensures
@@ -1605,7 +1605,7 @@
           (is-error (call-meta-node foldl (list / (fail-thunk))) tridash-fail)))
 
       (subtest "Meta-Node: foldr"
-        (build ":import(core, foldr, list)")
+        (build "/import(core, foldr, list)")
 
         (with-nodes ((foldr "foldr") (list "list")) modules
           (is (call-meta-node foldr (list list '(1 2 3 4 5))) '(1 (2 (3 (4 5)))))
@@ -1628,7 +1628,7 @@
           (is-error (call-meta-node foldr (list list (fail-thunk))) tridash-fail)))
 
       (subtest "Meta-Node: map"
-        (build ":import(core, map, +)"
+        (build "/import(core, map, +)"
                "1+(n) : n + 1")
 
         (with-nodes ((map "map") (1+ "1+")) modules
@@ -1639,7 +1639,7 @@
           (is-error (call-meta-node map (list 1+ (fail-thunk))) tridash-fail)))
 
       (subtest "Meta-Node: filter"
-        (build ":import(core, filter, >)"
+        (build "/import(core, filter, >)"
                ">5(n) : n > 5")
 
         (with-nodes ((filter "filter") (>5 ">5")) modules
@@ -1650,13 +1650,13 @@
           (is-error (call-meta-node filter (list >5 (fail-thunk))) tridash-fail)))
 
       (subtest "List Predicates"
-        (build ":import(core, >)"
+        (build "/import(core, >)"
                ">3(n) : n > 3")
 
         (with-nodes ((>3 ">3")) modules
 
           (subtest "Meta-Node: every?"
-            (build ":import(core, every?)")
+            (build "/import(core, every?)")
 
             (with-nodes ((every? "every?")) modules
               (ok (bool-value (call-meta-node every? (list >3 '(4 5 6)))))
@@ -1666,7 +1666,7 @@
               (is-error (bool-value (call-meta-node every? (list >3 (fail-thunk)))) tridash-fail)))
 
           (subtest "Meta-Node: some?"
-            (build ":import(core, some?)")
+            (build "/import(core, some?)")
 
             (with-nodes ((some? "some?")) modules
               (ok (bool-value (call-meta-node some? (list >3 '(4 5 6)))))
@@ -1677,7 +1677,7 @@
               (is-error (bool-value (call-meta-node some? (list >3 (fail-thunk)))) tridash-fail)))
 
           (subtest "Meta-Node: not-any?"
-            (build ":import(core, not-any?)")
+            (build "/import(core, not-any?)")
 
             (with-nodes ((not-any? "not-any?")) modules
               (is (bool-value (call-meta-node not-any? (list >3 '(4 5 6)))) nil)
@@ -1688,7 +1688,7 @@
               (is-error (bool-value (call-meta-node not-any? (list >3 (fail-thunk)))) tridash-fail)))
 
           (subtest "Meta-Node: not-every?"
-            (build ":import(core, not-every?)")
+            (build "/import(core, not-every?)")
 
             (with-nodes ((not-every? "not-every?")) modules
               (is (bool-value (call-meta-node not-every? (list >3 '(4 5 6)))) nil)
@@ -1701,8 +1701,8 @@
   (subtest "Introspection"
     (with-module-table modules
       (build-core-module)
-      (build ":import(core/introspection, node?, find-node, get-attribute)"
-             ":import(core, +)")
+      (build "/import(core/introspection, node?, find-node, get-attribute)"
+             "/import(core, +)")
 
       (subtest "Meta-Node: node?"
         (build "x")
@@ -1718,7 +1718,7 @@
                 (tridash.frontend::*current-module* init))
             (with-nodes ((find-node "find-node")
                          (x "x")
-                         (x+y ((":in" "core" "+") "x" "y")))
+                         (x+y (("/in" "core" "+") "x" "y")))
                 modules
 
               (is (call-meta-node find-node (list (id-symbol "x"))) x)
@@ -1726,7 +1726,7 @@
               (is-error (call-meta-node find-node (list (id-symbol "z"))) tridash-fail)))))
 
       (subtest "Meta-Node: get-attribute"
-        (build ":attribute(x, my-key, my-value)")
+        (build "/attribute(x, my-key, my-value)")
         (with-nodes ((get-attribute "get-attribute") (x "x"))
             modules
 
@@ -1741,7 +1741,7 @@
       (build-core-module)
 
       (subtest "Match Integer"
-        (build ":import(core, int)")
+        (build "/import(core, int)")
         (build "f-int(x) : { x -> int(y); y }")
 
         (with-nodes ((f-int "f-int")) modules
@@ -1750,7 +1750,7 @@
           (is-error (call-meta-node f-int '("hello")) tridash-fail)))
 
       (subtest "Match Real"
-        (build ":import(core, real)")
+        (build "/import(core, real)")
         (build "f-real(x) : { x -> real(y); y }")
 
         (with-nodes ((f-real "f-real")) modules
@@ -1759,7 +1759,7 @@
           (is-error (call-meta-node f-real '("hello")) tridash-fail)))
 
       (subtest "Match String"
-        (build ":import(core, string)")
+        (build "/import(core, string)")
         (build "f-string(x) : { x -> string(y); y }")
 
         (with-nodes ((f-string "f-string")) modules
@@ -1768,7 +1768,7 @@
           (is-error (call-meta-node f-string '(2.3)) tridash-fail)))
 
       (subtest "Match Cons"
-        (build ":import(core, cons, list)"
+        (build "/import(core, cons, list)"
                "f-cons(x) : { x -> cons(h,t); list(h,t) }")
 
         (with-nodes ((f-cons "f-cons")) modules
@@ -1777,7 +1777,7 @@
           (is-error (call-meta-node f-cons '("hello")) tridash-fail)))
 
       (subtest "Match List"
-        (build ":import(core, list, +)"
+        (build "/import(core, list, +)"
                "f-list(x) : { x -> list(a, b, c); a + b + c }")
 
         (with-nodes ((f-list "f-list")) modules
@@ -1789,7 +1789,7 @@
           (is-error (call-meta-node f-list '("hello")) tridash-fail)))
 
       (subtest "Match List*"
-        (build ":import(core, list, list*, +)"
+        (build "/import(core, list, list*, +)"
                "f-list*(x) : { x -> list*(a, b, xs); list*(a + b, xs) }")
 
         (with-nodes ((f-list* "f-list*")) modules
@@ -1803,7 +1803,7 @@
 
       (subtest "Boolean Logic"
         (subtest "Match and"
-          (build ":import(core, list, and, +)"
+          (build "/import(core, list, and, +)"
                  "f-and(xs) : { xs -> list(a, 1 and b); xs -> list(a and b); a + b }")
 
           (with-nodes ((f-and "f-and")) modules
@@ -1813,7 +1813,7 @@
             (is-error (call-meta-node f-and '((2 2))) tridash-fail)))
 
         (subtest "Match or"
-          (build ":import(core, list, or)"
+          (build "/import(core, list, or)"
                  "f-or(xs) : { xs -> list(a) or list(1, a); a }")
 
           (with-nodes ((f-or "f-or")) modules
@@ -1825,7 +1825,7 @@
             (is-error (call-meta-node f-or '((2 10))) tridash-fail)))
 
         (subtest "Match not"
-          (build ":import(core, list, not, and)"
+          (build "/import(core, list, not, and)"
                  "f-not(xs) : { xs -> list(1, not(2) and x); x }")
 
           (with-nodes ((f-not "f-not")) modules
@@ -1880,7 +1880,7 @@
       (build-core-module)
 
       (subtest "Case Macro"
-        (build ":import(core, case, =, ')"
+        (build "/import(core, case, =, ')"
                "test-case(x) : case(x = 1 : '(a), x = 2 : '(b), '(other))")
 
         (with-nodes ((test-case "test-case")) modules
@@ -1889,7 +1889,7 @@
           (is (call-meta-node test-case '(3)) (id-symbol "other"))))
 
       (subtest "Case Macro Without Default"
-        (build ":import(core, case, =, ')"
+        (build "/import(core, case, =, ')"
                "test-case2(x) : case(x = 1 : '(a), x = 2 : '(b))")
 
         (with-nodes ((test-case2 "test-case2")) modules
@@ -1898,7 +1898,7 @@
           (is-error (call-meta-node test-case2 '(3)) tridash-fail)))
 
       (subtest "! Macro"
-        (build ":import(core, cons, !)"
+        (build "/import(core, cons, !)"
                "cons!(x, y) : !(cons(x, y))")
 
         (with-nodes ((cons! "cons!")) modules
@@ -1951,7 +1951,7 @@
       (with-module-table modules
         (build-core-module)
 
-        (build ":import(core, apply, list, cons, +)"
+        (build "/import(core, apply, list, cons, +)"
 
                "f(x, y) : apply(list, x + y, list(x, y))"
                "g(x, ..(xs)) : apply(list, x, xs)"

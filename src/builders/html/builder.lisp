@@ -281,7 +281,9 @@
                      (accumulate nodes thing)
                      (concatenate-to 'string string "%s")))))
 
-           (list* (list (id-symbol ":in") (id-symbol "core") (id-symbol "format"))
+           (list* (list tridash.frontend::+in-module-operator+
+                        (id-symbol "core")
+                        (id-symbol "format"))
                   (reduce #'concat-node strings :initial-value "")
                   (collector-sequence nodes))))))))
 

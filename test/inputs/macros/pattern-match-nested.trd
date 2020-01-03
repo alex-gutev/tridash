@@ -1,6 +1,6 @@
 ## Test nested patterns (in list) and quote constant patterns.
 
-:import(core, @, list, real, ', +, -)
+/import(core, @, list, real, ', +, -)
 
 calc(exp) : {
     exp -> list('(add), real(add-x), real(add-y))

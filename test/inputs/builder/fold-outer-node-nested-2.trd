@@ -4,7 +4,7 @@
 ## references another node which is bound to an expression of the
 ## global node.
 
-:extern(add, a, b)
+/external(add, a, b)
 
 f(x, y) : {
     add(delta, 1) -> d
@@ -18,5 +18,5 @@ f(x, y) : {
 
 f(x, y) -> z
 
-:attribute(x, input, 1)
-:attribute(y, input, 1)
+/attribute(x, input, 1)
+/attribute(y, input, 1)

@@ -33,7 +33,7 @@
 
 ### String Processing Functions
 
-:module(core)
+/module(core)
 
 ### Conversions
 
@@ -121,4 +121,4 @@ format(string, ..(args)) : {
 
 ### Export Declarations
 
-:export(string->list, list->string, format)
+/export(string->list, list->string, format)

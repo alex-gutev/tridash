@@ -1,4 +1,4 @@
-:import(core, cons, case, >, -, Empty!)
+/import(core, cons, case, >, -, Empty!)
 
 keep(list, n) : {
     list -> cons(head, rest)

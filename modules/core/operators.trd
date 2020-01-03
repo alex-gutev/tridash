@@ -33,49 +33,49 @@
 
 ### Core Module Operator Table
 
-:module(core)
+/module(core)
 
 ### Operators
 
 ## Basic Operators
 
-:op(->, 10, right)
-:op(<-, 10, left)
+/operator(->, 10, right)
+/operator(<-, 10, left)
 
-:op(:, 5, right)
+/operator(:, 5, right)
 
-:op(., 1000, left)
-:op(@, 800, left)
+/operator(., 1000, left)
+/operator(@, 800, left)
 
-:op(when, 850, left)
+/operator(when, 850, left)
 
-:op(!-, 15, right)
+/operator(!-, 15, right)
 
-:op(::, 700, left)
-:op(=>, 750, left)
+/operator(::, 700, left)
+/operator(=>, 750, left)
 
 
 ## Arithmetic Operators
 
-:op(+, 100, left)
-:op(-, 100, left)
+/operator(+, 100, left)
+/operator(-, 100, left)
 
-:op(*, 200, left)
-:op(/, 200, left)
-:op(%, 200, left)
+/operator(*, 200, left)
+/operator(/, 200, left)
+/operator(%, 200, left)
 
 
 ## Comparison Operators
 
-:op(<, 50)
-:op(<=, 50)
-:op(>, 50)
-:op(>=, 50)
-:op(=, 50)
-:op(!=, 50)
+/operator(<, 50)
+/operator(<=, 50)
+/operator(>, 50)
+/operator(>=, 50)
+/operator(=, 50)
+/operator(!=, 50)
 
 
 ## Logical Operators
 
-:op(and, 25)
-:op(or, 20)
+/operator(and, 25)
+/operator(or, 20)

@@ -1,6 +1,6 @@
 ## Test integer, real and string constant patterns.
 
-:import(core, @, list, real, +, -, c)
+/import(core, @, list, real, +, -, c)
 
 calc2(exp) : {
     exp -> list(0, real(add-x), real(add-y))

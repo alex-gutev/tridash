@@ -33,122 +33,122 @@
 
 ### External Meta-Node Declarations
 
-:module(core)
+/module(core)
 
 ### Arithmetic Operators
 
-:extern(+, a, b)
-:attribute(+, strictness, or(a,b))
+/external(+, a, b)
+/attribute(+, strictness, or(a,b))
 
-:extern(-, a, :(b))
-:attribute(-, strictness, or(a,b))
+/external(-, a, :(b))
+/attribute(-, strictness, or(a,b))
 
-:extern(*, a, b)
-:attribute(*, strictness, or(a,b))
+/external(*, a, b)
+/attribute(*, strictness, or(a,b))
 
-:extern(/, a, b)
-:attribute(/, strictness, or(a,b))
+/external(/, a, b)
+/attribute(/, strictness, or(a,b))
 
-:extern(%, a, b)
-:attribute(%, strictness, or(a,b))
+/external(%, a, b)
+/attribute(%, strictness, or(a,b))
 
 
 ### Comparison Operators
 
-:extern(<, a, b)
-:attribute(<, strictness, or(a,b))
+/external(<, a, b)
+/attribute(<, strictness, or(a,b))
 
-:extern(<=, a, b)
-:attribute(<=, strictness, or(a,b))
+/external(<=, a, b)
+/attribute(<=, strictness, or(a,b))
 
-:extern(>, a, b)
-:attribute(>, strictness, or(a,b))
+/external(>, a, b)
+/attribute(>, strictness, or(a,b))
 
-:extern(>=, a, b)
-:attribute(>=, strictness, or(a,b))
+/external(>=, a, b)
+/attribute(>=, strictness, or(a,b))
 
-:extern(=, a, b)
-:attribute(=, strictness, or(a,b))
+/external(=, a, b)
+/attribute(=, strictness, or(a,b))
 
-:extern(!=, a, b)
-:attribute(!=, strictness, or(a,b))
+/external(!=, a, b)
+/attribute(!=, strictness, or(a,b))
 
 
 ### Logical Operators
 
-:extern(and, a, b)
-:attribute(and, strictness, a)
+/external(and, a, b)
+/attribute(and, strictness, a)
 
-:extern(or, a, b)
-:attribute(or, strictness, a)
+/external(or, a, b)
+/attribute(or, strictness, a)
 
-:extern(not, x)
-:attribute(not, strictness, x)
-:attribute(not, target-node, not)
+/external(not, x)
+/attribute(not, strictness, x)
+/attribute(not, target-node, not)
 
 
 ### Type Conversions
 
-:extern(int, x)
-:attribute(int, strictness, x)
+/external(int, x)
+/attribute(int, strictness, x)
 
-:extern(real, x)
-:attribute(real, target-node, real)
+/external(real, x)
+/attribute(real, target-node, real)
 
-:extern(string, x)
-:attribute(string, strictness, x)
+/external(string, x)
+/attribute(string, strictness, x)
 
 
 ### Type Checks
 
-:extern(int?, x)
-:attribute(int?, strictness, x)
+/external(int?, x)
+/attribute(int?, strictness, x)
 
-:extern(real?, x)
-:attribute(real?, strictness, x)
+/external(real?, x)
+/attribute(real?, strictness, x)
 
-:extern(string?, x)
-:attribute(string?, strictness, x)
+/external(string?, x)
+/attribute(string?, strictness, x)
 
-:extern(inf?, x)
-:attribute(inf?, strictness, x)
+/external(inf?, x)
+/attribute(inf?, strictness, x)
 
-:extern(NaN?, x)
-:attribute(NaN?, strictness, x)
+/external(NaN?, x)
+/attribute(NaN?, strictness, x)
 
 
 ### Lists
 
-:extern(cons, head, tail)
+/external(cons, head, tail)
 
-:extern(head, list)
-:attribute(head, strictness, list)
+/external(head, list)
+/attribute(head, strictness, list)
 
-:extern(tail, list)
-:attribute(tail, strictness, tail)
+/external(tail, list)
+/attribute(tail, strictness, tail)
 
-:extern(cons?, thing)
-:attribute(cons?, strictness, thing)
+/external(cons?, thing)
+/attribute(cons?, strictness, thing)
 
 
 ### Strings
 
-:extern(string-at, string, index)
-:attribute(string-at, strictness, or(string, index))
+/external(string-at, string, index)
+/attribute(string-at, strictness, or(string, index))
 
-:extern(string-concat, str1, str2)
-:attribute(string-concat, strictness, or(str1, str2))
+/external(string-concat, str1, str2)
+/attribute(string-concat, strictness, or(str1, str2))
 
 
 ### Functions
 
-:extern(apply%, f, args)
-:attribute(apply%, strictness, or(f, args))
+/external(apply%, f, args)
+/attribute(apply%, strictness, or(f, args))
 
 
 ### Export Declarations
 
-:export(+, -, *, /,
+/export(+, -, *, /,
         <, <=, >, >=,
         =, !=,
         and, or, not,

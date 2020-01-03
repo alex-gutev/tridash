@@ -1,6 +1,6 @@
 ## Tests Cyclic Bindings, in which the cyclic nodes are not coalesced.
 
-:import(core)
+/import(core)
 
 a <- cons(i, b)
 b <- cons(j, a)
@@ -10,11 +10,11 @@ output <- a
 
 ## No Coalesce Attributes
 
-:attribute(a, no-coalesce, 1)
-:attribute(b, no-coalesce, 1)
+/attribute(a, no-coalesce, 1)
+/attribute(b, no-coalesce, 1)
 
 
 ## Input Attributes
 
-:attribute(i, input, 1)
-:attribute(j, input, 2)
+/attribute(i, input, 1)
+/attribute(j, input, 2)

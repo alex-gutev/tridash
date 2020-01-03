@@ -33,7 +33,7 @@
 
 ### Utility meta-nodes for working with failure values
 
-:module(core)
+/module(core)
 
 
 ### Failure Checks
@@ -134,9 +134,9 @@ fail(Index-Out-Bounds) -> Index-Out-Bounds!
 
 ### Export Declarations
 
-:export(fail, fails?, fail-type, fail-type?, ?, !!, !-)
+/export(fail, fails?, fail-type, fail-type?, ?, !!, !-)
 
-:export(No-Value, No-Value!,
+/export(No-Value, No-Value!,
         Type-Error, Type-Error!,
         Invalid-Integer, Invalid-Integer!,
         Invalid-Real, Invalid-Real!,

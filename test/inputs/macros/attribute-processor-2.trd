@@ -1,14 +1,14 @@
 ## Tests setting an external meta-node as an attribute processor.
 
-:import(builtin)
+/import(builtin)
 
-:extern(find-node, node)
+/external(find-node, node)
 
-:attribute-processor(matcher, find-node)
+/attribute-processor(matcher, find-node)
 
 
 f(x) : x
 
 match-f(x) : x
 
-:attribute(f, matcher, match-f)
+/attribute(f, matcher, match-f)

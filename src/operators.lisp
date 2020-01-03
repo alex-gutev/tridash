@@ -25,23 +25,23 @@
 (defconstant +bind-operator+ :bind
   "Operator for establishing bindings between nodes.")
 
-(defconstant +op-operator+ (id-symbol ":op")
+(defconstant +op-operator+ (id-symbol "/operator")
   "Operator for marking nodes as infix operators.")
 
-(defconstant +quote-operator+ (id-symbol ":quote")
+(defconstant +quote-operator+ (id-symbol "/quote")
   "Operator for suppressing processing of declarations.")
 
-(defconstant +ref-operator+ (id-symbol "&")
+(defconstant +ref-operator+ (id-symbol :ref)
   "Operator for referencing another node without creating a binding.")
 
 
 ;;; Contexts
 
-(defconstant +context-operator+ (id-symbol ":context")
+(defconstant +context-operator+ (id-symbol "/context")
   "Operator for explicitly specifying the context to which bindings
    are established.")
 
-(defconstant +state-operator+ (id-symbol ":state")
+(defconstant +state-operator+ (id-symbol "/state")
   "Operator for establishing a binding between different states of a
    node.")
 
@@ -60,7 +60,7 @@
 (defconstant +def-operator+ :define
   "Operator for defining meta-nodes.")
 
-(defconstant +extern-operator+ (id-symbol ":extern")
+(defconstant +extern-operator+ (id-symbol "/external")
   "Special operator for adding stubs for meta-nodes which are defined
    externally.")
 
@@ -70,35 +70,35 @@
 
 ;;; Attributes
 
-(defconstant +attribute-operator+ (id-symbol ":attribute")
+(defconstant +attribute-operator+ (id-symbol "/attribute")
   "Special operator for setting node attributes.")
 
-(defconstant +attribute-processor-operator+ (id-symbol ":attribute-processor")
+(defconstant +attribute-processor-operator+ (id-symbol "/attribute-processor")
   "Special operator for setting a meta-node to process a particular
    attribute.")
 
 
 ;;; Modules
 
-(defconstant +module-operator+ (id-symbol ":module")
+(defconstant +module-operator+ (id-symbol "/module")
   "Operator which sets the current module.")
 
-(defconstant +import-operator+ (id-symbol ":import")
+(defconstant +import-operator+ (id-symbol "/import")
   "Operator for importing nodes, from another module, into the current
    module.")
 
-(defconstant +alias-operator+ (id-symbol ":alias")
+(defconstant +alias-operator+ (id-symbol "/use-as")
   "Operator for adding an alias for a module to the current module.")
 
-(defconstant +use-operator+ (id-symbol ":use")
+(defconstant +use-operator+ (id-symbol "/use")
   "Operator for using a module, using its name as an alias, from the
    current module.")
 
-(defconstant +export-operator+ (id-symbol ":export")
+(defconstant +export-operator+ (id-symbol "/export")
   "Operator for adding a node to the public nodes table of the current
    module.")
 
-(defconstant +in-module-operator+ (id-symbol ":in")
+(defconstant +in-module-operator+ (id-symbol "/in")
   "Operator for referencing a node in another module which does not
    have an alias in the current module.")
 

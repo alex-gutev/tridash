@@ -1,7 +1,7 @@
 ## Tests that failure types, defined by raw node references, work in
 ## the macro system.
 
-:import(core, <-, case, <, >, @, !-)
+/import(core, <-, case, <, >, @, !-)
 
 ## These two node declarations are necessary since node references,
 ## within a meta-node, result in the global scope being searched.
