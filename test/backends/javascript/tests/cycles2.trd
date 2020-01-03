@@ -10,8 +10,8 @@ output <- a
 
 ## No Coalesce Attributes
 
-/attribute(a, no-coalesce, 1)
-/attribute(b, no-coalesce, 1)
+/attribute(a, coalescable, 0)
+/attribute(b, coalescable, 0)
 
 
 ## Input Attributes

@@ -71,7 +71,7 @@
       (isf tag-name tag "Tag is ~a" tag)
       (isf html-attribute attribute "HTML attribute is ~a" attribute)
 
-      (ok (attribute :no-coalesce node) "Has NO-COALESCE attribute"))))
+      (isf (attribute :coalescable node t) nil "Has COALESCABLE attribute"))))
 
 
 (defgeneric html-node= (got expected)

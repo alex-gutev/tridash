@@ -233,10 +233,10 @@
 
 (defun may-coalesce? (node)
   "Returns true if NODE may be coalesced into another node. Returns
-   false if the node has the :NO-COALESCE attribute set to T."
+   false if the node has the :COALESCABLE attribute set to false."
 
-  (or *meta-node* ; Ignore NO-COALESCE when in meta-node
-      (null (attribute :no-coalesce node))))
+  (or *meta-node* ; Ignore COALESCABLE when in meta-node
+      (bool-value (attribute :coalescable node t))))
 
 
 ;;; Coalescing Node Links

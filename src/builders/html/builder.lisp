@@ -201,7 +201,7 @@
 (defun node->html-node (node &rest args &key element-id tag-name &allow-other-keys)
   "If NODE is an ordinary node changes its type to `HTML-NODE'"
 
-  (setf (attribute :no-coalesce node) t)
+  (setf (attribute :coalescable node) nil)
 
   (unless (typep node 'html-node)
     (html-attributes->html-nodes node element-id tag-name)

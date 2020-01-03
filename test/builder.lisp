@@ -942,12 +942,12 @@
         (build "add(a, b) : +(a, b); node1; node2")
 
         ;; Build Attribute Declarations
-        (build "/attribute(node1, no-coalesce, 1)")
+        (build "/attribute(node1, coalescable, 0)")
         (build "/attribute(add, \"public-name\", \"sum\")")
         (build "/attribute(node2, input, 1)")
 
         (with-nodes ((add "add") (node1 "node1") (node2 "node2")) modules
-          (is (attribute :no-coalesce node1) 1)
+          (is (attribute :coalescable node1) 0)
           (is (attribute :public-name add) "sum")
           (is (attribute :input node2) 1)
 
@@ -1812,11 +1812,11 @@
 	  (with-nodes ((a "a") (d "d")) table
 	    (test-simple-binding a d))))
 
-      (subtest "NO-COALESCE Attribute"
+      (subtest "COALESCABLE Attribute"
         (with-module-table modules
           (build "a -> b; b -> cc; cc -> d"
                  "/attribute(a, input, 1)"
-                 "/attribute(b, no-coalesce, 1)")
+                 "/attribute(b, coalescable, 0)")
 
           (let ((table (finish-build)))
             (test-not-nodes table "cc")
@@ -1837,7 +1837,7 @@
 	  (with-nodes ((a "a") (d "d")) table
 	    (test-simple-binding a d))))
 
-      (subtest "NO-COALESCE Attribute"
+      (subtest "COALESCABLE Attribute"
         (with-module-table modules
           (build "a -> b; b -> cc; cc -> d"
                  "d -> cc; cc -> b; b -> a"
@@ -1884,7 +1884,7 @@
           (with-nodes ((+ "+") (a "a") (b "b") (cc "cc") (d "d") (output "output")) table
             (has-value-function (a b cc d) output `(,+ (,+ (,+ ,a ,b) ,cc) ,d)))))
 
-      (subtest "NO-COALESCE Attribute"
+      (subtest "COALESCABLE Attribute"
         (with-module-table modules
           (build "/external(+, x, y); /operator(+, 50, left)"
                  "a + b + cc + d -> output"
@@ -1892,7 +1892,7 @@
                  "/attribute(b, input, 1)"
                  "/attribute(cc, input, 1)"
                  "/attribute(d, input, 1)"
-                 "/attribute(a + b, no-coalesce, 1)")
+                 "/attribute(a + b, coalescable, 0)")
 
           (let ((table (finish-build)))
             (test-not-nodes table
@@ -1991,8 +1991,8 @@
 
                  "/attribute(a, input, 1)"
                  "/attribute(b, input, 1)"
-                 "/attribute(x, no-coalesce, 1)"
-                 "/attribute(y, no-coalesce, 2)")
+                 "/attribute(x, coalescable, 0)"
+                 "/attribute(y, coalescable, 0)")
 
           (let ((table (finish-build)))
             (test-not-nodes
@@ -2284,7 +2284,7 @@
 
                "/attribute(a, input, 1)"
                "/attribute(b, input, 1)"
-               "/attribute(cc, no-coalesce, 1)")
+               "/attribute(cc, coalescable, 0)")
 
         (let ((table (finish-build)))
           (with-nodes ((< "<")

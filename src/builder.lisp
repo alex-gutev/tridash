@@ -980,7 +980,7 @@
   (if coalescablep
       (setf (attribute :non-coalescable-self-reference node) t))
 
-  (setf (attribute :no-coalesce node) t)
+  (setf (attribute :coalescable node) nil)
 
   (->> node
        node-ref

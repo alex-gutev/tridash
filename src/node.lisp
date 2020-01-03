@@ -134,11 +134,12 @@
 
 ;;;; Utility Functions
 
-(defun attribute (attribute node)
+(defun attribute (attribute node &optional default)
   "Retrieves a node attribute. ATTRIBUTE is converted to a string if
-   it is a symbol."
+   it is a symbol. If NODE does not have such an attribute, DEFAULT is
+   returned."
 
-  (get (string attribute) (attributes node)))
+  (get (string attribute) (attributes node) default))
 
 (defun (setf attribute) (value attribute node)
   "Sets the value of a node attribute. ATTRIBUTE is converted to a
