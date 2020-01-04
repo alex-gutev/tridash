@@ -15,7 +15,8 @@ library.
 
 (((', Core Module, Macro)))
 
-Interprets `x` as a literal symbol rather than a node declaration.
+Interprets `x` as a literal symbol rather than a node
+declaration. _See <<literal-symbols>>_.
 
 The same symbol object is always returned for a given symbol name.
 
@@ -151,7 +152,7 @@ identifier `state`.
 case the binding is only active when the state of `node` changes from
 the state with identifier `from` to the state with identifier `to`.
 
-_See <<node-states>> for more information._
+_See <<_node_states>> for more information._
 
 [horizontal]
 `node`:: The node.
@@ -1366,7 +1367,7 @@ Returns the node object or a failure if no node is found.
 
 `node`:: The node to lookup, which can be any node expression.
 `module` ('Optional'):: The module in which to look-up the
-node. Defaults to the current module, set by the last `:module`
+node. Defaults to the current module, set by the last `/module`
 declaration that is processed.
 
 NOTE: Currently there is no way to retrieve a module object, thus the
@@ -1547,7 +1548,7 @@ TIP: Pattern objects may be created with the <<meta-node-Pattern,
 
 All bindings, established by a pattern, should be established in an
 explicit context with identifier `match`, which is activated only on
-failures with type <<match-fail,`&(Match-Fail)`>>. This allows
+failures with type <<match-fail,`Match-Fail`>>. This allows
 multiple patterns to be specified on a single node, with the node
 being set to the value corresponding to the binding of the first
 pattern that 'matches'.
