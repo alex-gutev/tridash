@@ -1,0 +1,20 @@
+<?
+ /import(core)
+
+ x -> node @ context
+ y -> node @ context
+ z -> node @ context
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Explicit Contexts</title>
+    </head>
+    <body>
+      <div><label>X: <input value="<?@ to-int(x) ?>"/></label></div>
+      <div><label>Y: <input value="<?@ to-int(y) ?>"/></label></div>
+      <div><label>Z: <input value="<?@ to-int(z) ?>"/></label></div>
+      <hr/>
+      <div><strong>Value: <?@ node ?></strong></div>
+    </body>
+</html>

@@ -1,0 +1,17 @@
+/import(core)
+
+error-message(value) : {
+    value !- "" ->
+        @(self)
+
+    "Not a valid number!" ->
+        self @ when(Invalid-Integer)
+
+    "Number must be greater than or equal to 0!" ->
+        self @ when(Negative-Number)
+}
+
+sum <- a + b
+
+0 -> a
+0 -> b

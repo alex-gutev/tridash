@@ -1,0 +1,20 @@
+<?
+ /import(core)
+
+ # Increment `n` by `d`
+
+ increment(n, d : delta) : n + d
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Optional Argument Default Value</title>
+    </head>
+    <body>
+      <h1>Optional Argument Default Value</h1>
+      <div><label>N: <br/><input value="<?@ to-int(n) ?>"/></label></div>
+      <div><label>Delta: <br/><input value="<?@ to-int(delta) ?>"/></label></div>
+      <hr/>
+      <div><strong>Increment(N): <?@ increment(n) ?></strong></div>
+    </body>
+</html>

@@ -1,0 +1,53 @@
+<?
+ /import(core)
+
+ # Initial Message List
+
+ message-list <- Empty!
+
+ # Appending Messages to List
+
+ append(message-list, list(new-message)) ->
+     message-list :: add-new
+
+ case(
+     add-clicked? : '(add-new),
+     '(default)
+ ) -> /state(message-list)
+
+ # Formatting messages in single string
+
+ format-message(message) :
+     format("%s\n", message)
+
+ formatted-messages <- map(format-message, message-list)
+ messages <- foldl(string-concat, formatted-messages)
+
+ # Node Attributes
+
+ /attribute(add-clicked?, input, 1)
+ /attribute(add-clicked?, public-name, "clicked")
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Message List</title>
+    </head>
+    <body>
+      <h1>Message List</h1>
+      <div><label>New Message: <input value="<?@ new-message ?>"/></label></div>
+      <div><button id="add">Add Message</button></div>
+      <hr/>
+      <pre><?@ messages ?></pre>
+
+      <script>
+        var add = document.getElementById('add');
+        var clicked = Tridash.nodes.clicked;
+
+        add.addEventListener('click', function() {
+            clicked.set_value(true);
+            clicked.set_value(false);
+        });
+      </script>
+    </body>
+</html>

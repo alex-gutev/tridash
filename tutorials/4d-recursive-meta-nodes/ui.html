@@ -1,0 +1,28 @@
+<?
+ /import(core)
+
+ factorial(n) :
+     case(
+         n < 1 : 1,  # Ignoring the case: n < 0
+         n * factorial(n - 1)
+     )
+
+ fib(n) :
+     case(
+         n <= 1 : 1,
+         fib(n - 1) + fib(n - 2)
+     )
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Recursive Meta-Nodes</title>
+    </head>
+    <body>
+      <h1>Recursive Meta-Nodes</h1>
+      <div><label>N: <input value="<?@ to-int(n) ?>"/></label></div>
+      <hr/>
+      <div><strong>N!: <?@ factorial(n) ?></strong></div>
+      <div><strong>N<sup>th</sup> Fibonacci Number: <?@ fib(n) ?></strong></div>
+    </body>
+</html>

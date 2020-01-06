@@ -1,0 +1,18 @@
+<?
+ x -> node
+ y -> node
+ z -> node
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Node Contexts</title>
+    </head>
+    <body>
+      <div><label>X: <input value="<?@ x ?>"/></label></div>
+      <div><label>Y: <input id="b" value="<?@ y ?>"/></label></div>
+      <div><label>Z: <input value="<?@ z ?>"/></label></div>
+      <hr/>
+      <div><strong>Last value entered: <?@ node ?></strong></div>
+    </body>
+</html>

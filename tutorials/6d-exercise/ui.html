@@ -1,0 +1,56 @@
+<?
+ /import(core)
+
+ # Utilities
+
+ error-message(value) :
+     case(
+         fails?(value) : "Not a valid number!",
+         ""
+     )
+
+ border-color(field-value) :
+    case(
+        fails?(field-value) : "red",
+        "black"
+    )
+
+ # Color Bindings
+
+ border-color(a) -> self.input-a.style.borderColor
+ border-color(b) -> self.input-b.style.borderColor
+
+ # Initial Values
+
+ 0 -> a
+ 0 -> b
+
+?>
+<!doctype html>
+<html>
+    <head>
+      <title>Adding Numbers</title>
+      <style>
+        .input-field {
+            border: 1px solid black;
+        }
+        .error-message {
+            color: red;
+            font-weight: bold;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>Adding Numbers</h1>
+      <div>
+        <label>A: <input class="input-field" id="input-a" value="<?@ to-int(a) ?>"/></label>
+        <span class="error-message"><?@ error-message(a) ?></span>
+      </div>
+      <div>
+        <label>B: <input class="input-field" id="input-b" value="<?@ to-int(b) ?>"/></label>
+        <span class="error-message"><?@ error-message(b) ?></span>
+      </div>
+      <hr/>
+      <div><strong>A + B = <?@ a + b ?></strong></div>
+    </body>
+</html>

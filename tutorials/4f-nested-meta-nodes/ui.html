@@ -1,0 +1,26 @@
+<?
+ /import(core)
+
+ factorial(n) : {
+     iter(n, acc) : {
+         case(
+             n < 1 : acc,  # Ignoring the case: n < 0
+             iter(n - 1, n * acc)
+         )
+     }
+
+     iter(n, 1)
+ }
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Nested Meta-Nodes</title>
+    </head>
+    <body>
+      <h1>Nested Meta-Nodes</h1>
+      <div><label>N: <input value="<?@ to-int(n) ?>"/></label></div>
+      <hr/>
+      <div><strong>N!: <?@ factorial(n) ?></strong></div>
+    </body>
+</html>

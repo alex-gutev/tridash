@@ -1,0 +1,80 @@
+<?
+ /import(core)
+
+ # Counter Logic
+
+ ## Incrementing Counter
+
+ counter + 1 -> counter :: increment1 => increment2
+ counter + 1 -> counter :: increment2 => increment1
+
+ ## Counter Node State
+
+ clicked1? !- '(increment1) -> /state(counter)
+ clicked2? !- '(increment2) -> /state(counter)
+ '(increment2) -> /state(counter)
+
+ ## Resetting Counter Value
+
+ start -> counter
+ 0 -> start
+
+ # Button Color
+
+ increment1 <- /state(counter) = '(increment1)
+ increment2 <- /state(counter) = '(increment2)
+
+ case (increment2 : "green", "gray") ->
+     self.increment1.style.backgroundColor
+
+ case (increment1 : "green", "gray") ->
+     self.increment2.style.backgroundColor
+
+ # Attributes
+
+ /attribute(clicked1?, input, 1)
+ /attribute(clicked1?, public-name, "clicked1");
+
+ /attribute(clicked2?, input, 1)
+ /attribute(clicked2?, public-name, "clicked2");
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Counter</title>
+        <style>
+          .increment-button {
+              color: white;
+              font-weight: bold;
+          }
+        </style>
+    </head>
+    <body>
+      <h1>Counter</h1>
+      <div><label>Start: <input value="<?@ to-int(start) ?>"/></label></div>
+      <div>
+        <button class="increment-button" id="increment1">Increment 1</button>
+        <button class="increment-button" id="increment2">Increment 2</button>
+      </div>
+      <hr/>
+      <div><strong>Counter: <?@ counter ?></strong></div>
+
+      <script>
+        var increment1 = document.getElementById('increment1');
+        var increment2 = document.getElementById('increment2');
+
+        var clicked1 = Tridash.nodes.clicked1;
+        var clicked2 = Tridash.nodes.clicked2;
+
+        increment1.addEventListener('click', function() {
+            clicked1.set_value(true);
+            clicked1.set_value(false);
+        });
+
+        increment2.addEventListener('click', function() {
+            clicked2.set_value(true);
+            clicked2.set_value(false);
+        });
+      </script>
+    </body>
+</html>

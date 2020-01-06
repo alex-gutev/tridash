@@ -1,0 +1,21 @@
+<?
+ /import(core)
+
+ factorial(n, acc : 1) :
+     case(
+         n < 1 : acc,  # Ignoring the case: n < 0
+         factorial(n - 1, n * acc)
+     )
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Tail Recursive Meta-Nodes</title>
+    </head>
+    <body>
+      <h1>Tail Recursive Meta-Nodes</h1>
+      <div><label>N: <input value="<?@ to-int(n) ?>"/></label></div>
+      <hr/>
+      <div><strong>N!: <?@ factorial(n) ?></strong></div>
+    </body>
+</html>

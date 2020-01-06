@@ -1,0 +1,19 @@
+<?
+ /import(core)
+
+ # Increment `n` by `delta`
+
+ increment(n, delta : 1) : n + delta
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Optional Arguments</title>
+    </head>
+    <body>
+      <h1>Optional Arguments</h1>
+      <div><label>N: <br/><input value="<?@ to-int(n) ?>"/></label></div>
+      <hr/>
+      <div><strong>Increment(N): <?@ increment(n) ?></strong></div>
+    </body>
+</html>

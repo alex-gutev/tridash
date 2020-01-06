@@ -1,0 +1,24 @@
+/module(sum-app)
+
+/import(core)
+/import(validation)
+
+add(a, b) : a + b
+
+/operator(add, 100, left)
+
+error-message(value) : {
+    value !- "" ->
+        @(self)
+
+    "Not a valid number!" ->
+        self @ when(Invalid-Integer)
+
+    "Number must be greater than or equal to 0!" ->
+        self @ when(Negative-Number)
+}
+
+sum <- a add b
+
+0 -> a
+0 -> b

@@ -1,0 +1,54 @@
+<?
+ /import(core)
+
+ # Error Reporting
+
+ error-message(value) :
+     case(
+         fail-type?(value, Invalid-Integer) :
+             "Not a valid number!",
+         fail-type?(value, Negative-Number) :
+             "Number must be greater than or equal to 0!",
+         ""
+     )
+
+ # Input Validation
+
+ Negative-Number  <- &(Negative-Number)
+ Negative-Number! <- fail(Negative-Number)
+
+ validate(x) :
+     case(
+         x >= 0 : x,
+         Negative-Number!
+     )
+
+ # Bindings
+
+ a <- validate(input-a)
+ b <- validate(input-b)
+
+ # Initial Values
+
+ 0 -> input-a
+ 0 -> input-b
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Adding Numbers</title>
+    </head>
+    <body>
+      <h1>Adding Numbers</h1>
+      <div>
+        <label>A: <input value="<?@ to-int(input-a) ?>"/></label>
+        <?@ error-message(a) ?>
+      </div>
+      <div>
+        <label>B: <input value="<?@ to-int(input-b) ?>"/></label>
+        <?@ error-message(b) ?>
+      </div>
+      <hr/>
+      <div><strong>A + B = <?@ a + b ?></strong></div>
+    </body>
+</html>

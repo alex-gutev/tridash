@@ -1,0 +1,41 @@
+<?
+ /import(core)
+
+ Negative-Number  <- &(Negative-Number)
+ Negative-Number! <- fail(Negative-Number)
+
+ validate(x) :
+     case(
+         x >= 0 : x,
+         Negative-Number!
+     )
+
+ valid-int(value) : {
+     x <- int(value)
+
+     case(
+         x >= 0 : x,
+         Negative-Number!
+     )
+ }
+
+ /attribute(valid-int, target-node, valid-int)
+
+
+ x -> node @ context
+ y -> node @ when(context, Invalid-Integer)
+ z -> node @ when(context, Negative-Number)
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Explicit Contexts Failure Type</title>
+    </head>
+    <body>
+      <div><label>X: <input value="<?@ valid-int(x) ?>"/></label></div>
+      <div><label>Y: <input value="<?@ valid-int(y) ?>"/></label></div>
+      <div><label>Z: <input value="<?@ valid-int(z) ?>"/></label></div>
+      <hr/>
+      <div><strong>Value: <?@ node ?></strong></div>
+    </body>
+</html>

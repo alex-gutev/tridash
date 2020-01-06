@@ -1,0 +1,42 @@
+<?
+ /import(core)
+
+ counter + 1 -> counter :: default => increment
+
+ /state(counter) <-
+     case(
+         should-increment? : '(increment),
+         '(default)
+     )
+
+ /attribute(should-increment?, input, 1)
+ /attribute(should-increment?, public-name, "should_increment")
+
+ start -> counter
+ 0 -> start
+
+ '(default) -> /state(counter)
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Counter</title>
+    </head>
+    <body>
+      <h1>Counter</h1>
+      <div><label>Start: <input value="<?@ to-int(start) ?>"/></label></div>
+      <div><button id="increment">Increment</button></div>
+      <hr/>
+      <div><strong>Counter: <?@ counter ?></strong></div>
+
+      <script>
+        var increment = document.getElementById('increment');
+        var node_increment = Tridash.nodes.should_increment;
+
+        increment.addEventListener('click', function() {
+            node_increment.set_value(true);
+            node_increment.set_value(false);
+        });
+      </script>
+    </body>
+</html>

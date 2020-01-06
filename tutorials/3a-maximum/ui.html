@@ -1,0 +1,23 @@
+<?
+ /import(core)
+
+ maximum <-
+     case (
+         a > b : a,
+         b > a : b,
+         "neither"
+     )
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Maximum</title>
+    </head>
+    <body>
+      <h1>Maximum</h1>
+      <div><label>A: <input value="<?@ to-int(a) ?>"/></label></div>
+      <div><label>B: <input value="<?@ to-int(b) ?>"/></label></div>
+      <hr/>
+      <div><strong>The maximum of <?@ a ?> and <?@ b ?> is <?@ maximum ?>.</strong></div>
+    </body>
+</html>

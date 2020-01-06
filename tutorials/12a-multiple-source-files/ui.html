@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Adding Numbers</title>
+    </head>
+    <body>
+      <h1>Adding Numbers</h1>
+      <div>
+        <label>A: <input id="a" value="<?@ valid-int(a) ?>"/></label>
+        <?@ error-message(a) ?>
+      </div>
+      <div>
+        <label>B: <input id="b" value="<?@ valid-int(b) ?>"/></label>
+        <?@ error-message(b) ?>
+      </div>
+      <hr/>
+      <div><strong>A + B = <?@ sum ?></strong></div>
+    </body>
+</html>

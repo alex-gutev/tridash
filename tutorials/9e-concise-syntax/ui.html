@@ -1,0 +1,62 @@
+<?
+ /import(core)
+
+ # Error Reporting
+
+ error-message(value) : {
+     value !- "" ->
+         @(self)
+
+     "Not a valid number!" ->
+         self @ when(Invalid-Integer)
+
+     "Number must be greater than or equal to 0!" ->
+         self @ when(Negative-Number)
+ }
+
+ # Input Validation
+
+ Negative-Number  <- &(Negative-Number)
+ Negative-Number! <- fail(Negative-Number)
+
+ validate(x) :
+     case(
+         x >= 0 : x,
+         Negative-Number!
+     )
+
+ valid-int(value) : {
+     x <- int(value)
+
+     case(
+         x >= 0 : x,
+         Negative-Number!
+     )
+ }
+
+ /attribute(valid-int, target-node, valid-int)
+
+ # Initial Values
+
+ 0 -> a
+ 0 -> b
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Adding Numbers</title>
+    </head>
+    <body>
+      <h1>Adding Numbers</h1>
+      <div>
+        <label>A: <input id="a" value="<?@ valid-int(a) ?>"/></label>
+        <?@ error-message(a) ?>
+      </div>
+      <div>
+        <label>B: <input id="b" value="<?@ valid-int(b) ?>"/></label>
+        <?@ error-message(b) ?>
+      </div>
+      <hr/>
+      <div><strong>A + B = <?@ a + b ?></strong></div>
+    </body>
+</html>

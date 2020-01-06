@@ -1,0 +1,54 @@
+<?
+ /import(core)
+
+ # Utilities
+
+ lerp(a, b, alpha) : a + alpha * (b - a)
+
+ clamp(x, min, max) :
+     case (
+         x < min : min,
+         x > max : max,
+         x
+     )
+
+ make-hsl(h, s, l) :
+     format("hsl(%s,%s%%,%s%%)", h, s, l)
+
+
+ # Application Logic
+
+ scale <- clamp(quantity / maximum, 0, 1)
+
+ hue <- lerp(120, 0, scale)
+
+ self.meter.style.backgroundColor <-
+     make-hsl(hue, 90, 45)
+
+ format("%s%%", scale * 100) -> self.meter.style.width
+?>
+<!doctype html>
+<html>
+    <head>
+      <title>Simple Meter</title>
+      <style>
+        .meter-box {
+            margin-top: 5px;
+            width: 200px;
+            height: 1em;
+            border: 1px solid black;
+        }
+        .meter-bar {
+            height: 100%;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>Simple Meter</h1>
+      <div><label>Maximum: <br/><input value="<?@ to-int(maximum) ?>"/></label></div>
+      <div><label>Quantity: <br/><input value="<?@ to-int(quantity) ?>"/></label></div>
+      <div class="meter-box">
+        <div id="meter" class="meter-bar"></div>
+      </div>
+    </body>
+</html>

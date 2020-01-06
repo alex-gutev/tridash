@@ -1,0 +1,10 @@
+sources:
+  - validation.trd
+  - app.trd
+  - path: ui.html
+    node-name: sum-app.ui
+
+output:
+  path: app.html
+  type: html
+  main-ui: sum-app.ui

@@ -1,0 +1,23 @@
+<?
+ /import(core)
+
+ # Increment `x` by the value of the global node `delta
+ increment(x) : x + delta
+
+ call(f, arg) : f(arg)
+
+ result <- call(increment, n)
+?>
+<!doctype html>
+<html>
+    <head>
+        <title>Higher Order Meta-Nodes</title>
+    </head>
+    <body>
+      <h1>Higher Order Meta-Nodes</h1>
+      <div><label>N:<br/><input value="<?@ to-int(n) ?>"/></label></div>
+      <div><label>Delta:<br/><input value="<?@ to-int(delta) ?>"/></label></div>
+      <hr/>
+      <div>Result: <?@ result ?></div>
+    </body>
+</html>
