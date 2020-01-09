@@ -350,10 +350,10 @@
 
     (is! name nil "Anonymous function")
 
-    (is! (length args) 1 "Single argument")
+    (is! (length args) 2 "Single argument")
 
     (let ((prove:*default-test-function* #'ast-list=)
-          (*values-var* (first args))
+          (*values-var* (second args))
           (*ast-aliases* (make-hash-map)))
       (is body fn))))
 

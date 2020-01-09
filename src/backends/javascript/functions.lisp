@@ -118,9 +118,8 @@
    references the previous value, to indices within the
    'previous_values' array."
 
-  (symbol-macrolet ((values-var "values"))
+  (symbol-macrolet ((values-var "values") (previous-var "previous"))
     (let ((operands (make-hash-map))
-          (uses-old-value?)
           (references-this?)
           (previous-nodes (make-hash-map)))
 
@@ -139,8 +138,7 @@
                      (->> (ensure-get node previous-nodes
                             (length previous-nodes))
 
-                          (js-element
-                           (js-member "self" "previous_values")))))))))
+                          (js-element previous-var))))))))
 
         (with-slots (value-function) context
           (let* ((*protect* nil)
@@ -149,7 +147,7 @@
             (when value-function
               (values
                (js-lambda
-                (list values-var)
+                (list previous-var values-var)
                 (append
                  (when references-this?
                    (list

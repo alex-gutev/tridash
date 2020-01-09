@@ -356,7 +356,9 @@
                 (remove-operand node it))
 
       (erase dependencies dependency)
-      (erase (observers dependency) node))))
+      (erase (observers dependency) node)
+
+      t)))
 
 
 ;;;; Contexts

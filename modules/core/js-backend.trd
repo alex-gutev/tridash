@@ -106,7 +106,7 @@
 ### Failures
 
 /attribute(fail, js-name, "Tridash.fail")
-/attribute(fail-type, js-name, "Tridash.fail-type")
+/attribute(fail-type, js-name, "Tridash.fail_type")
 
 /attribute(catch, js-name, "Tridash.make_catch_thunk")
 

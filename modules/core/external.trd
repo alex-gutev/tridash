@@ -148,7 +148,7 @@
 
 ### Export Declarations
 
-/export(+, -, *, /,
+/export(+, -, *, /, %,
         <, <=, >, >=,
         =, !=,
         and, or, not,

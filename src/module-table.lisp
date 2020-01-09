@@ -109,10 +109,10 @@
      ((:type-error "Type-Error%") ())
      ((:index-out-bounds "Index-Out-Bounds%") ())
 
-     (:invalid-integer "Invalid-Integer%")
-     (:invalid-real "Invalid-Real%")
+     ((:invalid-integer "Invalid-Integer%") ())
+     ((:invalid-real "Invalid-Real%") ())
 
-     (:arity-error "Arity-Error%")))
+     ((:arity-error "Arity-Error%") ())))
 
   "Map of meta-nodes which comprise the language primitives.")
 

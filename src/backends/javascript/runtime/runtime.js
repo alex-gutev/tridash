@@ -81,7 +81,7 @@ function NodeContext(node, context_id) {
      * Value computation function. Takes an array of the operand
      * values as its first and only parameter.
      */
-    this.compute = ([a]) => a;
+    this.compute = (_, [a]) => a;
 
     /**
      * Array of the operand nodes.
@@ -174,8 +174,13 @@ function Reserve(context, start) {
      * Thunk which computes the value of the node.
      */
     this.value = new Thunk(() => {
-        return context.compute_value(this.operands);
+        return context.compute(this.previous_values, this.operands);
     });
+
+    /**
+     * Array in which the previous values of nodes, should be stored.
+     */
+    this.previous_values = [];
 
     /**
      * Promise which is resolved when the value of this node is
@@ -199,6 +204,12 @@ function Reserve(context, start) {
      * context's observer nodes has been reserved.
      */
     this.observers = Promise.resolve(true);
+
+    /**
+     * Array where each element is a Promise which is resolved when
+     * the path through that dependency node is reserved.
+     */
+    this.dependencies = [];
 
     /**
      * Optional promise which for which the update loop waits to be
@@ -231,18 +242,6 @@ Reserve.prototype.queue = function(node) {
 
         this.queued = true;
     }
-};
-
-/**
- * Adds a promise which is to be resolved prior to updating the node's
- * value
- *
- * @param condition A promise.
- */
-Reserve.prototype.add_precondition = function(condition) {
-    this.preconditions = this.preconditions ?
-        this.preconditions.then(() => condition) :
-        condition;
 };
 
 
@@ -281,6 +280,7 @@ NodeContext.prototype.reserve = function(start, index, path, value, visited = {}
         // This assumes that operands which are weakly bound are not
         // actually used within the context's value function.
         reserve.operands[index] = weak ? null : value;
+        reserve.dependencies[index] = path;
 
         this.reserve_hook(reserve, index, path, true);
 
@@ -300,6 +300,7 @@ NodeContext.prototype.reserve = function(start, index, path, value, visited = {}
         // This assumes that operands which are weakly bound are not
         // actually used within the context's value function.
         reserve.operands[index] = weak ? null : value;
+        reserve.dependencies[index] = path;
 
         this.reserve_hook(reserve, index, path, false);
 
@@ -360,20 +361,6 @@ NodeContext.prototype.reserveObservers = function(start, value, path, visited) {
 /* Update Loop */
 
 /**
- * Computes the value of the node, using the context's value
- * computation function, with the current value of the operands.
- *
- * @param operands Values (either immediate or thunks) of the operand
- *   nodes.
- *
- * @return The new value of the node.
- */
-NodeContext.prototype.compute_value = function(operands) {
-    return this.compute(operands);
-};
-
-
-/**
  * Runs the update loop if it is not already running.
  */
 Node.prototype.add_update = function() {
@@ -394,8 +381,9 @@ Node.prototype.update = function() {
         observers.then(() => start)
             .then(() => {
                 reserve.path.resolve(true);
-                return reserve.preconditions;
+                return Promise.all(reserve.dependencies);
             })
+            .then(() => reserve.preconditions)
             .then(() => {
                 // Wait for operand nodes to resolve. When resolved
                 // update node value.

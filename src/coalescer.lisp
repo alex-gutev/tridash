@@ -36,15 +36,15 @@
    a meta-node."
 
   (with-slots (nodes input-nodes) table
+    ;; Fold Constant Nodes
+    (fold-constant-nodes nodes)
+
     ;; Coalesce successive nodes with a single observer
     (coalesce-nodes input-nodes)
 
     ;; Check for cycles and coalesce multiple contexts activated by a
     ;; common ancestor node.
     (check-structure input-nodes :simultaneous in-meta-node)
-
-    ;; Fold Constant Nodes
-    (fold-constant-nodes nodes)
 
     ;; Remove nodes not reachable from any input node.
     (remove-unreachable-nodes input-nodes nodes)
@@ -90,10 +90,9 @@
 
          (remove-redundant-2-way-links (node)
            (when (= (length (contexts node)) 1)
-             (foreach (curry #'remove-observer node) (map-keys (dependencies node)))
-
-             (doseq (link (map-values (dependencies node)))
-               (setf (node-link-two-way-p link) nil))))
+             (doseq ((dependency . link) (dependencies node))
+               (when (remove-observer node dependency)
+                 (setf (node-link-two-way-p link) nil)))))
 
 
          (eliminate-node (node)
@@ -120,13 +119,13 @@
            "Returns true if NODE can be coalesced."
 
            (or
-            (and (may-coalesce? node)
+            (and (or (may-coalesce? node)
+                     (and (attribute :non-coalescable-self-reference node)
+                          (no-self-references? node)))
+
                  (= (length (observers node)) 1)
                  (strong-link? node)
                  (<= (length (contexts node)) 1))
-
-            (and (attribute :non-coalescable-self-reference node)
-                 (no-self-references? node))
 
             (and *meta-node*
                  (not (= node *meta-node*))
@@ -157,12 +156,15 @@
            "Returns true if NODE is bound to each of its observers via
             a strong (not weak) binding."
 
-           (-> node
-               observers
-               first
-               cdr
-               node-link-weak-p
-               not))
+           (let ((link
+                  (-> node
+                      observers
+                      first
+                      cdr)))
+
+             (not
+              (or (node-link-weak-p link)
+                  (node-link-two-way-p link)))))
 
          (merge-dependencies (node observer)
            "Merges the dependencies of NODE into the dependency set of
@@ -434,13 +436,14 @@
                  (-> (rcurry #'memberp operands)
                      (every (map-keys observers)))))))
 
-           (constant-context? (context)
-             (emptyp (operands context))))
+         (constant-context? (context)
+           (emptyp (operands context))))
 
     (unless (input-node? node)
       (let ((contexts (remove-if (curry #'coalescable? node)
                                  (map-values (contexts node)))))
         (and (= (length contexts) 1)
+             (may-coalesce? node)
              (constant-context? (first contexts))
              (value-function (first contexts)))))))
 
@@ -608,6 +611,7 @@
 
              (visit-observer (observer)
                (destructuring-bind (observer . link) observer
-                 (visit observer (context observer (node-link-context link))))))
+                 (unless (node-link-weak-p link)
+                   (visit observer (context observer (node-link-context link)))))))
 
       (foreach #'begin-walk input-nodes))))

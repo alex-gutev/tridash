@@ -411,34 +411,14 @@
 
   (labels ((save-node-value (operand)
              (destructuring-bind (operand . index) operand
+               (js-call
+                "="
 
-               (if (= operand node)
-                   (save-self index)
+                (js-element
+                 (js-member "reserve" "previous_values")
+                 index)
 
-                   (js-if
-                    (js-call "==" "index" (dependency-index context operand))
-                    (js-call
-                     (js-member "reserve" "add_precondition")
-                     (js-call
-                      (js-member "path" "then")
-                      (js-lambda
-                       nil
-
-                       (list
-                        (js-call
-                         "="
-
-                         (js-element
-                          (js-member var "previous_values")
-                          index)
-
-                         (js-member (node-path operand) "value"))))))))))
-
-           (save-self (index)
-             (js-if "first"
-                    (js-call "="
-                             (js-element (js-member var "previous_values") index)
-                             (js-member (node-path node) "value")))))
+                (js-member (node-path operand) "value")))))
 
     (unless (emptyp previous-values)
       (list
@@ -451,7 +431,19 @@
         (js-lambda
          (list "reserve" "index" "path" "first")
 
-         (map-to 'list #'save-node-value previous-values)))))))
+         (list
+          (->>
+           (map-to 'list #'save-node-value previous-values)
+           (js-lambda nil)
+
+           (js-call
+            (js-members "reserve" "path" "promise" "then"))
+
+           (js-call
+            "="
+            (js-members "reserve" "preconditions"))
+
+           (js-if "first")))))))))
 
 
 (defun make-context-expression (node-path id context)
