@@ -108,6 +108,17 @@
     the identifier stored in the CONTEXT-ID slot."))
 
 
+;;;; Constructors
+
+(defun constant-node (id value)
+  "Creates a constant node with identifier ID and value VALUE."
+
+  (let* ((name (id-symbol id))
+         (node (make-instance 'node :name name)))
+    (add-constant-function value node)
+    node))
+
+
 ;;;; Hash Function
 
 (defmethod hash ((node node))

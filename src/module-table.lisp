@@ -116,6 +116,12 @@
 
   "Map of meta-nodes which comprise the language primitives.")
 
+(defparameter *node-true* (constant-node "True" 1)
+  "Node, of which the value represents boolean True.")
+
+(defparameter *node-false* (constant-node "False" 0)
+  "Node, of which the value represents boolean False.")
+
 (defconstant +core-macro-nodes+
   `((-> ,+bind-operator+ 10 :right)
     (\: ,+def-operator+ 5 :right)
@@ -142,6 +148,12 @@
       (setf (node-macro-function chr-macro) #'chr-macro)
       (add-meta-node name chr-macro builtin)
       (export-node name builtin))
+
+    (add-node (name *node-true*) *node-true* builtin)
+    (add-node (name *node-false*) *node-false* builtin)
+
+    (export-node (name *node-true*) builtin)
+    (export-node (name *node-false*) builtin)
 
     builtin))
 
