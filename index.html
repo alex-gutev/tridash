@@ -55,9 +55,19 @@ the philosophy of the language.</p></div>
 installation instructions for the platform of your choice.</p></div>
 <div class="sect2">
 <h3 id="_tutorials">Tutorials</h3>
-<div class="paragraph"><p>Introductory tutorials, which introduce the basic features of the
-language and gradually move on to more advanced topics, are available
-<a href="tutorials/">here</a>.</p></div>
+<div class="paragraph"><p>Introductory tutorials are available, which introduce the core
+concepts of the language and gradually move on to more advanced topics.</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<a href="tutorials/">Introductory Tutorials</a>
+</dt>
+<dd>
+<p>
+Introduces the core concepts
+of the language and gradually moves on to more advanced features
+</p>
+</dd>
+</dl></div>
 <div class="ulist"><div class="title">Alternative Formats</div><ul>
 <li>
 <p>
@@ -76,8 +86,17 @@ language and gradually move on to more advanced topics, are available
 <div class="sect1">
 <h2 id="_documentation">Documentation</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>The full manual documenting the syntax, semantics, features and core
-modules of the language is available <a href="manual">here</a>.</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<a href="manual">Reference Manual</a>
+</dt>
+<dd>
+<p>
+Documents the syntax, semantics,
+features and core modules of the language.
+</p>
+</dd>
+</dl></div>
 <div class="ulist"><div class="title">Alternative Formats</div><ul>
 <li>
 <p>
@@ -97,26 +116,26 @@ modules of the language is available <a href="manual">here</a>.</p></div>
 <div class="sectionbody">
 <div class="sect2">
 <h3 id="_summing_values">Summing Values</h3>
-<div class="paragraph"><p>Let&#8217;s say you an application consisting of three text input fields,
-and you&#8217;d like to compute their sum and display it in a fourth text
-field. Additionally you&#8217;d like the sum to be recomputed, with the new
-sum displayed, whenever the values of one of the text fields is
-changed by the user. In most of today&#8217;s languages this would require
-setting up event listeners, and callback functions for each of the
-text fields, you&#8217;d then have to update a <span class="monospaced">sum</span> variable and manually
-change the value of the fourth text field to the new sum. With
-Tridash, the entire application can be implemented with the following:</p></div>
+<div class="paragraph"><p>Let&#8217;s say you an application consisting of two text input fields, and
+you&#8217;d like to display the sum of the values, entered in the fields,
+and display it. Additionally you&#8217;d like the sum to be recomputed, with
+the new sum displayed, whenever the values of one of the text fields
+is changed by the user. In most of today&#8217;s languages this would
+require setting up event listeners, and callback functions for each of
+the text fields, you&#8217;d then have to update a <span class="monospaced">sum</span> variable and
+manually change the value of the fourth text field to the new
+sum. With Tridash, the entire application can be implemented with just
+the following:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
-<pre>&lt;? :import(core) ?&gt;
+<pre>&lt;? /import(core) ?&gt;
 
 &lt;!doctype html&gt;
 &lt;html&gt;
     &lt;body&gt;
-      &lt;p&gt;&lt;label&gt;Food: &lt;input value="&lt;?@ to-real(food) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
-      &lt;p&gt;&lt;label&gt;Electricity: &lt;input value="&lt;?@ to-real(electricity) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
-      &lt;p&gt;&lt;label&gt;Water: &lt;input value="&lt;?@ to-real(water) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
-      &lt;p&gt;&lt;label&gt;&lt;strong&gt;Total:&lt;/strong&gt; &lt;input value="&lt;?@ food + electricity + water ?&gt;" readonly&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;label&gt;A: &lt;input value="&lt;?@ to-int(a) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;label&gt;B: &lt;input value="&lt;?@ to-real(b) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;p&gt;A + B = &lt;?@ a + b ?&gt;&lt;/p&gt;
     &lt;/body&gt;
 &lt;/html&gt;</pre>
 </div></div>
@@ -142,7 +161,7 @@ a text field is changed, the sum is automatically recomputed.</p></div>
 <div id="footer">
 <div id="footer-text">
 Last updated
- 2019-09-27 10:02:23 CEST
+ 2020-01-13 21:17:05 CET
 </div>
 </div>
 </body>

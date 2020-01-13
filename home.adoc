@@ -40,9 +40,11 @@ installation instructions for the platform of your choice.
 
 === Tutorials ===
 
-Introductory tutorials, which introduce the basic features of the
-language and gradually move on to more advanced topics, are available
-link:tutorials/[here].
+Introductory tutorials are available, which introduce the core
+concepts of the language and gradually move on to more advanced topics.
+
+link:tutorials/[Introductory Tutorials]:: Introduces the core concepts
+of the language and gradually moves on to more advanced features
 
 .Alternative Formats
 - link:tutorials.pdf[PDF]
@@ -51,8 +53,8 @@ link:tutorials/[here].
 
 == Documentation ==
 
-The full manual documenting the syntax, semantics, features and core
-modules of the language is available link:manual[here].
+link:manual[Reference Manual]:: Documents the syntax, semantics,
+features and core modules of the language.
 
 .Alternative Formats
 - link:tridash.pdf[PDF]
@@ -62,26 +64,26 @@ modules of the language is available link:manual[here].
 
 === Summing Values ===
 
-Let's say you an application consisting of three text input fields,
-and you'd like to compute their sum and display it in a fourth text
-field. Additionally you'd like the sum to be recomputed, with the new
-sum displayed, whenever the values of one of the text fields is
-changed by the user. In most of today's languages this would require
-setting up event listeners, and callback functions for each of the
-text fields, you'd then have to update a `sum` variable and manually
-change the value of the fourth text field to the new sum. With
-Tridash, the entire application can be implemented with the following:
+Let's say you an application consisting of two text input fields, and
+you'd like to display the sum of the values, entered in the fields,
+and display it. Additionally you'd like the sum to be recomputed, with
+the new sum displayed, whenever the values of one of the text fields
+is changed by the user. In most of today's languages this would
+require setting up event listeners, and callback functions for each of
+the text fields, you'd then have to update a `sum` variable and
+manually change the value of the fourth text field to the new
+sum. With Tridash, the entire application can be implemented with just
+the following:
 
 --------------------------------------------------
-<? :import(core) ?>
+<? /import(core) ?>
 
 <!doctype html>
 <html>
     <body>
-      <p><label>Food: <input value="<?@ to-real(food) ?>" /></label></p>
-      <p><label>Electricity: <input value="<?@ to-real(electricity) ?>" /></label></p>
-      <p><label>Water: <input value="<?@ to-real(water) ?>" /></label></p>
-      <p><label><strong>Total:</strong> <input value="<?@ food + electricity + water ?>" readonly></label></p>
+      <p><label>A: <input value="<?@ to-int(a) ?>" /></label></p>
+      <p><label>B: <input value="<?@ to-int(b) ?>" /></label></p>
+      <p>A + B = <?@ a + b ?></p>
     </body>
 </html>
 --------------------------------------------------
