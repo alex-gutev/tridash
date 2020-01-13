@@ -2,7 +2,7 @@
 Alexander Gutev <alex.gutev@gmail.com>
 :compat-mode: 1
 
-These set of tutorials cover the basics of the Tridash programming
+This set of tutorials covers the basics of the Tridash programming
 language.
 
 Prior programming experience is not strictly necessary however is
