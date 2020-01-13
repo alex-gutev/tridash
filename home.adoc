@@ -40,9 +40,6 @@ installation instructions for the platform of your choice.
 
 === Tutorials ===
 
-Introductory tutorials are available, which introduce the core
-concepts of the language and gradually move on to more advanced topics.
-
 link:tutorials/[Introductory Tutorials]:: Introduces the core concepts
 of the language and gradually moves on to more advanced features
 
@@ -97,3 +94,9 @@ That's all that is necessary. The main application logic is actually
 contained in `<?@ food + electricty + water ?>` which computes the sum
 of the values entered in the three text fields. Whenever the value of
 a text field is changed, the sum is automatically recomputed.
+
+== Support ==
+
+[small]#If you find this project interesting and would like to ensure
+its continued development please consider making a donation via
+link::https://www.patreon.com/alexgutev[Patreon]#
