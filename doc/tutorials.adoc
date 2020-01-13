@@ -3024,7 +3024,6 @@ given the same `public-name`.
 --------------------------------------------------
 
 .Example: Referencing the runtime node object in JavaScript
-[source, javascript]
 --------------------------------------------------
 var node = Tridash.nodes["aNode"];
 
@@ -3310,7 +3309,6 @@ The following JavaScript code attaches event listeners for the
 corresponding 'clicked?' node to true and them immediately to false,
 again.
 
-[source, javascript]
 --------------------------------------------------
 var increment1 = document.getElementById('increment1');
 var increment2 = document.getElementById('increment2');
