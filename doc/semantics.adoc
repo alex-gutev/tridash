@@ -641,7 +641,7 @@ single argument, the failure type of the previous binding. If the
 function returns 'true' the binding is activated otherwise this
 binding fails with the same failure type as the preceding binding.
 
-TIP: The <<meta-node-context, `@`>> macro, from the `core` module,
+TIP: The <<macro-node-context, `@`>> macro, from the `core` module,
 contains a shorthand syntax for establishing a binding to an explicit
 context with a test function that compares the failure type to a given
 value.
