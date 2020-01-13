@@ -535,9 +535,10 @@ c -> (a -> b)
 --------------------------------------------------
 
 The result of this declaration is that the binding `a -> b` is only
-active if the condition node `c` evaluates to a 'true' value, any
-non-zero value. If `c` evaluates to 'false' (`0`), `b` is not set to
-the value of `a` but is set to a failure value.
+active if the condition node `c` evaluates to a 'true' value, the
+value of the builtin `True` node,. If `c` evaluates to 'false', the
+value of the builtin `False` node, `b` is not set to the value of `a`
+but is set to a failure value.
 
 A binding declaration, with a binding node as the target, changes the
 function of the context of the binding to return a failure value if

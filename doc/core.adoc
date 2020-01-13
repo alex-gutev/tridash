@@ -665,6 +665,11 @@ treated as a constant pattern and may only appear nested inside other
 patterns.
 
 
+
+=== Selection Operators ===
+
+(((Selection Operators, Core Module)))
+
 [[meta-node-if]]
 ==== Meta-Node: `if(condition, true-value, :(false-value))` ====
 
@@ -728,6 +733,14 @@ case(
 if(a < b, -1, if(b > a, 1, 0))
 --------------------------------------------------
 
+
+==== Node `True` ====
+
+The value of this node represents Boolean 'True'.
+
+==== Node `False` ====
+
+The value of this node represents Boolean 'False'.
 
 === Types ===
 
