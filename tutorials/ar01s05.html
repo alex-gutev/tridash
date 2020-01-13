@@ -1,179 +1,144 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>5. Error Handling</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s04.html" title="4. Writing your own Functions" /><link rel="next" href="ar01s06.html" title="6. Failures of your own" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s04.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s06.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_error_handling"></a>5. Error Handling</h2></div></div></div><p>In all the tutorials, till this point, we’ve completely ignored the
-issue of invalid data being entered in the text fields, such as
-non-numeric data and negative numeric values.</p><p>Let’s try entering some non-numeric data in our existing application
-and see what happens.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial5/error1.png" align="middle" alt="foo entered in food, 10 entered in water and electricity. No total or message printed." /></div></div><p>If an invalid value is initially entered in one of the “food”,
- “electricity”, or “water” fields, no total is computed, the meter
- is filled, and no status message is displayed.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial5/error2.png" align="middle" alt="Water changed from 10 to foo, 20 and 10 entered in food and electricity. Total, color and message unchanged." /></div></div><p>If the value of one of the fields is changed from a valid to an
-invalid numeric value, such as “Electricity” in the snapshot above,
-the total is not recomputed, with the old total being displayed in the
-text field. Likewise the meter and status message are unchanged, even
-if the values of the “Budget” or other fields are changed. The new
-total is only computed when the invalid numeric value is replaced with
-a valid numeric value.</p><p>Now let’s try entering a non-numeric value for the budget, however
-keeping the values of the other fields valid:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial5/error3.png" align="middle" alt="Budget changed from 100 to foo. Food changed from 10 to 90, water and electricity set to 10. New total (110) computed, color and message unchanged." /></div></div><p>Changing the budget to a non-numeric value does not result in the
-total, color or message being changed. However changing the values of
-the expense fields does result in the new total being computed and
-displayed. The meter and status message, however, remain unchanged.</p><p>Whilst the application is still functioning when non-numeric values
-are entered in the text fields, and can quickly resume its normal
-operation when the invalid values are replaced with valid numeric
-values, there is no indication to the user that an invalid value has
-been entered. This can be misleading, as in the last snapshot, no
-matter how large of the total is entered, “Within Budget” is always
-displayed.</p><p>Negative values are treated as ordinary numeric values. Obviously
-these don’t make sense in our application, thus an error message
-should be displayed as well if a negative value is entered.</p><p>The following functionality has to be implemented:</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
-Check whether data entered in the text fields is actually
-      numeric data. If not print an appropriate error message.
-</li><li class="listitem">
-Validate the numeric data, checking that the numbers entered are
-      positive.
-</li></ol></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_failures"></a>5.1. Failures</h3></div></div></div><p>A failure is a special type of value which indicates the absence of a
-value, or the failure to compute a value. If a meta-node expects one
-of its argument nodes to evaluate to a value, but it evaluates to a
-failure, the failure is returned immediately.</p><p>The <code class="literal">to-real</code> meta-node returns a failure if its argument cannot be
-converted to a real number. In this case, each of the instance nodes
-<code class="literal">to-real(budget)</code>, <code class="literal">to-real(food)</code>, <code class="literal">to-real(electricity)</code> and
-<code class="literal">to-real(water)</code>, evaluate to failures if the argument is a string,
-from which a real-number cannot be parsed.</p><p>The <code class="literal">+</code>, <code class="literal">-</code>, <code class="literal">*</code>, <code class="literal">&lt;</code>, and <code class="literal">&gt;</code> meta-nodes return failures if any of
-their arguments evaluate to failures. As a result if at least one of
-<code class="literal">food</code>, <code class="literal">electricity</code> or <code class="literal">water</code> evaluate to failures the node <code class="literal">food +
-electricity + water</code>, and likewise the node <code class="literal">total</code>, evaluates to a
-failure.</p><p>When an HTML attribute is bound to a node, which evaluates to a
-failure, the value of the attribute is simply left as is. Thus, if the
-node <code class="literal">total</code> evaluates to a failure, due to an invalid value being
-entered for <span class="emphasis"><em>Food</em></span>, <span class="emphasis"><em>Electricity</em></span> or <span class="emphasis"><em>Water</em></span>, the <code class="literal">value</code> attribute of
-the <span class="emphasis"><em>Total</em></span> input field is not changed.</p><p>Similarly, if the <code class="literal">budget</code> node evaluates to a failure, due to an
-invalid value for <span class="emphasis"><em>Budget</em></span> being entered, the <code class="literal">color</code> node, <code class="literal">scale</code>
-node and the node storing the status message evaluate to failures. As
-a result the status message and meter is not updated.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_handling_failures"></a>5.2. Handling Failures</h3></div></div></div><p>Failures can be handled using explicit contexts. A node context is the
-information about how a node’s value is computed, and which of the
-dependency nodes' values are required. Each binding to a node, whether
-explicit or implicit creates a context.</p><p>The context to which a binding is established, can be set explicitly
-using the <code class="literal">@</code> macro <a href="#ftn.idm35961063968" class="footnote" id="idm35961063968"><sup class="footnote">[1]</sup></a>, from the <code class="literal">core</code>
-module.</p><p><strong><code class="literal">@</code> Macro Syntax. </strong>
-</p><pre class="screen">node @ context-id</pre><p>
-</p><p><code class="literal">node</code> is the node expression and <code class="literal">context-id</code> is the identifier of
-the explicit context, which can be any identifier. When this
-expression appears as the target of a binding, the binding is
-established in that context. When it appears as the source of a
-binding, it has no effect.</p><p>Multiple bindings can be established in the same explicit context. The
-value of the node is bound to the value of the source node of the
-first binding that is declared in the source code. However, if the
-source node evaluates to a failure, the value of the node is set to
-the value of the source node of the second binding. If the source node
-of the second binding evaluates to a failure, the node value is set to
-the value of source node of the third binding and so on. If the source
-nodes of all the context’s bindings evaluate to failures, the node
-evaluates to the failure value of the last binding’s source node.</p><p><strong>Example. </strong>
-</p><pre class="screen">a -&gt; x @ ctx
-b -&gt; x @ ctx
-c -&gt; x @ ctx</pre><p>
-</p><p>In the example, above, <code class="literal">x</code> primarily evaluates to the value of
-<code class="literal">a</code>. However, if <code class="literal">a</code> evaluates to a failure, <code class="literal">x</code> evaluates to the
-value of <code class="literal">b</code>. If <code class="literal">b</code> evaluates to a failure, <code class="literal">x</code> evaluates to the
-value of <code class="literal">c</code>.</p><p>Using explicit contexts we can write a meta-node which returns true if
-its argument node evaluates to a failure, otherwise returns false.</p><p><strong>Meta-Node: <code class="literal">fails?</code> </strong>
-</p><pre class="screen">fails?(x) : {
-    x and 0 -&gt; self @ catch-failure
-    1 -&gt; self @ catch-failure
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>5. Subnodes</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s04.html" title="4. Writing your own Functions" /><link rel="next" href="ar01s06.html" title="6. Error Handling with Failure Values" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s04.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s06.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_subnodes"></a>5. Subnodes</h2></div></div></div><p>You’ve already made use of subnodes in the previous tutorials, when
+binding to attributes of HTML elements. Now we’ll explores subnodes in
+depth.</p><p>A subnode is a node which references a value out of a dictionary of
+values stored in a parent node.</p><p><strong>Subnode Syntax. </strong>
+</p><pre class="screen">parent.key</pre><p>
+</p><p>The left hand side of the subnode <code class="literal">.</code> operator is the parent node
+expression and the right hand side is the key identifying the
+dictionary entry.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">key</code> is interpreted as a literal symbol rather than a node
+identifier.</p></td></tr></table></div><p>A dictionary can be created in a node by binding to a subnode of the
+node.</p><p><strong>Example. </strong>
+</p><pre class="screen">"John" -&gt; person.name
+"Smith" -&gt; person.surname</pre><p>
+</p><p>In this example, the value of the node <code class="literal">person</code> is a dictionary with
+two entries</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+<p>
+<code class="literal">name</code>
+</p>
+</td><td style="" valign="top">
+<p>
+Bound to the string constant “John”.
+</p>
+</td></tr><tr><td style="" valign="top">
+<p>
+<code class="literal">surname</code>
+</p>
+</td><td style="" valign="top">
+<p>
+Bound to the string constant “Smith”.
+</p>
+</td></tr></tbody></table></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_example_color_object"></a>5.1. Example: Color Object</h3></div></div></div><p>The meter application developed during the previous tutorial was a bit
+of mess with the various color components scattered through the code.</p><p>To change the colors you’d first have to change the hue components, in
+the following code:</p><pre class="screen">hue &lt;- lerp(120, 0, scale)</pre><p>It isn’t clear what the numbers <code class="literal">120</code> and <code class="literal">0</code> are supposed to be or
+which number corresponds to the hue component of which color.</p><p>To change the luminance and saturation components, you’d have to
+modify the following:</p><pre class="screen">self.meter.style.backgroundColor &lt;-
+    make-hsl(hue, 90, 45)</pre><p>There is also no interpolation of the saturation or luminance
+components.</p><p>The code can be made significantly more readable and maintainable by
+making use of a dedicated <span class="emphasis"><em>color object</em></span>.</p><p>We’ll create a meta-node <code class="literal">Color</code> which takes the three color
+components as arguments and returns a dictionary storing the
+components under the entries: <code class="literal">hue</code>, <code class="literal">saturation</code> and <code class="literal">luminance</code>.</p><p>How are we going to return a dictionary from a meta-node? We can
+create a dedicated local node, in which the dictionary is created,
+such as the following:</p><pre class="screen">Color(hue, saturation, luminance) : {
+    hue -&gt; color.hue
+    saturation -&gt; color.saturation
+    luminance -&gt; color.luminance
+
+    color
+}</pre><p>Or we can simply bind to subnodes of the <code class="literal">self</code> node.</p><p><strong>Meta-Node <code class="literal">Color</code>. </strong>
+</p><pre class="screen">Color(hue, saturation, luminance) : {
+    hue -&gt; self.hue
+    saturation -&gt; self.saturation
+    luminance -&gt; self.luminance
 }</pre><p>
-</p><p>The first declaration, in the function’s body, establishes the primary
-binding to the <code class="literal">self</code> node, if you recall from the previous
-tutorial it’s value is returned by the meta-node when an
-explicit binding to it is established. The primary binding ensures
-that the value of the <code class="literal">self</code> node is <span class="emphasis"><em>false</em></span> (<code class="literal">0</code>) if <code class="literal">x</code> does not
-evaluate to a failure.</p><p>The second declaration binds the <code class="literal">self</code> node to <span class="emphasis"><em>true</em></span> (<code class="literal">1</code>) if the
-previous binding evaluates to a failure. As a result, the <code class="literal">fails?</code>
-meta-node returns <span class="emphasis"><em>false</em></span> when <code class="literal">x</code> does not evaluate to a failure and
-<span class="emphasis"><em>true</em></span> when <code class="literal">x</code> evaluates to a failure.</p><p>It turns out we don’t need to write our own <code class="literal">fails?</code> meta-node, as the
-<code class="literal">core</code> module already provides a <code class="literal">fails?</code> meta-node which performs the
-same function. However, the implementation provided in this section
-serves as an introduction to <span class="emphasis"><em>failure</em></span> values and <span class="emphasis"><em>explicit contexts</em></span>.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_error_feedback"></a>5.3. Error Feedback</h3></div></div></div><p>The first improvement to we’d like to make, is to display an error
-message indicating when a non-numeric value is entered in the budget
-or expense text fields.</p><p>The first step is to detect failures in the nodes storing the budget
-and expense categories. For that, we’ll write a utility meta-node,
-<code class="literal">error-prompt</code> which returns an error message if its argument node evaluates
-to a failure.</p><p><strong>Meta-Node <code class="literal">error-prompt</code>. </strong>
-</p><pre class="screen">error?(thing) : {
-    error-message &lt;- "Please enter a valid number"
-    if (fails?(thing), error-message, "")
-}</pre><p>
-</p><p>The first declaration simply creates a local <code class="literal">error-message</code> node and
-binds it to the error message string. The expression in the last line
-of the body, which serves as the return value of the meta-node,
-evaluates to the error message (value of the <code class="literal">error-message</code> node) if
-the argument <code class="literal">thing</code> evaluates to a failure, determined using the
-<code class="literal">fails?</code> meta-node from the <code class="literal">core</code> module. Otherwise the expression
-evaluates to the empty string.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip: Meta-Node if"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left">Meta-Node <code class="literal">if</code></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">if</code> meta-node from the <code class="literal">core</code> module returns:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-its second argument if its first argument is true.
+</p><p>The dictionary returned by <code class="literal">Color</code> is how colors will be represented
+in our application. Let’s create color objects for the two colors and
+bind them to nodes:</p><pre class="screen">color-empty &lt;- Color(120, 90, 45)
+color-full  &lt;- Color(0, 90, 45)</pre><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">color-empty</code> and <code class="literal">color-full</code> are examples of constant nodes as
+their values are not dependent on other nodes and are thus effectively
+constant.</p></td></tr></table></div><p>Rather than interpolating between the components of <code class="literal">color-empty</code> and
+<code class="literal">color-full</code> in the global scope, we can create a meta-node that takes
+two colors and the alpha coefficient, and returns the interpolated
+color.</p><p><strong>Meta-Node <code class="literal">lerp-color</code>. </strong>
+</p><pre class="screen">lerp-color(c1, c2, alpha) :
+    Color(
+        lerp(c1.hue, c2.hue, alpha),
+        lerp(c1.saturation, c2.saturation, alpha),
+        lerp(c1.luminance, c2.luminance, alpha)
+    )</pre><p>
+</p><p>The <code class="literal">lerp-color</code> meta-node simply creates a new color, using the
+<code class="literal">Color</code> meta-node, with each component interpolated between the two
+colors, using <code class="literal">lerp</code>.</p><p>We can use this to easily interpolate between the colors:</p><pre class="screen">color &lt;- lerp-color(color-empty, color-full, scale)</pre><p>To convert the Color object to a CSS color string we have to pass each
+component to <code class="literal">make-hsl</code> as an individual argument like so:</p><pre class="screen">make-hsl(color.hue, color.saturation, color.luminance)</pre><p>However, the internal representational details of the color are
+leaking into the application logic. All it takes is to accidentally
+pass a single component twice or pass the components in the wrong
+order and there is a bug.</p><p>To rectify this we can rewrite <code class="literal">make-hsl</code> to take a Color object or we
+can bind a subnode of the Color object to the CSS color string.</p><p>Modify <code class="literal">Color</code> to the following:</p><pre class="screen">Color(hue, saturation, luminance) : {
+    hue -&gt; self.hue
+    saturation -&gt; self.saturation
+    luminance -&gt; self.luminance
+
+    make-hsl(hue, saturation, luminance) -&gt; self.hsl-string
+}</pre><p>We’ve added a new declaration to <code class="literal">Color</code> which binds the <code class="literal">hsl-string</code>
+subnode of <code class="literal">self</code> to the CSS HSL color string, created using
+<code class="literal">make-hsl</code>. Since the values of nodes are only evaluated if they are
+used, and subnodes are no different, the value of the subnode
+<code class="literal">hsl-string</code> will only be computed for the final <code class="literal">color</code> object, not
+the <code class="literal">color-empty</code> and <code class="literal">color-full</code> objects.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>If you’d like to make the code even neater you can move the
+definition of the <code class="literal">make-hsl</code> meta-node inside the <code class="literal">Color</code> meta-node.</p></td></tr></table></div><p>The interpolated color can be bound to the meter’s background color
+with the following:</p><pre class="screen"> color.hsl-string -&gt; self.meter.style.backgroundColor</pre><p>We now have a new more readable and maintainable version of the meter
+application. Replace the Tridash code tag with the following:</p><pre class="screen">&lt;?
+ /import(core)
+
+ # Utilities
+
+ lerp(a, b, alpha) : a + alpha * (b - a)
+
+ clamp(x, min, max) :
+     case (
+         x &lt; min : min,
+         x &gt; max : max,
+         x
+     )
+
+ make-hsl(h, s, l) :
+     format("hsl(%s,%s%%,%s%%)", h, s, l)
+
+ Color(hue, saturation, luminance) : {
+     hue -&gt; self.hue
+     saturation -&gt; self.saturation
+     luminance -&gt; self.luminance
+
+     make-hsl(hue, saturation, luminance) -&gt; self.hsl-string
+ }
+
+ lerp-color(c1, c2, alpha) :
+     Color(
+         lerp(c1.hue, c2.hue, alpha),
+         lerp(c1.saturation, c2.saturation, alpha),
+         lerp(c1.luminance, c2.luminance, alpha)
+     )
+
+
+ # Application Logic
+
+ color-empty &lt;- Color(120, 90, 45)
+ color-full  &lt;- Color(0, 90, 45)
+
+ scale &lt;- clamp(quantity / maximum, 0, 1)
+
+ color &lt;- lerp-color(color-empty, color-full, scale)
+
+
+ color.hsl-string -&gt; self.meter.style.backgroundColor
+
+ format("%s%%", scale * 100) -&gt; self.meter.style.width
+?&gt;</pre><p>Compared to the previous version, this version has a number of benefits:</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
+It is clearly visible where the two colors are defined, and thus can
+be changed easily.
 </li><li class="listitem">
-its third argument if the first argument is false.
-</li></ul></div></td></tr></table></div><p>We’d like to display the error messages next to each text field, which
-has an invalid value, thus we’ll change the body of the HTML file to
-the following:</p><pre class="programlisting">&lt;label for="budget"&gt;&lt;strong&gt;Budget:&lt;/strong&gt;&lt;/label&gt;
-&lt;div&gt;
-  &lt;input id="budget" value="&lt;?@ to-real(budget) ?&gt;"/&gt;
-  &lt;?@ error-prompt(budget) ?&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-&lt;hr&gt;
-&lt;div&gt;
-  &lt;label for="food"&gt;Food:&lt;/label&gt;
-  &lt;div&gt;
-    &lt;input id="food" value="&lt;?@ to-real(food) ?&gt;" /&gt;
-    &lt;?@ error-prompt(food) ?&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
-&lt;div&gt;
-  &lt;label for="electricity"&gt;Electricity:&lt;/label&gt;
-  &lt;div&gt;
-    &lt;input id="electricity" value="&lt;?@ to-real(electricity) ?&gt;" /&gt;
-    &lt;?@ error-prompt(electricity) ?&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
-&lt;div&gt;
-  &lt;label for="water"&gt;Water:&lt;/label&gt;
-  &lt;div&gt;
-    &lt;input id="water" value="&lt;?@ to-real(water) ?&gt;" /&gt;
-    &lt;?@ error-prompt(water) ?&gt;
-  &lt;/div&gt;
-&lt;/div&gt;</pre><p>We’ve added an <code class="literal">error-prompt</code> meta-node instance next to each text
-input field. Each instance evaluates to the error message if the node,
-bound to the field’s value, evaluates to a failure. Recall, the nodes
-bound to the value attributes evaluate to failures if the <code class="literal">to-real</code>
-meta-node fails to parse a real number from the string value.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_4"></a>Let’s try it out</h4></div></div></div><p>Build and run the application. Enter some non-numeric value in some of
-the text input fields.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial5/snap1.png" align="middle" alt="Snapshot: Error message displayed next to food and electricity fields, with invalid numeric values." /></div></div><p>Notice the error messages displayed next to the input fields with
-non-numeric values.</p><p>Now try changing the input fields back to numeric values.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial5/snap2.png" align="middle" alt="Snapshot: All fields changed to valid numbers. Total recomputed." /></div></div><p>The error messages disappear and the application resumes its normal
-operation, computing the new total and adjusting the meter.</p><p>This fixes the first issue with our application. As an exercise you
-can try to make the text color of the input fields change to "red" if
-non-numeric values are entered in them.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_initial_values"></a>5.4. Initial Values</h3></div></div></div><p>The issue with no feedback being displayed, in case of non-numeric
-values being entered in the text input fields, is fixed, however until
-a value is entered in each field, no total or status message is
-displayed. The nodes <code class="literal">budget</code>, <code class="literal">food</code>, <code class="literal">electricity</code> and <code class="literal">water</code> have
-not been given initial values. When a node is not given an initial
-value, its initial value is a failure. This results in the node
-<code class="literal">total</code> evaluating to a failure.</p><p>A node may be given an initial value, which is set as soon as the
-application is launched. The setting of the initial value is treated
-as an ordinary value change from the node’s previous value, which is a
-<span class="emphasis"><em>failure</em></span> value. Binding a node to a constant value, without an
-explicit context, is interpreted as setting its initial value.</p><pre class="screen">0 -&gt; x</pre><p>In the example, above, node <code class="literal">x</code> is given the initial value <code class="literal">0</code>. Nodes
-can also be given initial values which involve more complex
-expressions and even reference other nodes, provided they are constant
-nodes. Constant nodes are nodes with a constant value, that does not
-change throughout the execution of the application. In-effect constant
-nodes only have an initial value and do not depend on the values of
-other non-constant nodes.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">error-message</code> node, seen earlier in <a class="xref" href="ar01s05.html#_error_feedback" title="5.3. Error Feedback">Section 5.3, “Error Feedback”</a>,
-is an example of a constant node.</p></td></tr></table></div><p>Let’s give each of the <code class="literal">budget</code>, <code class="literal">food</code>, <code class="literal">electricity</code> and
-<code class="literal">water</code> nodes an initial value of <code class="literal">0</code>.</p><p>Add the following to the Tridash code tag in the <code class="literal">ui.html</code> file:</p><pre class="screen">0 -&gt; budget
-0 -&gt; food
-0 -&gt; electricity
-0 -&gt; water</pre><p>When running the application all text fields will be initialized to
-the value <code class="literal">0</code>.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial5/snap3.png" align="middle" alt="Initial State Snapshot: All fields initialized to 0. Total (0) and Budget Exceeded displayed in red" /></div></div><p>Since we gave initial values to all the nodes, and there is an
-implicit two-way binding between these nodes and the contents of the
-text fields, the contents of the text input fields are immediately
-initialized to <code class="literal">0</code>. This demonstrates that the setting of the initial
-node values is treated the same as any other node value change.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_4"></a>5.5. Summary</h3></div></div></div><p>In this tutorial you were introduced to <span class="emphasis"><em>failure</em></span> values and how to
-handle failures with explicit contexts. Additionally you also learned
-how to give nodes initial values.</p></div><div class="footnotes"><br /><hr style="width:100; text-align:left;margin-left: 0" /><div id="ftn.idm35961063968" class="footnote"><p><a href="#idm35961063968" class="simpara"><sup class="simpara">[1] </sup></a>The <code class="literal">@</code> macro expands to a functor
-expression with the special <code class="literal">:context</code> operator</p></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s04.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s06.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
+The color components are kept in a single place rather than being
+scattered throughout the code.
+</li><li class="listitem">
+All components of the colors are interpolated.
+</li></ol></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s04.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s06.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

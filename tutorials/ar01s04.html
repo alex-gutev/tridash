@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>4. Writing your own Functions</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s03.html" title="3. Conditional Bindings" /><link rel="next" href="ar01s05.html" title="5. Error Handling" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s03.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s05.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="tutorial4"></a>4. Writing your own Functions</h2></div></div></div><p>In this tutorial you’ll learn how to create your own functions, which
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>4. Writing your own Functions</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s03.html" title="3. Conditional Bindings" /><link rel="next" href="ar01s05.html" title="5. Subnodes" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s03.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s05.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="functions"></a>4. Writing your own Functions</h2></div></div></div><p>In this tutorial you’ll learn how to create your own functions, which
 can be used in functional bindings. Another feature which distinguishes
 Tridash from frameworks/toolkits, which offer bindings, is that new
 functions can be written in the same language, as the language in
 which the bindings are declared, rather than having to be implemented
-in a lower-level language.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_definition_operator"></a>4.1. Definition Operator</h3></div></div></div><p>New functions, referred to as meta-nodes, are defined using the
+in a lower-level language.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Only some of the example applications will be
+demonstrated. Visit the source code for the tutorials to try out the
+remaining applications.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_definition_operator"></a>4.1. Definition Operator</h3></div></div></div><p>New functions, referred to as meta-nodes, are defined using the
 special <code class="literal">:</code> operator, which has the following syntax:</p><pre class="screen">function(arg1, arg2, ...) : {
    declarations...
 }</pre><p>The left-hand side contains the function name (<code class="literal">function</code>) followed by
@@ -12,144 +14,265 @@ the argument list in brackets, where each item (<code class="literal">arg1</code
 is the name of the local node to which the argument at that position
 is bound.</p><p>The right-hand side, of the <code class="literal">:</code> operator, contains the declarations
 making up the body of the function, which may consist of any Tridash
-node declaration.</p><p>Nodes created within the body of a meta-node are local to the
-meta-node, meaning they can only be referenced from within it even if
-the same node identifier occurs in an expression in the global
-scope. Local nodes are created for each of the arguments, and for
-nodes which appear as the target of a binding. Node expressions which
-appear in source position primarily reference local nodes, however if
-no local node is found, the enclosing scope of the meta-node is
-searched. This differs from global node expressions, in which nodes
-are automatically created if no node with that identifier exists.</p><p>Meta-nodes return the value of the last node in the <code class="literal">declarations</code>
-list comprising the body. The curly braces <code class="literal">{</code> and <code class="literal">}</code> are optional if
-the meta-node body consists of a single declaration.</p><p>Alternatively an explicit binding to the <code class="literal">self</code> node, can be
-established. In that case, the return value of the meta-node, is the
-value of the <code class="literal">self</code> node, rather than the last node in the body.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_examples"></a>Examples</h4></div></div></div><pre class="screen"># Add two numbers <a id="CO1-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span>
+node declaration. The value of the last node in the <code class="literal">declarations</code>
+list is returned by the function.</p><p>The meta-node can then be used as the operator of functor nodes, which
+are referred to as instances of the meta-node, declared after its
+definition.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The curly braces <code class="literal">{</code> and <code class="literal">}</code> are optional if the meta-node body
+consists of a single declaration.</p></td></tr></table></div><p><strong>Example Adding Two Numbers. </strong>
+</p><pre class="screen"># Add two numbers    <a id="CO2-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span>
 
-add(x, y) : x + y</pre><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO1-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+add(x, y) : x + y</pre><p>
+</p><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO2-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
 This is a comment. Comments begin with a <code class="literal">#</code> character and extend
-till the end of the line. All content within a comment is discarded.
-</p></td></tr></table></div><p>In the example, above, a meta-node <code class="literal">add</code> is defined which takes two
-arguments, bound to the local nodes <code class="literal">x</code> and <code class="literal">y</code>. The function body
-consists of a single node declaration, hence the curly braces were
-omitted, <code class="literal">x + y</code> which is a functor node that computes the sum of <code class="literal">x</code>
-and <code class="literal">y</code>. The meta-node returns the value of <code class="literal">x + y</code> since it is the
-last node in the body.</p><p>The following example demonstrates recursive meta-nodes:</p><pre class="screen"># Computes the factorial of n
+till the end of the line. All text within a comment is discarded.
+</p></td></tr></table></div><p>In this example, an <code class="literal">add</code> meta-node is defined which takes two
+arguments, <code class="literal">x</code> and <code class="literal">y</code>, and returns their sum.</p><p>Our sum application can thus be rewritten as follows:</p><pre class="screen">&lt;?
+ /import(core)
 
-factorial(n) : {
-  case(
-    n &gt; 1 : n * factorial(n - 1),
-    1
-  )
-}</pre><p>The following example demonstrates that meta-nodes may themselves
-contain nested meta-nodes, which are local to the meta-node and can
-only be referenced within it.</p><pre class="screen"># Tail recursive factorial
+ # Add two numbers
 
-factorial(n) : {
-  iter(n, acc) : {
+ add(x, y) : x + y
+?&gt;
+
+...
+
+&lt;div&gt;&lt;label&gt;A: &lt;input value="&lt;?@ to-int(a) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+&lt;div&gt;&lt;label&gt;B: &lt;input value="&lt;?@ to-int(b) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+
+A + B is &lt;?@ add(a, b) ?&gt;
+...</pre></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_node_literal_self_literal"></a>4.2. Node <code class="literal">self</code></h3></div></div></div><p>When an explicit binding to the <code class="literal">self</code> node is established inside a
+meta-node, the value of the <code class="literal">self</code> node is returned rather than the
+value of the last node in the meta-node’s body.</p><p>The following is an alternative implementation of the <code class="literal">add</code> meta-node.</p><pre class="screen">add(x, y) : {
+    x + y -&gt; self
+}</pre><p>This is particularly useful when binding to subnodes of the <code class="literal">self</code>
+node, which you’ll learn about later.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_optional_arguments"></a>4.3. Optional Arguments</h3></div></div></div><p>Meta-node arguments can be designated as optional by giving the
+argument a default value. An optional argument is of the form <code class="literal">arg :
+value</code>, where <code class="literal">arg</code> is the argument node identifier and <code class="literal">value</code> is the
+default value, to which it is bound, if it is not provided.</p><p><strong>Example. </strong>
+</p><pre class="screen">increment(n, delta : 1) : n + delta</pre><p>
+</p><p>In this example, the argument <code class="literal">delta</code> is optional and is given the
+default value 1 if it is not provided.</p><p><strong>Examples. </strong>
+</p><pre class="screen">increment(n)    # delta defaults to 1
+increment(n, 2) # delta = 2</pre><p>
+</p><p>Default values don’t have to be constants, in-fact any node expression
+can be used as a default value. In the case that the default value is
+a node, then that node will be implicitly bound to all instances of
+the meta-node, for which the argument is not provided.</p><p><strong>Example: Node Default Values. </strong>
+</p><pre class="screen"># Increment `n` by `d`
+
+increment(n, d : delta) : n + d</pre><p>
+</p><p>In this example the default value for the delta <code class="literal">d</code> is the value of
+the global node <code class="literal">delta</code>. A binding between <code class="literal">delta</code> and each instance
+of <code class="literal">increment</code>, for which a value for <code class="literal">d</code> is not provided, will be
+established.</p><p>The effect of this is demonstrated in the following example
+application:</p><p><strong><code class="literal">ui.html</code>. </strong>
+</p><pre class="programlisting">&lt;?
+ /import(core)
+
+ # Increment `n` by `d`
+
+ increment(n, d : delta) : n + d
+?&gt;
+&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Optional Argument Default Value&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+      &lt;h1&gt;Optional Argument Default Value&lt;/h1&gt;
+      &lt;div&gt;&lt;label&gt;N: &lt;br/&gt;&lt;input value="&lt;?@ to-int(n) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;Delta: &lt;br/&gt;&lt;input value="&lt;?@ to-int(delta) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;hr/&gt;
+      &lt;div&gt;&lt;strong&gt;Increment(N): &lt;?@ increment(n) ?&gt;&lt;/strong&gt;&lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre><p>
+</p><p>Enter an initial value for <span class="emphasis"><em>N</em></span> and <span class="emphasis"><em>Delta</em></span>:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap1.png" align="middle" alt="N: 5, Delta: 1, Increment(N): 6" /></div></div><p>The value given to the delta (<code class="literal">d</code>) argument of <code class="literal">increment</code> is the
+initial value given for <span class="emphasis"><em>Delta</em></span>, which is <code class="literal">1</code>.</p><p>Now try changing <span class="emphasis"><em>Delta</em></span>:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap2.png" align="middle" alt="N: 5, Delta: 2, Increment(N): 7" /></div></div><p>The value of the <code class="literal">increment(n)</code> node is updated, with the new value of
+<span class="emphasis"><em>Delta</em></span> given as the delta argument. This shows that a binding is
+established rather than simply taking the value of the <code class="literal">delta</code> node.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_recursive_meta_nodes"></a>4.4. Recursive Meta-Nodes</h3></div></div></div><p>A recursive meta-node contains an instance of itself in its
+definition.</p><p>The following are the classic examples of recursion:</p><p><strong>Example: Factorial. </strong>
+</p><pre class="screen">factorial(n) :
     case(
-      n &gt; 1 : iter(n - 1, n * acc),
-      acc
-    )
-  }
+        n &lt; 1 : 1,  # Ignoring the case: n &lt; 0
+        n * factorial(n - 1)
+    )</pre><p>
+</p><p><strong>Example: Fibonacci Numbers. </strong>
+</p><pre class="screen">fib(n) :
+    case(
+        n &lt;= 1 : 1,
+        fib(n - 1) + fib(n - 2)
+    )</pre><p>
+</p><p>Recursion is the means by which Tridash provides iteration. The
+definition of <code class="literal">factorial</code>, above, will result in the stack space being
+exhausted for large values of <code class="literal">n</code>. This is due to the fact that each
+invocation of the meta-node consumes a certain amount of stack
+space. Since the recursive call to <code class="literal">factorial</code> has to be evaluated
+before the return value of the current call can be computed, the
+meta-node consumes an amount of stack space proportional to the value
+of <code class="literal">n</code>.</p><p>If the definition is rewritten such that it is tail recursive, that is
+the return value of <code class="literal">factorial</code> is the return value of the recursive
+call, a constant amount of stack space is consumed.</p><p><strong>Example: Tail-Recursive Factorial. </strong>
+</p><pre class="screen">factorial(n, acc : 1) :
+    case(
+        n &lt; 1 : acc,  # Ignoring the case: n &lt; 0
+        factorial(n - 1, n * acc)
+    )</pre><p>
+</p><p>This definition of <code class="literal">factorial</code> is tail recursive since the recursive
+call appears directly as the default value of the <code class="literal">case</code> expression,
+which is simply returned without any further operations performed on
+it.</p><p>In the previous implementation, the multiplication was performed on
+the result of the recursive call to <code class="literal">factorial</code>. In this
+implementation, the multiplication is performed on an accumulator
+argument, <code class="literal">acc</code> which is passed on to the recursive call and
+eventually returned when <code class="literal">factorial</code> is called with <code class="literal">n &lt; 1</code>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Tridash supports general <span class="emphasis"><em>tail call optimization</em></span> for mutually
+recursive meta-nodes.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_nested_meta_nodes"></a>4.5. Nested Meta-Nodes</h3></div></div></div><p>A meta-node may contain other meta-nodes inside its definition. These
+meta-nodes may only be used within the body of the meta-node and
+shadow meta-nodes, declared in the enclosing scope, with the same
+identifiers.</p><p>With nested meta-nodes we can rewrite our previous tail-recursive
+<code class="literal">factorial</code> meta-node without having to expose the accumulator
+argument <code class="literal">acc</code>, which is an implementation detail.</p><p><strong>Example: Factorial with nested <code class="literal">iter</code> meta-node. </strong>
+</p><pre class="screen">factorial(n) : {
+    iter(n, acc) : {
+        case(
+            n &lt; 1 : acc,  # Ignoring the case: n &lt; 0
+            iter(n - 1, n * acc)
+        )
+    }
 
-  iter(n, 1)
-}</pre></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_budget_meter"></a>4.2. Budget Meter</h3></div></div></div><p>Our current application displays some nice visual indications, in the
-form of color, which allow us to see, at a glance, whether the budget
-has been exceeded. However the visual indications are still quite
-limited, giving only a binary indication of whether the budget was
-exceeded or not. It would be nice if there is also a visual indication
-of how close the total is to the budget.</p><p>In this tutorial we’ll enhance the budget application by displaying a
-meter, which directly indicates how close the total is to the
-budget. Additionally we’d also like the meter to be displayed in a
-color that is between green and red proportional to how much the total
-is between zero and the budget.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_color_interpolation"></a>Color Interpolation</h4></div></div></div><p>Let’s first begin with computing the color of the meter. Our goal is
-to linearly interpolate a color between green and red depending on
-where the total amount allocated lies between zero and the
-budget. This is where meta-nodes will come in handy.</p><p>We’ll start off by writing a linear interpolation meta-node <code class="literal">lerp</code>.</p><pre class="screen">lerp(a, b, alpha) : lo + alpha * (b - a)</pre><p>The value returned by the meta-node is the fractional value, at the
-fraction <code class="literal">alpha</code>, between <code class="literal">a</code> and <code class="literal">b</code>.</p><p>Let’s write another handy meta-node for creating a CSS <code class="literal">hsl</code> color
-string out of hue, saturation and luminance components.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Interpolation is done in the HSL color space, rather than the RGB
-color space as it provides better results.</p></td></tr></table></div><pre class="screen">make-hsl(h, s, l) :
-    format("hsl(%s,%s%%,%s%%)", h, s, l)</pre><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">format</code> meta-node takes a format string, followed by a
-variable number of arguments, and returns the format string with all
-<code class="literal">%s</code> placeholders replaced by the arguments. <code class="literal">%%</code> is replaced with a
-literal <code class="literal">%</code> character.</p></td></tr></table></div><p>The next step is to compute the interpolation coefficient <code class="literal">alpha</code>
-based on where the total sum lies between zero and the budget.</p><p>To make sure that the interpolation coefficient is between 0 and 1,
-we’ll write a <code class="literal">clamp</code> meta-node, for clamping a value to a given
-range:</p><pre class="screen">clamp(x, min, max) :
-   case (
-      x &lt; min : min,
-      x &gt; max : max,
-      x
-   )</pre><p>Using the <code class="literal">clamp</code> meta-node, we compute the <code class="literal">alpha</code> coefficient
-clamped to the range [0, 1]:</p><pre class="screen">clamp((total + 1) / (budget + 1), 0, 1) -&gt; scale</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">1</code> was added to the total and budget to prevent division by
-zero in the case that <code class="literal">budget</code> is equal to <code class="literal">0</code>. This obviously does
-not work if <code class="literal">budget</code> is equal to <code class="literal">-1</code> however this will be handled in
-the following tutorials.</p></td></tr></table></div><p>And now finally we’ll compute the color making use of the <code class="literal">lerp</code>
-meta-node we implemented earlier:</p><pre class="screen">make-hsl(
-   lerp(120, 0, scale),
-   90,
-   45
-) -&gt; meter-color</pre><p>The hue is linearly interpolated between <span class="green">green</span> <code class="literal">120</code> and
-<span class="red">red</span> <code class="literal">0</code>, depending on where the total lies between <code class="literal">0</code> and the
-<code class="literal">budget</code>.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_creating_the_meter"></a>Creating the Meter</h4></div></div></div><p>Now we’ll actually create the meter. We need two block elements, one
-which displays a border containing the meter and another element which
-displays the portion of the meter that is filled.</p><p>Add the following HTML elements below the “Total” field.</p><pre class="programlisting">&lt;div class="meter-box"&gt;
-  &lt;div id="meter" class="meter-bar"&gt;&lt;/div&gt;
-&lt;/div&gt;</pre><p>Add the following <code class="literal">style</code> tag, which contains the style attributes of
-the <code class="literal">meter-box</code> and <code class="literal">meter-bar</code> classes, within the <code class="literal">&lt;head&gt;...&lt;/head&gt;</code>
-tag:</p><pre class="programlisting">&lt;style&gt;
- .meter-box {
-     margin-top: 5px;
-     width: 200px;
-     height: 1em;
-     border: 1px solid black;
-  }
- .meter-bar {
-     height: 100%;
- }
-&lt;/style&gt;</pre><p>The <code class="literal">meter-box</code> class, applied to the block element which serve as the
-container, gives the element a width, height and a border. The
-<code class="literal">meter-bar</code> class, applied to the element which displays the filled
-portion, specifies that the filled portion should take up <code class="literal">100%</code> of
-the vertical space within the container.</p><p>The meter should be filled proportionally to how close the value of
-<code class="literal">total</code> is to the value of <code class="literal">budget</code>. The proportion is already given
-by the value of the <code class="literal">scale</code> node. To implement the <span class="emphasis"><em>filling</em></span> of the
-meter, we simply need to bind the <code class="literal">scale</code> node to the <code class="literal">width</code> style
-attribute of the <code class="literal">meter</code> element.</p><p>This is achieved with the following:</p><pre class="screen">format("%s%%", scale * 100) -&gt; self.meter.style.width</pre><p>The <code class="literal">scale</code> is multiplied by <code class="literal">100</code> to convert it to a percentage, and
-<code class="literal">format</code> is used to convert the numeric value to a string with a <code class="literal">%</code>
-appended to it. This specifies that the width of the meter should be a
-percentage, given by <code class="literal">scale</code>, of the width of its parent container.</p><p>Finally we need to bind <code class="literal">meter-color</code>, which stores the interpolated
-color, to the background color of the meter.</p><pre class="screen">meter-color -&gt; self.meter.style.backgroundColor</pre><p>This is the full code that needs to be added to the Tridash code tag,
-to implement the meter:</p><pre class="screen">lerp(a, b, alpha) : a + alpha * (b - a)
-
-clamp(x, min, max) :
+    iter(n, 1)
+}</pre><p>
+</p><p>The computation of the factorial is implemented in the nested
+tail-recursive meta-node <code class="literal">iter</code>. The <code class="literal">factorial</code> meta-node simply
+calls this meta-node with the initial value for the accumulator.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_local_nodes"></a>4.6. Local Nodes</h3></div></div></div><p>Nodes which appears as the <span class="emphasis"><em>target</em></span> (observer) of a binding, declared
+within the body of a meta-node, are local to the meta-node’s body and
+may only be referenced within it. These may be used to store
+intermediate results or to break up complex expression into multiple
+nodes.</p><p><strong>Example: Average. </strong>
+</p><pre class="screen">average(a, b) : {
+    sum &lt;- a + b    <a id="CO3-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span>
+    sum / 2
+}</pre><p>
+</p><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO3-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
+Node <code class="literal">sum</code> is the binding <span class="emphasis"><em>target</em></span> in this declaration.
+</p></td></tr></table></div><p>In this example a local node <code class="literal">sum</code> is created, since it is bound (as
+the <span class="emphasis"><em>target</em></span>) to the value of <code class="literal">a + b</code>. The value returned by <code class="literal">average</code>
+is the value of <code class="literal">sum</code> divided by 2.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_referencing_outer_nodes"></a>4.7. Referencing Outer Nodes</h3></div></div></div><p>A meta-node may reference nodes declared in the global scope or the
+enclosing scope(s) containing the meta-node definition. This creates a
+binding between the referenced node and each instance of the
+meta-node. The net result is that whenever the value of the referenced
+node changes, the value of the instance is recomputed. In essence a
+reference to an outer node can be thought of as an additional hidden
+argument.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>An outer node with the same identifier as a local node can be
+referenced with the <code class="literal">..</code> operator, e.g. <code class="literal">..(x)</code>.</p></td></tr></table></div><p>Outer node references can be demonstrated by changing the definition
+of <code class="literal">increment</code>, in the <span class="emphasis"><em>Increment</em></span> Application developed earlier in
+this tutorial, to the following:</p><p><strong>Increment with reference to <code class="literal">delta</code>. </strong>
+</p><pre class="screen">increment(n) : n + delta</pre><p>
+</p><p>The <code class="literal">d</code> argument has been removed and replaced with <code class="literal">delta</code> in the
+body.</p><p>Repeat the same experiment, changing the delta, you should observe the
+same results.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_fun_example_simple_meter"></a>4.8. Fun Example: Simple Meter</h3></div></div></div><p>In this example we’ll be developing an application which displays a
+simple meter, representing a quantity, which changes color as the
+quantity approaches the maximum.</p><p>Let’s start off with the following HTML interface:</p><p><strong>ui.html. </strong>
+</p><pre class="programlisting">&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+      &lt;title&gt;Simple Meter&lt;/title&gt;
+      &lt;style&gt;
+        .meter-box {
+            margin-top: 5px;
+            width: 200px;
+            height: 1em;
+            border: 1px solid black;
+        }
+        .meter-bar {
+            height: 100%;
+        }
+      &lt;/style&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+      &lt;h1&gt;Simple Meter&lt;/h1&gt;
+      &lt;div&gt;&lt;label&gt;Maximum: &lt;input value="&lt;?@ to-int(maximum) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;Quantity: &lt;input value="&lt;?@ to-int(quantity) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div class="meter-box"&gt;
+        &lt;div id="meter" class="meter-bar"&gt;&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre><p>
+</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The file contains a few CSS class definitions for styling the
+elements which display the meter, located at the bottom of the file.</p></td></tr></table></div><p>The interface consists of two input fields for entering the values for
+the <span class="emphasis"><em>Maximum</em></span> and <span class="emphasis"><em>Quantity</em></span>, which are bound to the nodes <code class="literal">maximum</code>
+and <code class="literal">quantity</code>, respectively.</p><p>We’d like the meter to be displayed in a color which is in between
+<span class="green">green</span> (empty) and <span class="red">red</span> (full) depending on where the
+value of the quantity lies between 0 and the maximum.</p><p>First we’ll write a utility meta-node <code class="literal">lerp</code> for linearly
+interpolating between two values:</p><p><strong>Meta-Node <code class="literal">lerp</code>. </strong>
+</p><pre class="screen">lerp(a, b, alpha) : a + alpha * (b - a)</pre><p>
+</p><p>The value returned by <code class="literal">lerp</code> is the value between <code class="literal">a</code> and <code class="literal">b</code>
+proportional to where <code class="literal">alpha</code> lies between <code class="literal">0</code> and <code class="literal">1</code>.</p><p>This meta-node will be used to interpolate between green and red
+depending on where the quantity lies between 0 and the maximum.</p><p>We can compute the value for <code class="literal">alpha</code> by dividing the value for the
+quantity by the maximum.</p><pre class="screen">scale &lt;- quantity / maximum</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This assumes that <code class="literal">maximum</code> is not 0.</p></td></tr></table></div><p>Before we perform the interpolation, we need to make sure that <code class="literal">scale</code>
+is a value between 0 and 1. Let’s write another utility meta-node
+<code class="literal">clamp</code> which clamps a value to a given range.</p><p><strong>Meta-Node <code class="literal">clamp</code>. </strong>
+</p><pre class="screen">clamp(x, min, max) :
     case (
         x &lt; min : min,
         x &gt; max : max,
         x
-    )
+    )</pre><p>
+</p><p>This meta-node returns the value of its first argument <code class="literal">x</code> if it is
+between <code class="literal">min</code> and <code class="literal">max</code>, otherwise returns <code class="literal">min</code> if <code class="literal">x</code> is less than
+<code class="literal">min</code>, or <code class="literal">max</code> if <code class="literal">x</code> is greater than <code class="literal">max</code>.</p><p>We can amend the computation of <code class="literal">scale</code> such that it does not exceed
+<code class="literal">0</code> and <code class="literal">1</code>, by using the <code class="literal">clamp</code> meta-node.</p><pre class="screen">scale &lt;- clamp(quantity / maximum, 0, 1)</pre><p>Finally we can interpolate between the two colours. We’ll be using the
+HSL (Hue Saturation Luminance) colorspace, and interpolating in the
+<span class="emphasis"><em>Hue</em></span> component.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The HSL, rather than the RGB, colorspace was used as it provides
+better interpolation results.</p></td></tr></table></div><pre class="screen">hue &lt;- lerp(120, 0, scale)</pre><p><code class="literal">hue</code> is bound to a value interpolated between green (Hue 120) and red
+(Hue 0) with the value of <code class="literal">scale</code> as the interpolation coefficient.</p><p>Before we bind the interpolated color to the color of the meter, let’s
+write another utility meta-node which takes values for the hue,
+saturation and luminance components and produces a CSS HSL color
+string.</p><p><strong>Meta-Node <code class="literal">make-hsl</code>. </strong>
+</p><pre class="screen">make-hsl(h, s, l) :
+    format("hsl(%s,%s%%,%s%%)", h, s, l)</pre><p>
+</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">format</code> meta-node produces a string in which <code class="literal">%s</code> placeholders in
+the format string (the first argument) are replaced with the values of
+the corresponding arguments (following the format string). <code class="literal">%%</code>
+placeholders are replaced with literal <code class="literal">%</code> characters.</p><p><code class="literal">format("Hello %s %s.", "John", "Smith")</code> produces the string “Hello
+John Smith.”, as the first <code class="literal">%s</code> is replaced with <code class="literal">"John"</code> and the
+second <code class="literal">%s</code> is replaced with <code class="literal">"Smith"</code>.</p></td></tr></table></div><p>We can now generate a valid CSS color string using <code class="literal">make-hsl</code> that
+we’ll bind to the color of the meter element, which is the element
+with ID <code class="literal">meter</code>.</p><pre class="screen">self.meter.style.backgroundColor &lt;-
+    make-hsl(hue, 90, 45)</pre><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">backgroundColor</code> style attribute references the background
+color of an element.</p></td></tr></table></div><p>The constant values <code class="literal">90</code> and <code class="literal">45</code> have been chosen for the saturation
+and luminance components.</p><p>The last thing we need to do is adjust the width of the meter
+depending on the quantity value. We’ll simply multiply the value of
+<code class="literal">scale</code> by 100, to convert it to a percentage (indicating it should
+occupy that percentage of the width of its parent element), and bind
+it to the meter element’s width attribute.</p><pre class="screen">format("%s%%", scale * 100) -&gt; self.meter.style.width</pre><p>Our application is complete. Add the following Tridash code tag to the
+top of the <code class="literal">ui.html</code> file.</p><pre class="screen">&lt;?
+ /import(core)
 
-make-hsl(h, s, l) :
-    format("hsl(%s,%s%%,%s%%)", h, s, l)
+ # Utilities
 
-clamp((total + 1) / (budget + 1), 0, 1) -&gt; scale
+ lerp(a, b, alpha) : a + alpha * (b - a)
 
-make-hsl(
-    lerp(120, 0, scale),
-    90,
-    45
-) -&gt; meter-color
+ clamp(x, min, max) :
+     case (
+         x &lt; min : min,
+         x &gt; max : max,
+         x
+     )
 
-format("%s%%", scale * 100) -&gt; self.meter.style.width
-meter-color -&gt; self.meter.style.backgroundColor</pre></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_3"></a>Let’s try it out</h4></div></div></div><p>Build the application and open the resulting <code class="literal">app.html</code> file in a web
-browser.</p><p>Enter some initial values for the budget and expense totals. Start off
-with low expense totals such that the total expenses are well within
-the budget:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap1.png" align="middle" alt="Snapshot: Budget 100, Total 30. Meter 1/3 filled, displayed in bright green." /></div></div><p>The filled portion is roughly a third of the meter and is displayed in
-a bright green.</p><p>Now start increasing the expenses to bring the total closer to the
-budget:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap2.png" align="middle" alt="Snapshot: Total 50. Meter half filled, displayed in yellow." /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap3.png" align="middle" alt="Snapshot: Total 70. Meter more than half filled, displayed in orange." /></div></div><p>The meter gradually fills up and starts changing to red the closer the
-total expenses are to the budget.</p><p>Now finally increase the expenses till the total exceeds the budget:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap4.png" align="middle" alt="Snapshot: Total, 120. Meter filled, displayed in bright red." /></div></div><p>The mete is fully filled and displayed in a bright red color.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_3"></a>4.3. Summary</h3></div></div></div><p>In this tutorial you learned how to create your own functions,
-referred to as meta-nodes, which can be used in functor node
-expressions.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Functions are referred to as meta-nodes since they are nodes,
-themselves, which describe how the values of other nodes, referred to
-as meta-node instances, are computed, hence the term meta-nodes.</p></td></tr></table></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s03.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s05.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
+ make-hsl(h, s, l) :
+     format("hsl(%s,%s%%,%s%%)", h, s, l)
+
+
+ # Application Logic
+
+ scale &lt;- clamp(quantity / maximum, 0, 1)
+
+ hue &lt;- lerp(120, 0, scale)
+
+ self.meter.style.backgroundColor &lt;-
+     make-hsl(hue, 90, 45)
+
+ format("%s%%", scale * 100) -&gt; self.meter.style.width
+?&gt;</pre><p>Build and run the application, and enter some values for the quantity
+and maximum, such that the quantity is less than half the maximum.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap3.png" align="middle" alt="Maximum: 100, Quantity: 20, [Almost empty bright green meter]" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap4.png" align="middle" alt="Maximum: 100, Quantity: 40, [Almost empty dull green meter]" /></div></div><p>The meter is mostly empty and displayed in a green color.</p><p>Now increase the quantity such that it is greater than half the maximum.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap5.png" align="middle" alt="Maximum: 100, Quantity: 60, [Half full yellow meter]" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap6.png" align="middle" alt="Maximum: 100, Quantity: 90, [Almost full red meter]" /></div></div><p>The meter is more than half full and its color approaches red as the
+quantity approaches the maximum.</p></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s03.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s05.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

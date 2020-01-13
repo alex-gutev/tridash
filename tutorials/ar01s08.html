@@ -1,308 +1,127 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>8. Modules and Organization</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s07.html" title="7. Outer Node References" /><link rel="next" href="ar01s09.html" title="9. Typing Failures" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s07.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s09.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_modules_and_organization"></a>8. Modules and Organization</h2></div></div></div><p>Let’s face it, cramming the entire application’s code inside a single
-HTML file is becoming unwieldy. Ideally the HTML file should only
-contain the binding declarations which directly involve the HTML
-elements in the file. The core application logic should be separated
-from the presentation logic.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_multiple_source_files"></a>8.1. Multiple Source Files</h3></div></div></div><p>We can of course split up the application into multiple source files,
-with the extension <code class="literal">trd</code> for Tridash.</p><p>Let’s extract the utility meta-nodes in a file called: <code class="literal">util.trd</code></p><p><strong>util.trd. </strong>
-</p><pre class="screen">:import(core)
-
-# Utility Meta-nodes
-
-lerp(a, b, alpha) : a + alpha * (b - a)
-
-clamp(x, min, max) :
-    case (
-        x &lt; min : min,
-        x &gt; max : max,
-        x
-    )
-
-
-Color(h, s, l) : {
-    h -&gt; self.hue
-    s -&gt; self.saturation
-    l -&gt; self.luminance
-}
-
-lerp-color(c1, c2, alpha) : {
-    Color(
-        lerp(c1.hue, c2.hue, alpha),
-        lerp(c1.saturation, c2.saturation, alpha),
-        lerp(c1.luminance, c2.luminance, alpha)
-    )
-}
-
-make-hsl(c) :
-    format("hsl(%s,%s%%,%s%%)", c.hue, c.saturation, c.luminance)</pre><p>
-</p><p>Let’s also extract the application logic into another file called <code class="literal">app.trd</code>:</p><p><strong>app.trd. </strong>
-</p><pre class="screen">### Application Logic
-
-## Input Validation
-
-valid-amount(thing) : {
-    x &lt;- real(thing)
-    x &gt;= 0 -&gt; x -&gt; self
-}
-
-:attribute(valid-amount, target-node, valid-amount)
-
-## Error Handling
-
-error-prompt(thing) : {
-    error-message &lt;- "Please enter a valid number \u{2265} 0!"
-    if (fails?(thing), error-message, "")
-}
-
-## Colour Interpolation
-
-compute-color(total, budget) : {
-    clamp((total + 1) / (budget + 1), 0, 1) -&gt; scale
-    make-hsl(lerp-color(in-budget-color, out-budget-color, scale))
-}
-
-## Initial Values
-
-0 -&gt; budget
-0 -&gt; food
-0 -&gt; water
-0 -&gt; electricity
-
-## Computing Total
-
-food + electricity + water -&gt; total
-
-make-hsl(
-    case(
-        total &lt; budget : in-budget-color,
-        out-budget-color
-    )
-) -&gt; color
-
-
-clamp((total + 1) / (budget + 1), 0, 1) -&gt; scale
-
-compute-color(total, budget) -&gt; meter-color</pre><p>
-</p><p>The only code left inside the <code class="literal">ui.html</code> file is the binding of the
-colors to the various style properties of the elements, the setting of
-the default colours and the <code class="literal">urgent</code> attribute declarations.</p><p>Now we need to add these sources to the build configuration file.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>If we are building using the command line directly, we’d simply
-list <code class="literal">util.trd</code> and <code class="literal">app.trd</code> in the compile command.</p></td></tr></table></div><p><strong>build.yml. </strong>
-</p><pre class="screen">sources:
-  - util.trd
-  - app.trd
-  - path: ui.html
-    node-name: ui
-
-output:
-  path: app.html
-  type: html
-  main-ui: ui</pre><p>
-</p><p>We’ve added <code class="literal">util.trd</code> and <code class="literal">app.trd</code> to the <code class="literal">sources</code> list. Since
-there are no source specific options we’ve simply listed the paths to
-the files.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_modules_in_depth"></a>8.2. Modules In Depth</h3></div></div></div><p>Whilst this is a significant clean up, it would be even better if we
-could group the nodes into different namespaces based on their
-purpose, for example <span class="emphasis"><em>utility</em></span>, <span class="emphasis"><em>application logic</em></span> and <span class="emphasis"><em>ui</em></span>. This
-would allow us to use only the nodes which we actually need, from the
-<span class="emphasis"><em>utility</em></span> namespace, without having the rest of <span class="emphasis"><em>utility</em></span> nodes clash
-(i.e. have the same identifiers) with the <span class="emphasis"><em>application logic</em></span>
-nodes. Whilst in this application there are no clashes, keeping the
-nodes in separate namespaces allows us to use the same <code class="literal">util.trd</code> file
-in another application without the fear that some node is going to
-clash with other nodes in the application.</p><p>Modules are means of separating nodes into different namespaces. A
-module is a namespace in which nodes are contained. A node with
-identifier <code class="literal">x</code> in module <code class="literal">mod1</code> is a distinct node from the node <code class="literal">x</code>
-in <code class="literal">mod2</code>, even though the two nodes have the same identifiers.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>We’ve already made use of a builtin module, the <code class="literal">core</code> module,
-which contains the <code class="literal">int</code>, <code class="literal">real</code>, <code class="literal">to-real</code> meta-nodes, as well as
-the arithmetic and comparison operators.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_creating_modules"></a>Creating Modules</h4></div></div></div><p>Modules are created with the <code class="literal">:module</code> operator which has the
-following syntax:</p><pre class="screen">:module(module-name)</pre><p>This indicates that all node references, in the declarations following
-the <code class="literal">:module</code> declaration, will occur in the module with identifier
-<code class="literal">module-name</code>. Remember that nodes are created the first time they are
-referenced, thus if a node is referenced which is not in the module,
-it is created and added to the module.</p><p><strong>Example. </strong>
-</p><pre class="screen">:module(mod1)
-x -&gt; node1
-
-:module(mod2)
-x -&gt; node2</pre><p>
-</p><p>The first reference to the node <code class="literal">x</code> occurs in module <code class="literal">mod1</code> thus a
-node <code class="literal">x</code> is added to <code class="literal">mod1</code>. The second referenced occurs in module
-<code class="literal">mod2</code> thus the node is added to <code class="literal">mod2</code>. The two nodes <code class="literal">x</code> are
-distinct even though they share the same identifier.</p><p>If no module is specified the node references occur in a nameless
-<code class="literal">init</code> module. The current module is reset to the <code class="literal">init</code> module prior
-to processing each source file.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Module identifiers are distinct from node identifiers, thus
-a node <code class="literal">mod</code> will not clash with a module <code class="literal">mod</code> unless the module is
-added as a symbol to the module containing the node <code class="literal">mod</code>. <span class="emphasis"><em>More on
-this in the next section</em></span>.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_using_modules"></a>Using Modules</h4></div></div></div><p>This is great but it is of little use if you can’t reference a node
-that is declared in a different module from the current module.</p><p>The <code class="literal">:use</code> operator allows nodes in a module to be referenced as
-subnodes of the module identifier.</p><pre class="screen">:use(mod1)</pre><p>This adds the symbol <code class="literal">mod1</code> to the module in which the declaration
-occurs. Then you can reference a node <code class="literal">x</code> in <code class="literal">mod1</code> as a subnode of
-<code class="literal">mod1</code>, <code class="literal">mod1.x</code>. In effect you can think of the <code class="literal">:use</code> operator as
-adding the module as a node to the current module however the values
-of modules cannot be referenced, and you cannot bind a module to a
-node.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This is also true for meta-nodes. To use a meta-node <code class="literal">f</code>
-declared in <code class="literal">mod1</code>, simply reference it as a subnode of <code class="literal">mod1</code>:
-<code class="literal">mod1.f(a, b)</code>.</p></td></tr></table></div><p>This greatly increases the functionality of modules however sometimes
-it may become annoying to have to type out the full name of the module
-over and over again, for each node. You can try keeping the module
-names short however then you run the risk of module name
-collisions. The <code class="literal">:alias</code> operator allows you to control the symbol
-that is created in the current module, with which nodes in the module
-can be referenced.</p><pre class="screen">:alias(mod1, m)</pre><p>This adds the symbol <code class="literal">m</code>, with which nodes in <code class="literal">mod1</code> can be
-referenced. Nodes in <code class="literal">mod1</code> can then be referenced as subnodes of <code class="literal">m</code>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Both <code class="literal">:use</code> and <code class="literal">:alias</code> will trigger a compilation error if the
-symbol, with which the module is referenced, already names a node in
-the current module.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_importing_nodes_from_other_modules"></a>Importing Nodes from Other Modules</h4></div></div></div><p>Sometimes you would like to explicitly add a node in another module to
-the current module, so that you don’t have to reference it as a
-subnode of the module. The <code class="literal">:import</code> operator allows you to do
-this.</p><p>It has two forms:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-A short form taking only the module as an argument, in which case
-   all nodes exported from the module are added to the current module.
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>8. Target Node Transforms</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s07.html" title="7. Failure Types" /><link rel="next" href="ar01s09.html" title="9. Contexts" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s07.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s09.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_target_node_transforms"></a>8. Target Node Transforms</h2></div></div></div><p>Wow, we had to make so many fundamental changes to our code just to
+implement a minor change in the input accepted by the application. We
+had to:</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
+Add the nodes <code class="literal">input-a</code> and <code class="literal">input-b</code>, for which we had to come up
+with meaningful identifiers.
 </li><li class="listitem">
-A long form in which the first argument is the module and the
-   following arguments are the individual nodes to import from the
-   module. Only the nodes listed are imported.
-</li></ul></div><p><strong>Example. </strong>
-</p><pre class="screen"># Short form: Import all nodes exported from mod1
-:import(mod1)
+Change the input fields to be bound to <code class="literal">input-a</code> and <code class="literal">input-b</code>
+rather than <code class="literal">a</code> and <code class="literal">b</code>.
+</li><li class="listitem">
+Change the initial values to be assigned to <code class="literal">input-a</code> and <code class="literal">input-b</code>
+rather than <code class="literal">a</code> and <code class="literal">b</code>.
+</li><li class="listitem">
+Bind <code class="literal">a</code> to <code class="literal">validate(input-a)</code> and <code class="literal">b</code> to <code class="literal">validate(input-b)</code>.
+</li></ol></div><p>This is contrary to “simply adding new UI elements” which was the
+case when we introduced error handling. We can do better.</p><p>Notice that a lot of the code we added was simply repetitive binding
+boilerplate code, which is the same for both <code class="literal">a</code> and <code class="literal">b</code>. It would be
+nice if we could somehow abstract it away and not have to write the
+same code for both nodes. Luckily, there is a way.</p><p>Remember, from the second tutorial, that some meta-nodes, such as
+<code class="literal">to-int</code>, are special in that a two-way binding is established between
+the meta-node instance and the argument node. This allows instances of
+the meta-node to also appear as targets of bindings.</p><p><strong>Refresher Example. </strong>
+</p><pre class="screen"># The following
+a -&gt; to-int(b)
 
-# Long form: Only import nodes x, y, z
-:import(mod1, x, y, z)</pre><p>
-</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The short form only imports those nodes which are exported
-from the module not all nodes.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The long form allows you to choose which nodes are imported into
-the current module. You can list any node in the module, not just an
-exported node.</p></td></tr></table></div><p><code class="literal">:import</code> also has a side-effect in that if an imported node, whether
-imported by the long or short form, is registered as an infix
-operator, it can be also be written in infix position in the current
-module.</p><p><strong>Example. </strong>
-</p><pre class="screen"># @ is a meta-node that is registered as an infix operator
-:import(mod1, @)
+# Is equivalent to
+to-int(a) -&gt; b</pre><p>
+</p><p>It turns out <code class="literal">to-int</code> is not so special as we can do the same for our
+own meta-nodes by setting the <code class="literal">target-node</code> attribute.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_node_attributes"></a>8.1. Node Attributes</h3></div></div></div><p>Node attributes are simply key-value pairs associated with a node,
+which control various compilation options. Attributes are set using
+the special <code class="literal">/attribute</code> operator:</p><p><strong><code class="literal">/attribute</code> Operator Syntax. </strong>
+</p><pre class="screen">/attribute(node, key, value)</pre><p>
+</p><p>This sets the attribute of <code class="literal">node</code> with key <code class="literal">key</code> to the value <code class="literal">value</code>.</p><p><strong>Examples. </strong>
+</p><pre class="screen"># Set value of attribute `my-attribute` to 1
+/attribute(a, my-attribute, 1)
 
-# It can be also be placed in infix position in the current module
-x @ y</pre><p>
-</p><p>You cannot place a node in infix position if it is referenced as a
-subnode of the module.</p><pre class="screen">:use(mod1)
+# Set value of attribute `akey` to literal symbol `raw-id`
+/attribute(b, "akey", raw-id)</pre><p>
+</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">key</code> and <code class="literal">value</code> are interpreted as literal symbols rather
+than references to the values of nodes. Attribute keys are case
+insensitive and there is no difference between raw symbols and string
+keys. The following keys <code class="literal">key</code>, <code class="literal">Key</code>, <code class="literal">"key"</code> and <code class="literal">"kEy"</code> all refer
+to the same attribute.</p></td></tr></table></div><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Node attributes do not form part of a runtime node’s state.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_attribute_literal_target_node_literal"></a>8.2. Attribute <code class="literal">target-node</code></h3></div></div></div><p>The <code class="literal">target-node</code> attribute determines, when set, the meta-node which
+is used as the binding function of the binding in the reverse
+direction, from a meta-node instance to the meta-node arguments.</p><p>As an example, a meta-node <code class="literal">f</code> with its <code class="literal">target-node</code> attribute set to
+<code class="literal">g</code> results in the following:</p><p><strong>Example. </strong>
+</p><pre class="screen">/attribute(f, target-node, g)
 
-# The following will not compile as you cannot place a subnode in
-# infix position.
+# The following
+a -&gt; f(b)
 
-x mod1.@ y
+# Is equivalent to
+g(a) -&gt; b</pre><p>
+</p><p>In the example above the <code class="literal">target-node</code> attribute of <code class="literal">f</code> is set to
+<code class="literal">g</code>. Thus the declaration <code class="literal">f(b)</code> also results in the binding <code class="literal">g(f(b))
+-&gt; b</code> being created.</p><p>The meta-node <code class="literal">to-int</code> simply has its <code class="literal">target-node</code> attribute set to
+itself, which is why it performs the same function, when it appears as
+the target of a binding, as when it appears as the source of a
+binding.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">to-int</code> meta-node performs the same function as the <code class="literal">int</code>
+meta-node however the difference is that when an instance of <code class="literal">int</code>
+appears as the target of a binding, pattern matching (which will be
+introduced in a later tutorial) is performed, whereas <code class="literal">to-int</code> simply
+performs the same function. <code class="literal">int</code> has not been mentioned till this
+point to avoid creating confusion as to what’s the difference between
+it and <code class="literal">to-int</code>.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="target-node-own-meta-nodes"></a>8.3. Target-Node for own Meta-Nodes</h3></div></div></div><p>Our code can be simplified considerably by allowing a meta-node, which
+performs the additional input validation, to be bound (as the target)
+to the values in the input field. Let’s first write that meta-node,
+called <code class="literal">valid-int</code> which is responsible for converting an input string
+to an integer and ensuring that the resulting integer is greater than
+or equal to zero. In essence this meta-node combines <code class="literal">to-int</code>, we’ll
+use <code class="literal">int</code> this time, and <code class="literal">validate</code>.</p><p><strong>Meta-node <code class="literal">valid-int</code>. </strong>
+</p><pre class="screen">valid-int(value) : {
+    x &lt;- int(value)
+    validate(x)
+}</pre><p>
+</p><p>In order to allow the node to appear as the target of a binding, and
+still perform the same function, let’s set its <code class="literal">target-node</code> attribute
+to itself:</p><pre class="screen">/attribute(valid-int, target-node, valid-int)</pre><p>Now we can bind the contents of the input fields directly to an
+instance of the <code class="literal">valid-int</code> meta-node. In-fact, we can place the
+<code class="literal">valid-int</code> instance directly in an inline node declaration.</p><p>Replace <code class="literal">to-int(input-a)</code> with <code class="literal">valid-int(a)</code>, and the same for <code class="literal">b</code>,
+in the input fields as follows:</p><pre class="screen">&lt;label&gt;A: &lt;input value="&lt;?@ valid-int(a) ?&gt;"/&gt;&lt;/label&gt;
+&lt;label&gt;B: &lt;input value="&lt;?@ valid-int(b) ?&gt;"/&gt;&lt;/label&gt;</pre><p>The nodes <code class="literal">input-a</code> and <code class="literal">input-b</code> can be removed, as well as the
+following declarations:</p><pre class="screen"> a &lt;- validate(input-a)
+ b &lt;- validate(input-b)</pre><p>The initial values of <code class="literal">0</code> can once again be given to the nodes <code class="literal">a</code> and
+<code class="literal">b</code> rather than <code class="literal">input-a</code> and <code class="literal">input-b</code>.</p><pre class="screen"> 0 -&gt; a
+ 0 -&gt; b</pre><p>The following is the full content of the Tridash code tag.</p><pre class="screen">/import(core)
 
-# Instead you have to write it in prefix notation:
-mod1.@(x, y)</pre></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_exporting_nodes"></a>Exporting Nodes</h4></div></div></div><p>We mentioned that the short form of the <code class="literal">:import</code> operator imports all
-nodes which are exported from the module. Nodes are exported from the
-current module using the <code class="literal">:export</code> operator.</p><pre class="screen">:module(mod1)
+# Error Reporting
 
-# Exports nodes x, y and z from the current module
-:export(x, y, z)</pre><p>Importing <code class="literal">mod1</code> by the short form, <code class="literal">:import(mod1)</code>, will import nodes
-<code class="literal">x</code>, <code class="literal">y</code> and <code class="literal">z</code> (and other nodes listed in other <code class="literal">:export</code>
-declarations) into the module.</p><p><code class="literal">:export</code> can take any number of arguments and multiple <code class="literal">:export</code>
-declarations will result in the nodes listed in each declaration being
-exported.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_literal_in_literal_operator"></a><code class="literal">:in</code> Operator</h4></div></div></div><p>The <code class="literal">:in</code> operator references a node in another module, for which a
-symbol has not been created in the current module using <code class="literal">:use</code> or
-<code class="literal">:alias</code>.</p><p>The operator has the following syntax:</p><pre class="screen">:in(module, node)</pre><p>where <code class="literal">module</code> is the name of the <code class="literal">module</code>, as declared by the
-<code class="literal">:module</code> operator, and <code class="literal">node</code> is the node expression which is
-processed in <code class="literal">module</code>.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_adding_modularity_to_our_application"></a>8.3. Adding Modularity to our Application</h3></div></div></div><p>Let’s group the utility meta-nodes in their own <code class="literal">util</code> module. Add the
-following declaration to the top of the <code class="literal">util.trd</code> file:</p><pre class="screen">:module(util)
-:import(core) <a id="CO6-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></pre><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO6-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
-Imports all nodes from the <code class="literal">core</code> module into <code class="literal">util</code>. This
-includes the arithmetic and comparison operators as well as the
-special operators, <code class="literal">-&gt;</code>, <code class="literal">:</code>, <code class="literal">.</code>, which are originally from the
-<code class="literal">builtin</code> module.
-</p></td></tr></table></div><p>Add the following declaration near the bottom of the file to export
-the meta-nodes from the module:</p><pre class="screen">:export(lerp, clamp, Color, lerp-color, make-hsl)</pre><p>Lets keep the main application logic in a <code class="literal">budget-app</code> module.</p><p>Add the following to the top of the <code class="literal">app.trd</code> file:</p><pre class="screen">:module(budget-app)
+error-message(value) :
+    case(
+        fail-type?(value, Invalid-Integer) :
+            "Not a valid number!",
+        fail-type?(value, Negative-Number) :
+            "Number must be greater than or equal to 0!",
+        ""
+    )
 
-:import(core)
-:import(util)</pre><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>We have to import both the <code class="literal">core</code> module and <code class="literal">util</code> module.</p></td></tr></table></div><p>It doesn’t make sense to keep the UI in a separate module from the
-application logic, as the UI is designed specifically for this
-application, thus we’ll add the HTML nodes to the <code class="literal">budget-app</code>
-module. To do so we need to add <code class="literal">:module(budget-app)</code> to the top of
-the Tridash code tag at the beginning of the <code class="literal">ui.html</code> file. There is
-no need to import the <code class="literal">core</code> or <code class="literal">util</code> modules again, as they have
-already been imported into the <code class="literal">budget-app</code> module, in the <code class="literal">app.trd</code>
-file, provided this file appears before <code class="literal">ui.html</code> in the sources list.</p><p>This ensures that the HTML nodes processed in the file are added to
-the <code class="literal">budget-app</code> module instead of the <code class="literal">init</code> module however the HTML
-component node of the file, is still added to the <code class="literal">init</code>
-module. Recall from <a class="xref" href="ar01s01.html" title="1. Hello Node">Section 1, “Hello Node”</a>, that an HTML
-component node is created for each HTML file processed, with the
-identifier of the node given by the <code class="literal">node-name</code> source processing
-option. The node is created in the <code class="literal">init</code> module. This does not pose a
-problem, the application will compile at this point, however in the
-interest of modularity let’s add the HTML component node to the
-<code class="literal">budget-app</code> module.</p><p>In order for the HTML component node to be created in a module other
-than <code class="literal">init</code>, the <code class="literal">node-name</code> option has to be of the following form
-<code class="literal">module.name</code>, where <code class="literal">module</code> is the module in which the node should
-be created and <code class="literal">name</code> is the name of the node to create. The same
-syntax applies in the <code class="literal">main-ui</code> output option.</p><p>Change the <code class="literal">build.yml</code> file to the following:</p><p><strong>build.yml. </strong>
-</p><pre class="screen">sources:
-  - util.trd
-  - app.trd
-  - path: ui.html
-    node-name: budget-app.ui
+# Input Validation
 
-output:
-  path: app.html
-  type: html
-  main-ui: budget-app.ui</pre><p>
-</p><p>Build and run the application. You wont see any new features however
-we’ve significantly improved the organization of the code.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_infix_operators"></a>8.4. Infix Operators</h3></div></div></div><p><span class="emphasis"><em>This section contains a detailed explanation of registering your own
-infix operators. We will not be making any enhancements to the
-budgeting application in this section.</em></span></p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_precedence_and_associativity_basics"></a>Precedence and Associativity Basics</h4></div></div></div><p>Each module has an operator table, which contains the identifiers of
-all nodes which can be placed in infix position as well as their
-precedence and associativity. The precedence is a number which
-controls the priority in which operands are grouped with infix
-operators, in an expression containing multiple different infix
-operators. Higher numbers indicate greater precedence.</p><p>The multiplication <code class="literal">*</code> operator has a greater precedence (200), than
-the addition <code class="literal">+</code> operator (100) thus arguments will be grouped with
-the multiplication operator first and then the addition operator.</p><p>The following infix expression:</p><pre class="screen">x + y * z</pre><p>is parsed to the following expression in prefix notation:</p><pre class="screen">+(x, *(y, z))</pre><p>Notice that the <code class="literal">*</code> operator is grouped with the operands <code class="literal">x</code> and <code class="literal">y</code>
-first, and then <code class="literal">x</code> and <code class="literal">*(y, z)</code> are grouped with the <code class="literal">+</code>
-operator. This is due to <code class="literal">*</code> having a greater precedence than <code class="literal">+</code>.</p><p>To achieve the following grouping:</p><pre class="screen">*(+(x, y), z)</pre><p>enclose <code class="literal">x + y</code> in parenthesis:</p><pre class="screen">(x + y) * z</pre><p>Associativity controls the grouping of operands in an expression
-containing multiple instances of the same infix operator. The <code class="literal">+</code>
-operator has left associativity:</p><p>Thus the following infix expression:</p><pre class="screen">x + y + z</pre><p>is parsed to the following expression in prefix notation:</p><pre class="screen">+(+(x, y), z)</pre><p>i.e. it is equivalent to</p><pre class="screen">(x + y) + z</pre><p>If the <code class="literal">+</code> operator were to have right associativity, the expression
-would be parsed to the following:</p><pre class="screen">+(x, +(y, z))</pre><p>Below is a table showing the precedence and associativity of some of
-the builtin operators.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Visit the file in <code class="literal">&lt;prefix&gt;/share/tridash/modules/core/operators.trd</code> to see the full
-list:</p></td></tr></table></div><div class="informaltable"><table class="informaltable" cellpadding="4px" style="border-collapse: collapse;border-top: 3px solid #527bbd; border-bottom: 3px solid #527bbd; border-left: 3px solid #527bbd; border-right: 3px solid #527bbd; "><colgroup><col class="col_1" /><col class="col_2" /><col class="col_3" /></colgroup><thead><tr><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"> Operator </th><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"> Precedence </th><th style="border-bottom: 1px solid #527bbd; " align="left" valign="top"> Associativity</th></tr></thead><tbody><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">-&gt;</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>10</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>right</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">or</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>20</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">and</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>25</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">+</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>100</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">-</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>100</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">*</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="right" valign="top"><p>200</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>left</p></td></tr><tr><td style="border-right: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">/</code></p></td><td style="border-right: 1px solid #527bbd; " align="right" valign="top"><p>200</p></td><td style="" align="left" valign="top"><p>left</p></td></tr></tbody></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_registering_your_own_infix_operators"></a>Registering your own infix operators</h4></div></div></div><p>Node identifiers can be registered as infix operators using a special
-<code class="literal">:op</code> declaration.</p><pre class="screen">:op(id, precedence, [left | right])</pre><p>The first argument is the identifier. The second argument is the
-operator precedence as a number and the final argument is the symbol
-<code class="literal">left</code> or <code class="literal">right</code> for left or right associativity. If the third
-argument is omitted it defaults to <code class="literal">left</code>.</p><p>This declaration adds an infix operator to the operator table of the
-current module. In the declarations, following the <code class="literal">:op</code> declaration,
-<code class="literal">id</code> can be placed in infix position.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">id</code> can be any valid identifier, not just an identifier
-consisting only of special symbols. However, as a result, a space is
-required in between the operator and its operands.</p></td></tr></table></div><p>It is not checked whether <code class="literal">id</code> actually names an existing
-node, however using it in infix position only makes sense if
-<code class="literal">id</code> names a meta-node.</p><p>If the node with identifier <code class="literal">id</code> is imported into another module, its
-entry in the operator table, of the module from which it is imported,
-is copied into the operator table of the module into which it is
-imported.</p><p>The precedence and associativity of existing operators can be changed,
-using the <code class="literal">:op</code> operator however only the operator table of the
-current module is changed even if the operator is an imported node.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_7"></a>8.5. Summary</h3></div></div></div><p>In this tutorial you learned how to organize your code into multiple
-source files and modules.</p><p>Summary of the module operators:</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
-<code class="literal">:module</code>
-</span></dt><dd>
-Create a module. Remaining declarations in file are
-    processed in the new module.
-</dd><dt><span class="term">
-<code class="literal">:use</code>
-</span></dt><dd>
-Add the module’s name as a symbol to the current
-    module. Nodes in the module can be referenced as a subnode of the
-    module’s name.
-</dd><dt><span class="term">
-<code class="literal">:alias</code>
-</span></dt><dd>
-Same as <code class="literal">:use</code> however a symbol, which is different from
-    the module name, can be specified for referencing nodes in the
-    module.
-</dd><dt><span class="term">
-<code class="literal">:import</code>
-</span></dt><dd>
-Import nodes from a module.
-</dd><dt><span class="term">
-<code class="literal">:export</code>
-</span></dt><dd>
-Add nodes to exported nodes of current module.
-</dd><dt><span class="term">
-<code class="literal">:in</code>
-</span></dt><dd>
-reference a node in another module for which there is no
-    symbol in the current module.
-</dd></dl></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s07.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s09.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
+Negative-Number  &lt;- &amp;(Negative-Number)
+Negative-Number! &lt;- fail(Negative-Number)
+
+validate(x) :
+    case(
+        x &gt;= 0 : x,
+        Negative-Number!
+    )
+
+valid-int(value) : {
+    x &lt;- int(value)
+    validate(x)
+}
+
+/attribute(valid-int, target-node, valid-int)
+
+# Initial Values
+
+0 -&gt; a
+0 -&gt; b</pre><p>Compared to the previous version, the only modifications are in the
+<code class="literal">error-message</code> meta-node, the inline bindings in the input fields and
+the addition of the <code class="literal">validate</code> and <code class="literal">valid-int</code> meta-nodes along with
+the <code class="literal">Negative-Number</code> failure type. This version, however, did not
+require the addition of new nodes or modifying the bindings comprising
+the core application logic. Changing the input validation logic was
+simply a matter of substituting <code class="literal">to-int</code> with <code class="literal">valid-int</code> in the
+bindings to the input field values.</p></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s07.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s09.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

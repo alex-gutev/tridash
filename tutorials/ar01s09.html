@@ -1,214 +1,234 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>9. Typing Failures</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s08.html" title="8. Modules and Organization" /><link rel="next" href="ar01s10.html" title="10. What’s Next?" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s08.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s10.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_typing_failures"></a>9. Typing Failures</h2></div></div></div><p>We’ve now implemented a basic application, with error handling and
-customization of the user interface.</p><p>At a glance the error handling logic of our current application, looks
-sufficient. However, the error messages are not very informative as
-the same messages are displayed regardless of the cause of the
-error. A more informative error message would tell the user that the
-value entered is not a number, if a number could not be parsed from
-the value or that the number entered was invalid in the case of
-negative valued inputs.</p><p>This is difficult to achieve with our current error handling logic, as
-we only check for failures but have no way of knowing what the cause
-of the failure is. All we know is that a failure is returned, by
-<code class="literal">real</code>, if a number could not be parsed from the string value and a
-failure is returned by <code class="literal">valid-amount</code> if the parsed number is
-negative. This is where <span class="emphasis"><em>failure types</em></span> come in handy.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_failure_types"></a>9.1. Failure Types</h3></div></div></div><p>Each failure value has a type associated with it, which serves to
-identify the cause of the failure.</p><p>By default failures created by conditional bindings, when the
-<span class="emphasis"><em>condition</em></span> node evaluates to false, have no type. The <code class="literal">fail</code>
-meta-node from the <code class="literal">core</code> module can be used to create a failure value
-with a given type, provided as the argument.</p><p><strong>Meta-node <code class="literal">fail</code>. </strong>
-</p><pre class="screen">fail(type)</pre><p>
-</p><p>The <code class="literal">type</code> argument is optional. If it is omitted then a failure with
-no type is created.</p><p>The type of a failure can be retrieved using the <code class="literal">fail-type</code> meta-node
-from the <code class="literal">core</code> module.</p><p><strong>Meta-node <code class="literal">fail-type</code>. </strong>
-</p><pre class="screen">fail-type(x)</pre><p>
-</p><p>The type of the failure value <code class="literal">x</code> is returned. If <code class="literal">x</code> does not
-evaluate to a failure or evaluates to a failure with no type, a
-failure is returned.</p><p>A couple of other utility meta-nodes are:</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
-<code class="literal">fail-type?(x, type)</code>
-</span></dt><dd>
-Returns true if <code class="literal">x</code> is a failure value with a
-type equal to <code class="literal">type</code>.
-</dd><dt><span class="term">
-<code class="literal">fails?</code>
-</span></dt><dd>
-Returns true if <code class="literal">x</code> evaluates to a failure, false
-otherwise.
-</dd></dl></div><p>With these meta-nodes a more informative error message can be
-produced.</p><p><strong>Example: Creating Failures with Types. </strong>
-</p><pre class="screen"># Checks that a value is within the range [l, h]
-check-range(x, l, h) : {
-    case(
-        x &lt; l : fail(1)
-        x &gt; h : fail(2)
-        x
-    )
-}
-
-...
-
-value &lt;- check-range(input, 0, 10)
-
-case(
-    fail-type?(value, 1) : "Error: less than 0"
-    fail-type?(value, 2) : "Error: greater than 10"
-    fails?(value) : "Error: something else"
-    ""
-) -&gt; error-message</pre><p>
-</p><p>The <code class="literal">check-range</code> meta-node checks whether a number is within a given
-range. If the number falls below the minimum a failure value with type
-<code class="literal">1</code> is returned. If the number falls above the maximum a failure value
-with type <code class="literal">2</code> is returned, otherwise the value itself is returned.</p><p>The <code class="literal">fail-type?</code> meta-node is used to check whether the node <code class="literal">value</code>
-evaluates to a failure of type <code class="literal">1</code> or <code class="literal">2</code>, in which case the
-<code class="literal">error-message</code> node is bound to a message indicating that the number
-is below the minimum or above the maximum. The <code class="literal">fails?</code> meta-node
-checks whether <code class="literal">value</code> evaluates to a failure of another type, in
-which case <code class="literal">error-message</code> is bound to a generic error message. If
-<code class="literal">value</code> does not evaluate to a failure, <code class="literal">error-message</code> is bound to
-the empty string.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_improved_error_reporting"></a>9.2. Improved Error Reporting</h3></div></div></div><p>To improve the error reporting of our application, we first need to
-modify the <code class="literal">valid-amount</code> meta-node to return a failure with a unique
-type that indicates when a negative amount is entered in an <code class="literal">input</code>
-element.</p><p>Let’s assign an integer constant, which will be used as the failure
-type to indicate a negative amount. We’ll bind the constant <code class="literal">-1</code> to a
-constant node <code class="literal">Negative-Amount</code>, and we’ll also create another node
-<code class="literal">Negative-Amount!</code> which is bound to a failure value with type
-<code class="literal">Negative-Amount</code>.</p><p><strong>Negative Amount Failure Type. </strong>
-</p><pre class="screen">Negative-Amount &lt;- -1
-Negative-Amount! &lt;- fail(Negative-Amount)</pre><p>
-</p><p>Now we need to modify the <code class="literal">valid-amount</code> meta-node to return a
-<code class="literal">Negative-Amount</code> failure if the parsed value is less than
-zero. Currently conditional bindings are used to return the parsed
-value only if it is greater than zero, and to return a failure value
-otherwise. We can use explicit contexts to return a failure value if
-the previous conditional binding resulted in a failure however it is
-simpler to use an <code class="literal">if</code> or <code class="literal">case</code> expression.</p><p><strong>Improved <code class="literal">valid-amount</code> meta-node. </strong>
-</p><pre class="screen">valid-amount(thing) : {
-    x &lt;- real(thing)
-
-    if(x &gt;= 0, x, Negative-Amount!)
-}</pre><p>
-</p><p>We these modifications it is now possible to distinguish failures
-caused by a non-numeric value being entered from failures caused by a
-negative value being entered. Thus we can now change <code class="literal">error-prompt</code> to
-return a more informative error message.</p><p>There are three cases that need to be handled. The body of
-<code class="literal">error-prompt</code> can be summarized into the following steps:</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
-Check whether the value, passed to <code class="literal">error-prompt</code> is a failure
-value with type equal to <code class="literal">Negative-Amount</code>. If so, return a message
-that prompts for a positive number to be entered. This can be done
-with the <code class="literal">fail-type?</code> meta-node.
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>9. Contexts</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s08.html" title="8. Target Node Transforms" /><link rel="next" href="ar01s10.html" title="10. Node States" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s08.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s10.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="contexts"></a>9. Contexts</h2></div></div></div><p>Throughout these tutorials, we’ve glossed over two-way bindings
+without going into much detail of how they work, yet they were a vital
+component of every application as the bindings to the UI elements have
+all been two-way bindings.</p><p>Each node has a number of <span class="emphasis"><em>contexts</em></span> which store information about how
+to compute the node’s value, i.e. what function to use and what
+dependencies are operands to the function. The <span class="emphasis"><em>active</em></span> context of a
+node, at a given moment in time, is the context which is used to
+compute the node’s value. In general, a context is <span class="emphasis"><em>activated</em></span> when
+the value of an operand node of the context changes. By default, a
+node context is created for each dependency of a node which was added
+by an explicit binding.</p><p><strong>Example. </strong>
+</p><pre class="screen">a -&gt; x # Context created for dependency `a`
+b -&gt; x # Context created for dependency `b`
+c -&gt; x # Context created for dependency `c`</pre><p>
+</p><p>In this example node <code class="literal">x</code> has three contexts one for each of its
+dependency nodes, <code class="literal">a</code>, <code class="literal">b</code> and <code class="literal">c</code>, to which it is bound explicitly.</p><p>An implicit binding between a meta-node instance and the meta-node
+arguments does not result in the creation of a context for each
+operand.</p><pre class="screen">a + b</pre><p>Nodes <code class="literal">a</code> and <code class="literal">b</code> are implicitly added as dependencies of <code class="literal">a + b</code>
+however they are added as operands to the same context with the <code class="literal">+</code>
+function.</p><p>The following application demonstrates how different contexts are
+activated, when the values of their operand nodes change.</p><p><strong><code class="literal">ui.html</code>. </strong>
+</p><pre class="programlisting">&lt;?
+ x -&gt; node
+ y -&gt; node
+ z -&gt; node
+?&gt;
+&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Node Contexts&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+      &lt;div&gt;&lt;label&gt;X: &lt;input value="&lt;?@ x ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;Y: &lt;input id="b" value="&lt;?@ y ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;Z: &lt;input value="&lt;?@ z ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;hr/&gt;
+      &lt;div&gt;&lt;strong&gt;Last value entered: &lt;?@ node ?&gt;&lt;/strong&gt;&lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre><p>
+</p><p>This is a simple application consisting of three text input fields
+bound to nodes <code class="literal">x</code>, <code class="literal">y</code> and <code class="literal">z</code>. Nodes <code class="literal">x</code>, <code class="literal">y</code> and <code class="literal">z</code> are each
+explicitly bound to <code class="literal">node</code>, the value of which is displayed below the
+fields.</p><p>Let’s enter a value in each field and see what happens. Observe the
+value displayed below the fields after each change:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial9/snap1.png" align="middle" alt="X: 1, Y: _, Z: _, Last value entered: 1" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial9/snap2.png" align="middle" alt="X: 1, Y: 2, Z: _, Last value entered: 2" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial9/snap3.png" align="middle" alt="X: 1, Y: 2, Z: 3, Last value entered: 3" /></div></div><p>Notice that after each change, the value that was just entered is
+displayed.</p><p>Now let’s try changing the values of the fields which were edited
+previously:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial9/snap4.png" align="middle" alt="X: 1, Y: 10, Z: 3, Last value entered: 10" /></div></div><p>In this case the value of the second field, <span class="emphasis"><em>Y</em></span>, was changed to 10 and
+that value was immediately displayed below the fields.</p><p>The value of the field that was changed last is displayed. To
+understand why this is so, let’s examine the sequence of steps taken
+when a value is entered in the <span class="emphasis"><em>X</em></span> field.</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
+The value of <code class="literal">x</code>, which is bound to the value in the <span class="emphasis"><em>X</em></span> field, is
+updated.
 </li><li class="listitem">
-Check whether the value passed to <code class="literal">error-prompt</code> is a failure
-value. If so, the message returned should prompt for a number to be
-entered. This can be done with the <code class="literal">fails?</code> meta-node.
+The context corresponding to the binding <code class="literal">x -&gt; node</code> is activated
+due to the value of <code class="literal">x</code> being updated.
 </li><li class="listitem">
-Return the empty string indicating no failure.
-</li></ol></div><p>An implementation of the improved <code class="literal">error-prompt</code> meta-node can be the
-following:</p><p><strong>Improved <code class="literal">error-prompt</code> meta-node. </strong>
-</p><pre class="screen">error-prompt(thing) : {
-    case(
-        fail-type?(thing, Negative-Amount) :
-            "Please enter a number \u{2265} 0!",
-        fails?(thing) :
-            "Please enter a valid number!",
-        ""
-    )
-}</pre><p>
-</p><p>However explicit contexts provide a specialized feature for activating
-bindings based on the failure type.</p><p>Up till this point we’ve seen how explicit contexts can be used to
-handle failures of any type. We can also use contexts to handle
-failures of a specific type.</p><p>The <code class="literal">@</code> macro allows a binding to an explicit context to be
-established. This binding is activated only if the source node of the
-previous binding evaluates to a failure value. If the identifier is
-however an expression of the <code class="literal">when</code> operator, the binding will only
-be activated if the source node of the previous binding evaluates to a
-failure with the type given in the second argument.</p><p><strong>Explicit Context <code class="literal">when</code> Syntax. </strong>
-</p><pre class="screen">source -&gt; target @ when(context-id, type)</pre><p>
-</p><p>The <code class="literal">context-id</code> argument to the <code class="literal">when</code> expression is the explicit
-context identifier. The <code class="literal">type</code> argument is a node expression, of which
-the value is interpreted as a failure type. If the source node of the
-previous binding evaluates to a failure value with type equal to the
-value of <code class="literal">type</code>, the node <code class="literal">target</code> is set to the value of
-<code class="literal">source</code>.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">when</code> is registered as an infix operator thus can be placed between
-<code class="literal">context-id</code> and <code class="literal">type</code>.</p><pre class="screen">source -&gt; target @ context-id when type</pre></td></tr></table></div><p>The new improved <code class="literal">error-prompt</code> meta-node can thus be written using
-explicit <code class="literal">when</code> contexts. The following bindings need to be
-established:</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><p class="simpara">
-The <code class="literal">self</code> node should be bound to the empty string if the argument
-<code class="literal">thing</code> does not evaluate to a failure value. This can be achieved
-succinctly using the <code class="literal">!-</code> meta-node from the <code class="literal">core</code> module. <code class="literal">!-</code>
-returns the value of its second argument if the first argument does
-not evaluate to a failure, otherwise it returns the failure value.
-</p><pre class="screen">thing !- "" -&gt; self @ default</pre></li><li class="listitem"><p class="simpara">
-The <code class="literal">self</code> node should be bound to a string prompting the user for
-a positive number, if <code class="literal">thing</code> evaluates to a failure with type
-<code class="literal">Negative-Amount</code>. This is where we use explicit <code class="literal">when</code> contexts.
-</p><pre class="screen">"Please enter a number \u{2265} 0!" -&gt;
-    self @ default when Negative-Amount</pre></li><li class="listitem"><p class="simpara">
-The <code class="literal">self</code> node should be bound to the generic error string,
-prompting that a valid number is entered, if <code class="literal">thing</code> evaluates to a
-failure with a type other than <code class="literal">Negative-Amount</code>.
-</p><pre class="screen">"Please enter a valid number!" -&gt;
-    self @ default</pre></li></ol></div><p>Putting it all together, the improved implementation of <code class="literal">error-prompt</code>
-is the following:</p><p><strong>Improved Implementation of <code class="literal">error-prompt</code> with explicit <code class="literal">when</code> contexts. </strong>
-</p><pre class="screen">error-prompt(thing) : {
-    thing !- "" -&gt; self @ default
+The value of <code class="literal">node</code> is updated to the value of <code class="literal">x</code>.
+</li></ol></div><p>Contexts make two-way bindings possible:</p><p><strong>Example. </strong>
+</p><pre class="screen">input1 -&gt; a
 
-    "Please enter a number \u{2265} 0!" -&gt;
-        self @ default when Negative-Amount
+# Two-way binding
+a -&gt; b; a -&gt; b
 
-    "Please enter a valid number!" -&gt;
-        self @ default
+input2 -&gt; b</pre><p>
+</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">;</code> character separates multiple declarations written on a
+single line.</p></td></tr></table></div><p><code class="literal">a</code> has two contexts corresponding to dependency nodes <code class="literal">input1</code> and
+<code class="literal">a</code> (which is also an observer). <code class="literal">b</code> has two contexts corresponding to
+dependency nodes <code class="literal">input2</code> and <code class="literal">a</code>.</p><p>When <code class="literal">input1</code> is changed, the contexts corresponding to the bindings
+in the following direction are activated:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+<code class="literal">input1 -&gt; a</code>
+</li><li class="listitem">
+<code class="literal">a -&gt; b</code>
+</li></ul></div><p>When <code class="literal">input2</code> is changed, the contexts corresponding to the bindings
+in the following direction are activated:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+<code class="literal">input2 -&gt; b</code>
+</li><li class="listitem">
+<code class="literal">b -&gt; a</code>
+</li></ul></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_explicit_contexts"></a>9.1. Explicit Contexts</h3></div></div></div><p>The context of a binding can be set explicitly to a named context,
+using the <code class="literal">@</code> operator from the <code class="literal">core</code> module.</p><pre class="screen">a -&gt; b @ context-id</pre><p>The binding <code class="literal">a -&gt; b</code> is established in the context, of <code class="literal">b</code>, with
+identifier <code class="literal">context-id</code>.</p><p>When multiple bindings are established to the same explicit context,
+the observer node takes on the value of the first operand which does
+not evaluate to a failure. The operands are ordered by the order in
+which the explicit bindings are declared in the source file. If all
+the operands evaluate to failures, the node evaluates to the failure
+value of the last operand.</p><p>This is better explained with an example application:</p><p><strong><code class="literal">ui.html</code>. </strong>
+</p><pre class="programlisting">&lt;?
+ /import(core)
+
+ x -&gt; node @ context
+ y -&gt; node @ context
+ z -&gt; node @ context
+?&gt;
+&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Explicit Contexts&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+      &lt;div&gt;&lt;label&gt;X: &lt;input value="&lt;?@ to-int(x) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;Y: &lt;input value="&lt;?@ to-int(y) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;Z: &lt;input value="&lt;?@ to-int(z) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;hr/&gt;
+      &lt;div&gt;&lt;strong&gt;Value: &lt;?@ node ?&gt;&lt;/strong&gt;&lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre><p>
+</p><p>This application is similar to the previous application except the
+bindings from nodes <code class="literal">x</code>, <code class="literal">y</code> and <code class="literal">z</code>, to <code class="literal">node</code> are established in an
+explicit context with identifier <code class="literal">context</code>. Additionally the input
+fields are bound to <code class="literal">to-int</code> instances, of <code class="literal">x</code>, <code class="literal">y</code> and <code class="literal">z</code> which
+results in <code class="literal">x</code>, <code class="literal">y</code> and <code class="literal">z</code> being bound to the values entered in the
+fields converted to integers. If a non-integer value is entered in a
+field, the corresponding node is bound to a failure value.</p><p>Let’s try it out. Enter some integer values in each of the fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial9/snap5.png" align="middle" alt="X: 1, Y: 2, Z: 3, Value: 1" /></div></div><p>The value entered in the first field, <span class="emphasis"><em>X</em></span>, was displayed. Since a
+valid integer was entered, node <code class="literal">x</code> evaluates to the integer value
+1. The binding <code class="literal">x -&gt; node</code> was established first, as the declaration
+occurs first in the source file, and since <code class="literal">x</code> does not evaluate to a
+failure, <code class="literal">node</code> takes on the value of <code class="literal">x</code>. The values of <code class="literal">y</code> and <code class="literal">z</code>
+are ignored.</p><p>Now let’s change <code class="literal">x</code> to a non-integer value:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial9/snap6.png" align="middle" alt="X: foo, Y: 2, Z: 3, Value: 2" /></div></div><p>The value entered in the second field, 2, is displayed. Since a
+non-integer value was entered in the first field, <code class="literal">x</code> evaluates to a
+failure. <code class="literal">node</code> thus takes on the value of the next dependency, bound
+to the explicit context, which does not evaluate to a failure. The
+dependency is <code class="literal">y</code> which evaluates to the integer entered in the second
+field, 2.</p><p>Let’s see what happens if we enter a non-integer value in the third
+field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial9/snap7.png" align="middle" alt="X: foo, Y: 2, Z: bar, Value: 2" /></div></div><p>The displayed value is unchanged since the second dependency, node
+<code class="literal">y</code>, already evaluates to a value which is not a failure value. The
+value of the third dependency <code class="literal">z</code>, corresponding to the value entered
+in the third field, is ignored, regardless of whether it evaluates to
+a failure or not.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_handling_failures_with_explicit_contexts"></a>9.2. Handling Failures with Explicit Contexts</h3></div></div></div><p>Explicit contexts are a useful tool for handling failures. In the
+previous application a failure originating from the first input field,
+was handled by taking the value of the node bound to the second
+field. Similarly a failure originating from the second input field is
+handled by taking the value entered in the third field.</p><p>The <code class="literal">@</code> operator also allows a binding to be activated only if the
+result of the previous binding(s), in the same context, is a failure
+value with a given type. When the context identifier is of the form
+<code class="literal">when(context, type)</code> the binding is only activated if the result of
+the previous binding(s) is a failure of type <code class="literal">type</code>.</p><p><strong>Example. </strong>
+</p><pre class="screen">x -&gt; node @ context
+y -&gt; node @ when(context, Invalid-Integer)
+z -&gt; node @ when(context, Negative-Number)</pre><p>
+</p><p>Three bindings to <code class="literal">node</code> are established in the explicit context
+<code class="literal">context</code>.</p><p><code class="literal">node</code> is primarily bound to the value of <code class="literal">x</code> if it does not evaluate
+to a failure. If <code class="literal">x</code> evaluates to a failure of type <code class="literal">Invalid-Integer</code>,
+<code class="literal">node</code> is bound to the value of <code class="literal">y</code>. If <code class="literal">x</code>, or <code class="literal">y</code> evaluate to a
+failure of type <code class="literal">Negative-Number</code>, then <code class="literal">node</code> is bound to the value
+of <code class="literal">z</code>.</p><p>To try this out replace the binding declarations, in the application
+from the previous section, with the declarations in the example
+above. Also copy over the definition of the meta-nodes <code class="literal">valid-int</code>,
+<code class="literal">validate</code> and the <code class="literal">Negative-Number</code> failure type from
+<a class="xref" href="ar01s08.html#target-node-own-meta-nodes" title="8.3. Target-Node for own Meta-Nodes">Section 8.3, “Target-Node for own Meta-Nodes”</a>, into the Tridash code tag. Replace
+<code class="literal">to-int</code> with <code class="literal">valid-int</code> in the inline node declarations within the
+input field values.</p><p>Enter a non-integer value in the first field, and an integer value in
+the second and third fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial9/snap8.png" align="middle" alt="X: foo, Y: 1, Z: 2, Value: 1" /></div></div><p>The value of the second field is displayed, since <code class="literal">node</code> is bound to
+it when the value in the first field is not an integer.</p><p>Now change the value of the second field to a negative integer, or
+alternatively enter a negative integer value in the first field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial9/snap9.png" align="middle" alt="X: foo, Y: -1, Z: 2, Value: 2" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial9/snap10.png" align="middle" alt="X: -1, Y: 1, Z: 2, Value: 2" /></div></div><p>The value of the third field is displayed in both cases, even when the
+value of the second field is a valid positive integer. This is due to
+<code class="literal">node</code> being bound to the value of the third field when either the
+value of the first field or second field is a negative number.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">when</code> is registered as an infix operator thus the following:</p><pre class="screen">a -&gt; b @ when(context, type)</pre><p>can be rewritten as:</p><pre class="screen">a -&gt; b @ context when type</pre></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="adding-numbers-improved-error-handling"></a>9.3. Improved Error Handling in <span class="emphasis"><em>Adding Numbers</em></span></h3></div></div></div><p>Whilst the error handling logic in the <span class="emphasis"><em>Adding Numbers</em></span> application,
+from <a class="xref" href="ar01s08.html" title="8. Target Node Transforms">Section 8, “Target Node Transforms”</a>, is adequate and correct, the
+definition of the <code class="literal">error-message</code> meta-node, responsible for selecting
+an appropriate error message, can be improved using explicit
+contexts. The current definition repeatedly checks whether the failure
+type of the <code class="literal">value</code> argument is of a given type using the <code class="literal">fail-type?</code>
+meta-node. This is repetitive and does not convey the intent that this
+is error handling/reporting logic.</p><p>The <code class="literal">error-message</code> meta-node returns:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+The empty string if the <code class="literal">value</code> argument does not evaluate to a
+  failure.
+</li><li class="listitem">
+The string “Not a valid number!” when <code class="literal">value</code> evaluates to a
+  failure of type <code class="literal">Invalid-Integer</code>.
+</li><li class="listitem">
+The string “Number must be greater than or equal to 0!” when
+  <code class="literal">value</code> evaluates to a failure of type <code class="literal">Negative-Number</code>.
+</li></ul></div><p>We can re-implement this logic using bindings to the <code class="literal">self</code> node with
+explicit contexts.</p><p>The <code class="literal">self</code> node should primarily be bound to the empty string, if the
+<code class="literal">value</code> argument does not evaluate to a failure. There is a handy
+utility meta-node, <code class="literal">!-</code>, in the <code class="literal">core</code> module, which returns the value
+of its second argument if the first argument does not evaluate to a
+failure. If the first argument evaluates to a failure value, it is
+returned. This meta-node is registered as an infix operator thus can
+be placed between its arguments.</p><p>The primary binding can thus be written as follows:</p><pre class="screen">value !- "" -&gt;
+    self @ context</pre><p>If this binding results in a failure of type <code class="literal">Invalid-Integer</code>, <code class="literal">self</code>
+should be bound to the constant string “Not a valid number!”. This
+is achieved with the following:</p><pre class="screen">"Not a valid number!" -&gt;
+    self @ context when Invalid-Integer</pre><p>Finally <code class="literal">self</code> should be bound to “Number must be greater than or
+equal to 0!”, if the previous bindings resulted in a failure of type
+<code class="literal">Negative-Number</code>.</p><pre class="screen">"Number must be greater than or equal to 0!" -&gt;
+    self @ context when Negative-Number</pre><p>Putting it all together we have the following definition of
+<code class="literal">error-message</code> re-implemented using explicit contexts:</p><p><strong>New implementation of <code class="literal">error-message</code>. </strong>
+</p><pre class="screen">error-message(value) : {
+    value !- "" -&gt;
+        self @ context
+
+    "Not a valid number!" -&gt;
+        self @ context when Invalid-Integer
+
+    "Number must be greater than or equal to 0!" -&gt;
+        self @ context when Negative-Number
 }</pre><p>
-</p><p>For this small application there is hardly any advantage in
-implementing <code class="literal">error-prompt</code> using explicit <code class="literal">when</code> contexts rather
-than using a <code class="literal">case</code> expression. However let’s imagine that instead of
-binding <code class="literal">self</code> to a constant, in the case of a failure of type
-<code class="literal">Negative-Amount</code>, it is bound to another node <code class="literal">x</code>. Let’s say that <code class="literal">x</code>
-can also evaluate to a failure of type <code class="literal">Some-Type</code> and we want to
-handle this failure as well. With a <code class="literal">case</code> expression we’d need to
-explicitly handle the case when <code class="literal">x</code> evaluates to a failure of type
-<code class="literal">Some-Type</code>.</p><pre class="screen">case(
-    fail-type?(thing, Negative-Amount) : x,
-    fail-type?(x, Some-Type) : y,
-    ...
-)</pre><p>We have to repeat <code class="literal">x</code> in both cases, in the value expression of the
-first case and in the condition expression of the second case. If we
-happen to change <code class="literal">x</code> in the first case, we’d have to update the second
-case as well. If <code class="literal">x</code> is a complex node expression we’d have to either
-repeat the whole expression in the second case, which can lead to a
-bug if it is not typed out correctly. To avoid the repetition, the
-node expression has to be factored out in another node.</p><p>With explicit <code class="literal">when</code> contexts we can implement this error handling
-logic with the following bindings:</p><pre class="screen">...
-x -&gt; self @ default when Negative-Amount
-y -&gt; self @ default when Some-Type
-...</pre><p>Notice there is no repetition of <code class="literal">x</code> in the binding which is
-responsible for handling errors of type <code class="literal">Some-Type</code>. This reduces the
-amount of places where bugs can hide. Furthermore, this code is at a
-higher level where the emphasis is on handling <code class="literal">Some-Type</code> failures
-regardless of whether those failures originated from <code class="literal">x</code> or another
-node.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_proper_failure_types"></a>9.3. Proper Failure Types</h3></div></div></div><p>There is a flaw in our implementation of the improved error
-reporting. We used an arbitrary integer constant <code class="literal">-1</code> as the type of
-failure which is created when a negative value is entered. Whilst this
-works in this case, arbitrary integer constants, of different failure
-causes, can very easily clash. For example, it could be the case that
-the <code class="literal">real</code> meta-node returns a failure type of <code class="literal">-1</code> to indicate that a
-number could not be parsed from the input. Integer constants are not
-robust identifiers of failure causes, especially when combining
-multiple third party components.</p><p>Tridash includes a special operator <code class="literal">&amp;</code> for referencing the raw node
-object of a node rather than its value. This operator is used in
-meta-programming and macros, <span class="emphasis"><em>which will be introduced in a later
-tutorial</em></span>, however it can also be used to obtain a unique value which
-can be used as a failure type identifier. To create a unique failure
-type identifier, which guarantees that there will be no collisions
-with other types, we can simply bind <code class="literal">Negative-Amount</code> to the raw node
-reference of itself.</p><p>Replace the line of code, which binds <code class="literal">Negative-Amount</code> to <code class="literal">-1</code> with
-the following:</p><pre class="screen">Negative-Amount &lt;- &amp;(Negative-Amount)</pre><p>Now we have a robust failure type which uniquely identifies the
-failure caused by entering a negative number in an input field.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">Negative-Amount</code> is still a constant node as the node reference
-<code class="literal">&amp;(Negative-Amount)</code> constitutes a reference to the node object of
-<code class="literal">Negative-Amount</code>, which remains constant throughout the duration of
-the application, rather than a reference to the value of
-<code class="literal">Negative-Amount</code>.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_trying_it_out"></a>9.4. Trying it Out</h3></div></div></div><p>Build and run the application. Enter non-numeric values and negative
-amounts in some of the <code class="literal">input</code> elements.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial9/snap1.png" align="middle" alt="Snapshot of informative error messages" /></div></div><p>The error message, displayed next to the field where non-numeric data
-was entered, prompts the user for a valid number. The error message,
-next to the field where a negative number was entered, prompts the
-user to enter a positive number.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_8"></a>9.5. Summary</h3></div></div></div><p>In this tutorial you learned how to associate a type with a failure
-value in order to identify the cause of the failure. You also learned
-how to handle failures of a particular type.</p></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s08.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s10.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
+</p><p>The advantage of this implementation is that it more explicitly
+conveys the intent that this is error handling logic. As such it can
+be optimized more effectively, e.g. if <code class="literal">self</code> evaluates to a failure
+of type <code class="literal">Negative-Number</code>, the check for whether the failure type is
+<code class="literal">Invalid-Integer</code> can be skipped altogether.</p><p>An additional advantage of this implementation is that the third
+binding is activated on failures of type <code class="literal">Negative-Number</code> originating
+both from the first and second bindings whereas the previous
+implementation only handled failures originating in <code class="literal">value</code>. In this
+case it doesn’t make a difference as the second binding cannot result
+in a failure of type <code class="literal">Negative-Number</code>. However this does make a
+difference, in more complex error handling logic, where the handling
+of an error may itself result in a new error.</p><p>This implementation does, however, have a difference from the previous
+implementation in that if <code class="literal">value</code> evaluates to a failure of a type
+other than <code class="literal">Invalid-Integer</code> or <code class="literal">Negative-Number</code> it returns a
+failure, whereas the previous implementation returned the empty
+string. In this application it doesn’t make a difference as the
+arguments passed to <code class="literal">error-message</code> do not evaluate to failures of
+other types.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_concise_syntax"></a>9.4. Concise Syntax</h3></div></div></div><p>Coming up with a context identifier and typing it out repeatedly can
+become tiresome. The original reason for having an identifier for
+explicit contexts is to distinguish them from the remaining contexts
+which are implicitly created and to allow for multiple explicit
+contexts. However, there is usually only a single explicit context
+used for handling failures.</p><p>To shorten the syntax for binding to an explicit context, a default
+identifier, such as <code class="literal">_</code> can be given to all explicit contexts which
+are used only for handling failures. Alternatively, the <code class="literal">@</code> operator
+can take a single argument, the node, in which case it is a shorthand
+for the explicit context with identifier <code class="literal">default</code>.</p><pre class="screen"># The following:
+x -&gt; y @ default
+
+# Is equivalent to:
+x -&gt; @(y)</pre><p>When the context identifier is of the form <code class="literal">when(type)</code>, that is
+omitting the context identifier and leaving only the failure type, the
+explicit context with identifier <code class="literal">default</code> is, once again, assumed.</p><pre class="screen"># The following:
+x -&gt; y @ default when type
+
+# Is equivalent to:
+x -&gt; y @ when(type)</pre></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s08.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s10.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

@@ -1,211 +1,113 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>6. Failures of your own</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s05.html" title="5. Error Handling" /><link rel="next" href="ar01s07.html" title="7. Outer Node References" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s05.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s07.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_failures_of_your_own"></a>6. Failures of your own</h2></div></div></div><p>You’ve been introduced to failure values in the previous tutorial and
-how to handle them using explicit contexts. In this tutorial you’ll
-learn how to create your own failure values, which will be used to fix
-the second issue with our budgeting application, namely ensuring that
-only positive numeric values are entered in the budget and expense
-text input fields.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_conditional_bindings_2"></a>6.1. Conditional Bindings</h3></div></div></div><p>Conditional bindings allow a binding between two nodes to be active
-only if a <span class="emphasis"><em>condition</em></span> node evaluates to true. Conditional bindings are
-declared by declaring a binding with the bind expression as the target
-of the binding.</p><p><strong>Conditional Binding Declaration. </strong>
-</p><pre class="screen">condition -&gt; (a -&gt; b)</pre><p>
-</p><p>A conditional binding <code class="literal">a -&gt; b</code> is declared, which is conditioned on
-the node <code class="literal">condition</code>. If <code class="literal">condition</code> evaluates to true, the binding <code class="literal">a
--&gt; b</code> is active and thus node <code class="literal">b</code> evaluates to the value of <code class="literal">a</code>. If,
-however, <code class="literal">condition</code> evaluates to <span class="emphasis"><em>false</em></span>, <code class="literal">b</code> evaluates to a failure
-value.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>A conditional binding declaration may follow the main binding
-declaration, <code class="literal">a -&gt; b</code>, in the source code.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>When a conditional binding is declared, a node <code class="literal">a -&gt; b</code> is
-created which may be used to reference the status of the binding,
-i.e. is it active or inactive.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">-&gt;</code> operator has right associativity thus the parenthesis in
-the previous example are optional, however were added for clarity.</p></td></tr></table></div><p><strong>Example: Simple Conditional Binding. </strong>
-</p><pre class="screen">a &lt; 0 -&gt; (a -&gt; b)</pre><p>
-</p><p>In this example <code class="literal">b</code> is only bound to <code class="literal">a</code> if <code class="literal">a</code> is less than <code class="literal">0</code>,
-otherwise <code class="literal">b</code> evaluates to a failure value.</p><p><strong>Example: A <code class="literal">min</code> Meta-Node. </strong>
-</p><pre class="screen">min(a, b) : {
-    a &lt; b -&gt; (a -&gt; self @ ct)
-    b -&gt; self @ ct
-}</pre><p>
-</p><p>This example combines conditional bindings and explicit contexts. If
-<code class="literal">a</code> is less than <code class="literal">b</code>, <code class="literal">self</code> is bound to the value of <code class="literal">a</code> and thus the
-<code class="literal">min</code> meta-node returns the value of <code class="literal">a</code>. Otherwise, <code class="literal">b &gt;= a</code>, <code class="literal">self</code>
-is bound to the value of <code class="literal">b</code>, since the first binding resulted in a
-failure value, and thus the value of <code class="literal">b</code> is returned from the
-meta-node.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_simple_validation"></a>6.2. Simple Validation</h3></div></div></div><p>To fix the second issue, we need the <code class="literal">budget</code>, <code class="literal">food</code>, <code class="literal">electricity</code>
-and <code class="literal">water</code> nodes to evaluate to failures not only if non-numeric data
-is entered in the text fields but also if negative numbers are
-entered.</p><p>We’ll create a simple <code class="literal">valid-amount</code> meta-node which converts its
-argument to a real number and checks that the real value is greater
-than or equal to <code class="literal">0</code>. For this we’ll use conditional bindings.</p><p><strong>Meta-Node <code class="literal">valid-amount</code>. </strong>
-</p><pre class="screen">valid-amount(value) : {
-    x &lt;- real(value)
-    x &gt;= 0 -&gt; x -&gt; self
-}</pre><p>
-</p><p>The first declaration binds the local node <code class="literal">x</code> to the argument <code class="literal">value</code>
-converted to a <code class="literal">real</code> number.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">x</code> is a local node as it appears as the target of a binding.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">real</code> meta-node performs the same function as the <code class="literal">to-real</code>
-meta-node.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">&lt;-</code> is the same as <code class="literal">-&gt;</code> only with arguments reversed, that is
-the target of the binding is on the left hand side and the source on
-the right hand side.</p></td></tr></table></div><p>The second declaration conditionally binds <code class="literal">x</code> to the <code class="literal">self</code> node if
-<code class="literal">x</code> is greater than or equal to <code class="literal">0</code> (<code class="literal">x &gt;= 0</code>). As a result the return
-value of the meta-node is its argument converted to a real number, if
-it is greater than <code class="literal">0</code>. If the real value is less than <code class="literal">0</code>, or the
-argument cannot be converted to a real value, a failure is returned.</p><p>A simple way, to incorporate this in our application is to create new
-nodes which are bound directly to the string values entered in the
-text input fields. Let’s call them <code class="literal">in-budget</code>, <code class="literal">in-food</code>,
-<code class="literal">in-electricity</code> and <code class="literal">in-water</code>. Change the HTML code, where the input
-fields are created to the following:</p><pre class="programlisting">&lt;div&gt;
-  &lt;label for="budget"&gt;Budget:&lt;/label&gt;
-  &lt;div&gt;
-    &lt;input id="budget" value="&lt;?@ in-budget ?&gt;"/&gt;
-    &lt;?@ error-prompt(budget) ?&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
-&lt;hr&gt;
-&lt;div&gt;
-  &lt;label for="food"&gt;Food:&lt;/label&gt;
-  &lt;div&gt;
-    &lt;input id="food" value="&lt;?@ in-food ?&gt;" /&gt;
-    &lt;?@ error-prompt(food) ?&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
-&lt;div&gt;
-  &lt;label for="electricity"&gt;Electricity:&lt;/label&gt;
-  &lt;div&gt;
-    &lt;input id="electricity" value="&lt;?@ in-electricity ?&gt;" /&gt;
-    &lt;?@ error-prompt(electricity) ?&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
-&lt;div&gt;
-  &lt;label for="water"&gt;Water:&lt;/label&gt;
-  &lt;div&gt;
-    &lt;input id="water" value="&lt;?@ in-water ?&gt;" /&gt;
-    &lt;?@ error-prompt(water) ?&gt;
-  &lt;/div&gt;
-&lt;/div&gt;</pre><p>Also make sure that the initial values are given to the <code class="literal">in-...</code> nodes
-rather than the nodes which stored the parsed numeric values. Change
-the section of the Tridash code tag, responsible for setting the
-initial values, to the following:</p><pre class="screen"># Initial Values
-
-0 -&gt; in-budget
-0 -&gt; in-food
-0 -&gt; in-water
-0 -&gt; in-electricity</pre><p>Now we need to bind <code class="literal">valid-amount</code> instances of those nodes to the
-<code class="literal">budget</code>, <code class="literal">food</code>, <code class="literal">electricity</code> and <code class="literal">water</code> nodes.</p><p>Add the following to the Tridash code tag:</p><pre class="screen"># Validation
-
-valid-amount(in-budget) -&gt; budget
-valid-amount(in-food) -&gt; food
-valid-amount(in-electricity) -&gt; electricity
-valid-amount(in-water) -&gt; water</pre><p>Additionally let’s change the error message to indicate that negative
-numbers are invalid. Change the <code class="literal">error-prompt</code> meta-node to the
-following:</p><pre class="screen">error-prompt(thing) : {
-    error-message &lt;- "Please enter a valid number \u{2265} 0!"
-    if (fails?(thing), error-message, "")
-}</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">\u{2265}</code> represents the unicode character with code 2265 which
-is the character <code class="literal">≥</code>.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_let_8217_s_try_it_out_5"></a>Let’s try it out</h4></div></div></div><p>Build and run the application, and enter negative values in some of
-the fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial6/snap1.png" align="middle" alt="Snapshot: -30 entered in Electricity. Error message displayed next to it." /></div></div><p>The error message was displayed next to the field where a negative
-value was entered, in this case electricity. The total, status message
-and meter were left unchanged.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_meta_node_instances_as_targets"></a>6.3. Meta-Node Instances as Targets</h3></div></div></div><p>Whilst we’ve fixed the second issue with our application, we had to
-make a lot of changes to our code:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-New nodes had to be created to store the raw string input values.
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>6. Error Handling with Failure Values</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s05.html" title="5. Subnodes" /><link rel="next" href="ar01s07.html" title="7. Failure Types" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s05.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s07.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_error_handling_with_failure_values"></a>6. Error Handling with Failure Values</h2></div></div></div><p>Up till this point we have completely ignored the issue of what
+happens if the user provides invalid input. In this tutorial, failure
+values and their use in handling errors will be introduced.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_invalid_input"></a>6.1. Invalid Input</h3></div></div></div><p>First let’s investigate more closely what happens when an invalid
+value is entered by the user. Let’s try it out with the sum
+application we wrote in <a class="xref" href="ar01s02.html" title="2. Functional Bindings">Section 2, “Functional Bindings”</a>.</p><p>You may have noticed that nothing happens if a number is only entered
+in one of the fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial6/snap1.png" align="middle" alt="A: 1, B: &lt;blank&gt;, A + B = &lt;blank&gt;" /></div></div><p>Let’s enter an invalid value for <span class="emphasis"><em>B</em></span>, and see what happens:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial6/snap2.png" align="middle" alt="A: 1, B: foo, A + B = &lt;blank&gt;" /></div></div><p>Again nothing. Is there something wrong with application?</p><p>Let’s change <span class="emphasis"><em>B</em></span> to a valid number:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial6/snap3.png" align="middle" alt="A: 1, B: 2, A + B = 3" /></div></div><p>Now we get the result of the addition, <code class="literal">3</code>. The application resumed
+its normal operation when valid input is entered.</p><p>What will happen if we change one of the fields to an invalid value,
+let’s try changing <span class="emphasis"><em>A</em></span> this time:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial6/snap4.png" align="middle" alt="A: bar, B: 2, A + B = 3" /></div></div><p>No change in the result of <code class="literal">3</code>. It appears the application does not
+change the result if invalid input was entered. This demands an
+explanation.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_failure_values"></a>6.2. Failure Values</h3></div></div></div><p>What’s really going on under the hood is that when a value, which is
+not a valid number, is entered in one of the input fields, the node
+bound to that field is set to a <span class="emphasis"><em>failure value</em></span>.</p><p>A failure value is a special type of value which, when evaluated,
+terminates the evaluation of the node, by which it was evaluated, and
+the node’s value is set to the failure value. Failure values represent
+the failure of an operation, the absence of a value or special classes
+of values.</p><p>In the sum application, a failure value is returned by the <code class="literal">to-int</code>
+meta-node, when the argument is a string which does not contain a
+valid integer. Thus <code class="literal">to-int(a)</code> evaluates to a failure value if the
+value entered in the input field for <span class="emphasis"><em>A</em></span> does not contain a valid
+integer.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Remember that <code class="literal">to-int(a)</code> is bound, as the target, to the value
+entered in the text input field.</p></td></tr></table></div><p>The observer of <code class="literal">to-int(a)</code> is <code class="literal">a</code>, and is thus set to the failure
+value returned by <code class="literal">to-int</code>. Node <code class="literal">a + b</code> evaluates node <code class="literal">a</code>, thus
+evaluating the failure value. This results in the computation of the
+sum (<code class="literal">a + b</code>) being terminated and node <code class="literal">a + b</code>, and its observer
+<code class="literal">sum</code>, being set to the failure value.</p><p>By default when a node, bound to a user interface element, evaluates
+to a failure value, the user interface is not updated. As a result the
+application appears to be doing nothing.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_handling_failures"></a>6.3. Handling Failures</h3></div></div></div><p>Whilst the current behaviour of the application is a step up from
+crashing or producing garbage results, it does not provide any
+indication to the user that the input entered was invalid. This is
+confusing to the user as the application appears to not be working
+properly. Proper error handling should be in place.</p><p>The <code class="literal">core</code> module provides a handy utility meta-node <code class="literal">fails?</code>, which
+returns true if its argument node evaluates to a failure, and false
+otherwise. This can be used to detect failures in our application and
+display an appropriate error message.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>A related utility meta-node <code class="literal">?</code>, also from the <code class="literal">core</code> module,
+returns true if its argument does not evaluate to a failure.</p></td></tr></table></div><p>We need to detect failures in the <code class="literal">a</code> and <code class="literal">b</code> nodes which are bound to
+the values of the input fields for <span class="emphasis"><em>A</em></span> and <span class="emphasis"><em>B</em></span>, respectively. This can
+be achieved using the expression <code class="literal">fails?(a)</code> for <code class="literal">a</code> and <code class="literal">fails?(b)</code>
+for <code class="literal">b</code>.</p><p>We would like to display a message, indicating that the input entered
+was invalid, next to the field where invalid input was entered. This
+can be achieved using a <code class="literal">case</code> expression. The following is the <code class="literal">case</code>
+expression for <code class="literal">a</code>:</p><pre class="screen">case(
+    fails?(a) : "Not a valid number!",
+    ""
+)</pre><p>The <code class="literal">case</code> expression returns the constant string “Not a valid
+number!”, if <code class="literal">fails?(a)</code> is true, that is <code class="literal">a</code> evaluates to a failure,
+otherwise it returns the empty string. To display the error message
+next to the field for <span class="emphasis"><em>A</em></span>, we can simply place the entire <code class="literal">case</code>
+expression in an inline node declaration, between <code class="literal">&lt;?@ ... ?&gt;</code> next to
+the field. We can do the same for <span class="emphasis"><em>B</em></span>, substituting <code class="literal">a</code> with <code class="literal">b</code>, to
+get an error indication for <span class="emphasis"><em>B</em></span> as well.</p><p>That’s it we have added error handling to an existing application
+without having to make fundamental changes to our application
+logic. In-fact the addition of error handling was as simple as adding
+new UI elements.</p><p>Let’s try it out. Build and run the application and enter an invalid
+value in one of the input fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial6/snap5.png" align="middle" alt="A: 1, B: foo, Not a valid number!; A + B =" /></div></div><p>The message “Not a valid number!” is displayed next to the field
+containing the invalid value, <span class="emphasis"><em>B</em></span> in this case.</p><p>Now correct the invalid value, to a valid number:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial6/snap6.png" align="middle" alt="A: 1, B: 6; A + B = 7" /></div></div><p>The message disappears and the sum is computed.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_cleaning_up"></a>Cleaning Up</h4></div></div></div><p>The error handling logic, added in the previous section, can do with
+some cleaning up.</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+The error message is duplicated next to both fields. If we’d like to
+change the message we’d have to make sure we’ve changed it in both
+places.
 </li><li class="listitem">
-We had to change which nodes are given initial values.
-</li><li class="listitem">
-The <code class="literal">valid-amount</code> instances had to be explicitly bound to the nodes
-   which store the parsed numeric values.
-</li></ul></div><p>Most of the new code we’ve added is repetitive boilerplate, we’re
-creating an instance of the <code class="literal">valid-amount</code> meta-node for each input
-field’s value and binding it to the corresponding node storing the
-parsed value. Recall that we didn’t have to do this when converting
-the field values to real-numbers, we could simply write <code class="literal">to-real(...)</code>
-in the inline node expressions, within the value attributes, and be
-done with it. It was mentioned <code class="literal">to-real</code> was a special meta-node in
-that an instance of it can also appear as the target of a binding,
-whereas ordinarily that would trigger a compilation error. It turns
-out we can also make the <code class="literal">valid-amount</code> node special by setting a
-<code class="literal">target-node</code> attribute.</p><p>Node attributes are arbitrary key-value pairs associated with each
-node, which control certain compilation properties. Attributes are set
-using the special <code class="literal">:attribute</code> operator which has the following
-syntax:</p><pre class="screen">:attribute(node, attribute, value)</pre><div class="variablelist"><dl class="variablelist"><dt><span class="term">
-<code class="literal">node</code>
-</span></dt><dd>
-The node of which to set the attribute. Can be any node
-  expression including a functor node.
-</dd><dt><span class="term">
-<code class="literal">attribute</code>
-</span></dt><dd>
-The attribute key. Interpreted as a literal symbol
-  rather than a node expression.
-</dd><dt><span class="term">
-<code class="literal">value</code>
-</span></dt><dd>
-The value to set the attribute to. Like <code class="literal">attribute</code> this
-  is interpreted as a literal rather than a node expression.
-</dd></dl></div><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Attributes do not form part of a node’s runtime state thus
-cannot be bound to the values of other nodes.</p></td></tr></table></div><p>The <code class="literal">target-node</code> attribute, when set on a meta-node <code class="literal">m</code>, stores a
-meta-node which is used as the binding’s function, when an instance of
-<code class="literal">m</code> appears as the target of a binding. When an instance of the
-meta-node <code class="literal">m</code>, with the <code class="literal">target-node</code> attribute set, is processed, a
-binding between the instance, as the source, and each argument node,
-as the target, is established with the function of the binding being
-the meta-node stored in the <code class="literal">target-node</code> attribute.</p><p><strong>Example: <code class="literal">to-real</code>. </strong>
-</p><pre class="screen">:attribute(to-real, target-node, real)
-
-# results in a binding equivalent to the following
-# real(x) -&gt; y
-
-x -&gt; to-real(y)</pre><p>
-</p><p>In the example above, the <code class="literal">target-node</code> attribute of <code class="literal">to-real</code> is set
-to the meta-node <code class="literal">real</code>. The binding declaration, in the last line,
-results in the node <code class="literal">to-real(y)</code> being bound to <code class="literal">y</code>, with the function
-<code class="literal">real</code> being the function of the binding. As a result <code class="literal">y</code> is bound to
-the value of <code class="literal">x</code> converted to a <code class="literal">real</code> value.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">to-real</code> performs the same function as <code class="literal">real</code>, however a
-separate node is created in order to give it a different <code class="literal">target-node</code>
-attribute. The behaviour of the <code class="literal">real</code> meta-node, when an instance of
-it appears as the target of a binding, is to perform pattern matching
-on the argument, <span class="emphasis"><em>pattern matching will be introduced in a later
-tutorial</em></span>.</p></td></tr></table></div><p>To apply this to our application, we’ll give the <code class="literal">valid-amount</code>
-meta-node a <code class="literal">target-node</code> attribute so that it can be used directly
-inline, in the value attributes of the HTML input fields. We need the
-<code class="literal">valid-amount</code> meta-node to perform the same function, when it appears
-as a binding target thus we’ll simply set the <code class="literal">target-node</code> attribute
-of <code class="literal">valid-amount</code> to itself.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This section builds on the code from the previous tutorial, with
-the definition of <code class="literal">valid-amount</code> added to it, and the modifications to
-the <code class="literal">error-prompt</code> meta-node. It does not include the remaining
-modifications made in <a class="xref" href="ar01s06.html#_simple_validation" title="6.2. Simple Validation">Section 6.2, “Simple Validation”</a>.</p></td></tr></table></div><p>Add the following after the definition of <code class="literal">validate</code> in the Tridash code tag.</p><pre class="screen">:attribute(valid-amount, target-node, valid-amount)</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>When the <code class="literal">target-node</code> attribute is set, the meta-node is looked
-up as the <code class="literal">:attribute</code> declaration is processed.</p></td></tr></table></div><p>As a result we can simply replace <code class="literal">to-real(...)</code> with <code class="literal">valid-amount(...)</code>
-in the inline declarations, within the value attributes of the HTML
-input elements. This will be equivalent to the code we wrote at the
-end of <a class="xref" href="ar01s06.html#_simple_validation" title="6.2. Simple Validation">Section 6.2, “Simple Validation”</a>.</p><p>Change the text input fields HTML code to the following:</p><pre class="programlisting">&lt;div&gt;
-  &lt;label for="budget"&gt;Budget:&lt;/label&gt;
-  &lt;div&gt;
-    &lt;input id="budget" value="&lt;?@ valid-amount(budget) ?&gt;"/&gt;
-    &lt;?@ error-prompt(budget) ?&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
-&lt;hr&gt;
-&lt;div&gt;
-  &lt;label for="food"&gt;Food:&lt;/label&gt;
-  &lt;div&gt;
-    &lt;input id="food" value="&lt;?@ valid-amount(food) ?&gt;" /&gt;
-    &lt;?@ error-prompt(food) ?&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
-&lt;div&gt;
-  &lt;label for="electricity"&gt;Electricity:&lt;/label&gt;
-  &lt;div&gt;
-    &lt;input id="electricity" value="&lt;?@ valid-amount(electricity) ?&gt;" /&gt;
-    &lt;?@ error-prompt(electricity) ?&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
-&lt;div&gt;
-  &lt;label for="water"&gt;Water:&lt;/label&gt;
-  &lt;div&gt;
-    &lt;input id="water" value="&lt;?@ valid-amount(water) ?&gt;" /&gt;
-    &lt;?@ error-prompt(water) ?&gt;
-  &lt;/div&gt;
-&lt;/div&gt;</pre><p>That is all that is necessary to add the new validation logic to our
-application. There is no need for creating new nodes, coming up with
-new node names and changing which nodes are given initial values.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary_5"></a>6.4. Summary</h3></div></div></div><p>In this tutorial you learned how to create your own failure
-values. This was used to add further input validation to the budgeting
-application, thus fixing the second issue. Furthermore you learned how
-to use <code class="literal">target-node</code> attributes to reduce the amount of binding
-boilerplate code that needs to be written.</p></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s05.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s07.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
+The <code class="literal">case</code> expression is identical for both fields with the only
+difference being the node. If we change the error handling logic, to
+display a different message, we’d have to edit both the <code class="literal">case</code>
+expressions.
+</li></ul></div><p>The case expression can be extracted into a
+meta-node, let’s call it <code class="literal">error-message</code> which takes the node as input
+and returns the appropriate error message.</p><p><strong>Meta-Node <code class="literal">error-message</code>. </strong>
+</p><pre class="screen">error-message(value) :
+    case(
+        fails?(value) : "Not a valid number!",
+        ""
+    )</pre><p>
+</p><p><span class="emphasis"><em>Add this definition to the top of the Tridash code tag.</em></span></p><p>We can now replace the <code class="literal">case</code> expressions, inside the inline node
+declarations with the following for field <span class="emphasis"><em>A</em></span>:</p><pre class="screen">error-message(a)</pre><p>and the following for field <span class="emphasis"><em>B</em></span>:</p><pre class="screen">error-message(b)</pre><p>Changes to the error message and error handling logic are now much
+easier to implement as only the definition of the <code class="literal">error-message</code>
+meta-node needs to be changed.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_initial_values"></a>6.4. Initial Values</h3></div></div></div><p>You may have noticed that the error messages are not displayed
+initially, when the input fields are empty. Similarly no visible
+result is observed until a value is entered in both fields. You’re
+probably wondering why this is so, as an empty string is certainly not
+a valid integer. In-fact, if you first enter a valid integer in a
+field, and then change its value to empty, the error message will be
+displayed.</p><p>The problem is that the nodes <code class="literal">a</code> and <code class="literal">b</code> are not given initial
+values. As a result the value of the <code class="literal">error-message(a)</code> node, and the
+corresponding node for <code class="literal">b</code>, is not computed until <code class="literal">a</code> is given its
+first value. But then what happens when the node <code class="literal">a + b</code> is updated
+after a value is entered in the first field, <span class="emphasis"><em>A</em></span>, only? Since only the
+dependency <code class="literal">a</code>, of <code class="literal">a + b</code> has been given a value, <code class="literal">a + b</code> does not
+have a value for <code class="literal">b</code> and thus the value it uses for <code class="literal">b</code> defaults to a
+failure. To solve this problem we can give initial values to <code class="literal">a</code> and
+<code class="literal">b</code>.</p><p>An explicit binding in which the <span class="emphasis"><em>source</em></span> is a literal constant and
+the <span class="emphasis"><em>target</em></span> is a node is interpreted as giving the node an initial
+value, equal to the constant.</p><p>The following assigns an initial value of 1 to <code class="literal">a</code> and 2 to <code class="literal">b</code>:</p><p><strong>Example. </strong>
+</p><pre class="screen">1 -&gt; a
+2 -&gt; b</pre><p>
+</p><p>The setting of the initial values is treated as an ordinary value
+change from the default failure value to the given initial value,
+which occurs immediately after the application is launched. As a
+result, the values of the node’s observers are updated. In this case
+the nodes: <code class="literal">a + b</code>, <code class="literal">error-message(a)</code> and <code class="literal">error-message(b)</code> will be
+updated.</p><p>In our application, let’s give both <code class="literal">a</code> and <code class="literal">b</code> an initial value of
+<code class="literal">0</code>. Add the following to the Tridash code tag at the top of the file:</p><pre class="screen">0 -&gt; a
+0 -&gt; b</pre><p>Build and run the application:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial6/snap7.png" align="middle" alt="A: 0, B: 0, A + B: 0" /></div></div><p>Both fields are initialized to <code class="literal">0</code> and the sum of <code class="literal">0</code> is
+displayed.</p><p>Experiment with changing the node’s initial values and even try
+setting them to invalid integers.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>You may be wondering how it is that giving an initial value to
+the nodes <code class="literal">a</code> and <code class="literal">b</code> affects the values of the text input
+fields. This is due to the fact that there is a two-way binding
+between <code class="literal">a</code> and the value of the input element for <span class="emphasis"><em>A</em></span>, and between
+<code class="literal">b</code> and the value of the input element for <span class="emphasis"><em>B</em></span>.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_exercise"></a>6.5. Exercise</h3></div></div></div><p>As an exercise make the color of the border, or alternatively the
+background color, of the input element change to red when an invalid
+value is entered in it.</p><p>Try to achieve something similar to the following:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial6/snap8.png" align="middle" alt="A: foo, Not a number, B: 0, A + B = 0" /></div></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Some CSS styling rules have also been added to change the text
+color of the error messages to red, this is not part of the exercise.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>To change the border color of an element bind to the
+<code class="literal">style.borderColor</code> attribute of the element node.</p></td></tr></table></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s05.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s07.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

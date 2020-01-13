@@ -7,107 +7,78 @@ language comes from the ability to specify arbitrary functions in
 bindings which are dependent on the values of more than a single
 node. Moreover these bindings can be established in Tridash itself
 without having to implement "transformer" or "converter"
-interfaces/subclasses in a lower-level language.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_simple_budgeting_application"></a>2.1. Simple Budgeting Application</h3></div></div></div><p>In this tutorial, and the following tutorials, we’ll be implementing a
-very basic budgeting application with the following desired features:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-Allocate amounts to spend on a number of predefined expense
-    categories.
-</li><li class="listitem">
-Compute the total amount allocated.
-</li><li class="listitem">
-Specify a limit (the budget) on the total amount spent on expenses.
-</li><li class="listitem">
-Indicate whether the total amount allocated exceeds the limit,
-    with some visual cues such as the total amount turning red if it
-    exceeds the limit.
-</li></ul></div><p>We’ll start with a very basic version and incrementally add features
-and improve it.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_first_version"></a>First Version</h4></div></div></div><p>In the first version we’ll focus on the first two features, allocating
-an amount of money to different expenses and computing the total
-amount allocated.</p><p>Begin with the following <code class="literal">ui.html</code> file:</p><p><strong>ui.html. </strong>
-</p><pre class="programlisting">&lt;?
- :import(core)
-
- food + electricity + water -&gt; total
-?&gt;
-
-&lt;!doctype html&gt;
+interfaces/subclasses in a lower-level language.</p><p>A functor node is a node which is bound to a function of the values of
+one or more nodes. It consists of an expression comprising an operator
+applied to one or more arguments.</p><p><strong>Functor Node Syntax. </strong>
+</p><pre class="screen">operator(argument1, argument2, ...)</pre><p>
+</p><p>A binding is established between the argument nodes and the functor
+node. Whenever the value of one of the argument nodes changes, the
+expression is reevaluated and the value of the functor node is
+updated.</p><p><strong>Example: Functor of one argument. </strong>
+</p><pre class="screen">to-int(a)</pre><p>
+</p><p>The functor node is <code class="literal">to-int(a)</code> consisting of the function <code class="literal">to-int</code>,
+which converts its argument to an integer, applied to the value of
+node <code class="literal">a</code>. When the value of <code class="literal">a</code> changes, the value of <code class="literal">to-int(a)</code> is
+updated to <code class="literal">a</code>'s value converted to an integer.</p><p><strong>Example: Functor of two arguments. </strong>
+</p><pre class="screen">a + b</pre><p>
+</p><p>This is a functor node of the function <code class="literal">+</code> which computes, you guessed
+it, the sum of its arguments, in this case <code class="literal">a</code> and <code class="literal">b</code>. Whenever the value
+of either <code class="literal">a</code> or <code class="literal">b</code> changes, the value of <code class="literal">a + b</code> is updated to the
+sum of <code class="literal">a</code> and <code class="literal">b</code>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">+</code> operator is registered as an infix operator, meaning it
+can be placed between its two arguments (infix notation), instead of
+being placed before its arguments (prefix notation). <code class="literal">a + b</code> is
+transformed to prefix notation <code class="literal">+(a, b)</code>, when parsed. Both notations
+are equivalent and either notation can be written in source code.</p></td></tr></table></div><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The spaces between an infix operator and its arguments are
+mandatory since <code class="literal">a+b</code> is a valid node identifier and is thus
+interpreted as a single node with identifier <code class="literal">a+b</code>, rather than a
+functor node of the <code class="literal">+</code> operator.</p></td></tr></table></div><p>Functor nodes can be bound to other nodes using the same <code class="literal">-&gt;</code> operator.</p><p><strong>Example: Binding functors to other nodes. </strong>
+</p><pre class="screen">a + b -&gt; sum</pre><p>
+</p><p>In this example node <code class="literal">sum</code> is bound to <code class="literal">a + b</code> which is bound to the
+sum of <code class="literal">a</code> and <code class="literal">b</code>.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_example_application_adding_numbers"></a>2.1. Example Application: Adding Numbers</h3></div></div></div><p>We’ll build an application which computes the sum of two numbers,
+entered by the user, and displays the result.</p><p>Let’s focus on building the interface for now. Begin with the
+following <code class="literal">ui.html</code> file:</p><p><strong>ui.html. </strong>
+</p><pre class="programlisting">&lt;!doctype html&gt;
 &lt;html&gt;
     &lt;head&gt;
-        &lt;title&gt;Budget App&lt;/title&gt;
+        &lt;title&gt;Adding Numbers&lt;/title&gt;
     &lt;/head&gt;
     &lt;body&gt;
-      &lt;h1&gt;Budget App&lt;/h1&gt;
-      &lt;div&gt;
-        &lt;label for="food"&gt;Food:&lt;/label&gt;
-        &lt;div&gt;&lt;input id="food" value="&lt;?@ to-real(food) ?&gt;" /&gt;&lt;/div&gt;
-      &lt;/div&gt;
-      &lt;div&gt;
-        &lt;label for="electricity"&gt;Electricity:&lt;/label&gt;
-        &lt;div&gt;&lt;input id="electricity" value="&lt;?@ to-real(electricity) ?&gt;" /&gt;&lt;/div&gt;
-      &lt;/div&gt;
-      &lt;div&gt;
-        &lt;label for="water"&gt;Water:&lt;/label&gt;
-        &lt;div&gt;&lt;input id="water" value="&lt;?@ to-real(water) ?&gt;" /&gt;&lt;/div&gt;
-      &lt;/div&gt;
-      &lt;hr&gt;
-      &lt;div&gt;
-        &lt;label for="total"&gt;&lt;strong&gt;Total:&lt;/strong&gt;&lt;/label&gt;
-        &lt;div&gt;&lt;input id="total" value="&lt;?@ total ?&gt;" readonly/&gt;&lt;/div&gt;
-      &lt;/div&gt;
+      &lt;h1&gt;Adding Numbers&lt;/h1&gt;
+      &lt;div&gt;&lt;label&gt;A: &lt;input value="&lt;?@ a ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;B: &lt;input value="&lt;?@ b ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;hr/&gt;
+      &lt;div&gt;&lt;strong&gt;A + B = &lt;?@ sum ?&gt;&lt;/strong&gt;&lt;/div&gt;
     &lt;/body&gt;
 &lt;/html&gt;</pre><p>
-</p><p>A lot is going on here, lets focus on the body of the HTML file for
-now.</p><p>The body defines an interface with three text input fields for
-entering the amounts allocated to “Food”, “Electricity” and
-“Water” expenses, and a fourth readonly text field for displaying
-the total amount allocated. Each field is bound, using implicit
-bindings, to the nodes <code class="literal">to-real(food)</code>, <code class="literal">to-real(electricity)</code>,
-<code class="literal">to-real(water)</code> and <code class="literal">total</code> respectively.</p><p>The <code class="literal">total</code> node is a simple node, similar to the nodes seen in the
-previous tutorial.</p><p>The remaining nodes are examples of <code class="literal">functor</code> nodes. A functor node
-consists of an expression comprising an operator applied to zero or
-more arguments.</p><pre class="screen">operator(argument1, argument2, ...)</pre><p>A binding is established between each of the arguments and the functor
-node. Whenever the value of one of the arguments changes, the
-expression is reevaluated and the value of the functor node is
-updated.</p><p>In the functor node <code class="literal">to-real(food)</code> the operator is <code class="literal">to-real</code>, which
-simply converts its single argument, the node <code class="literal">food</code>, to a real
-(floating-point) numeric value. With the <code class="literal">to-real</code> operator a two-way
-binding is established between the argument and the functor node. The
-result of this is that if another node (not the argument) is bound to
-the functor node, <code class="literal">node -&gt; to-real(argument)</code>, its value is converted to
-a real value and the value of the argument node is updated to it.</p><p>The value of the input element, in which the amount allocated to food
-is entered, is implicitly bound to <code class="literal">to-real(food)</code>. Thus when text is
-entered in the input element, the value of the <code class="literal">food</code> node is set to
-the value in text field converted to a real value. The same is true
-for the electricity and water fields.</p><p>The bulk of the application logic is specified in the Tridash code tag
-at the beginning of the file.</p><p>The first line, <code class="literal">:import(core)</code>, is a special declaration which imports
-all the nodes from the <code class="literal">core</code> module into the current module, <span class="emphasis"><em>more on
-modules later</em></span>. The only nodes we use from the <code class="literal">core</code> module are the
-addition <code class="literal">+</code> operator and <code class="literal">to-real</code> operator.</p><p>The line <code class="literal">food + electricity + water -&gt; total</code> is in effect
-responsible for computing the total amount allocated and displaying it
-in the “Total” field. Lets break it down bit by bit.</p><p>A binding is established between the node <code class="literal">food + electricity + water</code>
-and the node <code class="literal">total</code>. The former is a functor node with the <code class="literal">+</code>
-operator.</p><p>The <code class="literal">+</code> operator is an infix operator, which means it can be placed
-between its two arguments (infix notation), instead of being placed
-before its arguments (prefix notation). The spaces between the infix
-<code class="literal">+</code> operator and its argument nodes are mandatory as
-<code class="literal">food+electricity+water</code> is a valid node identifier and is thus
-interpreted as a single node. The infix notation is transformed to the
-prefix notation <code class="literal">+(+(food, electricity), water)</code>. Both notations are
-equivalent and either one can be written in the source file, provided
-the operator is registered as an infix operator (<span class="emphasis"><em>more on this
-later</em></span>).</p><p>The <code class="literal">+</code> operator computes, you guessed it, the sum of the values of
-its argument nodes. The first argument is the functor node <code class="literal">+(food,
-electricity)</code> which computes the sum of the amount allocated to <code class="literal">food</code>
-and <code class="literal">electricity</code>, and the second argument is <code class="literal">water</code>, thus the
-functor node computes the total sum.</p><p>The total sum is bound to the <code class="literal">total</code> node which, recall, is bound to
-the text field displaying the total amount allocated to all
-expenses. Thus whenever the total amount allocated changes, the new
-total is displayed in the text field next to “Total:”. The total
-amount, itself, is updated, whenever the amount in one of the
-“Food”, “Electricity” or “Water” text fields is changed by
-the user.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_build_configuration_file"></a>Build Configuration File</h4></div></div></div><p>To simplify the build command, the build options will be specified in
-a build configuration file.</p><p>The build configuration file contains the list of sources, along with
+</p><p>An interface consisting of two text input fields is created. The first
+field is bound to node <code class="literal">a</code> and the second to node <code class="literal">b</code>. Underneath the
+fields the node <code class="literal">sum</code> is bound to an unnamed HTML element located next
+to “A + B =”.</p><p>Nodes <code class="literal">a</code> and <code class="literal">b</code> are bound to the values of the two numbers. Node
+<code class="literal">sum</code> is to be bound to the sum of <code class="literal">a</code> and <code class="literal">b</code>.</p><p>Before we begin writing the binding declarations we need to import the
+nodes from the <code class="literal">core</code> module, <span class="emphasis"><em>you’ll learn more about modules in a
+later tutorial</em></span>, which we’ll be making use of in this application. The
+following imports all nodes from the <code class="literal">core</code> module:</p><p><strong>Import all nodes from module <code class="literal">core</code>. </strong>
+</p><pre class="screen">/import(core)</pre><p>
+</p><p>Nodes <code class="literal">a</code> and <code class="literal">b</code> are bound to the contents of the text fields,
+however the contents of the text fields are strings. We need to
+convert <code class="literal">a</code> and <code class="literal">b</code> to integers in order to compute the sum. This is
+achieved using the <code class="literal">to-int</code> operator.</p><p>The sum of the integer values of <code class="literal">a</code> and <code class="literal">b</code> is computed using the <code class="literal">+</code>
+operator applied on the arguments <code class="literal">to-int(a)</code> and
+<code class="literal">to-int(b)</code>.</p><p><strong>Computing Sum of <code class="literal">a</code> and <code class="literal">b</code>. </strong>
+</p><pre class="screen">to-int(a) + to-int(b)</pre><p>
+</p><p>Finally, we need to bind the sum to the node <code class="literal">sum</code> in order for it to
+be displayed below the fields.</p><pre class="screen">to-int(a) + to-int(b) -&gt; sum</pre><p>Adding the declarations, we’ve written so far, to a Tridash code tag
+(somewhere in the file such as at the beginning), completes the
+application.</p><p><strong>Tridash Code Tag. </strong>
+</p><pre class="screen">&lt;?
+ /import(core)
+
+ to-int(a) + to-int(b) -&gt; sum
+?&gt;</pre><p>
+</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_build_configuration_file"></a>Build Configuration File</h4></div></div></div><p>To simplify the build command, the build options are specified in a
+build configuration file.</p><p>The build configuration file contains the list of sources, along with
 the source-specific options, and the output options in YAML syntax
-<span class="emphasis"><em>(see <a class="ulink" href="https://yaml.org" target="_top">https://yaml.org</a> for details)</em></span>.</p><p>Create the following <code class="literal">build.yaml</code> file:</p><p><strong>build.yml. </strong>
+<span class="emphasis"><em>(see <a class="ulink" href="https://yaml.org" target="_top">https://yaml.org</a> for details)</em></span>.</p><p>Create the following <code class="literal">build.yml</code> file:</p><p><strong>build.yml. </strong>
 </p><pre class="screen">sources:
   - path: ui.html
     node-name: ui
@@ -117,27 +88,56 @@ output:
   type: html
   main-ui: ui</pre><p>
 </p><p>The outer structure of the file is a dictionary with two entries
-<code class="literal">sources</code> and <code class="literal">output</code>.</p><p>The <code class="literal">sources</code> entry contains the list of source files. Each item in
-the list is either the path to the source file or is a dictionary with
-the path in the <code class="literal">path</code> entry and the source-specific options in the
-remaining entries. In this application there is one source file
-<code class="literal">ui.html</code> with one source processing option <code class="literal">node-name</code> set to <code class="literal">ui</code>.</p><p>The <code class="literal">output</code> entry is a dictionary containing the output options. The
-<code class="literal">path</code> entry specifies the <code class="literal">path</code> to the output file, in
-this case <code class="literal">app.html</code>. The remainder of the entries are output
-options. In this case, the output options are the same as in the
-previous tutorial, <code class="literal">type=html</code> and <code class="literal">main-ui=ui</code>.</p><p>To build from a build configuration file run the following command:</p><pre class="screen">tridashc -b build.yml</pre><p>The <code class="literal">-b</code> option specifies the path to the build configuration file
+<code class="literal">sources</code> and <code class="literal">output</code>.</p><p>The <code class="literal">sources</code> entry contains the list of source files either as a path
+or as a dictionary with the path in the <code class="literal">path</code> entry and the
+processing options in the remaining entries. In this application there
+is one source file <code class="literal">ui.html</code> with one source processing option
+<code class="literal">node-name</code> set to <code class="literal">ui</code>.</p><p>The <code class="literal">output</code> entry is a dictionary containing the path to the output
+file in the path entry, in this case <code class="literal">app.html</code>, and the output
+options in the remaining entries, in this case <code class="literal">type = html</code> and
+<code class="literal">main-ui = ui</code> which are the same options as in the previous
+tutorials.</p><p>To build from a build configuration file run the following command:</p><pre class="screen">tridashc -b build.yml</pre><p>The <code class="literal">-b</code> option specifies the path to the build configuration file
 containing the build options. All other command line options are
 ignored when this option is specified.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_running_the_application_2"></a>Running the Application</h4></div></div></div><p>Open the <code class="literal">app.html</code> file in a web browser, and enter some
-numbers in the text fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial2/snap1.png" align="middle" alt="Snapshot: 100, 300, 500 entered in expense fields. 900 displayed in total." /></div></div><p>Notice that the total is computed and displayed in the “Total:”
-field.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>You will only see a total computed once you have entered a valid
-number in each field.</p></td></tr></table></div><p>Now try changing some of the amounts allocated (<span class="emphasis"><em>remember to press
-enter after you’ve changed a value</em></span>):</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial2/snap2.png" align="middle" alt="Snapshot: Electricity changed to 350. New total 950 displayed." /></div></div><p>Notice that the total amount allocated is automatically recomputed and
-the new total is displayed in the “Total” field.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_inline_functional_bindings"></a>2.2. Inline Functional Bindings</h3></div></div></div><p>The application built in this tutorial can be implemented more
-succinctly by replacing the <code class="literal">total</code> node with <code class="literal">food + electricity +
-water</code> in the inline node declaration within the <code class="literal">value</code> attribute of
-the total <code class="literal">input</code> element.</p><pre class="programlisting">&lt;label for="total"&gt;&lt;strong&gt;Total:&lt;/strong&gt;&lt;/label&gt;
-&lt;div&gt;&lt;input id="total" value="&lt;?@ food + electricity + water ?&gt;" readonly/&gt;&lt;/div&gt;</pre><p>This shows that inline node declarations can contain any valid node
-declaration not just a simple node.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_summary"></a>2.3. Summary</h3></div></div></div><p>In this tutorial you learned how to create bindings involving a
-function of the values of two or more nodes. Whenever the value of one
-of the argument nodes changes, the expression is re-evaluated to
-compute the node’s new value.</p></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s01.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s03.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
+numbers in the text fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial2/snap1.png" align="middle" alt="A: 2:, B: 3, A + B = 5" /></div></div><p>Notice that the sum of the numbers is automatically computed and
+displayed below the fields.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The sum will only be displayed once you have entered a valid
+number in each field.</p></td></tr></table></div><p>Now try changing the numbers (<span class="emphasis"><em>remember to press enter afterwards</em></span>):</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial2/snap2.png" align="middle" alt="A: 2, B: 8, A + B = 10" /></div></div><p>Notice that the sum is automatically recomputed and the new sum is
+displayed.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_binding_to_functor_nodes"></a>2.2. Binding to Functor Nodes</h3></div></div></div><p>The <code class="literal">to-int</code> operator is special in that a two-way binding is
+established between its argument and the functor node. Thus the
+declaration <code class="literal">to-int(a)</code> also establishes the binding <code class="literal">to-int(a) -&gt; a</code>.
+The binding in the reverse direction, from functor to argument, has
+the same function as the binding from the argument to the
+functor. Thus in <code class="literal">to-int(a) -&gt; a</code>, <code class="literal">a</code> is bound to the value of
+<code class="literal">to-int(a)</code> converted to an integer.</p><p>This allows a binding to be established with a <code class="literal">to-int</code> functor node
+as the observer.</p><p><strong>Example: Binding with <code class="literal">to-int</code> as observer. </strong>
+</p><pre class="screen">x -&gt; to-int(a)</pre><p>
+</p><p>In this example, <code class="literal">to-int(a)</code> is bound to <code class="literal">x</code>. Whenever the value of
+<code class="literal">x</code> changes, the value of <code class="literal">to-int(a)</code> is set to it, and the value of
+<code class="literal">a</code> is set to the value of <code class="literal">to-int(a)</code> converted to an integer.</p><p>With this functionality, the application in this tutorial can be
+implemented more succinctly by moving the integer conversion from the
+Tridash code tag to the inline node declarations.</p><p>Replace the declaration:</p><pre class="screen">to-int(a) + to-int(b) -&gt; sum</pre><p>with:</p><pre class="screen">a + b -&gt; sum</pre><p>Replace <code class="literal">&lt;?@ a ?&gt;</code> and <code class="literal">&lt;?@ b ?&gt;</code> with <code class="literal">&lt;?@ to-int(a) ?&gt;</code> and <code class="literal">&lt;?@
+to-int(b) ?&gt;</code> respectively.</p><p>The benefit of this is that the value conversion logic is moved closer
+to the point where the values are obtained, rather than being littered
+throughout the core application logic. Nodes <code class="literal">a</code> and <code class="literal">b</code> can now be
+used directly, without having to be converted first, since it is known
+that they contain integer values.</p><p>To simplify the application further, the <code class="literal">sum</code> node can be omitted
+entirely and <code class="literal">&lt;?@ sum ?&gt;</code> can be replaced with <code class="literal">&lt;?@ a + b ?&gt;</code>.</p><p><strong>Improved Application. </strong>
+</p><pre class="programlisting">&lt;?
+ /import(core)
+?&gt;
+&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Adding Numbers&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+      &lt;h1&gt;Adding Numbers&lt;/h1&gt;
+      &lt;div&gt;&lt;label&gt;A: &lt;input value="&lt;?@ to-int(a) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;B: &lt;input value="&lt;?@ to-int(b) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;hr/&gt;
+      &lt;div&gt;&lt;strong&gt;A + B = &lt;?@ a + b ?&gt;&lt;/strong&gt;&lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre><p>
+</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">/import</code> declaration in the Tridash code tag has to be
+retained as it is responsible for importing the nodes <code class="literal">to-int</code> and <code class="literal">+</code>
+from the <code class="literal">core</code> module.</p></td></tr></table></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s01.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s03.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
