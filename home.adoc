@@ -91,8 +91,8 @@ building web apps. Other backends, allowing for desktop applications
 to be written, will be added in a future release.
 
 That's all that is necessary. The main application logic is actually
-contained in `<?@ food + electricty + water ?>` which computes the sum
-of the values entered in the three text fields. Whenever the value of
+contained in `<?@ a + b ?>` which computes the sum
+of the values entered in the two text fields. Whenever the value of
 a text field is changed, the sum is automatically recomputed.
 
 == Support ==
