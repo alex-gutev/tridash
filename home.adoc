@@ -99,4 +99,4 @@ a text field is changed, the sum is automatically recomputed.
 
 [small]#If you find this project interesting and would like to ensure
 its continued development please consider making a donation via
-link::https://www.patreon.com/alexgutev[Patreon]#
+link:https://www.patreon.com/alexgutev[Patreon]#
