@@ -104,7 +104,7 @@ user is informed when the sum of the numbers exceeds a limit, which is
 also given by the user.
 
 --------------------------------------------------
-<? 
+<?
  /import(core)
 
  sum <- a + b
@@ -113,9 +113,9 @@ also given by the user.
 <!doctype html>
 <html>
     <body>
-      <p><label>Limit: <input value="<?@ to-int(limit) ?>"/></label></p>
-      <p><label>A: <input value="<?@ to-int(a) ?>" /></label></p>
-      <p><label>B: <input value="<?@ to-int(b) ?>" /></label></p>
+      <div><label>Limit:<br/><input value="<?@ to-int(limit) ?>"/></label></div>
+      <div><label>A:<br/><input value="<?@ to-int(a) ?>" /></label></div>
+      <div><label>B:<br/><input value="<?@ to-int(b) ?>" /></label></div>
       <p>A + B = <?@ sum ?></p>
       <p>
        <?@
