@@ -57,6 +57,12 @@ features and core modules of the language.
 - link:tridash.pdf[PDF]
 - link:tridash-single.html[Single Page HTML]
 
+The Linux and OS X/macOS distributions contain the full manual in the
+'Info' format.
+
+The Windows distribution contains the full manual in the Compiled HTML
+Help format.
+
 == Examples ==
 
 Visit link:examples.html[Examples] for live examples of Tridash
