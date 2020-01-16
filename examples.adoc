@@ -37,7 +37,7 @@ implemented with just the following:
 <div style="text-align: center"><iframe src="examples/sum.html"></iframe></div>
 ++++++++++++++++++++++++++++++++++++++++++++++++++
 
-== Sum Limit ==
+== Conditions ==
 
 Let's say you'd like to enhance the previous application, so that the
 user is informed when the sum of the numbers exceeds a limit, which is
