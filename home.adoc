@@ -59,31 +59,33 @@ features and core modules of the language.
 
 == Examples ==
 
-=== Summing Values ===
+=== Adding Values ===
 
-Let's say you an application consisting of two text input fields, and
-you'd like to display the sum of the values, entered in the fields,
-and display it. Additionally you'd like the sum to be recomputed, with
-the new sum displayed, whenever the values of one of the text fields
-is changed by the user. In most of today's languages this would
-require setting up event listeners, and callback functions for each of
-the text fields, you'd then have to update a `sum` variable and
-manually change the value of the fourth text field to the new
-sum. With Tridash, the entire application can be implemented with just
-the following:
+The following is an example of an application consisting of two text
+input fields, which displays the sum of the two numbers below the
+fields. The sum is recomputed, whenever the values of one of the text
+fields is changed by the user.
+
+In most of today's languages this would require setting up event
+listeners, and callback functions for each of the text fields, you'd
+then have to update a `sum` variable and manually change displayed
+value to the new sum. With Tridash, the entire application can be
+implemented with just the following:
 
 --------------------------------------------------
 <? /import(core) ?>
 
 <!doctype html>
 <html>
-    <body>
-      <p><label>A: <input value="<?@ to-int(a) ?>" /></label></p>
-      <p><label>B: <input value="<?@ to-int(b) ?>" /></label></p>
-      <p>A + B = <?@ a + b ?></p>
-    </body>
+  <body>
+    <div><label>A:<br/><input value="<?@ to-int(a) ?>" /></label></div>
+    <div><label>B:<br/><input value="<?@ to-int(b) ?>" /></label></div>
+    <p>A + B = <?@ a + b ?></p>
+  </body>
 </html>
 --------------------------------------------------
+
+image::images/examples/sum.png["A: 1, B: 2, A + B = 3", align="center"]
 
 NOTE: This example targets the JavaScript backend with HTML used for
 the user interface, however Tridash is not intended exclusively for
@@ -94,6 +96,41 @@ That's all that is necessary. The main application logic is actually
 contained in `<?@ a + b ?>` which computes the sum
 of the values entered in the two text fields. Whenever the value of
 a text field is changed, the sum is automatically recomputed.
+
+=== Sum Limit ===
+
+Let's say you'd like to enhance the previous application, so that the
+user is informed when the sum of the numbers exceeds a limit, which is
+also given by the user.
+
+--------------------------------------------------
+<? 
+ /import(core)
+
+ sum <- a + b
+?>
+
+<!doctype html>
+<html>
+    <body>
+      <p><label>Limit: <input value="<?@ to-int(limit) ?>"/></label></p>
+      <p><label>A: <input value="<?@ to-int(a) ?>" /></label></p>
+      <p><label>B: <input value="<?@ to-int(b) ?>" /></label></p>
+      <p>A + B = <?@ sum ?></p>
+      <p>
+       <?@
+        case(
+            sum <= limit : "Within Limit!",
+            "Limit Exceeded!"
+        )
+       ?>
+      </p>
+    </body>
+</html>
+--------------------------------------------------
+
+image::images/examples/limit1.png["Limit: 10 A: 2, B: 3, A + B = 5, Within Limit!", align="center"]
+image::images/examples/limit2.png["Limit: 10 A: 20, B: 3, A + B = 5, Limit Exceeded!", align="center"]
 
 == Support ==
 

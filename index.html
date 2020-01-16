@@ -113,30 +113,34 @@ features and core modules of the language.
 <h2 id="_examples">Examples</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_summing_values">Summing Values</h3>
-<div class="paragraph"><p>Let&#8217;s say you an application consisting of two text input fields, and
-you&#8217;d like to display the sum of the values, entered in the fields,
-and display it. Additionally you&#8217;d like the sum to be recomputed, with
-the new sum displayed, whenever the values of one of the text fields
-is changed by the user. In most of today&#8217;s languages this would
-require setting up event listeners, and callback functions for each of
-the text fields, you&#8217;d then have to update a <span class="monospaced">sum</span> variable and
-manually change the value of the fourth text field to the new
-sum. With Tridash, the entire application can be implemented with just
-the following:</p></div>
+<h3 id="_adding_values">Adding Values</h3>
+<div class="paragraph"><p>The following is an example of an application consisting of two text
+input fields, which displays the sum of the two numbers below the
+fields. The sum is recomputed, whenever the values of one of the text
+fields is changed by the user.</p></div>
+<div class="paragraph"><p>In most of today&#8217;s languages this would require setting up event
+listeners, and callback functions for each of the text fields, you&#8217;d
+then have to update a <span class="monospaced">sum</span> variable and manually change displayed
+value to the new sum. With Tridash, the entire application can be
+implemented with just the following:</p></div>
 <div class="listingblock">
 <div class="content monospaced">
 <pre>&lt;? /import(core) ?&gt;
 
 &lt;!doctype html&gt;
 &lt;html&gt;
-    &lt;body&gt;
-      &lt;p&gt;&lt;label&gt;A: &lt;input value="&lt;?@ to-int(a) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
-      &lt;p&gt;&lt;label&gt;B: &lt;input value="&lt;?@ to-int(b) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
-      &lt;p&gt;A + B = &lt;?@ a + b ?&gt;&lt;/p&gt;
-    &lt;/body&gt;
+  &lt;body&gt;
+    &lt;div&gt;&lt;label&gt;A:&lt;br/&gt;&lt;input value="&lt;?@ to-int(a) ?&gt;" /&gt;&lt;/label&gt;&lt;/div&gt;
+    &lt;div&gt;&lt;label&gt;B:&lt;br/&gt;&lt;input value="&lt;?@ to-int(b) ?&gt;" /&gt;&lt;/label&gt;&lt;/div&gt;
+    &lt;p&gt;A + B = &lt;?@ a + b ?&gt;&lt;/p&gt;
+  &lt;/body&gt;
 &lt;/html&gt;</pre>
 </div></div>
+<div class="imageblock" style="text-align:center;">
+<div class="content">
+<img src="images/examples/sum.png" alt="A: 1, B: 2, A + B = 3">
+</div>
+</div>
 <div class="admonitionblock">
 <table><tr>
 <td class="icon">
@@ -153,6 +157,48 @@ contained in <span class="monospaced">&lt;?@ a + b ?&gt;</span> which computes t
 of the values entered in the two text fields. Whenever the value of
 a text field is changed, the sum is automatically recomputed.</p></div>
 </div>
+<div class="sect2">
+<h3 id="_sum_limit">Sum Limit</h3>
+<div class="paragraph"><p>Let&#8217;s say you&#8217;d like to enhance the previous application, so that the
+user is informed when the sum of the numbers exceeds a limit, which is
+also given by the user.</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>&lt;?
+ /import(core)
+
+ sum &lt;- a + b
+?&gt;
+
+&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;body&gt;
+      &lt;p&gt;&lt;label&gt;Limit: &lt;input value="&lt;?@ to-int(limit) ?&gt;"/&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;label&gt;A: &lt;input value="&lt;?@ to-int(a) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;label&gt;B: &lt;input value="&lt;?@ to-int(b) ?&gt;" /&gt;&lt;/label&gt;&lt;/p&gt;
+      &lt;p&gt;A + B = &lt;?@ sum ?&gt;&lt;/p&gt;
+      &lt;p&gt;
+       &lt;?@
+        case(
+            sum &lt;= limit : "Within Limit!",
+            "Limit Exceeded!"
+        )
+       ?&gt;
+      &lt;/p&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre>
+</div></div>
+<div class="imageblock" style="text-align:center;">
+<div class="content">
+<img src="images/examples/limit1.png" alt="Limit: 10 A: 2, B: 3, A + B = 5, Within Limit!">
+</div>
+</div>
+<div class="imageblock" style="text-align:center;">
+<div class="content">
+<img src="images/examples/limit2.png" alt="Limit: 10 A: 20, B: 3, A + B = 5, Limit Exceeded!">
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -167,7 +213,7 @@ its continued development please consider making a donation via
 <div id="footer">
 <div id="footer-text">
 Last updated
- 2020-01-14 14:44:36 CET
+ 2020-01-16 09:43:38 CET
 </div>
 </div>
 </body>
