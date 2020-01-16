@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="generator" content="AsciiDoc 8.6.10">
+<title>Tridash Examples</title>
+<link rel="stylesheet" href="style/asciidoc.css" type="text/css">
+
+
+</head>
+<body class="article">
+<div id="header">
+<h1>Tridash Examples</h1>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph"><p>This page contains brief examples of Tridash applications aiming to
+demonstrate the language&#8217;s functionality. This page is not a tutorial
+of the language. For an introductory tutorial head to
+<a href="tutorials/">Introductory Tutorials</a>.</p></div>
+<div class="paragraph"><p>Each example is accompanied by a live demo of the program.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_adding_numbers">Adding Numbers</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>The following is an example of an application consisting of two text
+input fields, which displays the sum of the two numbers below the
+fields. The sum is recomputed, whenever the values of one of the text
+fields is changed by the user.</p></div>
+<div class="paragraph"><p>In most of today&#8217;s languages this would require setting up event
+listeners, and callback functions for each of the text fields, you&#8217;d
+then have to update a <span class="monospaced">sum</span> variable and manually change displayed
+value to the new sum. With Tridash, the entire application can be
+implemented with just the following:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>&lt;? /import(core) ?&gt;
+
+&lt;!doctype html&gt;
+&lt;html&gt;
+  &lt;body&gt;
+    &lt;div&gt;&lt;label&gt;A:&lt;br/&gt;&lt;input value="&lt;?@ to-int(a) ?&gt;" /&gt;&lt;/label&gt;&lt;/div&gt;
+    &lt;div&gt;&lt;label&gt;B:&lt;br/&gt;&lt;input value="&lt;?@ to-int(b) ?&gt;" /&gt;&lt;/label&gt;&lt;/div&gt;
+    &lt;p&gt;A + B = &lt;?@ a + b ?&gt;&lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</pre>
+</div></div>
+<div style="text-align: center"><iframe src="examples/sum.html"></iframe></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_sum_limit">Sum Limit</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Let&#8217;s say you&#8217;d like to enhance the previous application, so that the
+user is informed when the sum of the numbers exceeds a limit, which is
+also given by the user.</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>&lt;?
+ /import(core)
+
+ sum &lt;- a + b
+?&gt;
+
+&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;body&gt;
+      &lt;div&gt;&lt;label&gt;Limit:&lt;br/&gt;&lt;input value="&lt;?@ to-int(limit) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;A:&lt;br/&gt;&lt;input value="&lt;?@ to-int(a) ?&gt;" /&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;B:&lt;br/&gt;&lt;input value="&lt;?@ to-int(b) ?&gt;" /&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;p&gt;A + B = &lt;?@ sum ?&gt;&lt;/p&gt;
+      &lt;p&gt;
+       &lt;?@
+        case(
+            sum &lt;= limit : "Within Limit!",
+            "Limit Exceeded!"
+        )
+       ?&gt;
+      &lt;/p&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre>
+</div></div>
+<div style="text-align: center">
+<iframe src="examples/limit.html" height="200"></iframe>
+</div>
+<div class="paragraph"><p>Implementing the new functionality was almost as easy as adding new UI
+elements. The <span class="monospaced">case( ... )</span> expression chooses the message &#8220;Within
+Limit!&#8221; or &#8220;Limit exceeded!&#8221; based on whether the sum is less than
+or equal to limit.</p></div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated
+ 2020-01-16 16:13:18 CET
+</div>
+</div>
+</body>
+</html>
