@@ -1,0 +1,23 @@
+<?
+ /import(core)
+
+ sum <- a + b
+?>
+
+<!doctype html>
+<html>
+    <body>
+      <div><label>Limit:<br/><input value="<?@ to-int(limit) ?>"/></label></div>
+      <div><label>A:<br/><input value="<?@ to-int(a) ?>" /></label></div>
+      <div><label>B:<br/><input value="<?@ to-int(b) ?>" /></label></div>
+      <p>A + B = <?@ sum ?></p>
+      <p>
+       <?@
+        case(
+            sum <= limit : "Within Limit!",
+            "Limit Exceeded!"
+        )
+       ?>
+      </p>
+    </body>
+</html>

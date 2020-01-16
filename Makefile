@@ -1,4 +1,4 @@
-all: index.html philosophy.html installation.html
+all: index.html philosophy.html installation.html examples.html examples
 
 index.html: home.adoc
 	asciidoc -b html5 -a disable-javascript -a linkcss -a stylesdir=style -a icons $<
@@ -10,10 +10,19 @@ philosophy.html: philosophy.adoc
 installation.html: installation.adoc
 	asciidoc -b html5 -a disable-javascript -a linkcss -a stylesdir=style -a icons $<
 
+examples.html: examples.adoc
+	asciidoc -b html5 -a disable-javascript -a linkcss -a stylesdir=style -a icons $<
 
-clean:
+examples:
+	$(MAKE) -C examples
+
+clean: clean-examples
 	rm -f index.html
 	rm -f philosophy.html
 	rm -f installation.html
+	rm -f examples.html
 
-.PHONY: all clean
+clean-examples:
+	$(MAKE) -C examples clean
+
+.PHONY: all clean examples clean-examples
