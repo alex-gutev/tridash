@@ -132,6 +132,11 @@ also given by the user.
 image::images/examples/limit1.png["Limit: 10 A: 2, B: 3, A + B = 5, Within Limit!", align="center"]
 image::images/examples/limit2.png["Limit: 10 A: 20, B: 3, A + B = 5, Limit Exceeded!", align="center"]
 
+Implementing the new functionality was almost as easy as adding new UI
+elements. The `case( ... )` expression chooses the message ``Within
+Limit!'' or ``Limit exceeded!'' based on whether the sum is less than
+or equal to limit.
+
 == Support ==
 
 [small]#If you find this project interesting and would like to ensure
