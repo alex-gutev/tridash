@@ -1121,7 +1121,7 @@ reached.
 [[meta-node-foldl]]
 ==== Meta-Node: `foldl(f, list)` ====
 
-(((fold, Core Module, Meta-Node)))
+(((foldl, Core Module, Meta-Node)))
 
 Folds a list to a single value, starting from the first element.
 

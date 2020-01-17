@@ -203,9 +203,20 @@ function uncatch_thunk(thing) {
 
 function cast_int(x) {
     try {
-        var intx = parseInt(resolve(x));
+        x = resolve(x);
 
-        return !isNaN(intx) ? intx : fail(InvalidInteger);
+        if (is_int(x)) {
+            return x;
+        }
+        else if (is_real(x)) {
+            return Math.trunc(x);
+        }
+        else if (is_string(x)) {
+            return /^[-+]?(\d+)$/.test(x) ? parseInt(x) :
+                InvalidInteger();
+        }
+
+        return TridashTypeError();
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -213,9 +224,18 @@ function cast_int(x) {
 };
 function cast_real(x) {
     try {
-        var realx = parseFloat(resolve(x));
+        x = resolve(x);
 
-        return !isNaN(realx) ? realx : fail(InvalidReal);
+        if (is_real(x)) {
+            return x;
+        }
+        else if (is_string(x)) {
+            var realx = Number(x);
+
+            return !isNaN(realx) ? realx : InvalidReal();
+        }
+
+        return TridashTypeError();
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -516,6 +536,10 @@ function get_symbol(id) {
 function member(dict, key) {
     try {
         dict = resolve(dict);
+
+        if (typeof dict !== 'object')
+            return TridashTypeError();
+
         key = resolve(key);
 
         return key in dict ? dict[key] : fail();

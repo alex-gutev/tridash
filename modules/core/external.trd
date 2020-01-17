@@ -84,7 +84,6 @@
 
 /external(not, x)
 /attribute(not, strictness, x)
-/attribute(not, target-node, not)
 
 
 ### Type Conversions
@@ -93,7 +92,7 @@
 /attribute(int, strictness, x)
 
 /external(real, x)
-/attribute(real, target-node, real)
+/attribute(real, strictness, x)
 
 /external(string, x)
 /attribute(string, strictness, x)
@@ -148,11 +147,13 @@
 
 ### Export Declarations
 
-/export(+, -, *, /, %,
-        <, <=, >, >=,
-        =, !=,
-        and, or, not,
-        int, real, string,
-        int?, real?, string?, inf?, NaN?,
-        cons, head, tail, cons?,
-        string-at, string-concat)
+/export(
+    +, -, *, /, %,
+    <, <=, >, >=,
+    =, !=,
+    and, or, not,
+    int, real, string,
+    int?, real?, string?, inf?, NaN?,
+    cons, head, tail, cons?,
+    string-at, string-concat
+)

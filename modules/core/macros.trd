@@ -65,7 +65,7 @@ case(..(cases)) : {
         case -> @(self)
     }
 
-    foldr(make-case, cases, list(&(fail)))
+    foldr(make-case, cases, list(&(No-Value!)))
 }
 /attribute(case, macro, 1)
 

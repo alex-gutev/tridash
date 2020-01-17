@@ -136,9 +136,11 @@ fail(Index-Out-Bounds) -> Index-Out-Bounds!
 
 /export(fail, fails?, fail-type, fail-type?, ?, !!, !-)
 
-/export(No-Value, No-Value!,
-        Type-Error, Type-Error!,
-        Invalid-Integer, Invalid-Integer!,
-        Invalid-Real, Invalid-Real!,
-        Arity-Error, Arity-Error!,
-        Index-Out-Bounds, Index-Out-Bounds!)
+/export(
+    No-Value, No-Value!,
+    Type-Error, Type-Error!,
+    Invalid-Integer, Invalid-Integer!,
+    Invalid-Real, Invalid-Real!,
+    Arity-Error, Arity-Error!,
+    Index-Out-Bounds, Index-Out-Bounds!
+)

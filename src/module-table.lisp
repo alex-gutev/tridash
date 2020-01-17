@@ -163,24 +163,25 @@
 
   (declare (ignore operator module))
 
-  (destructuring-bind (thing) operands
-    (atypecase (unwrap-declaration thing)
-      (symbol
-       (char (symbol-name it) 0))
+  (let ((*tridash-call-reason* :macro))
+    (destructuring-bind (thing) operands
+      (atypecase (unwrap-declaration thing)
+        (symbol
+         (char (symbol-name it) 0))
 
-      (string
-       (char it 0))
+        (string
+         (char it 0))
 
-      (integer
-       (if (typep thing '(integer 0 9))
-           (digit-char it)
-           (fail-thunk)))
+        (integer
+         (if (<= 0 it 9)
+             (digit-char it)
+             (error 'tridash-fail :fail-type (get :type-error *core-meta-nodes*))))
 
-      (character
-       it)
+        (character
+         it)
 
-      (otherwise
-       (fail-thunk)))))
+        (otherwise
+         (error 'tridash-fail :fail-type (get :type-error *core-meta-nodes*)))))))
 
 
 (defun add-core-nodes (builtin)

@@ -334,8 +334,7 @@ match-fails?(place, pattern) : {
 
     if(?(type),
        Pattern(list(&(fail-type?), place, type)),
-       Pattern(list(&(fails?), place))
-      )
+       Pattern(list(&(fails?), place)))
 }
 
 /attribute(fails?, matcher, match-fails?)
@@ -427,12 +426,14 @@ match-not(place, expression) : {
 
 ### Exports
 
-/export(get-matcher,
-        Pattern,
-        make-pattern-declarations,
-        make-pattern,
-        conditionalize-bindings,
-        combine-conditions,
-        Match-Fail, Match-Fail!,
-        make-match-bind,
-        fail-match)
+/export(
+    get-matcher,
+    Pattern,
+    make-pattern-declarations,
+    make-pattern,
+    conditionalize-bindings,
+    combine-conditions,
+    Match-Fail, Match-Fail!,
+    make-match-bind,
+    fail-match
+)

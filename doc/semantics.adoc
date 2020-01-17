@@ -1007,7 +1007,7 @@ The meta-node function returns the value of the last node in the body.
 
 factorial(n) : {
     case (
-         n > 1 : n * factorial(n - 1)
+         n > 1 : n * factorial(n - 1),
          1
     )
 }
@@ -1055,8 +1055,7 @@ preceding argument nodes of the meta-node.
 
 The `value` may be omitted, written in prefix form `:(name)`, in which
 case if the argument is omitted, the local argument node is set to a
-failure, _see <<_failures>>_, of type <<node-type-error,
-`Type-Error`>>.
+failure, _see <<_failures>>_, of type <<node-no-value, `No-Value`>>.
 
 .Example
 --------------------------------------------------
@@ -1450,7 +1449,7 @@ which are not constant literals.
 (((macro, Attribute, Macro Nodes)))
 
 A macro-node is a meta-node which is evaluated at compile-time with
-the result is interpreted as a Tridash node declaration.
+the result interpreted as a Tridash node declaration.
 
 A meta-node is marked as a macro-node by setting the `macro` attribute
 to true. Once set, the meta-node's function will be evaluated when

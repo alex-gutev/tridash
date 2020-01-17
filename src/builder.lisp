@@ -980,7 +980,10 @@
   (if coalescablep
       (setf (attribute :non-coalescable-self-reference node) t))
 
+  ;; Set these two attributes as an actual runtime node object is
+  ;; required to be able to reference its previous value.
   (setf (attribute :coalescable node) nil)
+  (setf (attribute :removable node) nil)
 
   (->> node
        node-ref
@@ -1126,12 +1129,8 @@
         (create-instance-node meta-node operands module)
       (add-meta-node-value-function instance meta-node operand-nodes)
 
-      (when target-meta-node
-        (if *source-node*
-            (make-reverse-bindings target-meta-node instance operands module)
-            (handler-case
-                (make-reverse-bindings target-meta-node instance operands module)
-              (target-node-error ()))))
+      (when (and *source-node* target-meta-node)
+        (make-reverse-bindings target-meta-node instance operands module))
 
       instance)))
 

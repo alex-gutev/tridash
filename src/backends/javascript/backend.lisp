@@ -73,8 +73,9 @@
     :accessor initial-values
     :documentation
     "List of initial node values to set. Each element is a list where
-     the first element is the node path and the second element is the
-     initial value.")))
+     the first element is the node path, the second element is the JS
+     block which computes the initial value and the third element is
+     the expression which references the initial value.")))
 
 (defvar *backend-state* nil
   "Special variable storing the `JS-BACKEND-STATE' object.")
@@ -228,22 +229,18 @@
    dispatches those values to their observer nodes."
 
   (when initial-values
-    (let ((state (make-instance 'function-block-state)))
-      (iter
-        (for (node init-value) in initial-values)
+    (iter
+      (for (node block expression) in initial-values)
 
-        (multiple-value-bind (block expression)
-            (compile-function init-value nil :return-value nil :state state)
+      (when block (collect block into blocks))
+      (collect (js-array (list node expression)) into expressions)
 
-          (when block (collect block into blocks))
-          (collect (js-array (list node expression)) into expressions))
-
-        (finally
-         (return
-           (list
-            blocks
-            (js-call (js-member +tridash-namespace+ "set_values")
-                     (js-array expressions)))))))))
+      (finally
+       (return
+         (list
+          blocks
+          (js-call (js-member +tridash-namespace+ "set_values")
+                   (js-array expressions))))))))
 
 
 ;;; Access Node Expressions
@@ -353,7 +350,13 @@
 
     (awhen (cdr (get-init-context node))
       (context node :input)
-      (push (list path (value-function it)) (initial-values *backend-state*)))
+
+      (let ((*protect* t))
+        (multiple-value-bind (block expression)
+            (compile-function (value-function it) nil :return-value nil)
+
+          (push (list path block expression)
+                (initial-values *backend-state*)))))
 
     (foreach (rcurry #'create-context node) (contexts node))))
 
