@@ -764,9 +764,11 @@ describe('Builtin Functions', function() {
 
         describe('Tridash.fail_type', function() {
             it('Should return failure type on failure', function() {
-                assert.equal(tridash.fail_type(tridash.fail()), null);
                 assert.equal(tridash.fail_type(tridash.fail('x')), 'x');
                 assert.equal(tridash.fail_type(tridash.fail(1)), 1);
+
+                assert.throws(() => tridash.resolve(tridash.fail_type(tridash.fail())),
+                              tridash.Fail);
             });
 
             it('Should fail if argument does not fail', function() {

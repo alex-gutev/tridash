@@ -1,0 +1,20 @@
+## Test calling other meta-nodes
+
+/import(core, +, <-)
+
+add(a, b) : a + b
+
+increment(n) : add(n, 1)
+
+output <- increment(n)
+
+
+## Input Attributes
+
+/attribute(n, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output, public-name, "output")
+/attribute(n, public-name, "n")

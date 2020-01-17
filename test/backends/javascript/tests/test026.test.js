@@ -1,5 +1,5 @@
 /**
- * cycles2.test.js
+ * test026.test.js
  *
  * Tridash JavaScript runtime library Tests.
  *
@@ -30,16 +30,47 @@ var Tridash = require('../runtime/tridash.js');
 var assert = require('assert');
 var util = require('./test_util.js');
 
-require('./cycles2.js');
+require('./test026.js');
+var n = Tridash.nodes.n;
+var output1 = Tridash.nodes.output1;
+var output2 = Tridash.nodes.output2;
 
-var i = Tridash.nodes['i'];
-var j = Tridash.nodes['j'];
-var output = Tridash.nodes['output'];
+describe('Integration Test 26', function() {
+    function test_fail_type(type) {
+        return (e) => {
+            return (e instanceof Tridash.Fail) && Tridash.resolve(e.type) === type;
+        };
+    }
 
-describe("Integration Test: Cyclic Bindings of Multiple Non-Coalescable Nodes", function() {
-    it('Output should resolve to a cyclic list', async function() {
-        Tridash.set_values([[i, 0], [j, 1]]);
+    describe('Optional Arguments with No Default Values', function() {
+        describe('Set `n` = 1', function() {
+            n.set_value(1);
 
-        assert.deepEqual(util.resolve_list(await output.next_value, 3), [0,1,0]);
+            var out1 = util.node_value(output1);
+            var out2 = util.node_value(output2);
+
+            it('`output1` fails', async function() {
+                await assert.rejects(out1, test_fail_type(Tridash.NoValue));
+            });
+
+            it('`output2` = 2', async function() {
+                assert.equal(await out2, 2);
+            });
+        });
+
+        describe('Set `n` = 2', function() {
+            n.set_value(2);
+
+            var out1 = util.node_value(output1);
+            var out2 = util.node_value(output2);
+
+            it('`output1` fails', async function() {
+                await assert.rejects(out1, test_fail_type(Tridash.NoValue));
+            });
+
+            it('`output2` = 3', async function() {
+                assert.equal(await out2, 3);
+            });
+        });
     });
 });

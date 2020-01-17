@@ -1,0 +1,385 @@
+## Unit Tests for Core Module Type Checking and Conversion Operators
+
+/module(type-tests)
+/import(tridash-unit)
+/import(core)
+
+## Definitions
+
+Fail-Type  <- &(Fail-Type)
+Fail-Type! <- fail(Fail-Type)
+
+1 -> object.x
+2 -> object.y
+
+f(x) : x
+
+## Tests
+
+### Type Operator Test Group
+
+all-tests <-
+    group(
+        "Types"
+
+        , check-tests
+        , conversion-tests
+    )
+
+check-tests <-
+    group(
+        "Type Checks"
+
+        , int?-tests
+        , real?-tests
+        , string?-tests
+    )
+
+conversion-tests <-
+    group(
+        "Type Conversions"
+        , int-tests
+        , to-int-tests
+
+        , real-tests
+        , to-real-tests
+
+        , string-tests
+        , to-string-tests
+    )
+
+/export(all-tests)
+
+
+## Test Type Checks
+
+### Test `int?`
+
+group(
+    "Meta-Node: `int?`",
+
+    test(int?(12), "int?(12)"),
+    test-not(int?(3.7), "int?(3.7)"),
+    test-not(int?("12"), "int?(\"12\")"),
+    test-not(int?(c(9)), "int?(c(9))"),
+    test-not(int?('(1x)), "int?('(1x))"),
+    test-not(int?(f), "int?(<meta-node-ref>)"),
+    test-not(int?(Fail-Type), "int?(<node-ref>)"),
+
+    test-fails?(int?(Fail-Type!), "int?(Fail-Type!)", Fail-Type)
+
+) -> int?-tests
+
+
+### Test `real?`
+
+group(
+    "Meta-Node: `real?`",
+
+    test(real?(12), "real?(12)"),
+    test(real?(3.7), "real?(3.7)"),
+    test-not(real?("5.6"), "real?(\"5.6\")"),
+    test-not(real?(c(9)), "real?(c(9))"),
+    test-not(real?('(1x)), "real?('(1x))"),
+    test-not(real?(f), "real?(<meta-node-ref>)"),
+    test-not(real?(Fail-Type), "real?(<node-ref>)"),
+
+    test-fails?(real?(Fail-Type!), "real?(Fail-Type!)", Fail-Type)
+
+) -> real?-tests
+
+
+### Test `string?`
+
+group(
+    "Meta-Node: `string?`",
+
+    test(string?("hello"), "string?(\"hello\")"),
+    test-not(string?(12), "string?(12)"),
+    test-not(string?(3.7), "string?(3.7)"),
+    test-not(string?(c(9)), "string?(c(9))"),
+    test-not(string?('(1x)), "string?('(1x))"),
+    test-not(string?(f), "string?(<meta-node-ref>)"),
+    test-not(string?(Fail-Type), "string?(<node-ref>)"),
+
+    test-fails?(string?(Fail-Type!), "string?(Fail-Type!)", Fail-Type)
+
+) -> string?-tests
+
+
+## Test Type Conversions
+
+### Test `int`
+
+group(
+    "Meta-Node: `int`",
+
+    group(
+        "Numeric Input",
+
+        test-equal(int(1), 1, "int(1)"),
+        test-equal(int(12), 12, "int(12)"),
+        test-equal(int(5.3), 5, "int(5.3)"),
+        test-equal(int(-1.2), -1, "int(-1.2)")
+    ),
+
+    group(
+        "String Input",
+
+        test-equal(int("1"), 1, "int(\"1\")"),
+        test-equal(int("37"), 37, "int(\"37\")"),
+        test-equal(int("-51"), -51, "int(\"-51\")"),
+
+        test-fails?(int("foo"), "int(\"foo\")", Invalid-Integer),
+        test-fails?(int("x1"), "int(\"x1\")", Invalid-Integer),
+        test-fails?(int("12x"), "int(\"12x\")", Invalid-Integer),
+        test-fails?(int("1.5"), "int(\"1.5\")", Invalid-Integer)
+    ),
+
+    group(
+        "Invalid Input",
+
+        test-fails?(int(object), "int(object)", Type-Error),
+        test-fails?(int(f), "int(<meta-node-ref>)", Type-Error),
+        test-fails?(int(Fail-Type), "int(<node-ref>)", Type-Error),
+        test-fails?(int(c(0)), "int(c(0))", Type-Error),
+        test-fails?(int('(5x)), "int('(5x))", Type-Error)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(int(Fail-Type!), "int(Fail-Type!)", Fail-Type)
+    )
+) -> int-tests
+
+#### Test `to-int`
+
+##### Bindings with to-int as target
+
+45         -> to-int(int-x1)
+3.5        -> to-int(int-x2)
+"37"       -> to-int(int-x3)
+f          -> to-int(int-x4)
+Fail-Type! -> to-int(int-x5)
+
+group(
+    "Meta-Node: `to-int`",
+
+    group(
+        "Numeric Input",
+
+        test-equal(to-int(1), 1, "to-int(1)"),
+        test-equal(to-int(12), 12, "to-int(12)"),
+        test-equal(to-int(5.3), 5, "to-int(5.3)"),
+        test-equal(to-int(-1.2), -1, "to-int(-1.2)")
+    ),
+
+    group(
+        "String Input",
+
+        test-equal(to-int("1"), 1, "to-int(\"1\")"),
+        test-equal(to-int("37"), 37, "to-int(\"37\")"),
+        test-equal(to-int("-51"), -51, "to-int(\"-51\")"),
+
+        test-fails?(to-int("foo"), "to-int(\"foo\")", Invalid-Integer),
+        test-fails?(to-int("x1"), "to-int(\"x1\")", Invalid-Integer),
+        test-fails?(to-int("12x"), "to-int(\"12x\")", Invalid-Integer),
+        test-fails?(to-int("1.5"), "to-int(\"1.5\")", Invalid-Integer)
+    ),
+
+    group(
+        "Invalid Input",
+
+        test-fails?(to-int(object), "to-int(object)", Type-Error),
+        test-fails?(to-int(f), "to-int(<meta-node-ref>)", Type-Error),
+        test-fails?(to-int(Fail-Type), "to-int(<node-ref>)", Type-Error),
+        test-fails?(to-int(c(0)), "to-int(c(0))", Type-Error),
+        test-fails?(to-int('(5x)), "to-int('(5x))", Type-Error)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(to-int(Fail-Type!), "to-int(Fail-Type!)", Fail-Type)
+    ),
+
+    group(
+        "As Binding Target",
+
+        test-equal(int-x1, 45, "45 -> to-int(x)"),
+        test-equal(int-x2, 3, "3.5 -> to-int(x)"),
+        test-equal(int-x3, 37, "\"37\" -> to-int(x)"),
+
+        test-fails?(int-x4, "<meta-node-ref> -> to-int(x)", Type-Error),
+        test-fails?(int-x5, "Fail-Type! -> to-int(x)", Fail-Type)
+    )
+) -> to-int-tests
+
+
+### Test `real`
+
+group(
+    "Meta-Node: `real`",
+
+    group(
+        "Numeric Input",
+
+        test-equal(real(1), 1, "real(1)"),
+        test-equal(real(12), 12, "real(12)"),
+        test-equal(real(4.5), 4.5, "real(4.5)"),
+        test-equal(real(-1.25), -1.25, "real(-1.25)")
+    ),
+
+    group(
+        "String Input",
+
+        test-equal(real("1"), 1, "real(\"1\")"),
+        test-equal(real("37.0"), 37, "real(\"37.0\")"),
+        test-equal(real("-51.25"), -51.25, "real(\"-51.25\")"),
+
+        test-fails?(real("foo"), "real(\"foo\")", Invalid-Real),
+        test-fails?(real("x1"), "real(\"x1\")", Invalid-Real),
+        test-fails?(real("12x"), "real(\"12x\")", Invalid-Real),
+        test-fails?(real("1.5.3"), "real(\"1.53\")", Invalid-Real)
+    ),
+
+    group(
+        "Invalid Input",
+
+        test-fails?(real(object), "real(object)", Type-Error),
+        test-fails?(real(f), "real(<meta-node-ref>)", Type-Error),
+        test-fails?(real(Fail-Type), "real(<node-ref>)", Type-Error),
+        test-fails?(real(c(0)), "real(c(0))", Type-Error),
+        test-fails?(real('(5x)), "real('(5x))", Type-Error)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(real(Fail-Type!), "real(Fail-Type!)", Fail-Type)
+    )
+) -> real-tests
+
+#### Test `to-real`
+
+##### Bindings with to-real as target
+
+45         -> to-real(real-x1)
+3.5        -> to-real(real-x2)
+"1.25"     -> to-real(real-x3)
+f          -> to-real(real-x4)
+Fail-Type! -> to-real(real-x5)
+
+
+group(
+    "Meta-Node: `to-real`",
+
+    group(
+        "Numeric Input",
+
+        test-equal(to-real(1), 1, "to-real(1)"),
+        test-equal(to-real(12), 12, "to-real(12)"),
+        test-equal(to-real(4.5), 4.5, "to-real(4.5)"),
+        test-equal(to-real(-1.25), -1.25, "to-real(-1.25)")
+    ),
+
+    group(
+        "String Input",
+
+        test-equal(to-real("1"), 1, "to-real(\"1\")"),
+        test-equal(to-real("37.0"), 37, "to-real(\"37.0\")"),
+        test-equal(to-real("-51.25"), -51.25, "to-real(\"-51.25\")"),
+
+        test-fails?(to-real("foo"), "to-real(\"foo\")", Invalid-Real),
+        test-fails?(to-real("x1"), "to-real(\"x1\")", Invalid-Real),
+        test-fails?(to-real("12x"), "to-real(\"12x\")", Invalid-Real),
+        test-fails?(to-real("1.5.3"), "to-real(\"1.53\")", Invalid-Real)
+    ),
+
+    group(
+        "Invalid Input",
+
+        test-fails?(to-real(object), "to-real(object)", Type-Error),
+        test-fails?(to-real(f), "to-real(<meta-node-ref>)", Type-Error),
+        test-fails?(to-real(Fail-Type), "to-real(<node-ref>)", Type-Error),
+        test-fails?(to-real(c(0)), "to-real(c(0))", Type-Error),
+        test-fails?(to-real('(5x)), "to-real('(5x))", Type-Error)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(to-real(Fail-Type!), "to-real(Fail-Type!)", Fail-Type)
+    ),
+
+    group(
+        "As Binding Target",
+
+        test-equal(real-x1, 45, "45 -> to-real(x)"),
+        test-equal(real-x2, 3.5, "3.5 -> to-real(x)"),
+        test-equal(real-x3, 1.25, "\"1.25\" -> to-real(x)"),
+
+        test-fails?(real-x4, "<meta-node-ref> -> to-real(x)", Type-Error),
+        test-fails?(real-x5, "Fail-Type! -> to-real(x)", Fail-Type)
+    )
+) -> to-real-tests
+
+
+### Test `string`
+
+group(
+    "Meta-Node: `string`",
+
+    group(
+        "Valid Input",
+
+        test-equal(string(120), "120", "string(120)"),
+        test-equal(string(3.5), "3.5", "string(3.5)"),
+        test-equal(string("hello world"), "hello world", "string(\"hello world\")"),
+        test-equal(string(c(x)), "x", "string(c(x))")
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(string(Fail-Type!), "string(Fail-Type!)", Fail-Type)
+    )
+) -> string-tests
+
+#### Test `to-string`
+
+##### Bindings with to-string as target
+
+45         -> to-string(string-x1)
+3.5        -> to-string(string-x2)
+"hello"       -> to-string(string-x3)
+Fail-Type! -> to-string(string-x4)
+
+group(
+    "Meta-Node: `to-string`",
+
+    group(
+        "Valid Input",
+
+        test-equal(to-string(120), "120", "to-string(120)"),
+        test-equal(to-string(3.5), "3.5", "to-string(3.5)"),
+        test-equal(to-string("hello world"), "hello world", "to-string(\"hello world\")"),
+        test-equal(to-string(c(x)), "x", "to-string(c(x))")
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(to-string(Fail-Type!), "to-string(Fail-Type!)", Fail-Type)
+    ),
+
+    group(
+        "As Binding Target",
+
+        test-equal(string-x1, "45", "45 -> to-string(x)"),
+        test-equal(string-x2, "3.5", "3.5 -> to-string(x)"),
+        test-equal(string-x3, "hello", "\"hello\" -> to-string(x)"),
+        test-fails?(string-x4, "Fail-Type! -> to-string(x)", Fail-Type)
+    )
+) -> to-string-tests

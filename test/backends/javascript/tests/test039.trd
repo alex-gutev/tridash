@@ -1,0 +1,17 @@
+## Test Core Module: Macro-Node `c`
+
+/import(core, c)
+
+c(h) -> out1
+c("\nhello") -> out2
+c(0) -> out3
+
+/attribute(out1, removable, 0)
+/attribute(out2, removable, 0)
+/attribute(out3, removable, 0)
+
+## Public Name Attributes
+
+/attribute(out1, public-name, "out1")
+/attribute(out2, public-name, "out2")
+/attribute(out3, public-name, "out3")

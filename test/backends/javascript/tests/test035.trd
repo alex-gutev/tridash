@@ -1,0 +1,18 @@
+## Test Higher Order Meta-Nodes
+
+/import(core, +, map, <-)
+
+increment(n) : n + 1
+
+output <- map(increment, input)
+
+
+## Input Attributes
+
+/attribute(input, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output, public-name, "output")
+/attribute(input, public-name, "input")

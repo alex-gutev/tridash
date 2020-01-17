@@ -1,0 +1,21 @@
+# Test Conditional Bindings based on Failure Types
+
+/import(core)
+
+Below-Limit  <- &(Below-Limit)
+Below-Limit! <- fail(Below-Limit)
+
+if (a + 1 > 3, a, Below-Limit!) -> a'
+
+a' -> output @ context
+b  -> output @ context when Below-Limit
+"other" -> output @ context
+
+# Attribute Declarations
+
+/attribute(a, input, 1)
+/attribute(b, input, 1)
+
+/attribute(a, public-name, "a")
+/attribute(b, public-name, "b")
+/attribute(output, public-name, "output")

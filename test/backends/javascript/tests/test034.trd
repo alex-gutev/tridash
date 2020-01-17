@@ -1,0 +1,20 @@
+## Test External Meta-Nodes
+
+/import(core, <-)
+
+/external(increment, x)
+
+/attribute(increment, js-name, "external_inc")
+
+output <- increment(x)
+
+
+## Input Attributes
+
+/attribute(x, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output, public-name, "output")
+/attribute(x, public-name, "x")

@@ -1,0 +1,205 @@
+## Unit Tests for Core Module Arithmetic Functions
+
+/module(arithmetic-tests)
+/import(tridash-unit)
+/import(core)
+
+
+## Definitions
+
+Fail-Type  <- &(Fail-Type)
+Fail-Type! <- fail(Fail-Type)
+
+1 -> object.x
+2 -> object.y
+
+f(x) : x
+
+## Tests
+
+### Arithmetic Test Group
+
+all-tests <-
+    group(
+        "Arithmetic Tests"
+        , +-tests
+        , --tests
+        , *-tests
+        , /-tests
+        , %-tests
+    )
+
+/export(all-tests)
+
+
+### Test `+`
+
+group(
+    "Meta-Node: `+`",
+
+    group(
+        "Valid Input",
+        test-equal(1 + 2, 3, "1 + 2"),
+        test-equal(-1 + 3, 2, "-1 + 3"),
+        test-equal(1.5 + 2.5, 4, "1.5 + 2.5")
+    ),
+
+    group(
+        "Invalid Types",
+        test-fails?("3" + 3, "\"3\" + 3", Type-Error),
+        test-fails?(10 + '(x), "10 + '(x)", Type-Error),
+        test-fails?(4 + c(4), "4 + c(4)", Type-Error),
+        test-fails?("1" + "2", "\"1\" + \"2\"", Type-Error),
+        test-fails?(object + 1, "object + 1", Type-Error),
+        test-fails?(2 + f, "2 + meta-node-ref", Type-Error),
+        test-fails?(2 + Fail-Type, "2 + &(Fail-Type)", Type-Error)
+    ),
+
+    group(
+        "Failure Propagation",
+        test-fails?(Fail-Type! + 1, "Fail-Type! + 1", Fail-Type),
+        test-fails?(1 + Fail-Type!, "1 + Fail-Type!", Fail-Type)
+    )
+) -> +-tests
+
+### Test `-`
+
+group(
+    "Meta-Node: `-`",
+
+    group(
+        "Valid Input",
+
+        test-equal(3 - 2, 1, "3 - 2"),
+        test-equal(3 - 5, -2, "3 - 5"),
+        test-equal(-3 - 5, -8, "-3 - 5"),
+        test-equal(5 - -3, 8, "5 - -3"),
+        test-equal(2.5 - 1.5, 1, "2.5 - 1.5"),
+
+        test-equal(-(2), -2, "-(2)"),
+        test-equal(-(2 + 3), -5, "-(2 + 3)"),
+        test-equal(-(-2 - 3), 5, "-(-2 - 3)"),
+        test-equal(-(1.5 + 1), -2.5, "-(1.5 + 1)")
+    ),
+
+    group(
+        "Invalid Types",
+
+        test-fails?("3" - 3, "\"3\" - 3", Type-Error),
+        test-fails?(10 - '(x), "10 - '(x)", Type-Error),
+        test-fails?(4 - c(4), "4 - c(4)", Type-Error),
+        test-fails?("1" - "2", "\"1\" - \"2\"", Type-Error),
+        test-fails?(object - 1, "object - 1", Type-Error),
+        test-fails?(2 - f, "2 - meta-node-ref", Type-Error),
+        test-fails?(2 - Fail-Type, "2 - &(Fail-Type)", Type-Error),
+
+        test-fails?(-("3"), "-(3)", Type-Error),
+        test-fails?(-('(x)), "-('(x))", Type-Error),
+        test-fails?(-(c(4)), "-(c(4))", Type-Error),
+        test-fails?(-(object), "-(object)", Type-Error),
+        test-fails?(-(f), "-(meta-node-ref)", Type-Error),
+        test-fails?(-(Fail-Type), "-(&(Fail-Type))", Type-Error)
+    ),
+
+    group(
+        "Failure Propagation",
+        test-fails?(Fail-Type! - 1, "Fail-Type! - 1", Fail-Type),
+        test-fails?(1 - Fail-Type!, "1 - Fail-Type!", Fail-Type),
+        test-fails?(-(Fail-Type!), "-(Fail-Type!)", Fail-Type)
+    )
+) -> --tests
+
+### Test `*`
+
+group(
+    "Meta-Node: `*`",
+
+    group(
+        "Valid Input",
+        test-equal(2 * 5, 10, "2 * 5"),
+        test-equal(-2 * 3, -6, "-2 * 3"),
+        test-equal(2 * -3, -6, "2 * -3"),
+        test-equal(1.25 * 2, 2.5, "1.25 * 2"),
+        test-equal(7 * 0, 0, "7 * 0")
+    ),
+
+    group(
+        "Invalid Types",
+        test-fails?("3" * 3, "\"3\" * 3", Type-Error),
+        test-fails?(10 * '(x), "10 * '(x)", Type-Error),
+        test-fails?(4 * c(4), "4 * c(4)", Type-Error),
+        test-fails?("1" * "2", "\"1\" * \"2\"", Type-Error),
+        test-fails?(object * 1, "object * 1", Type-Error),
+        test-fails?(2 * f, "2 * meta-node-ref", Type-Error),
+        test-fails?(2 * Fail-Type, "2 * &(Fail-Type)", Type-Error)
+    ),
+
+    group(
+        "Failure Propagation",
+        test-fails?(Fail-Type! * 1, "Fail-Type! * 1", Fail-Type),
+        test-fails?(1 * Fail-Type!, "1 * Fail-Type!", Fail-Type)
+    )
+) -> *-tests
+
+### Test `/`
+
+group(
+    "Meta-Node: `/`",
+
+    group(
+        "Valid Input",
+        test-equal(9 / 3, 3, "9 / 3"),
+        test-equal(-8 / 4, -2, "-8 / 4"),
+        test-equal(8 / -2, -4, "8 / -2"),
+        test-equal(5 / 2.0, 2.5, "5 / 2.0")
+    ),
+
+    group(
+        "Invalid Types",
+        test-fails?("3" / 3, "\"3\" / 3", Type-Error),
+        test-fails?(10 / '(x), "10 / '(x)", Type-Error),
+        test-fails?(4 / c(4), "4 / c(4)", Type-Error),
+        test-fails?("1" / "2", "\"1\" / \"2\"", Type-Error),
+        test-fails?(object / 1, "object / 1", Type-Error),
+        test-fails?(2 / f, "2 / meta-node-ref", Type-Error),
+        test-fails?(2 / Fail-Type, "2 / &(Fail-Type)", Type-Error)
+    ),
+
+    group(
+        "Failure Propagation",
+        test-fails?(Fail-Type! / 1, "Fail-Type! / 1", Fail-Type),
+        test-fails?(1 / Fail-Type!, "1 / Fail-Type!", Fail-Type)
+    )
+) -> /-tests
+
+### Test `%`
+
+group(
+    "Meta-Node: `%`",
+
+    group(
+        "Valid Input",
+        test-equal(9 % 3, 0, "9 % 3"),
+        test-equal(2 % 3, 2, "2 % 3"),
+        test-equal(11 % 5, 1, "11 % 5"),
+        test-equal(-9 % 4, -1, "-9 % 4"),
+        test-equal(14 % -3, 2, "14 % -3")
+    ),
+
+    group(
+        "Invalid Types",
+        test-fails?("3" % 3, "\"3\" % 3", Type-Error),
+        test-fails?(10 % '(x), "10 % '(x)", Type-Error),
+        test-fails?(4 % c(4), "4 % c(4)", Type-Error),
+        test-fails?("1" % "2", "\"1\" % \"2\"", Type-Error),
+        test-fails?(object % 1, "object % 1", Type-Error),
+        test-fails?(2 % f, "2 % meta-node-ref", Type-Error),
+        test-fails?(2 % Fail-Type, "2 % &(Fail-Type)", Type-Error)
+    ),
+
+    group(
+        "Failure Propagation",
+        test-fails?(Fail-Type! % 1, "Fail-Type! % 1", Fail-Type),
+        test-fails?(1 % Fail-Type!, "1 % Fail-Type!", Fail-Type)
+    )
+) -> %-tests

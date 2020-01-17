@@ -1,0 +1,23 @@
+## Test Recursive Meta-Nodes
+
+/import(core, *, -, >, <-, case)
+
+factorial(n) : {
+    case (
+        n > 1 : n * factorial(n - 1),
+        1
+    )
+}
+
+output <- factorial(n)
+
+
+## Input Attributes
+
+/attribute(n, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output, public-name, "output")
+/attribute(n, public-name, "n")

@@ -1,0 +1,13 @@
+# Test Simple One-Way Bindings
+
+a -> b
+b -> out1
+b -> out2
+
+# Attribute Declarations
+
+/attribute(a, input, 1)
+/attribute(a, public-name, "a")
+
+/attribute(out1, public-name, "out1")
+/attribute(out2, public-name, "out2")

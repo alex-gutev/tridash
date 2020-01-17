@@ -1,0 +1,18 @@
+# Test Explicit Contexts
+
+/import(core, @)
+
+a -> output @ context
+b -> output @ context
+d -> output @ context
+
+# Attribute Declarations
+
+/attribute(a, input, 1)
+/attribute(b, input, 1)
+/attribute(d, input, 1)
+
+/attribute(a, public-name, "a")
+/attribute(b, public-name, "b")
+/attribute(d, public-name, "d")
+/attribute(output, public-name, "output")

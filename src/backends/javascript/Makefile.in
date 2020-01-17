@@ -30,11 +30,47 @@ runtime/tridash.min.js: $(runtime_sources)
 
 ## Testing
 
-test_inputs = $(testdir)/tests/states1.js \
-	$(testdir)/tests/states2.js \
-	$(testdir)/tests/states3.js \
-	$(testdir)/tests/cycles.js \
-	$(testdir)/tests/cycles2.js
+test_inputs =  \
+	$(testdir)/tests/test001.js \
+	$(testdir)/tests/test002.js \
+	$(testdir)/tests/test003.js \
+	$(testdir)/tests/test004.js \
+	$(testdir)/tests/test005.js \
+	$(testdir)/tests/test006.js \
+	$(testdir)/tests/test007.js \
+	$(testdir)/tests/test008.js \
+	$(testdir)/tests/test009.js \
+	$(testdir)/tests/test010.js \
+	$(testdir)/tests/test011.js \
+	$(testdir)/tests/test012.js \
+	$(testdir)/tests/test013.js \
+	$(testdir)/tests/test014.js \
+	$(testdir)/tests/test015.js \
+	$(testdir)/tests/test016.js \
+	$(testdir)/tests/test017.js \
+	$(testdir)/tests/test018.js \
+	$(testdir)/tests/test019.js \
+	$(testdir)/tests/test020.js \
+	$(testdir)/tests/test021.js \
+	$(testdir)/tests/test022.js \
+	$(testdir)/tests/test023.js \
+	$(testdir)/tests/test024.js \
+	$(testdir)/tests/test025.js \
+	$(testdir)/tests/test026.js \
+	$(testdir)/tests/test027.js \
+	$(testdir)/tests/test028.js \
+	$(testdir)/tests/test029.js \
+	$(testdir)/tests/test030.js \
+	$(testdir)/tests/test031.js \
+	$(testdir)/tests/test032.js \
+	$(testdir)/tests/test033.js \
+	$(testdir)/tests/test034.js \
+	$(testdir)/tests/test035.js \
+	$(testdir)/tests/test036.js \
+	$(testdir)/tests/test037.js \
+	$(testdir)/tests/test038.js \
+	$(testdir)/tests/test039.js \
+	$(testdir)/tests/core.js
 
 check: $(testdir)/runtime/tridash.js $(test_inputs)
 	cd $(testdir); npm test
@@ -42,6 +78,19 @@ check: $(testdir)/runtime/tridash.js $(test_inputs)
 $(testdir)/runtime/tridash.js: runtime/tridash.min.js
 	cp $< $@
 	echo "module.exports=Tridash;" >> $@
+
+test_core_sources = $(testdir)/tests/core/tridash-unit.trd \
+	$(testdir)/tests/core/test-failures.trd \
+	$(testdir)/tests/core/arithmetic-tests.trd \
+	$(testdir)/tests/core/comparison-tests.trd \
+	$(testdir)/tests/core/logical-tests.trd \
+	$(testdir)/tests/core/selection-tests.trd \
+	$(testdir)/tests/core/type-tests.trd \
+	$(testdir)/tests/core/core-tests.trd
+
+$(testdir)/tests/core.js: $(test_core_sources) $(tridashc)
+	TRIDASH_MODULE_PATHS=$(module_dir) \
+	$(tridashc) $^ -o $@ -p JS_RUNTIME_PATH=runtime/tridash.min.js
 
 
 ## Installation

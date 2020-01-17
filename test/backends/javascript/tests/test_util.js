@@ -79,4 +79,43 @@ function resolve_list(value, n) {
     return Tridash.resolve(value);
 }
 
+/**
+ * Resolve a list value.
+ *
+ * If @a value is a list, it is converted to an array. The list
+ * elements themselves are not resolved.
+ *
+ * @param value The thunk
+ * @param n If provided, maximum number of elements to resolve.
+ *
+ * @return An array containing the elements of the resolved
+ *   list. If @a value does not resolve to a list, returns the
+ *   resolved value directly.
+ */
+function list_to_array(value, n) {
+    var result = [];
+
+    try {
+        while (Tridash.resolve(Tridash.is_cons(value))) {
+            if (n === 0)
+                return result;
+            else if (n !== undefined)
+                n--;
+
+            result.push(Tridash.head(value));
+            value = Tridash.resolve(Tridash.tail(value));
+        }
+    }
+    catch (e) {
+        if (e instanceof Tridash.Fail &&
+            Tridash.resolve(e.type) == Tridash.Empty)
+            return result;
+
+        throw e;
+    }
+
+    return Tridash.resolve(value);
+}
+
 exports.resolve_list = resolve_list;
+exports.list_to_array = list_to_array;

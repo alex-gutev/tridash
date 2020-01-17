@@ -1,0 +1,24 @@
+## Test Higher Order Meta-Nodes with Optional Arguments
+
+/import(core, +, map, list, <-)
+
+increment(n, d : delta) : n + d
+
+increment2(n) : increment(n, 2)
+
+output1 <- map(increment, input)
+output2 <- map(increment2, input)
+
+
+## Input Attributes
+
+/attribute(input, input, 1)
+/attribute(delta, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output1, public-name, "output1")
+/attribute(output2, public-name, "output2")
+/attribute(delta, public-name, "delta")
+/attribute(input, public-name, "input")

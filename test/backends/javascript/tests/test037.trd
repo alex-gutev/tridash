@@ -1,0 +1,20 @@
+## Test Higher Order Meta-Nodes with Outer Node References
+
+/import(core, +, map, list, <-)
+
+increment(n) : n + delta
+
+output <- map(increment, input)
+
+
+## Input Attributes
+
+/attribute(input, input, 1)
+/attribute(delta, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output, public-name, "output")
+/attribute(delta, public-name, "delta")
+/attribute(input, public-name, "input")

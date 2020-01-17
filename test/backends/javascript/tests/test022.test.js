@@ -1,5 +1,5 @@
 /**
- * cycles.test.js
+ * test022.test.js
  *
  * Tridash JavaScript runtime library Tests.
  *
@@ -30,16 +30,32 @@ var Tridash = require('../runtime/tridash.js');
 var assert = require('assert');
 var util = require('./test_util.js');
 
-require('./cycles.js');
+require('./test022.js');
 
-var i = Tridash.nodes['i'];
-var j = Tridash.nodes['j'];
-var output = Tridash.nodes['output'];
+var n = Tridash.nodes.n;
+var output = Tridash.nodes.output;
 
-describe("Integration Test: Cyclic Bindings", function() {
-    it('Output should resolve to a cyclic list', async function() {
-        Tridash.set_values([[i, 0], [j, 1]]);
+describe('Integration Test 22', function() {
+    describe('Recursive Meta-Nodes', function() {
+        describe('Set `n` = 1', function() {
+            it('`output` = factorial(1) = 1', async function() {
+                n.set_value(1);
+                assert.equal(await util.node_value(output), 1);
+            });
+        });
 
-        assert.deepEqual(util.resolve_list(await output.next_value, 3), [0,1,0]);
+        describe('Set `n` = 2', function() {
+            it('`output` = factorial(2) = 2', async function() {
+                n.set_value(2);
+                assert.equal(await util.node_value(output), 2);
+            });
+        });
+
+        describe('Set `n` = 5', function() {
+            it('`output` = factorial(5) = 120', async function() {
+                n.set_value(5);
+                assert.equal(await util.node_value(output), 120);
+            });
+        });
     });
 });

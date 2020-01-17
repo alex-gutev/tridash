@@ -1,0 +1,26 @@
+## Test Mutually Recursive Meta-Nodes
+
+/import(core, -, +, <=, <-, case)
+
+fib(n) : {
+    case (
+        n <= 1 : 1,
+        fib1(n) + fib2(n)
+    )
+}
+
+fib1(n) : fib(n - 1)
+fib2(n) : fib(n - 2)    
+
+output <- fib(n)
+
+
+## Input Attributes
+
+/attribute(n, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output, public-name, "output")
+/attribute(n, public-name, "n")

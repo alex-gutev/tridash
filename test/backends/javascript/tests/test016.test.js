@@ -1,5 +1,5 @@
 /**
- * states1.test.js
+ * test016.test.js
  *
  * Tridash JavaScript runtime library Tests.
  *
@@ -30,41 +30,43 @@ var Tridash = require('../runtime/tridash.js');
 var assert = require('assert');
 var util = require('./test_util.js');
 
-require('./states1.js');
+require('./test016.js');
 
 var counter = Tridash.nodes['counter'];
 var start = Tridash.nodes['start'];
 var clicked = Tridash.nodes['clicked?'];
 
-describe('Integration Test: Explicit States Counter', function() {
-    describe('Setting Initial Counter Value', function() {
-        it('Should set initial value of counter to 0', async function() {
-            start.set_value(0);
-            assert.equal(await util.node_value(counter), 0);
-        });
-    });
-
-    describe('Incrementing Counter Value', function() {
-        it('Should increment after changing to increment state', async function() {
-            clicked.set_value(true);
-            assert.equal(await util.node_value(counter), 1);
+describe('Integration Test 16', function() {
+    describe('Explicit States Counter', function() {
+        describe('Setting Initial Counter Value', function() {
+            it('Initial value of `counter` is 0', async function() {
+                start.set_value(0);
+                assert.equal(await util.node_value(counter), 0);
+            });
         });
 
-        it('Should retain value after changing back to default state', async function() {
-            clicked.set_value(false);
-            assert.equal(await util.node_value(counter), 1);
+        describe('Incrementing Counter Value', function() {
+            it('`counter` incremented after changing to increment state', async function() {
+                clicked.set_value(true);
+                assert.equal(await util.node_value(counter), 1);
+            });
+
+            it('`counter` value retained after changing back to default state', async function() {
+                clicked.set_value(false);
+                assert.equal(await util.node_value(counter), 1);
+            });
+
+            it('`counter` incremented again after changing back to increment state', async function() {
+                clicked.set_value(true);
+                assert.equal(await util.node_value(counter), 2);
+            });
         });
 
-        it('Should increment again after changing back to increment state', async function() {
-            clicked.set_value(true);
-            assert.equal(await util.node_value(counter), 2);
-        });
-    });
-
-    describe('Resetting Counter Value', function() {
-        it('Should reset counter value when changing start', async function() {
-            start.set_value(10);
-            assert.equal(await util.node_value(counter), 10);
+        describe('Resetting Counter Value', function() {
+            it('`counter` reset when changing `start`', async function() {
+                start.set_value(10);
+                assert.equal(await util.node_value(counter), 10);
+            });
         });
     });
 });

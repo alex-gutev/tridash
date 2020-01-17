@@ -1,0 +1,27 @@
+## Test Nested Meta-Nodes
+
+/import(core, >, *, -, case, <-)
+
+factorial(n) : {
+    iter(n, acc) : {
+        case(
+            n > 1 : iter(n - 1, n * acc),
+            acc
+        )
+    }
+
+    iter(n, 1)
+}
+
+output <- factorial(x);
+
+
+## Input Attributes
+
+/attribute(x, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output, public-name, "output")
+/attribute(x, public-name, "x")

@@ -1,0 +1,11 @@
+# Test Conditional Bindings
+
+/import(core)
+
+a > 3 -> (a -> output)
+
+# Attribute Declarations
+
+/attribute(a, input, 1)
+/attribute(a, public-name, "a")
+/attribute(output, public-name, "output")

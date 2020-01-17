@@ -1,0 +1,16 @@
+# Test Failure Propagation
+
+/import(core)
+
+a + b * d -> output
+
+# Attribute Declarations
+
+/attribute(a, input, 1)
+/attribute(b, input, 1)
+/attribute(d, input, 1)
+
+/attribute(a, public-name, "a")
+/attribute(b, public-name, "b")
+/attribute(d, public-name, "d")
+/attribute(output, public-name, "output")

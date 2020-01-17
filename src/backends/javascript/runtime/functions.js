@@ -134,7 +134,7 @@ function fail_type(value) {
     }
     catch (e) {
         if (e instanceof Fail)
-            return e.type;
+            return e.type ? e.type : NoValue();
     }
 
     return fail(TridashTypeError);

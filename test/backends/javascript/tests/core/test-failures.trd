@@ -1,0 +1,158 @@
+## Unit Tests for Core Module Failure Utilities
+
+/module(failure-util-tests)
+/import(tridash-unit)
+/import(core)
+
+## Definitions used by tests
+
+### Failure Types
+
+My-Fail-Type  <- &(My-Fail-Type)
+My-Fail-Type! <- fail(My-Fail-Type)
+
+
+### Constants
+
+x <- 1
+
+fail1 <- fail()
+fail2 <- fail(My-Fail-Type)
+fail3 <- fail(x)
+
+
+## Tests
+
+### Failure Utilities Test Group
+
+all-tests <-
+    group(
+        "Failure Utilities"
+        , fails?-tests
+        , ?-tests
+        , fail-type-tests
+        , fail-type?-tests
+        , !--tests
+        , !-tests
+        , catch-tests
+    )
+
+/export(all-tests)
+
+
+### Test `fails?`
+
+group(
+    "Meta-Node `fails?`",
+
+    test(fails?(fail1), "fails?(fail())"),
+    test(fails?(fail2), "fails?(fail(My-Fail-Type))"),
+    test(fails?(fail3), "fails?(fail(1))"),
+    test-not(fails?(x), "fails?(1)")
+) -> fails?-tests
+
+
+#### Test `fails?` Pattern Matching
+
+fail1 -> fails?() and fail1-fails?
+
+fail2 -> fails?() and fail2-fails?
+fail2 -> fails?(My-Fail-Type) and fail2-fails-type1?
+fail2 -> fails?(x) and fail2-fails-typ2?
+
+### Test `?`
+
+group(
+    "Meta-Node `?`",
+
+    test-not(?(fail1), "?(fail())"),
+    test-not(?(fail2), "?(fail(My-Fail-Type))"),
+    test-not(?(fail3), "?(fail(1))"),
+    test(?(x), "?(x)")
+) -> ?-tests
+
+### Test `fail-type`
+
+group(
+    "Meta-Node `fail-type`",
+
+    test(fails?(fail-type(fail1)), "fails?(fail-type(fail()))"),
+    test-equal(fail-type(fail2), My-Fail-Type, "fail-type(fail(My-Fail-Type))"),
+    test-equal(fail-type(fail3), x, "fail-type(fail(1))"),
+    test(fails?(fail-type(x)), "fails?(fail-type(1))")
+) -> fail-type-tests
+
+### Test `fail-type?`
+
+group(
+    "Meta-Node `fail-type?`",
+
+    test(fail-type?(fail2, My-Fail-Type), "fail-type?(fail(My-Fail-Type), My-Fail-Type)"),
+    test(fail-type?(fail3, x), "fail-type?(fail(1), 1)"),
+
+    test-not(fail-type?(fail2, x), "fail-type?(fail(My-Fail-Type), 1)"),
+    test-not(fail-type?(fail1, My-Fail-Type), "fail-type?(fail(), My-Fail-Type)"),
+    test-not(fail-type?(x, x), "fail-type?(1, 1)"),
+    test-not(fail-type?(x, My-Fail-Type), "fail-type?(1, My-Fail-Type)")
+) -> fail-type?-tests
+
+### Test `!-`
+
+group(
+    "Meta-Node `!-`",
+
+    test-equal(10 !- 1, 1, "10 !- 1"),
+    test-equal("hello" !- "world", "world", "\"hello\" !- \"world\""),
+    test-fails?(fail1 !- 5, "fail() !- 5"),
+    test-fails?(fail2 !- 3, "fail(My-Fail-Type) !- 3", My-Fail-Type),
+    test-fails?(fail3 !- 9, "fail(1) !- 9", x),
+    test-fails?(fail2 !- fail3, "fail(My-Fail-Type) !- fail(1)", My-Fail-Type)
+) -> !--tests
+
+### Test `!` Macro
+
+
+##
+## Creates a dictionary with field `x` bound to `x`.
+##
+## `x` is not evaluated thus an expression of `func` will not evaluate
+## to a failure even if `x` evaluates to a failure, unless subnode `x`
+## of the dictionary is evaluated. The purpose of this is to test that
+## the `!` macro forces evaluation of all the argument nodes of a
+## functor.
+##
+func(x) : {
+    x -> self.x
+}
+
+group(
+    "Macro-Node `!`",
+
+    test-not-fails?(!(func(1)), "!(func(1))"),
+    test-not-fails?(func(fail1), "func(fail())"),
+    test-fails?(!(func(fail1)), "!(func(fail()))")
+) -> !-tests
+
+
+### Test `catch`
+
+##
+## Tests that `type` is equal to `My-Fail-Type`.
+##
+## This is used as the failure type test function when testing
+## `catch`.
+##
+My-Fail-Type?(type) : type = My-Fail-Type
+
+group(
+    "Meta-Node `catch`",
+
+    test-equal(catch(1, 2), 1, "catch(1, 2)"),
+    test-equal(catch(fail1, "x"), "x", "catch(fail(), \"x\")"),
+    test-equal(catch(fail2, "y"), "y", "catch(fail(My-Fail-Type), \"y\")"),
+    test-equal(catch(fail2, 1, My-Fail-Type?), 1, "catch(fail(My-Fail-Type), 1, My-Fail-Type?)"),
+
+    test-fails?(catch(fail1, 1, My-Fail-Type?), "catch(fail(), 1, My-Fail-Type?"),
+    test-fails?(catch(fail3, 1, My-Fail-Type?), "catch(fail(), 1, 1", x),
+    test-fails?(catch(fail2, fail3, My-Fail-Type?), "catch(fail(My-Fail-Type), fail(1), My-Fail-Type?)", x)
+) -> catch-tests

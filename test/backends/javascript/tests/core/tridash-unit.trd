@@ -1,0 +1,190 @@
+### Module tridash-unit
+### Copyright (C) 2020  Alexander Gutev
+###
+### This program is free software: you can redistribute it and/or modify
+### it under the terms of the GNU General Public License as published by
+### the Free Software Foundation, either version 3 of the License, or
+### (at your option) any later version.
+###
+### This program is distributed in the hope that it will be useful,
+### but WITHOUT ANY WARRANTY; without even the implied warranty of
+### MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+### GNU General Public License for more details.
+###
+### You should have received a copy of the GNU General Public License
+### along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+## Provides utilities for structuring and performing tests. However,
+## the tests themselves need to be run by an external runner.
+
+/module(tridash-unit)
+/import(builtin)
+
+/import(core, <-, ', @)
+/import(core, =, not, ?, fails?, fail-type?)
+/import(core, string, string-concat)
+/import(core, head, tail)
+
+##
+## Create a basic `test` object.
+##
+## The test is considered to have passed when `condition` evaluates to
+## True. If `condition` evaluates to False, the test is considered to
+## have failed.
+##
+## condition   : Test condition
+## description : Description of the test
+##
+test(condition, description) : {
+    '(test)     -> self.type
+    condition   -> self.condition
+    description -> self.description
+}
+
+##
+## Create a `test` object which is considered passed when `condition`
+## evaluates to False.
+##
+## condition   : Test condition
+## description : Description of the test
+##
+## Note: "Not" is prepended to the description.
+##
+test-not(condition, description) : {
+    desc <- string-concat("Not ", description)
+
+    test(not(condition), desc)
+}
+
+##
+## Create a `test` object with a condition which is true when `got` is
+## equal, by `=` to `expected`.
+##
+## got         : The actual result obtained
+## expected    : The expected result
+## description : Description of the test
+##
+## Note: A string which prints the values for `got` and `expected is
+## appended to the description.
+##
+test-equal(got, expected, description) : {
+    full-description <-
+        concat-strings(description, ": ", got, " = ", expected)
+
+    test(got = expected, full-description)
+}
+
+
+### Testing for Failures
+
+##
+## Create a `test` object with a condition which is true when `result`
+## evaluates to a failure of type `type`.
+##
+## If `type` is omitted, the failure type is not checked.
+##
+## got         : The actual result obtained
+## expected    : The expected result
+## description : Description of the test
+##
+## Note: A string is appended to the description.
+##
+test-fails?(result, description, :(type)) : {
+    full-description <-
+        concat-strings(description, " fails with type ", type)
+
+    condition <-
+        if(?(type),
+           fail-type?(result, type),
+           fails?(result))
+
+    test(condition, full-description)
+}
+
+##
+## Create a `test` object with a condition which is true when `result`
+## doe not evaluates to a failure of type `type`.
+##
+## If `type` is omitted, the failure type is not checked.
+##
+## got         : The actual result obtained
+## expected    : The expected result
+## description : Description of the test
+##
+## Note: A string is appended to the description.
+##
+test-not-fails?(result, description, :(type)) : {
+    full-description <-
+        concat-strings(description, " does not fail with type ", type)
+
+    condition <-
+        if(?(type),
+           fail-type?(result, type),
+           fails?(result))
+
+    test-not(condition, full-description)
+}
+
+
+### Structuring Tests
+
+##
+## Group multiple tests into a single test.
+##
+## description : Description of the test group
+## ..(tests)   : The tests
+##
+group(description, ..(tests)) : {
+    '(group)    -> self.type
+    tests       -> self.tests
+    description -> self.description
+}
+
+
+### Utilities
+
+##
+## Converts a value to a string.
+##
+## If the value cannot be converted to a string, or evaluates to a
+## failure, the string "<FAIL>" is returned.
+##
+## value: The value to convert.
+##
+value->string(value) : {
+    string(value) -> @(self)
+    "<FAIL>" -> @(self)
+}
+
+##
+## Concatenates each value in `values` into a single string.
+##
+## Each value is converted to a string by `value->string`
+##
+## values: List of values.
+##
+concat-strings(..(values)) : {
+    iter(values) : {
+        first <- value->string(head(values))
+        rest <- tail(values)
+
+        ?(values) ->
+            string-concat(first, iter(rest)) -> @(self)
+
+        "" -> @(self)
+    }
+
+    iter(values)
+}
+
+
+### Export Declarations
+
+/export(
+    test,
+    test-not,
+    test-equal,
+    test-fails?,
+    test-not-fails?,
+    group
+)

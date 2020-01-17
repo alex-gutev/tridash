@@ -1,0 +1,14 @@
+# Test functor nodes
+
+/import(core)
+
+a + b -> sum
+
+# Attribute Declarations
+
+/attribute(a, input, 1)
+/attribute(b, input, 1)
+
+/attribute(a, public-name, "a")
+/attribute(b, public-name, "b")
+/attribute(sum, public-name, "sum")
