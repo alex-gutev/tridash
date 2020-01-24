@@ -79,3 +79,66 @@ Implementing the new functionality was almost as easy as adding new UI
 elements. The `case( ... )` expression chooses the message ``Within
 Limit!'' or ``Limit exceeded!'' based on whether the sum is less than
 or equal to limit.
+
+== Color ==
+
+The previous example was rather boring in that changes in the status
+message, indicating whether the limit was exceeded, are hard to
+notice. It would be much better if there is a visual indication, in
+the form of color, alongside the textual indication.
+
+In the following example, the status message and the sum are displayed
+in green, if the sum is below the limit, and are displayed in read if
+the sum exceeds the limit:
+
+--------------------------------------------------
+<?
+ /import(core)
+
+ sum <- a + b
+
+ color <-                          <1>
+     case(
+         sum <= limit : "green",
+         "red"
+     )
+
+ color -> self.sum.style.color     <2>
+ color -> self.status.style.color  <3>
+?>
+
+<!doctype html>
+<html>
+    <body>
+      <div><label>Limit:<br/><input value="<?@ to-int(limit) ?>"/></label></div>
+      <div><label>A:<br/><input value="<?@ to-int(a) ?>" /></label></div>
+      <div><label>B:<br/><input value="<?@ to-int(b) ?>" /></label></div>
+      <p>A + B = <span id="sum"><?@ sum ?></span></p>
+      <p id="status">
+       <?@
+        case(
+            sum <= limit : "Within Limit!",
+            "Limit Exceeded!"
+        )
+       ?>
+      </p>
+    </body>
+</html>
+--------------------------------------------------
+
+<1> The node `color` is bound to the string 'green' if the sum is less
+than or equal to the limit (`sum <= limit`), otherwise it is bound to
+'red'.
+
+<2> The text color of the sum is bound to the value of `color`.
+
+<3> The text color of the status message is bound to the value
+`color`.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++
+<div style="text-align: center">
+<iframe src="examples/color.html" height="200"></iframe>
+</div>
+++++++++++++++++++++++++++++++++++++++++++++++++++
+
+

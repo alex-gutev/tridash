@@ -91,11 +91,75 @@ Limit!&#8221; or &#8220;Limit exceeded!&#8221; based on whether the sum is less 
 or equal to limit.</p></div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_color">Color</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>The previous example was rather boring in that changes in the status
+message, indicating whether the limit was exceeded, are hard to
+notice. It would be much better if there is a visual indication, in
+the form of color, alongside the textual indication.</p></div>
+<div class="paragraph"><p>In the following example, the status message and the sum are displayed
+in green, if the sum is below the limit, and are displayed in read if
+the sum exceeds the limit:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>&lt;?
+ /import(core)
+
+ sum &lt;- a + b
+
+ color &lt;-                          <img src="./images/icons/callouts/1.png" alt="1">
+     case(
+         sum &lt;= limit : "green",
+         "red"
+     )
+
+ color -&gt; self.sum.style.color     <img src="./images/icons/callouts/2.png" alt="2">
+ color -&gt; self.status.style.color  <img src="./images/icons/callouts/3.png" alt="3">
+?&gt;
+
+&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;body&gt;
+      &lt;div&gt;&lt;label&gt;Limit:&lt;br/&gt;&lt;input value="&lt;?@ to-int(limit) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;A:&lt;br/&gt;&lt;input value="&lt;?@ to-int(a) ?&gt;" /&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;B:&lt;br/&gt;&lt;input value="&lt;?@ to-int(b) ?&gt;" /&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;p&gt;A + B = &lt;span id="sum"&gt;&lt;?@ sum ?&gt;&lt;/span&gt;&lt;/p&gt;
+      &lt;p id="status"&gt;
+       &lt;?@
+        case(
+            sum &lt;= limit : "Within Limit!",
+            "Limit Exceeded!"
+        )
+       ?&gt;
+      &lt;/p&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre>
+</div></div>
+<div class="colist arabic"><table>
+<tr><td><img src="./images/icons/callouts/1.png" alt="1"></td><td>
+The node <span class="monospaced">color</span> is bound to the string <em>green</em> if the sum is less
+than or equal to the limit (<span class="monospaced">sum &lt;= limit</span>), otherwise it is bound to
+<em>red</em>.
+</td></tr>
+<tr><td><img src="./images/icons/callouts/2.png" alt="2"></td><td>
+The text color of the sum is bound to the value of <span class="monospaced">color</span>.
+</td></tr>
+<tr><td><img src="./images/icons/callouts/3.png" alt="3"></td><td>
+The text color of the status message is bound to the value
+<span class="monospaced">color</span>.
+</td></tr>
+</table></div>
+<div style="text-align: center">
+<iframe src="examples/color.html" height="200"></iframe>
+</div>
+</div>
+</div>
 </div>
 <div id="footer">
 <div id="footer-text">
 Last updated
- 2020-01-16 18:30:35 CET
+ 2020-01-24 18:39:50 CET
 </div>
 </div>
 </body>

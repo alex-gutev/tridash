@@ -1,0 +1,32 @@
+<?
+ /import(core)
+
+ sum <- a + b
+
+ color <-
+     case(
+         sum <= limit : "green",
+         "red"
+     )
+
+ color -> self.sum.style.color
+ color -> self.status.style.color
+?>
+
+<!doctype html>
+<html>
+    <body>
+      <div><label>Limit:<br/><input value="<?@ to-int(limit) ?>"/></label></div>
+      <div><label>A:<br/><input value="<?@ to-int(a) ?>" /></label></div>
+      <div><label>B:<br/><input value="<?@ to-int(b) ?>" /></label></div>
+      <p>A + B = <span id="sum"><?@ sum ?></span></p>
+      <p id="status">
+       <?@
+        case(
+            sum <= limit : "Within Limit!",
+            "Limit Exceeded!"
+        )
+       ?>
+      </p>
+    </body>
+</html>

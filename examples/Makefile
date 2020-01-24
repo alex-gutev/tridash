@@ -1,13 +1,17 @@
-all: sum.html limit.html
+examples = sum.html \
+	limit.html \
+	color.html
 
-clean:
-	rm -f sum.html
-	rm -f limit.html
+all: $(examples)
 
-sum.html: sum.ui.html
+clean: $(examples:.html=.clean)
+
+
+%.html: %.ui.html
 	tridashc $< : node-name=ui -o $@ -p type=html -p main-ui=ui
 
-limit.html: limit.ui.html
-	tridashc $< : node-name=ui -o $@ -p type=html -p main-ui=ui
+%.clean:
+	rm -f $(@:.clean=.html)
+
 
 .PHONY: all clean
