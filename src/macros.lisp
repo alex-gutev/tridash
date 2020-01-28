@@ -26,7 +26,7 @@
 ;;; Failure Types
 
 (defconstant +empty-list+ (get :empty-list *core-meta-nodes*)
-  "Meta-Node representing the empty list failure type.")
+  "Meta-Node representing the empty list.")
 
 (defconstant +fail-type-no-value+ (get :no-value *core-meta-nodes*)
   "Failure type indicating no value was provided.")
@@ -325,7 +325,7 @@
      (cons (list (eql +rest-argument+) arg) args)
 
      (cons
-      (list (get-operand-var (name arg)) '(empty-list))
+      (list (get-operand-var (name arg)) '+empty-list+)
       (next args)))
 
     (outer
@@ -663,7 +663,7 @@
 
                  (accumulate lambda-list var)
                  (accumulate lambda-list '&aux)
-                 (accumulate lambda-list `(,rest-var (or ,var (empty-list))))
+                 (accumulate lambda-list `(,rest-var (or ,var +empty-list+)))
 
                  (accumulate vars rest-var))))
 
@@ -726,7 +726,7 @@
   (with-struct-slots argument-list- (arguments) list
     (if arguments
         (list* 'list (map #'tridash->cl (argument-list-arguments list)))
-        '(empty-list))))
+        '+empty-list+)))
 
 
 ;;; Literals

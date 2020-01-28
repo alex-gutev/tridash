@@ -338,13 +338,16 @@ function head(list) {
             if (l.length > 0)
                 return l[0];
 
-            return Empty();
+            return TridashTypeError();
         }
         else if (l instanceof SubArray) {
-            return l.array.length > l.start ? l.array[l.start] : Empty();
+            return l.array[l.start];
+        }
+        else if (l === Empty) {
+            return fail(Empty);
         }
         else {
-            return l === null ? Empty() : fail(TridashTypeError);
+            return fail(TridashTypeError);
         }
     }
     catch (e) {
@@ -357,21 +360,29 @@ function tail(list) {
         var l = resolve(list);
 
         if (l instanceof ConsCell) {
-            return l.tail;
+            var tail = resolve(l.tail);
+            return is_list(tail) || tail === Empty ?
+                l.tail :
+               TridashTypeError();
         }
         else if (Array.isArray(l)) {
             if (l.length > 1)
                 return new SubArray(l, 1);
+            else if (l.length === 1)
+                return Empty;
 
-            return Empty();
+            return TridashTypeError();
         }
         else if (l instanceof SubArray) {
             return l.array.length > (l.start + 1) ?
                 new SubArray(l.array, l.start + 1) :
-                Empty();
+                Empty;
+        }
+        else if (l === Empty) {
+            return fail(Empty);
         }
         else {
-            return l === null ? Empty() : fail(TridashTypeError);
+            return TridashTypeError();
         }
     }
     catch (e) {
@@ -381,20 +392,24 @@ function tail(list) {
 
 function is_cons(thing) {
     try {
-        var value = resolve(thing);
-
-        return value instanceof ConsCell ||
-            (value instanceof SubArray && value.array.length > value.start) ||
-            (Array.isArray(value) && value.length > 0);
+        return is_list(thing);
     }
     catch (e) {
         return new Thunk(() => { throw e; });
     }
 }
 
+function is_list(value) {
+    value = resolve(value);
+
+    return value instanceof ConsCell ||
+        (value instanceof SubArray && value.array.length > value.start) ||
+        (Array.isArray(value) && value.length > 0);
+}
+
 
 function Empty() {
-    return fail(Empty);
+    return Empty;
 }
 
 
@@ -555,20 +570,20 @@ function member(dict, key) {
 function mapply(f, args) {
     function resolve_list(list) {
         res = [];
-        list = resolve_list_thunk(list);
+        list = resolve(list);
 
-        while(list) {
+        while (list !== Empty) {
             if (list instanceof ConsCell) {
                 res.push(list.head);
-                list = resolve_list_thunk(list.tail);
+                list = resolve(list.tail);
             }
             else if (list instanceof SubArray) {
                 res.push(...list.array.slice(list.start));
-                list = null;
+                break;
             }
             else if (Array.isArray(list)) {
                 res.push(...list);
-                list = null;
+                break;
             }
             else {
                 throw new Fail(TridashTypeError);
@@ -576,18 +591,6 @@ function mapply(f, args) {
         }
 
         return res;
-    }
-
-    function resolve_list_thunk(list) {
-        try {
-            return resolve(list);
-        }
-        catch (e) {
-            if (e instanceof Fail && e.type == Empty)
-                return null;
-
-            throw e;
-        }
     }
 
     try {

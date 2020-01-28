@@ -49,7 +49,7 @@ string->list(string) : {
         tail <- convert(string, pos + 1)
 
         head !- cons(head, tail) -> @(self)
-        Empty! -> self @ when(Index-Out-Bounds)
+        Empty -> self @ when(Index-Out-Bounds)
     }
 
     convert(string, 0)
@@ -73,8 +73,9 @@ list->string(list) : {
         current <- string-concat(acc, head)
         rest <- convert(tail, current)
 
-        list !- rest -> @(self)
-        acc -> self @ when(Empty)
+        if (list = Empty,
+            acc,
+            rest)
     }
 
     strings <- map(string, list)
@@ -109,7 +110,7 @@ format(string, ..(args)) : {
         substitute !- cons(arg, format-chars(rest-chars, rest-args)) -> @(self)
         char !- cons(char, format-chars(rest-chars, args)) -> @(self)
 
-        Empty! -> @(self)
+        Empty -> @(self)
     }
 
     chars <- string->list(string)

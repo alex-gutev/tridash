@@ -1,11 +1,11 @@
-/import(core, cons, case, >, -, Empty!)
+/import(core, cons, case, >, -, Empty)
 
 keep(list, n) : {
     list -> cons(head, rest)
 
     case(
         n > 0 : cons(head, keep(rest, n - 1)),
-        Empty!
+        Empty
     )
 }
 

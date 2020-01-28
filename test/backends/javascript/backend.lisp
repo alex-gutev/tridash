@@ -2029,10 +2029,12 @@
           (with-module-table modules
             (build-core-module)
             (build "/import(core, map, +)"
-                   "f(l) : map(+, l)")
-            (finish-build)
+                   "f(l) : map(+, l)"
 
-            (with-nodes ((f "f") (map "map")) modules
+                   "f(a)"
+                   "/attribute(a, input, 1)")
+
+            (with-nodes ((f "f") (map "map")) (finish-build)
               (mock-backend-state
                 (test-meta-node-function f
                   (js-function
@@ -2063,7 +2065,10 @@
           (with-module-table modules
             (build-core-module)
             (build "/import(core, map, -)"
-                   "f(l) : map(-, l)")
+                   "f(l) : map(-, l)"
+
+                   "f(a)"
+                   "/attribute(a, input, 1)")
             (finish-build)
 
             (with-nodes ((f "f") (map "map")) modules
@@ -2081,7 +2086,10 @@
           (with-module-table modules
             (build-core-module)
             (build "/import(core, map, *)"
-                   "f(l) : map(*, l)")
+                   "f(l) : map(*, l)"
+
+                   "f(a)"
+                   "/attribute(a, input, 1)")
             (finish-build)
 
             (with-nodes ((f "f") (map "map")) modules
@@ -2115,7 +2123,10 @@
           (with-module-table modules
             (build-core-module)
             (build "/import(core, map, /)"
-                   "f(l) : map(/, l)")
+                   "f(l) : map(/, l)"
+
+                   "f(a)"
+                   "/attribute(a, input, 1)")
             (finish-build)
 
             (with-nodes ((f "f") (map "map")) modules
@@ -2149,7 +2160,10 @@
           (with-module-table modules
             (build-core-module)
             (build "/import(core, map, %)"
-                   "f(l) : map(%, l)")
+                   "f(l) : map(%, l)"
+
+                   "f(a)"
+                   "/attribute(a, input, 1)")
             (finish-build)
 
             (with-nodes ((f "f") (map "map")) modules
@@ -2183,7 +2197,10 @@
           (with-module-table modules
             (build-core-module)
             (build "/import(core, map, <)"
-                   "f(l) : map(<, l)")
+                   "f(l) : map(<, l)"
+
+                   "f(a)"
+                   "/attribute(a, input, 1)")
             (finish-build)
 
             (with-nodes ((f "f") (map "map")) modules
@@ -2217,7 +2234,10 @@
           (with-module-table modules
             (build-core-module)
             (build "/import(core, map, >)"
-                   "f(l) : map(>, l)")
+                   "f(l) : map(>, l)"
+
+                   "f(a)"
+                   "/attribute(a, input, 1)")
             (finish-build)
 
             (with-nodes ((f "f") (map "map")) modules
@@ -2251,7 +2271,10 @@
           (with-module-table modules
             (build-core-module)
             (build "/import(core, map, <=)"
-                   "f(l) : map(<=, l)")
+                   "f(l) : map(<=, l)"
+
+                   "f(a)"
+                   "/attribute(a, input, 1)")
             (finish-build)
 
             (with-nodes ((f "f") (map "map")) modules
@@ -2285,7 +2308,10 @@
           (with-module-table modules
             (build-core-module)
             (build "/import(core, map, >=)"
-                   "f(l) : map(>=, l)")
+                   "f(l) : map(>=, l)"
+
+                   "f(a)"
+                   "/attribute(a, input, 1)")
             (finish-build)
 
             (with-nodes ((f "f") (map "map")) modules
@@ -2319,7 +2345,10 @@
           (with-module-table modules
             (build-core-module)
             (build "/import(core, map, not)"
-                   "f(l) : map(not, l)")
+                   "f(l) : map(not, l)"
+
+                   "f(a)"
+                   "/attribute(a, input, 1)")
             (finish-build)
 
             (with-nodes ((f "f") (map "map")) modules

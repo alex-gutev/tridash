@@ -57,26 +57,17 @@ exports.node_value = node_value;
 function resolve_list(value, n) {
     var result = [];
 
-    try {
-        while (Tridash.resolve(Tridash.is_cons(value))) {
-            if (n === 0)
-                return result;
-            else if (n !== undefined)
-                n--;
-
-            result.push(Tridash.resolve(Tridash.head(value)));
-            value = Tridash.resolve(Tridash.tail(value));
-        }
-    }
-    catch (e) {
-        if (e instanceof Tridash.Fail &&
-            Tridash.resolve(e.type) == Tridash.Empty)
+    while (Tridash.resolve(value) !== Tridash.Empty) {
+        if (n === 0)
             return result;
+        else if (n !== undefined)
+            n--;
 
-        throw e;
+        result.push(Tridash.resolve(Tridash.head(value)));
+        value = Tridash.resolve(Tridash.tail(value));
     }
 
-    return Tridash.resolve(value);
+    return result;
 }
 
 /**
@@ -95,26 +86,17 @@ function resolve_list(value, n) {
 function list_to_array(value, n) {
     var result = [];
 
-    try {
-        while (Tridash.resolve(Tridash.is_cons(value))) {
-            if (n === 0)
-                return result;
-            else if (n !== undefined)
-                n--;
-
-            result.push(Tridash.head(value));
-            value = Tridash.resolve(Tridash.tail(value));
-        }
-    }
-    catch (e) {
-        if (e instanceof Tridash.Fail &&
-            Tridash.resolve(e.type) == Tridash.Empty)
+    while (Tridash.resolve(value) !== Tridash.Empty) {
+        if (n === 0)
             return result;
+        else if (n !== undefined)
+            n--;
 
-        throw e;
+        result.push(Tridash.head(value));
+        value = Tridash.resolve(Tridash.tail(value));
     }
 
-    return Tridash.resolve(value);
+    return result;
 }
 
 exports.resolve_list = resolve_list;

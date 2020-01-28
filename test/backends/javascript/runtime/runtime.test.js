@@ -286,17 +286,8 @@ describe('Builtin Functions', function() {
                 assert.equal(tridash.resolve(tridash.head(list)), 6);
             });
 
-            it('Fails on `null`', function() {
-                assert.throws(() => tridash.resolve(tridash.head(null)), test_fail_type(tridash.Empty));
-            });
-
-            it('Fails on empty array', function() {
-                assert.throws(() => tridash.resolve(tridash.head([])), test_fail_type(tridash.Empty));
-            });
-
-            it('Fails on empty SubArray', function() {
-                var sub = tridash.tail([1]);
-                assert.throws(() => tridash.resolve(tridash.head(sub)), test_fail_type(tridash.Empty));
+            it('Fails on empty list', function() {
+                assert.throws(() => tridash.resolve(tridash.head(tridash.Empty)), test_fail_type(tridash.Empty));
             });
 
             it('Fails on non-array', function() {
@@ -308,10 +299,10 @@ describe('Builtin Functions', function() {
             it('Returns tail of ConsCell', function() {
                 var list = new tridash.Thunk(() => {
                     return tridash.cons(
-                        new tridash.Thunk(() => 1), tridash.cons(2, null));
+                        new tridash.Thunk(() => 1), tridash.cons(2, tridash.Empty));
                 });
 
-                assert.deepStrictEqual(tridash.resolve(tridash.tail(list)), tridash.cons(2, null));
+                assert.deepStrictEqual(tridash.resolve(tridash.tail(list)), tridash.cons(2, tridash.Empty));
             });
 
             it('Returns SubArray of Array', function() {
@@ -329,20 +320,12 @@ describe('Builtin Functions', function() {
                 );
             });
 
-            it('Fails on `null`', function() {
-                assert.throws(() => tridash.resolve(tridash.tail(null)), test_fail_type(tridash.Empty));
-            });
-
-            it('Fails on empty Array', function() {
-                assert.throws(() => tridash.resolve(tridash.tail([])), test_fail_type(tridash.Empty));
-            });
-
-            it('Fails if tail is empty', function() {
-                assert.throws(() => tridash.resolve(tridash.tail([1])), test_fail_type(tridash.Empty));
+            it('Fails on empty list', function() {
+                assert.throws(() => tridash.resolve(tridash.tail(tridash.Empty)), test_fail_type(tridash.Empty));
             });
 
             it('Fails if tail is empty SubArray', function() {
-                var sub = tridash.tail([1,2]);
+                var sub = tridash.tail([1]);
                 assert.throws(() => tridash.resolve(tridash.tail(sub)), test_fail_type(tridash.Empty));
             });
 
@@ -907,13 +890,13 @@ describe('Builtin Functions', function() {
 
             it('Applies a function on a linked list of arguments', function() {
                 assert.equal(
-                    tridash.mapply(add, tridash.cons(4, tridash.cons(5, tridash.cons(6, null)))),
+                    tridash.mapply(add, tridash.cons(4, tridash.cons(5, tridash.cons(6, tridash.Empty)))),
                     15
                 );
                 assert.equal(
                     tridash.mapply(
                         add,
-                        new tridash.Thunk(() => tridash.cons(4, new tridash.Thunk(() => tridash.cons(5, tridash.cons(6, null)))))
+                        new tridash.Thunk(() => tridash.cons(4, new tridash.Thunk(() => tridash.cons(5, tridash.cons(6, tridash.Empty)))))
                     ),
                     15
                 );
@@ -934,7 +917,6 @@ describe('Builtin Functions', function() {
                 assert.equal(tridash.mapply(f, []), "hello");
                 assert.equal(tridash.mapply(f, tridash.Empty()), "hello");
                 assert.equal(tridash.mapply(f, tridash.tail([1])), "hello");
-                assert.equal(tridash.mapply(f, tridash.tail(tridash.cons(1, null))), "hello");
                 assert.equal(tridash.mapply(f, tridash.tail(tridash.cons(1, tridash.Empty()))), "hello");
             });
 

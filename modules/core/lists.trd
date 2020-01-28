@@ -82,8 +82,19 @@ Empty! <- fail(Empty)
 ## list : The list.
 ## n    : Index of the element to retrieve.
 
-nth(list, n) :
-    if (n = 0, head(list), nth(tail(list), n - 1))
+nth(list, n) : {
+    iter(list, n) : {
+        element <-
+            if (n = 0, head(list), iter(tail(list), n - 1))
+
+        element -> self @ _
+        Index-Out-Bounds! -> self @ _ when Empty
+    }
+
+    if (n >= 0,
+        iter(list, n),
+        Index-Out-Bounds!)
+}
 
 
 ### Concatenation
@@ -102,7 +113,7 @@ append(list1, list2) : {
 
     result <- cons(current, append(rest, list2))
 
-    list1 !- result -> @(self)
+    current !- result -> @(self)
     list2 -> self @ when(Empty)
 }
 
@@ -123,10 +134,11 @@ append(list1, list2) : {
 ## list : The list to fold.
 
 foldl'(x, f, list) : {
-    result <- foldl'(f(x, head(list)), f, tail(list))
+    element <- head(list)
+    result <- foldl'(f(x, element), f, tail(list))
 
-    list !- result -> @(self)
-    x -> self @ when(Empty)
+    element !- result -> self @ _
+    x -> self @ _ when Empty
 }
 
 
@@ -164,7 +176,9 @@ foldr(f, l, :(x)) : {
 
         result <- f(current, fold(rest))
 
-        if(fail-type?(rest, Empty), current, result)
+        if (rest = Empty,
+            current,
+            result)
     }
 
     arg-list <- if(fail-type?(x, No-Value), l, append(l, list(x)))
@@ -183,10 +197,13 @@ foldr(f, l, :(x)) : {
 ## list : The list.
 
 map(f, list) : {
+    element <- head(list)
     rest <- map(f, tail(list))
-    result <- cons(f(head(list)), rest)
 
-    list !- result -> self
+    result <- cons(f(element), rest)
+
+    element !- result -> self @ _
+    Empty -> self @ _ when Empty
 }
 
 
@@ -207,10 +224,13 @@ filter(f, list) : {
     current <- head(list)
     rest <- filter(f, tail(list))
 
-    f(current) -> cons(current, rest) -> @(result)
-    rest -> @(result)
+    result <-
+        if (f(current),
+            cons(current, rest),
+            rest)
 
-    list !- result -> self
+    current !- result -> self @ _
+    Empty -> self @ _ when Empty
 }
 
 
@@ -226,7 +246,7 @@ filter(f, list) : {
 every?(f, list) : {
     test(x, result) : f(x) and result
 
-    foldr(test, list, 1)
+    foldr(test, list, True)
 }
 
 ## Evaluates to true if `f`, applied on each element, evaluates to
@@ -239,7 +259,7 @@ every?(f, list) : {
 some?(f, list) : {
     test(x, result) : f(x) or result
 
-    foldr(test, list, 0)
+    foldr(test, list, False)
 }
 
 
@@ -253,7 +273,7 @@ some?(f, list) : {
 not-any?(f, list) : {
     test(x, result) : not(f(x)) and result
 
-    foldr(test, list, 1)
+    foldr(test, list, True)
 }
 
 ## Evaluates to true if `f`, applied on each element, evaluates to
@@ -266,7 +286,7 @@ not-any?(f, list) : {
 not-every?(f, xs) : {
     test(x, result) : not(f(x)) or result
 
-    foldr(test, xs, 0)
+    foldr(test, xs, False)
 }
 
 

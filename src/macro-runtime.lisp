@@ -62,27 +62,22 @@
 (defun resolve-list (list)
   "Returns a list where each element of LIST is resolved by RESOLVE."
 
-  (let ((resolving-head?))
-    (declare (special resolving-head?))
+  (flet ((next-cell (tail)
+           (let ((tail (resolve% tail)))
+             (cond
+               ((= tail +empty-list+)
+                nil)
 
-    (handler-bind
-        ((tridash-fail
-          (lambda (c)
-            (when (and (not resolving-head?)
-                       (= (fail-type c) +empty-list+))
-              (replace-failure nil)))))
+               ((listp tail) tail)
 
-      (loop
-         for items = list then
-           (aprog1 (resolve% (rest items))
-             (unless (listp it)
-               (error 'tridash-fail :fail-type +fail-type-type-error+)))
-         while items
-         collect
+               (t
+                (error 'tridash-fail :fail-type +fail-type-type-error+))))))
 
-           (let ((resolving-head? t))
-             (declare (special resolving-head?))
-             (resolve (car items)))))))
+    (loop
+       for items = list then (next-cell (cdr items))
+       while items
+       collect
+         (resolve (car items)))))
 
 
 (defun resolve% (thing)
@@ -390,21 +385,30 @@
   (atypecase (resolve% list)
     (cons (car it))
     (null (empty-list))
-    (otherwise (fail-thunk +fail-type-type-error+))))
+    (otherwise
+     (if (= it +empty-list+)
+         (empty-list)
+         (fail-thunk +fail-type-type-error+)))))
 
 (define-tridash-function |tail| (list)
   (atypecase (resolve% list)
     (cons
-     (or (cdr it) (empty-list)))
-    (null (empty-list))
-    (otherwise (fail-thunk +fail-type-type-error+))))
+     (or (cdr it) +empty-list+))
+
+    (null
+     (empty-list))
+
+    (otherwise
+     (if (= it +empty-list+)
+         (empty-list)
+         (fail-thunk +fail-type-type-error+)))))
 
 (define-tridash-function |cons?| (thing)
   (consp (resolve% thing)))
 
 (defun empty-list ()
   "Returns a `THUNK' which signals a `TRIDASH-FAIL' condition with the
-   type representing an empty list."
+   empty list type."
 
   (fail-thunk +empty-list+))
 
@@ -450,20 +454,22 @@
 
 ;;; Functions
 
-(define-tridash-function |apply%| (f args)
-  (flet ((resolve-list (list)
-           (handler-bind
-               ((tridash-fail
-                 (lambda (c)
-                   (when (= (fail-type c) +empty-list+)
-                     (replace-failure nil)))))
+(deftype tridash-list ()
+  `(or list (eql +empty-list+)))
 
+(define-tridash-function |apply%| (f args)
+  (labels ((resolve-list (list)
              (loop
-                for items = (check-tridash-types ((list list)) list)
-                then (let ((rem (cdr items)))
-                       (check-tridash-types ((rem list)) rem))
+                for items = (next-cell list)
+                then (next-cell (cdr items))
 
                 while items
-                collect (car items)))))
+                collect (car items)))
+
+           (next-cell (tail)
+             (check-tridash-types ((tail tridash-list))
+               (if (= tail +empty-list+)
+                   nil
+                   tail))))
 
     (call-node f (resolve-list args))))

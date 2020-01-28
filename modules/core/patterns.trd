@@ -70,7 +70,7 @@ Pattern(condition, :(binding)) : {
     condition -> self.condition
 
     binding -> @(self.bindings)
-    Empty! -> @(self.bindings)
+    Empty -> @(self.bindings)
 }
 
 ## Creates the node declarations implementing the Pattern `pattern`.
@@ -116,7 +116,7 @@ make-pattern(place, pattern) : {
         pattern != '(_) ->
             list(make-match-bind(place, pattern)) -> @(self.bindings)
 
-        Empty! -> @(self.bindings)
+        Empty -> @(self.bindings)
     }
 
     # Body
@@ -290,12 +290,14 @@ match-cons(place, pattern) : {
 
 ## List
 
+/import(builtin, Empty-List)
+
 target-list(source, expression) :
     make-pattern-declarations(match-list(source, expression))
 
 match-list(place, expression) : {
     args <- tail(expression)
-    empty-pattern <- list(list(&(fails?), &(Empty)))
+    empty-pattern <- list(list(&(Empty-List)))
 
     pattern <-
         cons(
@@ -308,6 +310,12 @@ match-list(place, expression) : {
 
 /attribute(list, target-transform, target-list)
 /attribute(list, matcher, match-list)
+
+
+match-Empty-List(place, expression) :
+    Pattern(list(&(=), place, &(Empty)))
+
+/attribute(Empty-List, matcher, match-Empty-List)
 
 
 ## List*
