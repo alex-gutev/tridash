@@ -1,0 +1,620 @@
+## Pattern Matching Unit Tests
+
+/module(pattern-match-tests)
+
+/import(tridash-unit)
+/import(core)
+/import(core/patterns)
+
+## Definitions
+
+Fail-Type  <- &(Fail-Type)
+Fail-Type! <- fail(Fail-Type)
+
+1 -> object.x
+2 -> object.y
+
+
+## Tests
+
+### Pattern Matching Test Group
+
+all-tests <-
+    group(
+        "Pattern Matching"
+
+        , int-pattern-tests
+        , real-pattern-tests
+        , string-pattern-tests
+        , cons-pattern-tests
+        , list-pattern-tests
+        , list*-pattern-tests
+
+        , and-pattern-tests
+        , or-pattern-tests
+        , not-pattern-tests
+
+        , fails?-pattern-tests
+
+        , multi-pattern-tests
+    )
+
+/export(all-tests)
+
+
+### `int` Patterns
+
+1 -> int1
+
+int1 -> int(match-int1)
+2 -> int(match-int2)
+
+3.5 -> int(match-int3)
+"12" -> int(match-int4)
+c(0) -> int(match-int5)
+'(x4) -> int(match-int6)
+object -> int(match-int7)
+
+Fail-Type! -> int(match-int-fail)
+
+group(
+    "`int` Patterns",
+
+    group(
+        "Integers",
+
+        test-equal(match-int1, 1, "1 -> int(x)"),
+        test-equal(match-int2, 2, "2 -> int(x)")
+    ),
+
+    group(
+        "Non-Integers",
+
+        test-fails?(match-int3, "3.5 -> int(x)", Match-Fail),
+        test-fails?(match-int4, "\"12\" -> int(x)", Match-Fail),
+        test-fails?(match-int5, "c(0) -> int(x)", Match-Fail),
+        test-fails?(match-int6, "'(x4) -> int(x)", Match-Fail),
+        test-fails?(match-int7, "object -> int(x)", Match-Fail)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(match-int-fail, "Fail-Type! -> int(x)", Fail-Type)
+    )
+) -> int-pattern-tests
+
+
+### `real` Patterns
+
+1.5 -> real1
+
+real1 -> real(match-real1)
+2.25 -> real(match-real2)
+3 -> real(match-real3)
+
+"12" -> real(match-real4)
+c(0) -> real(match-real5)
+'(x4) -> real(match-real6)
+object -> real(match-real7)
+
+Fail-Type! -> real(match-real-fail)
+
+group(
+    "`real` Patterns",
+
+    group(
+        "Real Values",
+
+        test-equal(match-real1, 1.5, "1.5 -> real(x)"),
+        test-equal(match-real2, 2.25, "2.25 -> real(x)"),
+        test-equal(match-real3, 3, "3 -> real(x)")
+    ),
+
+    group(
+        "Non-Real Values",
+
+        test-fails?(match-real4, "\"12\" -> real(x)", Match-Fail),
+        test-fails?(match-real5, "c(0) -> real(x)", Match-Fail),
+        test-fails?(match-real6, "'(x4) -> real(x)", Match-Fail),
+        test-fails?(match-real7, "object -> real(x)", Match-Fail)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(match-real-fail, "Fail-Type! -> real(x)", Fail-Type)
+    )
+) -> real-pattern-tests
+
+
+### `string` Patterns
+
+"hello world" -> string1
+
+string1 -> string(match-string1)
+"abc" -> string(match-string2)
+
+3.5 -> string(match-string3)
+12 -> string(match-string4)
+c(0) -> string(match-string5)
+'(x4) -> string(match-string6)
+object -> string(match-string7)
+
+Fail-Type! -> string(match-string-fail)
+
+group(
+    "`string` Patterns",
+
+    group(
+        "Strings",
+
+        test-equal(match-string1, "hello world", "\"hello world\" -> string(x)"),
+        test-equal(match-string2, "abc", "\"abc\" -> string(x)")
+    ),
+
+    group(
+        "Non-Strings",
+
+        test-fails?(match-string3, "3.5 -> string(x)", Match-Fail),
+        test-fails?(match-string4, "12 -> string(x)", Match-Fail),
+        test-fails?(match-string5, "c(0) -> string(x)", Match-Fail),
+        test-fails?(match-string6, "'(x4) -> string(x)", Match-Fail),
+        test-fails?(match-string7, "object -> string(x)", Match-Fail)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(match-string-fail, "Fail-Type! -> string(x)", Fail-Type)
+    )
+) -> string-pattern-tests
+
+
+### `cons` Patterns
+
+list(1) -> cons1
+
+list1 -> cons(match-cons1-head, match-cons1-tail)
+list("a", 3) -> cons(match-cons2-head, match-cons2-tail)
+
+12 -> cons(match-cons4-head, match-cons4-tail)
+c(0) -> cons(match-cons5-head, match-cons5-tail)
+'(x4) -> cons(match-cons6-head, match-cons6-tail)
+object -> cons(match-cons7-head, match-cons7-tail)
+Empty -> cons(match-cons8-head, match-cons8-tail)
+
+Fail-Type! -> cons(match-cons9-head, match-cons9-tail)
+
+list(1,2) -> cons(1, cons(int(match-cons-nested1-1), match-cons-nested1-2))
+list(2,2) -> cons(1, cons(int(match-cons-nested2-1), match-cons-nested2-2))
+list(1,"x") -> cons(1, cons(int(match-cons-nested3-1), match-cons-nested3-2))
+
+group(
+    "`cons` Patterns",
+
+    group(
+        "Conses",
+
+        test-equal(match-cons1-head, 1, "list(1) -> cons(x, _)"),
+        test-equal(match-cons1-tail, Empty, "list(1) -> cons(_, x)"),
+
+        test-equal(match-cons2-head, "a", "list(\"a\", 3) -> cons(x, _)"),
+        test-equal(head(match-cons2-tail), 3, "list(\"a\", 3) -> cons(_, x); head(x)"),
+        test-equal(tail(match-cons2-tail), Empty, "list(\"a\", 3) -> cons(_, x); tail(x)")
+    ),
+
+    group(
+        "Non Conses",
+
+        test-fails?(match-cons4-head, "12 -> cons(x, _)", Match-Fail),
+        test-fails?(match-cons4-tail, "12 -> cons(_, x)", Match-Fail),
+
+        test-fails?(match-cons5-head, "c(0) -> cons(x, _)", Match-Fail),
+        test-fails?(match-cons5-tail, "c(0) -> cons(_, x)", Match-Fail),
+
+        test-fails?(match-cons6-head, "'(x4) -> cons(x, _)", Match-Fail),
+        test-fails?(match-cons6-tail, "'(x4) -> cons(_, x)", Match-Fail),
+
+        test-fails?(match-cons7-head, "object -> cons(x, _)", Match-Fail),
+        test-fails?(match-cons7-tail, "object -> cons(_, x)", Match-Fail),
+
+        test-fails?(match-cons8-head, "Empty -> cons(x, _)", Match-Fail),
+        test-fails?(match-cons8-tail, "Empty -> cons(_, x)", Match-Fail)
+    ),
+
+    group(
+        "Nested Patterns",
+
+        test-equal(match-cons-nested1-1, 2, "list(1,2) -> cons(1, cons(int(x), _))"),
+        test-equal(match-cons-nested1-2, Empty, "list(1,2) -> cons(1, cons(int(_), x))"),
+
+        test-fails?(match-cons-nested2-1, "list(2,2) -> cons(1, cons(int(x), _))", Match-Fail),
+        test-fails?(match-cons-nested2-2, "list(2,2) -> cons(1, cons(int(_), x))", Match-Fail),
+
+        test-fails?(match-cons-nested3-1, "list(1,\"x\") -> cons(1, cons(int(x), _))", Match-Fail),
+        test-fails?(match-cons-nested3-2, "list(1,\"x\") -> cons(1, cons(int(_), x))", Match-Fail)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(match-cons9-head, "Fail-type! -> cons(x, _)", Fail-Type),
+        test-fails?(match-cons9-tail, "Fail-type! -> cons(_, x)", Fail-Type)
+    )
+) -> cons-pattern-tests
+
+
+### `list` Patterns
+
+list(1) -> list1
+
+list1 -> list(match-list1-1)
+list("a", 3, 4) -> list(match-list2-1, match-list2-2, match-list2-3)
+
+list(1, 2) -> list(match-list3-1, match-list3-2, match-list3-3)
+list(1, 2) -> list(match-list4)
+Empty -> list(match-list5)
+
+12 -> list(match-list6)
+c(0) -> list(match-list7)
+'(x4) -> list(match-list8)
+object -> list(match-list9)
+
+Fail-Type! -> list(match-list-fail)
+
+list('(x),1,2,3) -> list('(x), 1, int(match-list-nested1-1), match-list-nested1-2)
+list('(y),1,2,3) -> list('(x), 1, int(match-list-nested2-1), match-list-nested2-2)
+list('(x),1,"a",3) -> list('(x), 1, int(match-list-nested3-1), match-list-nested3-2)
+
+group(
+    "`list` Patterns",
+
+    group(
+        "Lists",
+
+        test-equal(match-list1-1, 1, "list(1) -> list(x)"),
+
+        test-equal(match-list2-1, "a", "list(\"a\", 3, 4) -> list(x,_,_)"),
+        test-equal(match-list2-2, 3, "list(\"a\", 3, 4) -> list(_,x,_)"),
+        test-equal(match-list2-3, 4, "list(\"a\", 3, 4) -> list(_,_,x)")
+    ),
+
+    group(
+        "Mismatched Lengths",
+
+        test-fails?(match-list3-1, "list(1, 2) -> list(x,_,_)", Match-Fail),
+        test-fails?(match-list3-2, "list(1, 2) -> list(_,x,_)", Match-Fail),
+        test-fails?(match-list3-3, "list(1, 2) -> list(_,_,x)", Match-Fail),
+
+        test-fails?(match-list4, "list(1, 2) -> list(x)", Match-Fail),
+        test-fails?(match-list5, "Empty -> list(x)", Match-Fail)
+    ),
+
+    group(
+        "Non Lists",
+
+        test-fails?(match-list6, "12 -> list(x)", Match-Fail),
+        test-fails?(match-list7, "c(0) -> list(x)", Match-Fail),
+        test-fails?(match-list8, "'(x4) -> list(x)", Match-Fail),
+        test-fails?(match-list9, "object -> list(x)", Match-Fail)
+    ),
+
+    group(
+        "Nested Patterns",
+
+        test-equal(match-list-nested1-1, 2, "list('(x),1,2,3) -> list('(x), 1, int(x), _)"),
+        test-equal(match-list-nested1-2, 3, "list('(x),1,2,3) -> list('(x), 1, int(_), x)"),
+
+        test-fails?(match-list-nested2-1, "list('(y),1,2,3) -> list('(x), 1, int(x), _)", Match-Fail),
+        test-fails?(match-list-nested2-2, "list('(y),1,2,3) -> list('(x), 1, int(_), x)", Match-Fail),
+
+        test-fails?(match-list-nested3-1, "list('(x),1,\"a\",3) -> list('(x), 1, int(x), _)", Match-Fail),
+        test-fails?(match-list-nested3-2, "list('(x),1,\"a\",3) -> list('(x), 1, int(_), x)", Match-Fail)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(match-list-fail, "Fail-type! -> list(x)", Fail-Type)
+    )
+) -> list-pattern-tests
+
+
+### `list*` Patterns
+
+list1 -> list*(match-list*1-1, match-list*1-tail)
+list1 -> list*(match-list*2-1)
+
+list("a", 3, 4) -> list*(match-list*3-1, match-list*3-2, match-list*3-tail)
+list(1, 2) -> list*(match-list*4-1, match-list*4-2, match-list*4-tail)
+list(1, 2) -> list*(match-list*5-1, match-list*5-2, _)                       # Also tests _ ignore patterns
+Empty -> list*(match-list*6)
+
+list(1) -> list*(match-list*7-1, match-list*7-2, match-list*7-tail)
+
+12 -> list*(match-list*8, _)
+c(0) -> list*(match-list*9, _)
+'(x4) -> list*(match-list*10, _)
+object -> list*(match-list*11, _)
+
+Fail-Type! -> list*(match-list*-fail, _)
+
+list("a", c(b), 2.5, 3) -> list*("a", c(b), real(match-list*-nested1-1), list(match-list*-nested1-2))
+list("b", c(b), 2.5, 3) -> list*("a", c(b), real(match-list*-nested2-1), list(match-list*-nested2-2))
+list("a", c(b), c(0), 3) -> list*("a", c(b), real(match-list*-nested3-1), list(match-list*-nested3-2))
+
+
+group(
+    "`list*` Patterns",
+
+    group(
+        "Lists",
+
+        test-equal(match-list*1-1, 1, "list(1) -> list*(x,_)"),
+        test-equal(match-list*1-tail, Empty, "list(1) -> list*(_,x)"),
+
+        test-equal(head(match-list*2-1), 1, "list(1) -> list*(x); head(x)"),
+        test-equal(tail(match-list*2-1), Empty, "list(1) -> list*(x); tail(x)"),
+
+        test-equal(match-list*3-1, "a", "list(\"a\",3,4) -> list*(x,_,_)"),
+        test-equal(match-list*3-2, 3, "list(\"a\",3,4) -> list*(_,x,_)"),
+        test-equal(head(match-list*3-tail), 4, "list(\"a\",3,4) -> list*(_,_,x); head(x)"),
+        test-equal(tail(match-list*3-tail), Empty, "list(\"a\",3,4) -> list*(_,_,x); tail(x)"),
+
+        test-equal(match-list*4-1, 1, "list(1,2) -> list*(x,_,_)"),
+        test-equal(match-list*4-2, 2, "list(1,2) -> list*(_,x,_)"),
+        test-equal(match-list*4-tail, Empty, "list(1,2) -> list*(_,_,x)"),
+
+        test-equal(match-list*5-1, 1, "list(1,2) -> list*(x,_,_)"),
+        test-equal(match-list*5-2, 2, "list(1,2) -> list*(_,x,_)"),
+
+        test-equal(match-list*6, Empty, "Empty -> list*(x)")
+    ),
+
+    group(
+        "Mismatched Lengths",
+
+        test-fails?(match-list*7-1, "list(1) -> list*(x,_,_)", Match-Fail),
+        test-fails?(match-list*7-2, "list(1) -> list*(_,x,_)", Match-Fail),
+        test-fails?(match-list*7-tail, "list(1) -> list*(_,_,x)", Match-Fail)
+    ),
+
+    group(
+        "Non Lists",
+
+        test-fails?(match-list*8, "12 -> list*(x,_)", Match-Fail),
+        test-fails?(match-list*9, "c(0) -> list*(x,_)", Match-Fail),
+        test-fails?(match-list*10, "'(x4) -> list*(x,_)", Match-Fail),
+        test-fails?(match-list*11, "object -> list*(x,_)", Match-Fail)
+    ),
+
+    group(
+        "Nested Patterns",
+
+        test-equal(match-list*-nested1-1, 2.5, "list(\"a\", c(b), 2.5, 3) -> list*(\"a\", c(b), real(x), list(_))"),
+        test-equal(match-list*-nested1-2, 3, "list(\"a\", c(b), 2.5, 3) -> list*(\"a\", c(b), real(_), list(x))"),
+
+        test-fails?(match-list*-nested2-1, "list(\"b\", c(b), 2.5, 3) -> list*(\"a\", c(b), real(x), list(_)", Match-Fail),
+        test-fails?(match-list*-nested2-2, "list(\"b\", c(b), 2.5, 3) -> list*(\"a\", c(b), real(_), list(x)", Match-Fail),
+
+        test-fails?(match-list*-nested3-1, "list(\"a\", c(b), c(0), 3) -> list*(\"a\", c(b), real(x), list(_)", Match-Fail),
+        test-fails?(match-list*-nested3-2, "list(\"a\", c(b), c(0), 3) -> list*(\"a\", c(b), real(_), list(x)", Match-Fail)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(match-list*-fail, "Fail-type! -> list*(x,_)", Fail-Type)
+    )
+) -> list*-pattern-tests
+
+
+### `and` Patterns
+
+1 -> int(match-and1-1) and match-and1-2
+list(1,2) -> list(match-and2-1, _) and cons(1, cons(match-and2-2, _))
+
+"s" -> int(match-and3-1) and match-and3-2
+'(x) -> match-and4-1 and string(match-and4-2)
+
+Fail-Type! -> int(match-and-fail1) and match-and-fail2
+
+group(
+    "`and` Patterns",
+
+    group(
+        "Matching Patterns",
+
+        test-equal(match-and1-1, 1, "1 -> int(x) and _"),
+        test-equal(match-and1-2, 1, "1 -> int(_) and x"),
+
+        test-equal(match-and2-1, 1, "list(1,2) -> list(x,_) and cons(1, cons(_,_))"),
+        test-equal(match-and2-2, 2, "list(1,2) -> list(_,_) and cons(1, cons(x,_))")
+    ),
+
+    group(
+        "Non-Matching Patterns",
+
+        test-fails?(match-and3-1, "\"s\" -> int(x) and _", Match-Fail),
+        test-fails?(match-and3-2, "\"s\" -> int(_) and x", Match-Fail),
+
+        test-fails?(match-and4-1, "'(x) -> x and string(_)", Match-Fail),
+        test-fails?(match-and4-2, "'(x) -> _ and string(x)", Match-Fail)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(match-and-fail1, "Fail-Type! -> int(x) and _", Fail-Type),
+        test-fails?(match-and-fail2, "Fail-Type! -> int(_) and x", Fail-Type)
+    )
+) -> and-pattern-tests
+
+
+### `or` Patterns
+
+1 -> string(match-or1-1) or match-or1-2
+"s" -> int(match-or2-1) or string(match-or2-2)
+
+"s" -> int(match-or3-1) or real(match-or3-2)
+'(x) -> 1 or string(match-or4)
+
+Fail-Type! -> int(match-or-fail1) or match-or-fail2
+
+group(
+    "`or` Patterns",
+
+    group(
+        "Matching Patterns",
+
+        test-fails?(match-or1-1, "1 -> string(x) or _", Match-Fail),
+        test-equal(match-or1-2, 1, "1 -> string(_) or x"),
+
+        test-fails?(match-or2-1, "\"s\" -> int(x) or string(_)", Match-Fail),
+        test-equal(match-or2-2, "s", "\"s\" -> int(_) or string(x)")
+    ),
+
+    group(
+        "Non-Matching Patterns",
+
+        test-fails?(match-or3-1, "\"s\" -> int(x) or real(_)", Match-Fail),
+        test-fails?(match-or3-2, "\"s\" -> int(_) or real(x)", Match-Fail),
+
+        test-fails?(match-or4, "'(x) -> 1 or string(x)", Match-Fail)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(match-or-fail1, "Fail-Type! -> int(x) and _", Fail-Type),
+        test-fails?(match-or-fail2, "Fail-Type! -> int(_) and x", Fail-Type)
+    )
+) -> or-pattern-tests
+
+
+### `not` Patterns
+
+1 -> not(string(_)) and match-not1
+"x" -> not("y") and match-not2
+
+"x" -> not("x") and match-not3
+1.5 -> not(real(_)) and match-not4
+
+Fail-Type! -> not(int(_)) and match-not-fail
+
+group(
+    "`not` Patterns",
+
+    group(
+        "Matching Patterns",
+
+        test-equal(match-not1, 1, "1 -> not(string(_)) and x"),
+        test-equal(match-not2, "x", "\"x\" -> not(\"y\") and x")
+    ),
+
+    group(
+        "Non-Matching Patterns",
+
+        test-fails?(match-not3, "\"x\" -> not(\"x\") and x", Match-Fail),
+        test-fails?(match-not4, "1.5 -> not(real(_)) and x", Match-Fail)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(match-not-fail, "Fail-Type! -> not(int(_)) and _", Fail-Type)
+    )
+) -> not-pattern-tests
+
+
+### `fails?` Patterns
+
+Fail-Type! -> fails?() and match-fails1
+Fail-Type! -> fails?(Fail-Type) and match-fails2
+
+1 -> fails?() and match-fails3
+Type-Error -> fails?(Fail-Type) and match-fails4
+
+group(
+    "`fails?` Patterns",
+
+    group(
+        "Matching Patterns",
+
+        test-fails?(match-fails1, "Fail-Type! -> fails?() and x", Fail-Type),
+        test-fails?(match-fails2, "Fail-Type! -> fails?(Fail-Type) and x", Fail-Type)
+    ),
+
+    group(
+        "Non-Matching Patterns",
+
+        test-fails?(match-fails3, "1 -> fails?() and x", Match-Fail),
+        test-fails?(match-fails4, "Type-Error -> fails?(Fail-Type) and match-fails4", Match-Fail)
+    )
+) -> fails?-pattern-tests
+
+
+### Multiple Pattern Tests
+
+1 + 1 -> source1
+
+source1 -> string(multi1)
+source1 -> int(multi1)
+
+
+list('(a), 1, 2) -> source2
+
+source2 -> list(int(multi2-1), int(multi2-2))
+source2 -> list(1, real(multi2-1), multi2-2)
+source2 -> list('(a), int(multi2-2), real(multi2-1))
+
+
+list("a", "b", "c") -> source3
+
+source3 -> list(1, 2, multi3)
+source3 -> list(string(multi3), "b", int(_))
+source3 -> int(multi3)
+
+Fail-Type! -> list(1, 2, multi-fail)
+Fail-Type! -> list(string(multi-fail), "b", int(_))
+Fail-Type! -> int(multi-fail)
+
+group(
+    "Multiple Patterns",
+
+    group(
+        "Matching Patterns",
+
+        test-equal(multi1, 2, "1 + 1 -> string(x); 1 + 1 -> int(x)"),
+
+        test-equal(
+            multi2-1, 2,
+            "['(a), 1, 2] ->* { list(int(x), int(_)); list(1, real(x), _); list('(a), int(_), real(x)) }"
+        ),
+        test-equal(
+            multi2-2, 1,
+            "['(a), 1, 2] ->* { list(int(_), int(x)); list(1, real(_), x); list('(a), int(x), real(_)) }"
+        )
+    ),
+
+    group(
+        "Non-Matching Patterns",
+
+        test-fails?(
+            multi3,
+            "[\"a\", \"b\", \"c\"] ->* { list(1,2,x); list(string(x), \"b\", int(_)); int(x) }",
+            Match-Fail
+        )
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(
+            multi-fail,
+            "Fail-Type! ->* { list(1,2,x); list(string(x), \"b\", int(_)); int(x) }",
+            Fail-Type
+        )
+    )
+) -> multi-pattern-tests

@@ -23,7 +23,7 @@
 /import(core, <-, ', @)
 /import(core, =, not, ?, fails?, fail-type?)
 /import(core, string, string-concat)
-/import(core, head, tail)
+/import(core, head, tail, Empty)
 
 ##
 ## Create a basic `test` object.
@@ -168,10 +168,9 @@ concat-strings(..(values)) : {
         first <- value->string(head(values))
         rest <- tail(values)
 
-        ?(values) ->
-            string-concat(first, iter(rest)) -> @(self)
-
-        "" -> @(self)
+        if (values = Empty,
+            "",
+            string-concat(first, iter(rest)))
     }
 
     iter(values)

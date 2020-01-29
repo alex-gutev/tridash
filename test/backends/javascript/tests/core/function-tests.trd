@@ -1,0 +1,77 @@
+## Unit tests for the Core Module functional utilities
+
+/module(function-tests)
+/import(tridash-unit)
+/import(core)
+
+
+## Definitions
+
+Fail-Type  <- &(Fail-Type)
+Fail-Type! <- fail(Fail-Type)
+
+1 -> object.x
+"b" -> object.y
+
+
+## Tests
+
+### Functional Utilities Test Group
+
+all-tests <-
+    group(
+        "Functional Utilities"
+
+        , apply-tests
+    )
+
+/export(all-tests)
+
+
+### Test `apply`
+
+add(x, y) : x + y
+
+sum(x, ..(xs)) : {
+    foldl'(x, +, xs)
+}
+
+id(x) : x
+
+f(..(xs)) : {
+    Fail-Type! -> self
+}
+
+group(
+    "Meta-Node: `apply`",
+
+    group(
+        "Valid Input",
+
+        test-equal(apply(add, list(1, 2)), 3, "apply(add, list(1, 2))"),
+        test-equal(apply(add, 2, list(7)), 9, "apply(add, 2, list(7))"),
+        test-equal(apply(sum, 1, list(2, 3)), 6, "apply(sum, 1, list(2, 3))"),
+
+        test-fails?(apply(add, list(1)), "apply(add, list(1))", Arity-Error),
+        test-fails?(apply(add, 1, 2, list(3, 4)), "apply(add, 1, 2, list(3, 4))", Arity-Error),
+        test-fails?(apply(sum, Empty), "apply(sum, Empty)", Arity-Error)
+    ),
+
+    group(
+        "Type-Errors",
+
+        test-fails?(apply(1, list(1, 2, 3)), "apply(1, list(1, 2, 3))", Type-Error),
+        test-fails?(apply("x", list(1, 2, 3)), "apply(\"x\", list(1, 2, 3))", Type-Error),
+
+        test-fails?(apply(sum, 1, 2, 3), "apply(sum, 1, 2, 3)", Type-Error),
+        test-fails?(apply(id, "hello"), "apply(id, \"hello\")", Type-Error)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(apply(Fail-Type!, list(1, 2, 3)), "apply(Fail-Type!, list(1, 2, 3))", Fail-Type),
+        test-fails?(apply(sum, 1, Fail-Type!, list(2, 3)), "apply(sum, 1, Fail-Type!, list(2, 3))", Fail-Type),
+        test-fails?(apply(f, 1, list(2, 3)), "apply(f, 1, list(2, 3))", Fail-Type)
+    )
+) -> apply-tests

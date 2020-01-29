@@ -86,6 +86,11 @@ test_core_sources = $(testdir)/tests/core/tridash-unit.trd \
 	$(testdir)/tests/core/logical-tests.trd \
 	$(testdir)/tests/core/selection-tests.trd \
 	$(testdir)/tests/core/type-tests.trd \
+	$(testdir)/tests/core/list-tests.trd \
+	$(testdir)/tests/core/string-tests.trd \
+	$(testdir)/tests/core/dictionary-tests.trd \
+	$(testdir)/tests/core/function-tests.trd \
+	$(testdir)/tests/core/pattern-match-tests.trd \
 	$(testdir)/tests/core/core-tests.trd
 
 $(testdir)/tests/core.js: $(test_core_sources) $(tridashc)

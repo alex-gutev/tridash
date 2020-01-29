@@ -1,0 +1,59 @@
+## Unit tests for the Core Module Dictionary Meta-Nodes
+
+/module(dictionary-tests)
+/import(tridash-unit)
+/import(core)
+
+
+## Definitions
+
+Fail-Type  <- &(Fail-Type)
+Fail-Type! <- fail(Fail-Type)
+
+1 -> object.x
+"b" -> object.y
+
+
+## Tests
+
+### Dictionary Test Group
+
+all-tests <-
+    group(
+        "Dictionaries"
+
+        , member-tests
+    )
+
+/export(all-tests)
+
+
+### Test `member`
+
+group(
+    "Meta-Node: `member`",
+
+    group(
+        "Valid Input",
+
+        test-equal(member(object, '(x)), 1, "member(object, '(x))"),
+        test-equal(member(object, '(y)), "b", "member(object, '(t))"),
+
+        test-fails?(member(object, '(z)), "member(object, '(z))")
+    ),
+
+    group(
+        "Type Errors",
+
+        test-fails?(member("hello", '(a)), "member(\"hello\", '(a))"),
+        test-fails?(member(1, '(a)), "member(1, '(a))"),
+        test-fails?(member('(z), '(a)), "member('(z), '(a))")
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(member(Fail-Type!, '(a)), "member(Fail-Type!, '(a))", Fail-Type),
+        test-fails?(member(object, Fail-Type!), "member(object, Fail-Type!)", Fail-Type)
+    )
+) -> member-tests

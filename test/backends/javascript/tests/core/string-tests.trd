@@ -1,0 +1,213 @@
+## Unit tests for the Core Module String Meta-Nodes
+
+/module(string-tests)
+/import(tridash-unit)
+/import(core)
+
+
+## Definitions
+
+Fail-Type  <- &(Fail-Type)
+Fail-Type! <- fail(Fail-Type)
+
+1 -> object.x
+2 -> object.y
+
+## Tests
+
+### String Tests Group
+
+all-tests <-
+    group(
+        "Strings"
+
+        , string-at-tests
+        , string-concat-tests
+        , string->list-tests
+        , list->string-tests
+        , format-tests
+    )
+
+/export(all-tests)
+
+
+### Test `string-at`
+
+group(
+    "Meta-Node: `string-at`",
+
+    group(
+        "Valid Input",
+
+        test-equal(string-at("hello", 0), c(h), "string-at(\"hello\", 0)"),
+        test-equal(string-at("world", 2), c(r), "string-at(\"world\", 2)"),
+        test-equal(string-at("hello\n", 5), c("\n"), "string-at(\"hello\\n\", 5)"),
+
+        test-fails?(string-at("", 0), "string-at(\"\", 0)", Index-Out-Bounds),
+        test-fails?(string-at("", 10), "string-at(\"\", 10)", Index-Out-Bounds),
+        test-fails?(string-at("", -3), "string-at(\"\", -3)", Index-Out-Bounds),
+
+        test-fails?(string-at("abc", 3), "string-at(\"abc\", 3)", Index-Out-Bounds),
+        test-fails?(string-at("abc", 4), "string-at(\"abc\", 3)", Index-Out-Bounds)
+    ),
+
+    group(
+        "Type Errors",
+
+        test-fails?(string-at(1, 1), "string-at(1, 1)", Type-Error),
+        test-fails?(string-at(c("a"), 2), "string-at(c(\"a\"), 2)", Type-Error),
+        test-fails?(string-at('(hello), 3), "string-at('(hello), 3)", Type-Error),
+        test-fails?(string-at(object, 8), "string-at(object, 8)", Type-Error),
+
+        test-fails?(string-at("hello", 1.2), "string-at(\"hello\", 1.2)", Type-Error),
+        test-fails?(string-at("hello", "2"), "string-at(\"hello\", \"3\")", Type-Error),
+        test-fails?(string-at("hello", c(3)), "string-at(\"hello\", c(3))", Type-Error)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(string-at(Fail-Type!, 1), "string-at(Fail-Type!, 1)", Fail-Type),
+        test-fails?(string-at("hello", Fail-Type!), "string-at(\"hello\", Fail-Type!)", Fail-Type!)
+    )
+) -> string-at-tests
+
+
+### Test `string-concat`
+
+group(
+    "Meta-Node: `string-concat`",
+
+    group(
+        "Valid Input",
+
+        test-equal(string-concat("hello ", "world"), "hello world", "string-concat(\"hello \", \"world\")"),
+        test-equal(string-concat("hello", ""), "hello", "string-concat(\"hello\", \"\")"),
+        test-equal(string-concat("", "hello"), "hello", "string-concat(\"\", \"hello\")")
+    ),
+
+    group(
+        "Type Errors",
+
+        test-fails?(string-concat("a", 1), "string-concat(\"a\", 1)", Type-Error),
+        test-fails?(string-concat("a", c(b)), "string-concat(\"a\", c(b))", Type-Error),
+        test-fails?(string-concat(object, "b"), "string-concat(object, \"b\")", Type-Error),
+        test-fails?(string-concat('(x), "y"), "string-concat('(x), \"y\")", Type-Error)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(string-concat(Fail-Type!, "b"), "string-concat(Fail-Type!, \"b\")", Fail-Type),
+        test-fails?(string-concat("b", Fail-Type!), "string-concat(\"b\", Fail-Type!)", Fail-Type)
+    )
+) -> string-concat-tests
+
+
+### Test `string->list`
+
+list1 <- string->list("abc")
+
+group(
+    "Meta-Node: `string->list`",
+
+    group(
+        "Valid Input",
+
+        test-equal(string->list(""), Empty, "string->list(\"\")"),
+
+        test-equal(nth(list1, 0), c(a), "nth(string->list(\"abc\"), 0)"),
+        test-equal(nth(list1, 1), c(b), "nth(string->list(\"abc\"), 1)"),
+        test-equal(nth(list1, 2), c(c), "nth(string->list(\"abc\"), 2)"),
+
+        test-fails?(nth(list1, 3), "nth(string->list(\"abc\"), 3)", Index-Out-Bounds!)
+    ),
+
+    group(
+        "Type Errors",
+
+        test-fails?(string->list(1), "string->list(1)", Type-Error),
+        test-fails?(string->list(c("a")), "string->list(c(\"a\"))", Type-Error),
+        test-fails?(string->list('(hello)), "string->list('(hello))", Type-Error),
+        test-fails?(string->list(object), "string->list(object)", Type-Error)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(string->list(Fail-Type!), "string->list(Fail-Type!)", Fail-Type)
+    )
+) -> string->list-tests
+
+
+### Test `list->string`
+
+group(
+    "Meta-Node: `list->string`",
+
+    group(
+        "Valid Input",
+
+        test-equal(list->string(list(c(a), c(b), c(c))), "abc", "list->string([c(a), c(b), c(c)])"),
+        test-equal(list->string(list("a", "b", "c")), "abc", "list->string([\"a\", \"b\", \"c\"])"),
+        test-equal(list->string(list(c(a), "b", 1)), "ab1", "list->string([c(a), \"b\", 1])"),
+
+        test-equal(list->string(Empty), "", "list->string(Empty)")
+    ),
+
+    group(
+        "Type Errors",
+
+        test-fails?(list->string(1), "list->string(1)", Type-Error),
+        test-fails?(list->string(c("a")), "list->string(c(\"a\"))", Type-Error),
+        test-fails?(list->string('(hello)), "list->string('(hello))", Type-Error),
+        test-fails?(list->string(object), "list->string(object)", Type-Error)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(list->string(Fail-Type!), "list->string(Fail-Type!)", Fail-Type),
+        test-fails?(list->string(list(c(a), Fail-Type!, c(c))), "list->string([c(a), Fail-Type!, c(c)])", Fail-Type)
+    )
+) -> list->string-tests
+
+
+### Test `format`
+
+group(
+    "Meta-Node: `format`",
+
+    group(
+        "Valid Input",
+
+        test-equal(format("Hello World"), "Hello World", "format(\"Hello World\")"),
+        test-equal(format(""), "", "format(\"\")"),
+
+        test-equal(format("Hello %s.", "Bob"), "Hello Bob.", "format(\"Hello %s.\", \"Bob\")"),
+        test-equal(format("Hello %s", "Bob"), "Hello Bob", "format(\"Hello %s\", \"Bob\")"),
+
+        test-equal(format("Hello %s %s!", "Bob", "Smith"), "Hello Bob Smith!", "format(\"Hello %s %s!\", \"Bob\", \"Smith\")"),
+        test-equal(format("Result: %s%% of %s", 85, "400"), "Result: 85% of 400", "format(\"Result: %s%% of %s\", 85, \"400\")"),
+
+        test-equal(format("A %d B: %s.", "x"), "A %d B: x.", "format(\"A %d B: %s.\", \"x\")"),
+
+        test-fails?(format("A: %s, B: %s", "1"), "format(\"A: %s, B: %s\", \"1\")")
+    ),
+
+    group(
+        "Type Errors",
+
+        test-fails?(format(12, "x"), "format(12, \"x\")", Type-Error),
+        test-fails?(format(c(h), "a"), "format(c(h), \"a\")", Type-Error),
+        test-fails?(format(list(c(a), c(b)), "a"), "format([c(a), c(b)], \"a\")", Type-Error),
+        test-fails?(format('(hello), "a"), "format('(hello), \"a\")", Type-Error)
+    ),
+
+    group(
+        "Failure Propagation",
+
+        test-fails?(format(Fail-Type!, "x"), "format(Fail-Type!, \"x\")", Fail-Type),
+        test-fails?(format("%s", Fail-Type!), "format(\"%s\", Fail-Type!)", Fail-Type)
+    )
+) -> format-tests
