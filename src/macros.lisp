@@ -25,22 +25,15 @@
 
 ;;; Failure Types
 
-(defconstant +empty-list+ (get :empty-list *core-meta-nodes*)
-  "Meta-Node representing the empty list.")
+(define-symbol-macro +empty-list+ (get :empty-list *core-meta-nodes*))
 
-(defconstant +fail-type-no-value+ (get :no-value *core-meta-nodes*)
-  "Failure type indicating no value was provided.")
+(define-symbol-macro +fail-type-no-value+ (get :no-value *core-meta-nodes*))
 
-(defconstant +fail-type-type-error+ (get :type-error *core-meta-nodes*)
-  "Failure type indicating a type error.")
+(define-symbol-macro +fail-type-type-error+ (get :type-error *core-meta-nodes*))
 
-(defconstant +fail-type-arity-error+ (get :arity-error *core-meta-nodes*)
-  "Failure type indicating an incorrect number of arguments were
-   passed to a meta-node.")
+(define-symbol-macro +fail-type-arity-error+ (get :arity-error *core-meta-nodes*))
 
-(defconstant +fail-type-index-out-bounds+ (get :index-out-bounds *core-meta-nodes*)
-  "Failure type indicating that an index is out of the bounds of a
-   list or string.")
+(define-symbol-macro +fail-type-index-out-bounds+ (get :index-out-bounds *core-meta-nodes*))
 
 
 ;;; Macro Compiler State
@@ -312,7 +305,7 @@
      (cons (list (get-operand-var (name arg))
                  (if value
                      (tridash->cl value)
-                     (fail-thunk +fail-type-no-value+)))
+                     '(fail-thunk +fail-type-no-value+)))
            (next args)))
 
     (rest
@@ -733,7 +726,7 @@
 
 (defmethod tridash->cl ((literal null) &key)
   (unless *return-nil*
-    (fail-thunk +fail-type-no-value+)))
+    '(fail-thunk +fail-type-no-value+)))
 
 (defmethod tridash->cl (literal &key)
   (match literal

@@ -205,7 +205,9 @@
    OPERANDS."
 
   (print-token operator)
-  (print-ast (first operands) :semicolon nil :brackets t))
+  (print-ast (first operands)
+             :semicolon nil
+             :brackets (/= operator "...")))
 
 
 ;;;; Blocks

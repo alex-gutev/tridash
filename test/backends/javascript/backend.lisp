@@ -1404,30 +1404,6 @@
                     (js-return
                      (thunk (js-throw ($ e))))))))))))))
 
-    (subtest "Cyclic References"
-      (with-module-table modules
-        (build-core-module)
-        (build-source-file "./test/backends/javascript/inputs/cyclic-references.trd" modules)
-
-        (with-nodes ((f "f")) (finish-build modules)
-          (mock-backend-state
-            (test-meta-node-function f
-              (js-function
-               (meta-node-id f)
-               '(($ a) ($ b))
-
-               (list
-                (js-var ($ cell))
-
-                (->>
-                 (js-call "Tridash.cons" ($ b) ($ cell))
-                 js-return
-                 thunk
-                 (js-call "Tridash.cons" ($ a))
-                 (js-call "=" ($ cell)))
-
-                (js-return ($ cell)))))))))
-
     (subtest "Optional Arguments"
       (with-module-table modules
         (build-core-module)

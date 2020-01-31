@@ -35,6 +35,9 @@
 
 /module(core)
 
+/use-as(core/patterns, patterns)
+
+
 ### Conversions
 
 ## Convert a string to a list of characters.
@@ -110,7 +113,7 @@ format(string, ..(args)) : {
         substitute !- cons(arg, format-chars(rest-chars, rest-args)) -> @(self)
         char !- cons(char, format-chars(rest-chars, args)) -> @(self)
 
-        Empty -> @(self)
+        Empty -> self @ when(patterns.Match-Fail)
     }
 
     chars <- string->list(string)

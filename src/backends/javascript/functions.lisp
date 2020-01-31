@@ -224,9 +224,8 @@
    OPERANDS is the list of `value-block' objects, of which the results
    are referenced in STATEMENTS.
 
-   BLOCKS is a map from `expression-block' objects to a list storing
-   the corresponding `value-block' object and the number of references
-   to the block's value.
+   COUNT is the number of references to the block's value. If NIL then
+   the block's value is only referenced in a single place.
 
    COMMON-P is a flag indicating whether the value computed by this
    block is referenced by more than one block, i.e. is a compiled
@@ -239,11 +238,9 @@
 
   variable
   expression
-
   statements
 
-  (blocks (make-hash-map))
-
+  count
   common-p
   protect-p)
 
@@ -279,6 +276,19 @@
   "Returns the list of statements making up the body of a function
    with return value given by the `value-block' object BLOCK.
 
+   Returns three values:
+
+   - The list of statements which compute the return value of the
+     function.
+
+   - An expression which references the value computed by the
+     function. If RETURN-VALUE is true, NIL is returned.
+
+   - A MAP mapping `VALUE-BLOCKS', which are referenced within the
+     function, to the number of times they are referenced. The MAP
+     only contains `VALUE-BLOCK's of which the number of references
+     within the function is less than the total number of references.
+
    If REPLACE-BLOCKS is true (default) any references to
    `value-block's, within the AST nodes, are replaced with their
    corresponding expressions.
@@ -298,44 +308,71 @@
      (list
       (js-return it))))
 
-  (values
-   (-> block
-       flatten-block
-       (extract-statements replace-blocks))
-   (replace-value-blocks (value-block-expression block))))
+  (multiple-value-bind (flat-block operands)
+      (flatten-block block)
+
+
+    (values
+     (extract-statements flat-block replace-blocks)
+     (replace-value-blocks (value-block-expression block))
+
+     operands)))
 
 (defun flatten-block (block)
   "Returns a list of all the blocks which are required for computing
    the value of BLOCK. The last element of the list is BLOCK, itself.
 
    Compiled `expression-block's of which the count does not equal the
-   reference within BLOCK, are not included in the list."
+   reference within BLOCK, are not included in the list. The second
+   return value contains a map of such `VALUE-BLOCK's and the number
+   of times they are referenced within BLOCK."
 
-  ;; 1. Remove from OPERANDS any expression blocks in which the
-  ;; reference count within the expression does not equal the
-  ;; expression block count.
-  ;;
-  ;; 2. Prepend all `expression-blocks' of which the reference count
-  ;; equals the expression block's count.
+  (let ((flat-block nil)
+        (block-map (make-hash-map)))
 
-  (flet ((prepend-block? (block)
-           (destructuring-bind (expression-block count block) block
-             (declare (ignore block))
-             (= (expression-block-count expression-block) count))))
+    (labels ((block-operands (block)
+               "Returns the operands of BLOCK which can be inserted
+                into the flat list."
 
-    (append
-     (-<>> block
-           value-block-blocks
-           (remove-if-not #'prepend-block?)
-           map-values
-           (map-extend (compose #'flatten-block #'second)))
+               (with-struct-slots value-block- (operands) block
+                 (remove-if-not #'count= operands)))
 
-     (->> block
-          value-block-operands
-          (remove-if #'value-block-common-p)
-          (map-extend #'flatten-block))
+             (count= (block)
+               "Returns true if the number of references to BLOCK
+                within the function is equal to its total number of
+                references."
 
-     (list block))))
+               (or (not (value-block-common-p block))
+                   (= (value-block-count block)
+                      (get block block-map))))
+
+             (add-to-block-map (operands)
+               "Increments the reference count, within BLOCK-MAP, for
+                each `VALUE-BLOCK' in OPERANDS."
+
+               (foreach
+                (lambda (block)
+                  (when (value-block-common-p block)
+                    (incf (get block block-map 0))))
+                operands)))
+
+      (nlet-tail add-blocks ((blocks (list block)))
+        (setf flat-block (append blocks flat-block))
+
+        (let ((next-blocks (map-extend #'block-operands blocks)))
+          (foreach (compose #'add-to-block-map #'value-block-operands) blocks)
+
+          (doseq ((block . count) block-map)
+            (when (= count (value-block-count block))
+              (push block next-blocks)
+              (erase block-map block)))
+
+          (when next-blocks
+            (add-blocks next-blocks)))))
+
+    (values
+     flat-block
+     block-map)))
 
 (defun extract-statements (blocks &optional (replace-blocks t))
   "Returns the list of statements of each block in BLOCKS.
@@ -416,6 +453,7 @@
 
   (let* ((*protect* (and *protect* (not thunk)))
          (block (call-next-method)))
+
     (with-struct-slots value-block- (statements expression common-p)
         block
 
@@ -427,20 +465,20 @@
           block))))
 
 (defun make-thunk (block)
-  (let* ((ref-blocks
-          (remove-if
-           (lambda (pair)
-             (= (expression-block-count (first pair))
-                (second pair)))
-           (value-block-blocks block))))
+  (multiple-value-bind (body expression operand-map)
+      (make-function-body block :replace-blocks nil)
+
+    (declare (ignore expression))
+
+    ;; Decrement total reference count of blocks by number of
+    ;; references within BLOCK.
+    (doseq ((operand . count) operand-map)
+      (decf (value-block-count operand)
+            (1- count)))
 
     (make-value-block
-     :expression
-     (thunk
-      (make-function-body block :replace-blocks nil))
-
-     :blocks ref-blocks
-     :operands (map #'second (map-values ref-blocks)))))
+     :expression (thunk body)
+     :operands (map-keys operand-map))))
 
 (defun thunk (statements)
   (->> statements
@@ -506,8 +544,11 @@
                   (make-value-block
                    :variable result
                    :expression result
+                   :count count
                    :common-p t)))
 
+            ;; Add to blocks in case it contains a cyclic reference to
+            ;; itself
             (setf (get block blocks) vblock)
 
             (let ((value
@@ -515,12 +556,8 @@
                     expression
                     :thunk (not (strict? strict-blocks block)))))
 
-              (setf (value-block-operands vblock) (list value))
-
-              (setf (value-block-blocks vblock)
-                    (copy (value-block-blocks value)))
-              (setf (get block (value-block-blocks vblock))
-                    (list 1 vblock))
+              (setf (value-block-operands vblock)
+                    (list value))
 
               (setf (value-block-statements vblock)
                     (list
@@ -537,7 +574,15 @@
 
     (let ((block (get expression (blocks *function-block-state*))))
       (assert block)
-      block)))
+
+      ;; Decrement reference count by 1 and return raw reference to
+      ;; the `VALUE-BLOCK' object.
+      ;;
+      ;; NOTE: The `VALUE-BLOCK' object is not added to the operands
+      ;; of the return block to prevent an infinite loop.
+
+      (decf (value-block-count block))
+      (make-value-block :expression block))))
 
 
 ;;; Functor Expressions
@@ -598,27 +643,28 @@
   (let ((strict-outer-nodes (strict-outer-operands meta-node))
         (protected (protected-call? meta-node)))
 
-    (multiple-value-bind (operands blocks)
-        (compile-operands
-         (append arguments (outer-node-operands meta-node outer-nodes))
+    (let ((operands
+           (compile-operands
+            (append arguments (outer-node-operands meta-node outer-nodes))
 
-         (append
-          (strict-arguments meta-node)
-          (map (rcurry #'get strict-outer-nodes) (outer-node-references meta-node)))
+            (append
+             (strict-arguments meta-node)
+             (map (rcurry #'get strict-outer-nodes) (outer-node-references meta-node)))
 
-         :protect
-         (if protected *protect* t))
+            :protect
+            (if protected *protect* t)))
 
-      (let ((result (next-var)))
-        (make-value-block
-         :variable result
-         :expression result
-         :operands operands
-         :statements
-         (list (make-meta-node-call result meta-node operands))
+          (result (next-var)))
 
-         :blocks blocks
-         :protect-p (and protected *protect*))))))
+      (make-value-block
+       :variable result
+       :expression result
+
+       :operands operands
+       :statements
+       (list (make-meta-node-call result meta-node operands))
+
+       :protect-p (and protected *protect*)))))
 
 
 ;;;; Node Operator
@@ -626,10 +672,10 @@
 (defmethod compile-functor-expression (node arguments outer-nodes)
   (declare (ignore outer-nodes))
 
-  (multiple-value-bind (operands blocks)
-      (compile-operands
-       (cons node arguments)
-       (cons t (make-list (length arguments) :initial-element nil)))
+  (let ((operands
+         (compile-operands
+          (cons node arguments)
+          (cons t (make-list (length arguments) :initial-element nil)))))
 
     (let ((result (next-var)))
       (make-value-block
@@ -641,40 +687,22 @@
         (destructuring-bind (fn &rest args) operands
           (->> (make-js-call (resolve fn) args)
                (js-call "=" result))))
-
-       :blocks blocks
        :protect-p *protect*))))
 
 
 ;;;; Operands
 
 (defun compile-operands (operands strict-operands &key (protect t))
-  "Compiles the operands of an expression.
+  "Compiles the operands of an expression. Returns a list containing
+   the `VALUE-BLOCK' objects corresponding to each compiled operand in
+   OPERANDS."
 
-   Returns two values: a list of `value-block' objects containing the
-   statements for each operand and a map (`expression-block' => count)
-   containing the total number of references for each
-   `expression-block' referenced with OPERANDS."
+  (labels ((compile-operand (operand strict?)
+             (compile-expression operand
+                                 :thunk (not strict?)
+                                 :protect protect)))
 
-  (let ((blocks (make-hash-map)))
-    (labels ((compile-operand (operand strict?)
-               (aprog1
-                   (compile-expression operand
-                                       :thunk (not strict?)
-                                       :protect protect)
-                 (merge-blocks (value-block-blocks it))))
-
-             (merge-blocks (blocks)
-               (foreach #'add-block blocks))
-
-             (add-block (block)
-               (destructuring-bind (expression-block count block) block
-                 (unless (= count (expression-block-count expression-block))
-                   (setf (get expression-block blocks)
-                         (list (+ (first (get expression-block blocks '(0))) count)
-                               block))))))
-
-      (values (map #'compile-operand operands strict-operands) blocks))))
+    (map #'compile-operand operands strict-operands)))
 
 (defun resolve (expression)
   (js-call +resolve-function+ expression))
@@ -689,14 +717,12 @@
         (make-value-block :expression (empty-list)))))
 
 (defun compile-argument-list (arguments)
-  (multiple-value-bind (operands blocks)
-      (compile-operands arguments (make-list (length arguments) :initial-element nil))
+  (let ((operands
+         (compile-operands arguments (make-list (length arguments) :initial-element nil))))
 
     (make-value-block
      :operands operands
-     :expression (js-array operands)
-
-     :blocks blocks)))
+     :expression (js-array operands))))
 
 (defun empty-list ()
   "Returns an expression which creates a failure that indicates an
@@ -789,26 +815,25 @@
   "Generates an if-block for an IF functor expression with arguments
    ARGUMENTS."
 
-  (multiple-value-bind (operands blocks)
-      (compile-operands arguments (list t nil nil) :protect *protect*)
+  (let ((operands
+         (compile-operands arguments (list t nil nil) :protect *protect*))
+        (result (next-var)))
 
-    (let ((result (next-var)))
-      (make-value-block
-       :variable result
-       :expression result
-       :operands operands
+    (make-value-block
+     :variable result
+     :expression result
+     :operands operands
 
-       :statements
-       (destructuring-bind (cond then &optional else) operands
+     :statements
+     (destructuring-bind (cond then &optional else) operands
 
-         (list
-          (js-if (resolve cond)
-                 (js-call "=" result then)
-                 (when else
-                   (js-call "=" result else)))))
+       (list
+        (js-if (resolve cond)
+               (js-call "=" result then)
+               (when else
+                 (js-call "=" result else)))))
 
-       :blocks blocks
-       :protect-p *protect*))))
+     :protect-p *protect*)))
 
 
 ;;; Object Expressions
@@ -821,21 +846,15 @@
     (let ((keys (map #'first entries))
           (values (map #'second entries)))
 
-      (multiple-value-bind (values blocks)
-          (compile-operands values (make-list (length values) :initial-element nil))
+      (let ((values
+             (compile-operands values (make-list (length values) :initial-element nil))))
 
         (make-value-block
          :operands values
 
          :expression
          (js-object
-          (map #'list (map #'js-string keys) values))
-
-         ;; (->> values
-         ;;      (map #'list (map #'js-string keys))
-         ;;      js-object)
-
-         :blocks blocks)))))
+          (map #'list (map #'js-string keys) values)))))))
 
 
 ;;; Meta-Node References
@@ -859,66 +878,66 @@
   (with-struct-slots meta-node-ref- (node optional outer-nodes)
       ref
 
-    (let ((operands (append optional (outer-node-operands node outer-nodes))))
-      (multiple-value-bind (operands blocks)
-          (compile-operands operands (make-list (length operands) :initial-element nil))
+    (let* ((operands
+            (append optional (outer-node-operands node outer-nodes)))
 
-        (make-value-block
-         :operands operands
+           (operands
+            (compile-operands operands (make-list (length operands) :initial-element nil))))
 
-         :expression
+      (make-value-block
+       :operands operands
 
-         (let ((op-values operands)
-               (fn-args (make-collector nil))
-               (call-args (make-collector nil))
-               (rest-arg nil))
+       :expression
 
-           (nlet-tail make-args
-               ((operands (operands node))
-                (op-values op-values))
+       (let ((op-values operands)
+             (fn-args (make-collector nil))
+             (call-args (make-collector nil))
+             (rest-arg nil))
 
-             (ematch operands
-               ((list* (list (eql +optional-argument+) _ _) rest)
-                (let ((var (next-var)))
-                  (accumulate call-args var)
-                  (accumulate fn-args (js-call "=" var (first op-values))))
+         (nlet-tail make-args
+             ((operands (operands node))
+              (op-values op-values))
 
-                (make-args rest (rest op-values)))
+           (ematch operands
+             ((list* (list (eql +optional-argument+) _ _) rest)
+              (let ((var (next-var)))
+                (accumulate call-args var)
+                (accumulate fn-args (js-call "=" var (first op-values))))
 
-               ((list* (list (eql +rest-argument+) _) rest)
-                (let ((var (next-var)))
-                  (setf rest-arg var)
+              (make-args rest (rest op-values)))
 
-                  (accumulate call-args var)
-                  (accumulate fn-args (js-call "..." var)))
+             ((list* (list (eql +rest-argument+) _) rest)
+              (let ((var (next-var)))
+                (setf rest-arg var)
 
-                (make-args rest op-values))
+                (accumulate call-args var)
+                (accumulate fn-args (js-call "..." var)))
 
-               ((list* (type (or symbol node)) rest)
-                (let ((var (next-var)))
-                  (accumulate call-args var)
-                  (accumulate fn-args var))
+              (make-args rest op-values))
 
-                (make-args rest op-values))
+             ((list* (type (or symbol node)) rest)
+              (let ((var (next-var)))
+                (accumulate call-args var)
+                (accumulate fn-args var))
 
-               (nil
-                (extend call-args op-values))))
+              (make-args rest op-values))
 
-           (js-lambda
-            (collector-sequence fn-args)
+             (nil
+              (extend call-args op-values))))
 
-            (list
-             (make-arity-check node)
+         (js-lambda
+          (collector-sequence fn-args)
 
-             (when rest-arg
-               (js-if
-                (js-call "===" (js-member rest-arg "length") 0)
-                (js-call "=" rest-arg (empty-list))))
+          (list
+           (make-arity-check node)
 
-             (return-call-result
-              (make-meta-node-call "result" node (collector-sequence call-args))))))
+           (when rest-arg
+             (js-if
+              (js-call "===" (js-member rest-arg "length") 0)
+              (js-call "=" rest-arg (empty-list))))
 
-         :blocks blocks)))))
+           (return-call-result
+            (make-meta-node-call "result" node (collector-sequence call-args))))))))))
 
 (defun make-arity-check (meta-node)
   "Generates code which checks that the correct number of arguments

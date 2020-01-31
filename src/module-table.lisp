@@ -87,40 +87,33 @@
 
 ;;;; Builtin Module Definition
 
-(defparameter *core-meta-nodes*
-  (external-meta-nodes
-   `((if (cond then (,+optional-argument+ else)) ((:strictness (or cond (and then else)))))
-     (:member (object key) ((:strictness (or object key))))
+(defconstant +core-meta-nodes+
+  `((if (cond then (,+optional-argument+ else)) ((:strictness (or cond (and then else)))))
+    (:member (object key) ((:strictness (or object key))))
 
-     ;; Reference Old Values
-     (:previous-value (node) ((:strictness node)))
+    ;; Reference Old Values
+    (:previous-value (node) ((:strictness node)))
 
-     ;; Equality
-     ((:symbol-equal "symbol-equal") (a b) ((:strictness (or a b))))
+    ;; Equality
+    ((:symbol-equal "symbol-equal") (a b) ((:strictness (or a b))))
 
-     ;; Failures
-     (:catch (try catch (,+optional-argument+ test)) ((:strictness try)))
-     (:fail ((,+optional-argument+ type)))
-     (:fail-type (thing) ((:strictness thing)))
+    ;; Failures
+    (:catch (try catch (,+optional-argument+ test)) ((:strictness try)))
+    (:fail ((,+optional-argument+ type)))
+    (:fail-type (thing) ((:strictness thing)))
 
-     ;; Failure Types
-     ((:empty-list "Empty-List") ())
-     ((:no-value "No-Value%") ())
-     ((:type-error "Type-Error%") ())
-     ((:index-out-bounds "Index-Out-Bounds%") ())
+    ;; Failure Types
+    ((:empty-list "Empty-List") ())
+    ((:no-value "No-Value%") ())
+    ((:type-error "Type-Error%") ())
+    ((:index-out-bounds "Index-Out-Bounds%") ())
 
-     ((:invalid-integer "Invalid-Integer%") ())
-     ((:invalid-real "Invalid-Real%") ())
+    ((:invalid-integer "Invalid-Integer%") ())
+    ((:invalid-real "Invalid-Real%") ())
 
-     ((:arity-error "Arity-Error%") ())))
+    ((:arity-error "Arity-Error%") ()))
 
-  "Map of meta-nodes which comprise the language primitives.")
-
-(defparameter *node-true* (constant-node "True" 1)
-  "Node, of which the value represents boolean True.")
-
-(defparameter *node-false* (constant-node "False" 0)
-  "Node, of which the value represents boolean False.")
+  "Builtin Meta-Node Specifications")
 
 (defconstant +core-macro-nodes+
   `((-> ,+bind-operator+ 10 :right)
@@ -135,27 +128,82 @@
    the operator to which the macro node expands to.")
 
 
+(defparameter *core-meta-nodes*
+  (external-meta-nodes +core-meta-nodes+)
+
+  "Map of meta-nodes which comprise the language primitives.")
+
+(defparameter *node-true* (constant-node "True" 1)
+  "Node, of which the value represents boolean True.")
+
+(defparameter *node-false* (constant-node "False" 0)
+  "Node, of which the value represents boolean False.")
+
+
 (defun create-builtin-module (modules)
   "Creates the builtin module."
 
   (let ((builtin (ensure-module (id-symbol "builtin") modules)))
-    (add-core-nodes builtin)
-    (add-core-macros builtin)
-
-    (let* ((name (id-symbol "c"))
-           (chr-macro (external-meta-node name '(sym))))
-
-      (setf (node-macro-function chr-macro) #'chr-macro)
-      (add-meta-node name chr-macro builtin)
-      (export-node name builtin))
-
-    (add-node (name *node-true*) *node-true* builtin)
-    (add-node (name *node-false*) *node-false* builtin)
-
-    (export-node (name *node-true*) builtin)
-    (export-node (name *node-false*) builtin)
+    (add-builtin-nodes builtin)
 
     builtin))
+
+(defun add-builtin-nodes (builtin)
+  (setf *core-meta-nodes* (external-meta-nodes +core-meta-nodes+))
+
+  (add-core-nodes builtin)
+  (add-core-macros builtin)
+
+  ;; c - Character Macro Node
+
+  (let* ((name (id-symbol "c"))
+         (chr-macro (external-meta-node name '(sym))))
+
+    (setf (node-macro-function chr-macro) #'chr-macro)
+    (add-meta-node name chr-macro builtin)
+    (export-node name builtin))
+
+  ;; True and False Nodes
+
+  (setf *node-true* (constant-node "True" 1))
+  (setf *node-false* (constant-node "False" 0))
+
+  (add-node (name *node-true*) *node-true* builtin)
+  (add-node (name *node-false*) *node-false* builtin)
+
+  (export-node (name *node-true*) builtin)
+  (export-node (name *node-false*) builtin))
+
+
+(defun add-core-nodes (builtin)
+  "Adds the nodes in *CORE-META-NODES* to the module BUILTIN, and its
+   export list."
+
+  (doseq (node (map-values *core-meta-nodes*))
+    (add-meta-node (name node) node builtin)
+    (export-node (name node) builtin)))
+
+
+(defun add-core-macros (builtin)
+  "Adds the core macro nodes in +CORE-MACRO-NODES+ to the module
+   BUILTIN."
+
+  (doseq ((node operator &rest op-info) +core-macro-nodes+)
+    (let ((meta-node (macro-node node nil operator)))
+      (with-slots (name) meta-node
+        (add-meta-node name meta-node builtin)
+        (export-node name builtin)
+
+        (when op-info
+          (add-core-operator name op-info builtin))))))
+
+(defun add-core-operator (name op-info builtin)
+  "Adds the identifier NAME to the operator table of module
+   BUILTIN. OP-INFO is a list of the operator precedence and
+   associativity."
+
+  (destructuring-bind (precedence &optional (assoc :left)) op-info
+    (add-operator name precedence assoc (operator-nodes builtin))))
 
 (defun chr-macro (operator operands module)
   "Character macro-node function. Converts its argument to a literal
@@ -182,36 +230,6 @@
 
         (otherwise
          (error 'tridash-fail :fail-type (get :type-error *core-meta-nodes*)))))))
-
-
-(defun add-core-nodes (builtin)
-  "Adds the nodes in *CORE-META-NODES* to the module BUILTIN, and its
-   export list."
-
-  (doseq (node (map-values *core-meta-nodes*))
-    (add-meta-node (name node) node builtin)
-    (export-node (name node) builtin)))
-
-(defun add-core-macros (builtin)
-  "Adds the core macro nodes in +CORE-MACRO-NODES+ to the module
-   BUILTIN."
-
-  (doseq ((node operator &rest op-info) +core-macro-nodes+)
-    (let ((meta-node (macro-node node nil operator)))
-      (with-slots (name) meta-node
-        (add-meta-node name meta-node builtin)
-        (export-node name builtin)
-
-        (when op-info
-          (add-core-operator name op-info builtin))))))
-
-(defun add-core-operator (name op-info builtin)
-  "Adds the identifier NAME to the operator table of module
-   BUILTIN. OP-INFO is a list of the operator precedence and
-   associativity."
-
-  (destructuring-bind (precedence &optional (assoc :left)) op-info
-    (add-operator name precedence assoc (operator-nodes builtin))))
 
 
 ;;;; Creating Core Expressions

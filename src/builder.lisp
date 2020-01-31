@@ -861,7 +861,7 @@
       ((node node) (node context-id) (optional (node fail-test)))
       operands
 
-    (let ((node (process-declaration (unwrap-declaration node) module :level *level*)))
+    (let ((node (process-declaration (unwrap-declaration node) module)))
       (unless (node? node)
         (error 'not-node-error :node node))
 

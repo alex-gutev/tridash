@@ -155,3 +155,4 @@ when(..(args)) :
 /export(:, ., &, c, .., prog)
 /export(if, catch)
 /export(True, False)
+/export(member)

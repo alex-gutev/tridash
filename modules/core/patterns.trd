@@ -137,11 +137,13 @@ make-pattern(place, pattern) : {
 ## bindings  : The list of binding declarations to conditionalize.
 
 conditionalize-bindings(condition, bindings) : {
-    conditionalize(binding) :
-        list(&(->), list(&(fail-match), condition), binding)
+    condition -> @(test)
+    True -> @(test)
 
-    condition !- map(conditionalize, bindings) -> @(self)
-    bindings -> @(self)
+    conditionalize(binding) :
+        list(&(->), list(&(fail-match), test), binding)
+
+    map(conditionalize, bindings)
 }
 
 
@@ -197,7 +199,7 @@ make-match-bind(src, target) : {
 ## condition : The pattern condition
 
 fail-match(condition) :
-    if (?(condition) and condition, 1, Match-Fail!)
+    if (condition, True, Match-Fail!)
 
 
 ### Pattern Matchers
