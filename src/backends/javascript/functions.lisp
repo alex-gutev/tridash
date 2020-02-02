@@ -311,7 +311,6 @@
   (multiple-value-bind (flat-block operands)
       (flatten-block block)
 
-
     (values
      (extract-statements flat-block replace-blocks)
      (replace-value-blocks (value-block-expression block))
@@ -1153,7 +1152,7 @@
                (foreach #'merge-operands operands)
 
                (when protect-p
-                 (let ((protected (remove-if-not #'value-block-protect-p operands)))
+                 (let ((protected (remove-if-not #'should-merge-p operands)))
                    (foreach #'inline-block protected)
 
                    (setf statements
@@ -1162,7 +1161,16 @@
                           statements))
 
                    (setf operands
-                         (remove-if #'value-block-protect-p operands))))))
+                         (map-extend #'replace-with-operands operands))))))
+
+           (should-merge-p (operand)
+             (and (value-block-protect-p operand)
+                  (not (value-block-common-p operand))))
+
+           (replace-with-operands (operand)
+             (if (should-merge-p operand)
+                 (value-block-operands operand)
+                 (list operand)))
 
            (operand-statements (operand)
              (with-struct-slots value-block- (variable statements)
