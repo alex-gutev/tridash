@@ -274,6 +274,16 @@ equal to `type` or `x` does not fail.
 `type`:: The failure type.
 
 
+==== Meta-Node: `!!(x)` ====
+
+(((!!, Core Module, Meta-Node)))
+
+Evaluates to true if `x` evaluates to a value. If `x` evaluates to a
+failure, evaluates to the failure value.
+
+[horizontal]
+`x`:: The value to test for failure.
+
 [[meta-node-test-fail-bind]]
 ==== Meta-Node: `!-(test, value)` ====
 
@@ -347,6 +357,7 @@ not of the expected type.
 Node `Type-Error!` is bound to a failure of this type.
 
 
+[[node-index-out-bounds]]
 ==== Failure Type Node: `Index-Out-Bounds` ====
 
 (((Index-Out-Bounds, Core Module, Node)))
@@ -940,8 +951,8 @@ stores the first element of the list and the 'tail' stores the list of
 remaining elements. Neither the 'head' nor the 'tail' are evaluated
 until they are actually referenced and used.
 
-The end of list is represented by a failure of type `Empty`, see
-<<node-Empty, `Empty`>>.
+The empty list is represented by the value of the node <<node-Empty,
+`Empty`>>.
 
 
 [[meta-node-cons]]
@@ -971,7 +982,11 @@ of the list. _See <<pattern_matching>>_.
 
 Returns the 'head' (first element) of a list.
 
-If `list` is not a list returns a failure value.
+If `list` is the empty list, returns a failure of type
+<<node-Empty, `Empty`>>.
+
+If `list` is not a list returns a failure value of type
+<<node-type-error, `Type-Error`>>.
 
 [horizontal]
 `list`:: The list.
@@ -985,7 +1000,11 @@ If `list` is not a list returns a failure value.
 Returns the 'tail', the list containing the elements after the first
 element, of a list.
 
-If `list` is not a list returns a failure value.
+If `list` is the empty list, returns a failure of type
+<<node-Empty, `Empty`>>.
+
+If `list` is not a list returns a failure value of type
+<<node-type-error, `Type-Error`>>.
 
 [horizontal]
 `list`:: The list.
@@ -999,23 +1018,28 @@ If `list` is not a list returns a failure value.
 Returns true if `thing` is a list of at least one element, false
 otherwise.
 
-NOTE: Does not return true if `thing` is an empty list.
+NOTE: Does not return true if `thing` is the empty list.
 
 [horizontal]
 `list`:: The list.
 
 
 [[node-Empty]]
-==== Failure Type Node: Empty ====
+==== Node: Empty ====
 
 (((Empty, Core Module, Node)))
 (((Empty, Core Module, Failure Type)))
+
+The value of this node represents the empty list.
+
+
+==== Node: `Empty!` ====
+
 (((Empty!, Core Module, Node)))
 
-Failure type indicating an empty list.
-
-Node `Empty!` is bound to a failure of this type.
-
+The value of this node is a failure of type <<node-Empty,
+`Empty`>>. This failure is returned when attempting to access the
+'head' or 'tail' of an empty list.
 
 [[meta-node-list]]
 ==== Meta-Node: `list(..(xs))` ====
@@ -1065,8 +1089,8 @@ last argument being matched to the remaining list elements. _See
 
 Creates a list containing, as elements, all the arguments in `xs`.
 
-Unlike `list`, if at least one of `xs` fails to evaluate to a value, a
-failure is returned.
+Unlike `list`, if at least one of `xs` fails to evaluate to a value,
+the failure is returned.
 
 [horizontal]
 `xs`:: The list elements.
@@ -1079,8 +1103,9 @@ failure is returned.
 
 Retrieves the element of a list at a particular index.
 
-Returns a failure of type <<node-Empty, `Empty`>> if `n` is
-greater than the number of elements in `list`.
+Returns a failure of type <<node-index-out-bounds,
+`Index-Out-Bounds`>> if `n` is greater than the number of elements in
+`list`.
 
 [horizontal]
 `list`:: The list.
@@ -1125,8 +1150,9 @@ reached.
 
 Folds a list to a single value, starting from the first element.
 
-Same as <<meta-node-foldl1,`foldl'`>> except the <<meta-node-head, 'head'>> of `list` is
-used as the initial first argument to the fold function `f`.
+Same as <<meta-node-foldl1,`foldl'`>> except the <<meta-node-head,
+'head'>> of `list` is used as the initial first argument to the fold
+function `f`.
 
 [horizontal]
 `f`:: Function of two arguments.
@@ -1251,7 +1277,7 @@ Returns true if `f` returns false for at least one element of `list`.
 Returns the character at a given index in the string.
 
 If the index is greater than the number of characters in this string,
-returns a failure.
+returns a failure of type <<node-index-out-bounds,`Index-Out-Bounds`>>.
 
 [horizontal]
 `string`:: The string.
