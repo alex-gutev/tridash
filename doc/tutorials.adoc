@@ -3460,10 +3460,12 @@ contiguous arrays which provide a linked list interface. In the
 current release, only linked lists can be created explicitly, however
 functionality for creating arrays will be added in a future release.
 
-The empty list is represented by a failure of type `Empty`. The `tail`
-of the last node in a list is thus a failure of type `Empty`.
+The empty list is represented by the value of the node `Empty`. The
+`tail` of the last node in a list is bound to this node.
 
-TIP: The node `Empty!` is bound to a failure of type `Empty`.
+TIP: The node `Empty!` is bound to a failure of type `Empty`, which is
+returned when attempting to access the 'head' or 'tail' of an empty
+list.
 
 === Creating Lists ===
 
@@ -3474,7 +3476,7 @@ front of an existing list:
 --------------------------------------------------
 # Create a list of 1 element, by appending to the front of the empty
 # list
-l1 <- cons(a, Empty!)
+l1 <- cons(a, Empty)
 
 # Append to front of l1, creating a list of 2 elements
 l2 <- cons(b, l1)
@@ -3704,7 +3706,7 @@ We'll need a node to store the list of messages. Let's call it
 `message-list` and set its initial value to the empty list.
 
 --------------------------------------------------
-message-list <- Empty!
+message-list <- Empty
 --------------------------------------------------
 
 The new message entered, bound to `new-message`, has to be added to
