@@ -18,7 +18,7 @@ f <- 1 = 2
 ### Logical Operator Test Group
 
 all-tests <-
-    group(
+    Test-Group(
         "Selection Operator Tests"
         , if-tests
         , case-tests
@@ -29,61 +29,61 @@ all-tests <-
 
 ### Test `if`
 
-group(
+Test-Group(
     "Meta-Node: `if`",
 
-    group(
+    Test-Group(
         "Valid Input",
 
-        test-equal(if(True, '(x), '(y)), '(x), "if(True, '(x), '(y))"),
-        test-equal(if(t, '(x), '(y)), '(x), "if(1 = 1, '(x), '(y))"),
-        test-equal(if(False, "x", "y"), "y", "if(False, \"x\", \"y\")"),
-        test-equal(if(f, "x", "y"), "y", "if(1 = 2, \"x\", \"y\")"),
+        Test-Equal(if(True, '(x), '(y)), '(x), "if(True, '(x), '(y))"),
+        Test-Equal(if(t, '(x), '(y)), '(x), "if(1 = 1, '(x), '(y))"),
+        Test-Equal(if(False, "x", "y"), "y", "if(False, \"x\", \"y\")"),
+        Test-Equal(if(f, "x", "y"), "y", "if(1 = 2, \"x\", \"y\")"),
 
-        test-fails?(if(False, "value"), "if(False, \"value\")", No-Value),
-        test-fails?(if(f, "value"), "if(False, \"value\")", No-Value)
+        Test-Fails(if(False, "value"), "if(False, \"value\")", No-Value),
+        Test-Fails(if(f, "value"), "if(False, \"value\")", No-Value)
     ),
 
-    group(
+    Test-Group(
         "Failure Propagation",
 
-        test-fails?(if(Fail-Type!, 1, 2), "if(Fail-Type!, 1, 2)", Fail-Type),
-        test-fails?(if(True, Fail-Type!, 2), "if(True, Fail-Type!, 2)", Fail-Type),
-        test-fails?(if(False, 2, Fail-Type!), "if(False, 2, Fail-Type!)", Fail-Type),
+        Test-Fails(if(Fail-Type!, 1, 2), "if(Fail-Type!, 1, 2)", Fail-Type),
+        Test-Fails(if(True, Fail-Type!, 2), "if(True, Fail-Type!, 2)", Fail-Type),
+        Test-Fails(if(False, 2, Fail-Type!), "if(False, 2, Fail-Type!)", Fail-Type),
 
-        test-equal(if(False, Fail-Type!, 2), 2, "if(False, Fail-Type!, 2)"),
-        test-equal(if(True, 1, Fail-Type!), 1, "if(True, 1, Fail-Type!)")
+        Test-Equal(if(False, Fail-Type!, 2), 2, "if(False, Fail-Type!, 2)"),
+        Test-Equal(if(True, 1, Fail-Type!), 1, "if(True, 1, Fail-Type!)")
     )
 ) -> if-tests
 
 ### Test `case`
 
-group(
+Test-Group(
     "Macro-Node: `case`",
 
-    group(
+    Test-Group(
         "Valid Input",
 
-        test-equal(case(t : '(x), 3 = 3 : '(y)), '(x), "case(1 = 1 : '(x), 3 = 3 : '(y))"),
-        test-equal(case(f : '(x), 3 = 3 : '(y)), '(y), "case(1 = 2 : '(x), 3 = 3 : '(y))"),
-        test-equal(case(False : '(x), 3 = 5 : '(y), '(z)), '(z), "case(False : '(x), 3 = 5 : '(y), '(z))"),
+        Test-Equal(case(t : '(x), 3 = 3 : '(y)), '(x), "case(1 = 1 : '(x), 3 = 3 : '(y))"),
+        Test-Equal(case(f : '(x), 3 = 3 : '(y)), '(y), "case(1 = 2 : '(x), 3 = 3 : '(y))"),
+        Test-Equal(case(False : '(x), 3 = 5 : '(y), '(z)), '(z), "case(False : '(x), 3 = 5 : '(y), '(z))"),
 
-        test-fails?(case(False : '(x), 3 = 5 : '(y)), "case(False : '(x), 3 = 5 : '(y))", No-Value)
+        Test-Fails(case(False : '(x), 3 = 5 : '(y)), "case(False : '(x), 3 = 5 : '(y))", No-Value)
     ),
 
-    group(
+    Test-Group(
         "Failure Propagation",
 
-        test-fails?(case(Fail-Type! : 1, 2), "case(Fail-Type! : 1, 2)", Fail-Type),
-        test-fails?(case(f : 1, Fail-Type! : 2), "case(1 = 1 : 1, Fail-Type! : 2)", Fail-Type),
+        Test-Fails(case(Fail-Type! : 1, 2), "case(Fail-Type! : 1, 2)", Fail-Type),
+        Test-Fails(case(f : 1, Fail-Type! : 2), "case(1 = 1 : 1, Fail-Type! : 2)", Fail-Type),
 
-        test-fails?(case(True : Fail-Type!, 2), "case(True : Fail-Type!, 2)", Fail-Type),
-        test-fails?(case(f : 1, t : Fail-Type!), "case(1 = 2 : 1, 1 = 1 : Fail-Type!)", Fail-Type),
-        test-fails?(case(f : 1, f : 2, Fail-Type!), "case(1 = 2 : 1, 1 = 2 : 2, Fail-Type!)", Fail-Type),
+        Test-Fails(case(True : Fail-Type!, 2), "case(True : Fail-Type!, 2)", Fail-Type),
+        Test-Fails(case(f : 1, t : Fail-Type!), "case(1 = 2 : 1, 1 = 1 : Fail-Type!)", Fail-Type),
+        Test-Fails(case(f : 1, f : 2, Fail-Type!), "case(1 = 2 : 1, 1 = 2 : 2, Fail-Type!)", Fail-Type),
 
-        test-equal(case(t : 1, Fail-Type! : 2), 1, "case(1 = 1 : 1, Fail-Type! : 2)"),
-        test-equal(case(False : Fail-Type!, 2), 2, "case(False : Fail-Type!, 2)"),
-        test-equal(case(t : 1, t : Fail-Type!), 1, "case(1 = 1 : 1, 1 = 1 : Fail-Type!)"),
-        test-equal(case(t : 1, f : 2, Fail-Type!), 1, "case(1 = 1 : 1, 1 = 2 : 2, Fail-Type!)")
+        Test-Equal(case(t : 1, Fail-Type! : 2), 1, "case(1 = 1 : 1, Fail-Type! : 2)"),
+        Test-Equal(case(False : Fail-Type!, 2), 2, "case(False : Fail-Type!, 2)"),
+        Test-Equal(case(t : 1, t : Fail-Type!), 1, "case(1 = 1 : 1, 1 = 1 : Fail-Type!)"),
+        Test-Equal(case(t : 1, f : 2, Fail-Type!), 1, "case(1 = 1 : 1, 1 = 2 : 2, Fail-Type!)")
     )
 ) -> case-tests

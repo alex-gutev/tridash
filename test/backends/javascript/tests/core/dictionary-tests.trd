@@ -19,7 +19,7 @@ Fail-Type! <- fail(Fail-Type)
 ### Dictionary Test Group
 
 all-tests <-
-    group(
+    Test-Group(
         "Dictionaries"
 
         , member-tests
@@ -30,30 +30,30 @@ all-tests <-
 
 ### Test `member`
 
-group(
+Test-Group(
     "Meta-Node: `member`",
 
-    group(
+    Test-Group(
         "Valid Input",
 
-        test-equal(member(object, '(x)), 1, "member(object, '(x))"),
-        test-equal(member(object, '(y)), "b", "member(object, '(t))"),
+        Test-Equal(member(object, '(x)), 1, "member(object, '(x))"),
+        Test-Equal(member(object, '(y)), "b", "member(object, '(t))"),
 
-        test-fails?(member(object, '(z)), "member(object, '(z))")
+        Test-Fails(member(object, '(z)), "member(object, '(z))")
     ),
 
-    group(
+    Test-Group(
         "Type Errors",
 
-        test-fails?(member("hello", '(a)), "member(\"hello\", '(a))"),
-        test-fails?(member(1, '(a)), "member(1, '(a))"),
-        test-fails?(member('(z), '(a)), "member('(z), '(a))")
+        Test-Fails(member("hello", '(a)), "member(\"hello\", '(a))"),
+        Test-Fails(member(1, '(a)), "member(1, '(a))"),
+        Test-Fails(member('(z), '(a)), "member('(z), '(a))")
     ),
 
-    group(
+    Test-Group(
         "Failure Propagation",
 
-        test-fails?(member(Fail-Type!, '(a)), "member(Fail-Type!, '(a))", Fail-Type),
-        test-fails?(member(object, Fail-Type!), "member(object, Fail-Type!)", Fail-Type)
+        Test-Fails(member(Fail-Type!, '(a)), "member(Fail-Type!, '(a))", Fail-Type),
+        Test-Fails(member(object, Fail-Type!), "member(object, Fail-Type!)", Fail-Type)
     )
 ) -> member-tests

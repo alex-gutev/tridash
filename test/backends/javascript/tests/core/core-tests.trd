@@ -17,20 +17,20 @@
 /use(pattern-match-tests)
 
 all-tests <-
-    group(
-        "Core Module Tests",
+    Test-Group(
+        "Core Module Tests"
 
-        failure-util-tests.all-tests,
-        arithmetic-tests.all-tests,
-        comparison-tests.all-tests,
-        logical-tests.all-tests,
-        selection-tests.all-tests,
-        type-tests.all-tests,
-        list-tests.all-tests,
-        string-tests.all-tests,
-        dictionary-tests.all-tests,
-        function-tests.all-tests,
-        pattern-match-tests.all-tests
+        , failure-util-tests.all-tests
+        , arithmetic-tests.all-tests
+        , comparison-tests.all-tests
+        , logical-tests.all-tests
+        , selection-tests.all-tests
+        , type-tests.all-tests
+        , list-tests.all-tests
+        , string-tests.all-tests
+        , dictionary-tests.all-tests
+        , function-tests.all-tests
+        , pattern-match-tests.all-tests
     )
 
 /attribute(all-tests, removable, 0)

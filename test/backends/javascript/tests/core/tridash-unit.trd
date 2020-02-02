@@ -35,7 +35,7 @@
 ## condition   : Test condition
 ## description : Description of the test
 ##
-test(condition, description) : {
+Test(condition, description) : {
     '(test)     -> self.type
     condition   -> self.condition
     description -> self.description
@@ -50,10 +50,10 @@ test(condition, description) : {
 ##
 ## Note: "Not" is prepended to the description.
 ##
-test-not(condition, description) : {
+Test-Not(condition, description) : {
     desc <- string-concat("Not ", description)
 
-    test(not(condition), desc)
+    Test(not(condition), desc)
 }
 
 ##
@@ -67,11 +67,11 @@ test-not(condition, description) : {
 ## Note: A string which prints the values for `got` and `expected is
 ## appended to the description.
 ##
-test-equal(got, expected, description) : {
+Test-Equal(got, expected, description) : {
     full-description <-
         concat-strings(description, ": ", got, " = ", expected)
 
-    test(got = expected, full-description)
+    Test(got = expected, full-description)
 }
 
 
@@ -89,7 +89,7 @@ test-equal(got, expected, description) : {
 ##
 ## Note: A string is appended to the description.
 ##
-test-fails?(result, description, :(type)) : {
+Test-Fails(result, description, :(type)) : {
     full-description <-
         concat-strings(description, " fails with type ", type)
 
@@ -98,7 +98,7 @@ test-fails?(result, description, :(type)) : {
            fail-type?(result, type),
            fails?(result))
 
-    test(condition, full-description)
+    Test(condition, full-description)
 }
 
 ##
@@ -113,7 +113,7 @@ test-fails?(result, description, :(type)) : {
 ##
 ## Note: A string is appended to the description.
 ##
-test-not-fails?(result, description, :(type)) : {
+Test-Not-Fails(result, description, :(type)) : {
     full-description <-
         concat-strings(description, " does not fail with type ", type)
 
@@ -122,7 +122,7 @@ test-not-fails?(result, description, :(type)) : {
            fail-type?(result, type),
            fails?(result))
 
-    test-not(condition, full-description)
+    Test-Not(condition, full-description)
 }
 
 
@@ -134,7 +134,7 @@ test-not-fails?(result, description, :(type)) : {
 ## description : Description of the test group
 ## ..(tests)   : The tests
 ##
-group(description, ..(tests)) : {
+Test-Group(description, ..(tests)) : {
     '(group)    -> self.type
     tests       -> self.tests
     description -> self.description
@@ -180,10 +180,10 @@ concat-strings(..(values)) : {
 ### Export Declarations
 
 /export(
-    test,
-    test-not,
-    test-equal,
-    test-fails?,
-    test-not-fails?,
-    group
+    Test,
+    Test-Not,
+    Test-Equal,
+    Test-Fails,
+    Test-Not-Fails,
+    Test-Group
 )

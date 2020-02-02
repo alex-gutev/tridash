@@ -19,7 +19,7 @@ Fail-Type! <- fail(Fail-Type)
 ### Functional Utilities Test Group
 
 all-tests <-
-    group(
+    Test-Group(
         "Functional Utilities"
 
         , apply-tests
@@ -42,36 +42,36 @@ f(..(xs)) : {
     Fail-Type! -> self
 }
 
-group(
+Test-Group(
     "Meta-Node: `apply`",
 
-    group(
+    Test-Group(
         "Valid Input",
 
-        test-equal(apply(add, list(1, 2)), 3, "apply(add, list(1, 2))"),
-        test-equal(apply(add, 2, list(7)), 9, "apply(add, 2, list(7))"),
-        test-equal(apply(sum, 1, list(2, 3)), 6, "apply(sum, 1, list(2, 3))"),
+        Test-Equal(apply(add, list(1, 2)), 3, "apply(add, list(1, 2))"),
+        Test-Equal(apply(add, 2, list(7)), 9, "apply(add, 2, list(7))"),
+        Test-Equal(apply(sum, 1, list(2, 3)), 6, "apply(sum, 1, list(2, 3))"),
 
-        test-fails?(apply(add, list(1)), "apply(add, list(1))", Arity-Error),
-        test-fails?(apply(add, 1, 2, list(3, 4)), "apply(add, 1, 2, list(3, 4))", Arity-Error),
-        test-fails?(apply(sum, Empty), "apply(sum, Empty)", Arity-Error)
+        Test-Fails(apply(add, list(1)), "apply(add, list(1))", Arity-Error),
+        Test-Fails(apply(add, 1, 2, list(3, 4)), "apply(add, 1, 2, list(3, 4))", Arity-Error),
+        Test-Fails(apply(sum, Empty), "apply(sum, Empty)", Arity-Error)
     ),
 
-    group(
+    Test-Group(
         "Type-Errors",
 
-        test-fails?(apply(1, list(1, 2, 3)), "apply(1, list(1, 2, 3))", Type-Error),
-        test-fails?(apply("x", list(1, 2, 3)), "apply(\"x\", list(1, 2, 3))", Type-Error),
+        Test-Fails(apply(1, list(1, 2, 3)), "apply(1, list(1, 2, 3))", Type-Error),
+        Test-Fails(apply("x", list(1, 2, 3)), "apply(\"x\", list(1, 2, 3))", Type-Error),
 
-        test-fails?(apply(sum, 1, 2, 3), "apply(sum, 1, 2, 3)", Type-Error),
-        test-fails?(apply(id, "hello"), "apply(id, \"hello\")", Type-Error)
+        Test-Fails(apply(sum, 1, 2, 3), "apply(sum, 1, 2, 3)", Type-Error),
+        Test-Fails(apply(id, "hello"), "apply(id, \"hello\")", Type-Error)
     ),
 
-    group(
+    Test-Group(
         "Failure Propagation",
 
-        test-fails?(apply(Fail-Type!, list(1, 2, 3)), "apply(Fail-Type!, list(1, 2, 3))", Fail-Type),
-        test-fails?(apply(sum, 1, Fail-Type!, list(2, 3)), "apply(sum, 1, Fail-Type!, list(2, 3))", Fail-Type),
-        test-fails?(apply(f, 1, list(2, 3)), "apply(f, 1, list(2, 3))", Fail-Type)
+        Test-Fails(apply(Fail-Type!, list(1, 2, 3)), "apply(Fail-Type!, list(1, 2, 3))", Fail-Type),
+        Test-Fails(apply(sum, 1, Fail-Type!, list(2, 3)), "apply(sum, 1, Fail-Type!, list(2, 3))", Fail-Type),
+        Test-Fails(apply(f, 1, list(2, 3)), "apply(f, 1, list(2, 3))", Fail-Type)
     )
 ) -> apply-tests

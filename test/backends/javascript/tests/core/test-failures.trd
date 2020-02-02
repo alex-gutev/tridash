@@ -26,7 +26,7 @@ fail3 <- fail(x)
 ### Failure Utilities Test Group
 
 all-tests <-
-    group(
+    Test-Group(
         "Failure Utilities"
         , fails?-tests
         , ?-tests
@@ -42,13 +42,13 @@ all-tests <-
 
 ### Test `fails?`
 
-group(
+Test-Group(
     "Meta-Node `fails?`",
 
-    test(fails?(fail1), "fails?(fail())"),
-    test(fails?(fail2), "fails?(fail(My-Fail-Type))"),
-    test(fails?(fail3), "fails?(fail(1))"),
-    test-not(fails?(x), "fails?(1)")
+    Test(fails?(fail1), "fails?(fail())"),
+    Test(fails?(fail2), "fails?(fail(My-Fail-Type))"),
+    Test(fails?(fail3), "fails?(fail(1))"),
+    Test-Not(fails?(x), "fails?(1)")
 ) -> fails?-tests
 
 
@@ -62,51 +62,51 @@ fail2 -> fails?(x) and fail2-fails-typ2?
 
 ### Test `?`
 
-group(
+Test-Group(
     "Meta-Node `?`",
 
-    test-not(?(fail1), "?(fail())"),
-    test-not(?(fail2), "?(fail(My-Fail-Type))"),
-    test-not(?(fail3), "?(fail(1))"),
-    test(?(x), "?(x)")
+    Test-Not(?(fail1), "?(fail())"),
+    Test-Not(?(fail2), "?(fail(My-Fail-Type))"),
+    Test-Not(?(fail3), "?(fail(1))"),
+    Test(?(x), "?(x)")
 ) -> ?-tests
 
 ### Test `fail-type`
 
-group(
+Test-Group(
     "Meta-Node `fail-type`",
 
-    test(fails?(fail-type(fail1)), "fails?(fail-type(fail()))"),
-    test-equal(fail-type(fail2), My-Fail-Type, "fail-type(fail(My-Fail-Type))"),
-    test-equal(fail-type(fail3), x, "fail-type(fail(1))"),
-    test(fails?(fail-type(x)), "fails?(fail-type(1))")
+    Test(fails?(fail-type(fail1)), "fails?(fail-type(fail()))"),
+    Test-Equal(fail-type(fail2), My-Fail-Type, "fail-type(fail(My-Fail-Type))"),
+    Test-Equal(fail-type(fail3), x, "fail-type(fail(1))"),
+    Test(fails?(fail-type(x)), "fails?(fail-type(1))")
 ) -> fail-type-tests
 
 ### Test `fail-type?`
 
-group(
+Test-Group(
     "Meta-Node `fail-type?`",
 
-    test(fail-type?(fail2, My-Fail-Type), "fail-type?(fail(My-Fail-Type), My-Fail-Type)"),
-    test(fail-type?(fail3, x), "fail-type?(fail(1), 1)"),
+    Test(fail-type?(fail2, My-Fail-Type), "fail-type?(fail(My-Fail-Type), My-Fail-Type)"),
+    Test(fail-type?(fail3, x), "fail-type?(fail(1), 1)"),
 
-    test-not(fail-type?(fail2, x), "fail-type?(fail(My-Fail-Type), 1)"),
-    test-not(fail-type?(fail1, My-Fail-Type), "fail-type?(fail(), My-Fail-Type)"),
-    test-not(fail-type?(x, x), "fail-type?(1, 1)"),
-    test-not(fail-type?(x, My-Fail-Type), "fail-type?(1, My-Fail-Type)")
+    Test-Not(fail-type?(fail2, x), "fail-type?(fail(My-Fail-Type), 1)"),
+    Test-Not(fail-type?(fail1, My-Fail-Type), "fail-type?(fail(), My-Fail-Type)"),
+    Test-Not(fail-type?(x, x), "fail-type?(1, 1)"),
+    Test-Not(fail-type?(x, My-Fail-Type), "fail-type?(1, My-Fail-Type)")
 ) -> fail-type?-tests
 
 ### Test `!-`
 
-group(
+Test-Group(
     "Meta-Node `!-`",
 
-    test-equal(10 !- 1, 1, "10 !- 1"),
-    test-equal("hello" !- "world", "world", "\"hello\" !- \"world\""),
-    test-fails?(fail1 !- 5, "fail() !- 5"),
-    test-fails?(fail2 !- 3, "fail(My-Fail-Type) !- 3", My-Fail-Type),
-    test-fails?(fail3 !- 9, "fail(1) !- 9", x),
-    test-fails?(fail2 !- fail3, "fail(My-Fail-Type) !- fail(1)", My-Fail-Type)
+    Test-Equal(10 !- 1, 1, "10 !- 1"),
+    Test-Equal("hello" !- "world", "world", "\"hello\" !- \"world\""),
+    Test-Fails(fail1 !- 5, "fail() !- 5"),
+    Test-Fails(fail2 !- 3, "fail(My-Fail-Type) !- 3", My-Fail-Type),
+    Test-Fails(fail3 !- 9, "fail(1) !- 9", x),
+    Test-Fails(fail2 !- fail3, "fail(My-Fail-Type) !- fail(1)", My-Fail-Type)
 ) -> !--tests
 
 ### Test `!` Macro
@@ -125,12 +125,12 @@ func(x) : {
     x -> self.x
 }
 
-group(
+Test-Group(
     "Macro-Node `!`",
 
-    test-not-fails?(!(func(1)), "!(func(1))"),
-    test-not-fails?(func(fail1), "func(fail())"),
-    test-fails?(!(func(fail1)), "!(func(fail()))")
+    Test-Not-Fails(!(func(1)), "!(func(1))"),
+    Test-Not-Fails(func(fail1), "func(fail())"),
+    Test-Fails(!(func(fail1)), "!(func(fail()))")
 ) -> !-tests
 
 
@@ -144,15 +144,15 @@ group(
 ##
 My-Fail-Type?(type) : type = My-Fail-Type
 
-group(
+Test-Group(
     "Meta-Node `catch`",
 
-    test-equal(catch(1, 2), 1, "catch(1, 2)"),
-    test-equal(catch(fail1, "x"), "x", "catch(fail(), \"x\")"),
-    test-equal(catch(fail2, "y"), "y", "catch(fail(My-Fail-Type), \"y\")"),
-    test-equal(catch(fail2, 1, My-Fail-Type?), 1, "catch(fail(My-Fail-Type), 1, My-Fail-Type?)"),
+    Test-Equal(catch(1, 2), 1, "catch(1, 2)"),
+    Test-Equal(catch(fail1, "x"), "x", "catch(fail(), \"x\")"),
+    Test-Equal(catch(fail2, "y"), "y", "catch(fail(My-Fail-Type), \"y\")"),
+    Test-Equal(catch(fail2, 1, My-Fail-Type?), 1, "catch(fail(My-Fail-Type), 1, My-Fail-Type?)"),
 
-    test-fails?(catch(fail1, 1, My-Fail-Type?), "catch(fail(), 1, My-Fail-Type?"),
-    test-fails?(catch(fail3, 1, My-Fail-Type?), "catch(fail(), 1, 1", x),
-    test-fails?(catch(fail2, fail3, My-Fail-Type?), "catch(fail(My-Fail-Type), fail(1), My-Fail-Type?)", x)
+    Test-Fails(catch(fail1, 1, My-Fail-Type?), "catch(fail(), 1, My-Fail-Type?"),
+    Test-Fails(catch(fail3, 1, My-Fail-Type?), "catch(fail(), 1, 1", x),
+    Test-Fails(catch(fail2, fail3, My-Fail-Type?), "catch(fail(My-Fail-Type), fail(1), My-Fail-Type?)", x)
 ) -> catch-tests
