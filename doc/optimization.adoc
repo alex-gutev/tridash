@@ -1,3 +1,106 @@
 == Optimizations ==
 
+(((Optimizations)))
+
+This section details functionality for controlling and fine tuning the
+optimizations performed by the Tridash compiler.
+
 === Coalescing ===
+
+(((Coalescing, Optimizations)))
+(((coalescable, Attribute, Coalescing)))
+
+A node is compiled to a runtime node object definition, which stores
+the details of the node's observers, dependencies, contexts and
+various other attributes. However, for efficiency, both in terms of
+speed and code size, not every single node is actually compiled to a
+runtime node object. When possible successive nodes are coalesced
+(merged) into a single node, with a value function that combines the
+functions of the coalesced nodes.
+
+Node coalescing does not affect the behaviour of a program however it
+can effect which nodes are actually available when interfacing with
+other languages.
+
+IMPORTANT: Input Nodes, _see <<_input_nodes>>_, are never coalesced
+into other nodes, as they provide the interface by which a program
+receives its inputs.
+
+.Example
+--------------------------------------------------
+a + b -> x
+x -> y
+y + z -> output
+--------------------------------------------------
+
+In this example, assuming `a`, `b` and `z` are input nodes and
+`output` is an output node, i.e. it has no observers, the following
+intermediate nodes can all be coalesced into the node `output`:
+
+- `a + b`
+- `x`
+- `y`
+- `y + z`
+
+As a result, only the following nodes remain:
+
+- `a`
+- `b`
+- `z`
+- `output`
+
+Node `output` has the dependencies: `a`, `b` and `z` with the
+following combined value function:
+
+--------------------------------------------------
+# y + z
+# x + z       <1>
+# a + b + z   <2>
+
+a + b + z
+--------------------------------------------------
+
+<1> `y` is substituted with its dependency `x`
+<2> `x` is substituted with its dependency `a + b`
+
+When interfacing with Tridash, from another language, only the values
+of the nodes remaining after coalescing can be observed. The only
+nodes guaranteed to never be coalesced into other nodes are input
+nodes, which are explicitly marked as such, and output nodes, that is
+nodes with no observers.
+
+To allow the value of a node, which is neither an input nor an output
+node, to be observed, the value of the node's `coalescable` attribute
+can be set to false (`0`). This guarantees that the node will never be
+coalesced into another node, and hence a runtime node object will be
+created for it.
+
+.Example
+--------------------------------------------------
+a + b -> x
+x -> y
+y + z -> output
+
+/attribute(x, coalescable, 0) <1>
+--------------------------------------------------
+
+<1> Set value of `x`'s `coalescable` attribute to false
+
+In this example, `x` is guaranteed to never be coalesced into another
+node and is thus is available for interfacing with other languages.
+
+The value function of `output` thus becomes `x + z`, assuming
+node `y` is coalesced into `x`.
+
+CAUTION: Preventing a node from being coalesced, by setting the
+`coalescable` attribute to false, may negatively impact the
+performance of the program.
+
+CAUTION: A node with the `coalescable` attribute set to false, can
+still be removed if it is not reachable from any input node, and thus
+its value can never change from its initial value. To prevent the node
+from being removed, the `removable` attribute should also be set to
+false (`0`).
+
+NOTE: The `coalescable` and `removable` attributes have no effect
+within meta-nodes.
