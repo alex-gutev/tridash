@@ -8,12 +8,14 @@ node respectively.</p><div class="note" style="margin-left: 0; margin-right: 10%
 implemented as linked lists. Some lists are actually implemented as
 contiguous arrays which provide a linked list interface. In the
 current release, only linked lists can be created explicitly, however
-functionality for creating arrays will be added in a future release.</p></td></tr></table></div><p>The empty list is represented by a failure of type <code class="literal">Empty</code>. The <code class="literal">tail</code>
-of the last node in a list is thus a failure of type <code class="literal">Empty</code>.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The node <code class="literal">Empty!</code> is bound to a failure of type <code class="literal">Empty</code>.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_creating_lists"></a>11.1. Creating Lists</h3></div></div></div><p>The <code class="literal">cons</code> meta-node creates a list node, taking the value for the
+functionality for creating arrays will be added in a future release.</p></td></tr></table></div><p>The empty list is represented by the value of the node <code class="literal">Empty</code>. The
+<code class="literal">tail</code> of the last node in a list is bound to this node.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The node <code class="literal">Empty!</code> is bound to a failure of type <code class="literal">Empty</code>, which is
+returned when attempting to access the <span class="emphasis"><em>head</em></span> or <span class="emphasis"><em>tail</em></span> of an empty
+list.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_creating_lists"></a>11.1. Creating Lists</h3></div></div></div><p>The <code class="literal">cons</code> meta-node creates a list node, taking the value for the
 <code class="literal">head</code> and the <code class="literal">tail</code> as arguments. This can be used to append to the
 front of an existing list:</p><pre class="screen"># Create a list of 1 element, by appending to the front of the empty
 # list
-l1 &lt;- cons(a, Empty!)
+l1 &lt;- cons(a, Empty)
 
 # Append to front of l1, creating a list of 2 elements
 l2 &lt;- cons(b, l1)</pre><p>The <code class="literal">list</code> meta-node takes a variable number of arguments and returns
@@ -144,7 +146,7 @@ the <code class="literal">add-clicked?</code> node, is set to true and the immed
 when the button is clicked. Add the following attribute declarations
 for the <code class="literal">add-clicked?</code> node:</p><pre class="screen">/attribute(add-clicked?, input, 1)
 /attribute(add-clicked?, public-name, "clicked")</pre><p>We’ll need a node to store the list of messages. Let’s call it
-<code class="literal">message-list</code> and set its initial value to the empty list.</p><pre class="screen">message-list &lt;- Empty!</pre><p>The new message entered, bound to <code class="literal">new-message</code>, has to be added to
+<code class="literal">message-list</code> and set its initial value to the empty list.</p><pre class="screen">message-list &lt;- Empty</pre><p>The new message entered, bound to <code class="literal">new-message</code>, has to be added to
 the end of <code class="literal">message-list</code>. The <code class="literal">append</code> meta-node takes two lists and
 appends the second list at the end of the first list. Thus to append a
 single item, we’ll pass a list of that one item to <code class="literal">append</code>.</p><pre class="screen">append(message-list, list(new-message))</pre><p>We want the value of <code class="literal">new-message</code> to be appended to <code class="literal">message-list</code>
