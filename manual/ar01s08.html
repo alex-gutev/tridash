@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>8. Target Node Transforms</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s07.html" title="7. Failure Types" /><link rel="next" href="ar01s09.html" title="9. Contexts" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s07.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s09.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_target_node_transforms"></a>8. Target Node Transforms</h2></div></div></div><p>Wow, we had to make so many fundamental changes to our code just to
+implement a minor change in the input accepted by the application. We
+had to:</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
+Add the nodes <code class="literal">input-a</code> and <code class="literal">input-b</code>, for which we had to come up
+with meaningful identifiers.
+</li><li class="listitem">
+Change the input fields to be bound to <code class="literal">input-a</code> and <code class="literal">input-b</code>
+rather than <code class="literal">a</code> and <code class="literal">b</code>.
+</li><li class="listitem">
+Change the initial values to be assigned to <code class="literal">input-a</code> and <code class="literal">input-b</code>
+rather than <code class="literal">a</code> and <code class="literal">b</code>.
+</li><li class="listitem">
+Bind <code class="literal">a</code> to <code class="literal">validate(input-a)</code> and <code class="literal">b</code> to <code class="literal">validate(input-b)</code>.
+</li></ol></div><p>This is contrary to “simply adding new UI elements” which was the
+case when we introduced error handling. We can do better.</p><p>Notice that a lot of the code we added was simply repetitive binding
+boilerplate code, which is the same for both <code class="literal">a</code> and <code class="literal">b</code>. It would be
+nice if we could somehow abstract it away and not have to write the
+same code for both nodes. Luckily, there is a way.</p><p>Remember, from the second tutorial, that some meta-nodes, such as
+<code class="literal">to-int</code>, are special in that a two-way binding is established between
+the meta-node instance and the argument node. This allows instances of
+the meta-node to also appear as targets of bindings.</p><p><strong>Refresher Example. </strong>
+</p><pre class="screen"># The following
+a -&gt; to-int(b)
+
+# Is equivalent to
+to-int(a) -&gt; b</pre><p>
+</p><p>It turns out <code class="literal">to-int</code> is not so special as we can do the same for our
+own meta-nodes by setting the <code class="literal">target-node</code> attribute.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_node_attributes"></a>8.1. Node Attributes</h3></div></div></div><p>Node attributes are simply key-value pairs associated with a node,
+which control various compilation options. Attributes are set using
+the special <code class="literal">/attribute</code> operator:</p><p><strong><code class="literal">/attribute</code> Operator Syntax. </strong>
+</p><pre class="screen">/attribute(node, key, value)</pre><p>
+</p><p>This sets the attribute of <code class="literal">node</code> with key <code class="literal">key</code> to the value <code class="literal">value</code>.</p><p><strong>Examples. </strong>
+</p><pre class="screen"># Set value of attribute `my-attribute` to 1
+/attribute(a, my-attribute, 1)
+
+# Set value of attribute `akey` to literal symbol `raw-id`
+/attribute(b, "akey", raw-id)</pre><p>
+</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">key</code> and <code class="literal">value</code> are interpreted as literal symbols rather
+than references to the values of nodes. Attribute keys are case
+insensitive and there is no difference between raw symbols and string
+keys. The following keys <code class="literal">key</code>, <code class="literal">Key</code>, <code class="literal">"key"</code> and <code class="literal">"kEy"</code> all refer
+to the same attribute.</p></td></tr></table></div><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Node attributes do not form part of a runtime node’s state.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_attribute_literal_target_node_literal"></a>8.2. Attribute <code class="literal">target-node</code></h3></div></div></div><p>The <code class="literal">target-node</code> attribute determines, when set, the meta-node which
+is used as the binding function of the binding in the reverse
+direction, from a meta-node instance to the meta-node arguments.</p><p>As an example, a meta-node <code class="literal">f</code> with its <code class="literal">target-node</code> attribute set to
+<code class="literal">g</code> results in the following:</p><p><strong>Example. </strong>
+</p><pre class="screen">/attribute(f, target-node, g)
+
+# The following
+a -&gt; f(b)
+
+# Is equivalent to
+g(a) -&gt; b</pre><p>
+</p><p>In the example above the <code class="literal">target-node</code> attribute of <code class="literal">f</code> is set to
+<code class="literal">g</code>. Thus the declaration <code class="literal">f(b)</code> also results in the binding <code class="literal">g(f(b))
+-&gt; b</code> being created.</p><p>The meta-node <code class="literal">to-int</code> simply has its <code class="literal">target-node</code> attribute set to
+itself, which is why it performs the same function, when it appears as
+the target of a binding, as when it appears as the source of a
+binding.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">to-int</code> meta-node performs the same function as the <code class="literal">int</code>
+meta-node however the difference is that when an instance of <code class="literal">int</code>
+appears as the target of a binding, pattern matching (which will be
+introduced in a later tutorial) is performed, whereas <code class="literal">to-int</code> simply
+performs the same function. <code class="literal">int</code> has not been mentioned till this
+point to avoid creating confusion as to what’s the difference between
+it and <code class="literal">to-int</code>.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="target-node-own-meta-nodes"></a>8.3. Target-Node for own Meta-Nodes</h3></div></div></div><p>Our code can be simplified considerably by allowing a meta-node, which
+performs the additional input validation, to be bound (as the target)
+to the values in the input field. Let’s first write that meta-node,
+called <code class="literal">valid-int</code> which is responsible for converting an input string
+to an integer and ensuring that the resulting integer is greater than
+or equal to zero. In essence this meta-node combines <code class="literal">to-int</code>, we’ll
+use <code class="literal">int</code> this time, and <code class="literal">validate</code>.</p><p><strong>Meta-node <code class="literal">valid-int</code>. </strong>
+</p><pre class="screen">valid-int(value) : {
+    x &lt;- int(value)
+    validate(x)
+}</pre><p>
+</p><p>In order to allow the node to appear as the target of a binding, and
+still perform the same function, let’s set its <code class="literal">target-node</code> attribute
+to itself:</p><pre class="screen">/attribute(valid-int, target-node, valid-int)</pre><p>Now we can bind the contents of the input fields directly to an
+instance of the <code class="literal">valid-int</code> meta-node. In-fact, we can place the
+<code class="literal">valid-int</code> instance directly in an inline node declaration.</p><p>Replace <code class="literal">to-int(input-a)</code> with <code class="literal">valid-int(a)</code>, and the same for <code class="literal">b</code>,
+in the input fields as follows:</p><pre class="screen">&lt;label&gt;A: &lt;input value="&lt;?@ valid-int(a) ?&gt;"/&gt;&lt;/label&gt;
+&lt;label&gt;B: &lt;input value="&lt;?@ valid-int(b) ?&gt;"/&gt;&lt;/label&gt;</pre><p>The nodes <code class="literal">input-a</code> and <code class="literal">input-b</code> can be removed, as well as the
+following declarations:</p><pre class="screen"> a &lt;- validate(input-a)
+ b &lt;- validate(input-b)</pre><p>The initial values of <code class="literal">0</code> can once again be given to the nodes <code class="literal">a</code> and
+<code class="literal">b</code> rather than <code class="literal">input-a</code> and <code class="literal">input-b</code>.</p><pre class="screen"> 0 -&gt; a
+ 0 -&gt; b</pre><p>The following is the full content of the Tridash code tag.</p><pre class="screen">/import(core)
+
+# Error Reporting
+
+error-message(value) :
+    case(
+        fail-type?(value, Invalid-Integer) :
+            "Not a valid number!",
+        fail-type?(value, Negative-Number) :
+            "Number must be greater than or equal to 0!",
+        ""
+    )
+
+# Input Validation
+
+Negative-Number  &lt;- &amp;(Negative-Number)
+Negative-Number! &lt;- fail(Negative-Number)
+
+validate(x) :
+    case(
+        x &gt;= 0 : x,
+        Negative-Number!
+    )
+
+valid-int(value) : {
+    x &lt;- int(value)
+    validate(x)
+}
+
+/attribute(valid-int, target-node, valid-int)
+
+# Initial Values
+
+0 -&gt; a
+0 -&gt; b</pre><p>Compared to the previous version, the only modifications are in the
+<code class="literal">error-message</code> meta-node, the inline bindings in the input fields and
+the addition of the <code class="literal">validate</code> and <code class="literal">valid-int</code> meta-nodes along with
+the <code class="literal">Negative-Number</code> failure type. This version, however, did not
+require the addition of new nodes or modifying the bindings comprising
+the core application logic. Changing the input validation logic was
+simply a matter of substituting <code class="literal">to-int</code> with <code class="literal">valid-int</code> in the
+bindings to the input field values.</p></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s07.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s09.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

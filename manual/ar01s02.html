@@ -1,614 +1,143 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>2. Nodes</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.8 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.8 Reference Manual" /><link rel="prev" href="ar01s01.html" title="1. Syntax" /><link rel="next" href="ar01s03.html" title="3. Meta-Nodes" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s01.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s03.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_nodes"></a>2. Nodes</h2></div></div></div><p><a id="idm407907521968" class="indexterm"></a>
-<a id="idm407907520720" class="indexterm"></a>
-<a id="idm407907519728" class="indexterm"></a>
-<a id="idm407907518480" class="indexterm"></a>
-<a id="idm407907517488" class="indexterm"></a>
-<a id="idm407907516240" class="indexterm"></a>
-<a id="idm407907515248" class="indexterm"></a>
-<a id="idm407907514000" class="indexterm"></a></p><p>Semantically a Tridash program is composed of a set of stateful
-components called nodes, each holding a particular value at a given
-moment in time.</p><p>Each node has a set of <span class="emphasis"><em>dependency</em></span> nodes. A change in the value of at
-least one of the dependency nodes causes the node to recompute its own
-value. The node is said to be an <span class="emphasis"><em>observer</em></span> of its dependency nodes,
-as it actively observes and responds to changes in their
-values. Similarly, each node has a set of <span class="emphasis"><em>observer</em></span> nodes which it
-notifies whenever its own value changes.</p><p>This <span class="emphasis"><em>dependency</em></span> — <span class="emphasis"><em>observer</em></span> relation is referred to as a binding.</p><div class="glossary"><div class="titlepage"><div><div><h3 class="title"><a id="_glossary"></a>Glossary</h3></div></div></div><dl><dt><span class="glossterm">
-dependency
-</span></dt><dd class="glossdef"><p>
-A node <code class="literal">a</code> is said to be a <span class="emphasis"><em>dependency</em></span> of node <code class="literal">b</code> if a
-change in the value of <code class="literal">a</code> triggers a change in the value of <code class="literal">b</code>.
-</p></dd><dt><span class="glossterm">
-observer
-</span></dt><dd class="glossdef"><p>
-A node <code class="literal">a</code> is said to be an <span class="emphasis"><em>observer</em></span> of node <code class="literal">b</code> if a
-change in the value of <code class="literal">b</code> triggers a change in the value of <code class="literal">a</code>.
-</p></dd><dt><span class="glossterm">
-binding
-</span></dt><dd class="glossdef"><p>
-A <span class="emphasis"><em>binding</em></span> is a relation between two nodes <code class="literal">a</code> and <code class="literal">b</code>, in
-which one node <code class="literal">a</code> is a <span class="emphasis"><em>dependency</em></span> of the other <code class="literal">b</code>, and likewise
-the other node <code class="literal">b</code> is its <span class="emphasis"><em>observer</em></span>.
-</p></dd><dt><span class="glossterm">
-ancestor
-</span></dt><dd class="glossdef"><p>
-A node <code class="literal">a</code> is said to be an <span class="emphasis"><em>ancestor</em></span> of a node <code class="literal">b</code> if <code class="literal">a</code>
-is a <span class="emphasis"><em>dependency</em></span> of <code class="literal">b</code> or it is an <span class="emphasis"><em>ancestor</em></span> of a <span class="emphasis"><em>dependency</em></span> of <code class="literal">b</code>.
-</p></dd><dt><span class="glossterm">
-successor
-</span></dt><dd class="glossdef"><p>
-A node <code class="literal">a</code> is said to be a <span class="emphasis"><em>successor</em></span> of a node <code class="literal">b</code> if
-<code class="literal">a</code> is an <span class="emphasis"><em>observer</em></span> of <code class="literal">b</code> or it is a successor of an <span class="emphasis"><em>observer</em></span> of
-<code class="literal">b</code>.
-</p></dd></dl></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_declaring_nodes"></a>2.1. Declaring Nodes</h3></div></div></div><p><a id="idm407907480816" class="indexterm"></a>
-<a id="idm407907479568" class="indexterm"></a></p><p>In the global scope, nodes are created on the first reference, that is
-when their identifier first appears in source code. This can either be
-a declaration consisting of the identifier itself or a functor node
-declaration of which the node is an argument.</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">self</code> identifier is reserved as an alias for the
-current <span class="emphasis"><em>meta-node</em></span>, <span class="emphasis"><em>see <a class="xref" href="ar01s03.html" title="3. Meta-Nodes">Section 3, “Meta-Nodes”</a></em></span>.</p></td></tr></table></div><p><strong>Examples. </strong>
-</p><pre class="screen"># Results in the creation of node `name`
-name
-
-# Results in the creation of nodes `a` and `b`
-a -&gt; b
-
-# Results in the creation of nodes `x`, `y` and `f(x, y)`
-f(x, y)</pre><p>
-</p><p>This allows for a relaxed ordering of declarations. A node’s
-definition need not be complete in order for it to be referenced as an
-argument.</p><p>Notice that in the last example, above, a node <code class="literal">f(x, y)</code> was
-created. This node corresponds to the functor node expression, thus
-functors, with the exception of a few special declarations, are nodes
-themselves. From now on a functor node expression refers only to
-functors in which the operator refers to a function. Functor
-expressions in which the operator does not refer to a function are
-referred to as special declarations.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Operators which correspond to functions, such as <code class="literal">f</code> in the
-example above are referred to as meta-nodes and the functor expression
-as an instance of the meta-node. See <a class="xref" href="ar01s03.html" title="3. Meta-Nodes">Section 3, “Meta-Nodes”</a>.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Nodes are also created for functors written in infix form,
-e.g. for the functor <code class="literal">a + b</code>, the node <code class="literal">+(a, b)</code> is created.</p></td></tr></table></div><p>A node corresponding to <code class="literal">a -&gt; b</code> was not created. This is a bind
-declaration which is treated rather specially. The <code class="literal">-&gt;</code> is not a
-meta-node, that is it does not compute a value, but is a special
-operator.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_declaring_bindings"></a>2.2. Declaring Bindings</h3></div></div></div><p><a id="idm407907464816" class="indexterm"></a>
-<a id="idm407907463312" class="indexterm"></a>
-<a id="idm407907462064" class="indexterm"></a>
-<a id="idm407907461072" class="indexterm"></a>
-<a id="idm407907459216" class="indexterm"></a>
-<a id="idm407907457968" class="indexterm"></a></p><p>A binding between two nodes is declared with the special bind operator
-<code class="literal">-&gt;</code>.</p><pre class="screen">a -&gt; b</pre><p>The above declares <code class="literal">b</code> an observer of <code class="literal">a</code> and likewise <code class="literal">a</code> a
-dependency of <code class="literal">b</code>. The result is that a change in the value of <code class="literal">a</code>
-will trigger a change in the value of <code class="literal">b</code>. This is an example of a
-simple binding, since the value of <code class="literal">b</code> is simply set to the value of
-<code class="literal">a</code>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>In an explicit binding declaration the dependency, i.e. the
-left-hand side of the <code class="literal">-&gt;</code> operator, is referred to as the <span class="emphasis"><em>source</em></span> node
-and the observer, i.e. the right-hand side, is referred to as the
-<span class="emphasis"><em>target</em></span> node.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The bind operator is registered as an infix operator with
-precedence <span class="strong"><strong>10</strong></span> and <span class="strong"><strong>right</strong></span> associativity.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">-&gt;</code> operator is in the form of an arrow which indicates the
-direction of data-flow, from the node on the left to the node on the
-right.</p></td></tr></table></div><p>Functional bindings involve a function of one or more argument
-nodes. Functional bindings are created implicitly in functor node
-expressions, with each argument node added as a dependency of the
-functor node. A change in the value of at least one argument node
-results in the value of the functor node being updated to the result
-of reevaluating the expression with the new values of the argument
-nodes.</p><p><strong>Example. </strong>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>2. Functional Bindings</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s01.html" title="1. Hello Node" /><link rel="next" href="ar01s03.html" title="3. Conditional Bindings" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s01.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s03.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_functional_bindings"></a>2. Functional Bindings</h2></div></div></div><p>The bindings in the previous tutorial were pretty boring and
+limited. Whatever was entered in the text field was simply displayed
+below it, verbatim. In-fact, this functionality is already offered by
+many web frameworks and GUI toolkits. The real power of the Tridash
+language comes from the ability to specify arbitrary functions in
+bindings which are dependent on the values of more than a single
+node. Moreover these bindings can be established in Tridash itself
+without having to implement "transformer" or "converter"
+interfaces/subclasses in a lower-level language.</p><p>A functor node is a node which is bound to a function of the values of
+one or more nodes. It consists of an expression comprising an operator
+applied to one or more arguments.</p><p><strong>Functor Node Syntax. </strong>
+</p><pre class="screen">operator(argument1, argument2, ...)</pre><p>
+</p><p>A binding is established between the argument nodes and the functor
+node. Whenever the value of one of the argument nodes changes, the
+expression is reevaluated and the value of the functor node is
+updated.</p><p><strong>Example: Functor of one argument. </strong>
+</p><pre class="screen">to-int(a)</pre><p>
+</p><p>The functor node is <code class="literal">to-int(a)</code> consisting of the function <code class="literal">to-int</code>,
+which converts its argument to an integer, applied to the value of
+node <code class="literal">a</code>. When the value of <code class="literal">a</code> changes, the value of <code class="literal">to-int(a)</code> is
+updated to <code class="literal">a</code>'s value converted to an integer.</p><p><strong>Example: Functor of two arguments. </strong>
 </p><pre class="screen">a + b</pre><p>
-</p><p>In the example, above, a functor node <code class="literal">+(a, b)</code> is created with the
-arguments <code class="literal">a</code> and <code class="literal">b</code> implicitly added as dependencies of <code class="literal">+(a, b)</code>. A
-change in either <code class="literal">a</code> or <code class="literal">b</code> will result in the value of <code class="literal">+(a, b)</code>
-being recomputed.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_propagation_of_changes"></a>2.3. Propagation of Changes</h3></div></div></div><p><a id="idm407907436128" class="indexterm"></a>
-<a id="idm407907434624" class="indexterm"></a>
-<a id="idm407907433376" class="indexterm"></a></p><p>As emphasized in the previous sections, changes in the value of a node
-are propagated to its observer nodes. The new value is propagated to
-each of the observers simultaneously. Each observer then proceeds to
-recompute its own value in parallel with the other observers.</p><p><strong>Example. </strong>
-</p><pre class="screen">a -&gt; b
-a + n -&gt; c
-a + 1 -&gt; d</pre><p>
-</p><p>Node <code class="literal">a</code> has three observers: <code class="literal">b</code>, <code class="literal">+(a, n)</code>, <code class="literal">+(a, 1)</code>. Each of <code class="literal">b</code>,
-<code class="literal">+(a, n)</code> and <code class="literal">+(a, 1)</code> receives the new value of <code class="literal">a</code> and immediately
-begins computing its new value. There is no strict sequential ordering
-of the updating of the values of the observer nodes. The following
-orderings are all possible:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-<code class="literal">b</code>, <code class="literal">+(a, n)</code>, <code class="literal">+(a, 1)</code>
-</li><li class="listitem">
-<code class="literal">+(a, n)</code>, <code class="literal">b</code>, <code class="literal">+(a, 1)</code>
-</li><li class="listitem">
-<code class="literal">+(a, 1)</code>, <code class="literal">+(a, n)</code>, <code class="literal">b</code>
-</li></ul></div><p>Other orderings, including interleaved orderings, are also possible or
-it may be that the values of all the observers are updated in
-parallel.</p><p>It is important to note the semantics when nodes share a common
-observer and the change in value of each node is triggered by a common
-ancestor node. A node is said to be <span class="emphasis"><em>dirtied</em></span> if either its value has
-changed, or at least one of its dependency nodes has been
-<span class="emphasis"><em>dirtied</em></span>. If a node is <span class="emphasis"><em>dirtied</em></span>, all its observers are <span class="emphasis"><em>dirtied</em></span>,
-and likewise their observers are <span class="emphasis"><em>dirtied</em></span> and so on. A node with
-multiple dependencies will only recompute its value when it receives a
-value change notification from each of its <span class="emphasis"><em>dirtied</em></span> dependency
-nodes. Thus there is no intermediate value where the node’s value is
-recomputed before all the dependency nodes have recomputed their
-values.</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This is only the case when the changes in each of the
-dependency nodes are triggered by a change in a common ancestor
-node. These semantics do no apply when the changes in the dependency
-nodes are not triggered by a change in a common ancestor node but by
-multiple simultaneous changes in an ancestor of each dependency,
-unless the changes in each ancestor are the setting of the initial
-values, in which case it is treated as though they have been triggered
-by a single common ancestor. See <a class="xref" href="ar01s02.html#literal_bindings" title="Literal Bindings">Literal Bindings</a>.</p></td></tr></table></div><p><strong>Example. </strong>
-</p><pre class="screen">a -&gt; b
-a + 1 -&gt; c
+</p><p>This is a functor node of the function <code class="literal">+</code> which computes, you guessed
+it, the sum of its arguments, in this case <code class="literal">a</code> and <code class="literal">b</code>. Whenever the value
+of either <code class="literal">a</code> or <code class="literal">b</code> changes, the value of <code class="literal">a + b</code> is updated to the
+sum of <code class="literal">a</code> and <code class="literal">b</code>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">+</code> operator is registered as an infix operator, meaning it
+can be placed between its two arguments (infix notation), instead of
+being placed before its arguments (prefix notation). <code class="literal">a + b</code> is
+transformed to prefix notation <code class="literal">+(a, b)</code>, when parsed. Both notations
+are equivalent and either notation can be written in source code.</p></td></tr></table></div><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The spaces between an infix operator and its arguments are
+mandatory since <code class="literal">a+b</code> is a valid node identifier and is thus
+interpreted as a single node with identifier <code class="literal">a+b</code>, rather than a
+functor node of the <code class="literal">+</code> operator.</p></td></tr></table></div><p>Functor nodes can be bound to other nodes using the same <code class="literal">-&gt;</code> operator.</p><p><strong>Example: Binding functors to other nodes. </strong>
+</p><pre class="screen">a + b -&gt; sum</pre><p>
+</p><p>In this example node <code class="literal">sum</code> is bound to <code class="literal">a + b</code> which is bound to the
+sum of <code class="literal">a</code> and <code class="literal">b</code>.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_example_application_adding_numbers"></a>2.1. Example Application: Adding Numbers</h3></div></div></div><p>We’ll build an application which computes the sum of two numbers,
+entered by the user, and displays the result.</p><p>Let’s focus on building the interface for now. Begin with the
+following <code class="literal">ui.html</code> file:</p><p><strong>ui.html. </strong>
+</p><pre class="programlisting">&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Adding Numbers&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+      &lt;h1&gt;Adding Numbers&lt;/h1&gt;
+      &lt;div&gt;&lt;label&gt;A: &lt;input value="&lt;?@ a ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;B: &lt;input value="&lt;?@ b ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;hr/&gt;
+      &lt;div&gt;&lt;strong&gt;A + B = &lt;?@ sum ?&gt;&lt;/strong&gt;&lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre><p>
+</p><p>An interface consisting of two text input fields is created. The first
+field is bound to node <code class="literal">a</code> and the second to node <code class="literal">b</code>. Underneath the
+fields the node <code class="literal">sum</code> is bound to an unnamed HTML element located next
+to “A + B =”.</p><p>Nodes <code class="literal">a</code> and <code class="literal">b</code> are bound to the values of the two numbers. Node
+<code class="literal">sum</code> is to be bound to the sum of <code class="literal">a</code> and <code class="literal">b</code>.</p><p>Before we begin writing the binding declarations we need to import the
+nodes from the <code class="literal">core</code> module, <span class="emphasis"><em>you’ll learn more about modules in a
+later tutorial</em></span>, which we’ll be making use of in this application. The
+following imports all nodes from the <code class="literal">core</code> module:</p><p><strong>Import all nodes from module <code class="literal">core</code>. </strong>
+</p><pre class="screen">/import(core)</pre><p>
+</p><p>Nodes <code class="literal">a</code> and <code class="literal">b</code> are bound to the contents of the text fields,
+however the contents of the text fields are strings. We need to
+convert <code class="literal">a</code> and <code class="literal">b</code> to integers in order to compute the sum. This is
+achieved using the <code class="literal">to-int</code> operator.</p><p>The sum of the integer values of <code class="literal">a</code> and <code class="literal">b</code> is computed using the <code class="literal">+</code>
+operator applied on the arguments <code class="literal">to-int(a)</code> and
+<code class="literal">to-int(b)</code>.</p><p><strong>Computing Sum of <code class="literal">a</code> and <code class="literal">b</code>. </strong>
+</p><pre class="screen">to-int(a) + to-int(b)</pre><p>
+</p><p>Finally, we need to bind the sum to the node <code class="literal">sum</code> in order for it to
+be displayed below the fields.</p><pre class="screen">to-int(a) + to-int(b) -&gt; sum</pre><p>Adding the declarations, we’ve written so far, to a Tridash code tag
+(somewhere in the file such as at the beginning), completes the
+application.</p><p><strong>Tridash Code Tag. </strong>
+</p><pre class="screen">&lt;?
+ /import(core)
 
-b + c -&gt; out</pre><p>
-</p><p>In the example, above, <code class="literal">a</code> is a common ancestor of dependency nodes
-<code class="literal">b</code> and <code class="literal">c</code> of node <code class="literal">+(b, c)</code>. A change in <code class="literal">a</code> will <span class="emphasis"><em>dirty</em></span> the
-following nodes:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-<code class="literal">a</code>
-</li><li class="listitem">
-<code class="literal">b</code>
-</li><li class="listitem">
-<code class="literal">+(a, 1)</code>
-</li><li class="listitem">
-<code class="literal">c</code>
-</li><li class="listitem">
-<code class="literal">+(b, c)</code>
-</li><li class="listitem">
-<code class="literal">out</code>.
-</li></ul></div><p>The value of <code class="literal">+(b, c)</code> will only be recomputed when the values of both
-<code class="literal">b</code> and <code class="literal">c</code> have been recomputed.</p><p>If <code class="literal">b</code> and <code class="literal">c</code> did not have the common ancestor <code class="literal">a</code>, the value of
-<code class="literal">+(b, c)</code> would be computed on each change in the value of either <code class="literal">b</code>
-or <code class="literal">c</code>, regardless of whether the changes in values of <code class="literal">b</code> and <code class="literal">c</code> are
-triggered simultaneously or not.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_evaluation_strategy"></a>2.4. Evaluation Strategy</h3></div></div></div><p><a id="idm407907387520" class="indexterm"></a>
-<a id="idm407907386272" class="indexterm"></a></p><p>The value of a node is not strictly evaluated. This means that a
-node’s value is only evaluated if it is actually used. In most cases
-the result of this is that node’s are evaluated lazily, that is they
-are evaluated on their first use. However if it can be statically
-determined that a node’s value will always be used it may be evaluated
-before its first use.</p><p><strong>Example: Lazy Evaluation in If Conditions. </strong>
-</p><pre class="screen">a - b -&gt; d1
-b - a -&gt; d2
+ to-int(a) + to-int(b) -&gt; sum
+?&gt;</pre><p>
+</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_build_configuration_file"></a>Build Configuration File</h4></div></div></div><p>To simplify the build command, the build options are specified in a
+build configuration file.</p><p>The build configuration file contains the list of sources, along with
+the source-specific options, and the output options in YAML syntax
+<span class="emphasis"><em>(see <a class="ulink" href="https://yaml.org" target="_top">https://yaml.org</a> for details)</em></span>.</p><p>Create the following <code class="literal">build.yml</code> file:</p><p><strong>build.yml. </strong>
+</p><pre class="screen">sources:
+  - path: ui.html
+    node-name: ui
 
-if(a &gt; b, d1, d2)</pre><p>
-</p><p>In the example, above, <code class="literal">d1</code> is only evaluated if <code class="literal">a &gt; b</code> evaluates to
-true. Likewise, <code class="literal">d2</code> is only evaluated if <code class="literal">a &gt; b</code> evaluates to
-false. <code class="literal">a &gt; b</code> is always evaluated as its value is always used. In
-this example, this only results in a performance optimization since
-the values of node’s which are not used are not needlessly
-computed. However, if <code class="literal">d1</code> or <code class="literal">d2</code> were bound to a recursive meta-node
-call, <span class="emphasis"><em>see <a class="xref" href="ar01s03.html" title="3. Meta-Nodes">Section 3, “Meta-Nodes”</a></em></span>, an infinite loop of recursive calls would
-result had <code class="literal">d1</code> and <code class="literal">d2</code> not been evaluated lazily.</p><p>A node’s value is evaluated at most once. Referencing the node’s value
-in more than one location will not cause it to be evaluated more than
-once. This applies to functor nodes as well as atom nodes.</p><p><strong>Example: Multiple Usage of Nodes. </strong>
-</p><pre class="screen"># Node `f(x, y)` is used in 2 places however it will only be evaluated
-# once.
-
-f(x, y) + a -&gt; node1
-f(x, y) + b -&gt; node2</pre><p>
-</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_contexts"></a>2.5. Contexts</h3></div></div></div><p><a id="idm407907371904" class="indexterm"></a>
-<a id="idm407907370400" class="indexterm"></a>
-<a id="idm407907369152" class="indexterm"></a></p><p>The function which computes a node’s value is controlled by the node’s
-context at that moment in time. The node context stores information
-about the function and which of the dependency nodes are operands to
-the function. Contexts are created whenever a binding between two nodes is
-established.</p><p>The most simple context function is the passthrough, created when a
-simple binding between two nodes is established. With this function,
-the node’s value is simply set to the value of its dependency node.</p><p><strong>Passthrough Example. </strong>
-</p><pre class="screen"># `b` is set to the value of `a` whenever it changes
-
-a -&gt; b.</pre><p>
-</p><p>Contexts with more complex functions, of more than one operand, are
-created for each functor node expression. The created context has the
-operator as the context function and the arguments as the context
-operands.</p><p><strong>Functor Node Example. </strong>
-</p><pre class="screen"># A functor node `+(a, b)` is created with a `+` context.
-# `a` and `b` are added to the operands of the `+` context.
-
-a + b</pre><p>
-</p><p>A node can have more than one context. A context is <span class="emphasis"><em>activated</em></span>,
-meaning its function is evaluated to compute the node’s value,
-whenever the value of one of its operand nodes changes.</p><p><strong>Multiple Context Example. </strong>
-</p><pre class="screen">a -&gt; x
-b -&gt; x
-c -&gt; x</pre><p>
-</p><p>When the value of <code class="literal">a</code> changes, the <code class="literal">a</code> context of <code class="literal">x</code> is activated and
-the value of <code class="literal">x</code> is set to the value of <code class="literal">a</code>. Similarly when <code class="literal">b</code> or
-<code class="literal">c</code>'s value changes, the <code class="literal">b</code> or <code class="literal">c</code> context is activated,
-respectively, and <code class="literal">x</code>'s value is set to the value of <code class="literal">b</code> or <code class="literal">c</code>,
-respectively.</p><div class="warning" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Warning"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Warning]" src="images/icons/warning.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>It is an error for two or more contexts of a single node to be
-activated at the same time. This occurs when either both contexts have
-a common operand or an operand from one context has a common
-ancestor with an operand from the other context.</p><p><strong>Example 1. </strong>
-</p><pre class="screen"># Node `a` is a dependency of `b`
-# Node `a` is a dependency of `+(a, c)`
-# Both `b` and `+(a, c)` are dependencies of `x`
-
-a -&gt; b
-b -&gt; x
-
-a + c -&gt; x</pre><p>
-</p><p>In the example, above, node <code class="literal">a</code> is a dependency node of <code class="literal">b</code> which is
-an operand of the <code class="literal">b</code> context of <code class="literal">x</code>. However, node <code class="literal">a</code> is also a
-dependency of node <code class="literal">+(a, c)</code> (<code class="literal">a + c</code>), which is an operand of the
-<code class="literal">+(a, c)</code> context of <code class="literal">x</code>. A change in the value of <code class="literal">a</code> would trigger a
-change in the value of both <code class="literal">b</code> and <code class="literal">+(a, c)</code> thus the value to which
-<code class="literal">b</code> should be set is ambiguous.</p><p>Structure checking is performed at compile-time, thus the above
-example, and all such scenarios, will result in a compilation error
-along the lines: <code class="literal">Semantic Error: Node x has multiple contexts
-activated by a single common ancestor</code>.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_two_way_bindings"></a>Two-Way Bindings</h4></div></div></div><p><a id="idm407907338512" class="indexterm"></a>
-<a id="idm407907337008" class="indexterm"></a>
-<a id="idm407907335760" class="indexterm"></a></p><p>A dependency of a node may also be an observer of the same node. This
-allows for a two-way binding in which data may flow from either
-direction. In this case only the observer nodes which are not also
-operands of the node’s current context are notified of a change in the
-node’s value.</p><p><strong>Example. </strong>
-</p><pre class="screen"># A two-way binding is established between `a` and `b`
-a -&gt; b
-b -&gt; a
-
-a -&gt; c
-
-d -&gt; a</pre><p>
-</p><p>In the above example, both <code class="literal">b</code> and <code class="literal">c</code>, which are observers of
-<code class="literal">a</code>, will be notified of a change in the value of <code class="literal">a</code> triggered by a
-change in the value of <code class="literal">d</code>. This will trigger a change in the value of
-<code class="literal">b</code> however <code class="literal">a</code> will not be notified of this change as the change was
-triggered by <code class="literal">a</code>, itself.</p><p>In the case of a change in the value of <code class="literal">a</code> triggered by a change in
-the value of <code class="literal">b</code>, only the observer <code class="literal">c</code> of <code class="literal">a</code> will be notified of the
-change.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_cyclic_bindings"></a>Cyclic Bindings</h4></div></div></div><p>Cyclic bindings are bindings between a set of nodes, such that there
-is a path, via bindings, from a node to itself, consisting of at least
-three nodes. The resulting value of the node contains a <span class="emphasis"><em>cyclic
-reference</em></span> to itself.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>A cycle comprising just a pair of nodes is interpreted as a
-two-way binding rather than a cyclic binding.</p></td></tr></table></div><p><strong>Example. </strong>
-</p><pre class="screen">cons(a, y) -&gt; x
-cons(b, x) -&gt; y</pre><p>
-</p><p>The cycle in this example involves the nodes:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-<code class="literal">x</code>
-</li><li class="listitem">
-<code class="literal">cons(b, x)</code>
-</li><li class="listitem">
-<code class="literal">y</code>
-</li><li class="listitem">
-<code class="literal">cons(a, y)</code>
-</li></ul></div><p>In this example the value function of <code class="literal">x</code> is effectively:</p><pre class="screen">cons(a, cons(b, x))</pre><p>where <code class="literal">x</code>, is substituted with a reference to the result of the
-evaluation of the expression, itself. This is well-formed since the
-arguments to the <code class="literal">cons</code> meta-node are evaluated lazily.</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>In order for a cyclic binding to have a meaningful result, the cyclic
-reference must be evaluated lazily. The following will result in an
-infinite loop, as the cyclic reference to <code class="literal">i</code>, in <code class="literal">i + 1</code>, is strictly
-evaluated. Currently there is no compiler warning or error.</p><pre class="screen">i + 1 -&gt; i</pre></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="literal_bindings"></a>Literal Bindings</h4></div></div></div><p><a id="idm407907305168" class="indexterm"></a>
-<a id="idm407907303664" class="indexterm"></a>
-<a id="idm407907302416" class="indexterm"></a>
-<a id="idm407907301424" class="indexterm"></a>
-<a id="idm407907299920" class="indexterm"></a>
-<a id="idm407907298672" class="indexterm"></a></p><p>A binding in which the dependency is a literal value, is interpreted
-as setting the initial value of a node. A special <code class="literal">init</code> context is
-created, which has no operands and has the literal value as its
-function.</p><p>Initial values are set on the launch of the application, and are
-treated as an ordinary value change to the initial value. The initial
-active context of the node is the <code class="literal">init</code> context. If a node is not
-given an initial value, its initial value is a failure value, <span class="emphasis"><em>see
-<a class="xref" href="ar01s02.html#_failures" title="2.6. Failures">Section 2.6, “Failures”</a></em></span>.</p><p><strong>Examples. </strong>
-</p><pre class="screen">0 -&gt; counter
-"hello" -&gt; message
-10.5 -&gt; threshold</pre><p>
-</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The setting of the initial values of each node, is treated
-as having been triggered by a single common ancestor node. <span class="emphasis"><em>See
-<a class="xref" href="ar01s02.html#_propagation_of_changes" title="2.3. Propagation of Changes">Section 2.3, “Propagation of Changes”</a> for the implications of this</em></span>.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="explicit_contexts"></a>Explicit Contexts</h4></div></div></div><p><a id="idm407907289664" class="indexterm"></a>
-<a id="idm407907288160" class="indexterm"></a>
-<a id="idm407907286912" class="indexterm"></a>
-<a id="idm407907285920" class="indexterm"></a>
-<a id="idm407907284416" class="indexterm"></a>
-<a id="idm407907283168" class="indexterm"></a></p><p>The context to which a binding is established can be set explicitly
-with the special <code class="literal">/context</code> operator.</p><p><strong>Syntax. </strong>
-</p><pre class="screen">/context(node, context-id)</pre><p>
-</p><p>The effect of this expression, when it appears as the target of a
-binding, is that the binding to <code class="literal">node</code> will be established in the
-context with identifier <code class="literal">context-id</code>. The identifier can be a symbol
-or a functor.</p><p><strong>Example. </strong>
-</p><pre class="screen"># Context `my-context` of b has a passthrough value function to the
-# value of the dependency `a`.
-
-a -&gt; /context(b, my-context)</pre><p>
-</p><p>When a <code class="literal">/context</code> declaration appears in source position it is
-equivalent to an ordinary reference to the <code class="literal">node</code>.</p><p>Multiple bindings to the same explicit context can be established. The
-function of the context then selects the value of the first
-dependency, ordered by the declaration order in the source file, which
-does not <span class="emphasis"><em>fail</em></span> to evaluate to a value, <span class="emphasis"><em>see <a class="xref" href="ar01s02.html#_failures" title="2.6. Failures">Section 2.6, “Failures”</a>.</em></span></p><p><strong>Example. </strong>
-</p><pre class="screen">a -&gt; /context(node, ctx)
-b -&gt; /context(node, ctx)
-c -&gt; /context(node, ctx)</pre><p>
-</p><p><code class="literal">node</code> evaluates to:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-The value of <code class="literal">a</code> if <code class="literal">a</code> evaluates to a value.
-</li><li class="listitem">
-The value of <code class="literal">b</code> if <code class="literal">a</code> fails to evaluate to a value.
-</li><li class="listitem">
-The value of <code class="literal">c</code> if both <code class="literal">a</code> and <code class="literal">b</code> fail to evaluate to a value.
-</li></ul></div><p>If <code class="literal">a</code>, <code class="literal">b</code> and <code class="literal">c</code> all fail to evaluate to a value, <code class="literal">node</code> evaluates
-to the failure value of <code class="literal">c</code>.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <a class="link" href="ar01s05.html#macro-node-context" title="Macro-Node: @(node, context : '(default))"><code class="literal">@</code></a> macro from the <code class="literal">core</code> module,
-which is a shorthand for the <code class="literal">/context</code> operator, is the preferred way
-of establishing bindings to explicit contexts in source code.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_failures"></a>2.6. Failures</h3></div></div></div><p><a id="idm407907255408" class="indexterm"></a>
-<a id="idm407907254160" class="indexterm"></a></p><p>Failures are a special type of value which represents the absence of a
-value or the failure to compute a value. Failures can either be
-created by <span class="emphasis"><em>conditional bindings</em></span>, in which the condition node
-evaluates to <span class="emphasis"><em>false</em></span>, or by the <code class="literal">fail</code> meta-node, from the <code class="literal">builtin</code>
-module.</p><p>Functions which expect an argument node to evaluate to a value will
-fail if at least one argument fails. In formal terms, if the result of
-a function requires that the value of an argument, which fails to
-evaluate to a value, be evaluated, the entire function fails to
-evaluate to a value. The following are examples of functions which
-fail if at least one of argument fails: <code class="literal">+</code>, <code class="literal">-</code>, <code class="literal">*</code>, <code class="literal">/</code>.</p><p>If the result of a function is a dictionary, and a dictionary entry
-fails to evaluate to a value, it is only that dictionary entry that
-fails, the function still returns a dictionary.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="conditional_bindings"></a>Conditional Bindings</h4></div></div></div><p><a id="idm407907244784" class="indexterm"></a>
-<a id="idm407907243264" class="indexterm"></a>
-<a id="idm407907241968" class="indexterm"></a></p><p>A binding declaration <code class="literal">a -&gt; b</code> can, itself, be treated as a node, to
-which an explicit binding can be established with the binding node as
-the target.</p><pre class="screen">c -&gt; (a -&gt; b)</pre><p>The result of this declaration is that the binding <code class="literal">a -&gt; b</code> is only
-active if the condition node <code class="literal">c</code> evaluates to a <span class="emphasis"><em>true</em></span> value, the
-value of the builtin <code class="literal">True</code> node,. If <code class="literal">c</code> evaluates to <span class="emphasis"><em>false</em></span>, the
-value of the builtin <code class="literal">False</code> node, <code class="literal">b</code> is not set to the value of <code class="literal">a</code>
-but is set to a failure value.</p><p>A binding declaration, with a binding node as the target, changes the
-function of the context of the binding to return a failure value if
-the value of the condition node is <span class="emphasis"><em>false</em></span>. The binding node <code class="literal">a -&gt; b</code>
-(<code class="literal">-&gt;(a, b)</code> in prefix notation), is added as a dependency of <code class="literal">b</code> and
-as an operand of the context corresponding to the binding <code class="literal">a -&gt;
-b</code>. The binding node is itself an observer of <code class="literal">c</code> with a simple
-passthrough function. This allows you to reference the <span class="emphasis"><em>status</em></span> of the
-binding by referencing the binding node, <code class="literal">a -&gt; b</code>.</p><p><strong>Example: Simple Validation. </strong>
-</p><pre class="screen"># Validate that `i` has a value &gt; 0
-# Propagate value of `i` to `j`
-
-i &gt; 0 -&gt; (i -&gt; j)
-
-# Perform some computation with `j` which is guaranteed to either be a
-# numeric value greater than zero or a failure.
-...</pre><p>
-</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The bind <code class="literal">-&gt;</code> operator has <span class="emphasis"><em>right</em></span> associativity, thus the
-parenthesis in <code class="literal">c -&gt; (a -&gt; b)</code> can be omitted: <code class="literal">c -&gt; a -&gt; b</code>.</p></td></tr></table></div><p>Conditional bindings to an explicit context can also be established,
-<span class="emphasis"><em>see <a class="xref" href="ar01s02.html#explicit_contexts" title="Explicit Contexts"> Explicit Contexts</a></em></span>. If a condition node evaluates to
-<span class="emphasis"><em>false</em></span>, it is treated as though the corresponding dependency node has
-failed to evaluate to a value. The context’s function then evaluates
-to the next dependency which does not fail to evaluate to a value. If
-all condition nodes evaluate to <span class="emphasis"><em>false</em></span>, the node fails to evaluate to
-a value.</p><p><strong>Example: Conditional Bindings and Explicit Contexts. </strong>
-</p><pre class="screen">cond1 -&gt; (a -&gt; /context(node, ctx))
-cond2 -&gt; (b -&gt; /context(node, ctx))
-c -&gt; /context(node, ctx)</pre><p>
-</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-If <code class="literal">cond1</code> evaluates to false, it is treated as though <code class="literal">a</code> has
-      failed to evaluate to a value.
-</li><li class="listitem">
-If <code class="literal">cond2</code> evaluates to false, it is treated as though <code class="literal">b</code> has
-      failed to evaluate to a value.
-</li></ul></div><p>The net result is that <code class="literal">node</code> evaluates to:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-<code class="literal">a</code> if <code class="literal">cond1</code> evaluates to true.
-</li><li class="listitem">
-<code class="literal">b</code> if <code class="literal">cond2</code> evaluates to true.
-</li><li class="listitem">
-<code class="literal">c</code> if neither <code class="literal">cond1</code> not <code class="literal">cond2</code> evaluate to true, or both <code class="literal">a</code>
-      and <code class="literal">b</code> fail to evaluate to a value.
-</li></ul></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_explicit_failures_and_failure_types"></a>Explicit Failures and Failure Types</h4></div></div></div><p><a id="idm407907201712" class="indexterm"></a>
-<a id="idm407907200144" class="indexterm"></a>
-<a id="idm407907198848" class="indexterm"></a></p><p>Failure values can also be created explicitly with the
-<a class="link" href="ar01s05.html#meta-node-fail" title="Meta-Node: fail(:(type))"><code class="literal">fail</code></a> meta-node, from the <code class="literal">core</code> module. This
-meta-node takes one optional argument: a value indicating the failure
-type. If the failure type is not provided, the failure returned does
-not have a type.</p><p><strong>Example: Explicit Failure with Type. </strong>
-</p><pre class="screen"># Bind `b` to `a` if `c` is true
-c -&gt; (a -&gt; /context(b, ctx))
-
-# If `c` is false set `b` to an explicit failure
-fail("my-type") -&gt; /context(b, ctx)</pre><p>
-</p><p>The failure type of a <span class="emphasis"><em>failure value</em></span> can be retrieved with the
-<a class="link" href="ar01s05.html#meta-node-fail-type" title="Meta-Node: fail-type(x)"><code class="literal">fail-type</code></a> meta-node. This meta-node takes a
-single argument, which if it fails to evaluate to a value, returns the
-failure type associated with the failure. If the argument does not
-fail to evaluate to a value, or the failure has no type associated
-with it, <code class="literal">fail-type</code> returns a failure.</p><p><strong>Example: Querying Failure Type. </strong>
-</p><pre class="screen"># Compare failure type of `b`, to "my-type" from example above
-
-fail-type(c) = "my-type" -&gt; c-fails?</pre><p>
-</p><p>The failure type is useful to identify the cause of a failure, since
-failures are used to represent many classes of errors, such as type
-errors, out of range errors, no value errors, as well as representing
-special classes of values such as the empty list.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="conditional_binding_fail_type"></a>Conditionally Active Bindings based on Failure Type</h4></div></div></div><p>The special <code class="literal">/context</code> operator takes an optional third argument which
-is a test function that is evaluated prior to activating the binding
-after the previous binding fails. The test function is applied on a
-single argument, the failure type of the previous binding. If the
-function returns <span class="emphasis"><em>true</em></span> the binding is activated otherwise this
-binding fails with the same failure type as the preceding binding.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <a class="link" href="ar01s05.html#macro-node-context" title="Macro-Node: @(node, context : '(default))"><code class="literal">@</code></a> macro, from the <code class="literal">core</code> module,
-contains a shorthand syntax for establishing a binding to an explicit
-context with a test function that compares the failure type to a given
-value.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_input_nodes"></a>2.7. Input Nodes</h3></div></div></div><p><a id="idm407907180160" class="indexterm"></a>
-<a id="idm407907178864" class="indexterm"></a></p><p>Input nodes are the nodes which receive the application input, which
-could be the value entered in a text field of the user interface (UI),
-data received from the network, etc. Input nodes do not have any
-dependencies and have a special <code class="literal">input</code> context, which does not have a
-value computation function. Instead the value of the node is meant to
-be set explicitly through some external event.</p><p>Input nodes have to be explicitly designated as such by setting the
-<code class="literal">input</code> attribute to true. <span class="emphasis"><em>See <a class="xref" href="ar01s02.html#_attributes" title="2.8. Attributes">Section 2.8, “Attributes”</a> for more information
-about node attributes</em></span>.</p><p><strong>Example: Setting Input Attribute. </strong>
-</p><pre class="screen">a -&gt; b
-
-# Designate `a` as an input node
-/attribute(a, input, 1)</pre><p>
-</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>A compilation error is triggered if a node has a dependency
-that is not reachable from any input node, however has at least one
-dependency that is reachable from an input node. The error is not
-signalled if all of the node’s dependencies are unreachable from all
-the input nodes.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_attributes"></a>2.8. Attributes</h3></div></div></div><p><a id="idm407907169968" class="indexterm"></a>
-<a id="idm407907168720" class="indexterm"></a>
-<a id="idm407907167712" class="indexterm"></a>
-<a id="idm407907166128" class="indexterm"></a>
-<a id="idm407907164816" class="indexterm"></a></p><p>Attributes are arbitrary key value pairs associated with a node, which
-control various compilation options of the node. These are set using
-the special <code class="literal">/attribute</code> operator.</p><p>The first argument is the node of which to set the attribute, the
-second argument is the attribute key (not interpreted as a node) and
-the last argument is the value, which is interpreted as a literal
-value, not a node reference.</p><p><code class="literal">/attribute</code> declarations may only appear at top-level and may not
-appear in binding declarations or as arguments in functor nodes.</p><p><strong>Attribute Declaration Syntax. </strong>
-</p><pre class="screen">/attribute(node, attribute, value)</pre><p>
-</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">attribute</code> key need not be a string, it may simply be an
-identifier as it is not interpreted as a node.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Attribute keys are case insensitive. Additionally a string
-attribute key and an equivalent identifier key both refer to the same
-attribute. Thus the following keys all refer to the same attribute:
-<code class="literal">key</code>, <code class="literal">Key</code>, <code class="literal">"key"</code>, <code class="literal">"KEY"</code>.</p></td></tr></table></div><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">value</code> is treated as a literal value, not a reference
-to the value of a node, since attributes do not form part of the
-runtime node’s state.</p></td></tr></table></div><p>The <code class="literal">input</code> attribute has already been introduced. The following is a
-list of some attributes and a summary of their effect:</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
-<code class="literal">input</code>
-</span></dt><dd>
-When set to true, designates a node as an input
-    node. <span class="emphasis"><em>See <a class="xref" href="ar01s02.html#_input_nodes" title="2.7. Input Nodes">Section 2.7, “Input Nodes”</a></em></span>.
-</dd><dt><span class="term">
-<code class="literal">coalescable</code>
-</span></dt><dd>
-When set to false, prevents the node from being
-    coalesced into other nodes. <span class="emphasis"><em>See <a class="xref" href="ar01s06.html#_coalescing" title="6.1. Coalescing">Section 6.1, “Coalescing”</a></em></span>.
-</dd><dt><span class="term">
-<code class="literal">removable</code>
-</span></dt><dd>
-When set to false, prevents the node from being
-    removed.
-</dd><dt><span class="term">
-<code class="literal">public-name</code>
-</span></dt><dd>
-The name with which the runtime node can be
-    referenced from non-Tridash code.
-</dd><dt><span class="term">
-<code class="literal">macro</code>
-</span></dt><dd>
-When set to true, indicates that a meta-node is a macro and should be
-    invoked at compile-time. <span class="emphasis"><em>See <a class="xref" href="ar01s03.html#_macro_nodes" title="3.6. Macro Nodes">Section 3.6, “Macro Nodes”</a></em></span>.
-</dd><dt><span class="term">
-<code class="literal">target-node</code>
-</span></dt><dd>
-Sets the name of a meta-node to use as the value
-    function, in the contexts of the bindings of the meta-node
-    instance (as the source node) to its arguments (as the target
-    nodes). <span class="emphasis"><em>See <a class="xref" href="ar01s03.html#_instances_as_targets" title="3.7. Instances as Targets">Section 3.7, “Instances as Targets”</a></em></span>.
-</dd><dt><span class="term">
-<code class="literal">target-transform</code>
-</span></dt><dd>
-The name of a meta-node to invoke if the
-    meta-node, of which the attribute is set, appears as the target of
-    a binding. <span class="emphasis"><em>See <a class="xref" href="ar01s03.html#_instances_as_targets" title="3.7. Instances as Targets">Section 3.7, “Instances as Targets”</a></em></span>.
-</dd></dl></div><p><strong>Examples. </strong>
-</p><pre class="screen">/attribute(a, input, 1)
-/attribute(a, public-name, "app-input")</pre><p>
-</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_subnodes"></a>2.9. Subnodes</h3></div></div></div><p><a id="idm407907127312" class="indexterm"></a>
-<a id="idm407907126016" class="indexterm"></a>
-<a id="idm407907124992" class="indexterm"></a>
-<a id="idm407907123696" class="indexterm"></a>
-<a id="idm407907122672" class="indexterm"></a>
-<a id="idm407907121104" class="indexterm"></a>
-<a id="idm407907119792" class="indexterm"></a></p><p>Subnodes are nodes which reference a value, with a particular key, out
-of a dictionary of values stored in another node, referred to as the
-<code class="literal">parent</code> node.</p><p>Subnodes are referenced using the special <code class="literal">.</code> operator, which is also
-an infix operator. The <code class="literal">parent</code> node appears on the left-hand side and
-the key on the right-hand side. The key is treated as a literal
-identifier.</p><p><strong>Syntax. </strong>
-</p><pre class="screen">&lt;parent node&gt;.&lt;key identifier&gt;</pre><p>
-</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">.</code> operator is lexically special in that spaces are not
-required to separate it from its operand.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">.</code> infix operator has precedence <span class="strong"><strong>1000</strong></span> and <span class="strong"><strong>left</strong></span>
-associativity.</p></td></tr></table></div><p><strong>Example. </strong>
-</p><pre class="screen">string-concat(
-    person.first-name, <a id="CO1-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span>
-    person.last-name   <a id="CO1-2"></a><span><img src="images/icons/callouts/2.png" alt="2" border="0" /></span>
-) -&gt; full-name</pre><p>
-</p><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO1-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
-References the <code class="literal">first-name</code> subnode of node <code class="literal">person</code>.
-</p></td></tr><tr><td width="5%" valign="top" align="left"><p><a href="#CO1-2"><span><img src="images/icons/callouts/2.png" alt="2" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
-References the <code class="literal">last-name</code> subnode of node <code class="literal">person</code>.
-</p></td></tr></table></div><p>An implicit two-way binding is established between the subnode and
-parent node. The binding in the direction <code class="literal">parent -&gt; subnode</code> has a
-value function which extracts the subnode key from the dictionary
-stored in <code class="literal">parent</code>. The binding in the reverse direction, <code class="literal">subnode -&gt;
-parent</code>, has a function which creates a dictionary with an entry which
-has the subnode key as the key and the value of <code class="literal">subnode</code> as the
-value. This allows a dictionary to be created in the <code class="literal">parent</code> node by
-establishing an explicit binding with <code class="literal">subnode</code> as the
-target. Multiple such bindings, with different subnodes of <code class="literal">parent</code>,
-will result in a dictionary being created with an entry for each
-subnode.</p><p><strong>Example: Creating Dictionaries. </strong>
-</p><pre class="screen">"John" -&gt; person.first-name
-"Smith" -&gt; person.last-name</pre><p>
-</p><p>The value of a subnode is only evaluated when the value of its
-dictionary entry is referenced. A subnode is not evaluated when only
-the value of its parent node, which evaluates to the dictionary, is
-referenced. <span class="emphasis"><em>See <a class="xref" href="ar01s02.html#_evaluation_strategy" title="2.4. Evaluation Strategy">Section 2.4, “Evaluation Strategy”</a></em></span>. If a subnode fails to
-evaluate to a value, it does not cause the parent node to fail to
-evaluate to value. The parent node evaluates to a dictionary however
-the dictionary entry, corresponding to the subnode, evaluates to a
-failure. <span class="emphasis"><em>See <a class="xref" href="ar01s02.html#_failures" title="2.6. Failures">Section 2.6, “Failures”</a></em></span>.</p><p>Accessing a non-existent entry, or accessing a subnode of a parent
-node which does not evaluate to a dictionary will result in a failure.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_node_states"></a>2.10. Node States</h3></div></div></div><p><a id="idm407907089376" class="indexterm"></a>
-<a id="idm407907087872" class="indexterm"></a>
-<a id="idm407907086592" class="indexterm"></a>
-<a id="idm407907085568" class="indexterm"></a>
-<a id="idm407907083984" class="indexterm"></a>
-<a id="idm407907082672" class="indexterm"></a></p><p>A binding can be established between the same node, as both the source
-and target of the binding, however in different <span class="emphasis"><em>states</em></span>. The binding
-thus acts as a state transition function which computes the value of
-the node in its current <span class="emphasis"><em>state</em></span> given its value in the previous <span class="emphasis"><em>state</em></span>.</p><p>The special <code class="literal">/state</code> operator allows a binding to a particular state
-of a node to be established.</p><p><strong>Syntax. </strong>
-</p><pre class="screen">/state(node, state-identifier)</pre><p>
-</p><p>where <code class="literal">node</code> is the node and <code class="literal">state-identifier</code> is a symbol
-identifying the state.</p><p>When a <code class="literal">/state</code> expression appears as the target of a binding, the
-binding will only take effect when <code class="literal">node</code> switches to the state with
-identifier <code class="literal">state-identifier</code>. This allows <code class="literal">node</code> to appear in the
-source of the binding either directly or as part of a node expression,
-in which case the current value of <code class="literal">node</code> is referenced to compute its
-value in the new state.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>When a <code class="literal">/state</code> expression appears as the source of a
-binding, it reduces to a reference to the value of node. It is not a
-reference to the value of node in a particular state.</p></td></tr></table></div><p>The <code class="literal">/state</code> operator may also take an additional third argument, in
-which case the arguments are interpreted as follows:</p><p><strong>Syntax: With Explicit <span class="emphasis"><em>From</em></span> and <span class="emphasis"><em>To</em></span> States. </strong>
-</p><pre class="screen">/state(node, from-state, to-state)</pre><p>
-</p><p>This specifies that the binding, of which the <code class="literal">/state</code> expression is a
-target, is only active when the state of <code class="literal">node</code> switches from the
-state with identifier <code class="literal">from-state</code> to the state with identifier
-<code class="literal">to-state</code>.</p><p>The <code class="literal">state</code> of a node <code class="literal">n</code> is determined by the value of the special
-node <code class="literal">/state(n)</code>, to which bindings can be established. The value of
-<code class="literal">/state(n)</code> must be a symbol which is interpreted as a state
-identifier. The symbol may name a node state to which no bindings are
-established.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Any value change of the node <code class="literal">/state(n)</code> is considered a
-change in the state of the node, even if the new state is identical to
-the previous state.</p></td></tr></table></div><p>Multiple bindings, to the same node state, can be declared however
-bindings declared later in the source file take priority over bindings
-declared earlier in the file.</p><p><strong>Example 1: Simple Counter. </strong>
-</p><pre class="screen">counter + 1 -&gt; /state(counter, increment)
-
-if (increment, '(increment), '(default)) -&gt; /state(counter)</pre><p>
-</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">'</code> operator is a macro which returns its argument as a
-literal symbol, <span class="emphasis"><em>see <a class="xref" href="ar01s03.html#literal-symbols" title="Literal Symbols"> Literal Symbols</a></em></span>.</p></td></tr></table></div><p>The first declaration establishes the binding <code class="literal">counter + 1 -&gt;
-counter</code>, which is active only when <code class="literal">counter</code> switches to the
-<code class="literal">increment</code> state. When <code class="literal">counter</code> switches to the <code class="literal">increment</code> state,
-its value is updated to its current value incremented by one.</p><p>The second declaration establishes a binding to the node
-<code class="literal">/state(counter)</code>, the value of which determines the state of
-<code class="literal">counter</code>. When the node <code class="literal">increment</code> changes to true, the value of
-<code class="literal">/state(counter)</code>, and thus the state of <code class="literal">counter</code>, is <code class="literal">increment</code>
-resulting in the value of <code class="literal">counter</code> being incremented by one. When
-<code class="literal">increment</code> is false, the state of <code class="literal">counter</code> is <code class="literal">default</code> and thus the
-binding established by the first declaration has no effect.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>A change in the value of <code class="literal">increment</code> from true to true will
-result in a change in the state of <code class="literal">counter</code> from <code class="literal">increment</code> to
-<code class="literal">increment</code>. Even though the new state is identical to the previous
-state, it is still considered a change to the <code class="literal">increment</code> state and
-thus the value of <code class="literal">counter</code> is incremented. To avoid this use the
-three argument form of the <code class="literal">/state</code> operator which specifies both a
-<span class="emphasis"><em>from</em></span> and <span class="emphasis"><em>to</em></span> state.</p></td></tr></table></div><p><strong>Example 2: Simple Counter with Explicit <span class="emphasis"><em>From</em></span> and <span class="emphasis"><em>To</em></span> States. </strong>
-</p><pre class="screen">counter + 1 -&gt; /state(counter, default, increment)
-
-if (increment, '(increment), '(default)) -&gt; /state(counter)</pre><p>
-</p><p>Using the three argument form of the <code class="literal">/state</code> operator, the first
-declaration establishes a binding, between <code class="literal">counter + 1</code> and
-<code class="literal">counter</code>, which is only active when the state of <code class="literal">counter</code> changes
-from <code class="literal">default</code> to <code class="literal">increment</code>. This differs from the previous example,
-in which the binding is active when the state of <code class="literal">counter</code> changes
-from any state to <code class="literal">increment</code>.</p><p>In this example, the value of <code class="literal">counter</code> is not incremented if the
-state of <code class="literal">counter</code> changes from <code class="literal">increment</code> to <code class="literal">increment</code>, as the
-binding <code class="literal">counter + 1 -&gt; counter</code> is only active when the state changes
-from <code class="literal">default</code> to <code class="literal">increment</code>.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <a class="link" href="ar01s05.html#macro-node-state" title="Macro-Node: ::(node, state)"><code class="literal">::</code></a> macro from the <code class="literal">core</code> module, which is a
-shorthand for the <code class="literal">/state</code> operator, is the preferred way of
-establishing bindings to explicit node states. The shorthand for the
-two argument form is <code class="literal">node :: state</code> and the shorthand for the three
-argument form is <code class="literal">node :: from =&gt; to</code>.</p><p>The first declarations of the previous examples can thus be rewritten
-as follows:</p><pre class="screen"># First Declaration of Example 1
-counter + 1 -&gt; counter :: increment
-
-# First Declaration of Example 2
-counter + 1 -&gt; counter :: default =&gt; increment</pre></td></tr></table></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s01.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s03.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
+output:
+  path: app.html
+  type: html
+  main-ui: ui</pre><p>
+</p><p>The outer structure of the file is a dictionary with two entries
+<code class="literal">sources</code> and <code class="literal">output</code>.</p><p>The <code class="literal">sources</code> entry contains the list of source files either as a path
+or as a dictionary with the path in the <code class="literal">path</code> entry and the
+processing options in the remaining entries. In this application there
+is one source file <code class="literal">ui.html</code> with one source processing option
+<code class="literal">node-name</code> set to <code class="literal">ui</code>.</p><p>The <code class="literal">output</code> entry is a dictionary containing the path to the output
+file in the path entry, in this case <code class="literal">app.html</code>, and the output
+options in the remaining entries, in this case <code class="literal">type = html</code> and
+<code class="literal">main-ui = ui</code> which are the same options as in the previous
+tutorials.</p><p>To build from a build configuration file run the following command:</p><pre class="screen">tridashc -b build.yml</pre><p>The <code class="literal">-b</code> option specifies the path to the build configuration file
+containing the build options. All other command line options are
+ignored when this option is specified.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_running_the_application_2"></a>Running the Application</h4></div></div></div><p>Open the <code class="literal">app.html</code> file in a web browser, and enter some
+numbers in the text fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial2/snap1.png" align="middle" alt="A: 2:, B: 3, A + B = 5" /></div></div><p>Notice that the sum of the numbers is automatically computed and
+displayed below the fields.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The sum will only be displayed once you have entered a valid
+number in each field.</p></td></tr></table></div><p>Now try changing the numbers (<span class="emphasis"><em>remember to press enter afterwards</em></span>):</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial2/snap2.png" align="middle" alt="A: 2, B: 8, A + B = 10" /></div></div><p>Notice that the sum is automatically recomputed and the new sum is
+displayed.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_binding_to_functor_nodes"></a>2.2. Binding to Functor Nodes</h3></div></div></div><p>The <code class="literal">to-int</code> operator is special in that a two-way binding is
+established between its argument and the functor node. Thus the
+declaration <code class="literal">to-int(a)</code> also establishes the binding <code class="literal">to-int(a) -&gt; a</code>.
+The binding in the reverse direction, from functor to argument, has
+the same function as the binding from the argument to the
+functor. Thus in <code class="literal">to-int(a) -&gt; a</code>, <code class="literal">a</code> is bound to the value of
+<code class="literal">to-int(a)</code> converted to an integer.</p><p>This allows a binding to be established with a <code class="literal">to-int</code> functor node
+as the observer.</p><p><strong>Example: Binding with <code class="literal">to-int</code> as observer. </strong>
+</p><pre class="screen">x -&gt; to-int(a)</pre><p>
+</p><p>In this example, <code class="literal">to-int(a)</code> is bound to <code class="literal">x</code>. Whenever the value of
+<code class="literal">x</code> changes, the value of <code class="literal">to-int(a)</code> is set to it, and the value of
+<code class="literal">a</code> is set to the value of <code class="literal">to-int(a)</code> converted to an integer.</p><p>With this functionality, the application in this tutorial can be
+implemented more succinctly by moving the integer conversion from the
+Tridash code tag to the inline node declarations.</p><p>Replace the declaration:</p><pre class="screen">to-int(a) + to-int(b) -&gt; sum</pre><p>with:</p><pre class="screen">a + b -&gt; sum</pre><p>Replace <code class="literal">&lt;?@ a ?&gt;</code> and <code class="literal">&lt;?@ b ?&gt;</code> with <code class="literal">&lt;?@ to-int(a) ?&gt;</code> and <code class="literal">&lt;?@
+to-int(b) ?&gt;</code> respectively.</p><p>The benefit of this is that the value conversion logic is moved closer
+to the point where the values are obtained, rather than being littered
+throughout the core application logic. Nodes <code class="literal">a</code> and <code class="literal">b</code> can now be
+used directly, without having to be converted first, since it is known
+that they contain integer values.</p><p>To simplify the application further, the <code class="literal">sum</code> node can be omitted
+entirely and <code class="literal">&lt;?@ sum ?&gt;</code> can be replaced with <code class="literal">&lt;?@ a + b ?&gt;</code>.</p><p><strong>Improved Application. </strong>
+</p><pre class="programlisting">&lt;?
+ /import(core)
+?&gt;
+&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Adding Numbers&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+      &lt;h1&gt;Adding Numbers&lt;/h1&gt;
+      &lt;div&gt;&lt;label&gt;A: &lt;input value="&lt;?@ to-int(a) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;B: &lt;input value="&lt;?@ to-int(b) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;hr/&gt;
+      &lt;div&gt;&lt;strong&gt;A + B = &lt;?@ a + b ?&gt;&lt;/strong&gt;&lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre><p>
+</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">/import</code> declaration in the Tridash code tag has to be
+retained as it is responsible for importing the nodes <code class="literal">to-int</code> and <code class="literal">+</code>
+from the <code class="literal">core</code> module.</p></td></tr></table></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s01.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s03.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

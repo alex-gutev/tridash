@@ -1,63 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>1. Syntax</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.8 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.8 Reference Manual" /><link rel="prev" href="index.html" title="Tridash 0.8 Reference Manual" /><link rel="next" href="ar01s02.html" title="2. Nodes" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="index.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s02.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_syntax"></a>1. Syntax</h2></div></div></div><p><a id="idm407911954752" class="indexterm"></a>
-<a id="idm407911953600" class="indexterm"></a></p><p>Syntactically a Tridash program consists of a sequence of <span class="strong"><strong>node</strong></span>
-declarations, each consisting of a single node expression. Node
-expressions are divided into three types: <span class="strong"><strong>atom</strong></span> nodes, <span class="strong"><strong>functor</strong></span>
-nodes and <span class="strong"><strong>literal</strong></span> nodes. Declarations are separated by a semicolon
-<code class="literal">;</code> character or a line break.</p><p>Anything occurring between a <code class="literal">#</code> character and the end of the line is
-treated as a comment and is discarded.</p><p><a id="idm407911948352" class="indexterm"></a>
-<a id="idm407911947200" class="indexterm"></a>
-<a id="idm407911946304" class="indexterm"></a>
-<a id="idm407911945152" class="indexterm"></a></p><p><strong>Basic Grammar. </strong>
-</p><pre class="screen">&lt;declaration&gt; = &lt;node&gt;(';' | &lt;line break&gt; | &lt;end of file&gt;)
-
-&lt;node&gt; = &lt;functor&gt; | &lt;identifier&gt; | &lt;literal&gt;
-&lt;node&gt; = '(' &lt;node&gt; ')'
-
-&lt;functor&gt; = &lt;prefix-functor&gt; | &lt;infix-functor&gt;
-&lt;prefix-functor&gt; = &lt;node&gt; '(' [&lt;node&gt; {',' &lt;node&gt;}*] ')'
-&lt;infix-functor&gt; = &lt;node&gt;' '&lt;identifier&gt;' '&lt;node&gt;
-
-&lt;literal&gt; = &lt;number&gt; | &lt;string&gt;
-&lt;number&gt; = &lt;integer&gt; | &lt;real&gt;</pre><p>
-</p><h3><a id="_grammar_notation"></a>Grammar Notation</h3><p>The grammar notation used in this manual adheres to the following
-conventions:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-Angle brackets <code class="literal">&lt;...&gt;</code> indicate named syntactical entities.
-</li><li class="listitem">
-<code class="literal">=</code> designates that the syntactical entity on the left is
-      defined by the rules on the right. Multiple definitions of the
-      same syntactical entity indicate disjunction of the rules in
-      each definition.
-</li><li class="listitem">
-<code class="literal">|</code> indicates disjunction in a single definition.
-</li><li class="listitem">
-Literal tokens are enclosed in single quotes <code class="literal">'...'</code>.
-</li><li class="listitem">
-<code class="literal">..</code> indicates ranges, e.g. <code class="literal">'0'..'9'</code> indicates the digit
-      characters in the range <code class="literal">0</code> to <code class="literal">9</code>: <code class="literal">0</code>, <code class="literal">1</code>, <code class="literal">2</code>, <code class="literal">3</code>, <code class="literal">4</code>,
-      <code class="literal">5</code>, <code class="literal">6</code>, <code class="literal">7</code>, <code class="literal">8</code>, <code class="literal">9</code>.
-</li><li class="listitem">
-Rules enclosed in square brackets <code class="literal">[...]</code> are optional.
-</li><li class="listitem">
-Multiple rules enclosed in braces <code class="literal">{...}</code> are grouped into a single rule.
-</li><li class="listitem">
-<code class="literal">*</code> indicates zero or more repetitions of the preceding rule.
-</li><li class="listitem">
-<code class="literal">+</code> indicates one or more repetitions of the preceding rule.
-</li></ul></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="atom_nodes"></a>1.1. Atom Nodes</h3></div></div></div><p><a id="idm407907708336" class="indexterm"></a>
-<a id="idm407907706832" class="indexterm"></a>
-<a id="idm407907705584" class="indexterm"></a>
-<a id="idm407907704592" class="indexterm"></a>
-<a id="idm407907703088" class="indexterm"></a>
-<a id="idm407907701840" class="indexterm"></a>
-<a id="idm407907700848" class="indexterm"></a>
-<a id="idm407907699344" class="indexterm"></a>
-<a id="idm407907698096" class="indexterm"></a></p><p>An <span class="strong"><strong>atom</strong></span> node consists of a single node identifier, referred to as a
-symbol. Node identifiers may consist of any sequence of characters
-excluding whitespace, line breaks, and the following special
-characters: <code class="literal">(</code>, <code class="literal">)</code>, <code class="literal">{</code>, <code class="literal">}</code>, <code class="literal">"</code>, <code class="literal">,</code>, <code class="literal">.</code>, <code class="literal">;</code>, <code class="literal">#</code>. Node identifiers
-must consist of at least one non-digit character, otherwise they are
-interpreted as numbers.</p><p>The following are all examples of valid node identifiers:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>1. Hello Node</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="index.html" title="Tridash Tutorials" /><link rel="next" href="ar01s02.html" title="2. Functional Bindings" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="index.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s02.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="tutorial1"></a>1. Hello Node</h2></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_nodes"></a>1.1. Nodes</h3></div></div></div><p>A Tridash program is made up of a number of components called nodes,
+which are loosely analogous to variables in other languages. Each node
+holds a particular value, referred to as the node’s state, at a given
+moment in time.</p><p>Nodes are created the first time they are referenced, by their
+identifiers. Node identifiers can consist of any sequence of
+Unicode characters excluding whitespace, parenthesis <code class="literal">(</code>, <code class="literal">)</code>, braces
+<code class="literal">{</code>, <code class="literal">}</code>, double quotes <code class="literal">"</code> and the following special characters: <code class="literal">;</code>,
+<code class="literal">,</code>, <code class="literal">.</code>, <code class="literal">#</code>. A node identifier must consist of at least one
+non-digit character otherwise it is interpreted as a number.</p><p>The following are examples of valid node identifiers:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
 <code class="literal">name</code>
 </li><li class="listitem">
 <code class="literal">full-name</code>
@@ -65,125 +15,164 @@ interpreted as numbers.</p><p>The following are all examples of valid node ident
 <code class="literal">node1</code>
 </li><li class="listitem">
 <code class="literal">1node</code>
-</li></ul></div><p>The following are not valid node identifiers:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
-<code class="literal">123</code>
-</li><li class="listitem">
-<code class="literal">a.b</code>
-</li><li class="listitem">
-<code class="literal">j#2</code> — Only the <code class="literal">j</code> is part of an identifier, the <code class="literal">#2</code> is a comment
-</li><li class="listitem">
-<code class="literal">1e7</code> — As the <code class="literal">e</code> indicates a real-number in scientific
-      notation. <span class="emphasis"><em>See <a class="link" href="ar01s01.html#_numbers" title="Numbers">Numbers</a></em></span>.
-</li></ul></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_functors"></a>1.2. Functors</h3></div></div></div><p><a id="idm407907673744" class="indexterm"></a>
-<a id="idm407907672240" class="indexterm"></a>
-<a id="idm407907670992" class="indexterm"></a></p><p>A functor node is an expression consisting of an operator node applied
-to zero or more argument nodes. Syntactically the operator node is
-written first followed by the comma-separated list of argument nodes
-in parenthesis <code class="literal">(...)</code>.</p><p><strong>Examples. </strong>
-</p><pre class="screen">op(arg)
-func(arg1, arg2)
-m.fn()</pre><p>
-</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>A line break occurring before the closing parenthesis <code class="literal">)</code>
-is not treated as a declaration separator. Instead the following line
-is treated as a continuation of the current line.</p></td></tr></table></div><p><a id="idm407907665760" class="indexterm"></a>
-<a id="idm407907664256" class="indexterm"></a>
-<a id="idm407907663008" class="indexterm"></a></p><p>In the special case of an operator applied to two arguments, the
-operator may be placed in infix position, that is between the two
-argument nodes. The operator may only be an <span class="strong"><strong>atom</strong></span> node and must be
-registered as an infix operator.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Spaces between the infix operator and its operands are
-required, in order to distinguish the operator from the operands. This
-is due to there being few restrictions on the characters allowed in
-node identifiers.</p></td></tr></table></div><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>A line break occurring between the infix operator and its
-right argument is not treated as a declaration separator. However a
-line break between the left argument and infix operator is treated as
-terminating the declaration consisting of the left argument. The
-following line is then treated as a new separate declaration.</p></td></tr></table></div><p>Functor expressions written in infix and prefix form are equivalent,
-thus the following infix functor expression:</p><pre class="screen">a + b</pre><p>is equivalent to the following prefix functor expression (<span class="emphasis"><em>either
-expression may be written in source code</em></span>):</p><pre class="screen">+(a, b)</pre><p><a id="idm407907655808" class="indexterm"></a>
-<a id="idm407907654304" class="indexterm"></a>
-<a id="idm407907653056" class="indexterm"></a>
-<a id="idm407907652064" class="indexterm"></a>
-<a id="idm407907650560" class="indexterm"></a>
-<a id="idm407907649312" class="indexterm"></a></p><p>Each node registered as an infix operator has, associated with it, a
-precedence and associativity. The precedence is a number that controls
-the priority with which the operator consumes its arguments. Operators
-with a higher precedence consume arguments before operators with a
-lower precedence. The associativity controls whether the operands are
-grouped starting from the left or right, in an expression containing
-multiple instances of the same infix operator.</p><pre class="screen">a + b * c</pre><p>The <code class="literal">*</code> operator has a greater precedence than the <code class="literal">+</code> operator, thus
-it consumes its arguments first, consuming the <code class="literal">b</code> and <code class="literal">c</code> arguments.</p><p>The <code class="literal">+</code> operator has a lower precedence thus it consumes its arguments
-after <code class="literal">*</code>. The arguments available to it are <code class="literal">a</code> and <code class="literal">*(b, c)</code>.</p><p>As a result the infix functor expression is parsed to the following:</p><pre class="screen">+(a, *(b, c))</pre><p>Use parenthesis to control which arguments are grouped with which
-operators. Thus for an infix expression to be parsed to the following,
-, assuming the <code class="literal">*</code> operator has a greater precedence than <code class="literal">+</code>:</p><pre class="screen">*(+(a, b), c)</pre><p><code class="literal">a + b</code> must be surrounded in parenthesis:</p><pre class="screen">(a + b) * c</pre></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_node_lists"></a>1.3. Node Lists</h3></div></div></div><p><a id="idm407907634448" class="indexterm"></a>
-<a id="idm407907632944" class="indexterm"></a>
-<a id="idm407907631696" class="indexterm"></a></p><p>Multiple declarations can be syntactically grouped into a single node
-expression using the <code class="literal">{</code> and <code class="literal">}</code> delimiters. All declarations between
-the delimiters are processed and accumulated into a special <span class="emphasis"><em>node
-list</em></span> syntactic entity. In most contexts the node list is treated as
-being equivalent to the last node expression before the closing brace
-<code class="literal">}</code>, however special operators and macros may process node lists in a
-different manner.</p><p><strong>Node Lists. </strong>
-</p><pre class="screen">&lt;node&gt; = &lt;node list&gt;
-&lt;node list&gt; = '{' &lt;declaration&gt;* '}'</pre><p>
-</p><div class="warning" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Warning"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Warning]" src="images/icons/warning.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Each node list must be terminated by a closing brace <code class="literal">}</code>
-further on in the file otherwise a parse error is triggered.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_literals"></a>1.4. Literals</h3></div></div></div><p><a id="idm407907623536" class="indexterm"></a>
-<a id="idm407907622288" class="indexterm"></a></p><p>Literal nodes include numbers and strings.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_numbers"></a>Numbers</h4></div></div></div><p><a id="idm407907619920" class="indexterm"></a>
-<a id="idm407907618416" class="indexterm"></a>
-<a id="idm407907617168" class="indexterm"></a></p><p>There are two types of numbers: <span class="strong"><strong>integer</strong></span>s and real-valued numbers,
-referred to as <span class="strong"><strong>real</strong></span>s, which are represented as floating-point
-numbers.</p><p><a id="idm407907614240" class="indexterm"></a>
-<a id="idm407907612736" class="indexterm"></a>
-<a id="idm407907611488" class="indexterm"></a></p><p>Integers consist of a sequence of digits in the range <code class="literal">0—9</code>,
-optionally preceded by the integer’s sign. A preceding <code class="literal">-</code> indicates a
-negative number. A preceding <code class="literal">+</code> indicates a positive integer, which
-is the default if the sign is omitted.</p><p><strong>Integer Syntax. </strong>
-</p><pre class="screen">&lt;integer&gt; = ['+'|'-']('0'..'9')+</pre><p>
-</p><p><a id="idm407907606288" class="indexterm"></a>
-<a id="idm407907604784" class="indexterm"></a>
-<a id="idm407907603536" class="indexterm"></a>
-<a id="idm407907602544" class="indexterm"></a>
-<a id="idm407907601040" class="indexterm"></a>
-<a id="idm407907599792" class="indexterm"></a></p><p>There are numerous syntaxes for real-valued numbers. The most basic is
-the decimal syntax which comprises an <span class="strong"><strong>integer</strong></span> followed by the
-decimal dot <code class="literal">.</code> character and a sequence of digits in the range
-<code class="literal">0—9</code>.</p><p><strong>Decimal Real Syntax. </strong>
-</p><pre class="screen">&lt;real&gt; = &lt;decimal&gt; | &lt;magnitude-exponent&gt;
+</li></ul></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>There are few restrictions on the characters allowed in node
+identifiers, meaning node identifiers may even contain symbols such as
+<code class="literal">-</code>, <code class="literal">+</code>, <code class="literal">=</code>, <code class="literal">&gt;</code>, <code class="literal">?</code>, etc.</p></td></tr></table></div><p>A node can be bound to another node in which case its value is
+automatically updated when the value of the node, to which it is
+bound, changes.</p><p>The <code class="literal">-&gt;</code> operator establishes a binding between node on the left hand
+side, referred to as the <span class="emphasis"><em>source</em></span>, and the node on the right hand
+side, referred to as the <span class="emphasis"><em>target</em></span>.</p><p><strong>Example. </strong>
+</p><pre class="screen">a -&gt; b</pre><p>
+</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The spaces between the node identifiers and the bind <code class="literal">-&gt;</code>
+operator are mandatory since <code class="literal">a-&gt;b</code> is a valid node identifier and is
+thus interpreted as a single node.</p></td></tr></table></div><p>In this example a binding is established between node <code class="literal">a</code> and node
+<code class="literal">b</code>. The result is that when the value of <code class="literal">a</code> changes, the value of
+<code class="literal">b</code> is automatically updated to match the value of <code class="literal">a</code>. This kind of
+binding is known as a simple binding since a node is simply set to the
+value of another node. Node <code class="literal">a</code> is referred to as a <span class="emphasis"><em>dependency</em></span> node
+of <code class="literal">b</code>, since <code class="literal">b</code>'s value depends on the value of <code class="literal">a</code>, and <code class="literal">b</code> is
+referred to as an <span class="emphasis"><em>observer</em></span> node of <code class="literal">a</code> since it actively observes
+its value.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_first_application"></a>1.2. First Application</h3></div></div></div><p>We’ll use bindings to develop a simple application which asks for the
+user’s name and displays a greeting.</p><p>This tutorial targets the JavaScript backend and makes use of HTML for
+the user interface.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Some knowledge of the basics of HTML, i.e. what tags, elements
+and attributes are, is necessary to complete this tutorial.</p></td></tr></table></div><p>We’ll start off by creating an HTML file, called <code class="literal">hello-ui.html</code>, with
+the following contents:</p><p><strong>hello-ui.html. </strong>
+</p><pre class="programlisting">&lt;?
+ self.input-name.value -&gt; name
+ name -&gt; self.span-name.textContent
+?&gt;
 
-&lt;decimal&gt; = &lt;integer&gt;'.'('0'..'9')+</pre><p>
-</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The decimal <code class="literal">.</code> must be preceded and followed by at-least one
-digit character. Thus <code class="literal">.5</code> and <code class="literal">1.</code> are not valid <span class="strong"><strong>real</strong></span> literals,
-<code class="literal">0.5</code> and <code class="literal">1.0</code> have to be written instead.</p></td></tr></table></div><p><a id="idm407907590192" class="indexterm"></a>
-<a id="idm407907588688" class="indexterm"></a>
-<a id="idm407907587440" class="indexterm"></a></p><p>The exponent syntax allows a real-number to be specified in scientific
-notation as a magnitude <span class="inlinemediaobject"><span class="phrase"></span></span> and exponent <span class="inlinemediaobject"><span class="phrase"></span></span> pair
-<span class="inlinemediaobject"><span class="phrase"></span></span>. The exponent syntax comprises a real in
-decimal syntax or an integer, followed by the character <code class="literal">e</code>, <code class="literal">f</code>, <code class="literal">d</code>,
-or <code class="literal">l</code> which indicates the precision of the real-number, followed by
-the exponent as an integer.</p><p><strong>Exponent Syntax. </strong>
-</p><pre class="screen">&lt;magnitude-exponent&gt; = (&lt;decimal&gt;|&lt;integer&gt;)['e'|'f'|'d'|'l']&lt;integer&gt;</pre><p>
-</p><p><code class="literal">e</code> and <code class="literal">f</code> indicate a single precision floating point number, <code class="literal">d</code>
-indicates double precision and <code class="literal">l</code> indicates long precision.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_strings"></a>Strings</h4></div></div></div><p><a id="idm407907573824" class="indexterm"></a>
-<a id="idm407907572320" class="indexterm"></a>
-<a id="idm407907571072" class="indexterm"></a></p><p>Literal strings consist of a sequence of characters enclosed in double
-quotes <code class="literal">"..."</code>.</p><p><strong>String Syntax. </strong>
-</p><pre class="screen">&lt;string&gt; = '"'&lt;unicode char&gt;*'"'</pre><p>
-</p><p>where <code class="literal">&lt;unicode char&gt;</code> can be any Unicode character.</p><p>A literal <code class="literal">"</code> character can appear inside a string if it is preceded
-by the backslash escape character <code class="literal">\</code>.</p><p><strong>Example. </strong>
-</p><pre class="screen">"John said \"Hello\""</pre><p>
-</p><p><a id="idm407907563200" class="indexterm"></a>
-<a id="idm407907561696" class="indexterm"></a>
-<a id="idm407907560448" class="indexterm"></a></p><p>Certain escape sequence, consisting of a <code class="literal">\</code> followed by a character,
-are shorthands for special characters, allowing the character to
-appear in the parsed string without having to write the actual
-character in the string literal.</p><div class="table"><a id="idm407907557840"></a><p class="title"><strong>Table 1. Escape Sequences</strong></p><div class="table-contents"><table class="table" summary="Escape Sequences" cellpadding="4px" style="border-collapse: collapse;border-top: 3px solid #527bbd; border-bottom: 3px solid #527bbd; border-left: 3px solid #527bbd; border-right: 3px solid #527bbd; "><colgroup><col class="col_1" /><col class="col_2" /><col class="col_3" /></colgroup><thead><tr><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"> Sequence </th><th style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"> Character </th><th style="border-bottom: 1px solid #527bbd; " align="left" valign="top"> ASCII Character Code (Hex)</th></tr></thead><tbody><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">\n</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>Line Feed (LF) / New Line</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">0A</code></p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">\r</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>Carriage Return (CR)</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">0D</code></p></td></tr><tr><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">\t</code></p></td><td style="border-right: 1px solid #527bbd; border-bottom: 1px solid #527bbd; " align="left" valign="top"><p>Tab</p></td><td style="border-bottom: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">09</code></p></td></tr><tr><td style="border-right: 1px solid #527bbd; " align="left" valign="top"><p><code class="literal">\u{&lt;code&gt;}</code></p></td><td style="border-right: 1px solid #527bbd; " align="left" valign="top"><p>Unicode Character</p></td><td style="" align="left" valign="top"><p><code class="literal">&lt;code&gt;</code></p></td></tr></tbody></table></div></div><br class="table-break" /><p>The <code class="literal">\u{&lt;code&gt;}</code> escape sequence is replaced with the Unicode
-character with code (in hexadecimal) <code class="literal">&lt;code&gt;</code>. There must be an
-opening brace <code class="literal">{</code> following <code class="literal">\u</code> otherwise the escape sequence is
-treated as an ordinary literal character escape, in which <code class="literal">\u</code> is
-replaced with <code class="literal">u</code>. Currently the closing brace is optional <code class="literal">}</code>, as
-only the characters up to the first character that is not a
-hexadecimal digit are considered part of the character code. However,
-it is good practice to insert the closing brace as it clearly delimits
-which characters are to be interpreted as the character code and which
-characters are literal characters.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">\n</code>, <code class="literal">\r</code> and <code class="literal">\t</code> escape sequences can alternatively be
-written as <code class="literal">\u{A}</code>, <code class="literal">\u{D}</code> and <code class="literal">\u{9}</code> respectively.</p></td></tr></table></div><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>In a future release, omitting either the opening or closing
-brace, in a Unicode escape sequence, may result in a parse error.</p></td></tr></table></div></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="index.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s02.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
+&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Hello Node&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+        &lt;h1&gt;Tutorial 1: Hello Node&lt;/h1&gt;
+        &lt;label&gt;Enter your name: &lt;input id="input-name"/&gt;&lt;/label&gt;
+        &lt;p&gt;Hello &lt;span id="span-name"&gt;&lt;/span&gt;&lt;/p&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre><p>
+</p><p>Most of the file is HTML boilerplate, the interesting part is within
+the <code class="literal">&lt;? ... ?&gt;</code> tag. The content of this tag is interpreted as Tridash
+code. Tridash code tags can be placed almost anywhere in the file,
+we’ve just chosen to place it at the top.</p><p>The Tridash code consists of two explicit binding
+declarations. Declarations are separated by a line break or a
+semicolon <code class="literal">;</code>.</p><p><strong>Tridash Code. </strong>
+</p><pre class="screen">self.input-name.value -&gt; name
+name -&gt; self.span-name.textContent</pre><p>
+</p><p>The declaration in the first line binds the <code class="literal">self.input-name.value</code>
+node to the <code class="literal">name</code> node.</p><p>The node <code class="literal">self.input-name</code> is a special node that references the
+<code class="literal">input</code> element, with id <code class="literal">input-name</code>, in the HTML file. HTML elements
+can be referenced from within Tridash code, in the same HTML file,
+using the expression <code class="literal">self.&lt;id&gt;</code> where <code class="literal">&lt;id&gt;</code> is substituted with the
+id of the element.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">.</code> operator is a special operator for referencing subnodes of
+nodes, these will be explained in detail later. The subnode identifier
+is the identifier which appears to the right of the operator. When a
+subnode of a node, that references an HTML element, is referenced, the
+HTML attribute, of the element, with the same name as the subnode
+identifier is referenced. Referencing attributes of HTML elements,
+from Tridash, allows the values of attributes to be bound to Tridash
+nodes.</p></td></tr></table></div><p>The node <code class="literal">self.input-name.value</code>, which references the <code class="literal">value</code>
+attribute of the HTML element with ID <code class="literal">input-name</code>, is bound to the
+node <code class="literal">name</code>. Thus whenever the value of <code class="literal">input-name.value</code> changes,
+the value of <code class="literal">name</code> is set to it. In other words, whenever text is
+entered in the input element, the value of <code class="literal">name</code> is automatically set
+to the text entered.</p><p>In the second declaration, the <code class="literal">name</code> node is bound to the
+<code class="literal">self.span-name.textContent</code> node. <code class="literal">self.span-name</code> references the
+HTML <code class="literal">span</code> element with ID <code class="literal">span-name</code>, with the node
+<code class="literal">self.span-name.textContent</code> referencing the <code class="literal">textContent</code> attribute,
+i.e. the content, of the element. The result of this binding is that
+whenever the value of the <code class="literal">name</code> node changes, its value is displayed
+in the <code class="literal">span</code> element. As mentioned earlier, the value of the <code class="literal">name</code>
+node is automatically set to the text entered in the <code class="literal">input</code> element,
+thus the value entered in the <code class="literal">input</code> element is displayed in the
+<code class="literal">span</code> element.</p><p>The application we’ve just written, simply prompts the user for
+his/her name and displays “Hello” followed by the user’s name
+directly below the prompt. Let’s try it out to see if it works.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_building"></a>Building</h4></div></div></div><p>Run the following command to build the application:</p><pre class="screen">tridashc hello-ui.html : node-name=ui -o hello.html -p type=html -p main-ui=ui</pre><p>That looks complicated, let’s simplify it a bit.</p><p>The <code class="literal">tridashc</code> executable compiles one or more Tridash source files,
+generating an output file. The source files, in this case
+<code class="literal">hello.html</code>, are listed after <code class="literal">tridashc</code>. The name of the output file
+is given by the <code class="literal">-o</code> or <code class="literal">--output-file</code> option, in this case
+<code class="literal">hello.html</code>.</p><p>The snippet <code class="literal">: node-name=ui</code> sets the <code class="literal">node-name</code> option, for
+processing the source file <code class="literal">hello-ui.html</code>, to <code class="literal">ui</code>. This creates a
+node <code class="literal">ui</code> with which the contents of the HTML file can be referenced.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">self</code> node, when occurring within an HTML file is simply an
+alias for the node name, given by the <code class="literal">node-name</code> option, which
+references the contents of the HTML file.</p></td></tr></table></div><p>The <code class="literal">-p option=value</code> command-line options sets various options
+related to the compilation output. The first option <code class="literal">type</code> is set to
+<code class="literal">html</code> which indicates that the output should be an HTML file with the
+generated JavaScript code embedded in it. The <code class="literal">main-ui</code> option is set
+to <code class="literal">ui</code>, which is the name of the node referencing the contents of the
+<code class="literal">hello-ui.html</code> file. It is the contents of this file that are used to
+generate the output HTML file.</p><p>If all went well a <code class="literal">hello.html</code> file should have been created in the
+same directory, after running the command.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_running_the_application"></a>Running The Application</h4></div></div></div><p>Open the <code class="literal">hello.html</code> file in a web-browser with JavaScript
+enabled. You should see something similar to the following:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial1/snap1.png" align="middle" alt="Enter your name: __, Hello" /></div></div><p>Try entering some text in the text field, and press enter afterwards:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial1/snap2.png" align="middle" alt="Enter your name: John, Hello John" /></div></div><p>Notice that the text entered appears next to the “Hello” message
+underneath the text field. This is due to the binding of the text
+field to the <code class="literal">name</code> node and the binding of the <code class="literal">name</code> node to the
+contents of the <code class="literal">span</code> element placed adjacent to the “Hello” text.</p><p>Now try changing the text entered in the text field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial1/snap3.png" align="middle" alt="Enter your name: John Doe, Hello John Doe" /></div></div><p>The text changes to match the contents of the text field. This
+demonstrates the automatic updating of a node’s state when the state
+of its dependency nodes changes.</p><p>When the state (the value) of the text field changes:</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
+The state of the <code class="literal">name</code> node is updated to the text entered in the
+field.
+</li><li class="listitem">
+The content of <code class="literal">span</code> element is updated to match the state of the
+<code class="literal">name</code> node.
+</li></ol></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_inline_node_declarations"></a>1.3. Inline Node Declarations</h3></div></div></div><p>The previous application can be implemented much more succinctly using
+implicit bindings and inline node declarations.</p><p><strong>hello-ui.html. </strong>
+</p><pre class="programlisting">&lt;!doctype html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;Hello Node&lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+        &lt;h1&gt;Tutorial 1: Hello Node&lt;/h1&gt;
+        &lt;label&gt;Enter your name: &lt;input value="&lt;?@ name ?&gt;"/&gt;&lt;/label&gt;
+        &lt;p&gt;Hello &lt;?@ name @&gt;&lt;/p&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</pre><p>
+</p><p>Implicit bindings between an HTML node and a Tridash node can be
+established using the <code class="literal">&lt;?@ declaration ?&gt;</code> tag. This is similar to the
+Tridash code tag, seen earlier, however an implicit binding is
+established between the nodes appearing in the tag and the HTML node
+in which the tag appears.</p><p>If the tag is placed within an attribute of an element, an implicit
+two-way binding is established between the element’s attribute and the
+node, appearing in the tag. If the tag appears outside an attribute,
+an HTML element is created in its place, and a binding is established
+between the node appearing in the tag, and the content of the element
+(referenced as <code class="literal">textContent</code> from Tridash).</p><p>With inline declarations it is not necessary to give the HTML elements
+unique ID’s unless they will be referenced from within Tridash
+code. In this example they have been omitted.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_two_way_bindings"></a>1.4. Two-Way Bindings</h3></div></div></div><p>The bindings we’ve seen so far are one-way bindings, as data only
+flows in one direction, from the dependency node to the observer node.</p><p><strong>Example: One-Way Binding. </strong>
+</p><pre class="screen">a -&gt; b</pre><p>
+</p><p>This is a one-way binding since the value of <code class="literal">b</code> is updated to the
+value of <code class="literal">a</code> when it changes, however, <code class="literal">a</code> is not updated when the
+value of <code class="literal">b</code> changes.</p><p>If a binding in the reverse direction is also established:</p><pre class="screen">b -&gt; a</pre><p>the binding becomes a two-way binding since the value of each node is
+updated when the value of the other node changes.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_example_application"></a>Example Application</h4></div></div></div><p>The following simple application demonstrates two-way bindings:</p><p><strong><code class="literal">ui.html</code>. </strong>
+</p><pre class="programlisting">&lt;?
+ a -&gt; b
+ b -&gt; a
+?&gt;
+
+&lt;!doctype html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;Two-Way Bindings&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;h1&gt;Two-Way Bindings&lt;/h1&gt;
+    &lt;div&gt;&lt;label&gt;A: &lt;input value="&lt;?@ a ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+    &lt;div&gt;&lt;label&gt;B: &lt;input value="&lt;?@ b ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</pre><p>
+</p><p>The applications consists of two text input fields with the first
+field bound to node <code class="literal">a</code> and the second field bound to <code class="literal">b</code>, using
+inline node declarations.</p><p>In the Tridash code tag, a two-way binding between <code class="literal">a</code> and <code class="literal">b</code> is
+established since a binding is declared in both directions:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+<code class="literal">a -&gt; b</code>
+</li><li class="listitem">
+<code class="literal">b -&gt; a</code>
+</li></ul></div><p>Build the application using the following command, which is identical
+to the previous build command with only the source and output file
+names changed.</p><pre class="screen">tridashc ui.html : node-name=ui -o app.html -p type=html -p main-ui=ui</pre><p>Open the resulting <code class="literal">app.html</code> file in a web-browser, and enter a value
+in the first text field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial1/snap4.png" align="middle" alt="A: 1, B: 1" /></div></div><p>Notice that the content of the second text field is automatically
+updated to match the content of the first field.</p><p>Now change the value in the second field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial1/snap5.png" align="middle" alt="A: 3, B: 3" /></div></div><p>The value of the first field is updated to the value entered in the
+second field.</p></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="index.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s02.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
