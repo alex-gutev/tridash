@@ -1,278 +1,274 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>4. Writing your own Functions</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s03.html" title="3. Conditional Bindings" /><link rel="next" href="ar01s05.html" title="5. Subnodes" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s03.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s05.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="functions"></a>4. Writing your own Functions</h2></div></div></div><p>In this tutorial you’ll learn how to create your own functions, which
-can be used in functional bindings. Another feature which distinguishes
-Tridash from frameworks/toolkits, which offer bindings, is that new
-functions can be written in the same language, as the language in
-which the bindings are declared, rather than having to be implemented
-in a lower-level language.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Only some of the example applications will be
-demonstrated. Visit the source code for the tutorials to try out the
-remaining applications.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_definition_operator"></a>4.1. Definition Operator</h3></div></div></div><p>New functions, referred to as meta-nodes, are defined using the
-special <code class="literal">:</code> operator, which has the following syntax:</p><pre class="screen">function(arg1, arg2, ...) : {
-   declarations...
-}</pre><p>The left-hand side contains the function name (<code class="literal">function</code>) followed by
-the argument list in brackets, where each item (<code class="literal">arg1</code>, <code class="literal">arg2</code>, …)
-is the name of the local node to which the argument at that position
-is bound.</p><p>The right-hand side, of the <code class="literal">:</code> operator, contains the declarations
-making up the body of the function, which may consist of any Tridash
-node declaration. The value of the last node in the <code class="literal">declarations</code>
-list is returned by the function.</p><p>The meta-node can then be used as the operator of functor nodes, which
-are referred to as instances of the meta-node, declared after its
-definition.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The curly braces <code class="literal">{</code> and <code class="literal">}</code> are optional if the meta-node body
-consists of a single declaration.</p></td></tr></table></div><p><strong>Example Adding Two Numbers. </strong>
-</p><pre class="screen"># Add two numbers    <a id="CO2-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>4. Modules</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.9 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.9 Reference Manual" /><link rel="prev" href="ar01s03.html" title="3. Meta-Nodes" /><link rel="next" href="ar01s05.html" title="5. Core Module" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s03.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s05.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_modules"></a>4. Modules</h2></div></div></div><p><a id="idm196017937104" class="indexterm"></a></p><p>Modules provide a means of avoiding name collisions between nodes. A
+module is a namespace which contains all global nodes, including
+meta-nodes, created in it. A node with identifier <code class="literal">x</code> in a module <code class="literal">m1</code>
+is distinct from a node with the same identifier <code class="literal">x</code> in another module
+<code class="literal">m2</code>.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_creating_modules"></a>4.1. Creating Modules</h3></div></div></div><p><a id="idm196017931616" class="indexterm"></a>
+<a id="idm196017930320" class="indexterm"></a>
+<a id="idm196017929296" class="indexterm"></a>
+<a id="idm196017927712" class="indexterm"></a>
+<a id="idm196017926400" class="indexterm"></a></p><p>Each new node, that is created as a result of processing a declaration
+in the source file, is added to the current module. Initially the
+current module is a nameless <code class="literal">init</code> module until it is changed
+explicitly.</p><p>The current module can be changed using the special <code class="literal">/module</code> operator,
+which takes the identifier of the module as its only argument. If
+there is no such module a new module is created.</p><p><strong>Example. </strong>
+</p><pre class="screen"># Change to module with identifier `mod1`
+/module(mod1)
 
-add(x, y) : x + y</pre><p>
-</p><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO2-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
-This is a comment. Comments begin with a <code class="literal">#</code> character and extend
-till the end of the line. All text within a comment is discarded.
-</p></td></tr></table></div><p>In this example, an <code class="literal">add</code> meta-node is defined which takes two
-arguments, <code class="literal">x</code> and <code class="literal">y</code>, and returns their sum.</p><p>Our sum application can thus be rewritten as follows:</p><pre class="screen">&lt;?
- /import(core)
+# Nodes `a` and `b` added to `mod1`
+a -&gt; b
 
- # Add two numbers
+# Change to module with identifier `mod2`
+/module(mod2)
 
- add(x, y) : x + y
-?&gt;
+# Nodes `a` and `b` added to `mod2`
+# Distinct nodes from nodes `a` and `b` in `mod1`
+a -&gt; b</pre><p>
+</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Module identifiers reside in a different namespace from node
+identifiers, thus there is no risk of collision between a node and
+module with the same identifier, unless a pseudo-node for the module
+is added to the module containing the node.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Modules reside in a single global, flat namespace. Hierarchical
+relations between modules have to be <span class="emphasis"><em>faked</em></span> with a separator such as
+<code class="literal">/</code>, e.g. <code class="literal">module/submodule</code>.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_referencing_nodes_in_different_modules"></a>4.2. Referencing Nodes in Different Modules</h3></div></div></div><p>There are two ways to reference a node in a another module, different
+from the current module. One way is to create a <span class="emphasis"><em>pseudo-node</em></span> for the
+module in the current module. Nodes in the module can then be
+referenced as subnodes of the module’s <span class="emphasis"><em>pseudo-node</em></span>.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_module_pseudo_nodes"></a>Module Pseudo-Nodes</h4></div></div></div><p><a id="idm196017913584" class="indexterm"></a>
+<a id="idm196017912288" class="indexterm"></a>
+<a id="idm196017911264" class="indexterm"></a>
+<a id="idm196017909680" class="indexterm"></a>
+<a id="idm196017908368" class="indexterm"></a></p><p>The special <code class="literal">/use</code> operator creates pseudo-nodes for the modules
+passed as arguments. The pseudo-nodes are created with the same
+identifiers as the modules.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Module pseudo-nodes are referred to as such, since syntactically
+they are the same as any other node, however the value of a module
+pseudo-node cannot be referenced nor can bindings involving it be
+established.</p></td></tr></table></div><p><strong>Syntax. </strong>
+</p><pre class="screen">/use(mod1, mod2, ...)</pre><p>
+</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Creating a pseudo node in a module, which contains a node
+with same identifier as the pseudo-node, results in a compilation
+error.</p></td></tr></table></div><p>Nodes from the <span class="emphasis"><em>used</em></span> modules can then be referenced as subnodes of
+the module pseudo nodes.</p><p><strong>Example. </strong>
+</p><pre class="screen">/module(mod1)
 
-...
+a -&gt; b
 
-&lt;div&gt;&lt;label&gt;A: &lt;input value="&lt;?@ to-int(a) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
-&lt;div&gt;&lt;label&gt;B: &lt;input value="&lt;?@ to-int(b) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+/module(mod2)
+/use(mod1)
 
-A + B is &lt;?@ add(a, b) ?&gt;
-...</pre></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_node_literal_self_literal"></a>4.2. Node <code class="literal">self</code></h3></div></div></div><p>When an explicit binding to the <code class="literal">self</code> node is established inside a
-meta-node, the value of the <code class="literal">self</code> node is returned rather than the
-value of the last node in the meta-node’s body.</p><p>The following is an alternative implementation of the <code class="literal">add</code> meta-node.</p><pre class="screen">add(x, y) : {
-    x + y -&gt; self
-}</pre><p>This is particularly useful when binding to subnodes of the <code class="literal">self</code>
-node, which you’ll learn about later.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_optional_arguments"></a>4.3. Optional Arguments</h3></div></div></div><p>Meta-node arguments can be designated as optional by giving the
-argument a default value. An optional argument is of the form <code class="literal">arg :
-value</code>, where <code class="literal">arg</code> is the argument node identifier and <code class="literal">value</code> is the
-default value, to which it is bound, if it is not provided.</p><p><strong>Example. </strong>
-</p><pre class="screen">increment(n, delta : 1) : n + delta</pre><p>
-</p><p>In this example, the argument <code class="literal">delta</code> is optional and is given the
-default value 1 if it is not provided.</p><p><strong>Examples. </strong>
-</p><pre class="screen">increment(n)    # delta defaults to 1
-increment(n, 2) # delta = 2</pre><p>
-</p><p>Default values don’t have to be constants, in-fact any node expression
-can be used as a default value. In the case that the default value is
-a node, then that node will be implicitly bound to all instances of
-the meta-node, for which the argument is not provided.</p><p><strong>Example: Node Default Values. </strong>
-</p><pre class="screen"># Increment `n` by `d`
+# Reference node `b` from module `mod1`
+mod1.b -&gt; b
+x -&gt; mod1.b</pre><p>
+</p><p>Meta-nodes from a different module can be also referenced as subnodes
+of the module pseudo-node.</p><p><strong>Example. </strong>
+</p><pre class="screen">/module(mod1)
 
-increment(n, d : delta) : n + d</pre><p>
-</p><p>In this example the default value for the delta <code class="literal">d</code> is the value of
-the global node <code class="literal">delta</code>. A binding between <code class="literal">delta</code> and each instance
-of <code class="literal">increment</code>, for which a value for <code class="literal">d</code> is not provided, will be
-established.</p><p>The effect of this is demonstrated in the following example
-application:</p><p><strong><code class="literal">ui.html</code>. </strong>
-</p><pre class="programlisting">&lt;?
- /import(core)
+add(x, y) : x + y
 
- # Increment `n` by `d`
+/module(mod2)
+/use(mod1)
 
- increment(n, d : delta) : n + d
-?&gt;
-&lt;!doctype html&gt;
-&lt;html&gt;
-    &lt;head&gt;
-        &lt;title&gt;Optional Argument Default Value&lt;/title&gt;
-    &lt;/head&gt;
-    &lt;body&gt;
-      &lt;h1&gt;Optional Argument Default Value&lt;/h1&gt;
-      &lt;div&gt;&lt;label&gt;N: &lt;br/&gt;&lt;input value="&lt;?@ to-int(n) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
-      &lt;div&gt;&lt;label&gt;Delta: &lt;br/&gt;&lt;input value="&lt;?@ to-int(delta) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
-      &lt;hr/&gt;
-      &lt;div&gt;&lt;strong&gt;Increment(N): &lt;?@ increment(n) ?&gt;&lt;/strong&gt;&lt;/div&gt;
-    &lt;/body&gt;
-&lt;/html&gt;</pre><p>
-</p><p>Enter an initial value for <span class="emphasis"><em>N</em></span> and <span class="emphasis"><em>Delta</em></span>:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap1.png" align="middle" alt="N: 5, Delta: 1, Increment(N): 6" /></div></div><p>The value given to the delta (<code class="literal">d</code>) argument of <code class="literal">increment</code> is the
-initial value given for <span class="emphasis"><em>Delta</em></span>, which is <code class="literal">1</code>.</p><p>Now try changing <span class="emphasis"><em>Delta</em></span>:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap2.png" align="middle" alt="N: 5, Delta: 2, Increment(N): 7" /></div></div><p>The value of the <code class="literal">increment(n)</code> node is updated, with the new value of
-<span class="emphasis"><em>Delta</em></span> given as the delta argument. This shows that a binding is
-established rather than simply taking the value of the <code class="literal">delta</code> node.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_recursive_meta_nodes"></a>4.4. Recursive Meta-Nodes</h3></div></div></div><p>A recursive meta-node contains an instance of itself in its
-definition.</p><p>The following are the classic examples of recursion:</p><p><strong>Example: Factorial. </strong>
-</p><pre class="screen">factorial(n) :
-    case(
-        n &lt; 1 : 1,  # Ignoring the case: n &lt; 0
-        n * factorial(n - 1)
-    )</pre><p>
-</p><p><strong>Example: Fibonacci Numbers. </strong>
-</p><pre class="screen">fib(n) :
-    case(
-        n &lt;= 1 : 1,
-        fib(n - 1) + fib(n - 2)
-    )</pre><p>
-</p><p>Recursion is the means by which Tridash provides iteration. The
-definition of <code class="literal">factorial</code>, above, will result in the stack space being
-exhausted for large values of <code class="literal">n</code>. This is due to the fact that each
-invocation of the meta-node consumes a certain amount of stack
-space. Since the recursive call to <code class="literal">factorial</code> has to be evaluated
-before the return value of the current call can be computed, the
-meta-node consumes an amount of stack space proportional to the value
-of <code class="literal">n</code>.</p><p>If the definition is rewritten such that it is tail recursive, that is
-the return value of <code class="literal">factorial</code> is the return value of the recursive
-call, a constant amount of stack space is consumed.</p><p><strong>Example: Tail-Recursive Factorial. </strong>
-</p><pre class="screen">factorial(n, acc : 1) :
-    case(
-        n &lt; 1 : acc,  # Ignoring the case: n &lt; 0
-        factorial(n - 1, n * acc)
-    )</pre><p>
-</p><p>This definition of <code class="literal">factorial</code> is tail recursive since the recursive
-call appears directly as the default value of the <code class="literal">case</code> expression,
-which is simply returned without any further operations performed on
-it.</p><p>In the previous implementation, the multiplication was performed on
-the result of the recursive call to <code class="literal">factorial</code>. In this
-implementation, the multiplication is performed on an accumulator
-argument, <code class="literal">acc</code> which is passed on to the recursive call and
-eventually returned when <code class="literal">factorial</code> is called with <code class="literal">n &lt; 1</code>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Tridash supports general <span class="emphasis"><em>tail call optimization</em></span> for mutually
-recursive meta-nodes.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_nested_meta_nodes"></a>4.5. Nested Meta-Nodes</h3></div></div></div><p>A meta-node may contain other meta-nodes inside its definition. These
-meta-nodes may only be used within the body of the meta-node and
-shadow meta-nodes, declared in the enclosing scope, with the same
-identifiers.</p><p>With nested meta-nodes we can rewrite our previous tail-recursive
-<code class="literal">factorial</code> meta-node without having to expose the accumulator
-argument <code class="literal">acc</code>, which is an implementation detail.</p><p><strong>Example: Factorial with nested <code class="literal">iter</code> meta-node. </strong>
-</p><pre class="screen">factorial(n) : {
-    iter(n, acc) : {
-        case(
-            n &lt; 1 : acc,  # Ignoring the case: n &lt; 0
-            iter(n - 1, n * acc)
-        )
-    }
+# Use the `add` meta-node from module `mod1`
+mod1.add(a, b) -&gt; c</pre><p>
+</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Nodes referenced from other modules, can appear both as
+dependencies or observers of bindings.</p></td></tr></table></div><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Referencing a subnode of a module pseudo-node does not
+result in the automatic creation of a node in that module. Referencing
+a node that does not exist in the module results in a compilation
+error.</p></td></tr></table></div><p><a id="idm196017896496" class="indexterm"></a>
+<a id="idm196017894992" class="indexterm"></a>
+<a id="idm196017893680" class="indexterm"></a></p><p>A pseudo-node with a different identifier, from the identifier of the
+module, can be created using the special <code class="literal">/use-as</code> operator. This is
+useful for when the module identifier is too long to type out
+repeatedly, or there is already a node, in the current module, with
+the same identifier.</p><p>the <code class="literal">/use-as</code> operator takes two arguments, the identifier of the
+module and the name of the pseudo-node to create in the current
+module:</p><pre class="screen">/use-as(module-name, pseudo-node-name)</pre><p>The above examples can be rewritten using <code class="literal">/use-as</code> declarations:</p><p><strong>Example. </strong>
+</p><pre class="screen">/module(mod1)
 
-    iter(n, 1)
-}</pre><p>
-</p><p>The computation of the factorial is implemented in the nested
-tail-recursive meta-node <code class="literal">iter</code>. The <code class="literal">factorial</code> meta-node simply
-calls this meta-node with the initial value for the accumulator.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_local_nodes"></a>4.6. Local Nodes</h3></div></div></div><p>Nodes which appears as the <span class="emphasis"><em>target</em></span> (observer) of a binding, declared
-within the body of a meta-node, are local to the meta-node’s body and
-may only be referenced within it. These may be used to store
-intermediate results or to break up complex expression into multiple
-nodes.</p><p><strong>Example: Average. </strong>
-</p><pre class="screen">average(a, b) : {
-    sum &lt;- a + b    <a id="CO3-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span>
-    sum / 2
-}</pre><p>
-</p><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO3-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
-Node <code class="literal">sum</code> is the binding <span class="emphasis"><em>target</em></span> in this declaration.
-</p></td></tr></table></div><p>In this example a local node <code class="literal">sum</code> is created, since it is bound (as
-the <span class="emphasis"><em>target</em></span>) to the value of <code class="literal">a + b</code>. The value returned by <code class="literal">average</code>
-is the value of <code class="literal">sum</code> divided by 2.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_referencing_outer_nodes"></a>4.7. Referencing Outer Nodes</h3></div></div></div><p>A meta-node may reference nodes declared in the global scope or the
-enclosing scope(s) containing the meta-node definition. This creates a
-binding between the referenced node and each instance of the
-meta-node. The net result is that whenever the value of the referenced
-node changes, the value of the instance is recomputed. In essence a
-reference to an outer node can be thought of as an additional hidden
-argument.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>An outer node with the same identifier as a local node can be
-referenced with the <code class="literal">..</code> operator, e.g. <code class="literal">..(x)</code>.</p></td></tr></table></div><p>Outer node references can be demonstrated by changing the definition
-of <code class="literal">increment</code>, in the <span class="emphasis"><em>Increment</em></span> Application developed earlier in
-this tutorial, to the following:</p><p><strong>Increment with reference to <code class="literal">delta</code>. </strong>
-</p><pre class="screen">increment(n) : n + delta</pre><p>
-</p><p>The <code class="literal">d</code> argument has been removed and replaced with <code class="literal">delta</code> in the
-body.</p><p>Repeat the same experiment, changing the delta, you should observe the
-same results.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_fun_example_simple_meter"></a>4.8. Fun Example: Simple Meter</h3></div></div></div><p>In this example we’ll be developing an application which displays a
-simple meter, representing a quantity, which changes color as the
-quantity approaches the maximum.</p><p>Let’s start off with the following HTML interface:</p><p><strong>ui.html. </strong>
-</p><pre class="programlisting">&lt;!doctype html&gt;
-&lt;html&gt;
-    &lt;head&gt;
-      &lt;title&gt;Simple Meter&lt;/title&gt;
-      &lt;style&gt;
-        .meter-box {
-            margin-top: 5px;
-            width: 200px;
-            height: 1em;
-            border: 1px solid black;
-        }
-        .meter-bar {
-            height: 100%;
-        }
-      &lt;/style&gt;
-    &lt;/head&gt;
-    &lt;body&gt;
-      &lt;h1&gt;Simple Meter&lt;/h1&gt;
-      &lt;div&gt;&lt;label&gt;Maximum: &lt;input value="&lt;?@ to-int(maximum) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
-      &lt;div&gt;&lt;label&gt;Quantity: &lt;input value="&lt;?@ to-int(quantity) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
-      &lt;div class="meter-box"&gt;
-        &lt;div id="meter" class="meter-bar"&gt;&lt;/div&gt;
-      &lt;/div&gt;
-    &lt;/body&gt;
-&lt;/html&gt;</pre><p>
-</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The file contains a few CSS class definitions for styling the
-elements which display the meter, located at the bottom of the file.</p></td></tr></table></div><p>The interface consists of two input fields for entering the values for
-the <span class="emphasis"><em>Maximum</em></span> and <span class="emphasis"><em>Quantity</em></span>, which are bound to the nodes <code class="literal">maximum</code>
-and <code class="literal">quantity</code>, respectively.</p><p>We’d like the meter to be displayed in a color which is in between
-<span class="green">green</span> (empty) and <span class="red">red</span> (full) depending on where the
-value of the quantity lies between 0 and the maximum.</p><p>First we’ll write a utility meta-node <code class="literal">lerp</code> for linearly
-interpolating between two values:</p><p><strong>Meta-Node <code class="literal">lerp</code>. </strong>
-</p><pre class="screen">lerp(a, b, alpha) : a + alpha * (b - a)</pre><p>
-</p><p>The value returned by <code class="literal">lerp</code> is the value between <code class="literal">a</code> and <code class="literal">b</code>
-proportional to where <code class="literal">alpha</code> lies between <code class="literal">0</code> and <code class="literal">1</code>.</p><p>This meta-node will be used to interpolate between green and red
-depending on where the quantity lies between 0 and the maximum.</p><p>We can compute the value for <code class="literal">alpha</code> by dividing the value for the
-quantity by the maximum.</p><pre class="screen">scale &lt;- quantity / maximum</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>This assumes that <code class="literal">maximum</code> is not 0.</p></td></tr></table></div><p>Before we perform the interpolation, we need to make sure that <code class="literal">scale</code>
-is a value between 0 and 1. Let’s write another utility meta-node
-<code class="literal">clamp</code> which clamps a value to a given range.</p><p><strong>Meta-Node <code class="literal">clamp</code>. </strong>
-</p><pre class="screen">clamp(x, min, max) :
-    case (
-        x &lt; min : min,
-        x &gt; max : max,
-        x
-    )</pre><p>
-</p><p>This meta-node returns the value of its first argument <code class="literal">x</code> if it is
-between <code class="literal">min</code> and <code class="literal">max</code>, otherwise returns <code class="literal">min</code> if <code class="literal">x</code> is less than
-<code class="literal">min</code>, or <code class="literal">max</code> if <code class="literal">x</code> is greater than <code class="literal">max</code>.</p><p>We can amend the computation of <code class="literal">scale</code> such that it does not exceed
-<code class="literal">0</code> and <code class="literal">1</code>, by using the <code class="literal">clamp</code> meta-node.</p><pre class="screen">scale &lt;- clamp(quantity / maximum, 0, 1)</pre><p>Finally we can interpolate between the two colours. We’ll be using the
-HSL (Hue Saturation Luminance) colorspace, and interpolating in the
-<span class="emphasis"><em>Hue</em></span> component.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The HSL, rather than the RGB, colorspace was used as it provides
-better interpolation results.</p></td></tr></table></div><pre class="screen">hue &lt;- lerp(120, 0, scale)</pre><p><code class="literal">hue</code> is bound to a value interpolated between green (Hue 120) and red
-(Hue 0) with the value of <code class="literal">scale</code> as the interpolation coefficient.</p><p>Before we bind the interpolated color to the color of the meter, let’s
-write another utility meta-node which takes values for the hue,
-saturation and luminance components and produces a CSS HSL color
-string.</p><p><strong>Meta-Node <code class="literal">make-hsl</code>. </strong>
-</p><pre class="screen">make-hsl(h, s, l) :
-    format("hsl(%s,%s%%,%s%%)", h, s, l)</pre><p>
-</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">format</code> meta-node produces a string in which <code class="literal">%s</code> placeholders in
-the format string (the first argument) are replaced with the values of
-the corresponding arguments (following the format string). <code class="literal">%%</code>
-placeholders are replaced with literal <code class="literal">%</code> characters.</p><p><code class="literal">format("Hello %s %s.", "John", "Smith")</code> produces the string “Hello
-John Smith.”, as the first <code class="literal">%s</code> is replaced with <code class="literal">"John"</code> and the
-second <code class="literal">%s</code> is replaced with <code class="literal">"Smith"</code>.</p></td></tr></table></div><p>We can now generate a valid CSS color string using <code class="literal">make-hsl</code> that
-we’ll bind to the color of the meter element, which is the element
-with ID <code class="literal">meter</code>.</p><pre class="screen">self.meter.style.backgroundColor &lt;-
-    make-hsl(hue, 90, 45)</pre><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">backgroundColor</code> style attribute references the background
-color of an element.</p></td></tr></table></div><p>The constant values <code class="literal">90</code> and <code class="literal">45</code> have been chosen for the saturation
-and luminance components.</p><p>The last thing we need to do is adjust the width of the meter
-depending on the quantity value. We’ll simply multiply the value of
-<code class="literal">scale</code> by 100, to convert it to a percentage (indicating it should
-occupy that percentage of the width of its parent element), and bind
-it to the meter element’s width attribute.</p><pre class="screen">format("%s%%", scale * 100) -&gt; self.meter.style.width</pre><p>Our application is complete. Add the following Tridash code tag to the
-top of the <code class="literal">ui.html</code> file.</p><pre class="screen">&lt;?
- /import(core)
+a -&gt; b
 
- # Utilities
+/module(mod2)
+/use-as(mod1, m1)
 
- lerp(a, b, alpha) : a + alpha * (b - a)
+# Reference node `b` from module `mod1`
+m1.b -&gt; b
+x -&gt; m1.b</pre><p>
+</p><p><strong>Example. </strong>
+</p><pre class="screen">/module(mod1)
 
- clamp(x, min, max) :
-     case (
-         x &lt; min : min,
-         x &gt; max : max,
-         x
-     )
+add(x, y) : x + y
 
- make-hsl(h, s, l) :
-     format("hsl(%s,%s%%,%s%%)", h, s, l)
+/module(mod2)
+/use-as(mod1, m1)
 
+# Use the `add` meta-node from module `mod1`
+m1.add(a, b) -&gt; c</pre><p>
+</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_importing_nodes"></a>Importing Nodes</h4></div></div></div><p><a id="idm196017883424" class="indexterm"></a>
+<a id="idm196017882144" class="indexterm"></a>
+<a id="idm196017881120" class="indexterm"></a>
+<a id="idm196017879568" class="indexterm"></a>
+<a id="idm196017878256" class="indexterm"></a></p><p>The second approach to referencing a node, residing in another module,
+is to add it directly to the current module. With this approach there
+is no need to reference the node as a subnode of a module
+pseudo-node. This is referred to as <span class="emphasis"><em>importing</em></span> the node and is
+achieved using the <code class="literal">/import</code> operator.</p><p>The <code class="literal">/import</code> operator adds the identifiers of nodes, residing in
+another module, to the current module. The result is that the node can
+be referenced directly by its identifier, as though it were declared
+in the current module.</p><p>The <code class="literal">/import</code> operator has two forms:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+A short form that <span class="emphasis"><em>imports</em></span> all the nodes <span class="emphasis"><em>exported</em></span> from
+      another module. Takes the module identifier as its only
+      argument.
+</li><li class="listitem">
+A long form that can be used to <span class="emphasis"><em>import</em></span> specific nodes. The
+      first argument is the module identifier, the following arguments
+      are the identifiers of the nodes to <span class="emphasis"><em>import</em></span>
+</li></ul></div><p><strong>Syntax. </strong>
+</p><pre class="screen"># Short form: Import all nodes exported from `module`
+/import(module)
 
- # Application Logic
+# Long form: Import only the nodes listed in the arguments after the
+# module identifier.
+/import(module, node1, node2, ...)</pre><p>
+</p><p><strong>Example: Long form. </strong>
+</p><pre class="screen">/module(mod1)
 
- scale &lt;- clamp(quantity / maximum, 0, 1)
+a -&gt; b
 
- hue &lt;- lerp(120, 0, scale)
+/module(mod2)
 
- self.meter.style.backgroundColor &lt;-
-     make-hsl(hue, 90, 45)
+# Import node `b` from `mod1`
+/import(mod1, b)
 
- format("%s%%", scale * 100) -&gt; self.meter.style.width
-?&gt;</pre><p>Build and run the application, and enter some values for the quantity
-and maximum, such that the quantity is less than half the maximum.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap3.png" align="middle" alt="Maximum: 100, Quantity: 20, [Almost empty bright green meter]" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap4.png" align="middle" alt="Maximum: 100, Quantity: 40, [Almost empty dull green meter]" /></div></div><p>The meter is mostly empty and displayed in a green color.</p><p>Now increase the quantity such that it is greater than half the maximum.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap5.png" align="middle" alt="Maximum: 100, Quantity: 60, [Half full yellow meter]" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial4/snap6.png" align="middle" alt="Maximum: 100, Quantity: 90, [Almost full red meter]" /></div></div><p>The meter is more than half full and its color approaches red as the
-quantity approaches the maximum.</p></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s03.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s05.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
+# Node `b` is the same `b` as in `mod1`
+b -&gt; a
+x -&gt; b</pre><p>
+</p><p><a id="idm196017865232" class="indexterm"></a>
+<a id="idm196017863952" class="indexterm"></a>
+<a id="idm196017862928" class="indexterm"></a>
+<a id="idm196017861344" class="indexterm"></a>
+<a id="idm196017860032" class="indexterm"></a></p><p>The short form only imports those nodes which are explicitly
+<span class="emphasis"><em>exported</em></span> from the module. Nodes are explicitly exported from the
+current module with the <code class="literal">/export</code> operator which simply takes the
+identifiers of the nodes to <span class="emphasis"><em>export</em></span> as arguments.</p><p><strong>Syntax. </strong>
+</p><pre class="screen">/export(node1, node2, ...)</pre><p>
+</p><p>Each <code class="literal">/export</code> declaration adds (does not replace) nodes, that are in
+the arguments, to the exported nodes of the current module.</p><p><strong>Example: <code class="literal">/export</code> and short form <code class="literal">/import</code>. </strong>
+</p><pre class="screen">/module(mod1)
+
+a -&gt; b
+
+# Export node `b`
+/export(b)
+
+/module(mod2)
+# Import all nodes exported from `mod1`
+/import(mod1)
+
+# Node `b` is the same `b` as in `mod1`
+b -&gt; a
+x -&gt; b</pre><p>
+</p><p><strong>Meta-node Example: <code class="literal">/export</code> and short form <code class="literal">/import</code>. </strong>
+</p><pre class="screen">/module(mod1)
+
+add(x, y) : x + y
+
+/export(add)
+
+/module(mod2)
+/import(mod1)
+
+# Use the `add` meta-node from module `mod1`
+add(a, b) -&gt; c</pre><p>
+</p><p>A side effect of <code class="literal">/import</code> is that if the identifier of an imported
+node, whether imported by the long or short form of <code class="literal">/import</code>, is
+registered as an infix operator in the module, from which it is being
+imported, it’s entry in the module’s operator table is copied over to
+the current module. This allows the operator to be placed in infix
+position, in the current module.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>All nodes in the <code class="literal">builtin</code> module, which contains the special
+operators mentioned so far (<code class="literal">-&gt;</code>, <code class="literal">:</code>, <code class="literal">..</code>, <code class="literal">&amp;</code>, <code class="literal">.</code>), are
+automatically imported into the <code class="literal">init</code> module.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_direct_references"></a>Direct References</h4></div></div></div><p><a id="idm196017839312" class="indexterm"></a>
+<a id="idm196017838016" class="indexterm"></a>
+<a id="idm196017836992" class="indexterm"></a>
+<a id="idm196017835392" class="indexterm"></a>
+<a id="idm196017834080" class="indexterm"></a></p><p>It may be necessary to reference a node in another module without
+creating a pseudo-node, for its module, and without importing it in
+the current module. The special <code class="literal">/in</code> operator directly references a
+node in another module by the module and node identifiers.</p><p><strong>Syntax. </strong>
+</p><pre class="screen">/in(module-id, node-id)</pre><p>
+</p><p>The first argument is the identifier of the module containing the
+node, and the second argument is the identifier of the node.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">module-id</code> is the identifier of the module itself, and not
+the identifier of a module pseudo-node.</p></td></tr></table></div><p><strong>Example: <code class="literal">/in</code> Operator. </strong>
+</p><pre class="screen">/module(mod1)
+
+a -&gt; b
+
+/module(mod2)
+
+# Reference node `b` in `mod1` directly
+/in(mod1, b) -&gt; a
+x -&gt; /in(mod1, b)</pre><p>
+</p><p><strong>Example: <code class="literal">/in</code> Operator. </strong>
+</p><pre class="screen">/module(mod1)
+
+add(x, y) : x + y
+
+/module(mod2)
+
+# Use the `add` meta-node from module `mod1`
+(/in(mod1, add))(a, b) -&gt; c</pre><p>
+</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_operator_table"></a>4.3. Operator Table</h3></div></div></div><p><a id="idm196017822304" class="indexterm"></a>
+<a id="idm196017820736" class="indexterm"></a>
+<a id="idm196017819440" class="indexterm"></a></p><p>Each module may register a number of node identifiers as infix
+operators. This means that those identifiers may appear in infix
+position in declarations parsed while the module is the current
+module. The module’s <span class="emphasis"><em>operator table</em></span> stores the identifier,
+precedence and associativity of each infix operator. <span class="emphasis"><em>See
+<a class="xref" href="ar01s01.html#_functors" title="1.2. Functors">Section 1.2, “Functors”</a> for more information about infix operators, operator
+precedence and associativity</em></span>.</p><p>Initially the operator table of each module contains a single entry
+which is the special entry for function application. The precedence of
+function application controls whether an expression is treated as the
+operator of a functor or the operand of an infix expression.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The precedence of function application is set to <code class="literal">900</code>. This
+value cannot be changed.</p></td></tr></table></div><p><strong>Example: Precedence of Function Application. </strong>
+</p><pre class="screen"># If `.` has a higher precedence than function application, the
+# following is parsed to: ((. m1 add) a b)
+
+# If `.` has a lower precedence than function application, the
+# following is parsed to: (. m1 (add a b))
+
+m1.add(a, b)</pre><p>
+</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_registering_infix_operators"></a>Registering Infix Operators</h4></div></div></div><p><a id="idm196017810672" class="indexterm"></a>
+<a id="idm196017809184" class="indexterm"></a>
+<a id="idm196017807888" class="indexterm"></a>
+<a id="idm196017806864" class="indexterm"></a>
+<a id="idm196017805280" class="indexterm"></a>
+<a id="idm196017803968" class="indexterm"></a></p><p>New infix operators can be registered using the special <code class="literal">/operator</code>
+declaration. This declaration modifies the operator table of the
+current module.</p><p><strong>Syntax. </strong>
+</p><pre class="screen">/operator(identifier, precedence [, (left | right)])</pre><p>
+</p><p>The first argument is the node identifier to register as an infix
+operator. The second argument is the precedence as an integer
+value. The third argument specifies the associativity. This is either
+the identifier <code class="literal">left</code> or <code class="literal">right</code> for <span class="emphasis"><em>left</em></span> or <span class="emphasis"><em>right</em></span>
+associativity. If the third argument is omitted, <span class="emphasis"><em>left</em></span> associativity
+is assumed.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The identifier does not have to name a node or meta-node that
+exists at the time the <code class="literal">/operator</code> declaration is processed. The table
+only stores the identifier for syntactic transformations, no
+information about the actual node is stored.</p></td></tr></table></div><p>An <code class="literal">/operator</code> declaration adds an entry to the current module’s
+operator table if it does not already contain an entry for the
+identifier. If the table already contains an entry for the identifier,
+the <span class="emphasis"><em>precedence</em></span> and <span class="emphasis"><em>associativity</em></span> values of the existing entry are
+replaced with those given in the arguments to the <code class="literal">/operator</code>
+declaration.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <span class="emphasis"><em>precedence</em></span> and <span class="emphasis"><em>associativity</em></span> of all operators can be
+changed, with the exception of <span class="emphasis"><em>function application</em></span>.</p></td></tr></table></div><p>When a node is imported into the current module and there is an entry,
+for the node’s identifier, in the operator table of the module, from
+which the node is being imported, the entry is copied over into the
+current module’s operator table, replacing any existing entries for
+the identifier.</p><p><strong>Example: <code class="literal">+</code> infix operator from <code class="literal">core</code> module. </strong>
+</p><pre class="screen"># Register `+` as infix operator
+/operator(+, 100, left)
+
+# Now `+` can appear in infix position
+a + b
+
+# It can also still appear in prefix position
++(a, b)</pre><p>
+</p></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s03.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s05.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
