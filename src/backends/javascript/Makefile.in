@@ -70,6 +70,7 @@ test_inputs =  \
 	$(testdir)/tests/test037.js \
 	$(testdir)/tests/test038.js \
 	$(testdir)/tests/test039.js \
+	$(testdir)/tests/test040.js \
 	$(testdir)/tests/core.js
 
 check: $(testdir)/runtime/tridash.js $(test_inputs)
