@@ -56,6 +56,9 @@ describe('Integration Test 26', function() {
             it('`output2` = 2', async function() {
                 assert.equal(await out2, 2);
             });
+
+            // Suppress unhandled promise rejection warnings.
+            out1.catch(() => {});
         });
 
         describe('Set `n` = 2', function() {
@@ -71,6 +74,9 @@ describe('Integration Test 26', function() {
             it('`output2` = 3', async function() {
                 assert.equal(await out2, 3);
             });
+
+            // Suppress unhandled promise rejection warnings.
+            out1.catch(() => {});
         });
     });
 });
