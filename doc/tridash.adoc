@@ -1,10 +1,10 @@
-= Tridash 0.8 Reference Manual =
+= Tridash 0.9 Reference Manual =
 Alexander Gutev <alex.gutev@gmail.com>
 :toclevels: 4
 :compat-mode: 1
 :latexmath: 1
 
-Complete reference manual for version 0.8 of the Tridash programming
+Complete reference manual for version 0.9 of the Tridash programming
 language.
 
 include::syntax.adoc[]
