@@ -89,6 +89,7 @@ exports.string_concat = string_concat;
 exports.check_number = check_number;
 exports.check_value = check_value;
 exports.check_string = check_string;
+exports.check_function = check_function;
 
 exports.get_symbol = get_symbol;
 exports.member = member;

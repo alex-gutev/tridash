@@ -516,6 +516,21 @@ function check_string(value) {
     throw new Fail(TridashTypeError);
 }
 
+/**
+ * Checks that @a value is a function.
+ *
+ * @param value The value to check.
+ *
+ * @return @a value if it is a function, otherwise throws a 'Fail'
+ *   exception.
+ */
+function check_function(value) {
+    if (typeof value === 'function') {
+        return value;
+    }
+
+    throw new Fail(TridashTypeError);
+}
 
 /* Symbols */
 

@@ -684,7 +684,7 @@
        :statements
        (list
         (destructuring-bind (fn &rest args) operands
-          (->> (make-js-call (resolve fn) args)
+          (->> (make-js-call (js-call "Tridash.check_function" (resolve fn)) args)
                (js-call "=" result))))
        :protect-p *protect*))))
 

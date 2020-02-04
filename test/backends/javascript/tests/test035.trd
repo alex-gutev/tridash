@@ -7,12 +7,23 @@ increment(n) : n + 1
 output <- map(increment, input)
 
 
+# Test Type Errors
+
+f
+output2 <- f(input)
+
+
 ## Input Attributes
 
 /attribute(input, input, 1)
+/attribute(f, input, 1)
 
 
 ## Public Name Attributes
 
-/attribute(output, public-name, "output")
+
 /attribute(input, public-name, "input")
+/attribute(f, public-name, "f")
+
+/attribute(output, public-name, "output")
+/attribute(output2, public-name, "output2")

@@ -978,7 +978,9 @@
 
           (test-compute-function context
             (js-return
-             (js-call (resolve (d f)) (d x)))))))
+             (js-call
+              (js-call "Tridash.check_function" (resolve (d f)))
+              (d x)))))))
 
     (subtest "As Operand"
       (subtest "Strict Argument"
@@ -991,7 +993,13 @@
                 (js-var ($ f))
                 (js-catch
                  (list
-                  (js-call "=" ($ f) (js-call (resolve (d f)) (d x))))
+                  (js-call
+                   "="
+                   ($ f)
+
+                   (js-call
+                    (js-call "Tridash.check_function" (resolve (d f)))
+                    (d x))))
 
                  ($ e)
                  (list
@@ -1007,7 +1015,7 @@
                 ((context (f x y) (functor func (functor f x) y)))
 
               (test-compute-function context
-                (-<> (js-call (resolve (d f)) (d x))
+                (-<> (js-call (js-call "Tridash.check_function" (resolve (d f))) (d x))
                      js-return
                      thunk
                      (js-call func <> (d y))
@@ -1023,7 +1031,7 @@
               (->> (js-call + (d x) (d y))
                    js-return
                    thunk
-                   (js-call (resolve (d f)))
+                   (js-call (js-call "Tridash.check_function" (resolve (d f))))
                    js-return))))))))
 
 
