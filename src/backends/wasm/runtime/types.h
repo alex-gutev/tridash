@@ -1,6 +1,6 @@
 /**
  * Tridash Wasm32 Runtime Library
- * Copyright (C) 2019  Alexander Gutev
+ * Copyright (C) 2019-2020  Alexander Gutev
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,104 +36,16 @@
 #ifndef TRIDASH_TYPES_H
 #define TRIDASH_TYPES_H
 
+#include <stddef.h>
 #include <stdint.h>
 
-/// Macros
+#include "thunk.h"
+#include "strings.h"
+#include "funcrefs.h"
+#include "arrays.h"
+#include "objects.h"
 
-#define export __attribute__( ( visibility( "default" ) ) )
-
-
-/// Tagging
-
-#define WORD_SIZE sizeof(uintptr_t)
-
-/**
- * Bit mask of the tag bits in a Tridash pointer.
- */
-#define TAG_MASK (WORD_SIZE-1)
-
-/**
- * Clears the non-tag bits of x.
- */
-#define PTR_TAG(x) ((uintptr_t)(x) & TAG_MASK)
-
-
-//// Tag Types
-
-/**
- * The following tag constants identify the type of value.
- */
-
-/**
- * Pointer to a boxed value stored on the heap.
- */
-#define TAG_TYPE_PTR 0
-/**
- * Immediate integer value stored in the non-tag portion.
- */
-#define TAG_TYPE_INT 0x1
-/**
- * Failure value.
- */
-#define TAG_TYPE_FAIL 0x3
-
-
-//// Creating tagged pointers
-
-/**
- * Create a tagged pointer, storing the immediate 'value', with tag
- * type 'type'.
- */
-#define TAG_VALUE(value, type) (((value) << 2) | (type))
-
-/**
- * Create a tagged pointer, storing the immediate integer 'value'.
- */
-#define TAG_INT(value) TAG_VALUE(value, TAG_TYPE_INT)
-
-
-//// Querying tagged value type
-
-/**
- * The following macros test the tag type of a tagged pointer.
- */
-
-/**
- * Test that 'x' is a reference to a boxed value on the heap.
- */
-#define IS_REF(x) (PTR_TAG(x) == 0)
-
-/**
- * Test that 'x' is an immediate integer value.
- */
-#define IS_INT(x) (PTR_TAG(x) == TAG_TYPE_INT)
-
-/**
- * Test that 'x' is a failure value.
- */
-#define IS_FAIL(x) (PTR_TAG(x) == TAG_TYPE_FAIL)
-
-
-//// Decoding Immediate Values
-
-/**
- * Extract immediate integer value stored in tagged pointer.
- */
-#define INT_VALUE(x) (((int32_t)(x)) >> 2)
-
-/**
- * Maximum immediate signed integer value that can be stored in a
- * tagged pointer.
- */
-#define MAX_IMMEDIATE_INT ((int32_t)(INT32_MAX) >> 1)
-/**
- * Minimum immediate signed integer value that can be stored in a
- * tagged pointer.
- */
-#define MIN_IMMEDIATE_INT ((int32_t)(INT32_MIN) >> 1)
-
-
-/// Boxed Type Constants
+/// Object Type Constants
 
 enum tridash_type {
     TRIDASH_TYPE_THUNK = 0,
@@ -142,15 +54,73 @@ enum tridash_type {
     TRIDASH_TYPE_INT = 2,
     TRIDASH_TYPE_FLOAT = 3,
 
+    TRIDASH_TYPE_STRING = 4,
+
+    TRIDASH_TYPE_FAILURE = 5,
+
+    TRIDASH_TYPE_FUNCREF = 6,
+     /* Function reference with optional/outer arguments */
+    TRIDASH_TYPE_FUNCREF_ARGS = 7,
+
+    TRIDASH_TYPE_ARRAY = 8,
+
+    TRIDASH_TYPE_SYMBOL = 9,
+    TRIDASH_TYPE_CHAR = 10,
+
+    TRIDASH_TYPE_OBJECT = 11,
+
     /**
      * Indicates object was copied to new heap during garbage
-     * collection.
-     *
-     * The pointer to the copied object is stored at the following
-     * word.
+     * collection. The pointer to the copied object is stored in the
+     * old object.
      */
-    TRIDASH_TYPE_FORWARD = 4
+    TRIDASH_TYPE_FORWARD
 };
 
+/**
+ * Tridash Object
+ */
+struct tridash_object {
+    /** Object Type */
+    uintptr_t type;
+
+    /**
+     * Object Data.
+     *
+     * Which field is used depends on 'type'.
+     */
+    union {
+        /* Boxed Number Values */
+        int32_t integer;
+        float real;
+
+        /* Thunks */
+        struct thunk thunk;
+        uintptr_t resolved_value;
+
+        /* Strings */
+        struct string string;
+
+        /* Characters */
+        uint32_t char_code;
+
+        /* Failure Values */
+        uintptr_t fail_type;
+
+        /* GC Forwarding Pointer */
+        void *forward_ptr;
+
+
+        /* Function References */
+        struct funcref funcref;
+
+        /* Arrays */
+        struct array array;
+
+        /* User Objects */
+        struct user_object object;
+
+    } object;
+};
 
 #endif /* TRIDASH_TYPES_H */

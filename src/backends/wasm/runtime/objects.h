@@ -1,6 +1,6 @@
 /**
  * Tridash Wasm32 Runtime Library
- * Copyright (C) 2019-2020  Alexander Gutev
+ * Copyright (C) 2020  Alexander Gutev
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,84 +33,78 @@
  * so, delete this exception statement from your version.
  */
 
-#ifndef TRIDASH_THUNK_H
-#define TRIDASH_THUNK_H
+#ifndef TRIDASH_OBJECTS_H
+#define TRIDASH_OBJECTS_H
+
+/* User Defined Objects */
 
 #include <stdint.h>
 #include <stddef.h>
 
 #include "macros.h"
+#include "hash-table.h"
 
 /**
- * Thunk function pointer type.
+ * User-Defined Object Descriptor
  *
- * Takes a pointer to the start of the thunk's closure (the first word
- * after the thunk function).
+ * Stores a map which maps subnode identifiers to the array indices at
+ * which their corresponding values are stored.
  */
-typedef uintptr_t(*thunk_fn)(void *);
-/**
- * Thunk structure type
- */
-struct thunk {
-    /**
-     * Thunk function.
-     */
-    thunk_fn fn;
-
-    /**
-     * Number of elements in closure.
-     */
-    size_t closure_size;
-
-    /**
-     * Closure array.
-     */
-    uintptr_t closure[];
+struct object_descriptor {
+    size_t num_fields;
+    struct hash_table fields;
 };
 
 /**
- * Returns the value of a thunk, computing it if it has not been
- * computed already.
+ * User-Defined Object
  *
- * @param val Value to resolve. If this is not a reference or does not
- *    point to a thunk, it is returned directly.
- *
- * @return The resolved thunk value.
+ * Contains an object descriptor, containing the indices where the
+ * subnode values are stored and array which stores the subnode
+ * values.
  */
-export uintptr_t resolve(uintptr_t val);
+struct user_object {
+    struct object_descriptor *descriptor;
+    uintptr_t fields[];
+};
 
 
 /// Copying
 
 /**
- * Copy a thunk along with its closure.
+ * Copy a user object. Only the references to the subnode values
+ * stored in the object are copied, not the values themselves.
  *
- * Only the references to the objects in the closure are copied, not
- * the objects themselves.
- *
- * @param src Pointer to the thunk.
- * @return Pointer to the copied thunk.
+ * @param src Pointer to the object
+ * @return Pointer to the copied object
  */
-void *copy_thunk(const void *src);
+void *copy_user_object(const void *src);
 
 /**
- * Copy the result computed by a thunk.
- *
- * The thunk's value must have previously been computed.  The thunk
- * object and its closure are not copied.
- *
- * @param src Pointer to a resolved thunk.
- */
-void *copy_thunk_result(void *src);
-
-/**
- * Copies the objects referenced in the thunk's closure, and updates
+ * Copy the subnode values stored in a user defined object and update
  * the references.
  *
- * @param object Pointer to the thunk.
- *
- * @return The pointer to the first byte following the thunk object.
+ * @param src Pointer to the object
+ * @return Pointer to the first byte following the object
  */
-void *copy_thunk_closure(void *object);
+void *copy_user_object_subnodes(void *src);
 
-#endif /* TRIDASH_THUNK_H */
+
+/// Public Interface
+
+/**
+ * Retrieve the value corresponding to a subnode of an object.
+ *
+ * Implements the external `member` meta-node from the builtin module.
+ *
+ * @param object The object
+ * @param field The subnode identifier
+ *
+ * @return The value. If there is no value corresponding to the
+ *   subnode identifier @a field a failure of type `No-Value` is
+ *   returned. If @a object is not a user-defined object, or @a field
+ *   is not a valid subnode identifier a failure of type `Type-Error`
+ *   is returned.
+ */
+export uintptr_t object_member(uintptr_t object, uintptr_t field);
+
+#endif /* TRIDASH_OBJECTS_H */

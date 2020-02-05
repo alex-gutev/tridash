@@ -1,6 +1,6 @@
 /**
  * Tridash Wasm32 Runtime Library
- * Copyright (C) 2019  Alexander Gutev
+ * Copyright (C) 2019-2020  Alexander Gutev
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,14 +34,8 @@
  */
 
 #include "thunk.h"
-
-/**
- * Thunk function pointer type.
- *
- * Takes a pointer to the start of the thunk's closure (the first word
- * after the thunk function)
- */
-typedef uintptr_t(*thunk_fn)(uintptr_t *);
+#include "copying.h"
+#include "memory.h"
 
 /**
  * Calls a thunk function.
@@ -50,23 +44,23 @@ typedef uintptr_t(*thunk_fn)(uintptr_t *);
  *
  * @return The value returned by the thunk function.
  */
-static uintptr_t resolve_thunk(uintptr_t *thunk);
+static uintptr_t resolve_thunk(struct tridash_object *thunk);
 
 
 uintptr_t resolve(uintptr_t value) {
     while (IS_REF(value)) {
-        uintptr_t *box = (void*)(value);
+        struct tridash_object *object = (void*)value;
 
-        switch (box[0]) {
+        switch (object->type) {
         case TRIDASH_TYPE_RESOLVED_THUNK:
-            value = box[1];
+            value = object->object.resolved_value;
             break;
 
         case TRIDASH_TYPE_THUNK: {
-            uintptr_t res = resolve_thunk(box);
+            uintptr_t res = resolve_thunk(object);
 
-            box[0] = TRIDASH_TYPE_RESOLVED_THUNK;
-            box[1] = res;
+            object->type = TRIDASH_TYPE_RESOLVED_THUNK;
+            object->object.resolved_value = res;
 
             value = res;
         } break;
@@ -79,20 +73,47 @@ uintptr_t resolve(uintptr_t value) {
     return value;
 }
 
-uintptr_t resolve_thunk(uintptr_t *thunk) {
-    thunk_fn fn;
-    uintptr_t result;
+uintptr_t resolve_thunk(struct tridash_object *object) {
+    return object->object.thunk.fn(&object->object.thunk.closure_size);
+}
 
-    // The pointer to the thunk function is obtained by the following
-    // inline asm as casting a void* pointer to a function pointer is
-    // "undefined behavior".
 
-    asm("local.get %1;"
-        "i32.load 4;"
-        "local.set %0;"
+/// Copying
 
-        : "=r" (fn)
-        : "r" (thunk));
+void *copy_thunk(const void *src) {
+    const struct tridash_object *object = src;
+    size_t size = offsetof(struct tridash_object, object) + sizeof(struct thunk) +
+        object->object.thunk.closure_size * sizeof(uintptr_t);
 
-    return fn(thunk+2);
+    void *dest = alloc(size);
+    memcopy(dest, src, size);
+
+    return dest;
+}
+
+void *copy_thunk_result(void *src) {
+    struct tridash_object *object = src;
+
+    while (object->type == TRIDASH_TYPE_RESOLVED_THUNK) {
+        src = (void*)object->object.resolved_value;
+
+        if (!IS_REF(src))
+            return src;
+
+        object = src;
+    }
+
+    return copy_object(src);
+}
+
+void *copy_thunk_closure(void *ptr) {
+    struct tridash_object *object = ptr;
+    size_t size = object->object.thunk.closure_size;
+
+    for (size_t i = 0; i < size; i++) {
+        object->object.thunk.closure[i] =
+            (uintptr_t)copy_object((void*)object->object.thunk.closure[i]);
+    }
+
+    return &object->object.thunk.closure[size];
 }

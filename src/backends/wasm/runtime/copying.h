@@ -33,57 +33,30 @@
  * so, delete this exception statement from your version.
  */
 
-#ifndef TRIDASH_MEMORY_H
-#define TRIDASH_MEMORY_H
+#ifndef TRIDASH_COPYING_H
+#define TRIDASH_COPYING_H
 
-#include <stdint.h>
-#include <stdlib.h>
-
-#include "types.h"
+/* Functions for copying objects */
 
 /**
- * Pointer to the top of the stack.
+ * Copy a Tridash object from the "from space" to the "to space".
+ *
+ * NOTE: The old object, @a object, is changed to a forwarding
+ * pointer to the copied object.
+ *
+ * @param object Pointer to the object.
+ * @return Pointer to the copied object.
  */
-extern char ** stack_top;
-
+void *copy_object(void *object);
 
 /**
- * Initialize the garbage collector.
+ * Copy the objects directly referenced by @a object to the new heap,
+ * and update The references.
  *
- * @param stack Pointer to the stack base.
+ * @param object The object
  *
- * @param heap Pointer to the start of the heap which is managed by
- *   the garbage collector.
- *
- * @param size Size of the heap. It is assumed that the memory can
- *   grow beyond this size.
+ * @return Pointer of byte past the object
  */
-export void initialize(char *stack, char *heap, size_t size);
+void *copy_referenced_objects(void *object);
 
-/**
- * Allocate a block of memory.
- *
- * @param size Size of the block in bytes.
- * @return Pointer to the first byte of the block.
- */
-export void * alloc(size_t size);
-
-/**
- * Run the garbage collector.
- */
-export void run_gc(void);
-
-
-/**
- * Copies a block of memory from one region to another.
- *
- * @param dest The destination region to which the source region is
- *   copied.
- *
- * @param src The source region.
- *
- * @param size Number of bytes to copy.
- */
-void memcopy(char *dest, const char *src, size_t size);
-
-#endif /* TRIDASH_MEMORY_H */
+#endif /* TRIDASH_COPYING_H */

@@ -1,6 +1,6 @@
 /**
  * Tridash Wasm32 Runtime Library
- * Copyright (C) 2019-2020  Alexander Gutev
+ * Copyright (C) 2020  Alexander Gutev
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,57 +33,39 @@
  * so, delete this exception statement from your version.
  */
 
-#ifndef TRIDASH_MEMORY_H
-#define TRIDASH_MEMORY_H
+#ifndef TRIDASH_ARRAYS_H
+#define TRIDASH_ARRAYS_H
 
 #include <stdint.h>
-#include <stdlib.h>
+#include <stddef.h>
 
-#include "types.h"
-
-/**
- * Pointer to the top of the stack.
- */
-extern char ** stack_top;
-
+#include "macros.h"
 
 /**
- * Initialize the garbage collector.
- *
- * @param stack Pointer to the stack base.
- *
- * @param heap Pointer to the start of the heap which is managed by
- *   the garbage collector.
- *
- * @param size Size of the heap. It is assumed that the memory can
- *   grow beyond this size.
+ * Tridash Array
  */
-export void initialize(char *stack, char *heap, size_t size);
+struct array {
+    /** Number of elements */
+    size_t size;
+    /** Array of elements */
+    uintptr_t elements[];
+};
 
 /**
- * Allocate a block of memory.
+ * Copy an array structure. Only the references to the elements of the
+ * array are copied, not the elements themselves.
  *
- * @param size Size of the block in bytes.
- * @return Pointer to the first byte of the block.
+ * @param src Pointer to the array object.
+ * @return Pointer to the copied object.
  */
-export void * alloc(size_t size);
+void *copy_array(const void *src);
 
 /**
- * Run the garbage collector.
+ * Copy the elements stored in an array and update the references.
+ *
+ * @param src Pointer to the array object.
+ * @return Pointer to the first byte following the array object.
  */
-export void run_gc(void);
+void *copy_array_elements(void *src);
 
-
-/**
- * Copies a block of memory from one region to another.
- *
- * @param dest The destination region to which the source region is
- *   copied.
- *
- * @param src The source region.
- *
- * @param size Number of bytes to copy.
- */
-void memcopy(char *dest, const char *src, size_t size);
-
-#endif /* TRIDASH_MEMORY_H */
+#endif /* TRIDASH_ARRAYS_H */

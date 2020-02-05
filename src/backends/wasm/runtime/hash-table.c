@@ -1,6 +1,6 @@
 /**
  * Tridash Wasm32 Runtime Library
- * Copyright (C) 2019-2020  Alexander Gutev
+ * Copyright (C) 2020  Alexander Gutev
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,57 +33,65 @@
  * so, delete this exception statement from your version.
  */
 
-#ifndef TRIDASH_MEMORY_H
-#define TRIDASH_MEMORY_H
+#include "hash-table.h"
 
-#include <stdint.h>
-#include <stdlib.h>
-
-#include "types.h"
+#define HASH_TABLE_SIZE offsetof(struct tridash_object, object.table) + sizeof(struct hash_table)
 
 /**
- * Pointer to the top of the stack.
+ * Compute a hash code for a string.
+ *
+ * @param key The string
+ * @return the hash code.
  */
-extern char ** stack_top;
-
+size_t string_hash(const struct string *key);
 
 /**
- * Initialize the garbage collector.
+ * Check whether two strings are byte-equal.
  *
- * @param stack Pointer to the stack base.
+ * @param str1 String 1
+ * @param str2 String 2
  *
- * @param heap Pointer to the start of the heap which is managed by
- *   the garbage collector.
- *
- * @param size Size of the heap. It is assumed that the memory can
- *   grow beyond this size.
+ * @return True (1) if the strings are equal, false (0) otherwise.
  */
-export void initialize(char *stack, char *heap, size_t size);
-
-/**
- * Allocate a block of memory.
- *
- * @param size Size of the block in bytes.
- * @return Pointer to the first byte of the block.
- */
-export void * alloc(size_t size);
-
-/**
- * Run the garbage collector.
- */
-export void run_gc(void);
+int string_equal(const struct string *str1, const struct string *str2);
 
 
-/**
- * Copies a block of memory from one region to another.
- *
- * @param dest The destination region to which the source region is
- *   copied.
- *
- * @param src The source region.
- *
- * @param size Number of bytes to copy.
- */
-void memcopy(char *dest, const char *src, size_t size);
+struct hash_bucket *hash_table_lookup(struct hash_table *table, const struct string *key) {
+    uintptr_t index = string_hash(key) % table->num_buckets;
 
-#endif /* TRIDASH_MEMORY_H */
+    struct hash_bucket *bucket = &table->buckets[index];
+
+    while (bucket->key) {
+        if (string_equal(bucket->key, key))
+            return bucket;
+
+        index = (index + 1) % table->num_buckets;
+        bucket = &table->buckets[index];
+    }
+
+    return NULL;
+}
+
+
+size_t string_hash(const struct string *key) {
+    uintptr_t code = 1;
+
+    for (size_t i = 0; i < key->size; ++i) {
+        code = code * 31 + key->data[i];
+    }
+
+    return code;
+}
+
+int string_equal(const struct string *str1, const struct string *str2) {
+    if (str1->size == str2->size) {
+        for (size_t i = 0; i < str1->size; ++i) {
+            if (str1->data[i] != str2->data[i])
+                return 0;
+        }
+
+        return 1;
+    }
+
+    return 0;
+}

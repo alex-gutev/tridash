@@ -1,6 +1,6 @@
 /**
  * Tridash Wasm32 Runtime Library
- * Copyright (C) 2019-2020  Alexander Gutev
+ * Copyright (C) 2020  Alexander Gutev
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,57 +33,32 @@
  * so, delete this exception statement from your version.
  */
 
-#ifndef TRIDASH_MEMORY_H
-#define TRIDASH_MEMORY_H
-
-#include <stdint.h>
-#include <stdlib.h>
+#include "arrays.h"
 
 #include "types.h"
+#include "memory.h"
+#include "copying.h"
 
-/**
- * Pointer to the top of the stack.
- */
-extern char ** stack_top;
+#define TRIDASH_ARRAY_SIZE offsetof(struct tridash_object, object.array) + sizeof(struct array)
 
+void *copy_array(const void *src) {
+    const struct tridash_object *object = src;
+    size_t size = TRIDASH_ARRAY_SIZE + object->object.array.size * sizeof(uintptr_t);
 
-/**
- * Initialize the garbage collector.
- *
- * @param stack Pointer to the stack base.
- *
- * @param heap Pointer to the start of the heap which is managed by
- *   the garbage collector.
- *
- * @param size Size of the heap. It is assumed that the memory can
- *   grow beyond this size.
- */
-export void initialize(char *stack, char *heap, size_t size);
+    void *dest = alloc(size);
+    memcopy(dest, src, size);
 
-/**
- * Allocate a block of memory.
- *
- * @param size Size of the block in bytes.
- * @return Pointer to the first byte of the block.
- */
-export void * alloc(size_t size);
+    return dest;
+}
 
-/**
- * Run the garbage collector.
- */
-export void run_gc(void);
+void *copy_array_elements(void *src) {
+    struct tridash_object *object = src;
 
+    size_t size = object->object.array.size;
 
-/**
- * Copies a block of memory from one region to another.
- *
- * @param dest The destination region to which the source region is
- *   copied.
- *
- * @param src The source region.
- *
- * @param size Number of bytes to copy.
- */
-void memcopy(char *dest, const char *src, size_t size);
+    for (size_t i = 0; i < size; ++i) {
+        object->object.array.elements[i] = (uintptr_t)copy_object((void*)object->object.array.elements[i]);
+    }
 
-#endif /* TRIDASH_MEMORY_H */
+    return &object->object.array.elements[size];
+}

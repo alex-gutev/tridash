@@ -1,6 +1,6 @@
 /**
  * Tridash Wasm32 Runtime Library
- * Copyright (C) 2019-2020  Alexander Gutev
+ * Copyright (C) 2020  Alexander Gutev
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,57 +33,56 @@
  * so, delete this exception statement from your version.
  */
 
-#ifndef TRIDASH_MEMORY_H
-#define TRIDASH_MEMORY_H
-
-#include <stdint.h>
-#include <stdlib.h>
+#include "failures.h"
 
 #include "types.h"
+#include "memory.h"
+#include "copying.h"
 
-/**
- * Pointer to the top of the stack.
- */
-extern char ** stack_top;
+#define TRIDASH_FAIL_SIZE (offsetof(struct tridash_object, object.fail_type) + sizeof(uintptr_t))
 
+uintptr_t make_failure(uintptr_t type) {
+    struct tridash_object *object = alloc(TRIDASH_FAIL_SIZE);
 
-/**
- * Initialize the garbage collector.
- *
- * @param stack Pointer to the stack base.
- *
- * @param heap Pointer to the start of the heap which is managed by
- *   the garbage collector.
- *
- * @param size Size of the heap. It is assumed that the memory can
- *   grow beyond this size.
- */
-export void initialize(char *stack, char *heap, size_t size);
+    object->type = TRIDASH_TYPE_FAILURE;
+    object->object.fail_type = type;
 
-/**
- * Allocate a block of memory.
- *
- * @param size Size of the block in bytes.
- * @return Pointer to the first byte of the block.
- */
-export void * alloc(size_t size);
+    uintptr_t ptr = (uintptr_t)((void*)object);
+    return ptr | TAG_TYPE_FAIL;
+}
 
-/**
- * Run the garbage collector.
- */
-export void run_gc(void);
+void *copy_failure(const void *src) {
+    void *dest = alloc(TRIDASH_FAIL_SIZE);
+    memcopy(dest, src, TRIDASH_FAIL_SIZE);
+
+    return dest;
+}
+
+void *copy_failure_type(void *src) {
+    struct tridash_object *object = src;
+
+    object->object.fail_type = (uintptr_t)copy_object((void*)object->object.fail_type);
+
+    return &object->object.fail_type + 1;
+}
 
 
-/**
- * Copies a block of memory from one region to another.
- *
- * @param dest The destination region to which the source region is
- *   copied.
- *
- * @param src The source region.
- *
- * @param size Number of bytes to copy.
- */
-void memcopy(char *dest, const char *src, size_t size);
+/// Builtin Failure Types
 
-#endif /* TRIDASH_MEMORY_H */
+uintptr_t fail_type_error(void) {
+    /* TODO: Create constant failure type node object */
+
+    // For now function reference index 2 will be used as the failure
+    // type
+
+    return make_failure(TAG_VALUE(2, TAG_TYPE_FUNCREF));
+}
+
+uintptr_t fail_type_no_value(void) {
+    /* TODO: Create constant failure type node object */
+
+    // For now function reference index 3 will be used as the failure
+    // type
+
+    return make_failure(TAG_VALUE(3, TAG_TYPE_FUNCREF));
+}

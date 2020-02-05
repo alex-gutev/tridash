@@ -1,6 +1,6 @@
 /**
  * Tridash Wasm32 Runtime Library
- * Copyright (C) 2019-2020  Alexander Gutev
+ * Copyright (C) 2020  Alexander Gutev
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,57 +33,28 @@
  * so, delete this exception statement from your version.
  */
 
-#ifndef TRIDASH_MEMORY_H
-#define TRIDASH_MEMORY_H
+#ifndef TRIDASH_STRINGS_H
+#define TRIDASH_STRINGS_H
 
-#include <stdint.h>
-#include <stdlib.h>
-
-#include "types.h"
+#include <stddef.h>
 
 /**
- * Pointer to the top of the stack.
+ * Tridash string object
  */
-extern char ** stack_top;
-
+struct string {
+    /** String size in bytes */
+    size_t size;
+    /** String byte data */
+    char data[];
+};
 
 /**
- * Initialize the garbage collector.
+ * Copy a string object.
  *
- * @param stack Pointer to the stack base.
+ * @param ptr Pointer to the string object
  *
- * @param heap Pointer to the start of the heap which is managed by
- *   the garbage collector.
- *
- * @param size Size of the heap. It is assumed that the memory can
- *   grow beyond this size.
+ * @return Pointer to the copied string.
  */
-export void initialize(char *stack, char *heap, size_t size);
+void *copy_string(const void *ptr);
 
-/**
- * Allocate a block of memory.
- *
- * @param size Size of the block in bytes.
- * @return Pointer to the first byte of the block.
- */
-export void * alloc(size_t size);
-
-/**
- * Run the garbage collector.
- */
-export void run_gc(void);
-
-
-/**
- * Copies a block of memory from one region to another.
- *
- * @param dest The destination region to which the source region is
- *   copied.
- *
- * @param src The source region.
- *
- * @param size Number of bytes to copy.
- */
-void memcopy(char *dest, const char *src, size_t size);
-
-#endif /* TRIDASH_MEMORY_H */
+#endif /* TRIDASH_STRINGS_H */

@@ -1,6 +1,6 @@
 /**
  * Tridash Wasm32 Runtime Library
- * Copyright (C) 2019-2020  Alexander Gutev
+ * Copyright (C) 2020  Alexander Gutev
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,57 +33,52 @@
  * so, delete this exception statement from your version.
  */
 
-#ifndef TRIDASH_MEMORY_H
-#define TRIDASH_MEMORY_H
+#ifndef TRIDASH_HASH_TABLE_H
+#define TRIDASH_HASH_TABLE_H
+
+/**
+ * Hash-table data structure and related functions.
+ *
+ * This is intended only to be used to store object descriptor subnode
+ * maps. It is not a general purpose hash table type. This map is
+ * constructed directly during compilation and as such no creation
+ * functions are provided.
+ */
 
 #include <stdint.h>
-#include <stdlib.h>
+#include <stddef.h>
 
-#include "types.h"
-
-/**
- * Pointer to the top of the stack.
- */
-extern char ** stack_top;
-
+#include "strings.h"
 
 /**
- * Initialize the garbage collector.
+ * Hash-table bucket storing a key and associated value.
  *
- * @param stack Pointer to the stack base.
- *
- * @param heap Pointer to the start of the heap which is managed by
- *   the garbage collector.
- *
- * @param size Size of the heap. It is assumed that the memory can
- *   grow beyond this size.
+ * If the key is of size zero (the empty string) then the bucket has
+ * no value.
  */
-export void initialize(char *stack, char *heap, size_t size);
+struct hash_bucket {
+    struct string *key;
+    uintptr_t value;
+};
 
 /**
- * Allocate a block of memory.
- *
- * @param size Size of the block in bytes.
- * @return Pointer to the first byte of the block.
+ * Hash table data structure.
  */
-export void * alloc(size_t size);
+struct hash_table {
+    size_t num_buckets;
+    struct hash_bucket buckets[];
+};
 
 /**
- * Run the garbage collector.
+ * Lookup a key in a hash table.
+ *
+ * @param table The hash-table
+ * @param key The key
+ *
+ * @return Pointer to the bucket in which the value is stored if the
+ *   table contains an entry for the given key. If the table does not
+ *   contain an entry for the given key, NULL is returned.
  */
-export void run_gc(void);
+struct hash_bucket *hash_table_lookup(struct hash_table *table, const struct string *key);
 
-
-/**
- * Copies a block of memory from one region to another.
- *
- * @param dest The destination region to which the source region is
- *   copied.
- *
- * @param src The source region.
- *
- * @param size Number of bytes to copy.
- */
-void memcopy(char *dest, const char *src, size_t size);
-
-#endif /* TRIDASH_MEMORY_H */
+#endif /* TRIDASH_HASH_TABLE_H */

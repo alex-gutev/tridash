@@ -1,6 +1,6 @@
 /**
  * Tridash Wasm32 Runtime Library
- * Copyright (C) 2019-2020  Alexander Gutev
+ * Copyright (C) 2020  Alexander Gutev
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,57 +33,49 @@
  * so, delete this exception statement from your version.
  */
 
-#ifndef TRIDASH_MEMORY_H
-#define TRIDASH_MEMORY_H
+#ifndef TRIDASH_FUNCREFS_H
+#define TRIDASH_FUNCREFS_H
 
 #include <stdint.h>
-#include <stdlib.h>
-
-#include "types.h"
+#include <stddef.h>
 
 /**
- * Pointer to the top of the stack.
+ * Function reference with optional and/or outer node arguments
  */
-extern char ** stack_top;
+struct funcref {
+	/**
+	 * Index of referenced function
+	 */
+	uintptr_t index;
 
+	/**
+	 * Number of optional and outer node arguments
+	 */
+	size_t num_args;
+
+	/**
+	 * Optional and outer node argument values
+	 */
+	uintptr_t args[];
+};
 
 /**
- * Initialize the garbage collector.
+ * Copy a function reference structure. Only the references to the
+ * argument values stored in the structure are copied, not the values
+ * themselves.
  *
- * @param stack Pointer to the stack base.
- *
- * @param heap Pointer to the start of the heap which is managed by
- *   the garbage collector.
- *
- * @param size Size of the heap. It is assumed that the memory can
- *   grow beyond this size.
+ * @param src Pointer to the function reference object.
+ * @return Pointer to the copied function reference.
  */
-export void initialize(char *stack, char *heap, size_t size);
+void *copy_funcref(const void *src);
 
 /**
- * Allocate a block of memory.
+ * Copy the argument values stored in the function reference object
+ * and update the references.
  *
- * @param size Size of the block in bytes.
- * @return Pointer to the first byte of the block.
+ * @param src Pointer to the function reference object.
+ * @return Pointer to the first byte following the function reference object.
  */
-export void * alloc(size_t size);
+void *copy_funcref_args(void *src);
 
-/**
- * Run the garbage collector.
- */
-export void run_gc(void);
-
-
-/**
- * Copies a block of memory from one region to another.
- *
- * @param dest The destination region to which the source region is
- *   copied.
- *
- * @param src The source region.
- *
- * @param size Number of bytes to copy.
- */
-void memcopy(char *dest, const char *src, size_t size);
-
-#endif /* TRIDASH_MEMORY_H */
+#endif /* TRIDASH_FUNCREFS_H */

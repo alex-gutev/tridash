@@ -2,7 +2,7 @@
  * runtime.test.js
  *
  * Tridash Wasm32 Runtime Library Tests
- * Copyright (C) 2019  Alexander Gutev
+ * Copyright (C) 2019-2020  Alexander Gutev
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@
 
 const assert = require('assert');
 const fs = require('fs');
-
 
 /* Utility Functions */
 
@@ -72,129 +71,744 @@ async function load_module(file, imports) {
 }
 
 /**
- * Load the runtime library module.
+ * Runtime library loader
  *
- * @param table The function reference table to use.
- * @param memory The memory object to use.
- * @param base The address at which the module's memory space begins.
+ * Loads and initializes the runtime library.
  *
- * @return The module instance.
+ * Provides the following member variables:
+ *
+ *   stack_size:
+ *
+ *     Size of stack in bytes
+ *
+ *   constant_section_size:
+ *
+ *      Size of the unmanaged memory section in bytes.
+ *
+ *   stack_base:
+ *
+ *      Index of the element (32-bit word) at the base of the stack.
+ *
+ *   dylink_section:
+ *
+ *       Uint8Array of the bytes forming part of the 'dylink' custom
+ *       section.
+ *
+ *   data_size:
+ *
+ *       Size of the memory requested by the module for internal
+ *       use. This is located after the unmanaged memory section and
+ *       before the GC managed heap.
+ *
+ *   base:
+ *
+ *     Module "memory base" pointer. Offset to the first byte
+ *     available to the module for internal use.
+ *
+ *   heap_start:
+ *
+ *     Offset to the first byte of the GC managed heap.
+ *
+ *   table:
+ *
+ *     WebAssembly function table.
+ *
+ *   memory:
+ *
+ *     WebAssembly memory object.
+ *
+ *   instance:
+ *
+ *     WebAssembly module instance.
+ *
+ *   exports:
+ *
+ *     Runtime library module exports.
+ *
  */
-async function load_runtime(table, memory, base) {
-    var module = await load_module(
-        './runtime/runtime.wasm',
-        {
-            env: {
-                table: table,
-                memory: memory,
-                __memory_base: base + 4,
-                "g$stack_top" : () => base,
+class Runtime {
+    /**
+     * Constructor
+     *
+     * @param stack_size The stack size to use in bytes
+     *
+     * @param constant_section_size The amount of space to reserve for
+     *   the unmanaged memory section in bytes
+     */
+    constructor(stack_size = 24, constant_section_size = 24) {
+        this.stack_size = stack_size;
+        this.constant_section_size = constant_section_size;
+
+        this.stack_base = this.stack_size / 4;
+        this.constant_section = this.stack_size;
+    }
+
+    /**
+     * Instantiate the runtime library module and initialize the
+     * garbage collector.
+     */
+    async load() {
+        const module = await Runtime.module;
+        const sections = WebAssembly.Module.customSections(module, 'dylink');
+
+        if (sections.length === 0)
+            throw "No Dylink Section in Runtime";
+
+        this.dylink_section = new Uint8Array(sections[0], 0, sections[0].byteLength);
+        this.data_size = this.dylink_section[0] + 4;
+
+        this.base = this.stack_size + this.constant_section_size;
+        this.heap_start = this.base + this.data_size;
+
+        this.table = make_fn_table(10);
+        this.memory = make_memory(1);
+
+        this.instance = await WebAssembly.instantiate(
+            await module,
+            {
+                env: {
+                    table: this.table,
+                    memory: this.memory,
+                    __memory_base: this.base + 4,
+                    "g$stack_top": () => this.base
+                }
             }
-        }
-    );
+        );
 
-    module.exports.__post_instantiate();
-    return module;
+        this.exports = this.instance.exports;
+        this.instance.exports.__post_instantiate();
+
+        this.init_memory();
+    }
+
+    /**
+     * Initialize the garbage collector.
+     *
+     * @param limit Limit of the managed heap.
+     */
+    init_memory(limit = 64 * 1024) {
+        var size = limit - this.heap_start;
+        this.exports.initialize(this.stack_size - 4, this.heap_start, size);
+
+        this.stack_index = this.stack_base - 1;
+        this.stack_top = new Uint32Array(this.memory.buffer, this.base, 1);
+        this.stack = new Uint32Array(this.memory.buffer, 0, this.stack_base);
+    }
+
+    /* Stack Manipulation */
+
+    /**
+     * Push a value (interpreted as a pointer) onto the stack.
+     *
+     * @param ptr The value to push
+     */
+    stack_push(ptr) {
+        this.stack[this.stack_index--] = ptr;
+        this.stack_top[0] -= 4;
+    }
+
+    /**
+     * Return the element at a particular index within the stack.
+     *
+     * @param index Index of the element. The element at the top of
+     *   the stack is located at index 0.
+     *
+     * @return Value of the stack element.
+     */
+    stack_elem(index) {
+        return this.stack[this.stack_base - index - 1];
+    }
+
+    /** Loading Other Modules */
+
+    /**
+     * Load a WebAssembly module with the runtime library functions
+     * imported into it.
+     *
+     * @param file Path to the wasm file.
+     *
+     * @return The module instance.
+     */
+    load_module(file) {
+        var imports = {
+            runtime: {
+                table: this.table,
+                memory: this.memory
+            }
+        };
+        Object.assign(imports.runtime, this.exports);
+
+        return load_module(file, imports);
+    }
 }
 
+Runtime.bytes = fs.readFileSync('./runtime/runtime.wasm');
+Runtime.module = WebAssembly.compile(Runtime.bytes);
+
+
 /**
- * Load a WebAssembly module with the functions exported from the
- * runtime library. Imported into the module.
- *
- * @param file Path to the wasm file.
- * @param runtime Runtime library module instance.
- * @param table The function reference table to import.
- * @param memory The memory object to import.
- *
- * @return The module instance.
+ * Tagged pointer tag values
  */
-function load_with_runtime(file, runtime, table, memory) {
-    var imports = {
-        runtime: {
-            table: table,
-            memory: memory
-        }
-    };
-    Object.assign(imports.runtime, runtime.exports);
-
-    return load_module(file, imports);
-}
+const Tags = {
+    integer: 0x1,
+    funcref: 0x2,
+    failure: 0x3
+};
 
 /**
- * Encode an integer into an immediate integer tagged pointer.
+ * Tridash Object Type Constants
+ */
+const Types =  {
+    thunk: 0,
+    resolved_thunk: 1,
+    integer: 2,
+    real: 3,
+    string: 4,
+    failure: 5,
+    funcref: 7,
+    array: 8,
+    symbol: 9,
+    character: 10,
+    object: 11
+};
+
+Object.freeze(Tags);
+Object.freeze(Types);
+
+/**
+ * Encode an integer value into an immediate value tagged pointer.
  *
  * @param value The integer value.
+ * @param tag The tag type (default integer)
  *
  * @return The tagged pointer.
  */
-function im(value) {
-    return (value << 2) | 0x1;
+function im(value, tag = Tags.integer) {
+    return (value << 2) | tag;
 }
+
 
 /**
- * Create a boxed signed integer value on the heap.
+ * Test Utilities
  *
- * @param mem The WebAssembly memory.
- * @param offset Offset into the heap at which to create the boxed value.
- * @param value The signed integer value.
+ * Provides utility functions for creating Tridash objects in the
+ * WebAssembly memory object and testing whether a memory location
+ * contains an object of a certain type.
  */
-function box_int(mem, offset, value) {
-    buf = new Int32Array(mem.buffer, offset, 2);
+class TestUtil {
+    /**
+     * Constructor
+     *
+     * @param table Indirect Function Table
+     * @param memory Wasm Memory Object
+     * @param runtime Runtime Library Module
+     */
+    constructor(table, memory, runtime) {
+        this.table = table;
+        this.memory = memory;
+        this.runtime = runtime.exports;
+    }
 
-    buf[0] = 2;
-    buf[1] = value;
-}
 
-/**
- * Create a boxed 32-bit float value on the heap.
- *
- * @param mem The WebAssembly memory.
- * @param offset Offset into the heap at which to create the boxed value.
- * @param value The float value.
- */
-function box_float(mem, offset, value) {
-    words = new Uint32Array(mem.buffer, offset, 1);
-    words[0] = 3;
+    /* Tridash Object Constructors */
 
-    floats = new Float32Array(mem.buffer, offset, 2);
-    floats[1] = value;
-}
+    /**
+     * Create a thunk.
+     *
+     * @param fn Thunk function index
+     *
+     * @param closure Array of values in the thunks closure.
+     *
+     * @param resolve If true a resolved thunk is create with result
+     *   value @a fn, otherwise (the default) an unresolved thunk is
+     *   created.
+     *
+     * @return Location of the thunk object.
+     */
+    make_thunk(fn, closure, resolved = false) {
+        var ref = this.runtime.alloc((3 + closure.length) * 4);
+        var words = new Uint32Array(this.memory.buffer, ref, 3 + closure.length);
 
-/**
- * Create a thunk on the heap.
- *
- * @param mem The WebAssembly memory.
- * @param offset Offset into the heap at which to create the thunk.
- * @param fn Index of thunk function.
- * @param data Closure data.
- */
-function make_thunk(mem, offset, fn, data) {
-    words = new Uint32Array(mem.buffer, offset, 3);
+        words[0] = resolved ? Types.resolved_thunk : Types.thunk;
+        words[1] = fn;
+        words[2] = closure.length;
 
-    words[0] = 0;
-    words[1] = fn;
-    words[2] = data;
-}
+        words.set(closure, 3);
+
+        return ref;
+    }
+
+    /**
+     * Create a boxed integer object.
+     *
+     * @param value Integer value
+     * @return Location of the object
+     */
+    make_int(value) {
+        var ref = this.runtime.alloc(2 * 4);
+        var buf = new Int32Array(this.memory.buffer, ref, 2);
+
+        buf[0] = Types.integer;
+        buf[1] = value;
+
+        return ref;
+    }
+
+    /**
+     * Create a boxed integer object at a given memory location.
+     *
+     * @param offset Location at which to create the object.
+     * @param value Integer value
+     */
+    box_int(offset, value) {
+        var buf = new Int32Array(this.memory.buffer, offset, 2);
+
+        buf[0] = Types.integer;
+        buf[1] = value;
+    }
+
+    /**
+     * Create a boxed float object.
+     *
+     * @param value Float value
+     * @return Location of the object
+     */
+    make_float(value) {
+        var ref = this.runtime.alloc(2 * 4);
+
+        var words = new Uint32Array(this.memory.buffer, ref, 1);
+        words[0] = Types.real;
+
+        var floats = new Float32Array(this.memory.buffer, ref, 2);
+        floats[1] = value;
+
+        return ref;
+    }
+
+    /**
+     * Create a boxed float object at a given memory location.
+     *
+     * @param offset Location at which to create the object.
+     * @param value Integer value
+     */
+    box_float(offset, value) {
+        var words = new Uint32Array(this.memory.buffer, offset, 1);
+        words[0] = Types.real;
+
+        var floats = new Float32Array(this.memory.buffer, offset, 2);
+        floats[1] = value;
+    }
+
+    /**
+     * Create a boxed character object.
+     *
+     * @param code Character code
+     * @return Location of the object
+     */
+    make_char(code) {
+        var ref = this.runtime.alloc(2 * 4);
+        var words = new Uint32Array(this.memory.buffer, ref, 2);
+
+        words[0] = Types.character;
+        words[1] = code;
+
+        return ref;
+    }
+
+    /**
+     * Create a string object.
+     *
+     * @param str The string. Should only contain ASCII characters.
+     *
+     * @return Location of the object
+     */
+    make_string(str) {
+        var ref = this.runtime.alloc(2 * 4 + str.length);
+        var words = new Uint32Array(this.memory.buffer, ref, 1);
+
+        // Set object type = 'string'
+        words[0] = Types.string;
+        this.encode_string(ref + 4, str);
+
+        return ref;
+    }
+
+    /**
+     * Create a symbol object.
+     *
+     * @param name Symbol name string. Should only contain ASCII
+     *   characters.
+     *
+     * @return Location of the object
+     */
+    make_symbol(name) {
+        var ref = this.runtime.alloc((2 * 4) + name.length);
+        var words = new Uint32Array(this.memory.buffer, ref, 1);
+
+        words[0] = Types.symbol;
+        this.encode_string(ref + 4, name);
+
+        return ref;
+    }
+
+    /**
+     * Encode a JS string (in UTF-8) at a given memory location. The
+     * first 32-bit word contains the string length followed by the
+     * bytes comprising the string.
+     *
+     * @param offset Location at which to encode the string
+     * @param str String to encode
+     */
+    encode_string(offset, str) {
+        var words = new Uint32Array(this.memory.buffer, offset, 1);
+
+        // Encode string to UTF-8
+        var encoder = new TextEncoder();
+        var utf8 = encoder.encode(str);
+
+        // Store String Size
+        words[0] = utf8.length;
+
+        // Store string contents1
+        var bytes = new Uint8Array(this.memory.buffer, offset + 4, utf8.length);
+        bytes.set(utf8);
+    }
+
+    /**
+     * Create an array object.
+     *
+     * @param array Array of values
+     *
+     * @return Location of the object
+     */
+    make_array(array) {
+        var ref = this.runtime.alloc((2 * 4) + array.length * 4);
+        var buf = new Uint32Array(this.memory.buffer, ref, 2 + array.length);
+
+        buf[0] = Types.array;
+        buf[1] = array.length;
+        buf.set(array, 2);
+
+        return ref;
+    }
+
+    /**
+     * Create a function reference object.
+     *
+     * @param fn Function index
+     * @param args Array of default argument values
+     *
+     * @return Location of the object
+     */
+    make_funcref(fn, args) {
+        var ref = this.runtime.alloc((3 * 4) + args.length * 4);
+        var buf = new Uint32Array(this.memory.buffer, ref, 3 + args.length);
+
+        buf[0] = Types.funcref;
+        buf[1] = fn;
+        buf[2] = args.length;
+        buf.set(args, 3);
+
+        return ref;
+    }
+
+    /**
+     * Create a simple object descriptor.
+     *
+     * The descriptor created, only contains the number of subnodes in
+     * the object, and not the map from subnode identifiers to array
+     * indices.
+     *
+     * NOTE: The descriptor is created on the heap managed by the
+     * garbage collector, thus will survive for, at most, one garbage
+     * collection cycle.
+     *
+     * @param num_fields Number of subnodes
+     *
+     * @return Location of the descriptor.
+     */
+    make_simple_object_descriptor(num_fields) {
+        var ref = this.runtime.alloc(4);
+        var buf = new Uint32Array(this.memory.buffer, ref, 1);
+
+        buf[0] = num_fields;
+        return ref;
+    }
+
+    /**
+     * Create a user-defined Tridash object.
+     *
+     * @param descriptor Location of the object descriptor
+     * @param values Array of subnode values.
+     *
+     * @return Location of the object
+     */
+    make_object(descriptor, values) {
+        var ref = this.runtime.alloc(8 + values.length * 4);
+        var buf = new Uint32Array(this.memory.buffer, ref, 2 + values.length);
+
+        buf[0] = Types.object;
+        buf[1] = descriptor;
+        buf.set(values, 2);
+
+        return ref;
+    }
+
+
+    /* Checking Addresses */
+
+    /**
+     * Check whether an address is aligned to a particular word
+     * boundary.
+     *
+     * @param address The address
+     *
+     * @param alignment The alignment (multiple of 2), by default word
+     *   alignment (4).
+     *
+     * @return True if the address is aligned.
+     */
+    static is_aligned(address, alignment = 4) {
+        return (address % alignment) === 0;
+    }
+
+    /**
+     * Assert that an object was copied during the last garbage
+     * collection cycle, by checking that the new object reference is
+     * not equal to the reference prior to the GC cycle.
+     *
+     * @param old_ref Reference to the object, before GC.
+     * @param new_ref Reference to the object, after GC.
+     *
+     * @return @a new_ref if it is different from @a old_ref,
+     *   otherwise this function does not return.
+     */
+    static check_copied(old_ref, new_ref) {
+        assert.notEqual(old_ref, new_ref, 'Object not copied');
+        return new_ref;
+    }
+
+
+    /* Checking Tridash Objects */
+
+    /**
+     * Assert that a memory location contains a thunk with a given
+     * function index and closure size. Does not compare the closure
+     * elements themselves.
+     *
+     * @param ref The memory location
+     *
+     * @param fn Function index
+     *
+     * @param size Closure size
+     *
+     * @param resolved If true a resolved thunk is expected. Otherwise
+     *   an unresolved thunk is expected.
+     */
+    check_thunk(ref, fn, size, resolved = false) {
+        var words = new Uint32Array(this.memory.buffer, ref, 3);
+
+        assert.equal(words[0], resolved ? Types.resolved_thunk : Types.thunk,
+                     'Object not thunk');
+
+        assert.equal(words[1], fn, 'Incorrect thunk function');
+        assert.equal(words[2], size, 'Incorrect closure size');
+    }
+
+    /**
+     * Assert that a memory location contains a boxed integer with a
+     * given value.
+     *
+     * @param ref The memory location
+     * @param value The integer value
+     */
+    check_int(ref, value) {
+        var words = new Uint32Array(this.memory.buffer, ref, 2);
+
+        assert.equal(words[0], Types.integer, 'Object not integer');
+        assert.equal(words[1], value, 'Incorrect integer value');
+    }
+
+    /**
+     * Assert that a memory location contains a boxed character with a
+     * given value.
+     *
+     * @param ref The memory location
+     * @param value The character code
+     */
+    check_char(ref, value) {
+        var words = new Uint32Array(this.memory.buffer, ref, 2);
+
+        assert.equal(words[0], Types.character, 'Object not character');
+        assert.equal(words[1], value, 'Incorrect character code');
+    }
+
+    /**
+     * Assert that a memory location contains a string object.
+     *
+     * @param ref The memory location
+     * @param str The expected string contents (as a JS string)
+     */
+    check_string(ref, str) {
+        var words = new Uint32Array(this.memory.buffer, ref, 2);
+
+        assert.equal(words[0], Types.string, 'Copied object not string');
+        this.check_string_bytes(ref + 4, str);
+    }
+
+    /**
+     * Assert that a memory location contains a symbol object.
+     *
+     * @param ref The memory location
+     * @param name The expected symbol name (as a JS string)
+     */
+    check_symbol(ref, name) {
+        var words = new Uint32Array(this.memory.buffer, ref, 1);
+
+        assert.equal(words[0], Types.symbol, 'Object not symbol');
+        this.check_string_bytes(ref + 4, name);
+    }
+
+    /**
+     * Assert that a memory location contains a given string.
+     *
+     * The string is encoded to UTF-8, and it is checked that the
+     * first word of the location contains the size of the UTF-8 byte
+     * array followed by the contents of the array.
+     *
+     * @param ref The memory location
+     * @param str The expected string (as a JS string)
+     */
+    check_string_bytes(ref, str) {
+        var words = new Uint32Array(this.memory.buffer, ref, 1);
+
+        // Assuming ASCII characters only
+        assert.equal(words[0], str.length, 'Copied string not of same length');
+
+        var bytes = new Uint8Array(this.memory.buffer, ref + 4, str.length);
+        var string = new TextDecoder('utf8').decode(bytes);
+
+        assert.equal(string, str, 'Copied string not equal to original.');
+    }
+
+    /**
+     * Assert that a memory location contains an array object of a
+     * given size. The array elements themselves are not checked.
+     *
+     * @param ref The memory location
+     * @param length Array length
+     */
+    check_is_array(ref, length) {
+        var words = new Uint32Array(this.memory.buffer, ref, 2);
+
+        assert.equal(words[0], Types.array, 'Copied object is array');
+        assert.equal(words[1], length, 'Incorrect array length');
+    }
+
+    /**
+     * Assert that a memory location contains a function reference
+     * object with a given function index and default argument array
+     * size. The array elements themselves are not checked.
+     *
+     * @param ref The memory location
+     * @param fn Function index
+     * @param length Default argument array length
+     */
+    check_is_funcref(ref, fn, length) {
+        var words = new Uint32Array(this.memory.buffer, ref, 3);
+
+        assert.equal(words[0], Types.funcref, 'Object not function reference');
+        assert.equal(words[1], fn, 'Incorrect function index');
+        assert.equal(words[2], length, 'Incorrect number of arguments in function reference');
+    }
+
+    /**
+     * Assert that a memory location contains a user-defined object
+     * with a given object descriptor. The subnode values are not
+     * checked.
+     *
+     * @param ref The memory location
+     * @param descriptor Location of object descriptor
+     */
+    check_is_object(ref, descriptor) {
+        var words = new Uint32Array(this.memory.buffer, ref, 2);
+
+        assert.equal(words[0], Types.object, 'Object not user-object');
+        assert.equal(words[1], descriptor, 'Incorrect object descriptor');
+    }
+
+
+    /* Checking Failures */
+
+    /**
+     * Check that a Tridash object pointer is tagged as a failure
+     * value.
+     *
+     * @param ref The tridash Pointer
+     *
+     * @return True if the pointer is tagged as a failure value
+     */
+    static is_tag_fail(ref) {
+        return (ref & 0x3) == 3;
+    }
+
+    /**
+     * Remove the tag from a tagged failure pointer, returning the
+     * memory location of the failure value object.
+     *
+     * @param ref The tagged failure value pointer
+     *
+     * @return Location of the failure value object
+     */
+    static fail_ptr(ref) {
+        return ref - 3;
+    }
+
+    /**
+     * Assert that a memory location contains a failure value object
+     * with a given type.
+     *
+     * @param ref The memory location
+     * @param type Failure type value
+     */
+    check_is_failure(ref, type) {
+        var words = new Uint32Array(this.memory.buffer, ref, 2);
+
+        assert.equal(words[0], Types.failure, 'Object not failure');
+        assert.equal(words[1], type, 'Incorrect failure type');
+    }
+};
 
 
 /* Tests */
 
 describe('Lazy Evaluation', function() {
     var runtime;
-    var table;
-    var memory;
     var fns;
+    var util;
 
-    function load(file) {
-        return load_with_runtime(file, runtime, table, memory);
+    /**
+     * Create a thunk on the heap.
+     *
+     * @param mem The WebAssembly memory.
+     * @param offset Offset into the heap at which to create the thunk.
+     * @param fn Index of thunk function.
+     * @param data Closure data.
+     */
+    function make_thunk(mem, offset, fn, data) {
+        var words = new Uint32Array(mem.buffer, offset, 3);
+
+        words[0] = 0;
+        words[1] = fn;
+        words[2] = data;
     }
 
     beforeEach(async function() {
-        table = make_fn_table(10);
-        memory = make_memory(1);
-        runtime = await load_runtime(table, memory);
+        runtime = new Runtime();
+        await runtime.load();
 
         fns = runtime.exports;
+        util = new TestUtil(runtime.table, runtime.memory, runtime.instance);
     });
 
     describe('resolve(Thunk)', function() {
@@ -204,21 +818,21 @@ describe('Lazy Evaluation', function() {
         });
 
         it('Should directly return pointers to boxed values', function() {
-            box_int(memory, 4, 24);
-            box_float(memory, 12, 7.5);
+            util.box_int(4, 24);
+            util.box_float(12, 7.5);
 
             assert.equal(fns.resolve(4), 4);
             assert.equal(fns.resolve(12), 12);
         });
 
         it('Should call thunk function to compute value', async function() {
-            const thunks = await load('./runtime/thunks.wasm');
+            const thunks = await runtime.load_module('./runtime/thunks.wasm');
 
-            var mem = new Uint32Array(memory.buffer, 4, 3);
+            var mem = new Uint32Array(runtime.memory.buffer, 4, 3);
 
             assert.equal(fns.resolve(4), im(1));
 
-            // Test that the type is updated to 'resolve thunk', and
+            // Test that the type is updated to 'resolved thunk', and
             // the function index is replaced with the computed value.
             assert.deepEqual(mem, Uint32Array.from([1,im(1),0]));
 
@@ -228,12 +842,12 @@ describe('Lazy Evaluation', function() {
         });
 
         it('Should pass closure to thunk function', async function() {
-            const thunks = await load('./runtime/thunks.wasm');
+            const thunks = await runtime.load_module('./runtime/thunks.wasm');
 
             // Make closure thunk with closure over value 21
-            make_thunk(memory, 16, 2, 21);
+            make_thunk(runtime.memory, 16, 2, 21);
 
-            var mem = new Uint32Array(memory.buffer, 16, 3);
+            var mem = new Uint32Array(runtime.memory.buffer, 16, 3);
 
             assert.equal(fns.resolve(16), im(22));
 
@@ -247,11 +861,11 @@ describe('Lazy Evaluation', function() {
         });
 
         it('Should compute value of thunks, returned by thunks', async function() {
-            const thunks = await load('./runtime/thunks.wasm');
+            const thunks = await runtime.load_module('./runtime/thunks.wasm');
 
             // Make two chained thunks
-            make_thunk(memory, 16, 3, 0);
-            make_thunk(memory, 28, 3, 0);
+            make_thunk(runtime.memory, 16, 3, 0);
+            make_thunk(runtime.memory, 28, 3, 0);
 
             assert.equal(fns.resolve(16), im(1));
 
@@ -266,454 +880,471 @@ describe('Lazy Evaluation', function() {
     });
 });
 
-describe('Memory', function() {
-    const heap_start = 60;
-    const stack_size = 24;
-    const stack_base = stack_size / 4;
-
+describe('Core Functions', function() {
     var runtime;
-    var table;
-    var memory;
-    var exports;
-
-    var stack_index;
-    var stack_top;
-    var stack;
-    var mem_buf;
-
-    /**
-     * Load a Wasm file with the runtime functions imported into it.
-     *
-     * @param file Path to the file
-     * @return The WebAssembly Module
-     */
-    function load(file) {
-        return load_with_runtime(file, runtime, table, memory);
-    }
-
-    /**
-     * Call the 'initialize' function of the garbage collector and set
-     * the 'stack_index', 'stack_top', 'stack' and 'mem_buf'
-     * variables.
-     *
-     * @param size Initial size of the heap.
-     */
-    function init_memory(size = 64*1024 - heap_start) {
-        exports.initialize(stack_size - 4, heap_start, size);
-
-        stack_index = stack_base - 1;
-        stack_top = new Uint32Array(memory.buffer, stack_size, 1);
-        stack = new Uint32Array(memory.buffer, 0, stack_base);
-        mem_buf = new Uint8Array(memory.buffer, 0, 64*1024);
-    }
-
-    /**
-     * Checks whether an address is aligned to a particular boundary.
-     *
-     * @param address The address
-     *
-     * @param alignment The alignment (multiple of 2), by default word
-     *   alignment (4).
-     *
-     * @return True if the address is aligned.
-     */
-    function is_aligned(address, alignment = 4) {
-        return (address % alignment) === 0;
-    }
-
-    /**
-     * Creates a thunk.
-     *
-     * @param addr Address to create the thunk at.
-     * @param type Thunk type.
-     * @param fn Thunk function pointer.
-     * @param closure Values in the thunk closure.
-     */
-    function make_thunk(addr, type, fn, ...closure) {
-        var thunk = new Uint32Array(memory.buffer, addr, 3 + closure.length);
-
-        thunk[0] = type;
-        thunk[1] = fn;
-        thunk[2] = closure.length;
-
-        thunk.set(closure, 3);
-    }
-
-
-    /**
-     * Push a pointer onto the stack.
-     *
-     * @param ptr The pointer to push.
-     */
-    function stack_push(ptr) {
-        stack[stack_index--] = ptr;
-        stack_top[0] -= 4;
-    }
-
-    /**
-     * Retrieve an element from the stack.
-     *
-     * @param index Index of the element where index 0 references the
-     *   bottom (base) of the stack.
-     *
-     * @return The element.
-     */
-    function stack_elem(index) {
-        return stack[stack_base - index - 1];
-    }
+    var util;
 
     beforeEach(async function() {
-        table = make_fn_table(10);
-        memory = make_memory(1);
-        runtime = await load_runtime(table, memory, stack_size);
+        runtime = new Runtime();
 
-        exports = runtime.exports;
+        await runtime.load();
+        util = new TestUtil(runtime.table, runtime.memory, runtime.instance);
+    });
 
-        init_memory();
+    describe('Failures', function() {
+        describe('make_failure', function() {
+            it('Should create a failure on the heap', function() {
+                var ref = runtime.exports.make_failure(im(3));
+
+                assert(TestUtil.is_tag_fail(ref), 'Not tagged failure pointer');
+
+                ref = TestUtil.fail_ptr(ref);
+                util.check_is_failure(ref, im(3));
+            });
+        });
+    });
+});
+
+describe('Memory', function() {
+    var runtime;
+    var mem_buf;
+
+    var util;
+
+    beforeEach(async function() {
+        runtime = new Runtime();
+        await runtime.load();
+
+        util = new TestUtil(runtime.table, runtime.memory, runtime);
+
+        mem_buf = new Uint8Array(runtime.memory.buffer, 0, 64*1024);
     });
 
     describe('alloc(size)', function() {
-        it('Should allocate first block at start of heap', function() {
-            var addr = exports.alloc(8);
-            assert.equal(addr, heap_start);
+        it('First block allocated at start of heap', function() {
+            var addr = runtime.exports.alloc(8);
+            assert.equal(addr, runtime.heap_start);
         });
 
-        it('Should allocate blocks in non-overlapping regions', function() {
-            var addr1 = exports.alloc(4);
+        it('Blocks allocated in non-overlapping regions', function() {
+            var addr1 = runtime.exports.alloc(4);
             mem_buf.set([1,2,3,4], addr1);
 
-            var addr2 = exports.alloc(8);
+            var addr2 = runtime.exports.alloc(8);
             mem_buf.set([11,12,13,14,15,16,17,18], addr2);
 
-            assert.deepEqual(mem_buf.slice(addr1, addr1 + 4),
-                             Uint8Array.from([1,2,3,4]),
-                            "Contents of first object overwritten");
+            assert.deepEqual(
+                mem_buf.slice(addr1, addr1 + 4),
+                Uint8Array.from([1,2,3,4]),
+                'Contents of first object overwritten'
+            );
         });
 
-        it('Should allocate blocks at 32-bit word boundaries', function() {
-            var addr1 = exports.alloc(2);
-            var addr2 = exports.alloc(1);
-            var addr3 = exports.alloc(4);
+        it('Blocks allocated at 32-bit word boundaries', function() {
+            var addr1 = runtime.exports.alloc(2);
+            var addr2 = runtime.exports.alloc(1);
+            var addr3 = runtime.exports.alloc(4);
 
-            assert(is_aligned(addr1), "First object not word aligned")
-            assert(is_aligned(addr2), "Second object not word aligned")
-            assert(is_aligned(addr3), "Thid object not word aligned")
+            assert(TestUtil.is_aligned(addr1), 'First object not word aligned');
+            assert(TestUtil.is_aligned(addr2), 'Second object not word aligned');
+            assert(TestUtil.is_aligned(addr3), 'Third object not word aligned');
         });
     });
 
     describe('Garbage Collection', function() {
         describe('Objects Reachable from Root Set', function() {
-            it('Should copy objects in root set to new heap', function() {
-                var ref1 = exports.alloc(8);
-                box_int(memory, ref1, 0x0AF68735);
-                stack_push(ref1);
+            it('Objects in root set to copied new heap', function() {
+                var ref1 = util.make_int(0x0AF68735);
+                runtime.stack_push(ref1);
 
-                var ref2 = exports.alloc(8);
-                box_int(memory, ref2, 0x05003110);
+                var ref2 = util.make_int(0x05003110);
 
                 // Run Garbage Collection
-                exports.run_gc();
+                runtime.exports.run_gc();
 
-                var new_ref1 = stack_elem(0);
-                assert.notEqual(ref1, new_ref1, "Reference to object 1 not changed in root set");
-                assert(is_aligned(new_ref1), "New object address not word aligned");
+                ref1 = TestUtil.check_copied(ref1, runtime.stack_elem(0));
+                assert(TestUtil.is_aligned(ref1), 'Copied object address not word aligned');
 
-                assert.deepEqual(
-                    new Uint32Array(memory.buffer, new_ref1, 2),
-                    Uint32Array.from([2, 0x0AF68735]),
-                    "Object 1 not copied correctly"
-                );
+                util.check_int(ref1, 0x0AF68735);
             });
 
-            it('Should not copy garbage objects to new heap', function() {
-                var ref1 = exports.alloc(8);
-                box_int(memory, ref1, 0x0AF68735);
-                stack_push(ref1);
+            it('Garbage objects not copied to new heap', function() {
+                var ref1 = util.make_int(0x0AF68735);
+                runtime.stack_push(ref1);
 
-                var ref2 = exports.alloc(8);
-                box_int(memory, ref2, 0x05003110);
+                var ref2 = util.make_int(0x05003110);
 
                 // Run Garbage Collection
-                exports.run_gc();
-                ref1 = stack_elem(0);
+                runtime.exports.run_gc();
+                ref1 = runtime.stack_elem(0);
 
                 assert.deepEqual(
                     mem_buf.slice(ref1+8, ref1+16),
                     Uint8Array.from([0,0,0,0,0,0,0,0]),
-                    "Garbage object copied to new heap"
+                    'Garbage object copied to new heap'
                 );
             });
 
-            it('Should copy all objects in root set to new heap', function() {
-                // Create thre boxed integers
+            it('All objects in root set copied to new heap', function() {
+                // Create three boxed integers
+                var ref1 = util.make_int(0x12345678);
+                var ref2 = util.make_int(0x87654321);
+                var ref3 = util.make_int(0x90340124);
 
-                var ref1 = exports.alloc(8);
-                stack_push(ref1);
-                box_int(memory, ref1, 0x12345678);
-
-                var ref2 = exports.alloc(8);
-                box_int(memory, ref2, 0x87654321);
-
-                var ref3 = exports.alloc(8);
-                stack_push(ref3);
-                box_int(memory, ref3, 0x90340124);
+                runtime.stack_push(ref1);
+                runtime.stack_push(ref3);
 
                 // Run Garbage Collection
-                exports.run_gc();
+                runtime.exports.run_gc();
 
-                var new_ref1 = stack_elem(0);
-                assert.notEqual(ref1, new_ref1, "Reference to object 1 not replaced in root set");
+                ref1 = TestUtil.check_copied(ref1, runtime.stack_elem(0));
+                ref3 = TestUtil.check_copied(ref3, runtime.stack_elem(1));
 
-                var new_ref3 = stack_elem(1);
-                assert.notEqual(ref3, new_ref3, "Reference to object 2 not replaced in root set");
-
-                assert.deepEqual(
-                    new Uint32Array(memory.buffer, new_ref1, 2),
-                    Uint32Array.from([2, 0x12345678]),
-                    "Object 1 not copied correctly"
-                );
-
-                assert.deepEqual(
-                    new Uint32Array(memory.buffer, new_ref3, 2),
-                    Uint32Array.from([2, 0x90340124]),
-                    "Object 3 not copied correctly"
-                );
+                util.check_int(ref1, 0x12345678);
+                util.check_int(ref3, 0x90340124);
             });
 
-            it('Should not traverse immediate integer operands', function() {
+            it('Immediate integer operands not traversed', function() {
                 var ref1 = im(1);
                 var ref2 = im(34);
 
-                stack_push(ref1);
-                stack_push(ref2);
+                runtime.stack_push(ref1);
+                runtime.stack_push(ref2);
 
-                exports.run_gc();
+                runtime.exports.run_gc();
 
-                assert.equal(stack_elem(0), ref1, "Immediate operand 1 not preserved");
-                assert.equal(stack_elem(1), ref2, "Immediate operand 2 not preserved");
+                assert.equal(runtime.stack_elem(0), ref1, 'Immediate operand 1 not preserved');
+                assert.equal(runtime.stack_elem(1), ref2, 'Immediate operand 2 not preserved');
             });
 
-            it('Should copy boxed floats', function() {
-                var ref = exports.alloc(8);
-                stack_push(ref);
-
-                box_float(memory, ref, 6.73);
+            it('Boxed floats copied', function() {
+                var ref = util.make_float(6.73);
                 var fbox = mem_buf.slice(ref, ref+8);
 
+                runtime.stack_push(ref);
+
                 // Run Garbage Collection
-                exports.run_gc();
+                runtime.exports.run_gc();
 
-                var new_ref = stack[stack_base - 1];
-                assert.notEqual(ref, new_ref, "Reference to object not updated in root set");
+                ref = TestUtil.check_copied(ref, runtime.stack_elem(0));
 
-                assert.deepEqual(mem_buf.slice(new_ref, new_ref+8), fbox, "Object not copied correctly");
+                // Compare new and old objects bytewise, since floating
+                // point values cannot be accurately compared.
+                assert.deepEqual(mem_buf.slice(ref, ref + 8), fbox, 'Object not copied correctly');
+            });
+
+            it('Boxed characters copied', function() {
+                const chr = 'a'.codePointAt(0);
+                var ref = util.make_char(chr);
+
+                runtime.stack_push(ref);
+
+                // Run Garbage Collection
+                runtime.exports.run_gc();
+
+                ref = TestUtil.check_copied(ref, runtime.stack_elem(0));
+                util.check_char(ref, chr);
+            });
+
+            it('Strings copied', function() {
+                var str = "hello world";
+                var ref = util.make_string(str);
+
+                runtime.stack_push(ref);
+
+                // Run Garbage Collection
+                runtime.exports.run_gc();
+
+                ref = TestUtil.check_copied(ref, runtime.stack_elem(0));
+                util.check_string(ref, str);
+            });
+
+            it('Symbols copied', function() {
+                let name = "my-sym-a";
+                var ref = util.make_symbol(name);
+
+                runtime.stack_push(ref);
+
+                // Run Garbage Collection
+                runtime.exports.run_gc();
+
+                ref = TestUtil.check_copied(ref, runtime.stack_elem(0));
+                util.check_symbol(ref, name);
+            });
+
+            it('Failures copied', function() {
+                // Create failure Type
+
+                var str = "my type";
+                var str_ref = util.make_string(str);
+
+                // Create failure object
+
+                var fail_ref = runtime.exports.make_failure(str_ref);
+                runtime.stack_push(fail_ref);
+
+
+                // Run Garbage Collection
+                runtime.exports.run_gc();
+
+                fail_ref = TestUtil.check_copied(fail_ref, runtime.stack_elem(0));
+                assert(TestUtil.is_tag_fail(fail_ref), 'Not tagged failure');
+
+
+                // Check that copied object is a failure
+
+                var words = new Uint32Array(runtime.memory.buffer, TestUtil.fail_ptr(fail_ref), 2);
+                assert.equal(words[0], Types.failure, 'Copied object not failure value');
+
+                // Check that failure type was copied
+
+                str_ref = TestUtil.check_copied(str_ref, words[1]);
+                util.check_string(str_ref, str);
+            });
+
+            it('Arrays copied', function() {
+                var str = "hello";
+                var str_ref = util.make_string(str);
+                var int_ref = util.make_int(23);
+                var arr_ref = util.make_array([im(14), int_ref, str_ref]);
+
+                runtime.stack_push(arr_ref);
+
+                // Run garbage collection
+                runtime.exports.run_gc();
+
+                // Check Array
+
+                arr_ref = TestUtil.check_copied(arr_ref, runtime.stack_elem(0));
+                util.check_is_array(arr_ref, 3);
+
+                /// Check Elements
+
+                var words = new Uint32Array(runtime.memory.buffer, arr_ref + 8, 3);
+
+                // Check element 1 - immediate integer
+                assert.equal(words[0], im(14), 'Element 1 not copied');
+
+                // Check element 2 - boxed integer
+                int_ref = TestUtil.check_copied(int_ref, words[1]);
+                util.check_int(int_ref, 23);
+
+                // Check element 1 - string
+                str_ref = TestUtil.check_copied(str_ref, words[2]);
+                util.check_string(str_ref, str);
+            });
+
+            it('Function references copied', function() {
+                var str = "hello";
+                var str_ref = util.make_string(str);
+                var int_ref = util.make_int(37);
+
+                // Also tests tagged function references
+                var funcref = util.make_funcref(2, [im(19, Tags.funcref), int_ref, str_ref]);
+
+                runtime.stack_push(funcref);
+
+                // Run garbage collection
+                runtime.exports.run_gc();
+
+                // Check Function Reference
+                funcref = TestUtil.check_copied(funcref, runtime.stack_elem(0));
+                util.check_is_funcref(funcref, 2, 3);
+
+                /// Check Arguments
+
+                var words = new Uint32Array(runtime.memory.buffer, funcref + 3 * 4, 3);
+
+                // Check element 1 - immediate integer
+                assert.equal(words[0], im(19, Tags.funcref), 'Element 1 not copied');
+
+                // Check element 2 - boxed integer
+                int_ref = TestUtil.check_copied(int_ref, words[1]);
+                util.check_int(int_ref, 37);
+
+                // Check element 3 - string
+                str_ref = TestUtil.check_copied(str_ref, words[2]);
+                util.check_string(str_ref, str);
+            });
+
+            it('Objects copied', function() {
+                var int_ref = util.make_int(17);
+
+                var descriptor = util.make_simple_object_descriptor(2);
+                var obj_ref = util.make_object(descriptor, [im(29), int_ref]);
+
+                runtime.stack_push(obj_ref);
+
+                // Run garbage collection
+                runtime.exports.run_gc();
+
+                // Check object Reference
+                obj_ref = TestUtil.check_copied(obj_ref, runtime.stack_elem(0));
+                util.check_is_object(obj_ref, descriptor);
+
+                /// Check Fields
+
+                var words = new Uint32Array(runtime.memory.buffer, obj_ref + 2 * 4, 2);
+
+                // Check Field 1 - Immediate Integer
+                assert.equal(words[0], im(29), 'Field 1 not copied');
+
+                // Check Field 2 - Boxed Integer
+                int_ref = TestUtil.check_copied(int_ref, words[1]);
+                util.check_int(int_ref, 17);
             });
         });
 
         describe('Objects Referenced by Thunks', function() {
-            it('Should copy thunks with objects in their closure', function() {
+            it('Thunks copied with objects in their closure', function() {
                 // Create boxed integer on heap
-                var int_ref = exports.alloc(2 * 4);
-                box_int(memory, int_ref, 0x11223344);
+                var int_ref = util.make_int(0x11223344);
 
                 // Create thunk with two values in closure
-                var thunk_ref = exports.alloc(5 * 4);
-                make_thunk(thunk_ref, 0, 5, im(3), int_ref);
-                stack_push(thunk_ref);
+                var thunk_ref = util.make_thunk(5, [im(3), int_ref]);
+
+                runtime.stack_push(thunk_ref);
 
 
                 // Run garbage collection
-                exports.run_gc();
+                runtime.exports.run_gc();
 
-                // Check that thunk was actually copied to new heap
-                assert.notEqual(thunk_ref, stack_elem(0),
-                                "Reference to thunk not updated in root set");
+                // Check thunk object
 
-                thunk_ref = stack_elem(0);
-                thunk = new Uint32Array(memory.buffer, thunk_ref, 5);
+                thunk_ref = TestUtil.check_copied(thunk_ref, runtime.stack_elem(0));
+                util.check_thunk(thunk_ref, 5, 2);
 
-                // Check that thunk object properties were copied
-                // correctly
+                /// Check closure elements
 
-                assert.equal(thunk[0], 0, "Object type != Thunk");
-                assert.equal(thunk[1], 5, "Incorrect thunk function");
-                assert.equal(thunk[2], 2, "Incorrect closure size");
+                var closure = new Uint32Array(runtime.memory.buffer, thunk_ref + 3 * 4, 2);
 
-                // Check that closure was copied correctly
-                assert.equal(thunk[3], im(3), "Immediate integer not copied in closure");
+                // Check element 1
+                assert.equal(closure[0], im(3), 'Element 1 of closure not copied');
 
-                // Check that reference to boxed integer was updated
-                // in closure
-                assert.notEqual(thunk[4], int_ref, "Reference to boxed integer not updated in closure");
-
-                // Check that boxed integer was copied
-
-                int_ref = thunk[4];
-                assert.deepEqual(
-                    new Uint32Array(memory.buffer, int_ref, 2),
-                    Uint32Array.from([2, 0x11223344]),
-                    "Referenced boxed integer not copied correctly"
-                );
+                // Check element 2
+                int_ref = TestUtil.check_copied(int_ref, closure[1]);
+                util.check_int(int_ref, 0x11223344);
             });
 
-            it('Should copy object, referenced by multiple other objects, once', function() {
+            it('Objects, referenced by multiple other objects, copied once', function() {
                 // Create boxed integer on heap
-                var int_ref = exports.alloc(2 * 4);
-                box_int(memory, int_ref, 0x11223344);
+                var int_ref = util.make_int(0x11223344);
 
                 // Create thunk with two values in closure
-                var thunk_ref = exports.alloc(5 * 4);
-                make_thunk(thunk_ref, 0, 5, im(3), int_ref);
+                var thunk_ref = util.make_thunk(5, [im(3), int_ref]);
 
-                stack_push(thunk_ref);
-                stack_push(int_ref);
+                runtime.stack_push(thunk_ref);
+                runtime.stack_push(int_ref);
 
                 // Run garbage collection
-                exports.run_gc();
+                runtime.exports.run_gc();
 
-                // Check that thunk was actually copied to new heap
-                assert.notEqual(thunk_ref, stack_elem(0),
-                                "Reference to thunk not updated in root set");
+                // Check thunk object
 
-                thunk_ref = stack_elem(0);
-                thunk = new Uint32Array(memory.buffer, thunk_ref, 5);
+                thunk_ref = TestUtil.check_copied(thunk_ref, runtime.stack_elem(0));
+                util.check_thunk(thunk_ref, 5, 2);
 
-                // Check that thunk object properties were copied
-                // correctly
+                /// Check closure elements
 
-                assert.equal(thunk[0], 0, "Object type != Thunk");
-                assert.equal(thunk[1], 5, "Incorrect thunk function");
-                assert.equal(thunk[2], 2, "Incorrect closure size");
+                var closure = new Uint32Array(runtime.memory.buffer, thunk_ref + 3 * 4, 2);
 
-                // Check that closure was copied correctly
-                assert.equal(thunk[3], im(3), "Immediate integer not copied in closure");
+                // Check element 1
+                assert.equal(closure[0], im(3), 'Element 1 of closure not copied');
 
-                // Check that reference to boxed integer was updated
-                // in closure
-                assert.notEqual(thunk[4], int_ref, "Reference to boxed integer not updated in closure");
-                assert.equal(thunk[4], stack_elem(1), "Reference to boxed integer in closure not equal to reference in root set");
+                // Check element 2
+                int_ref = TestUtil.check_copied(int_ref, closure[1]);
+                util.check_int(int_ref, 0x11223344);
 
-                // Check that boxed integer was copied
-
-                int_ref = thunk[4];
-                assert.deepEqual(
-                    new Uint32Array(memory.buffer, int_ref, 2),
-                    Uint32Array.from([2, 0x11223344]),
-                    "Referenced boxed integer not copied correctly"
-                );
+                assert.equal(int_ref, runtime.stack_elem(1), 'Reference to boxed integer in closure not equal to reference in root set');
             });
 
-            it('Should copy thunks referenced by thunks', function() {
+            it('Thunks, referenced by other thunks, copied', function() {
                 // Create boxed integer on heap
-                var int_ref = exports.alloc(2 * 4);
-                box_int(memory, int_ref, 0x10023044);
-
-                // Allocate memory for thunks
-                var thunk1_ref = exports.alloc(5*4);
-                var thunk2_ref = exports.alloc(4 * 4);
+                var int_ref = util.make_int(0x10023044);
 
                 // Create thunks
-                make_thunk(thunk1_ref, 0, 5, im(3), thunk2_ref);
-                make_thunk(thunk2_ref, 0, 17, int_ref);
+                var thunk2_ref = util.make_thunk(17, [int_ref]);
+                var thunk1_ref = util.make_thunk(5, [im(3), thunk2_ref]);
 
                 // Add thunk1 to root set
-                stack_push(thunk1_ref);
+                runtime.stack_push(thunk1_ref);
 
 
                 // Run garbage collection
-                exports.run_gc();
+                runtime.exports.run_gc();
 
                 // Check that thunk was actually copied to new heap
-                assert.notEqual(thunk1_ref, stack_elem(0), "Reference to thunk 1 not updated in root set");
+                thunk1_ref = TestUtil.check_copied(thunk1_ref, runtime.stack_elem(0));
+                util.check_thunk(thunk1_ref, 5, 2);
 
-                thunk1_ref = stack_elem(0);
-                thunk1 = new Uint32Array(memory.buffer, thunk1_ref, 5);
+                /// Check closure elements
+                var thunk1 = new Uint32Array(runtime.memory.buffer, thunk1_ref + 3 * 4, 2);
 
-                // Check that thunk object properties were copied
-                // correctly
+                // Check element 1
+                assert.equal(thunk1[0], im(3), 'Element 1 of closure 1 not copied');
 
-                assert.equal(thunk1[0], 0, "Object type != Thunk");
-                assert.equal(thunk1[1], 5, "Incorrect thunk function");
-                assert.equal(thunk1[2], 2, "Incorrect closure size");
+                // Check element 2
+                thunk2_ref = TestUtil.check_copied(thunk2_ref, thunk1[1]);
+                util.check_thunk(thunk2_ref, 17, 1);
 
-                // Check that closure was copied correctly
-                assert.equal(thunk1[3], im(3), "Immediate integer not copied in closure");
+                // Check thunk2's closure
+                var thunk2 = new Uint32Array(runtime.memory.buffer, thunk2_ref + 3 * 4, 1);
 
-                // Check that reference to thunk2 was updated in
-                // closure
-                assert.notEqual(thunk1[4], thunk2_ref, "Reference to thunk 2 not updated in closure");
-
-
-                // Test thunk 2
-                thunk2_ref = thunk1[4]
-                thunk2 = new Uint32Array(memory.buffer, thunk2_ref, 4);
-
-                // Check that thunk object properties were copied
-                // correctly
-
-                assert.equal(thunk2[0], 0, "Object type != Thunk");
-                assert.equal(thunk2[1], 17, "Incorrect thunk function");
-                assert.equal(thunk2[2], 1, "Incorrect closure size");
-
-
-                // Check that reference to boxed integer was updated in
-                // closure
-                assert.notEqual(thunk2[3], int_ref, "Reference to boxed integer not updated in closure");
-
-                // Check that boxed integer was copied
-
-                int_ref = thunk2[3];
-                assert.deepEqual(
-                    new Uint32Array(memory.buffer, int_ref, 2),
-                    Uint32Array.from([2, 0x10023044]),
-                    "Referenced boxed integer not copied correctly"
-                );
+                int_ref = TestUtil.check_copied(int_ref, thunk2[0]);
+                util.check_int(int_ref, 0x10023044);
             });
 
-
-            it('Should replace resolved thunk with its result (immediate values)', function() {
-                // Allocate storage for resolved thunk with 1 closure
-                // value
-                var thunk_ref = exports.alloc(4 * 4);
-                var thunk = new Uint32Array(memory.buffer, thunk_ref, 4);
-
-                // Create thunk
-                make_thunk(thunk_ref, 1, im(7), im(87));
-                stack_push(thunk_ref);
+            it('Resolved thunks replaced with their results (immediate values)', function() {
+                // Create resolved thunk
+                var thunk_ref = util.make_thunk(im(7), [im(87)], true);
+                runtime.stack_push(thunk_ref);
 
 
                 // Run garbage collection
-                exports.run_gc();
+                runtime.exports.run_gc();
 
                 // Check that the resolved thunk was replaced with its
                 // result
-                assert.equal(stack_elem(0), im(7), "Thunk not replaced with result in root set");
+                assert.equal(runtime.stack_elem(0), im(7), 'Thunk not replaced with result in root set');
             });
 
-            it('Should copy result of resolved thunk', function() {
+            it('Result of resolved thunk copied', function() {
                 // Create boxed integer result
-                var result_ref = exports.alloc(2 * 4);
-                box_int(memory, result_ref, 87006500);
+                var result_ref = util.make_int(87006500);
 
                 // Create thunk with no closure
-                var thunk_ref = exports.alloc(3 * 4);
-                make_thunk(thunk_ref, 1, result_ref);
-                stack_push(thunk_ref);
+                var thunk_ref = util.make_thunk(result_ref, [], true);
+                runtime.stack_push(thunk_ref);
 
 
                 // Run garbage collection
-                exports.run_gc();
+                runtime.exports.run_gc();
 
                 // Check that the thunk reference was replaced with a
                 // reference to the boxed integer result
 
-                assert.deepEqual(
-                    new Uint32Array(memory.buffer, stack_elem(0), 2),
-                    Uint32Array.from([2, 87006500]),
-                    "Reference to thunk not replaced with reference to result"
-                );
+                result_ref = TestUtil.check_copied(result_ref, runtime.stack_elem(0));
+                util.check_int(result_ref, 87006500);
+            });
 
-                assert.notEqual(result_ref, stack_elem(0), "Thunk result not copied to new heap");
+            it('Thunks, with strings in closure, copied', function() {
+                var str = "hello world!";
+                var str_ref = util.make_string(str);
+
+                var thunk_ref = util.make_thunk(4, [str_ref]);
+                runtime.stack_push(thunk_ref);
+
+                // Run garbage collection
+                runtime.exports.run_gc();
+
+                thunk_ref = TestUtil.check_copied(thunk_ref, runtime.stack_elem(0));
+                util.check_thunk(thunk_ref, 4, 1);
+
+                // Check that closure was copied correctly
+                var closure = new Uint32Array(runtime.memory.buffer, thunk_ref + 3 * 4, 1);
+
+                str_ref = TestUtil.check_copied(str_ref, closure[0]);
+                util.check_string(str_ref, str);
             });
         });
     });
