@@ -1,5 +1,8 @@
 {
     "scripts": {
         "test": "mocha \"./runtime/*.test.js\""
+    },
+    "dependencies": {
+        "mocha": "^7.0.1"
     }
 }
