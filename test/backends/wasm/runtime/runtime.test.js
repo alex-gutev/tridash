@@ -1347,5 +1347,44 @@ describe('Memory', function() {
                 util.check_string(str_ref, str);
             });
         });
+
+        describe('Unmanaged Objects', function() {
+            it('Unmanaged objects in root set not copied', function() {
+                // Create object below GC managed heap
+
+                var int_ref = runtime.constant_section;
+                util.box_int(int_ref, 1527);
+
+                runtime.stack_push(int_ref);
+
+                // Run garbage collection
+                runtime.exports.run_gc();
+
+                assert.equal(int_ref, runtime.stack_elem(0), 'Unmanaged object copied');
+                util.check_int(int_ref, 1527);
+            });
+
+            it('Unmanaged object referenced by managed object not copied', function() {
+                // Create object below GC managed heap
+
+                var int_ref = runtime.constant_section;
+                util.box_int(int_ref, 1527);
+
+                var arr_ref = util.make_array([int_ref]);
+
+                runtime.stack_push(arr_ref);
+
+                // Run garbage collection
+                runtime.exports.run_gc();
+
+                arr_ref = TestUtil.check_copied(arr_ref, runtime.stack_elem(0));
+                util.check_is_array(arr_ref, 1);
+
+                var array = new Uint32Array(runtime.memory.buffer, arr_ref + 8, 1);
+
+                assert.equal(int_ref, array[0], 'Unmanaged object copied');
+                util.check_int(int_ref, 1527);
+            });
+        });
     });
 });

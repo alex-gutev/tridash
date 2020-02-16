@@ -45,6 +45,14 @@
 static char ** stack_base;
 
 /**
+ * Pointer to the first byte of the heap memory, which is managed by
+ * the garbage collector.
+ *
+ * Objects located below this address are not collected.
+ */
+static char * heap_base;
+
+/**
  * Pointer to the heap to which objects are copied after garbage
  * collection.
  */
@@ -95,6 +103,8 @@ static void grow_memory(size_t amount);
 void initialize(char *stack, char *heap, size_t size) {
     stack_base = (char**)stack;
     stack_top = stack_base;
+
+    heap_base = heap;
 
     from_space = alloc_ptr = heap;
     to_space = heap + size/2;
@@ -172,4 +182,8 @@ void memcopy(char *dest, const char *src, size_t size) {
         dest++;
         src++;
     }
+}
+
+int is_managed(const void *ptr) {
+    return (uintptr_t)ptr >= (uintptr_t)heap_base;
 }

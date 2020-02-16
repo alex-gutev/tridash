@@ -86,4 +86,15 @@ export void run_gc(void);
  */
 void memcopy(char *dest, const char *src, size_t size);
 
+/**
+ * Checks whether a pointer points to a memory location within the
+ * garbage collected heap.
+ *
+ * @param ptr The pointer
+ *
+ * @return True (1) if the pointer points within the garbage collected
+ *   heap.
+ */
+int is_managed(const void *ptr);
+
 #endif /* TRIDASH_MEMORY_H */

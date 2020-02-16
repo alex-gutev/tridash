@@ -60,7 +60,10 @@ void *copy_object(void *ptr) {
         ptr = (void*)((uintptr_t)ptr & ~(uintptr_t)TAG_MASK);
 
     else if (!IS_REF(ptr))
-        return (void*)ptr;
+        return ptr;
+
+    else if (!is_managed(ptr))
+        return ptr;
 
     struct tridash_object *object = ptr;
     void *dest;
