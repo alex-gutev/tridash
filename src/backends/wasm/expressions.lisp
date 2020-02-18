@@ -237,10 +237,12 @@
 
       `(func ,@(make-list (length operands) :initial-element '(param i32))
              ,@(-> (map-extend #'value-block-instructions blocks)
-                   (append `((local.get ,(value-block-label block))))
+                   (append `((local.get (ref ,(value-block-label block)))))
                    remove-redundant-boxes
-                   (expand-wasm-macros locals)
-                   (make-locals (make-operand-map (length operands))))))))
+
+                   (make-function-body
+                    (make-operand-map (length operands))
+                    locals))))))
 
 (defun add-operand (node)
   "Adds a local variable, to *FUNCTION-BLOCK-STATE*, and a
@@ -312,11 +314,11 @@
 
     (values flat-block block-map)))
 
+
 (defun make-operand-map (num-operands)
   "Creates a map mapping the labels [0, num-operands] to themselves."
 
   (map-to 'hash-map #'cons (range 0 num-operands) (range 0 num-operands)))
-
 
 (defun locals-map (blocks)
   "Returns the map mapping local variable labels to the corresponding
@@ -330,6 +332,38 @@
 
    blocks))
 
+
+(defun make-function-body (instructions operands locals)
+  "Generates the full series of instructions for a function.
+
+   Performs the following:
+
+   1. Expands macro instructions into their wasm equivalents
+   2. Inserts the necessary stack load and stores for references
+   3. Maps local variable labels to indices
+   4. Generates (local ...) declarations
+   5. Optimizations
+
+   INSTRUCTIONS are the instructions for computing the result of then
+   function.
+
+   OPERANDS is the map, mapping parameter local variable labels to
+   indices.
+
+   LOCALS is the map mapping local variable labels to the
+   corresponding VALUE-BLOCK objects."
+
+  (-> instructions
+      remove-redundant-boxes
+      (expand-wasm-macros locals)
+
+      ;; Making Reference Load and Stores
+      optimize-reference-loads
+      make-load-references
+      patch-stack-offsets
+
+      ;; Renumber locals and generate locals declarations
+      (make-locals operands)))
 
 (defun make-locals (instructions &optional (local-map (make-hash-map)))
   "Adds local variable declarations, for all local variables used in
@@ -394,9 +428,9 @@
    comprising the thunk's closure."
 
   (flet ((load-local (local index)
-           `((local.get $c)
+           `((local.get (ref $c))
              (i32.load offset ,(* 4 index))
-             (local.set ,(value-block-label local)))))
+             (local.set (ref ,(value-block-label local))))))
 
     (with-struct-slots value-block- (label instructions locals) block
       (multiple-value-bind (blocks closure)
@@ -412,12 +446,11 @@
                       (map-extend #'load-local closure-locals (range 1))
                       (map-extend #'value-block-instructions blocks)
 
-                      `((local.get ,label)))
+                      `((local.get (ref ,label))))
 
-                     remove-redundant-boxes
-                     (expand-wasm-macros (locals-map blocks))
-
-                     (make-locals (alist-hash-map '(($c . 0))))))
+                     (make-function-body
+                      (make-locals (alist-hash-map '(($c . 0))))
+                      (locals-map blocks))))
            closure-locals))))))
 
 (defun decrement-block-count (block-map)
@@ -438,8 +471,8 @@
          (size (* 4 (+ 3 num-locals))))
 
     (flet ((store-local (local index)
-             `((local.get ,result)
-               (local.get ,(value-block-label local))
+             `((local.get (ref ,result))
+               (local.get (ref ,(value-block-label local)))
                (i32.store offset ,(+ 12 (* 4 index))))))
 
       (make-value-block
@@ -448,17 +481,17 @@
 
        :instructions
        `((i32.const ,size)
-         (call $alloc)
-         (local.tee ,result)
+         (call (import "alloc"))
+         (local.tee (ref ,result))
 
          (i32.const ,+type-thunk+)
          i32.store
 
-         (local.get ,result)
+         (local.get (ref ,result))
          (i32.const ,funcref)
          (i32.store offset 4)
 
-         (local.get ,result)
+         (local.get (ref ,result))
          (i32.const ,num-locals)
          (i32.store offset 8)
 
@@ -498,8 +531,8 @@
                     (list value))
 
               (setf (value-block-instructions vblock)
-                    `((local.get ,(value-block-label value))
-                      (local.set ,result))))
+                    `((local.get (ref ,(value-block-label value)))
+                      (local.set (ref ,result)))))
 
             vblock)))))
 
@@ -525,8 +558,8 @@
         (make-value-block
          :label result
          :instructions
-         `((local.get ,(value-block-label block))
-           (local.set ,result)))))))
+         `((local.get (ref ,(value-block-label block)))
+           (local.set (ref ,result))))))))
 
 
 ;;; Functor Expressions
@@ -571,9 +604,10 @@
      :operands operands
 
      :instructions
-     `(,@(map (compose (curry #'list 'local.get) #'value-block-label) operands)
+     `(,@(map (curry #'list 'local.get)
+              (map (compose (curry #'list 'ref) #'value-block-label) operands))
          (call ,(meta-node-id meta-node))
-         (local.set ,result)))))
+         (local.set (ref ,result))))))
 
 (defun outer-node-operands (meta-node outer-nodes)
   "Returns the list of intermediate expressions for computing the
@@ -733,8 +767,8 @@
                (num-args (length arguments)))
 
            (flet ((push-operand (operand offset)
-                    `((local.get ,arg-list)
-                      (local.get ,operand)
+                    `((local.get (ref ,arg-list))
+                      (local.get (ref ,operand))
                       (i32.store offset ,offset))))
 
              `((block
@@ -744,8 +778,8 @@
 
                      ;; Allocate storage for arguments list
                      (i32.const ,(+ 4 (* 4 num-args)))
-                     (call $alloc)
-                     (local.tee ,arg-list)
+                     (call (import "alloc"))
+                     (local.tee (ref ,arg-list))
 
                      ;; Store number of arguments
                      (i32.const ,num-args)
@@ -760,19 +794,19 @@
 
                      (if (result i32)
                          (then
-                          (local.get ,arg-list)
+                          (local.get (ref ,arg-list))
                           (local.get (value ,operator))
                           (call_indirect (type (func (param i32) (result i32)))))
 
                          (else
-                          (local.get ,arg-list)
-                          (local.get ,operator)
+                          (local.get (ref ,arg-list))
+                          (local.get (ref ,operator))
                           (i32.load offset 12)
-                          (local.get ,operator)
+                          (local.get (ref ,operator))
                           i32.load
                           (call_indirect (type (func (param i32) (param i32) (result i32))))))
 
-                     (local.set ,result)
+                     (local.set (ref ,result))
                      (br 1))
 
                  ;; Handle failure in operator operand
@@ -802,12 +836,12 @@
   (with-struct-slots argument-list- (arguments) list
     (let* ((result (next-local))
            (num-args (length arguments))
-           (operands (compile-operands arguments (make-list num-args :initial-element nil))))
+           (operands (compile-operands arguments (repeat nil))))
 
       (flet ((store-arg (arg index)
-               `((local.get ,result)
-                 (local.get ,(value-block-label arg))
-                 (i32.store offset ,(+ 8 (* 4 index))))))
+               `((local.get (ref ,result))
+                 (local.get (ref ,(value-block-label arg)))
+                 (i32.store (offset ,(+ 8 (* 4 index)))))))
 
         (make-value-block
          :label result
@@ -817,20 +851,20 @@
 
          (if (emptyp arguments)
              `((call (import "empty_list"))
-               (local.set ,result))
+               (local.set (ref ,result)))
 
              `((i32.const ,(+ 8 (* num-args 4)))
-               (call $alloc)
-               (local.tee ,result)
+               (call (import "alloc"))
+               (local.tee (ref ,result))
 
                ;; Store object type
                (i32.const ,+type-array+)
-               (i32.store)
+               i32.store
 
                ;; Store list size
-               (local.get ,result)
+               (local.get (ref ,result))
                (i32.const ,num-args)
-               (i32.store offset 4)
+               (i32.store (offset 4))
 
                ;; Store Arguments
                ,@(map-extend #'store-arg operands (range 0)))))))))
@@ -865,8 +899,8 @@
                   OPERAND at INDEX within the defaults array of the
                   function reference."
 
-                 `((local.get ,result)
-                   (local.get ,(value-block-label operand))
+                 `((local.get (ref ,result))
+                   (local.get (ref ,(value-block-label operand)))
                    (i32.store offset ,(+ 12 (* 4 index))))))
 
           (make-value-block
@@ -880,18 +914,18 @@
                  (box ,result (type funcref)))
 
                `((i32.const ,(+ 12 (* 4 (length operands))))
-                 (call $alloc)
-                 (local.tee ,result)
+                 (call (import "alloc"))
+                 (local.tee (ref ,result))
 
                  (i32.const ,+type-funcref-args+)
                  i32.store
 
-                 (local.get ,result)
+                 (local.get (ref ,result))
                  (i32.const (meta-node-ref ,func))
                  (i32.store offset 4)
 
                  ;; Store number of default argument values
-                 (local.get ,result)
+                 (local.get (ref ,result))
                  (i32.const ,(length operands))
                  (i32.store offset 8)
 
@@ -926,9 +960,9 @@
                "Generate code which loads an operand from the
                 arguments array parameter."
 
-               `((local.get $args)
+               `((local.get (ref $args))
                  (i32.load offset ,(+ 4 (* index 4)))
-                 (local.set ,index)))
+                 (local.set (ref ,index))))
 
              (load-optional (start count)
                "Generate code which loads the values of the optional
@@ -970,9 +1004,9 @@
                (load-default-value (+ start index) (* 4 index)))
 
              (load-default-value (local offset)
-               `((local.get $defaults)
+               `((local.get (ref $defaults))
                  (i32.load offset ,offset)
-                 (local.set ,local)))
+                 (local.set (ref ,local))))
 
              (make-block (loads block)
                "Wrap BLOCK and LOADS into a block."
@@ -1013,25 +1047,26 @@
                        ;; Allocate memory for array
                        (i32.const 8)
                        i32.add
-                       (call $alloc)
-                       (local.tee ,start)
+                       (call (import "alloc"))
+                       (local.tee (ref ,start))
 
                        ;; Store object type
                        (i32.const ,+type-array+)
                        i32.store
 
                        ;; Store number of arguments
+                       (local.get (ref ,start))
                        (local.get $count)
                        (i32.const ,start)
                        i32.sub
                        (i32.store offset 4)
 
                        ;; Copy arguments using memcopy
-                       (local.get ,start)
+                       (local.get (ref ,start))
                        (i32.const 8)
                        i32.add
 
-                       (local.get $args)
+                       (local.get (ref $args))
                        (i32.const ,(+ 4 (* 4 start)))
                        i32.add
 
@@ -1041,7 +1076,7 @@
 
                    ;; Set rest argument array to empty
                    (call (import "Empty"))
-                   (local.set ,start)))))
+                   (local.set (ref ,start))))))
 
       (let* ((num-outer-nodes (length (outer-node-references meta-node)))
              (num-operands (length operands))
@@ -1055,7 +1090,7 @@
           (result i32)
 
           ,@(->
-             `((local.get $args)
+             `((local.get (ref $args))
                i32.load
                (local.set $count)
 
@@ -1081,17 +1116,15 @@
 
                ;; Body Instructions
                ,@(map-extend #'value-block-instructions blocks)
-               (local.get ,result))
+               (local.get (ref ,result)))
 
-             remove-redundant-boxes
-             (expand-wasm-macros (locals-map blocks))
-
-             (make-locals
+             (make-function-body
               (alist-hash-map
                (if (plusp num-optional)
                    '(($args . 0)
                      ($defaults . 1))
-                   '(($args . 0)))))))))))
+                   '(($args . 0))))
+              (locals-map blocks))))))))
 
 (defun make-arity-check (arity)
   "Generate code which checks that the number of arguments (stored in
@@ -1149,8 +1182,8 @@
             (descriptor (make-object-descriptor keys)))
 
         (flet ((store-field (value index)
-                 `((local.get ,result)
-                   (local.get ,(value-block-label value))
+                 `((local.get (ref ,result))
+                   (local.get (ref ,(value-block-label value)))
                    (i32.store offset ,(+ 4 (* 4 index))))))
 
           (make-value-block
@@ -1159,8 +1192,8 @@
 
            :instructions
            `((i32.const ,(+ 4 (* 4 (length values))))
-             (call $alloc)
-             (local.tee ,result)
+             (call (import "alloc"))
+             (local.tee (ref ,result))
 
              ;; Store object descriptor
              (i32.const (data ,descriptor))
@@ -1226,13 +1259,19 @@
   (let ((result (next-local)))
     (make-value-block
      :label result
-     :instructions (number-literal value 'i32 result))))
+     :instructions (number-literal value 'i32 result)
+
+     :immediate-p t
+     :strict-p t)))
 
 (defmethod compile-expression ((value float) &key)
   (let ((result (next-local)))
     (make-value-block
      :label result
-     :instructions (number-literal value 'f32 result))))
+     :instructions (number-literal value 'f32 result)
+
+     :immediate-p t
+     :strict-p t)))
 
 (defun number-literal (value type result)
   `((,(symb type '.const) ,value)
@@ -1251,7 +1290,7 @@
      :label result
      :instructions
      `((i32.const (data ,(add-string-constant value +type-string+)))
-       (local.set ,result))
+       (local.set (ref ,result)))
 
      :strict-p t)))
 
@@ -1303,7 +1342,10 @@
      :label result
      :instructions
      `((i32.const ,(char-code chr))
-       (box ,result (type character))))))
+       (box ,result (type character)))
+
+     :immediate-p t
+     :strict-p t)))
 
 
 ;;;; Symbols
@@ -1318,7 +1360,7 @@
      :label result
      :instructions
      `((i32.const (data ,(add-string-constant (symbol-name sym) +type-symbol+)))
-       (local.set ,result))
+       (local.set (ref ,result)))
 
      :strict-p t)))
 
@@ -1331,7 +1373,235 @@
      :label result
      :instructions
      `((call (import "fail_no_value"))
-       (local.set ,result)))))
+       (local.set (ref ,result))))))
+
+
+;;; Managing Pointers
+
+(defun make-load-references (instructions)
+  "Replaces each LOCAL.GET/SET/TEE instruction, for a REF local, with
+   a sequence of instructions that load/store the reference from/onto
+   the stack."
+
+  (let ((store-operands (make-hash-map)))
+    (labels ((expand (instruction)
+               "Expand LOCAL.GET/SET/TEE instructions for REF locals
+                to instructions which load/store the object reference
+                on the stack."
+
+               (match instruction
+                 ((list 'local.get (list 'ref label))
+                  (ensure-get label store-operands t)
+
+                  ;; Load label offset from stack
+                  `((local.get $stack-base)
+                    (i32.load (offset (local-offset ,label)))
+                    (local.tee ,label)))
+
+                 ((list 'local.set (list 'ref label))
+                  (ensure-get label store-operands nil)
+
+                  `((local.set ,label)
+
+                    ;; Store in stack
+                    (local.get $stack-base)
+                    (local.get ,label)
+                    (i32.store (offset (local-offset ,label)))))
+
+                 ((list 'local.tee (list 'ref label))
+                  (concatenate
+                   (expand `(local.set (ref ,label)))
+                   `((local.get ,label))))
+
+                 (_ (list instruction))))
+
+             (add-store-operands (instructions)
+               "Add instructions which store the references to the
+                function operands on the stack."
+
+               (concatenate
+                (make-store-operands)
+                instructions))
+
+             (make-store-operands ()
+               "Create instructions which store the references to the
+                function operands on the stack."
+
+               (let ((locals (remove-if-not #'cdr store-operands)))
+                 (concatenate
+                  (->> locals
+                       map-keys
+                       (map-extend #'store-operand)))))
+
+             (store-operand (label)
+               "Create instructions which store operand LABEL on the
+                stack."
+
+               `((local.get $stack-base)
+                 (local.get ,label)
+                 (i32.store (offset (local-offset ,label))))))
+
+      (add-store-operands (map-wasm #'expand instructions)))))
+
+(defun optimize-reference-loads (instructions)
+  "Optimize the loading/storing of reference from/onto the stack.
+
+   LOCAL.GET/SET/TEE instructions for REF locals, are replaced with
+   instructions for regular locals if it can be determined that there
+   is no need to refresh or save the reference at that point."
+
+  (let ((live (make-hash-map))
+        (at-start t)
+        (store-indices (make-hash-map))
+        (load-counts (make-hash-map)))
+
+    (labels ((optimize-load (instruction)
+               "Replace REF locals with regular locals in LOCAL.GET
+                instructions."
+
+               (match instruction
+                 ((list 'local.get (list 'ref label))
+                  (list
+                   (if (or (get label live) at-start)
+                       (list 'local.get label)
+                       (prog1 (list 'local.get (list 'ref label))
+                         (setf (get label live) t)))))
+
+                 ((list (or 'local.set 'local.tee) (list 'ref label))
+                  (setf (get label live) t)
+                  (list instruction))
+
+                 ((list 'call _)
+                  (clear live)
+                  (setf at-start nil)
+                  (list instruction))
+
+                 (_
+                  (list instruction))))
+
+             (match-load-stores (instruction)
+               "If INSTRUCTION is a LOCAL.SET REF, assign it a unique
+                index. If INSTRUCTION is a LOCAL.GET REF, increment
+                the number of loads for the last store (for that
+                label) in load-COUNTS."
+
+               (match instruction
+                 ((list (and (or 'local.set 'local.tee) instruction)
+                        (list 'ref label))
+                  (let ((index (length load-counts)))
+                    (setf (get label store-indices) index)
+                    (setf (get index load-counts) 0)
+
+                    (list (list instruction (list 'ref label index)))))
+
+                 ((list 'local.get (list 'ref label))
+                  (awhen (get label store-indices)
+                    (incf (get it load-counts)))
+
+                  (list instruction))
+
+                 (_ (list instruction))))
+
+             (optimize-store (instruction)
+               "Replace LOCAL.SET REF instructions, for which the load
+                count (in STORE-COUNTS) is 0, with regular LOCAL.SET
+                instructions."
+
+               (match instruction
+                 ((list (and (or 'local.set 'local.tee) instruction)
+                        (list 'ref label index))
+
+                  (list
+                   (if (zerop (get index load-counts))
+                       (list instruction label)
+                       (list instruction (list 'ref label)))))
+
+                 (_ (list instruction)))))
+
+      ;; Optimizing Stores
+      ;;
+      ;; Stores (local.set (ref $x)) for which there is no following
+      ;; (local.get (ref $x)) can be removed
+
+      (->> (map-wasm #'optimize-load instructions)
+           (map-wasm #'match-load-stores)
+           (map-wasm #'optimize-store)))))
+
+(defun patch-stack-offsets (instructions)
+  "Replace symbolic references to the stack offsets at which local
+   variables are stored with actual offsets, and add the stack
+   initialization and cleanup instructions."
+
+  (let ((offsets (make-hash-map))
+        (size 0))
+
+    (labels ((patch-offset (instruction)
+               "Patch references to local variable stack offsets with
+                the actual offsets."
+
+               (match instruction
+                 ((list (and (or 'i32.load 'i32.store) op)
+                        (list 'offset
+                              (list 'local-offset label)))
+
+                  (unless (get label offsets)
+                    (setf (get label offsets) size)
+                    (incf size 4))
+
+                  `((,op (offset ,(get label offsets)))))
+
+                 (_ (list instruction))))
+
+             (add-stack-instructions (instructions)
+               "Add instructions for initializing the stack base
+                pointer, reserving stack space, zeroing stack elements
+                and restoring the stack pointer."
+
+               `((i32.const $stack-ptr)
+                 (i32.const $stack-ptr)
+                 i32.load
+                 (i32.const ,size)
+                 i32.sub
+                 (local.tee $stack-base)
+                 i32.store
+
+                 ,@(zero-stack)
+
+                 ,@instructions
+                 (i32.const $stack-ptr)
+                 (local.get $stack-base)
+                 (i32.const ,size)
+                 i32.add
+                 i32.store))
+
+             (zero-stack ()
+               "Create instructions which zero out the reserved stack
+                space."
+
+               (let* ((size (/ size 4)))
+                 (multiple-value-bind (num rem)
+                     (floor size 2)
+
+                   (concatenate-to
+                    'list
+
+                    (map-extend (curry #'zero-offset 'i64)
+                                (range 0 (* num 8) 8))
+
+                    (map-extend (curry #'zero-offset 'i32)
+                                (range (* num 8) (+ (* num 8) (* rem 4)) 4))))))
+
+             (zero-offset (type offset)
+               "Create instructions which zero out the stack location
+                at OFFSET. Type is the element size, I32 or I64."
+               `((local.get $stack-base)
+                 (,(symb type '.const) 0)
+                 (,(symb type '.store) (offset ,offset)))))
+
+      (let ((patched (map-wasm #'patch-offset instructions)))
+        (if (zerop size)
+            patched
+            (add-stack-instructions patched))))))
 
 
 ;;; Optimization
@@ -1341,9 +1611,10 @@
    boxed."
 
   (let ((used-boxed (hash-set)))
+
     (labels ((mark-used (instruction)
                (match instruction
-                 ((list 'local.get local)
+                 ((list 'local.get (list 'ref local))
                   (nadjoin local used-boxed))))
 
              (replace-box (instruction)
@@ -1391,9 +1662,9 @@
 
                     (nadjoin local resolved)
 
-                    `((local.get ,local)
+                    `((local.get (ref ,local))
                       (call $resolve)
-                      (local.set ,local))))
+                      (local.set (ref ,local)))))
 
                  ((list 'unbox local (list 'type type))
                   (cond
@@ -1414,7 +1685,7 @@
                   (box-local local type))
 
                  ((list 'get-fail local)
-                  `((local.get ,local)))
+                  `((local.get (ref ,local))))
 
                  (_ (list instruction))))
 
@@ -1423,6 +1694,7 @@
 
              (unboxed? (local)
                (memberp local unboxed)))
+
       (map-wasm #'expand-macro instructions))))
 
 
@@ -1450,7 +1722,7 @@
             (br_table 0 1 2 4))
 
           ;; Boxed Value
-          (local.get ,local)
+          (local.get (ref ,local))
           i32.load
           (local.tee (type ,local))
 
@@ -1459,7 +1731,7 @@
           i32.sub
           (br_table 2 2 1)
 
-          (local.get ,local)
+          (local.get (ref ,local))
           (i32.load offset 4)
           (local.set (value ,local))
           (br 2))
@@ -1475,7 +1747,7 @@
         (br 1))
 
       (call (import "type-error"))
-      (local.set ,local)
+      (local.set (ref ,local))
       (br 1))))
 
 (defun unbox-funcref (local)
@@ -1492,7 +1764,7 @@
             (br_table 0 1 2 4))
 
           ;; Boxed Reference
-          (local.get ,local)
+          (local.get (ref ,local))
           i32.load
           (local.tee (type ,local))
 
@@ -1506,14 +1778,14 @@
         (i32.const ,+type-funcref+)
         (local.set (type ,local))
 
-        (local.get ,local)
+        (local.get (ref ,local))
         (i32.const 2)
         i32.shr_s
         (local.set (value ,local))
         (br 1))
 
       (call (import "type-error"))
-      (local.set ,local)
+      (local.set (ref ,local))
       (br 1))))
 
 
@@ -1526,23 +1798,23 @@
     (character (box-character local))
     (funcref (box-funcref local))
     (fail
-     `((local.set ,local)))))
+     `((local.set (ref ,local))))))
 
 (defun box-float (local)
   `(i32.reinterpret_f32
-    (local.set (value local))
+    (local.set (value ,local))
 
     (i32.const 8)
-    (call $alloc)
-    (local.tee ,local)
+    (call (import "alloc"))
+    (local.tee (ref ,local))
 
     (i32.const ,+type-f32+)
     (local.tee (type ,local))
     i32.store
 
-    (local.get ,local)
+    (local.get (ref ,local))
     (local.get (value ,local))
-    (i32.store offset 4)))
+    (i32.store (offset 4))))
 
 (defun box-integer (local)
   `((local.tee (value ,local))
@@ -1564,13 +1836,13 @@
 
         (else
          (i32.const 8)
-         (call $alloc)
-         (local.tee ,local)
+         (call (import "alloc"))
+         (local.tee (ref ,local))
 
          (i32.const ,+type-i32+)
          i32.store
 
-         (local.get ,local)
+         (local.get (ref ,local))
          (local.get (value ,local))
          (i32.store offset 4)))))
 
@@ -1578,19 +1850,19 @@
   "Generates code which creates a boxed character object, with the
    reference to it stored in LOCAL."
 
-  `((local.set (value local))
+  `((local.set (value ,local))
 
     (i32.const 8)
-    (call $alloc)
-    (local.tee ,local)
+    (call (import "alloc"))
+    (local.tee (ref ,local))
 
     (i32.const ,+type-charecter+)
     (local.tee (type ,local))
     i32.store
 
-    (local.get ,local)
+    (local.get (ref ,local))
     (local.get (value ,local))
-    (i32.store offset 4)))
+    (i32.store (offset 4))))
 
 (defun box-funcref (local)
   "Generates code which boxes the function index, stored in LOCAL into
