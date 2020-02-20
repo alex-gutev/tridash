@@ -375,22 +375,25 @@
    labels are added to the map with the index being the size of the
    map."
 
-  (let ((decls (make-collector nil)))
-    (labels ((map-instruction (instruction)
-               (list
-                (match instruction
-                  ((list (and (or 'local.get 'local.set 'local.tee) op) local)
-                   `(,op ,(map-local local)))
+  (labels ((map-instruction (instruction)
+             (list
+              (match instruction
+                ((list (and (or 'local.get 'local.set 'local.tee) op) local)
+                 `(,op ,(map-local local)))
 
-                  (_ instruction))))
+                (_ instruction))))
 
-             (map-local (local)
-               (ensure-get local local-map
-                 (prog1 (length local-map)
-                   (accumulate decls '(local i32))))))
+           (map-local (local)
+             (ensure-get local local-map
+               (length local-map))))
 
-      (let ((body (map-wasm #'map-instruction instructions)))
-        (append (collector-sequence decls) body)))))
+    (let ((operands (length local-map))
+          (body (map-wasm #'map-instruction instructions)))
+      (if (emptyp local-map)
+          body
+          (concatenate
+           (list (list* 'local (coerce (repeat 'i32 (- (length local-map) operands)) 'list)))
+           body)))))
 
 
 (defgeneric compile-expression (expression &key &allow-other-keys)
