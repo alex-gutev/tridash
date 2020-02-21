@@ -371,6 +371,7 @@
   (-> instructions
       remove-redundant-boxes
       (expand-wasm-macros locals)
+      fold-constant-locals
 
       ;; Making Reference Load and Stores
       optimize-reference-loads
@@ -1292,7 +1293,8 @@
   (let ((result (next-local)))
     (make-value-block
      :label result
-     :instructions (number-literal value 'i32 result)
+     :instructions
+     `((constant ,result ,value))
 
      :immediate-p t
      :strict-p t
@@ -1664,6 +1666,12 @@
                       (list instruction)
                       (set-value local type)))
 
+                 ((list 'constant local value)
+                  (if (memberp local used-boxed)
+                      (list instruction)
+                      `((i32.const ,value)
+                        ,@(set-int-value local))))
+
                  (_ (list instruction))))
 
              (set-value (local type)
@@ -1689,6 +1697,79 @@
 
       (walk-wasm #'mark-used instructions)
       (map-wasm #'replace-box instructions))))
+
+(defun fold-constant-locals (instructions)
+  "Replaces references to constant values with the values themselves."
+
+  (labels ((mark-constant (constants instruction it)
+             "If INSTRUCTION is a constant push instruction followed
+              by a LOCAL.SET/TEE, add an the local variable to the
+              CONSTANTS map."
+
+             (match instruction
+               ((and (list* (or 'i32.const 'f32.const) _) constant)
+                (when-let (local (set-local? it))
+                  (if (memberp local constants)
+                      (setf (get local constants) nil)
+                      (setf (get local constants) constant))
+
+                  (values nil 1)))
+
+               ((list (or 'local.set 'local.tee) local)
+                (setf (get local constants) nil))))
+
+           (set-local? (it)
+             "If the next instruction is a LOCAL.SET/TEE return the
+              local variable label."
+
+             (advance it)
+
+             (unless (endp it)
+               (match (at it)
+                 ((list (or 'local.set 'local.tee) local)
+                  local))))
+
+           (remove-constants (constants instruction it)
+             "Remove LOCAL.SET/TEE instructions for constant locals
+              and replace LOCAL.GET instructions with the constant for
+              constant locals."
+
+             (match instruction
+               ((list* (or 'i32.const 'f32.const) _)
+                (replace-next-set constants instruction it))
+
+               ((list 'local.get local)
+                (list
+                 (or (get local constants)
+                     instruction)))
+
+               (_ (list instruction))))
+
+           (replace-next-set (constants instruction it)
+             "If the next instruction is a LOCAL.SET/LOCAL.TEE for a
+              constant local, return the replacement instructions."
+
+             (advance it)
+
+             (match (start it)
+               ((list 'local.set local)
+                (if (get local constants)
+                    (values nil 1)
+                    (list instruction)))
+
+               ((list 'local.tee local)
+                (if (get local constants)
+                    (values (list instruction) 1)
+                    (list instruction)))
+
+               (_ (list instruction)))))
+
+    (let ((constants (make-hash-map)))
+      (walk-group (curry #'mark-constant constants) instructions)
+      (map-group (curry #'remove-constants constants) instructions))))
+
+
+;;; Boxing and Unboxing
 
 (defun expand-wasm-macros (instructions locals)
   (let ((resolved (make-hash-set))
@@ -1720,6 +1801,9 @@
                     (t
                      (nadjoin local unboxed)
                      (unbox-local local type))))
+
+                 ((list 'constant local value)
+                  (make-constant local value))
 
                  ((list 'box local (list 'type type))
                   (box-local local type))
@@ -1829,6 +1913,43 @@
       (br 1))))
 
 
+;;;; Constants
+
+(defun make-constant (local value)
+  "Generate instructions which create the constant VALUE and store it
+   in LOCAL. Currently only integer constants are supported."
+
+  (etypecase value
+    (integer
+     (constant-integer local value))))
+
+(defun constant-integer (local value)
+  "Generate instructions which create a boxed integer with value
+   VALUE and store it in LOCAL."
+
+  `((i32.const ,value)
+    (local.set (value ,local))
+
+    ,@(if (< +min-immediate-int+ value +max-immediate-int+)
+
+          `((i32.const
+             ,(-> (ash value 2)
+                  (logior +tag-int+)))
+
+            (local.set (ref ,local)))
+
+          `((i32.const 8)
+            (call (import "alloc"))
+            (local.tee (ref ,local))
+
+            (i32.const ,+type-i32+)
+            i32.store
+
+            (local.get (ref ,local))
+            (i32.const ,value)
+            (i32.store (offset 4))))))
+
+
 ;;;; Boxing
 
 (defun box-local (local type)
@@ -1922,15 +2043,26 @@
 ;;; Utilities
 
 (defun walk-wasm (fn instructions)
+  "Apply FN on each instruction in INSTRUCTIONS.
+
+   If FN returns non-NIL when applied on a block instruction, the
+   instructions in the block are skipped."
+
   (labels ((walk (instruction)
              (unless (funcall fn instruction)
                (match instruction
                  ((list* (or 'block 'if 'then 'else 'loop)
                          instructions)
-                  (map #'walk instructions))))))
-    (map #'walk instructions)))
+                  (foreach #'walk instructions))))))
+    (foreach #'walk instructions)))
 
 (defun map-wasm (fn instructions)
+  "Replace each instruction in INSTRUCTIONS with the result of
+   applying FN on the instruction.
+
+   FN is applied on the contents of block instructions and not the
+   blocks themselves."
+
   (labels ((map-instruction (instruction)
              (match instruction
                ((list* (and (or 'block 'if 'then 'else 'loop) block)
@@ -1944,3 +2076,68 @@
                (_ (funcall fn instruction)))))
 
     (map-extend #'map-instruction instructions)))
+
+
+(defun walk-group (fn instructions)
+  "Apply FN on each instruction in INSTRUCTIONS.
+
+   FN is additionally passed an iterator which can be used to
+   lookahead at the following instructions.
+
+   If the first return value of FN is true and the instruction is a
+   block, the contents of the block are skipped. If the second value
+   is non-NIL, it is interpreted as the number of additional
+   instructions to skip (after the current instruction) before the
+   next call to FN."
+
+  (doiter (it instructions)
+    (let ((instruction (at it)))
+      (multiple-value-bind (skip n)
+          (funcall fn instruction (copy it))
+
+        (unless skip
+          (match instruction
+            ((list* (or 'block 'if 'then 'else 'loop)
+                    body)
+             (walk-group fn body))))
+
+        (when n (advance-n it n))))))
+
+(defun map-group (fn instructions)
+  "Map a list of instructions to another list using the function FN.
+
+   FN is applied on each instruction in INSTRUCTIONS and on an
+   iterator which can be used to lookahead at the following
+   instructions.
+
+   The first return value of FN is interpreted as a list of
+   instructions with which to replace the instruction that was passed
+   as the first argument.
+
+   If the second value is non-NIL, it is interpreted as the number of
+   additional instructions to skip (after the current instruction)
+   before the next call to FN. The additional skipped instructions are
+   not included in the result."
+
+  (let ((c (make-collector nil)))
+    (doiter (it instructions)
+      (let ((instruction (at it)))
+        (match instruction
+          ((list* (and (or 'block 'if 'then 'else 'loop) block)
+                  instructions)
+
+           (accumulate c (list* block (map-group fn instructions))))
+
+          ((list* 'result _)
+           (accumulate c instruction))
+
+          (_
+           (multiple-value-bind (instructions n)
+               (funcall fn instruction (copy it))
+
+             (when n
+               (advance-n it n))
+
+             (extend c instructions))))))
+
+    (collector-sequence c)))
