@@ -168,6 +168,9 @@
    available as an immediate unboxed value, that is it is computed
    locally by INSTRUCTIONS prior to being boxed.
 
+   VALUE-P is a flag for whether the result of the expression is a
+   static value which does not require computation.
+
    COUNT is the total number of references to the block's value. NIL
    if the block is only referenced in one place.
 
@@ -181,9 +184,17 @@
 
   strict-p
   immediate-p
+  value-p
 
   count
   common-p)
+
+(defun value-block-operand-p (block)
+  "Returns true if BLOCK represents an operand to the current
+   function."
+
+  (emptyp (value-block-instructions block)))
+
 
 (defclass function-block-state ()
   ((argument-locals
@@ -249,7 +260,9 @@
    `VALUE-BLOCK', for the operand node NODE."
 
   (with-slots (argument-locals) *function-block-state*
-    (setf (get node argument-locals) (make-value-block :label (next-local)))))
+    (setf (get node argument-locals)
+          (make-value-block :label (next-local)
+                            :value-p t))))
 
 (defun next-local (&optional (state *function-block-state*))
   "Returns a unique identifier for a new local variable in the
@@ -294,7 +307,8 @@
 
                (foreach
                 (lambda (block)
-                  (when (value-block-common-p block)
+                  (when (or (value-block-common-p block)
+                            (value-block-operand-p block))
                     (incf (get block block-map 0))))
                 operands)))
 
@@ -305,9 +319,10 @@
           (foreach (compose #'add-to-block-map #'value-block-operands) blocks)
 
           (doseq ((block . count) block-map)
-            (when (= count (value-block-count block))
-              (push block next-blocks)
-              (erase block-map block)))
+            (unless (value-block-operand-p block)
+              (when (= count (value-block-count block))
+                (push block next-blocks)
+                (erase block-map block))))
 
           (when next-blocks
             (add-blocks next-blocks)))))
@@ -412,10 +427,10 @@
    returns a `value-block' which creates the thunk object."
 
   (let ((block (call-next-method)))
-    (with-struct-slots value-block- (instructions common-p)
+    (with-struct-slots value-block- (instructions common-p value-p)
         block
 
-      (if (and thunk instructions (not common-p))
+      (if (and thunk instructions (not common-p) (not value-p))
           (multiple-value-bind (fn closure)
               (make-thunk-function block)
 
@@ -432,7 +447,7 @@
 
   (flet ((load-local (local index)
            `((local.get (ref $c))
-             (i32.load offset ,(* 4 index))
+             (i32.load (offset ,(* 4 index)))
              (local.set (ref ,(value-block-label local))))))
 
     (with-struct-slots value-block- (label instructions locals) block
@@ -461,8 +476,9 @@
    number of references to the block."
 
   (doseq ((block . count) block-map)
-    (decf (value-block-count block)
-          (1- count))))
+    (unless (value-block-operand-p block)
+      (decf (value-block-count block)
+            (1- count)))))
 
 (defun make-thunk (funcref closure)
   "Returns a `value-block' which creates a thunk object that invokes
@@ -476,7 +492,7 @@
     (flet ((store-local (local index)
              `((local.get (ref ,result))
                (local.get (ref ,(value-block-label local)))
-               (i32.store offset ,(+ 12 (* 4 index))))))
+               (i32.store (offset ,(+ 12 (* 4 index)))))))
 
       (make-value-block
        :label result
@@ -492,11 +508,11 @@
 
          (local.get (ref ,result))
          (i32.const ,funcref)
-         (i32.store offset 4)
+         (i32.store (offset 4))
 
          (local.get (ref ,result))
          (i32.const ,num-locals)
-         (i32.store offset 8)
+         (i32.store (offset 8))
 
          ,@(map-extend #'store-local closure (range 0)))))))
 
@@ -772,24 +788,27 @@
            (flet ((push-operand (operand offset)
                     `((local.get (ref ,arg-list))
                       (local.get (ref ,operand))
-                      (i32.store offset ,offset))))
+                      (i32.store (offset ,offset)))))
 
              `((block
                    (block
                        (resolve ,operator)
                      (unbox ,operator (type funcref))
 
-                     ;; Allocate storage for arguments list
-                     (i32.const ,(+ 4 (* 4 num-args)))
+                     ;; Allocate array for arguments list
+                     (i32.const ,(+ 8 (* 4 num-args)))
                      (call (import "alloc"))
                      (local.tee (ref ,arg-list))
-
-                     ;; Store number of arguments
-                     (i32.const ,num-args)
+                     (i32.const ,+type-array+)
                      i32.store
 
+                     ;; Store number of arguments
+                     (local.get (ref ,arg-list))
+                     (i32.const ,num-args)
+                     (i32.store (offset 4))
+
                      ;; Store arguments
-                     ,@(map-extend-to 'list #'push-operand operands (range 4 (+ 4 (* 4 num-args)) 4))
+                     ,@(map-extend-to 'list #'push-operand operands (range 8 (+ 8 (* 4 num-args)) 4))
 
                      (local.get (type ,operator))
                      (i32.const ,+type-funcref+)
@@ -798,15 +817,22 @@
                      (if (result i32)
                          (then
                           (local.get (ref ,arg-list))
+                          (i32.const 4)
+                          i32.add
                           (local.get (value ,operator))
                           (call_indirect (type (func (param i32) (result i32)))))
 
                          (else
                           (local.get (ref ,arg-list))
+                          (i32.const 4)
+                          i32.add
+
                           (local.get (ref ,operator))
-                          (i32.load offset 12)
+                          (i32.const 8)
+                          i32.add
+
                           (local.get (ref ,operator))
-                          i32.load
+                          (i32.load (offset 4))
                           (call_indirect (type (func (param i32) (param i32) (result i32))))))
 
                      (local.set (ref ,result))
@@ -849,6 +875,7 @@
         (make-value-block
          :label result
          :operands operands
+         :value-p t
 
          :instructions
 
@@ -904,7 +931,7 @@
 
                  `((local.get (ref ,result))
                    (local.get (ref ,(value-block-label operand)))
-                   (i32.store offset ,(+ 12 (* 4 index))))))
+                   (i32.store (offset ,(+ 12 (* 4 index)))))))
 
           (make-value-block
            :label result
@@ -925,12 +952,12 @@
 
                  (local.get (ref ,result))
                  (i32.const (meta-node-ref ,func))
-                 (i32.store offset 4)
+                 (i32.store (offset 4))
 
                  ;; Store number of default argument values
                  (local.get (ref ,result))
                  (i32.const ,(length operands))
-                 (i32.store offset 8)
+                 (i32.store (offset 8))
 
                  ;; Store optional and outer node argument values
                  ,@(map-extend #'store-arg operands (range 0))))))))))
@@ -964,7 +991,7 @@
                 arguments array parameter."
 
                `((local.get (ref $args))
-                 (i32.load offset ,(+ 4 (* index 4)))
+                 (i32.load (offset ,(+ 4 (* index 4))))
                  (local.set (ref ,index))))
 
              (load-optional (start count)
@@ -1008,7 +1035,7 @@
 
              (load-default-value (local offset)
                `((local.get (ref $defaults))
-                 (i32.load offset ,offset)
+                 (i32.load (offset ,offset))
                  (local.set (ref ,local))))
 
              (make-block (loads block)
@@ -1034,7 +1061,7 @@
                          ;; Check whether has rest arguments
                          (local.get $count)
                        (i32.const ,start)
-                       i32.lt_u
+                       i32.le_u
                        (br_if 0)
 
                        ;; Determine number of rest arguments
@@ -1062,7 +1089,7 @@
                        (local.get $count)
                        (i32.const ,start)
                        i32.sub
-                       (i32.store offset 4)
+                       (i32.store (offset 4))
 
                        ;; Copy arguments using memcopy
                        (local.get (ref ,start))
@@ -1088,7 +1115,7 @@
 
         `(func
           (param i32)
-          ,@(when (plusp num-optional)
+          ,@(when (or (plusp num-optional) (plusp num-outer-nodes))
               '((param i32)))
           (result i32)
 
@@ -1123,9 +1150,12 @@
 
              (make-function-body
               (alist-hash-map
-               (if (plusp num-optional)
+               (if (or (plusp num-optional)
+                       (plusp num-outer-nodes))
+
                    '(($args . 0)
                      ($defaults . 1))
+
                    '(($args . 0))))
               (locals-map blocks))))))))
 
@@ -1187,7 +1217,7 @@
         (flet ((store-field (value index)
                  `((local.get (ref ,result))
                    (local.get (ref ,(value-block-label value)))
-                   (i32.store offset ,(+ 4 (* 4 index))))))
+                   (i32.store (offset ,(+ 4 (* 4 index)))))))
 
           (make-value-block
            :label result
@@ -1265,7 +1295,8 @@
      :instructions (number-literal value 'i32 result)
 
      :immediate-p t
-     :strict-p t)))
+     :strict-p t
+     :value-p t)))
 
 (defmethod compile-expression ((value float) &key)
   (let ((result (next-local)))
@@ -1274,7 +1305,8 @@
      :instructions (number-literal value 'f32 result)
 
      :immediate-p t
-     :strict-p t)))
+     :strict-p t
+     :value-p t)))
 
 (defun number-literal (value type result)
   `((,(symb type '.const) ,value)
@@ -1295,7 +1327,8 @@
      `((i32.const (data ,(add-string-constant value +type-string+)))
        (local.set (ref ,result)))
 
-     :strict-p t)))
+     :strict-p t
+     :value-p t)))
 
 (defun byte-encode (value)
   "Return the list of bytes comprising a 32-bit integer VALUE in
@@ -1348,7 +1381,8 @@
        (box ,result (type character)))
 
      :immediate-p t
-     :strict-p t)))
+     :strict-p t
+     :value-p t)))
 
 
 ;;;; Symbols
@@ -1365,7 +1399,8 @@
      `((i32.const (data ,(add-string-constant (symbol-name sym) +type-symbol+)))
        (local.set (ref ,result)))
 
-     :strict-p t)))
+     :strict-p t
+     :value-p t)))
 
 
 ;;;; No Value
@@ -1376,7 +1411,9 @@
      :label result
      :instructions
      `((call (import "fail_no_value"))
-       (local.set (ref ,result))))))
+       (local.set (ref ,result)))
+
+     :value-p t)))
 
 
 ;;; Managing Pointers
@@ -1474,7 +1511,7 @@
                   (setf (get label live) t)
                   (list instruction))
 
-                 ((list 'call _)
+                 ((list* (or 'call 'call_indirect) _)
                   (clear live)
                   (setf at-start nil)
                   (list instruction))
@@ -1666,7 +1703,7 @@
                     (nadjoin local resolved)
 
                     `((local.get (ref ,local))
-                      (call $resolve)
+                      (call (import "resolve"))
                       (local.set (ref ,local)))))
 
                  ((list 'unbox local (list 'type type))
@@ -1756,36 +1793,36 @@
 (defun unbox-funcref (local)
   "Generates code which unboxes an function reference."
 
-  `((block (result)       ;; Type Error
-      (block (result)     ;; Unbox immediate integer
-        (block (result)   ;; Unbox boxed integer
-          (block (result) ;; Untag
-            (local.get ,local)
-            (i32.const ,+tag-mask+)
-            i32.and
+  `((block                              ; Type Error
+        (block                          ; Unbox immediate integer
+            (block                      ; Unbox boxed integer
+                (block                  ; Untag
+                    (local.get ,local)
+                  (i32.const ,+tag-mask+)
+                  i32.and
 
-            (br_table 0 1 2 4))
+                  (br_table 0 1 2 4))
 
-          ;; Boxed Reference
+              ;; Boxed Reference
+              (local.get (ref ,local))
+              i32.load
+              (local.tee (type ,local))
+
+              ;; Check Type
+              (i32.const ,+type-funcref-args+)
+              i32.ne
+              (br_if 1)
+              (br 2))
+
+          ;; Immediate Reference
+          (i32.const ,+type-funcref+)
+          (local.set (type ,local))
+
           (local.get (ref ,local))
-          i32.load
-          (local.tee (type ,local))
-
-          ;; Check Type
-          (i32.const ,+type-funcref-args+)
-          i32.ne
-          (br_if 1)
-          (br 2))
-
-        ;; Immediate Reference
-        (i32.const ,+type-funcref+)
-        (local.set (type ,local))
-
-        (local.get (ref ,local))
-        (i32.const 2)
-        i32.shr_s
-        (local.set (value ,local))
-        (br 1))
+          (i32.const 2)
+          i32.shr_s
+          (local.set (value ,local))
+          (br 1))
 
       (call (import "type-error"))
       (local.set (ref ,local))
