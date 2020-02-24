@@ -149,6 +149,12 @@
                   "backends/javascript"
 
                   :components
+                  ((:test-file "backend")))
+
+                 (:module
+                  "backends/wasm"
+
+                  :components
                   ((:test-file "backend"))))))
 
   :perform (asdf:test-op :after (op c)
