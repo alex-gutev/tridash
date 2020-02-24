@@ -378,6 +378,9 @@
       make-load-references
       patch-stack-offsets
 
+      ;; Replace symbolic block labels with relative block indices
+      make-branches
+
       ;; Renumber locals and generate locals declarations
       (make-locals operands)))
 
@@ -410,6 +413,51 @@
           (concatenate
            (list (list* 'local (coerce (repeat 'i32 (- (length local-map) operands)) 'list)))
            body)))))
+
+(defun make-branches (instructions)
+  "Replace symbolic block labels, in branch instructions, with
+   relative block indices."
+
+  (labels ((make-branch (instruction depth labels)
+             (match instruction
+               ((list* (and (or 'block 'loop 'then 'else)
+                            block)
+                       (guard label (symbolp label))
+                       body)
+
+                (let ((depth (1+ depth))
+                      (labels (copy labels)))
+                  (setf (get label labels) depth)
+
+                  (cons block (map (rcurry #'make-branch depth labels) body))))
+
+               ((list* (and (or 'block 'loop 'then 'else) block)
+                       body)
+
+                (cons block (map (rcurry #'make-branch (1+ depth) labels) body)))
+
+               ((list* 'if body)
+                (cons 'if (map (rcurry #'make-branch depth labels) body)))
+
+               ((list (and (or 'br 'br_if) branch) label)
+                (list branch (block-index label depth labels)))
+
+               ((list* 'br_table branches)
+                (cons 'br_table (map (rcurry #'block-index depth labels) branches)))
+
+               (_ instruction)))
+
+           (block-index (label depth labels)
+             (etypecase label
+               (integer label)
+               (symbol
+                (let ((block-depth (get label labels)))
+                  (assert (integerp block-depth))
+                  (assert (>= depth block-depth))
+
+                  (- depth block-depth))))))
+
+    (map (rcurry #'make-branch 0 (make-hash-map)) instructions)))
 
 
 (defgeneric compile-expression (expression &key &allow-other-keys)
@@ -756,11 +804,26 @@
 
      :instructions
      (destructuring-bind (test then else) operand-labels
-       `((local.get ,then)
-         (local.get ,else)
-         (local.get ,test)
-         select
-         (local.set ,result))))))
+       `((block $if
+           (block $fail
+             (block $true
+               (block $false
+                 (resolve ,test)
+                 (unbox ,test boolean))
+
+               ;; If false
+               (local.get (ref ,else))
+               (local.set (ref ,result))
+               (br $if))
+
+             ;; If true
+             (local.get (ref ,then))
+             (local.set (ref ,result))
+             (br $if))
+
+           ;; Handle Failures
+           (get-fail ,test)
+           (box ,result (type fail))))))))
 
 (defmethod compile-functor-expression (node arguments outer-nodes)
   "Compiles a functor expression in which the operator is a `node'
@@ -1830,6 +1893,7 @@
 
   (ecase type
     (number (unbox-number local))
+    (boolean (unbox-boolean local))
     (funcref (unbox-funcref local))))
 
 (defun unbox-number (local)
@@ -1911,6 +1975,25 @@
       (call (import "type-error"))
       (local.set (ref ,local))
       (br 1))))
+
+(defun unbox-boolean (local)
+  "Generate code which unboxes a boolean value."
+
+  `((block $type-error
+      `(block $unbox                    ; Untag
+         (local.get (ref ,local))
+         (i32.const ,+tag-mask+)
+         i32.and
+         (br_table $type-error $type-error $unbox $fail))
+
+      (local.get (ref ,local))
+      (i32.const 2)
+      i32.shr_s
+      (br_table $false $true $type-error))
+
+    (call (import "type-error"))
+    (local.set (ref ,local))
+    (br $fail)))
 
 
 ;;;; Constants
