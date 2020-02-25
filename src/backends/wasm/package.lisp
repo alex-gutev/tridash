@@ -54,4 +54,7 @@
                 :lol-syntax
                 :nlet-tail)
 
+  (:import-from :agutil
+                :update-let)
+
   (:documentation "WebAssembly Backend."))

@@ -248,8 +248,7 @@
 
       `(func ,@(make-list (length operands) :initial-element '(param i32))
              ,@(-> (map-extend #'value-block-instructions blocks)
-                   (append `((local.get (ref ,(value-block-label block)))))
-                   remove-redundant-boxes
+                   (concatenate `((local.get (ref ,(value-block-label block)))))
 
                    (make-function-body
                     (make-operand-map (length operands))
@@ -369,8 +368,9 @@
    corresponding VALUE-BLOCK objects."
 
   (-> instructions
-      remove-redundant-boxes
-      (expand-wasm-macros locals)
+      optimize-boxing
+      (optimize-unboxing locals)
+      expand-wasm-macros
       fold-constant-locals
 
       ;; Making Reference Load and Stores
@@ -726,69 +726,104 @@
 
 
 (defun compile-arithmetic-expression (instruction operands result)
-  (destructuring-bind (l r) operands
-    `((block (result) (for ,result)
-        (block (result)
-          (resolve ,l)
-          (unbox ,l)
+  (let ((finst (symb 'f32. instruction))
+        (iinst (symb 'i32. instruction)))
 
-          (block (result)
-            (resolve ,r)
-            (unbox ,r)
+    (flet ((unbox (label)
+             `((block $fail
+                 (resolve ,label)
+                 (unbox ,label (type number))
 
-            (block (result)
-              (block (result)
-                (local.get (type ,l))
-                (local.get (type ,r))
-                i32.or
+                 ;; Branch to either integer or float block This
+                 ;; assumes that the type is checked beforehand and
+                 ;; cannot be anything other than integer or float
 
-                (i32.const 2)
-                i32.sub
+                 (local.get (type ,label))
+                 (i32.const ,+type-i32+)
+                 i32.eq
+                 (br_if $int)
+                 (br $float))
 
-                ;;TODO: Branch to block which returns failure if types
-                ;;are neither float nor integer
-                (br_table 0 1))
+               ;; Handle Failure
+               (get-fail ,label)
+               (box ,result (type fail))
+               (br $out))))
 
-              ;; Integer Arithmetic
+      (destructuring-bind (l r) operands
+        `((block $out
+            (block $type-error
+              (block $float
+                (block $int
+                  ,@(unbox l))
 
+                ;; Left operand is an integer
+
+                (block $float
+                  (block $int
+                    ,@(unbox r))
+
+                  ;; Right operand is an integer
+
+                  ;; Integer Arithmetic
+                  (local.get (value ,l))
+                  (local.get (value ,r))
+                  ,iinst
+
+                  (box ,result (type i32))
+                  (br $out))
+
+                ;; Right operand is a float
+
+                ;; Convert left operand to float
+                (local.get (value ,l))
+                f32.convert_i32_s
+
+                ;; Reinterpret right operand as a float
+                (local.get (value ,r))
+                f32.reinterpret_i32_s
+
+                ;; Floating Point Arithmetic
+                ,finst
+                (box ,result (type f32))
+                (br $out))
+
+              ;; Left operand is a float
+
+              (block $float
+                (block $int
+                  ,@(unbox r))
+
+                ;; Right operand is an integer
+
+                ;; Reinterpret left operand as float
+                (local.get (value ,l))
+                f32.reinterpret_i32_s
+
+                ;; Convert right operand to float
+                (local.get (value ,r))
+                f32.convert_i32_s
+
+                ;; Floating point arithmetic
+                ,finst
+                (box ,result (type f32))
+                (br $out))
+
+              ;; Right operand is a float
+
+              ;; Reinterpret both operands as floats
               (local.get (value ,l))
+              f32.reinterpret_i32_s
               (local.get (value ,r))
-              ,(symb 'i32. instruction)
+              f32.reinterpret_i32_s
 
-              (box ,result (type i32))
-              (br 3))
+              ,finst
+              (box ,result (type f32))
+              (br $out))
 
-            ;; Floating-point arithmetic
-            (local.get (type ,l))
-            (i32.const ,+type-i32+)
-            i32.eq
-            (if (result f32)
-                (then (local.get (value ,l))
-                      f32.convert_i32)
-                (else (local.get (value ,l))
-                      f32.reinterpret_i32))
+            ;; Type error - At least one operand is not a numeric
+            ;; value
 
-            (local.get (type ,r))
-            (i32.const ,+type-i32+)
-            i32.eq
-            (if (result f32)
-                (then (local.get (value ,r))
-                      f32.convert_i32)
-                (else (local.get (value ,l))
-                      f32.reinterpret_i32))
-
-            ,(symb 'f32. instruction)
-            (box ,result (type f32))
-            (br 2))
-
-          ;; Handle failure in $b
-          (get-fail ,r)
-          (box ,result (type fail))
-          (br 1))
-
-        ;; Handle failure in $a
-        (get-fail ,l)
-        (box ,result (type fail))))))
+            ,@(make-type-error result)))))))
 
 (defun compile-if-expression (operands)
   "Returns a block which computes the result of an if expression with
@@ -804,26 +839,31 @@
 
      :instructions
      (destructuring-bind (test then else) operand-labels
-       `((block $if
-           (block $fail
-             (block $true
-               (block $false
-                 (resolve ,test)
-                 (unbox ,test boolean))
+       `((block $out
+           (block $type-error
+             (block $fail
+               (block $true
+                 (block $false
+                   (resolve ,test)
+                   (unbox ,test boolean))
 
-               ;; If false
-               (local.get (ref ,else))
+                 ;; If false
+                 (local.get (ref ,else))
+                 (local.set (ref ,result))
+                 (br $out))
+
+               ;; If true
+               (local.get (ref ,then))
                (local.set (ref ,result))
-               (br $if))
+               (br $out))
 
-             ;; If true
-             (local.get (ref ,then))
-             (local.set (ref ,result))
-             (br $if))
+             ;; Handle Failures
+             (get-fail ,test)
+             (box ,result (type fail))
+             (br $out))
 
-           ;; Handle Failures
-           (get-fail ,test)
-           (box ,result (type fail))))))))
+           ;; Type Error - Not a boolean value
+           ,@(make-type-error result)))))))
 
 (defmethod compile-functor-expression (node arguments outer-nodes)
   "Compiles a functor expression in which the operator is a `node'
@@ -854,9 +894,10 @@
                       (local.get (ref ,operand))
                       (i32.store (offset ,offset)))))
 
-             `((block
-                   (block
-                       (resolve ,operator)
+             `((block $out
+                 (block $type-error
+                   (block $fail
+                     (resolve ,operator)
                      (unbox ,operator (type funcref))
 
                      ;; Allocate array for arguments list
@@ -900,11 +941,15 @@
                           (call_indirect (type (func (param i32) (param i32) (result i32))))))
 
                      (local.set (ref ,result))
-                     (br 1))
+                     (br $out))
 
-                 ;; Handle failure in operator operand
-                 (get-fail ,operator)
-                 (box ,result (type fail)))))))))))
+                   ;; Handle failure in operator operand
+                   (get-fail ,operator)
+                   (box ,result (type fail))
+                   (br $out))
+
+                 ;; Type Error - Operator not a function reference
+                 ,@(make-type-error result))))))))))
 
 
 ;;; Operands
@@ -962,6 +1007,13 @@
 
                ;; Store Arguments
                ,@(map-extend #'store-arg operands (range 0)))))))))
+
+
+(defun make-type-error (local)
+  "Generate code which creates a type error failure."
+
+  `((call (import "type_error"))
+    (box ,local (type fail))))
 
 
 ;;; Meta-Node References
@@ -1120,53 +1172,53 @@
                "Generate code which creates an array containing the
                 rest arguments."
 
-               `((block
-                     (block
-                         ;; Check whether has rest arguments
-                         (local.get $count)
-                       (i32.const ,start)
-                       i32.le_u
-                       (br_if 0)
+               `((block $out
+                   (block $empty
+                     ;; Check whether has rest arguments
+                     (local.get $count)
+                     (i32.const ,start)
+                     i32.le_u
+                     (br_if $empty)
 
-                       ;; Determine number of rest arguments
-                       (local.get $count)
-                       (i32.const ,start)
-                       i32.sub
+                     ;; Determine number of rest arguments
+                     (local.get $count)
+                     (i32.const ,start)
+                     i32.sub
 
-                       ;; Determine size of array
-                       (i32.const 4)
-                       i32.mul
-                       (local.tee $rest-size)
+                     ;; Determine size of array
+                     (i32.const 4)
+                     i32.mul
+                     (local.tee $rest-size)
 
-                       ;; Allocate memory for array
-                       (i32.const 8)
-                       i32.add
-                       (call (import "alloc"))
-                       (local.tee (ref ,start))
+                     ;; Allocate memory for array
+                     (i32.const 8)
+                     i32.add
+                     (call (import "alloc"))
+                     (local.tee (ref ,start))
 
-                       ;; Store object type
-                       (i32.const ,+type-array+)
-                       i32.store
+                     ;; Store object type
+                     (i32.const ,+type-array+)
+                     i32.store
 
-                       ;; Store number of arguments
-                       (local.get (ref ,start))
-                       (local.get $count)
-                       (i32.const ,start)
-                       i32.sub
-                       (i32.store (offset 4))
+                     ;; Store number of arguments
+                     (local.get (ref ,start))
+                     (local.get $count)
+                     (i32.const ,start)
+                     i32.sub
+                     (i32.store (offset 4))
 
-                       ;; Copy arguments using memcopy
-                       (local.get (ref ,start))
-                       (i32.const 8)
-                       i32.add
+                     ;; Copy arguments using memcopy
+                     (local.get (ref ,start))
+                     (i32.const 8)
+                     i32.add
 
-                       (local.get (ref $args))
-                       (i32.const ,(+ 4 (* 4 start)))
-                       i32.add
+                     (local.get (ref $args))
+                     (i32.const ,(+ 4 (* 4 start)))
+                     i32.add
 
-                       (local.get $rest-size)
-                       (call (import "memcopy"))
-                       (br 1))
+                     (local.get $rest-size)
+                     (call (import "memcopy"))
+                     (br $out))
 
                    ;; Set rest argument array to empty
                    (call (import "Empty"))
@@ -1228,30 +1280,30 @@
    a $count local variable) is within the ARITY."
 
   (destructuring-bind (min . max) arity
-    `(block
-         ,@(cond
-            ((= min max)
-             `((local.get $count)
-               (i32.const ,min)
-               i32.eq))
+    `(block $out
+       ,@(cond
+           ((= min max)
+            `((local.get $count)
+              (i32.const ,min)
+              i32.eq))
 
-            ((null max)
-             `((local.get $count)
-               (i32.const ,min)
-               i32.ge_u))
+           ((null max)
+            `((local.get $count)
+              (i32.const ,min)
+              i32.ge_u))
 
-            (t
-             `((local.get $count)
-               (i32.const ,min)
-               i32.ge_u
+           (t
+            `((local.get $count)
+              (i32.const ,min)
+              i32.ge_u
 
-               (local.get $count)
-               (i32.const ,max)
-               i32.le_u
+              (local.get $count)
+              (i32.const ,max)
+              i32.le_u
 
-               i32.and)))
+              i32.and)))
 
-       (br_if 0)
+       (br_if $out)
 
        (call (import "make_arity_error"))
        return)))
@@ -1711,12 +1763,11 @@
 
 ;;; Optimization
 
-(defun remove-redundant-boxes (instructions)
+(defun optimize-boxing (instructions)
   "Removes `BOX' instructions for locals which do not need to be
    boxed."
 
   (let ((used-boxed (hash-set)))
-
     (labels ((mark-used (instruction)
                (match instruction
                  ((list 'local.get (list 'ref local))
@@ -1728,12 +1779,6 @@
                   (if (memberp local used-boxed)
                       (list instruction)
                       (set-value local type)))
-
-                 ((list 'constant local value)
-                  (if (memberp local used-boxed)
-                      (list instruction)
-                      `((i32.const ,value)
-                        ,@(set-int-value local))))
 
                  (_ (list instruction))))
 
@@ -1756,7 +1801,7 @@
                  (local.set (type ,local))))
 
              (set-fail-value (local)
-               `((local.set ,local))))
+               `((local.set (ref ,local)))))
 
       (walk-wasm #'mark-used instructions)
       (map-wasm #'replace-box instructions))))
@@ -1831,58 +1876,130 @@
       (walk-group (curry #'mark-constant constants) instructions)
       (map-group (curry #'remove-constants constants) instructions))))
 
-
-;;; Boxing and Unboxing
+(defun optimize-unboxing (instructions locals)
+  "Remove unnecessary UNBOX and RESOLVE instructions.
 
-(defun expand-wasm-macros (instructions locals)
-  (let ((resolved (make-hash-set))
-        (unboxed (make-hash-set)))
+   Does not support LOOP or IF instructions and only supports BLOCK
+   and branch instructions with explicit symbolic labels. INSTRUCTIONS
+   may contain LOOP or IF instructions however they should not contain
+   UNBOX or RESOLVE instructions."
 
-    (labels ((expand-macro (instruction)
+  (let ((unboxed (make-hash-map))
+        (resolved (make-hash-map))
+        (branches (hash-set)))
+
+    (declare (special unboxed resolved branches))
+
+    (labels ((optimize-instructions (instructions)
+               (map-extend #'optimize instructions))
+
+             (optimize (instruction)
                (match instruction
-                 ((list 'resolve local)
-                  (unless (or (resolved? local)
-                              (value-block-strict-p (get local locals)))
+                 ((list* 'block (guard label (symbolp label)) body)
+                  (optimize-block label body))
 
-                    (nadjoin local resolved)
+                 ((list (or 'br 'br_if) label)
+                  (setf branches (adjoin label branches))
+                  (list instruction))
 
-                    `((local.get (ref ,local))
-                      (call (import "resolve"))
-                      (local.set (ref ,local)))))
+                 ((list* 'br_table labels)
+                  (setf branches (union branches (coerce labels 'hash-set)))
+                  (list instruction))
 
                  ((list 'unbox local (list 'type type))
-                  (cond
-                    ((or (value-block-immediate-p (get local locals))
-                         (unboxed? local))
-                     `((local.get ,local)
-                       (i32.const ,+tag-mask+)
-                       i32.and
-                       (i32.const ,+tag-fail+)
-                       i32.eq
-                       (br_if 0)))
+                  (if (or (unboxed? local)
+                          (value-block-immediate-p (get local locals)))
 
-                    (t
-                     (nadjoin local unboxed)
-                     (unbox-local local type))))
+                      `((check-type ,local ,type))
 
-                 ((list 'constant local value)
-                  (make-constant local value))
+                      (progn
+                        (setf (get local unboxed) branches)
+                        (list instruction))))
 
-                 ((list 'box local (list 'type type))
-                  (box-local local type))
+                 ((list 'resolve local)
+                  (unless
+                      (or (resolved? local)
+                          (value-block-strict-p (get local locals)))
 
-                 ((list 'get-fail local)
-                  `((local.get (ref ,local))))
+                    (setf (get local resolved) branches)
+                    (list instruction)))
 
                  (_ (list instruction))))
 
-             (resolved? (local)
-               (memberp local resolved))
+             (optimize-block (label body)
+               (let ((outer-branches branches))
+                 (update-let
+                     ((unboxed (copy unboxed)
+                               (merge label outer-branches old unboxed))
+
+                      (resolved (copy resolved)
+                                (merge label outer-branches old resolved))
+
+                      (branches (make-hash-set)
+                                (progn (erase branches label)
+                                       (union branches old))))
+
+                   (declare (special unboxed resolved branches))
+
+                   (list (list* 'block label (optimize-instructions body))))))
+
+             (merge (label outer-branches old new)
+               "Merge the map NEW of resolved/unboxed local variables
+                into the MAP OLD. Additionally OUTER-BRANCHES,
+                excluding LABEL, is merged into the branches of each
+                local variable in NEW."
+
+               (doseq ((local . branches) new)
+                 (unless (memberp label branches)
+                   (setf (get local old) (union branches outer-branches))))
+               old)
 
              (unboxed? (local)
-               (memberp local unboxed)))
+               (memberp local unboxed))
 
-      (map-wasm #'expand-macro instructions))))
+             (resolved? (local)
+               (memberp local resolved)))
+
+      (optimize-instructions instructions))))
+
+
+;;; Boxing and Unboxing
+
+(defun expand-wasm-macros (instructions)
+  "Expand Web Assembly macro instructions."
+
+  (labels ((expand-macro (instruction)
+             (match instruction
+               ((list 'resolve local)
+                `((local.get (ref ,local))
+                  (call (import "resolve"))
+                  (local.set (ref ,local))))
+
+               ((list 'unbox local (list 'type type))
+                (unbox-local local type))
+
+               ((list 'check-type local type)
+                `((local.get (ref ,local))
+                  (i32.const ,+tag-mask+)
+                  i32.and
+                  (i32.const ,+tag-fail+)
+                  i32.eq
+                  (br_if $fail)
+
+                  ,@(check-boxed-type local type)))
+
+               ((list 'constant local value)
+                (make-constant local value))
+
+               ((list 'box local (list 'type type))
+                (box-local local type))
+
+               ((list 'get-fail local)
+                `((local.get (ref ,local))))
+
+               (_ (list instruction)))))
+
+    (map-wasm #'expand-macro instructions)))
 
 
 ;;;; Unboxing
@@ -1899,101 +2016,107 @@
 (defun unbox-number (local)
   "Generate code which unboxes an immediate or boxed numeric value."
 
-  `((block (result)       ;; Type Error
-      (block (result)     ;; Unbox immediate integer
-        (block (result)   ;; Unbox boxed integer
-          (block (result) ;; Untag
-            (local.get ,local)
-            (i32.const ,+tag-mask+)
-            i32.and
+  `((block $out
+      (block $immediate                 ; Unbox boxed integer
+        (block $pointer                 ; Untag
+          (local.get ,local)
+          (i32.const ,+tag-mask+)
+          i32.and
 
-            (br_table 0 1 2 4))
+          (br_table $pointer $immediate $type-error $fail))
 
-          ;; Boxed Value
-          (local.get (ref ,local))
-          i32.load
-          (local.tee (type ,local))
+        ;; Boxed Value
+        (local.get (ref ,local))
+        i32.load
+        (local.tee (type ,local))
 
-          ;; Check Type
-          (i32.const ,+type-i32+)
-          i32.sub
-          (br_table 2 2 1)
+        ;; Check Type
+        (i32.const ,+type-f32+)
+        i32.gt_u
+        (br_if $type-error)
 
-          (local.get (ref ,local))
-          (i32.load offset 4)
-          (local.set (value ,local))
-          (br 2))
-
-        ;; Immediate Integer
-        (i32.const ,+type-i32+)
-        (local.set (type ,local))
-
-        (local.get ,local)
-        (i32.const 2)
-        i32.shr_s
+        (local.get (ref ,local))
+        (i32.load (offset 4))
         (local.set (value ,local))
-        (br 1))
+        (br $out))
 
-      (call (import "type-error"))
-      (local.set (ref ,local))
-      (br 1))))
+      ;; Immediate Integer
+      (i32.const ,+type-i32+)
+      (local.set (type ,local))
+
+      (local.get ,local)
+      (i32.const 2)
+      i32.shr_s
+      (local.set (value ,local))
+      (br $int))))
 
 (defun unbox-funcref (local)
-  "Generates code which unboxes an function reference."
+  "Generates code which unboxes a function reference."
 
-  `((block                              ; Type Error
-        (block                          ; Unbox immediate integer
-            (block                      ; Unbox boxed integer
-                (block                  ; Untag
-                    (local.get ,local)
-                  (i32.const ,+tag-mask+)
-                  i32.and
+  `((block $out                         ; Unbox immediate integer
+      (block $immediate                 ; Unbox boxed integer
+        (block $pointer                 ; Untag
+          (local.get ,local)
+          (i32.const ,+tag-mask+)
+          i32.and
 
-                  (br_table 0 1 2 4))
+          (br_table $pointer $type-error $immediate $fail))
 
-              ;; Boxed Reference
-              (local.get (ref ,local))
-              i32.load
-              (local.tee (type ,local))
+        ;; Boxed Reference
+        (local.get (ref ,local))
+        i32.load
+        (local.tee (type ,local))
 
-              ;; Check Type
-              (i32.const ,+type-funcref-args+)
-              i32.ne
-              (br_if 1)
-              (br 2))
+        ;; Check Type
+        (i32.const ,+type-funcref-args+)
+        i32.ne
+        (br_if $type-error)
+        (br $out))
 
-          ;; Immediate Reference
-          (i32.const ,+type-funcref+)
-          (local.set (type ,local))
-
-          (local.get (ref ,local))
-          (i32.const 2)
-          i32.shr_s
-          (local.set (value ,local))
-          (br 1))
-
-      (call (import "type-error"))
-      (local.set (ref ,local))
-      (br 1))))
-
-(defun unbox-boolean (local)
-  "Generate code which unboxes a boolean value."
-
-  `((block $type-error
-      `(block $unbox                    ; Untag
-         (local.get (ref ,local))
-         (i32.const ,+tag-mask+)
-         i32.and
-         (br_table $type-error $type-error $unbox $fail))
+      ;; Immediate Reference
+      (i32.const ,+type-funcref+)
+      (local.set (type ,local))
 
       (local.get (ref ,local))
       (i32.const 2)
       i32.shr_s
-      (br_table $false $true $type-error))
+      (local.tee (value ,local))
 
-    (call (import "type-error"))
-    (local.set (ref ,local))
-    (br $fail)))
+      ;; Check that value is not a boolean
+      (i32.const 2)
+      i32.lt_u
+      (br_if $type-error))))
+
+(defun unbox-boolean (local)
+  "Generate code which unboxes a boolean value."
+
+  `((block $unbox                       ; Untag
+      (local.get (ref ,local))
+      (i32.const ,+tag-mask+)
+      i32.and
+      (br_table $type-error $type-error $unbox $fail))
+
+    (local.get (ref ,local))
+    (i32.const 2)
+    i32.shr_s
+    (br_table $false $true $type-error)))
+
+
+;;;; Type Checking
+
+(defun check-boxed-type (local type)
+  "Generate code that checks that LOCAL is of type TYPE."
+
+  (ecase type
+    (number (check-number local))))
+
+(defun check-number (local)
+  "Generate code that checks that LOCAL is a number."
+
+  `((local.get (type ,local))
+    (i32.const ,+type-f32+)
+    i32.gt_u
+    (br_if $type-error)))
 
 
 ;;;; Constants
@@ -2012,6 +2135,9 @@
 
   `((i32.const ,value)
     (local.set (value ,local))
+
+    (i32.const ,+type-i32+)
+    (local.set (type ,local))
 
     ,@(if (< +min-immediate-int+ value +max-immediate-int+)
 
@@ -2063,11 +2189,11 @@
 (defun box-integer (local)
   `((local.tee (value ,local))
     (i32.const ,+max-immediate-int+)
-    i32.le
+    i32.le_s
 
     (local.get (value ,local))
     (i32.const ,+min-immediate-int+)
-    i32.ge
+    i32.ge_s
 
     i32.and
     (if (then
