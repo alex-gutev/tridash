@@ -117,12 +117,7 @@
 
   (etypecase meta-node
     (external-meta-node
-     (list
-      'import
-      (or (attribute :wasm-name meta-node)
-          (error 'undefined-external-meta-node-error
-                 :backend "Wasm32"
-                 :meta-node meta-node))))
+     (list* 'import (add-meta-import meta-node)))
 
     (meta-node
      (list 'meta-node meta-node))))
@@ -571,7 +566,7 @@
 
        :instructions
        `((i32.const ,size)
-         (call (import "alloc"))
+         (call (import "runtime" "alloc"))
          (local.tee (ref ,result))
 
          (i32.const ,+type-thunk+)
@@ -924,7 +919,7 @@
 
                      ;; Allocate array for arguments list
                      (i32.const ,(+ 8 (* 4 num-args)))
-                     (call (import "alloc"))
+                     (call (import "runtime" "alloc"))
                      (local.tee (ref ,arg-list))
                      (i32.const ,+type-array+)
                      i32.store
@@ -1011,11 +1006,11 @@
          :instructions
 
          (if (emptyp arguments)
-             `((call (import "empty_list"))
+             `((call (import "runtime" "empty_list"))
                (local.set (ref ,result)))
 
              `((i32.const ,(+ 8 (* num-args 4)))
-               (call (import "alloc"))
+               (call (import "runtime" "alloc"))
                (local.tee (ref ,result))
 
                ;; Store object type
@@ -1034,7 +1029,7 @@
 (defun make-type-error (local)
   "Generate code which creates a type error failure."
 
-  `((call (import "type_error"))
+  `((call (import "runtime" "type_error"))
     (box ,local (type fail))))
 
 
@@ -1079,7 +1074,7 @@
                  (box ,result (type funcref)))
 
                `((i32.const ,(+ 12 (* 4 (length operands))))
-                 (call (import "alloc"))
+                 (call (import "runtime" "alloc"))
                  (local.tee (ref ,result))
 
                  (i32.const ,+type-funcref-args+)
@@ -1216,7 +1211,7 @@
                      ;; Allocate memory for array
                      (i32.const 8)
                      i32.add
-                     (call (import "alloc"))
+                     (call (import "runtime" "alloc"))
                      (local.tee (ref ,start))
 
                      ;; Store object type
@@ -1240,11 +1235,11 @@
                      i32.add
 
                      (local.get $rest-size)
-                     (call (import "memcopy"))
+                     (call (import "runtime" "memcopy"))
                      (br $out))
 
                    ;; Set rest argument array to empty
-                   (call (import "Empty"))
+                   (call (import "runtime" "empty_list"))
                    (local.set (ref ,start))))))
 
       (let* ((num-outer-nodes (length (outer-node-references meta-node)))
@@ -1331,7 +1326,7 @@
 
        (br_if $out)
 
-       (call (import "make_arity_error"))
+       (call (import "runtime" "arity_error"))
        return)))
 
 
@@ -1367,7 +1362,7 @@
 
            :instructions
            `((i32.const ,(+ 4 (* 4 (length values))))
-             (call (import "alloc"))
+             (call (import "runtime" "alloc"))
              (local.tee (ref ,result))
 
              ;; Store object descriptor
@@ -1553,7 +1548,7 @@
     (make-value-block
      :label result
      :instructions
-     `((call (import "fail_no_value"))
+     `((call (import "runtime" "fail_no_value"))
        (local.set (ref ,result)))
 
      :value-p t)))
@@ -1998,7 +1993,7 @@
              (match instruction
                ((list 'resolve local)
                 `((local.get (ref ,local))
-                  (call (import "resolve"))
+                  (call (import "runtime" "resolve"))
                   (local.set (ref ,local))))
 
                ((list 'unbox local (list 'type type))
@@ -2174,7 +2169,7 @@
             (local.set (ref ,local)))
 
           `((i32.const 8)
-            (call (import "alloc"))
+            (call (import "runtime" "alloc"))
             (local.tee (ref ,local))
 
             (i32.const ,+type-i32+)
@@ -2201,7 +2196,7 @@
     (local.set (value ,local))
 
     (i32.const 8)
-    (call (import "alloc"))
+    (call (import "runtime" "alloc"))
     (local.tee (ref ,local))
 
     (i32.const ,+type-f32+)
@@ -2232,7 +2227,7 @@
 
         (else
          (i32.const 8)
-         (call (import "alloc"))
+         (call (import "runtime" "alloc"))
          (local.tee (ref ,local))
 
          (i32.const ,+type-i32+)
@@ -2249,7 +2244,7 @@
   `((local.set (value ,local))
 
     (i32.const 8)
-    (call (import "alloc"))
+    (call (import "runtime" "alloc"))
     (local.tee (ref ,local))
 
     (i32.const ,+type-charecter+)
