@@ -281,8 +281,7 @@ Example: tridashc ui.trd : node-name=ui")
   (let* ((*global-module-table* (make-instance 'module-table))
          (node-table (build-sources sources)))
 
-    (with-open-file (*standard-output* out-file :direction :output :if-exists :supersede)
-      (compile-nodes backend node-table out-options))))
+    (compile-nodes backend node-table out-file out-options)))
 
 (defun search-paths ()
   "Returns a list of the module search paths. This contains the search

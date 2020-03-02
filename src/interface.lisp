@@ -95,12 +95,12 @@
 
 ;;; Compiling Nodes
 
-(defgeneric compile-nodes (backend module-table &optional options)
+(defgeneric compile-nodes (backend module-table out-file &optional options)
   (:documentation
-   "Generates code for the nodes and meta-nodes contained in
-    NODE-TABLE using the backend identified by the symbol BACKEND. The
-    generated code is written to *standard-output*. OPTIONS is a
-    hash-table of backend specific options."))
+   "Generate code for the nodes and meta-nodes contained in NODE-TABLE
+    using the backend identified by the symbol BACKEND. Write the
+    generated code to the file at OUT-FILE. OPTIONS is a hash-table of
+    backend specific options."))
 
 
 ;;;; Errors

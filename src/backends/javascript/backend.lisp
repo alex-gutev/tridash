@@ -132,7 +132,7 @@
 
 ;;;; Compilation
 
-(defmethod compile-nodes ((backend (eql :javascript)) table &optional (options (make-hash-map :test #'cl:equalp)))
+(defmethod compile-nodes ((backend (eql :javascript)) table out-file &optional (options (make-hash-map :test #'cl:equalp)))
   "Compile the node and meta-node definitions, in the `NODE-TABLE'
    TABLE, to JavaScript."
 
@@ -146,7 +146,7 @@
           (bindings (make-code-array)))
 
       (generate-code table defs bindings)
-      (print-output-code (list defs bindings) options))))
+      (print-output-code out-file (list defs bindings) options))))
 
 (defun runtime-path (options)
   "Returns the path to the runtime library. First OPTIONS is checked
@@ -187,24 +187,25 @@
     ((cl:equalp "none")
      nil)))
 
-(defun print-output-code (code options)
+(defun print-output-code (out-file code options)
   "Prints the JavaScript code represented by the AST nodes in CODE to
    *STANDARD-OUTPUT*."
 
-  (with-slots (initial-values) *backend-state*
-    (with-hash-keys ((type "type") (main-ui "main-ui")) options
-      (match type
-        ((cl:equalp "html")
-         (->>
-          (get-root-node main-ui)
-          (create-html-file
-           (lexical-block (list code (make-html-set-initial-values initial-values))))))
+  (with-open-file (*standard-output* out-file :direction :output :if-exists :supersede)
+    (with-slots (initial-values) *backend-state*
+      (with-hash-keys ((type "type") (main-ui "main-ui")) options
+        (match type
+          ((cl:equalp "html")
+           (->>
+            (get-root-node main-ui)
+            (create-html-file
+             (lexical-block (list code (make-html-set-initial-values initial-values))))))
 
-        (_
-         (-<> (make-set-initial-values initial-values)
-              (list code <>)
-              (lexical-block)
-              (output-code)))))))
+          (_
+           (-<> (make-set-initial-values initial-values)
+                (list code <>)
+                (lexical-block)
+                (output-code))))))))
 
 (defun get-root-node (node)
   "Gets the root HTML node specified by NODE."
