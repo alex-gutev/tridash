@@ -232,7 +232,7 @@
   locals
   code)
 
-(defun compile-function (expression operands)
+(defun compile-function (expression operands &key (epilogue (constantly nil)))
   "Compiles a function comprising the expression EXPRESSION with
    operand nodes OPERANDS. Returns a WASM-FUNCTION-SPEC object."
 
@@ -250,7 +250,9 @@
 
       (multiple-value-bind (locals code)
           (-> (map-extend #'value-block-instructions blocks)
-              (concatenate `((local.get (ref ,(value-block-label block)))))
+              (concatenate
+               `((local.get (ref ,(value-block-label block))))
+               (funcall epilogue (value-block-label block)))
 
               (make-function-body
                (make-operand-map (length operands))
@@ -1029,7 +1031,7 @@
 (defun make-type-error (local)
   "Generate code which creates a type error failure."
 
-  `((call (import "runtime" "type_error"))
+  `((call (import "runtime" "fail_type_error"))
     (box ,local (type fail))))
 
 

@@ -245,25 +245,37 @@
    "Returns the names of the operand nodes of META-NODE.")
 
   (:method ((meta-node meta-node))
-    (map
-     (lambda (operand)
-       (match operand
-         ((or (list* (eql +optional-argument+) name _)
-              (list (eql +rest-argument+) name)
-              name)
-          name)))
-     (operands meta-node)))
+    (operand-nodes meta-node))
 
   (:method ((meta-node built-meta-node))
     (map #'name (call-next-method))))
+
+(defun operand-nodes (meta-node)
+  "Return the internal `node' objects to which the operands of
+   META-NODE are bound."
+
+  (map
+   (lambda (operand)
+     (match operand
+       ((or (list* (eql +optional-argument+) name _)
+            (list (eql +rest-argument+) name)
+            name)
+        name)))
+   (operands meta-node)))
+
 
 (defun outer-node-operand-names (meta-node)
   "Returns the names of the outer node operands, in the order they
    should appear in the argument list, following the last argument."
 
+  (map #'name (outer-node-operand-nodes meta-node)))
+
+(defun outer-node-operand-nodes (meta-node)
+  "Return the internal `node' objects to which the outer node operands
+   of META-NODE are bound."
+
   (map
-   (lambda (node)
-     (name (get node (outer-nodes meta-node))))
+   (rcurry #'get (outer-nodes meta-node))
    (outer-node-references meta-node)))
 
 

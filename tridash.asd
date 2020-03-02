@@ -82,7 +82,9 @@
                  (:module "backends/wasm"
                           :serial t
                           :components ((:file "package")
-                                       (:file "expressions"))))))
+                                       (:file "expressions")
+                                       (:file "serialization")
+                                       (:file "backend"))))))
 
   :depends-on (:anaphora
                :iterate

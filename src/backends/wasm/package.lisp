@@ -35,11 +35,18 @@
         :tridash.parser
         :tridash.interface
         :tridash.frontend
-        :tridash.frontend.strictness)
+        :tridash.frontend.strictness
+
+        :tridash.backend.js.ast)
 
   (:import-from :tridash.frontend.strictness
                 :strict-arguments
                 :strict-outer-operands)
+
+  (:import-from :tridash.backend.js
+                :output-code
+                :*print-indented*
+                :parse-boolean)
 
   (:shadowing-import-from :generic-cl
                           :emptyp

@@ -232,7 +232,9 @@
    :external-meta-node?
 
    :operand-node-names
+   :operand-nodes
    :outer-node-operand-names
+   :outer-node-operand-nodes
    :outer-node-references
 
    :+optional-argument+
