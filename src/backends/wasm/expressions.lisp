@@ -59,26 +59,19 @@
 ;;; Backend State
 
 (defclass backend-state ()
-  ((meta-node-functions
-    :initform (make-hash-map)
-    :accessor meta-node-functions
-    :documentation
-    "Map from meta-node objects to meta-node function identifiers.")
-
-   (thunk-functions
+  ((thunk-functions
     :initform (make-hash-map)
     :accessor thunk-functions
     :documentation
-    "Map from thunk function indices to the instructions comprising
-     the thunk functions.")
+    "Map from thunk function indices to the corresponding
+     WASM-FUNCTION-SPEC objects")
 
    (meta-node-ref-functions
     :initform (make-hash-map)
     :accessor meta-node-ref-functions
     :documentation
-    "Map from meta-node's to a list containing the index and
-     instructions of the corresponding meta-node reference
-     function.")
+    "Map from meta-nodes to the WASM-FUNCTION-SPEC objects of their
+     meta-node reference functions.")
 
    (string-constants
     :initform (make-hash-map)
@@ -125,16 +118,14 @@
   (etypecase meta-node
     (external-meta-node
      (list
-      "import"
+      'import
       (or (attribute :wasm-name meta-node)
           (error 'undefined-external-meta-node-error
                  :backend "Wasm32"
                  :meta-node meta-node))))
 
     (meta-node
-     (with-slots (meta-node-functions) *backend-state*
-       (ensure-get meta-node meta-node-functions
-         (symb '$m (length meta-node-functions)))))))
+     (list 'meta-node meta-node))))
 
 (defun add-thunk-function (function &optional (state *backend-state*))
   "Adds a thunk function to the global backend state's list of thunk
@@ -230,9 +221,25 @@
 (defvar *function-block-state* nil
   "The compilation state for the function currently being compiled.")
 
+(defstruct wasm-function-spec
+  "Represents a specificiation of a WebAssembly function in terms of
+   its parameter types (PARAMS), result types (RESULTS), local
+   variable types LOCAL and the instructions comprising the function
+   CODE.
+
+   If EXPORT-NAME is non-NIL it designates the name by which the
+   function is exported from the module."
+
+  params
+  results
+  export-name
+
+  locals
+  code)
+
 (defun compile-function (expression operands)
   "Compiles a function comprising the expression EXPRESSION with
-   operand nodes OPERANDS."
+   operand nodes OPERANDS. Returns a WASM-FUNCTION-SPEC object."
 
   (let ((*function-block-state* (make-instance 'function-block-state)))
     (foreach #'add-operand operands)
@@ -246,13 +253,19 @@
            (blocks (flatten-block block))
            (locals (locals-map blocks)))
 
-      `(func ,@(make-list (length operands) :initial-element '(param i32))
-             ,@(-> (map-extend #'value-block-instructions blocks)
-                   (concatenate `((local.get (ref ,(value-block-label block)))))
+      (multiple-value-bind (locals code)
+          (-> (map-extend #'value-block-instructions blocks)
+              (concatenate `((local.get (ref ,(value-block-label block)))))
 
-                   (make-function-body
-                    (make-operand-map (length operands))
-                    locals))))))
+              (make-function-body
+               (make-operand-map (length operands))
+               locals))
+
+        (make-wasm-function-spec
+         :params (repeat 'i32 (length operands))
+         :results '(i32)
+         :locals locals
+         :code code)))))
 
 (defun add-operand (node)
   "Adds a local variable, to *FUNCTION-BLOCK-STATE*, and a
@@ -311,7 +324,7 @@
                     (incf (get block block-map 0))))
                 operands)))
 
-      (nlet-tail add-blocks ((blocks (list block)))
+      (nlet add-blocks ((blocks (list block)))
         (setf flat-block (append blocks flat-block))
 
         (let ((next-blocks (map-extend #'block-operands blocks)))
@@ -386,9 +399,12 @@
 
 (defun make-locals (instructions &optional (local-map (make-hash-map)))
   "Adds local variable declarations, for all local variables used in
-   INSTRUCTIONS. Returns INSTRUCTIONS with all local variables labels
-   converted to indices and prepended with the local variable
-   declarations.
+   INSTRUCTIONS.
+
+   Returns the list of local variable types in the first return value
+   and INSTRUCTIONS, with all local variables labels converted to
+   indices and prepended with the local variable declarations, in the
+   second return value.
 
    LOCAL-MAP is the initial map from labels to indices to use. New
    labels are added to the map with the index being the size of the
@@ -408,11 +424,10 @@
 
     (let ((operands (length local-map))
           (body (map-wasm #'map-instruction instructions)))
-      (if (emptyp local-map)
-          body
-          (concatenate
-           (list (list* 'local (coerce (repeat 'i32 (- (length local-map) operands)) 'list)))
-           body)))))
+
+      (values
+       (repeat 'i32 (- (length local-map) operands))
+       body))))
 
 (defun make-branches (instructions)
   "Replace symbolic block labels, in branch instructions, with
@@ -491,8 +506,8 @@
   "Creates a thunk function which computes the value of the
    `value-block' BLOCK.
 
-   Returns two values: the thunk function and the list of locals
-   comprising the thunk's closure."
+   Returns two values: the thunk function (WASM-FUNCTION-SPEC) and the
+   list of locals comprising the thunk's closure."
 
   (flet ((load-local (local index)
            `((local.get (ref $c))
@@ -506,19 +521,26 @@
         (decrement-block-count closure)
 
         (let ((closure-locals (sort (map-keys closure) :key #'value-block-label)))
-          (values
-           `(func (param i32) (result i32)
-                  ,@(->
-                     (append
-                      (map-extend #'load-local closure-locals (range 1))
-                      (map-extend #'value-block-instructions blocks)
+          (multiple-value-bind (locals code)
+              (->
+               (append
+                (map-extend #'load-local closure-locals (range 1))
+                (map-extend #'value-block-instructions blocks)
 
-                      `((local.get (ref ,label))))
+                `((local.get (ref ,label))))
 
-                     (make-function-body
-                      (make-locals (alist-hash-map '(($c . 0))))
-                      (locals-map blocks))))
-           closure-locals))))))
+               (make-function-body
+                (alist-hash-map '(($c . 0)))
+                (locals-map blocks)))
+
+            (values
+             (make-wasm-function-spec
+              :params '(i32)
+              :results '(i32)
+              :locals locals
+              :code code)
+
+             closure-locals)))))))
 
 (defun decrement-block-count (block-map)
   "Decrement block count of each `VALUE-BLOCK' in BLOCK-MAP by the
@@ -780,7 +802,7 @@
 
                 ;; Reinterpret right operand as a float
                 (local.get (value ,r))
-                f32.reinterpret_i32_s
+                f32.reinterpret_i32
 
                 ;; Floating Point Arithmetic
                 ,finst
@@ -797,7 +819,7 @@
 
                 ;; Reinterpret left operand as float
                 (local.get (value ,l))
-                f32.reinterpret_i32_s
+                f32.reinterpret_i32
 
                 ;; Convert right operand to float
                 (local.get (value ,r))
@@ -812,9 +834,9 @@
 
               ;; Reinterpret both operands as floats
               (local.get (value ,l))
-              f32.reinterpret_i32_s
+              f32.reinterpret_i32
               (local.get (value ,r))
-              f32.reinterpret_i32_s
+              f32.reinterpret_i32
 
               ,finst
               (box ,result (type f32))
@@ -845,7 +867,7 @@
                (block $true
                  (block $false
                    (resolve ,test)
-                   (unbox ,test boolean))
+                   (unbox ,test (type boolean)))
 
                  ;; If false
                  (local.get (ref ,else))
@@ -938,7 +960,7 @@
 
                           (local.get (ref ,operator))
                           (i32.load (offset 4))
-                          (call_indirect (type (func (param i32) (param i32) (result i32))))))
+                          (call_indirect (type (func (param i32 i32) (result i32))))))
 
                      (local.set (ref ,result))
                      (br $out))
@@ -1032,13 +1054,10 @@
               (append optional (outer-node-operands node outer-nodes)))
 
              (operands
-              (compile-operands arguments (make-list (length arguments) :initial-element nil)))
+              (compile-operands arguments (make-list (length arguments) :initial-element nil))))
 
-             (func
-              (first
-               (ensure-get node meta-node-ref-functions
-                 (list (length meta-node-ref-functions)
-                       (make-meta-node-ref-function node))))))
+        (ensure-get node meta-node-ref-functions
+          (make-meta-node-ref-function node))
 
         (flet ((store-arg (operand index)
                  "Generate instructions which stores the value of
@@ -1056,7 +1075,7 @@
            :instructions
            (if (emptyp operands)
 
-               `((i32.const (meta-node-ref ,func))
+               `((i32.const (meta-node-ref ,node))
                  (box ,result (type funcref)))
 
                `((i32.const ,(+ 12 (* 4 (length operands))))
@@ -1067,7 +1086,7 @@
                  i32.store
 
                  (local.get (ref ,result))
-                 (i32.const (meta-node-ref ,func))
+                 (i32.const (meta-node-ref ,node))
                  (i32.store (offset 4))
 
                  ;; Store number of default argument values
@@ -1095,12 +1114,16 @@
 
              (block (compile-functor-expression meta-node operands outer-nodes)))
 
-        (make-ref-function-declaration
+        (make-ref-function-spec
          meta-node
          (value-block-label block)
          (flatten-block block))))))
 
-(defun make-ref-function-declaration (meta-node result blocks)
+(defun make-ref-function-spec (meta-node result blocks)
+  "Create the WASM-FUNCTION-SPEC object for a meta-node reference
+   function. RESULT is the variable in which the return is stored and
+   BLOCKS is the list of blocks comprising the body of the function."
+
   (with-slots (operands) meta-node
     (labels ((load-operand (index)
                "Generate code which loads an operand from the
@@ -1229,13 +1252,8 @@
              (arity (meta-node-arity meta-node))
              (num-optional (num-optional arity)))
 
-        `(func
-          (param i32)
-          ,@(when (or (plusp num-optional) (plusp num-outer-nodes))
-              '((param i32)))
-          (result i32)
-
-          ,@(->
+        (multiple-value-bind (locals code)
+            (->
              `((local.get (ref $args))
                i32.load
                (local.set $count)
@@ -1273,7 +1291,15 @@
                      ($defaults . 1))
 
                    '(($args . 0))))
-              (locals-map blocks))))))))
+              (locals-map blocks)))
+
+          (make-wasm-function-spec
+           :params (if (or (plusp num-optional) (plusp num-outer-nodes))
+                       '(i32 i32)
+                       '(i32))
+           :results '(i32)
+           :locals locals
+           :code code))))))
 
 (defun make-arity-check (arity)
   "Generate code which checks that the number of arguments (stored in
@@ -1811,7 +1837,7 @@
 
   (labels ((mark-constant (constants instruction it)
              "If INSTRUCTION is a constant push instruction followed
-              by a LOCAL.SET/TEE, add an the local variable to the
+              by a LOCAL.SET/TEE, add the local variable to the
               CONSTANTS map."
 
              (match instruction
@@ -2214,7 +2240,7 @@
 
          (local.get (ref ,local))
          (local.get (value ,local))
-         (i32.store offset 4)))))
+         (i32.store (offset 4))))))
 
 (defun box-character (local)
   "Generates code which creates a boxed character object, with the

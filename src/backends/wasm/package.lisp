@@ -51,10 +51,10 @@
   (:import-from :let-over-lambda
                 :mkstr
                 :symb
-                :lol-syntax
-                :nlet-tail)
+                :lol-syntax)
 
   (:import-from :agutil
-                :update-let)
+                :update-let
+                :nlet)
 
   (:documentation "WebAssembly Backend."))
