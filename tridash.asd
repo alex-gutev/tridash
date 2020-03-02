@@ -100,7 +100,9 @@
                :cl-fad
                :unix-opts
                :trivial-gray-streams
+               :flexi-streams
                :babel
+               :ieee-floats
 
                :generic-cl
                :generic-cl.util

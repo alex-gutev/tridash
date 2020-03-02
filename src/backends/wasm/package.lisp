@@ -29,6 +29,7 @@
 
         :babel
         :babel-encodings
+        :ieee-floats
 
         :tridash.util
         :tridash.parser
@@ -56,5 +57,8 @@
   (:import-from :agutil
                 :update-let
                 :nlet)
+
+  (:import-from :flexi-streams
+                :with-output-to-sequence)
 
   (:documentation "WebAssembly Backend."))
