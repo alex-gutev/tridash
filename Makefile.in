@@ -93,6 +93,10 @@ sources = tridash.asd \
         src/backends/javascript/backend.lisp \
         src/backends/javascript/functions.lisp \
         src/backends/javascript/html.lisp \
+	src/backends/wasm/package.lisp \
+	src/backends/wasm/backend.lisp \
+	src/backends/wasm/expressions.lisp \
+	src/backends/wasm/serialization.lisp \
 	$(plump_sources)
 
 core_module_sources = \
@@ -135,10 +139,14 @@ install-js-runtime:
 # WebAssembly Runtime Library
 
 wasm-runtime:
-	$(MAKE) --directory=src/backends/wasm/runtime
+	$(MAKE) --directory=src/backends/wasm
 
 clean-wasm-runtime:
-	$(MAKE) --directory=src/backends/wasm/runtime clean
+	$(MAKE) --directory=src/backends/wasm clean
+
+check-wasm-runtime: tridashc
+	$(MAKE) --directory=src/backends/wasm check
+
 
 ## Documentation
 
@@ -273,10 +281,6 @@ check: check-compiler check-js-runtime
 check-compiler:
 	cd $(srcdir); \
 	$(LISP) $(LISP_FLAGS) $(LISP_TEST_FLAGS) --load tridash.asd --load test/script.lisp
-
-
-check-wasm-runtime:
-	$(MAKE) --directory=src/backends/wasm/runtime check
 
 ## Phony Targets
 

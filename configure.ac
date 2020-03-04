@@ -55,8 +55,9 @@ AC_SUBST([PACKAGE], AC_PACKAGE_TARNAME)
 AS_MKDIR_P([doc])
 AS_MKDIR_P([src/backends/javascript/runtime])
 AS_MKDIR_P([src/backends/wasm/runtime])
+AS_MKDIR_P([src/backends/wasm/loader])
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/backends/javascript/Makefile])
-AC_CONFIG_FILES([src/backends/wasm/runtime/Makefile])
+AC_CONFIG_FILES([src/backends/wasm/Makefile])
 AC_OUTPUT

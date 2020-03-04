@@ -1,0 +1,151 @@
+# Tools
+
+UGLIFYJS = @UGLIFYJS@
+tridashc = $(top_builddir)/tridashc
+
+EMCC = @EMCC@
+WAT2WASM = @WAT2WASM@
+
+
+# Paths
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+top_builddir = @top_builddir@
+
+
+VPATH = $(srcdir)
+testdir = $(top_srcdir)/test/backends/wasm
+module_dir = $(top_srcdir)/modules/
+
+
+# Compiling Runtime
+
+## Header File Dependencies
+
+macros_h_deps = runtime/macros.h
+thunk_h_deps = runtime/thunk.h $(macros_h_deps)
+copying_h_deps = runtime/copying.h
+
+types_h_deps = runtime/types.h $(thunk_h_deps) \
+	$(strings_h_deps) \
+	$(arrays_h_deps) \
+	$(funcrefs_h_deps) \
+	$(object_h_deps)
+
+memory_h_deps = runtime/memory.h $(types_h_deps)
+strings_h_deps = runtime/strings.h
+failures_h_deps = runtime/failures.h $(macros_h_deps)
+arrays_h_deps = runtime/arrays.h $(macros_h_deps)
+funcrefs_h_deps = runtime/funcrefs.h
+hash_table_h_deps = runtime/hash-table.h $(strings_h_deps)
+objects_h_deps = runtime/objects.h $(hash_table_h_deps) $(macros_h_deps)
+
+
+## Wasm Runtime Library
+
+runtime: runtime/runtime.wasm loader/tridash.min.js
+
+runtime_objects = runtime/thunk.o \
+	runtime/memory.o \
+	runtime/copying.o \
+	runtime/strings.o \
+	runtime/failures.o \
+	runtime/arrays.o \
+	runtime/funcrefs.o \
+	runtime/objects.o \
+	runtime/hash-table.o
+
+runtime/runtime.wasm: $(runtime_objects)
+	$(EMCC) -O2 $^ -o $@ -s SIDE_MODULE
+
+runtime/thunk.o: runtime/thunk.c $(thunk_h_deps) $(copying_h_deps) $(memory_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/memory.o: runtime/memory.c $(memory_h_deps) $(copying_h_deps)
+	$(EMCC) -fPIC -O2 $< -o $@ -c
+
+runtime/copying.o: runtime/copying.c $(copying_h_deps) \
+	$(types_h_deps) \
+	$(thunk_h_deps) \
+	$(strings_h_deps) \
+	$(memory_h_deps) \
+	$(failures_h_deps) \
+	$(arrays_h_deps) \
+	$(funcrefs_h_deps) \
+	$(object_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/strings.o: runtime/strings.c $(strings_h_deps) $(types_h_deps) $(memory_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/failures.o: runtime/failures.c $(failures_h_deps) $(types_h_deps) $(memory_h_deps) $(copying_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/arrays.o: runtime/arrays.c $(arrays_h_deps) $(types_h_deps) $(memory_h_deps) $(copying_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/funcrefs.o: runtime/funcrefs.c $(funcrefs_h_deps) $(memory_h_deps) $(copying_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/objects.o: runtime/objects.c $(objects_h_deps) \
+	$(macros_h_deps) \
+	$(types_h_deps) \
+	$(memory_h_deps) \
+	$(copying_h_deps) \
+	$(thunk_h_deps) \
+	$(failures_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/hash-table.o: runtime/hash-table.c $(hash_table_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+
+## JavaScript Loader Library
+
+loader_sources = loader/loader.js \
+	loader/runtime.js \
+	loader/queue.js \
+	loader/loader.js \
+	loader/marshaller.js \
+	loader/exports.js
+
+loader/tridash.min.js: $(loader_sources)
+	$(UGLIFYJS) --wrap Tridash -m -o $@ $^
+
+
+# Testing
+
+wasm_test_inputs = $(testdir)/runtime/thunks.wasm
+
+check: $(testdir)/runtime/runtime.wasm \
+	$(testdir)/tests/tridash.min.js \
+	$(wasm_test_inputs)
+	cd $(testdir); npm test
+
+$(testdir)/runtime/runtime.wasm: runtime/runtime.wasm
+	cp $< $@
+
+$(testdir)/runtime/thunks.wasm: $(testdir)/runtime/thunks.wat
+	$(WAT2WASM) $^ -o $@
+
+
+# Cleaning
+
+clean:
+	rm -f runtime/thunk.o
+	rm -f runtime/memory.o
+	rm -f runtime/copying.o
+	rm -f runtime/strings.o
+	rm -f runtime/failures.o
+	rm -f runtime/arrays.o
+	rm -f runtime/funcrefs.o
+	rm -f runtime/objects.o
+	rm -f runtime/hash-table.o
+	rm -f runtime/runtime.wasm
+	rm -f loader/tridash.min.js
+
+
+# Phony Targets
+
+.PHONY: runtime clean check
