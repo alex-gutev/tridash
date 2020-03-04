@@ -127,21 +127,49 @@ loader/tridash.min.js: $(loader_sources)
 
 wasm_test_inputs = $(testdir)/runtime/thunks.wasm
 
+test_inputs = \
+	$(testdir)/tests/test001.wasm \
+	$(testdir)/tests/test002.wasm \
+	$(testdir)/tests/test003.wasm \
+	$(testdir)/tests/test004.wasm \
+	$(testdir)/tests/test005.wasm \
+	$(testdir)/tests/test006.wasm \
+	$(testdir)/tests/test007.wasm \
+	$(testdir)/tests/test008.wasm
+
 check: $(testdir)/runtime/runtime.wasm \
 	$(testdir)/tests/tridash.min.js \
-	$(wasm_test_inputs)
+	$(wasm_test_inputs) $(test_inputs)
 	cd $(testdir); npm test
 
 $(testdir)/runtime/runtime.wasm: runtime/runtime.wasm
 	cp $< $@
 
+$(testdir)/tests/tridash.min.js: loader/tridash.min.js
+	cp $< $@
+	echo "module.exports=Tridash;" >> $@
+
+
 $(testdir)/runtime/thunks.wasm: $(testdir)/runtime/thunks.wat
 	$(WAT2WASM) $^ -o $@
 
 
+## Test Program Rules
+
+%.wasm: %.trd $(tridashc)
+	TRIDASH_MODULE_PATHS=$(module_dir) \
+	$(tridashc) $< -o $@ -t wasm32 \
+	-p runtime-path="runtime/runtime.wasm" \
+	-p module-path="tests/" -p indented=1
+
+%.clean:
+	rm -f $(@:.clean=.wasm)
+	rm -f $(@:.clean=.js)
+
+
 # Cleaning
 
-clean:
+clean: $(test_inputs:.wasm=.clean)
 	rm -f runtime/thunk.o
 	rm -f runtime/memory.o
 	rm -f runtime/copying.o
@@ -154,6 +182,9 @@ clean:
 	rm -f runtime/lists.o
 	rm -f runtime/runtime.wasm
 	rm -f loader/tridash.min.js
+	rm -f $(testdir)/runtime/runtime.wasm
+	rm -f $(testdir)/runtime/thunks.wasm
+	rm -f $(testdir)/tests/tridash.min.js
 
 
 # Phony Targets

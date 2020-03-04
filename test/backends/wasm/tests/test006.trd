@@ -1,0 +1,27 @@
+## Tests Cyclic Bindings, in which the cyclic nodes are not coalesced.
+
+/import(core)
+
+a <- cons(i, b)
+b <- cons(j, a)
+
+output <- a
+
+
+## No Coalesce Attributes
+
+/attribute(a, coalescable, 0)
+/attribute(b, coalescable, 0)
+
+
+## Input Attributes
+
+/attribute(i, input, 1)
+/attribute(j, input, 2)
+
+
+## Public Name Attributes
+
+/attribute(i, public-name, "i")
+/attribute(j, public-name, "j")
+/attribute(output, public-name, "output")

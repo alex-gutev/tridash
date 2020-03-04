@@ -1,0 +1,19 @@
+# Test Initial Values with Complex Expressions
+
+/import(core)
+
+a + b * d -> output
+
+2 -> a
+3 -> b
+
+10 -> d
+
+x + a + d -> output
+
+# Attribute Declarations
+
+/attribute(x, input, 1)
+
+/attribute(x, public-name, "x")
+/attribute(output, public-name, "output")

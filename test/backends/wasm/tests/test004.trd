@@ -1,0 +1,15 @@
+# Test Multiple Node Contexts
+
+/import(core)
+
+a -> output
+b -> output
+
+# Attribute Declarations
+
+/attribute(a, input, 1)
+/attribute(b, input, 1)
+
+/attribute(a, public-name, "a")
+/attribute(b, public-name, "b")
+/attribute(output, public-name, "output")

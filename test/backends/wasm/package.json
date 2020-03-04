@@ -1,6 +1,6 @@
 {
     "scripts": {
-        "test": "mocha \"./runtime/*.test.js\""
+        "test": "mocha \"./runtime/*.test.js\" \"./tests/*.test.js\" "
     },
     "dependencies": {
         "mocha": "^7.0.1"

@@ -1,0 +1,17 @@
+# Test Initial Values
+
+/import(core)
+
+a + b -> output
+
+2 -> a
+3 -> b
+
+# Attribute Declarations
+
+/attribute(a, input, 1)
+/attribute(b, input, 1)
+
+/attribute(a, public-name, "a")
+/attribute(b, public-name, "b")
+/attribute(output, public-name, "output")
