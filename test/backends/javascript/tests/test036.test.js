@@ -26,31 +26,32 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
+const util = require('./test_util.js');
 
-require('./test036.js');
-var input = Tridash.nodes.input;
-var delta = Tridash.nodes.delta;
-var output1 = Tridash.nodes.output1;
-var output2 = Tridash.nodes.output2;
+const mod = require('./test036.js');
+
+const input = mod.nodes.input;
+const delta = mod.nodes.delta;
+const output1 = mod.nodes.output1;
+const output2 = mod.nodes.output2;
 
 describe('Integration Test 36', function() {
     describe('Higher Order Meta-Nodes with Optional Arguments', function() {
         describe('Set `input` = [1,2,3], `delta` = 1', function () {
-            Tridash.set_values([[input, [1,2,3]], [delta, 1]]);
+            mod.set_values([[input, [1,2,3]], [delta, 1]]);
 
-            var out1 = output1.next_value;
-            var out2 = output2.next_value;
+            const out1 = output1.get_value();
+            const out2 = output2.get_value();
 
-            it('`output1` = [2,3,4]', async function() {
-               var value = util.resolve_list(await out1);
+            it('`output1` = [2,3,4]', function() {
+               const value = util.resolve_list(out1);
                assert.deepEqual(value, [2,3,4]);
             });
 
-            it('`output2` = [3,4,5]', async function() {
-                var value = util.resolve_list(await out2);
+            it('`output2` = [3,4,5]', function() {
+                const value = util.resolve_list(out2);
                 assert.deepEqual(value, [3,4,5]);
             });
         });
@@ -58,16 +59,16 @@ describe('Integration Test 36', function() {
         describe('Set `delta` = 10', function () {
             delta.set_value(10);
 
-            var out1 = output1.next_value;
-            var out2 = output2.next_value;
+            const out1 = output1.get_value();
+            const out2 = output2.get_value();
 
-            it('`output1` = [11,12,13]', async function() {
-               var value = util.resolve_list(await out1);
+            it('`output1` = [11,12,13]', function() {
+               const value = util.resolve_list(out1);
                assert.deepEqual(value, [11,12,13]);
             });
 
-            it('`output2` = [3,4,5]', async function() {
-                var value = util.resolve_list(await out2);
+            it('`output2` = [3,4,5]', function() {
+                const value = util.resolve_list(out2);
                 assert.deepEqual(value, [3,4,5]);
             });
         });

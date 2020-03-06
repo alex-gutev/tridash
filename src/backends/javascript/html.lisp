@@ -110,66 +110,61 @@
     (error 'html-component-binding-error :name (name node))))
 
 (defmethod create-node ((node html-node))
-  "Generates the node definition for a NODE which references an HTML
-   element."
+  "Generate the code which associates a node with an HTML element."
 
-  ;; Create base node definition first
-  (call-next-method)
+  (concatenate
+   ;; Create base node definition first
+   (call-next-method)
 
-  (when (get :input (contexts node))
-    (make-input-html-node node))
+   (when (get :input (contexts node))
+     (list
+      (make-input-html-node node)))
 
-  (when (get :object (contexts node))
-    (make-output-html-node node)))
+   (when (get :object (contexts node))
+     (list
+      (make-output-html-node node)))))
 
 (defun make-input-html-node (node)
-  "Generates the node definition for a node which references an
-   attribute of an HTML element. The HTML element is retrieved and an
-   event listener, for changes to the attribute's value, is attached."
+  "Generate code which attaches an event listener to the attribute of
+   the HTML element associated with node, and updates the nodes value
+   accordingly."
 
-  (let ((path (node-path node)))
-    (with-slots (element-id tag-name html-attribute) node
-      (when html-attribute
-        (when-let ((listener (make-event-listener node html-attribute)))
-          (append-code
-           (make-onloaded-method
-            (list
-             (make-get-element path element-id)
-
-             (js-call "=" (js-member path "value")
-                      (js-members path "html_element" html-attribute))
-
-             listener))))))))
+  (with-slots (element-id tag-name html-attribute) node
+    (when html-attribute
+      (when-let ((listener (make-event-listener node "element" html-attribute)))
+        (make-onloaded-method
+         (list
+          (js-var "element" (make-get-element element-id))
+          listener))))))
 
 (defun make-output-html-node (node)
-  "Generates the node definition for a node which corresponds to an
-   HTML element. The update_value method is overridden to update the
-   attributes of the element."
+  "Generate code which adds a callback function to a node that updates
+   the attributes of the HTML element associated with it."
 
-  (let ((path (node-path node))
+  (let ((value-index (node-index node))
         (context (get :object (contexts node))))
 
     (with-slots (value-function) context
-      (append-code
-       (make-onloaded-method
-        (list (make-get-element path (element-id node))))
+      (make-onloaded-method
+       (list
+        (js-var "element" (make-get-element (element-id node)))
 
-       (js-call
-        "="
-        (js-member path "update_value")
-        (js-lambda
-         (list "value")
-         (-> (compose (curry #'make-set-attribute node "value") #'first)
-             (map (object-expression-entries value-function)))))))))
+        (js-call
+         (js-member "module" "watch_node")
 
-(defun make-get-element (path id)
+         value-index
+
+         (js-lambda
+          (list "value")
+          (-> (compose (curry #'make-set-attribute node "element" "value") #'first)
+              (map (object-expression-entries value-function))))))))))
+
+(defun make-get-element (id)
   "Generates code which retrieves a reference to the HTML element with
-   id ID, and stores it in the html_element field of the node, which
-   is referenced by the expression PATH."
+   id ID"
 
-  (js-call "=" (js-member path "html_element")
-           (js-call (js-member "document" "getElementById")
-                    (js-string id))))
+  (js-call (js-member "document" "getElementById")
+           (js-string id)))
 
 (defun make-onloaded-method (body)
   "Generates code which executes the code BODY, after the DOM has been
@@ -179,21 +174,25 @@
            (js-string "DOMContentLoaded")
            (js-lambda nil body)))
 
-(defun make-set-attribute (node object attribute)
+(defun make-set-attribute (node element object attribute)
   "Generates code which sets the attribute ATTRIBUTE of the HTML
-   element, stored in the html_element field of NODE. OBJECT is an
-   expression referencing a JS object in which the value of the
-   attribute (to be set) is stored in the field ATTRIBUTE. If NODE has
-   the HTML-ATTRIBUTE slot, the attribute <HTML-ATTRIBUTE>.<ATTRIBUTE>
-   is set."
+   element, stored in the variable ELEMENT. OBJECT is an expression
+   referencing a JS object in which the value of the attribute (to be
+   set) is stored in the field ATTRIBUTE. If NODE has the
+   HTML-ATTRIBUTE slot, the attribute <HTML-ATTRIBUTE>.<ATTRIBUTE> is
+   set."
 
   (with-slots (html-attribute) node
     (unless (equal (string attribute) "style")
-      (let ((path (node-path node)))
+      (js-catch
+       (list
         (js-call
          "="
-         (apply #'js-members path "html_element" (append (ensure-list html-attribute) (list attribute)))
-         (resolve (js-member (resolve object) attribute)))))))
+         (apply #'js-members element (append (ensure-list html-attribute) (list attribute)))
+         (resolve (js-member (resolve object) attribute))))
+
+       "e"
+       nil))))
 
 
 (defparameter *html-events*
@@ -210,10 +209,10 @@
    the EQUALP test thus the tag names and attributes can be specified
    as case-insensitive strings.")
 
-(defun make-event-listener (node attribute)
+(defun make-event-listener (node element attribute)
   "Generates code which attaches an event listener to the attribute
-   ATTRIBUTE of the HTML element (stored in the html_element field of
-   NODE), which updates the value of NODE."
+   ATTRIBUTE of the HTML element ELEMENT, which updates the value of
+   NODE."
 
   (flet ((get-event-name (tag attribute)
            (let ((events (get (list tag attribute) *html-events*)))
@@ -221,16 +220,21 @@
                  (second events)
                  (first events)))))
 
-    (let ((path (node-path node)))
+    (let ((value-index (node-index node))
+          (input-index (context-index node (context node :input))))
+
       (with-slots (tag-name) node
         (awhen (get-event-name tag-name attribute)
-          (js-call (js-members path "html_element" "addEventListener")
+          (js-call (js-member element "addEventListener")
                    (js-string it)
                    (js-lambda
                     nil
+
                     (list
-                     (js-call "="
-                              (js-member path "value")
-                              (js-member "this" attribute))
-                     (js-call (js-member path "set_value")
-                              (js-member path "value"))))))))))
+                     (js-call
+                      (js-member "module" "set_value")
+
+                      value-index
+                      input-index
+
+                      (js-member "this" attribute))))))))))

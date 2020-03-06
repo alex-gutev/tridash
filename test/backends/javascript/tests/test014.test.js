@@ -26,31 +26,36 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test014.js');
+const mod = require('./test014.js');
 
-var a = Tridash.nodes.a;
-var b = Tridash.nodes.b;
-var output = Tridash.nodes.output;
+const a = mod.nodes.a;
+const b = mod.nodes.b;
+const output = mod.nodes.output;
 
 describe('Integration Test 14', function() {
     describe('Conditional Bindings Based on Failure Type', function() {
-        it('`output` is set to `a` when `a + 1 > 3`', async function() {
-            a.set_value(3);
-            assert.equal(await util.node_value(output), 3);
+        describe('Set `a` = 3', function() {
+            it('`output` = `a` = 3', function() {
+                a.set_value(3);
+                assert.equal(output.get_value(), 3);
+            });
         });
 
-        it('`output` is set to `b` when `a + 1 < 3`', async function() {
-            Tridash.set_values([[a, 1], [b, 10]]);
-            assert.equal(await util.node_value(output), 10);
+        describe('Set `a` = 1, `b` = 10', function() {
+            it('`output` b = 10', function() {
+                mod.set_values([[a, 1], [b, 10]]);
+                assert.equal(output.get_value(), 10);
+            });
         });
 
-        it('`output` is set to `a` is not a number', async function() {
-            a.set_value("x");
-            assert.equal(await util.node_value(output), "other");
+        describe('Set `a` = "other"', function() {
+            it('`output` = "x"', function() {
+                a.set_value("x");
+                assert.equal(output.get_value(), "other");
+            });
         });
 
     });

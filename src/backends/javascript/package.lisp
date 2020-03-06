@@ -66,6 +66,11 @@
    :js-if-then
    :js-if-else
 
+   :js-switch
+   :js-switch-p
+   :js-switch-value
+   :js-switch-cases
+
    :js-block
    :js-block-p
    :js-block-statements
@@ -103,6 +108,8 @@
 
    :js-continue
    :js-continue-p
+   :js-break
+   :js-break-p
 
    :js-throw
    :js-throw-p

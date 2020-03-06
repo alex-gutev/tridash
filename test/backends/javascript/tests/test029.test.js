@@ -26,32 +26,35 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
+const util = require('./test_util.js');
 
-require('./test029.js');
-var x = Tridash.nodes.x;
-var y = Tridash.nodes.y;
-var output = Tridash.nodes.output;
+const mod = require('./test029.js');
+
+const x = mod.nodes.x;
+const y = mod.nodes.y;
+const output = mod.nodes.output;
 
 describe('Integration Test 29', function() {
     describe('Local Nodes: Cyclic Bindings', function() {
         describe('Set `x` = 1, `y` = 2', function () {
-            it('`output` = [1, 2, 1, ...]', async function() {
-                Tridash.set_values([[x, 1], [y, 2]]);
+            it('`output` = [1, 2, 1, ...]', function() {
+                mod.set_values([[x, 1], [y, 2]]);
+
                 assert.deepEqual(
-                    util.resolve_list(await output.next_value, 3),
+                    util.resolve_list(output.get_value(), 3),
                     [1, 2, 1]
                 );
             });
         });
 
         describe('Set `x` = 2, `y` = 3', function () {
-            it('`output` = [2, 3, 2, ...]', async function() {
-                Tridash.set_values([[x, 2], [y, 3]]);
+            it('`output` = [2, 3, 2, ...]', function() {
+                mod.set_values([[x, 2], [y, 3]]);
+
                 assert.deepEqual(
-                    util.resolve_list(await output.next_value, 3),
+                    util.resolve_list(output.get_value(), 3),
                     [2, 3, 2]
                 );
             });

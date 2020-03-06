@@ -274,6 +274,31 @@
     (print-ast var :brackets t)
     (print-block catch)))
 
+
+(defmethod print-ast ((expression js-switch) &key)
+  (flet ((print-case (case)
+           (destructuring-bind (value statements) case
+             (print-token "case" :space t)
+             (print-ast value)
+             (print-token ":" :lead-space nil)
+
+             (print-newline)
+             (let ((*indent-level* (1+ *indent-level*)))
+               (foreach (rcurry #'print-ast :semicolon t) statements)))))
+
+    (with-struct-slots js-switch- (value cases) expression
+      (print-token "switch")
+      (print-ast value :brackets t)
+
+      (print-token "{")
+      (print-newline)
+
+      (let ((*indent-level* (1+ *indent-level*)))
+        (foreach #'print-case cases))
+
+      (print-newline)
+      (print-token "}"))))
+
 ;;; Statements
 
 (defmethod print-ast ((ret js-return) &key)
@@ -293,6 +318,9 @@
 
 (defmethod print-ast ((continue js-continue) &key)
   (print-token "continue"))
+
+(defmethod print-ast ((break js-break) &key)
+  (print-token "break"))
 
 (defmethod print-ast ((throw js-throw) &key)
   (print-token "throw" :space t)
@@ -504,6 +532,20 @@
    (js-catch-var catch)
    (strip-redundant (js-catch-catch catch))))
 
+
+(defmethod strip-redundant ((switch js-switch) &key)
+  (flet ((strip-case (case)
+           (destructuring-bind (value statements) case
+             (list
+              value
+
+              (map-extend
+               (compose #'ensure-list #'strip-redundant)
+               statements)))))
+
+    (js-switch
+     (js-switch-value switch)
+     (map #'strip-case (js-switch-cases switch)))))
 
 ;;; Statements
 

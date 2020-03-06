@@ -44,7 +44,8 @@
 
   (:import-from :lol
                 :defmacro!
-                :lol-syntax)
+                :lol-syntax
+                :mkstr)
 
   (:import-from :tridash
                 :*module-search-paths*
@@ -56,26 +57,19 @@
   (:import-from :tridash.backend.js
 
                 :+tridash-namespace+
-                :+end-update-class+
                 :+thunk-class+
-                :+catch-thunk-class+
                 :+resolve-function+
 
                 :js-backend-state
                 :*backend-state*
-                :*output-code*
-
-                :make-code-array
                 :meta-node-id
-                :dependency-index
 
-                :create-node
-                :create-compute-function
+                :make-value-block
+                :compile-function
                 :create-meta-node
                 :make-meta-node-call
 
-                :strip-redundant
-                :output-code)
+                :strip-redundant)
 
   (:import-from :tridash.test.builder
                 :with-module-table
@@ -93,15 +87,8 @@
 
 (plan nil)
 
-
-;;;; AST Equality Comparison
-
-(defvar *current-context* nil
-  "The context whose value function is currently being tested.")
-
-(defvar *values-var* nil
-  "The name of the variable storing the 'values' argument to the
-   compute function.")
+
+;;; AST Equality Comparison
 
 (defvar *ast-aliases* nil
   "Hash table mapping alias identifier to the aliased AST nodes.")
@@ -176,6 +163,15 @@
        (ast= (js-catch-var got) (js-catch-var expected))
        (ast-list= (js-catch-catch got) (js-catch-catch expected))))
 
+(defmethod ast= ((got js-switch) (expected js-switch))
+  (flet ((case= (got expected)
+           (and (ast= (first got) (first expected))
+                (ast-list= (second got) (second expected)))))
+
+    (and (ast= (js-switch-value got) (js-switch-value expected))
+         (= (length (js-switch-cases got) (js-switch-cases expected)))
+         (every #'case= (js-switch-cases got) (js-switch-cases expected)))))
+
 
 (defmethod ast= ((got js-var) (expected js-var))
   (and (ast= (js-var-var got) (js-var-var expected))
@@ -187,21 +183,17 @@
 (defmethod ast= ((got js-continue) (expected js-continue))
   t)
 
+(defmethod ast= ((got js-break) (expected js-break))
+  t)
+
 (defmethod ast= ((got js-throw) (expected js-throw))
   (ast= (js-throw-expression got) (js-throw-expression expected)))
 
 
-(defmethod ast= ((got cons) (expected cons))
-  (match* (got expected)
-    (((cons 'async got) (cons 'async expected))
-     (ast= got expected))
-
-    ((_ _) (call-next-method))))
-
 (defmethod ast= (got (expected list))
   (match expected
-    ((list 'd dependency)
-     (ast= got (js-element *values-var* (dependency-index *current-context* dependency))))
+    ((list 'd _)
+     (ast= got (get expected *ast-aliases*)))
 
     ((list '$ '_) t)
 
@@ -239,8 +231,8 @@
 
   `'(d ,dependency))
 
-
-;;;; Test Mock Utilities
+
+;;; Test Mock Utilities
 
 (defmacro mock-backend-state (&body body)
   "Evaluates the forms in BODY in an environment in which the
@@ -275,7 +267,6 @@
        (make-meta-node (opts)
          (match opts
            ((list name operands strict-operands)
-
 
             (multiple-value-bind (operands outer-nodes)
                 (split-args operands)
@@ -334,32 +325,12 @@
            `(,(first context) (mock-context ,@(rest context)))))
     `(let ,(map #'make-binding contexts) ,@body)))
 
+
+;;; Test Value Function Utilities
 
-;;;; Test Value Function Utilities
-
-(defun test-compute-function% (code fn)
-  "Tests that the compute function CODE contains the statements in
-   FN."
-
-  (is-type! code 'js-function "Is a function")
-
-  (with-accessors ((name js-function-name)
-                   (args js-function-arguments)
-                   (body js-function-statements))
-      code
-
-    (is! name nil "Anonymous function")
-
-    (is! (length args) 2 "Single argument")
-
-    (let ((prove:*default-test-function* #'ast-list=)
-          (*values-var* (second args))
-          (*ast-aliases* (make-hash-map)))
-      (is body fn))))
-
-(defmacro! test-compute-function (o!context &body statements)
-  "Tests that the generated compute function, of CONTEXT, contains
-   STATEMENTS in its body.
+(defun test-context-function (context &rest expected)
+  "Tests that the function generated for context consists of the
+   statements EXPECTED
 
    Some nodes have a special meaning:
 
@@ -368,9 +339,7 @@
 
    A CONS with the CAR being the symbol D references the dependency
    node in the CDR. It is replaced with an expression that references
-   the element, at the index corresponding to the dependency index of
-   the dependency node, within the values argument to the compute
-   function.
+   the value of the dependency node.
 
    A CONS with the car being the symbol $ creates an alias, with the
    identifier in the CDR, for the corresponding AST node of the
@@ -380,8 +349,27 @@
    'a', for that node. Subsequent occurrences are replaced with the
    aliased AST node."
 
-  `(let ((*current-context* ,g!context))
-     (test-compute-function% (strip-redundant (create-compute-function ,g!context)) (list ,@statements))))
+  (let ((operands (make-hash-map))
+        (*ast-aliases* (make-hash-map))
+        (counter 0))
+
+    (flet ((get-input (link)
+             (ematch link
+               ((node-link- node)
+                (ensure-get node operands
+                  (aprog1
+                      (make-value-block :expression (mkstr "dep" counter))
+
+                    (setf (get (list 'd node) *ast-aliases*) (mkstr "dep" counter))
+                    (incf counter)))))))
+
+      (is
+       (-> (value-function context)
+           (compile-function #'get-input :protect nil)
+           strip-redundant)
+
+       expected
+       :test #'ast-list=))))
 
 
 (defun functor (meta-node &rest arguments)
@@ -405,42 +393,49 @@
 
   (js-new +thunk-class+ (list (js-lambda nil statements))))
 
+
+;;; Test Compiling Expression
 
-;;;; Tests
-
-(subtest "Node Value Function Code Generation"
+(subtest "Test Compiling Expressions"
   (subtest "Literals"
     (subtest "Strings"
       (mock-backend-state
         (mock-contexts
             ((context () "hello"))
 
-          (test-compute-function context
-            (js-return (js-string "hello"))))))
+          (test-context-function
+           context
+
+           (js-return (js-string "hello"))))))
 
     (subtest "Symbols"
       (mock-backend-state
         (mock-contexts
             ((context () '|some-key|))
 
-          (test-compute-function context
-            (js-return (js-call "Tridash.get_symbol" (js-string "some-key")))))))
+          (test-context-function
+           context
+           (js-return (js-call "Tridash.get_symbol" (js-string "some-key")))))))
 
     (subtest "Integers"
       (mock-backend-state
         (mock-contexts
             ((context () 1))
 
-          (test-compute-function context
-            (js-return 1)))))
+          (test-context-function
+           context
+
+           (js-return 1)))))
 
     (subtest "Characters"
       (mock-backend-state
         (mock-contexts
             ((context () #\h))
 
-          (test-compute-function context
-            (js-return (js-new "Tridash.Char" (list (js-string "h")))))))))
+          (test-context-function
+           context
+
+           (js-return (js-new "Tridash.Char" (list (js-string "h")))))))))
 
   (subtest "Function Calls"
     (subtest "Positional Arguments"
@@ -449,8 +444,10 @@
           (mock-contexts
               ((context (a b) (functor f a b)))
 
-            (test-compute-function context
-              (js-return (js-call f (d a) (d b))))))))
+            (test-context-function
+             context
+
+             (js-return (js-call f (d a) (d b))))))))
 
     (subtest "Optional Argument with No Default"
       (mock-backend-state
@@ -458,9 +455,11 @@
           (mock-contexts
               ((context (a) (functor f a nil)))
 
-            (test-compute-function context
-              (js-return
-               (js-call f (d a) (thunk (js-return (js-call "Tridash.fail" "Tridash.NoValue"))))))))))
+            (test-context-function
+             context
+
+             (js-return
+              (js-call f (d a) (thunk (js-return (js-call "Tridash.fail" "Tridash.NoValue"))))))))))
 
     (subtest "Rest Arguments"
       (mock-backend-state
@@ -468,9 +467,11 @@
           (mock-contexts
               ((context (a b c) (functor f a (argument-list (list b c)))))
 
-            (test-compute-function context
-              (js-return
-               (js-call f (d a) (thunk (js-return (js-array (list (d b) (d c))))))))))))
+            (test-context-function
+             context
+
+             (js-return
+              (js-call f (d a) (thunk (js-return (js-array (list (d b) (d c))))))))))))
 
     (subtest "Empty Rest Argument List"
       (mock-backend-state
@@ -478,9 +479,11 @@
           (mock-contexts
               ((context (a) (functor f a (argument-list nil))))
 
-            (test-compute-function context
-              (js-return
-               (js-call f (d a) (thunk (js-return (js-call "Tridash.Empty"))))))))))
+            (test-context-function
+             context
+
+             (js-return
+              (js-call f (d a) (thunk (js-return (js-call "Tridash.Empty"))))))))))
 
     (subtest "With Outer Node References"
       (subtest "Simple Node Reference"
@@ -492,9 +495,11 @@
                           (->> (alist-hash-map `((b . ,b)))
                                (functor-expression f (list a) :outer-nodes))))
 
-              (test-compute-function context
-                (js-return
-                 (js-call f (d a) (d b))))))))
+              (test-context-function
+               context
+
+               (js-return
+                (js-call f (d a) (d b))))))))
 
       (subtest "Complex Expression"
         (subtest "Strict Argument"
@@ -507,9 +512,11 @@
                             (->> (alist-hash-map `((b . ,(functor + b c))))
                                  (functor-expression f (list a) :outer-nodes))))
 
-                (test-compute-function context
-                  (js-return
-                   (js-call f (d a) (js-call + (d b) (d c)))))))))
+                (test-context-function
+                 context
+
+                 (js-return
+                  (js-call f (d a) (js-call + (d b) (d c)))))))))
 
         (subtest "Lazy Argument"
           (mock-backend-state
@@ -521,9 +528,11 @@
                             (->> (alist-hash-map `((b . ,(functor + b c))))
                                  (functor-expression f (list a) :outer-nodes))))
 
-                (test-compute-function context
-                  (js-return
-                   (js-call f (d a) (thunk (js-return (js-call + (d b) (d c))))))))))))))
+                (test-context-function
+                 context
+
+                 (js-return
+                  (js-call f (d a) (thunk (js-return (js-call + (d b) (d c))))))))))))))
 
   (subtest "Conditionals"
     (subtest "Simple If Statements"
@@ -536,13 +545,15 @@
                                        (functor - b a)
                                        (functor - a b))))
 
-            (test-compute-function context
-              (js-if (resolve (js-call < (d a) (d b)))
-                     (js-return
-                      (thunk (js-return (js-call - (d b) (d a)))))
+            (test-context-function
+             context
 
-                     (js-return
-                      (thunk (js-return (js-call - (d a) (d b)))))))))))
+             (js-if (resolve (js-call < (d a) (d b)))
+                    (js-return
+                     (thunk (js-return (js-call - (d b) (d a)))))
+
+                    (js-return
+                     (thunk (js-return (js-call - (d a) (d b)))))))))))
 
     (subtest "Nested If Statements"
       (subtest "Function Call Arguments"
@@ -558,24 +569,26 @@
                                                 d)
                                  (functor f <> a))))
 
-                (test-compute-function context
-                  (js-var ($ arg1))
-                  (js-catch
-                   (list
-                    (js-if (resolve (js-call < (d a) 3))
-                           (js-call "="
-                                    ($ arg1)
-                                    (thunk (js-return (js-call + (d b) (d c)))))
+                (test-context-function
+                 context
 
-                           (js-call "="
-                                    ($ arg1)
-                                    (d d))))
+                 (js-var ($ arg1))
+                 (js-catch
+                  (list
+                   (js-if (resolve (js-call < (d a) 3))
+                          (js-call "="
+                                   ($ arg1)
+                                   (thunk (js-return (js-call + (d b) (d c)))))
 
-                   ($ e)
-                   (list
-                    (js-call "=" ($ arg1) (thunk (js-throw ($ e))))))
+                          (js-call "="
+                                   ($ arg1)
+                                   (d d))))
 
-                  (js-return (js-call f ($ arg1) (d a))))))))
+                  ($ e)
+                  (list
+                   (js-call "=" ($ arg1) (thunk (js-throw ($ e))))))
+
+                 (js-return (js-call f ($ arg1) (d a))))))))
 
         (subtest "Lazy Argument"
           (mock-backend-state
@@ -589,17 +602,19 @@
                                                 d)
                                  (functor f <> a))))
 
-                (test-compute-function context
-                  (-<>
-                   (js-if (resolve (js-call < (d a) 3))
-                          (js-return
-                           (thunk (js-return (js-call + (d b) (d c)))))
+                (test-context-function
+                 context
 
-                          (js-return
-                           (d d)))
-                   thunk
-                   (js-call f <> (d a))
-                   js-return)))))))
+                 (-<>
+                  (js-if (resolve (js-call < (d a) 3))
+                         (js-return
+                          (thunk (js-return (js-call + (d b) (d c)))))
+
+                         (js-return
+                          (d d)))
+                  thunk
+                  (js-call f <> (d a))
+                  js-return)))))))
 
       (subtest "Nested in If Condition"
         (mock-backend-state
@@ -611,29 +626,31 @@
                                (if-expression (functor + b c) d)
                                (if-expression a <> e))))
 
-              (test-compute-function context
-                (js-if (resolve (d a))
+              (test-context-function
+               context
 
-                       (js-return
-                        (thunk
-                         (js-var ($ cond))
-                         (js-if (resolve (js-call < (d b) (d c)))
-                                (js-call "="
-                                         ($ cond)
-                                         (d b))
+               (js-if (resolve (d a))
 
-                                (js-call "="
-                                         ($ cond)
-                                         (d c)))
+                      (js-return
+                       (thunk
+                        (js-var ($ cond))
+                        (js-if (resolve (js-call < (d b) (d c)))
+                               (js-call "="
+                                        ($ cond)
+                                        (d b))
 
-                         (js-if (resolve ($ cond))
-                                (js-return
-                                 (thunk (js-return (js-call + (d b) (d c)))))
+                               (js-call "="
+                                        ($ cond)
+                                        (d c)))
 
-                                (js-return
-                                 (d d)))))
+                        (js-if (resolve ($ cond))
+                               (js-return
+                                (thunk (js-return (js-call + (d b) (d c)))))
 
-                       (js-return (d e))))))))))
+                               (js-return
+                                (d d)))))
+
+                      (js-return (d e))))))))))
 
   (subtest "Objects"
     (subtest "Object Creation"
@@ -647,14 +664,16 @@
                                         ("x" x)
                                         ("y" y))))
 
-              (test-compute-function context
-                (js-return
-                 (js-object
-                  (list
-                   (list (js-string "sum") (thunk (js-return (js-call + (d x) (d y)))))
-                   (list (js-string "difference") (thunk (js-return (js-call - (d x) (d y)))))
-                   (list (js-string "x") (d x))
-                   (list (js-string "y") (d y))))))))))
+              (test-context-function
+               context
+
+               (js-return
+                (js-object
+                 (list
+                  (list (js-string "sum") (thunk (js-return (js-call + (d x) (d y)))))
+                  (list (js-string "difference") (thunk (js-return (js-call - (d x) (d y)))))
+                  (list (js-string "x") (d x))
+                  (list (js-string "y") (d y))))))))))
 
       (subtest "If Expressions in Field Values"
         (mock-backend-state
@@ -663,88 +682,108 @@
                 ((context (x y) (object ("min" (if-expression (functor < x y) x y))
                                         ("max" (if-expression (functor < y x) x y)))))
 
-              (test-compute-function context
-                (js-return
-                 (js-object
-                  (list
-                   (list (js-string "min")
-                         (thunk
-                          (js-if (resolve (js-call < (d x) (d y)))
-                                 (js-return (d x))
-                                 (js-return (d y)))))
+              (test-context-function
+               context
 
-                   (list (js-string "max")
-                         (thunk
-                          (js-if (resolve (js-call < (d y) (d x)))
-                                 (js-return (d x))
-                                 (js-return (d y))))))))))))))
+               (js-return
+                (js-object
+                 (list
+                  (list (js-string "min")
+                        (thunk
+                         (js-if (resolve (js-call < (d x) (d y)))
+                                (js-return (d x))
+                                (js-return (d y)))))
+
+                  (list (js-string "max")
+                        (thunk
+                         (js-if (resolve (js-call < (d y) (d x)))
+                                (js-return (d x))
+                                (js-return (d y))))))))))))))
 
     (subtest "Member Access"
-      (subtest "Direct Member Access"
-        (subtest "Strict Argument"
-          (mock-backend-state
-            (mock-meta-nodes ((f (x) (x)))
-              (mock-contexts
-                  ((context (object) (functor f (member-expression object '|field|))))
+      (with-module-table modules
+        ;; This is require because the mapping from the external
+        ;; `member` meta-node, to the corresponding JavaScript
+        ;; function is specified in the core module source file
+        ;; `js-backend.trd`.
 
-                (test-compute-function context
-                  (-<> (d object)
-                       (js-call "Tridash.member" <> (js-string "field"))
-                       (js-call f <>)
-                       js-return))))))
+        (build-core-module modules)
 
-        (subtest "Lazy Argument"
+        (subtest "Direct Member Access"
+          (subtest "Strict Argument"
+            (mock-backend-state
+              (mock-meta-nodes ((f (x) (x)))
+                (mock-contexts
+                    ((context (object) (functor f (member-expression object '|field|))))
+
+                  (test-context-function
+                   context
+
+                   (-<> (d object)
+                        (js-call "Tridash.member" <> (js-string "field"))
+                        (js-call f <>)
+                        js-return))))))
+
+          (subtest "Lazy Argument"
+            (mock-backend-state
+              (mock-meta-nodes ((f (x) nil))
+                (mock-contexts
+                    ((context (object) (functor f (member-expression object '|field|))))
+
+                  (test-context-function
+                   context
+
+                   (js-return
+                    (js-call f (-<> (d object)
+                                    (js-call "Tridash.member" <> (js-string "field"))
+                                    js-return
+                                    thunk)))))))))
+
+        (subtest "Expression Member Access"
           (mock-backend-state
             (mock-meta-nodes ((f (x) nil))
               (mock-contexts
-                  ((context (object) (functor f (member-expression object '|field|))))
+                  ((context (a) (member-expression (functor f a) '\x)))
 
-                (test-compute-function context
-                  (js-return
-                   (js-call f (-<> (d object)
-                                   (js-call "Tridash.member" <> (js-string "field"))
-                                   js-return
-                                   thunk)))))))))
+                (test-context-function
+                 context
 
-      (subtest "Expression Member Access"
-        (mock-backend-state
-          (mock-meta-nodes ((f (x) nil))
+                 (js-return
+                  (js-call "Tridash.member" (js-call f (d a)) (js-string "x"))))))))
+
+        (subtest "Expression Key"
+          (mock-backend-state
+            (mock-meta-nodes ((f (x) nil))
+              (mock-contexts
+                  ((context (a) (member-expression a (functor f a))))
+
+                (test-context-function
+                 context
+
+                 (js-return
+                  (js-call "Tridash.member" (d a) (js-call f (d a)))))))))
+
+        (subtest "Member Access of If Expression"
+          (mock-backend-state
             (mock-contexts
-                ((context (a) (member-expression (functor f a) '\x)))
+                ((context (cond a b) (member-expression (if-expression cond a b) '\z)))
 
-              (test-compute-function context
-                (js-return
-                 (js-call "Tridash.member" (js-call f (d a)) (js-string "x"))))))))
+              (test-context-function
+               context
 
-      (subtest "Expression Key"
-        (mock-backend-state
-          (mock-meta-nodes ((f (x) nil))
-            (mock-contexts
-                ((context (a) (member-expression a (functor f a))))
+               (js-var ($ object))
+               (js-catch
+                (list
+                 (js-if (resolve (d cond))
+                        (js-call "=" ($ object) (d a))
+                        (js-call "=" ($ object) (d b))))
 
-              (test-compute-function context
-                (js-return
-                 (js-call "Tridash.member" (d a) (js-call f (d a)))))))))
+                ($ e)
+                (list
+                 (js-call "=" ($ object) (thunk (js-throw ($ e))))))
 
-      (subtest "Member Access of If Expression"
-        (mock-backend-state
-          (mock-contexts
-              ((context (cond a b) (member-expression (if-expression cond a b) '\z)))
-
-            (test-compute-function context
-              (js-var ($ object))
-              (js-catch
-               (list
-                (js-if (resolve (d cond))
-                       (js-call "=" ($ object) (d a))
-                       (js-call "=" ($ object) (d b))))
-
-               ($ e)
-               (list
-                (js-call "=" ($ object) (thunk (js-throw ($ e))))))
-
-              (js-return
-               (js-call "Tridash.member" ($ object) (js-string "z")))))))))
+               (js-return
+                (js-call "Tridash.member" ($ object) (js-string "z"))))))))))
 
   (subtest "Conditional Bindings"
     (subtest "Throwing Fail Exception"
@@ -754,12 +793,14 @@
               ((context (a) (expression-block
                              (if-expression (functor < a 0) a (fail-expression)))))
 
-            (test-compute-function context
-              (js-if (resolve (js-call < (d a) 0))
-                     (js-return (d a))
-                     (js-return
-                      (thunk
-                       (js-return (js-call "Tridash.fail")))))))))))
+            (test-context-function
+             context
+
+             (js-if (resolve (js-call < (d a) 0))
+                    (js-return (d a))
+                    (js-return
+                     (thunk
+                      (js-return (js-call "Tridash.fail")))))))))))
 
   (subtest "Catch Expressions"
     (mock-backend-state
@@ -775,32 +816,34 @@
 
                              (expression-block (functor - a b)))))
 
-          (test-compute-function context
-            (js-var ($ try))
-            (js-catch
-             (list
-              (js-if (resolve (js-call < (d a) (d b)))
+          (test-context-function
+           context
 
-                     (-<> (js-call + (d a) (d b))
-                          js-return
-                          thunk
-                          (js-call "=" ($ try) <>))
+           (js-var ($ try))
+           (js-catch
+            (list
+             (js-if (resolve (js-call < (d a) (d b)))
 
-                     (->> (js-call "Tridash.fail")
-                          js-return
-                          thunk
-                          (js-call "=" ($ try)))))
+                    (-<> (js-call + (d a) (d b))
+                         js-return
+                         thunk
+                         (js-call "=" ($ try) <>))
 
-             ($ e)
-             (list
-              (js-call "=" ($ try) (thunk (js-throw ($ e))))))
+                    (->> (js-call "Tridash.fail")
+                         js-return
+                         thunk
+                         (js-call "=" ($ try)))))
 
-            (js-return
-             (js-call "Tridash.make_catch_thunk"
-                      ($ try)
-                      (thunk
-                       (js-return
-                        (js-call - (d a) (d b)))))))))))
+            ($ e)
+            (list
+             (js-call "=" ($ try) (thunk (js-throw ($ e))))))
+
+           (js-return
+            (js-call "Tridash.make_catch_thunk"
+                     ($ try)
+                     (thunk
+                      (js-return
+                       (js-call - (d a) (d b)))))))))))
 
   (subtest "Meta-Node References"
     (subtest "Without Outer Nodes"
@@ -811,22 +854,24 @@
               ((context (a)
                         (functor map (meta-node-ref f) a)))
 
-            (test-compute-function context
-              (js-return
-               (js-call
-                map
+            (test-context-function
+             context
 
-                (js-lambda
-                 '(($ x))
+             (js-return
+              (js-call
+               map
 
-                 (list
-                  (js-if
-                   (js-call "!==" (js-member "arguments" "length") 1)
-                   (js-return (js-call "Tridash.ArityError")))
+               (js-lambda
+                '(($ x))
 
-                  (js-return (js-call f ($ x)))))
+                (list
+                 (js-if
+                  (js-call "!==" (js-member "arguments" "length") 1)
+                  (js-return (js-call "Tridash.ArityError")))
 
-                (d a))))))))
+                 (js-return (js-call f ($ x)))))
+
+               (d a))))))))
 
     (subtest "With Optional Arguments"
       (mock-backend-state
@@ -836,25 +881,27 @@
               ((context (a b)
                         (functor map (meta-node-ref 1+ :optional (list b)) a)))
 
-            (test-compute-function context
-              (js-return
-               (js-call
-                map
+            (test-context-function
+             context
 
-                (js-lambda
-                 (list ($ n) (js-call "=" ($ d) (d b)))
-                 (list
-                  (js-if
-                   (js-call
-                    "||"
-                    (js-call "<" (js-member "arguments" "length") 1)
-                    (js-call ">" (js-member "arguments" "length") 2))
-                   (js-return (js-call "Tridash.ArityError")))
+             (js-return
+              (js-call
+               map
 
-                  (js-return
-                   (js-call 1+ ($ a) ($ d)))))
+               (js-lambda
+                (list ($ n) (js-call "=" ($ d) (d b)))
+                (list
+                 (js-if
+                  (js-call
+                   "||"
+                   (js-call "<" (js-member "arguments" "length") 1)
+                   (js-call ">" (js-member "arguments" "length") 2))
+                  (js-return (js-call "Tridash.ArityError")))
 
-                (d a))))))))
+                 (js-return
+                  (js-call 1+ ($ a) ($ d)))))
+
+               (d a))))))))
 
     (subtest "With Rest Arguments"
       (mock-backend-state
@@ -863,24 +910,26 @@
           (mock-contexts
               ((context (a) (functor map (meta-node-ref list) a)))
 
-            (test-compute-function context
-              (js-return
-               (js-call
-                map
+            (test-context-function
+             context
 
-                (js-lambda
-                 (list ($ x) (js-call "..." ($ xs)))
-                 (list
-                  (js-if
-                   (js-call "<" (js-member "arguments" "length") 1)
-                   (js-return (js-call "Tridash.ArityError")))
+             (js-return
+              (js-call
+               map
 
-                  (js-if (js-call "===" (js-member ($ xs) "length") 0)
-                         (js-call "=" ($ xs) (js-call "Tridash.Empty")))
+               (js-lambda
+                (list ($ x) (js-call "..." ($ xs)))
+                (list
+                 (js-if
+                  (js-call "<" (js-member "arguments" "length") 1)
+                  (js-return (js-call "Tridash.ArityError")))
 
-                  (js-return
-                   (js-call list ($ x) ($ xs)))))
-                (d a))))))))
+                 (js-if (js-call "===" (js-member ($ xs) "length") 0)
+                        (js-call "=" ($ xs) (js-call "Tridash.Empty")))
+
+                 (js-return
+                  (js-call list ($ x) ($ xs)))))
+               (d a))))))))
 
     (subtest "With Outer Nodes"
       (mock-backend-state
@@ -890,20 +939,22 @@
               ((context (a b)
                         (functor map (meta-node-ref f :outer-nodes (alist-hash-map `((x . ,b)))) a)))
 
-            (test-compute-function context
-              (js-return
-               (js-call
-                map
-                (js-lambda
-                 '(($ a))
-                 (list
-                  (js-if
-                   (js-call "!==" (js-member "arguments" "length") 1)
-                   (js-return (js-call "Tridash.ArityError")))
+            (test-context-function
+             context
 
-                  (js-return
-                   (js-call f ($ a) (d b)))))
-                (d a))))))))
+             (js-return
+              (js-call
+               map
+               (js-lambda
+                '(($ a))
+                (list
+                 (js-if
+                  (js-call "!==" (js-member "arguments" "length") 1)
+                  (js-return (js-call "Tridash.ArityError")))
+
+                 (js-return
+                  (js-call f ($ a) (d b)))))
+               (d a))))))))
 
     (subtest "With Optional Rest and Outer Node Operands"
       (mock-backend-state
@@ -917,27 +968,29 @@
                                                 :outer-nodes (alist-hash-map `((d . ,b))))
                                  a)))
 
-            (test-compute-function context
-              (js-return
-               (js-call
-                map
+            (test-context-function
+             context
 
-                (js-lambda
-                 (list
-                  ($ a) (js-call "=" ($ b) 1) (js-call "..." ($ c)))
+             (js-return
+              (js-call
+               map
 
-                 (list
-                  (js-if
-                   (js-call "<" (js-member "arguments" "length") 1)
-                   (js-return (js-call "Tridash.ArityError")))
+               (js-lambda
+                (list
+                 ($ a) (js-call "=" ($ b) 1) (js-call "..." ($ c)))
 
-                  (js-if (js-call "===" (js-member ($ c) "length") 0)
-                         (js-call "=" ($ c) (js-call "Tridash.Empty")))
+                (list
+                 (js-if
+                  (js-call "<" (js-member "arguments" "length") 1)
+                  (js-return (js-call "Tridash.ArityError")))
 
-                  (js-return
-                   (js-call f ($ a) ($ b) ($ c) (d b)))))
+                 (js-if (js-call "===" (js-member ($ c) "length") 0)
+                        (js-call "=" ($ c) (js-call "Tridash.Empty")))
 
-                (d a)))))))))
+                 (js-return
+                  (js-call f ($ a) ($ b) ($ c) (d b)))))
+
+               (d a)))))))))
 
   (subtest "Raw Node References"
     (subtest "Raw Meta-Node References"
@@ -946,29 +999,10 @@
           (mock-contexts
               ((context () (node-ref f)))
 
-            (test-compute-function context
-              (js-return f))))))
+            (test-context-function
+             context
 
-    (subtest "Raw Ordinary Node References"
-      (mock-backend-state
-        (let ((node1 (make-instance 'node :name 'node1))
-              (node2 (make-instance 'node :name 'node2)))
-          (mock-meta-nodes ((list (x y z) nil))
-            (mock-contexts
-                ((context () (functor list (node-ref node1) (functor list (node-ref node2) (node-ref node1) 0) (node-ref node2))))
-
-              (test-compute-function context
-                (-<> (js-call list
-                              (js-element "Tridash.type_nodes" 1)
-                              (js-element "Tridash.type_nodes" 0)
-                              0)
-                     js-return
-                     thunk
-                     (js-call list
-                              (js-element "Tridash.type_nodes" 0)
-                              <>
-                              (js-element "Tridash.type_nodes" 1))
-                     js-return))))))))
+             (js-return f)))))))
 
   (subtest "Invoking Nodes as Meta-Nodes"
     (subtest "As Return Value"
@@ -976,9 +1010,11 @@
         (mock-contexts
             ((context (f x) (functor f x)))
 
-          (test-compute-function context
-            (js-return
-             (js-call (resolve (d f)) (d x)))))))
+          (test-context-function
+           context
+
+           (js-return
+            (js-call (resolve (d f)) (d x)))))))
 
     (subtest "As Operand"
       (subtest "Strict Argument"
@@ -987,18 +1023,20 @@
             (mock-contexts
                 ((context (f x y) (functor func (functor f x) y)))
 
-              (test-compute-function context
-                (js-var ($ f))
-                (js-catch
-                 (list
-                  (js-call "=" ($ f) (js-call (resolve (d f)) (d x))))
+              (test-context-function
+               context
 
-                 ($ e)
-                 (list
-                  (js-call "=" ($ f) (thunk (js-throw ($ e))))))
+               (js-var ($ f))
+               (js-catch
+                (list
+                 (js-call "=" ($ f) (js-call (resolve (d f)) (d x))))
 
-                (js-return
-                 (js-call func ($ f) (d y))))))))
+                ($ e)
+                (list
+                 (js-call "=" ($ f) (thunk (js-throw ($ e))))))
+
+               (js-return
+                (js-call func ($ f) (d y))))))))
 
       (subtest "Lazy Argument"
         (mock-backend-state
@@ -1006,12 +1044,14 @@
             (mock-contexts
                 ((context (f x y) (functor func (functor f x) y)))
 
-              (test-compute-function context
-                (-<> (js-call (resolve (d f)) (d x))
-                     js-return
-                     thunk
-                     (js-call func <> (d y))
-                     js-return)))))))
+              (test-context-function
+               context
+
+               (-<> (js-call (resolve (d f)) (d x))
+                    js-return
+                    thunk
+                    (js-call func <> (d y))
+                    js-return)))))))
 
     (subtest "With Expression Operands"
       (mock-backend-state
@@ -1019,13 +1059,17 @@
           (mock-contexts
               ((context (f x y) (functor f (functor + x y))))
 
-            (test-compute-function context
-              (->> (js-call + (d x) (d y))
-                   js-return
-                   thunk
-                   (js-call (resolve (d f)))
-                   js-return))))))))
+            (test-context-function
+             context
 
+             (->> (js-call + (d x) (d y))
+                  js-return
+                  thunk
+                  (js-call (resolve (d f)))
+                  js-return))))))))
+
+
+;;; Test Compiling Meta-Nodes
 
 (defun test-function% (got expected)
   "Tests that the generated code GOT is equal to EXPECTED. The test is
@@ -2363,5 +2407,8 @@
           (with-nodes ((g "g")) modules
             (mock-backend-state
               (is-error (create-meta-node g) undefined-external-meta-node-error))))))))
+
+
+;;; Test Finalization
 
 (finalize)

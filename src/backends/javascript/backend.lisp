@@ -1,7 +1,7 @@
 ;;;; backend.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018-2019  Alexander Gutev
+;;;; Copyright (C) 2018-2020  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -20,8 +20,8 @@
 
 (in-package :tridash.backend.js)
 
-
-;;;; Backend State
+
+;;; Backend State
 
 (defclass js-backend-state ()
   ((node-ids
@@ -45,49 +45,44 @@
     "Map from `NODE' objects, serving as Tridash types, to their
      indices within the Tridash type node table.")
 
-   (node-link-indices
+   (public-nodes
     :initform (make-hash-map)
-    :accessor node-link-indices
+    :accessor public-nodes
     :documentation
-    "Map storing the dependency indices of each dependency of each
-     node context. Each key is a `NODE-CONTEXT' object and the
-     corresponding value is a map from `NODE-LINK' objects (of the
-     dependency node) to their dependency indices.")
+    "Map from public node identifiers to the corresponding node index
+     or meta-node identifier.")
 
-   (context-ids
+   (context-indices
     :initform (make-hash-map)
-    :accessor context-ids
+    :accessor context-indices
     :documentation
-    "Map storing the context identifiers of each context of each
-     node. Each key is a `NODE' object and the corresponding value is
-     a map from context identifiers to their JS identifiers.")
-
-   (context-counter
-    :initform 0
-    :accessor context-counter
-    :documentation
-    "Counter for generating globally unique context identifiers.")
+    "Map from `NODE-CONTEXT' objects to the corresponding context
+     indices. Each value is a list of the form (NODE INDEX) where NODE
+     is the node to which the context belongs and INDEX is the
+     context's index.")
 
    (initial-values
     :initform nil
     :accessor initial-values
     :documentation
-    "List of initial node values to set. Each element is a list where
-     the first element is the node path, the second element is the JS
-     block which computes the initial value and the third element is
-     the expression which references the initial value.")))
+    "List of initial node values to set, where each element is an
+     INITIAL-VALUE object.")))
+
+(defstruct initial-value
+  "Node Initial Value.
+
+   NODE-INDEX - Index of the node.
+   CONTEXT-INDEX - Index of the context.
+   EXPRESSION - Initial value expression"
+
+  node-index
+  context-index
+  expression)
 
 (defvar *backend-state* nil
   "Special variable storing the `JS-BACKEND-STATE' object.")
 
-(defvar *current-node* nil
-  "The node whose definition code is currently being generated.")
-
-(defparameter *node-path* 'access-node
-  "Function which takes a node as an argument and returns an
-   expression which references that node.")
-
-
+
 ;;; Code Generation Flags
 
 (defconstant +runtime-path-var+ "TRIDASH_JS_RUNTIME"
@@ -113,23 +108,6 @@
    NIL - No linkage.")
 
 
-;;;; Code Array
-
-(defvar *output-code* nil
-  "Array into which the output JavaScript AST nodes are added.")
-
-(defun make-code-array ()
-  "Creates an empty array suitable for pushing JavaScript AST nodes to
-   it."
-
-  (make-array 0 :adjustable t :fill-pointer t))
-
-(defun append-code (&rest asts)
-  "Appends each ast node in ASTS to the *OUTPUT-CODE* array."
-
-  (foreach (rcurry #'vector-push-extend *output-code*) asts))
-
-
 ;;;; Compilation
 
 (defmethod compile-nodes ((backend (eql :javascript)) table out-file &optional (options (make-hash-map :test #'cl:equalp)))
@@ -139,14 +117,24 @@
   (let ((*print-indented* (parse-boolean (get "indented" options)))
         (*debug-info-p* (parse-boolean (get "debug-info" options)))
         (*runtime-library-path* (runtime-path options))
-        (*runtime-link-type* (parse-linkage-type (get "runtime-linkage" options))))
+        (*runtime-link-type* (parse-linkage-type (get "runtime-linkage" options)))
 
-    (let ((*backend-state* (make-instance 'js-backend-state))
-          (defs (make-code-array))
-          (bindings (make-code-array)))
+        (*backend-state* (make-instance 'js-backend-state)))
 
-      (generate-code table defs bindings)
-      (print-output-code out-file (list defs bindings) options))))
+    (with-slots (initial-values public-nodes type-node-ids) *backend-state*
+      (let ((compute (create-compute-function table))
+            (code (generate-code table)))
+
+        (print-output-code
+         out-file
+
+         (list
+          (make-type-nodes type-node-ids)
+          (make-module compute)
+          code
+          (make-exports public-nodes))
+
+         options)))))
 
 (defun runtime-path (options)
   "Returns the path to the runtime library. First OPTIONS is checked
@@ -193,18 +181,30 @@
 
   (with-open-file (*standard-output* out-file :direction :output :if-exists :supersede)
     (with-slots (initial-values) *backend-state*
-      (with-hash-keys ((type "type") (main-ui "main-ui")) options
+      (with-hash-keys
+          ((type "type")
+           (module-name "module-name")
+           (main-ui "main-ui"))
+          options
+
         (match type
           ((cl:equalp "html")
-           (->>
-            (get-root-node main-ui)
-            (create-html-file
-             (lexical-block (list code (make-html-set-initial-values initial-values))))))
+
+           (let ((code (list code (make-html-set-initial-values initial-values))))
+             (->>
+              (get-root-node main-ui)
+              (create-html-file
+
+               (if module-name
+                   (make-js-module code module-name)
+                   (lexical-block
+                    (js-var "exports" (js-object))
+                    code))))))
 
           (_
            (-<> (make-set-initial-values initial-values)
                 (list code <>)
-                (lexical-block)
+                (wrap-module module-name)
                 (output-code))))))))
 
 (defun get-root-node (node)
@@ -216,7 +216,87 @@
          (element-node))))
 
 
-;; Initialize nodes to initial values
+(defun wrap-module (code module-name)
+  "If MODULE-NAME is non-NIL wrap CODE in an anonymous function with
+   the result assigned to the variable MODULE-NAME."
+
+  (if module-name
+      (make-js-module code module-name)
+      code))
+
+(defun make-js-module (code module-name)
+  "Wrap CODE in an anonymous function with the result assigned to a
+   variable with identifier MODULE-NAME."
+
+  (list
+   (js-var module-name (js-object))
+   (js-call
+    (js-lambda '("exports") code)
+    (list module-name))))
+
+
+
+;;; Creating Tridash Module
+
+(defun make-module (compute)
+  "Generate code which creates the Tridash Module and assigns it to
+   the variable `module`."
+
+  (js-var
+   "module"
+
+   (js-new
+    +module-class+
+
+    (list compute))))
+
+(defun make-exports (public-nodes)
+  "Generate code which creates the object storing the exported
+   nodes (in PUBLIC-NODES). The object is assigned to
+   `exports.nodes`."
+
+  (list
+   (js-call
+    "="
+    (js-member "exports" "nodes")
+
+    (js-object
+     (map-to
+      'list
+
+      (lambda (export)
+        (destructuring-bind (name node-index context-index) export
+          (list
+           (js-string name)
+           (js-new +node-interface-class+
+                   (list* "module" node-index (ensure-list context-index))))))
+
+      public-nodes)))
+
+   (js-call
+    "="
+    (js-member "exports" "set_values")
+
+    (js-call
+     (js-members "module" "set_node_values" "bind")
+     "module"))))
+
+(defun make-type-nodes (type-nodes)
+  "Generate code which creates the NodeRef objects for the nodes, for
+   which there is a raw node reference."
+
+  (flet ((make-type-node (node)
+           (destructuring-bind (node . id) node
+             (js-var
+              id
+
+              (js-new +node-ref-class+
+                      (list (node-index node)))))))
+
+    (map-to 'list #'make-type-node type-nodes)))
+
+
+;;; Initialize nodes to initial values
 
 (defun make-html-set-initial-values (initial-values)
   "Generates the setting of initial node values code for HTML files."
@@ -226,140 +306,232 @@
      (list (make-set-initial-values initial-values)))))
 
 (defun make-set-initial-values (initial-values)
-  "Generates code which sets the initial values of the nodes and
-   dispatches those values to their observer nodes."
+  "Generates code which sets the initial state of the module."
 
   (when initial-values
-    (iter
-      (for (node block expression) in initial-values)
+    (list
+     (js-call
+      (js-members "module" "set_values")
 
-      (when block (collect block into blocks))
-      (collect (js-array (list node expression)) into expressions)
+      (js-array
+       (map
+        (lambda (init)
+          (js-array
+           (list (initial-value-context-index init)
+                 (initial-value-node-index init)
+                 (initial-value-expression init))))
 
-      (finally
-       (return
+        initial-values))))))
+
+
+
+;;; Generate the main state computation function
+
+(defun create-compute-function (table)
+  "Generate the main state computation function of the program."
+
+  (with-slots (nodes) table
+    (with-slots (context-indices) *backend-state*
+
+      (labels ((make-context-case (context)
+                 "Generate the switch statement case for CONTEXT."
+
+                 (destructuring-bind (context node index) context
+                   (with-slots (operands) context
+                     (list
+                      index
+
+                      (list
+                       (js-call
+                        "="
+                        (js-element "changed" (node-index node))
+                        "true")
+
+                       (when-let
+                           ((observers
+                             (->> (observers node)
+                                  (remove-if
+                                   (lambda (observer)
+                                     (destructuring-bind (node . link) observer
+                                       (or
+                                        (and (node-link-two-way-p link)
+                                             (memberp node operands))
+
+                                        (node-link-weak-p link)))))
+
+                                  (map-to 'list #'observer-index))))
+
+                         (make-js-call (js-member "dirtied" "push") observers))
+
+                       (unless (emptyp operands)
+                         (js-call
+                          "="
+
+                          (node-value-var node)
+                          (make-set-node-value context)))
+
+                       (js-break))))))
+
+               (observer-index (observer)
+                 (destructuring-bind (node . link) observer
+                   (->> link
+                        node-link-context
+                        (context node)
+                        (context-index node))))
+
+               (make-node-var (node)
+                 "Generate a variable state for the variable storing
+                  the value of NODE."
+
+                 (js-var
+                  (node-value-var node)
+                  (js-element "state" (node-index node))))
+
+               (node-value (node)
+                 "Create an entry for NODE to be placed in the state
+                  object."
+
+                 (list (node-index node) (node-value-var node))))
+
+        ;; Add Context Indices
+        (doseq (node nodes)
+          (foreach (curry #'context-index node)
+                   (map-values (contexts node))))
+
+        (js-lambda
+         (list "dirtied" "state")
+
          (list
-          blocks
-          (js-call (js-member +tridash-namespace+ "set_values")
-                   (js-array expressions))))))))
+          (map-to 'list #'make-node-var nodes)
 
+          (js-var "visited" (js-object))
+          (js-call "=" "dirtied" (js-call (js-member "dirtied" "slice")))
 
-;;; Access Node Expressions
+          (js-var "changed" (js-object))
 
-(defun access-node (node)
-  "Returns an expression which references NODE."
+          (js-while
+           (js-member "dirtied" "length")
+
+           (js-block
+            (js-var "node" (js-call (js-member "dirtied" "pop")))
+            (js-if
+             (js-call "!" (js-element "visited" "node"))
+
+             (js-block
+              (js-call "=" (js-element "visited" "node") "true")
+              (js-switch
+               "node"
+
+               (-<> (coerce context-indices 'alist)
+                    (sort :key #'third)
+                    (map #'make-context-case <>)))))))
+
+          (js-return
+           (js-object
+            (list
+             (list "changed" "changed")
+             (list "state" (js-object (map-to 'list #'node-value nodes))))))))))))
+
+(defun context-index (node context)
+  "Returns the index of the `NODE-CONTEXT' CONTEXT of NODE."
+
+  (with-slots (context-indices) *backend-state*
+    (second
+     (ensure-get context context-indices
+       (list node (length context-indices))))))
+
+(defun make-set-node-value (context)
+  "Generate a thunk function which computes the new value of a node
+   using the function of CONTEXT."
+
+  (let ((operands (make-hash-map)))
+    (flet ((get-operand (operand)
+             (ematch operand
+               ((node-link node)
+                (ensure-get node operands
+                  (make-value-block
+                   :expression (node-value-var node))))
+
+               ((list :previous-value (and (node-ref node) ref))
+                (ensure-get ref operands
+                  (make-value-block
+                   :expression (js-element "state" (node-index node))))))))
+
+      (with-slots (value-function) context
+        (thunk
+         (compile-function value-function #'get-operand :protect nil))))))
+
+(defun node-value-var (node)
+  "Return the name of the variable in which the value of NODE is
+   stored. This variable is only available inside the state
+   computation function."
 
   (mkstr "node" (node-index node)))
 
+
+;;;; Code Generation
+
+(defun generate-code (table)
+  "Generates the JavaScript code for the node and meta-node
+   definitions in the `NODE-TABLE' TABLE."
+
+  (with-slots (nodes meta-nodes) table
+    (concatenate
+     (create-nodes nodes)
+     (create-meta-nodes meta-nodes))))
+
+
+;;; Creating nodes
+
 (defun node-index (node)
-  "Returns the index of NODE within the node table variable."
+  "Returns the index of NODE within the program state"
 
   (with-slots (node-ids) *backend-state*
    (ensure-get node node-ids (length node-ids))))
 
-(defun node-path (node)
-  "Returns an expression which references NODE, by calling the
-   function bound to *NODE-PATH*."
-
-  (funcall *node-path* node))
-
-
-;;; Context Identifiers
-
-(defun global-context-id ()
-  "Returns a new unique global context identifier."
-
-  (with-slots (context-counter) *backend-state*
-    (prog1 context-counter
-      (incf context-counter))))
-
-(defun context-js-id (node context-id)
-  "Returns the JavaScript context identifier for the context with
-   identifier CONTEXT-ID of NODE."
-
-  (let ((ids (ensure-get node (context-ids *backend-state*) (make-hash-map))))
-    (case context-id
-      (:input
-       (js-string "input"))
-
-      (otherwise
-       (ensure-get context-id ids (length ids))))))
-
-(defun context-path (node context-id)
-  "Returns a JS expression which references the context, with
-   identifier CONTEXT-ID, of NODE."
-
-  (js-element (js-member (node-path node) "contexts")
-              (context-js-id node context-id)))
-
-
-;;;; Code Generation
-
-(defun generate-code (table &optional (defs *output-code*) (bindings *output-code*))
-  "Generates the JavaScript code for the node and meta-node
-   definitions in the `NODE-TABLE' TABLE. DEFS is the code array into
-   which the node definition code is appended. BINDINGS is the code
-   array into which the node binding code is appended."
-
-  (with-slots (nodes meta-nodes) table
-    (let ((*output-code* defs))
-      (create-nodes nodes)
-      (create-meta-nodes meta-nodes)
-      (create-type-nodes *backend-state*))
-
-    (let ((*output-code* bindings))
-      (init-nodes nodes))))
-
-
-;;;; Creating nodes
-
 (defun create-nodes (nodes)
   "Generate the node creation code of each `NODE' in NODES."
 
-  (foreach #'create-node nodes))
+  (map-extend-to 'list #'create-node nodes))
 
 
 (defgeneric create-node (node)
   (:documentation
-   "Generate the node creation code of NODE. This includes the
-    creation of the node, its dependency queues and its value
-    computation function, however it does not include the binding of
-    the node to its observers."))
+   "Generate the node creation code of NODE."))
 
 (defmethod create-node (node)
   "Generate the node creation code, which creates the dependency
    queues and the value computation function."
 
-  (let ((*current-node* node)
-        (path (node-path node)))
+  (awhen (attribute :public-name node)
+    (setf (get it (public-nodes *backend-state*))
+          (list
+           (node-index node)
+           (awhen (get :input (contexts node))
+             (context-index node it)))))
 
-    (append-code
-     (if (typep path '(or string symbol))
-         (js-var path (js-new +node-class+))
-         (js-call "=" path (js-new +node-class+))))
+  ;; If the node has an INIT context, add its initial value to
+  ;; INITIAl-VALUES of *BACKEND-STATE* and ensure it has an input
+  ;; context.
 
-    (when *debug-info-p*
-      (append-code
-       (js-call "=" (js-member path "name") (js-string (name node)))))
+  (awhen (cdr (get-init-context node))
+    (context node :input)
 
-    (append-code
-     (store-in-public-nodes node path))
+    (push
+     (make-initial-value
+      :node-index (node-index node)
+      :context-index (context-index node it)
+      :expression
+      (multiple-value-bind (block expression)
+          (compile-function (value-function it) nil :protect nil :return-value nil)
 
-    ;; If the node has an INIT context, add its initial value to
-    ;; INITIAl-VALUES of *BACKEND-STATE* and ensure it has an input
-    ;; context.
+        (if (and (null block) (non-computing? expression))
+            expression
+            (thunk (list block (js-return expression))))))
 
-    (awhen (cdr (get-init-context node))
-      (context node :input)
+     (initial-values *backend-state*)))
 
-      (let ((*protect* t))
-        (multiple-value-bind (block expression)
-            (compile-function (value-function it) nil :return-value nil)
-
-          (push (list path block expression)
-                (initial-values *backend-state*)))))
-
-    (foreach (rcurry #'create-context node) (contexts node))))
+  nil)
 
 (defun get-init-context (node)
   "If NODE has an initial value context, that is a context with no
@@ -377,112 +549,8 @@
     (and (not (eq id :input))
          (emptyp (operands context)))))
 
-(defun create-context (context node)
-  "Generates the initialization code for a `NODE-CONTEXT'. ID is the
-   context identifier, CONTEXT is the `NODE-CONTEXT' itself and NODE
-   is the `NODE' to which the context belongs."
-
-  (unless (init-context? context)
-    (destructuring-bind (id . context) context
-      (establish-dependency-indices context)
-
-      (let ((node-path (node-path node))
-            (context-path (context-path node id)))
-
-        (multiple-value-bind (function previous-values)
-            (create-compute-function context)
-
-          (append-code
-           (lexical-block
-            (js-var "context" (make-context-expression node-path id context))
-
-            (when function
-              (js-call "=" (js-member "context" "compute") function))
-
-            (make-save-previous-node-values node context "context" previous-values)
-
-            (js-call "=" context-path "context"))))))))
-
-(defun make-save-previous-node-values (node context var previous-values)
-  "Generates code which overrides the `reserve_hook' method of a
-   context to store the values of nodes, of which the previous values
-   are referenced by CONTEXT's value function, in the
-   'previous_values' array.
-
-   NODE is the node to which CONTEXT belongs. VAR is the variable with
-   which the context is referenced. PREVIOUS-VALUES is the map of
-   nodes of which the previous-values are referenced."
-
-  (labels ((save-node-value (operand)
-             (destructuring-bind (operand . index) operand
-               (js-call
-                "="
-
-                (js-element
-                 (js-member "reserve" "previous_values")
-                 index)
-
-                (js-member (node-path operand) "value")))))
-
-    (unless (emptyp previous-values)
-      (list
-       (js-call "=" (js-member var "previous_values") (js-array))
-
-       (js-call
-        "="
-
-        (js-member var "reserve_hook")
-        (js-lambda
-         (list "reserve" "index" "path" "first")
-
-         (list
-          (->>
-           (map-to 'list #'save-node-value previous-values)
-           (js-lambda nil)
-
-           (js-call
-            (js-members "reserve" "path" "promise" "then"))
-
-           (js-call
-            "="
-            (js-members "reserve" "preconditions"))
-
-           (js-if "first")))))))))
-
-
-(defun make-context-expression (node-path id context)
-  "Creates an expression which creates a new context for the context
-   CONTEXT with id ID of the node which is referenced by the
-   expression NODE-PATH."
-
-  (case id
-    (:input
-     (js-call (js-member +node-context-class+ "create_input")
-              node-path
-              (global-context-id)))
-
-    (otherwise
-     (js-call (js-member +node-context-class+ "create")
-              node-path
-              (length (operands context))
-              (global-context-id)))))
-
-(defun establish-dependency-indices (context)
-  "Establishes the indices of the operands of the `NODE-CONTEXT'
-   CONTEXT, and adds them to the node link indices map of
-   *BACKEND-STATE*."
-
-  (foreach (curry #'dependency-index context) (map-keys (operands context))))
-
-(defun dependency-index (context operand)
-  "Returns the index of the operand (of CONTEXT). If OPERAND does not have an index,
-   a new index is assigned to it."
-
-  (let ((operands (ensure-get context (node-link-indices *backend-state*) (make-hash-map))))
-    (ensure-get operand operands (length operands))))
-
-
-;;;; Creating meta-nodes
+
+;;; Creating meta-nodes
 
 (defun create-meta-nodes (meta-nodes)
   "Generates the meta-node functions of each `META-NODE' in META-NODES."
@@ -508,7 +576,7 @@
 
     (let ((all-meta-nodes (make-hash-set)))
       (union-meta-nodes all-meta-nodes meta-nodes)
-      (foreach (compose #'append-code #'create-meta-node) all-meta-nodes))))
+      (map-extend-to 'list #'create-meta-node all-meta-nodes))))
 
 (defgeneric create-meta-node (meta-node)
   (:documentation
@@ -518,84 +586,4 @@
     nil)
 
   (:method ((meta-node final-meta-node))
-    (let ((*current-node* meta-node))
-      (create-function-meta-node meta-node))))
-
-
-;;;; Generate dispatch methods
-
-(defun init-nodes (nodes)
-  "Generates the initialization code of each `NODE' in NODES."
-
-  (foreach #'init-node nodes))
-
-(defun init-node (node)
-  "Generates the initialization code of NODE. This includes the
-   binding of the node to its observers."
-
-  (foreach (rcurry #'init-context node) (contexts node)))
-
-(defun init-context (context node)
-  "Generates the initialization code of the node context CONTEXT, with
-   identifier CONTEXT-ID, of the node NODE."
-
-  (unless (init-context? context)
-    (bind-observers node (car context) (cdr context))))
-
-(defun bind-observers (node context-id context)
-  "Generates code which binds the `NODE' NODE to its observers."
-
-  (with-slots (operands) context
-    (let ((context-path (context-path node context-id)))
-      (labels ((reserve-observer (observer index weak-p)
-                 (-> (js-member observer "reserve")
-                     (js-call
-                      "start" index "path" "value" "visited" (if weak-p "true" "false"))))
-
-               (observer-index (observer link)
-                 (-<>> link
-                       node-link-context
-                       (context observer)
-                       (dependency-index <> node)))
-
-               (observer-context (observer link)
-                 (->> link
-                      node-link-context
-                      (context-path observer)))
-
-               (make-reserve (observer)
-                 (destructuring-bind (observer . link) observer
-                   (reserve-observer
-                    (observer-context observer link)
-                    (observer-index observer link)
-                    (node-link-weak-p link))))
-
-               (two-way-p (observer)
-                 (and (node-link-two-way-p (cdr observer))
-                      (get (car observer) operands)))
-
-               (add-observer (observer)
-                 (js-call
-                  (js-member context-path "add_observer")
-                  (context-path (car observer)
-                                (node-link-context (cdr observer)))
-                  (observer-index (car observer) (cdr observer)))))
-
-
-        (let ((observers (coerce (remove-if #'two-way-p (observers node)) 'alist)))
-          (foreach #'append-code (map #'add-observer observers))
-
-          (append-code
-           (js-call
-            "="
-            (js-member context-path "reserveObservers")
-
-            (js-lambda
-             '("start" "value" "path" "visited")
-
-             (list
-              (js-return
-               (js-call
-                (js-member "Promise" "all")
-                (js-array
-                 (map #'make-reserve observers)))))))))))))
+    (create-function-meta-node meta-node)))

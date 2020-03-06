@@ -26,31 +26,31 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test033.js');
-var x = Tridash.nodes.x;
-var y = Tridash.nodes.y;
-var delta = Tridash.nodes.delta;
-var output = Tridash.nodes.output;
+const mod = require('./test033.js');
+
+const x = mod.nodes.x;
+const y = mod.nodes.y;
+const delta = mod.nodes.delta;
+const output = mod.nodes.output;
 
 describe('Integration Test 33', function() {
     describe('Outer Node References from Nested Meta-Nodes', function() {
         describe('Set `x` = 1, `y` = 2, `delta` = 1', function () {
-            it('`output` = 25', async function() {
-                Tridash.set_values([[x, 1], [y, 2], [delta, 1]]);
+            it('`output` = 25', function() {
+                mod.set_values([[x, 1], [y, 2], [delta, 1]]);
 
-                assert.equal(await util.node_value(output), 25);
+                assert.equal(output.get_value(), 25);
             });
         });
-        
+
         describe('Set `delta` = 2', function () {
             it('`output` = 27', async function() {
                 delta.set_value(2);
 
-                assert.equal(await util.node_value(output), 27);
+                assert.equal(output.get_value(), 27);
             });
         });
 
@@ -58,8 +58,8 @@ describe('Integration Test 33', function() {
             it('`output` = 31', async function() {
                 x.set_value(5);
 
-                assert.equal(await util.node_value(output), 31);
+                assert.equal(output.get_value(), 31);
             });
-        });        
+        });
     });
 });

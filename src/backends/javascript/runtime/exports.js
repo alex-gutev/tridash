@@ -26,25 +26,20 @@
  * SOFTWARE.
  */
 
-/* Export Runtime Symbols */
 
+/* Tridash Modules */
+
+exports.Module = TridashModule;
 exports.Node = Node;
-exports.NodeContext = NodeContext;
+exports.NodeRef = NodeRef;
 
-exports.set_values = set_values;
+
+/* Thunks and Failure Types */
 
 exports.Fail = Fail;
 
 exports.Thunk = Thunk;
 exports.resolve = resolve;
-
-
-/* Node Tables */
-
-/* Public Nodes Table */
-exports.nodes = {};
-/* Type Nodes Table */
-exports.type_nodes = {};
 
 
 /* Functions */

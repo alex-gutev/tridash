@@ -26,21 +26,21 @@
  * SOFTWARE.
  */
 
-/**
- * Returns a promise which is resolved with the next value of @a node
- * when it is computed.
- *
- * If the node evaluates to a thunk it is resolved by the promise.
- *
- * @param node The Node
- *
- * @return The Promise
- */
-function node_value(node) {
-    return Promise.resolve(node.next_value).then(Tridash.resolve);
-}
+const Tridash = require('../runtime/tridash.js');
 
-exports.node_value = node_value;
+/**
+ * Return a function which checks whether its argument is an instance
+ * of Tridash.Fail and its type is equal to @a type.
+ *
+ * @param type Expected failure type.
+ *
+ * @return The function.
+ */
+function test_fail_type(type) {
+    return (e) => {
+        return (e instanceof Tridash.Fail) && Tridash.resolve(e.type) === type;
+    };
+}
 
 /**
  * Resolve a list value.
@@ -99,5 +99,6 @@ function list_to_array(value, n) {
     return result;
 }
 
+exports.test_fail_type = test_fail_type;
 exports.resolve_list = resolve_list;
 exports.list_to_array = list_to_array;

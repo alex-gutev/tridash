@@ -9,11 +9,11 @@ a + b * d -> output
 
 10 -> d
 
+x + a + d -> output
+
 # Attribute Declarations
 
-/attribute(a, input, 1)
-/attribute(b, input, 1)
+/attribute(x, input, 1)
 
-/attribute(a, public-name, "a")
-/attribute(b, public-name, "b")
+/attribute(x, public-name, "x")
 /attribute(output, public-name, "output")

@@ -20,27 +20,23 @@
 
 (in-package :tridash.backend.js)
 
+
 ;;;; Symbol Constants
 
 (defconstant +tridash-namespace+ "Tridash"
   "Namespace containing the Tridash runtime library")
 
-(defconstant +tridash-prefix+ (mkstr +tridash-namespace+ ".")
-  "Namespace containing the Tridash runtime library definitions.")
-
-(defconstant +node-class+ (mkstr +tridash-prefix+ "Node")
-  "Runtime node class name.")
-
-(defconstant +node-context-class+ (mkstr +tridash-prefix+ "NodeContext")
-  "Runtime node context class name.")
-
-(defconstant +end-update-class+ (mkstr +tridash-prefix+ "Fail")
-  "Fail class name.")
-
-(defconstant +thunk-class+ (mkstr +tridash-prefix+ "Thunk")
+(defconstant +thunk-class+ (js-member +tridash-namespace+ "Thunk")
   "Thunk constructor function name.")
 
-(defconstant +catch-thunk-class+ (mkstr +tridash-prefix+ "CatchThunk")
-  "CatchThunk constructor function name.")
+(defconstant +resolve-function+ (js-member +tridash-namespace+ "resolve")
+  "Thunk resolve function name.")
 
-(defconstant +resolve-function+ (mkstr +tridash-prefix+ "resolve"))
+(defconstant +node-ref-class+ (js-member +tridash-namespace+ "NodeRef")
+  "Class representing a raw node reference object.")
+
+(defconstant +node-interface-class+ (js-member +tridash-namespace+ "Node")
+  "Node class type which servers as an interface to the node object.")
+
+(defconstant +module-class+ (js-member +tridash-namespace+ "Module")
+  "Tridash module class.")

@@ -18,3 +18,10 @@ output <- a
 
 /attribute(i, input, 1)
 /attribute(j, input, 2)
+
+
+## Public Name Attributes
+
+/attribute(i, public-name, "i")
+/attribute(j, public-name, "j")
+/attribute(output, public-name, "output")

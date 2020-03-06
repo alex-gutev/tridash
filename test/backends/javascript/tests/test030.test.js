@@ -26,30 +26,30 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test030.js');
-var name = Tridash.nodes.name;
-var output = Tridash.nodes.output;
+const mod = require('./test030.js');
+
+const name = mod.nodes.name;
+const output = mod.nodes.output;
 
 describe('Integration Test 30', function() {
     describe('Self Node Bindings', function() {
         describe('Set `name` to "John"', function () {
-            it('`output` = { first: "John"; last: "Smith" }', async function() {
+            it('`output` = { first: "John"; last: "Smith" }', function() {
                 name.set_value("John");
-                var value = await util.node_value(output);
+                const value = output.get_value();
 
                 assert.equal(Tridash.resolve(value.first), "John");
                 assert.equal(Tridash.resolve(value.last), "Smith");
             });
         });
-        
+
         describe('Set `name` to "Bob"', function () {
-            it('`output` = { first: "Bob"; last: "Smith" }', async function() {
+            it('`output` = { first: "Bob"; last: "Smith" }', function() {
                 name.set_value("Bob");
-                var value = await util.node_value(output);
+                const value = output.get_value();
 
                 assert.equal(Tridash.resolve(value.first), "Bob");
                 assert.equal(Tridash.resolve(value.last), "Smith");

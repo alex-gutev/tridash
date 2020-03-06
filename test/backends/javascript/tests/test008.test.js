@@ -26,25 +26,27 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test008.js');
+const mod = require('./test008.js');
 
-var a = Tridash.nodes.a;
-var output = Tridash.nodes.output;
+const x = mod.nodes.x;
+const output = mod.nodes.output;
 
 describe('Integration Test 8', function() {
-    describe('Initial Values of Complex Expressions', function() {
-        it('`output` is set to `a + b * d` computed using initial values', async function() {
-            assert.equal(await util.node_value(output), 32);
+    describe('Initial Values', function() {
+        describe('Initial Values: `a` = 2, `b` = 3', function() {
+            it('`output` = `a + b * d` = 32', function() {
+                assert.equal(output.get_value(), 32);
+            });
         });
 
-        it('`output` is set to recomputed value of `a + b * d`, when `a` is changed', async function() {
-            a.set_value(5);
-
-            assert.equal(await util.node_value(output), 35);
+        describe('Set `a` = 5', function() {
+            it('`output` = 17', function() {
+                x.set_value(5);
+                assert.equal(output.get_value(), 17);
+            });
         });
     });
 });

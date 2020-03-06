@@ -26,51 +26,53 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
+const util = require('./test_util.js');
 
-require('./test015.js');
+const mod = require('./test015.js');
 
-var x = Tridash.nodes.x;
-var y = Tridash.nodes.y;
-var input = Tridash.nodes.input;
-var dict = Tridash.nodes.dict;
+const x = mod.nodes.x;
+const y = mod.nodes.y;
+const input = mod.nodes.input;
+const dict = mod.nodes.dict;
 
 describe('Integration Test 15', function() {
-    function test_fail_type(type) {
-        return (e) => {
-            return (e instanceof Tridash.Fail) && Tridash.resolve(e.type) === type;
-        };
-    }
-    
     describe('Subnodes', function() {
-        it('`dict` is set to object containing fields `a` and `b`, set to `x` and `y`', async function() {
-            Tridash.set_values([[x, 1], [y, 2]]);
+        describe('Set `x` = 1, `y` = 2', function() {
+            it('`dict` = `{ a : 1, b : 2 }`', function() {
+                mod.set_values([[x, 1], [y, 2]]);
 
-            var value = await util.node_value(dict);
+                const value = dict.get_value();
 
-            assert.equal(Tridash.resolve(value.a), 1);
-            assert.equal(Tridash.resolve(value.b), 2);
+                assert.equal(Tridash.resolve(value.a), 1);
+                assert.equal(Tridash.resolve(value.b), 2);
+            });
         });
 
-        it('`x` is set to `dict.a`, and `y` to `dict.b` when `input` is set', async function() {
-            input.set_value({a: "hello", b: "world"});
+        describe('Set `dict` = `{a : "hello", b : "world" }`', function() {
+            it('`x` = `dict.a` = "hello, `y` = `dict.b` = "world""', function() {
+                input.set_value({a: "hello", b: "world"});
 
-            assert.equal(await util.node_value(x), "hello");
-            assert.equal(await util.node_value(y), "world");
+                assert.equal(x.get_value(), "hello");
+                assert.equal(y.get_value(), "world");
+            });
         });
 
-        it('`x` is set to a failure when `dict` set to object without `a` field', async function() {
-            input.set_value({b : "world"});
-            await assert.rejects(util.node_value(x), Tridash.Fail);
+        describe('Set `dict` = `{ b : "world" }`', function() {
+            it('`x` = `dict.a` = fail', function() {
+                input.set_value({b : "world"});
+                assert.throws(() => x.get_value(), Tridash.Fail);
+            });
         });
 
-        it('`x` and `y` are set to failures when `dict` set to non object', async function() {
-            input.set_value(1);
+        describe('Set `dict` = 1', function() {
+            it('`x` = `y` = Type Error Failure', function() {
+                input.set_value(1);
 
-            await assert.rejects(util.node_value(x), Tridash.Fail);
-            await assert.rejects(util.node_value(y), test_fail_type(Tridash.TypeError));
-        });        
+                assert.throws(() => x.get_value(), Tridash.Fail);
+                assert.throws(() => y.get_value(), util.test_fail_type(Tridash.TypeError));
+            });
+        });
     });
 });

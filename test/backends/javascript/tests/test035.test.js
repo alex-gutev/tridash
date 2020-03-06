@@ -26,30 +26,33 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
+const util = require('./test_util.js');
 
-require('./test035.js');
-var input = Tridash.nodes.input;
-var output = Tridash.nodes.output;
+const mod = require('./test035.js');
+
+const input = mod.nodes.input;
+const output = mod.nodes.output;
 
 describe('Integration Test 35', function() {
     describe('Higher Order Meta-Nodes', function() {
         describe('Set `input` = [1,2,3]', function () {
-            it('`output` = [2,3,4]', async function() {
+            it('`output` = [2,3,4]', function() {
                 input.set_value([1, 2, 3]);
-                var value = util.resolve_list(await output.next_value);
+                const value = util.resolve_list(output.get_value());
+
                 assert.deepEqual(value, [2, 3, 4]);
             });
         });
 
         describe('Set `input` = [1,1,1]', function () {
-            it('`output` = [2,2,2]', async function() {
+            it('`output` = [2,2,2]', function() {
                 input.set_value([1, 1, 1]);
-                var value = util.resolve_list(await output.next_value);
+                const value = util.resolve_list(output.get_value());
+
                 assert.deepEqual(value, [2, 2, 2]);
             });
-        });        
+        });
     });
 });

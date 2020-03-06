@@ -26,26 +26,29 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test012.js');
+const mod = require('./test012.js');
 
-var a = Tridash.nodes.a;
-var b = Tridash.nodes.b;
-var output = Tridash.nodes.output;
+const a = mod.nodes.a;
+const b = mod.nodes.b;
+const output = mod.nodes.output;
 
 describe('Integration Test 12', function() {
     describe('Conditional Bindings in Explicit Contexts', function() {
-        it('`output` is set to `a` when `a > 3`', async function() {
-            a.set_value(5);
-            assert.equal(await util.node_value(output), 5);
+        describe('Set `a` = 5', function() {
+            it('`output` = `a` = 5', function() {
+                a.set_value(5);
+                assert.equal(output.get_value(), 5);
+            });
         });
 
-        it('`output` is set to `b` when `a < 3`', async function() {
-            Tridash.set_values([[a, 1], [b, 2]]);
-            assert.equal(await util.node_value(output), 2);
+        describe('Set `a` = 1, `b` = 2', function() {
+            it('`output` = `b` = 2', function() {
+                mod.set_values([[a, 1], [b, 2]]);
+                assert.equal(output.get_value(), 2);
+            });
         });
     });
 });

@@ -26,6 +26,105 @@
  * SOFTWARE.
  */
 
+
+/* Fail Exception Type */
+
+/**
+ * Used as the fail exception type, which indicates that a value
+ * computation has failed.
+ *
+ * @param type Failure type.
+ *
+ * @param uncatch Number of failures handlers which should be
+ *   bypassed, before this failure is handled.
+ */
+function Fail(type = null, uncatch = 0) {
+    this.type = type;
+    this.uncatch = uncatch;
+};
+
+
+/* Thunk */
+
+/**
+ * Creates a thunk for lazily computing a value. When the thunk
+ * function is called for the first time @a compute is called and the
+ * value returned is stored. Subsequent invocations of the thunk
+ * function will simply return the stored value.
+ *
+ * @param compute Function of no arguments, which computes the value.
+ *
+ * @param fail_handler Function which is invoked when @a compute
+ *   returns a failure value. The function is passed the Fail
+ *   exception (the function is not called for other exceptions), and
+ *   the return value becomes the return value of the thunk.
+ *
+ * @return The thunk function.
+ */
+function Thunk(compute, fail_handler = null) {
+    this.computed = false;
+
+    this.compute = compute;
+    this.fail_handler = fail_handler;
+};
+
+
+/**
+ * Computes the value of the thunk if it has not already been
+ * computed.
+ *
+ * @return The value of the thunk
+ */
+Thunk.prototype.resolve = function() {
+    if (this.computed) {
+        return this.result;
+    }
+    else {
+        this.result = this.compute();
+        this.computed = true;
+
+        return this.result;
+    }
+};
+
+/**
+ * If @a thing is a Thunk, computes the thunk's value, otherwise
+ * returns @a thing.
+ *
+ * @param thing The thing to resolve.
+ *
+ * @return The resolved value.
+ */
+function resolve(thing) {
+    function Handler(current, next) {
+        this.handler = current;
+        this.next = next;
+    }
+
+    var handler = null;
+
+    while (thing instanceof Thunk) {
+        if (thing.fail_handler) {
+            handler = new Handler(thing.fail_handler, handler);
+        }
+
+        try {
+            thing = thing.resolve();
+        }
+        catch (e) {
+            if (e instanceof Fail && handler) {
+                thing = handler.handler(e);
+                handler = handler.next;
+            }
+            else {
+                throw e;
+            }
+        }
+    }
+
+    return thing;
+}
+
 /** Functions */
 
 /* Comparison */

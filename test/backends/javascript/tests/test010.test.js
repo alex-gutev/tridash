@@ -26,27 +26,30 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test010.js');
+const mod = require('./test010.js');
 
-var a = Tridash.nodes.a;
-var b = Tridash.nodes.b;
-var d = Tridash.nodes.d;
-var output = Tridash.nodes.output;
+const a = mod.nodes.a;
+const b = mod.nodes.b;
+const d = mod.nodes.d;
+const output = mod.nodes.output;
 
 describe('Integration Test 10', function() {
     describe('Failure Propagation', function() {
-        it('`output` is set to `a + b * d` when `a`, `b`, `d` all numbers', async function() {
-            Tridash.set_values([[a, 1], [b, 1.5], [d, 2]]);
-            assert.equal(await util.node_value(output), 4);
+        describe('Set `a` = 1, `b` = 1.5, `d` = 2', function() {
+            it('`output` = `a + b * d` = 4', function() {
+                mod.set_values([[a, 1], [b, 1.5], [d, 2]]);
+                assert.equal(output.get_value(), 4);
+            });
         });
 
-        it('`output` is set to a failure when `d` is not a number', async function() {
-            d.set_value("x");
-            await assert.rejects(util.node_value(output), Tridash.Fail);
+        describe('Set `d` = "x"', function() {
+            it('`output` = fail', async function() {
+                d.set_value("x");
+                assert.throws(() => output.get_value(), Tridash.Fail);
+            });
         });
     });
 });

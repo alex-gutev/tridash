@@ -26,34 +26,35 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
+const util = require('./test_util.js');
 
-require('./test039.js');
-var out1 = Tridash.nodes.out1;
-var out2 = Tridash.nodes.out2;
-var out3 = Tridash.nodes.out3;
+const mod = require('./test039.js');
+
+const out1 = mod.nodes.out1;
+const out2 = mod.nodes.out2;
+const out3 = mod.nodes.out3;
 
 describe('Core Module Integration Test 39', function() {
     describe('Macro-Node: `c`', function() {
-        it('`out1` = Char("h")', async function() {
-            var value = await util.node_value(out1);
+        it('`out1` = Char("h")', function() {
+            const value = out1.get_value();
 
             assert(value instanceof Tridash.Char);
             assert.equal(value.chr, "h");
         });
 
 
-        it('`out2` = Char("\\n")', async function() {
-            var value = await util.node_value(out2);
+        it('`out2` = Char("\\n")', function() {
+            const value = out2.get_value();
 
             assert(value instanceof Tridash.Char);
             assert.equal(value.chr, "\n");
         });
 
-        it('`out3` = Char("0")', async function() {
-            var value = await util.node_value(out3);
+        it('`out3` = Char("0")',  function() {
+            const value = out3.get_value();
 
             assert(value instanceof Tridash.Char);
             assert.equal(value.chr, "0");

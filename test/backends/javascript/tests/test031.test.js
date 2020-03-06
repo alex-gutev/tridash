@@ -26,29 +26,29 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test031.js');
-var x = Tridash.nodes.x;
-var output = Tridash.nodes.output;
+const mod = require('./test031.js');
+
+const x = mod.nodes.x;
+const output = mod.nodes.output;
 
 describe('Integration Test 31', function() {
     describe('Nested Meta-Nodes', function() {
         describe('Set `x` to 1', function () {
-            it('`output` = factorial(x) = 1', async function() {
+            it('`output` = factorial(x) = 1', function() {
                 x.set_value(1);
 
-                assert.equal(await util.node_value(output), 1);
+                assert.equal(output.get_value(), 1);
             });
         });
-        
+
         describe('Set `x` to 5', function () {
-            it('`output` = factorial(x) = 120', async function() {
+            it('`output` = factorial(x) = 120', function() {
                 x.set_value(5);
 
-                assert.equal(await util.node_value(output), 120);
+                assert.equal(output.get_value(), 120);
             });
         });
     });
