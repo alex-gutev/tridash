@@ -269,7 +269,8 @@ const Types =  {
     array: 8,
     symbol: 9,
     character: 10,
-    object: 11
+    object: 11,
+    int_array: 12
 };
 
 Object.freeze(Tags);
@@ -481,11 +482,11 @@ class TestUtil {
      *
      * @return Location of the object
      */
-    make_array(array) {
+    make_array(array, type = Types.array) {
         var ref = this.runtime.alloc((2 * 4) + array.length * 4);
         var buf = new Uint32Array(this.memory.buffer, ref, 2 + array.length);
 
-        buf[0] = Types.array;
+        buf[0] = type;
         buf[1] = array.length;
         buf.set(array, 2);
 
@@ -698,10 +699,10 @@ class TestUtil {
      * @param ref The memory location
      * @param length Array length
      */
-    check_is_array(ref, length) {
+    check_is_array(ref, length, type = Types.array) {
         var words = new Uint32Array(this.memory.buffer, ref, 2);
 
-        assert.equal(words[0], Types.array, 'Copied object is array');
+        assert.equal(words[0], type, 'Copied object is array');
         assert.equal(words[1], length, 'Incorrect array length');
     }
 
@@ -1132,6 +1133,27 @@ describe('Memory', function() {
                 // Check element 1 - string
                 str_ref = TestUtil.check_copied(str_ref, words[2]);
                 util.check_string(str_ref, str);
+            });
+
+            it('Integer arrays copied', function() {
+                var int_ref = util.make_int(23);
+
+                var array = [1, int_ref, 123, 0, 5];
+                var arr_ref = util.make_array(array, Types.int_array);
+
+                runtime.stack_push(arr_ref);
+
+                // Run garbage collection
+                runtime.exports.run_gc();
+
+                // Check Array
+                arr_ref = TestUtil.check_copied(arr_ref, runtime.stack_elem(0));
+                util.check_is_array(arr_ref, array.length, Types.int_array);
+
+                // Check Elements
+                var words = new Uint32Array(runtime.memory.buffer, arr_ref + 8, array.length);
+
+                assert.deepStrictEqual(words, Uint32Array.from(array), "Integer Array Contents");
             });
 
             it('Function references copied', function() {

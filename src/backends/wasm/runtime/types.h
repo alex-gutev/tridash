@@ -59,7 +59,7 @@ enum tridash_type {
     TRIDASH_TYPE_FAILURE = 5,
 
     TRIDASH_TYPE_FUNCREF = 6,
-     /* Function reference with optional/outer arguments */
+    /* Function reference with optional/outer arguments */
     TRIDASH_TYPE_FUNCREF_ARGS = 7,
 
     TRIDASH_TYPE_ARRAY = 8,
@@ -67,7 +67,11 @@ enum tridash_type {
     TRIDASH_TYPE_SYMBOL = 9,
     TRIDASH_TYPE_CHAR = 10,
 
+    /* User-Defined Object */
     TRIDASH_TYPE_OBJECT = 11,
+
+    /* Integer Array */
+    TRIDASH_TYPE_INT_ARRAY = 12,
 
     /**
      * Indicates object was copied to new heap during garbage

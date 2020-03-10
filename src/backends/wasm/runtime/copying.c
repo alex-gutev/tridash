@@ -97,6 +97,7 @@ void *copy_object(void *ptr) {
         break;
 
     case TRIDASH_TYPE_ARRAY:
+    case TRIDASH_TYPE_INT_ARRAY:
         dest = copy_array(object);
         break;
 
@@ -145,8 +146,9 @@ void *copy_referenced_objects(void *ptr) {
 
     case TRIDASH_TYPE_OBJECT:
         return copy_user_object_subnodes(ptr);
-        break;
 
+    case TRIDASH_TYPE_INT_ARRAY:
+        return &object->object.array.elements[object->object.array.size];
     }
 
     // Only here to prevent compilation errors
