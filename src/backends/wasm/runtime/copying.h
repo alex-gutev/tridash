@@ -36,6 +36,8 @@
 #ifndef TRIDASH_COPYING_H
 #define TRIDASH_COPYING_H
 
+#include "macros.h"
+
 /* Functions for copying objects */
 
 /**
