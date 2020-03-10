@@ -47,7 +47,7 @@
  * @param object Pointer to the object.
  * @return Pointer to the copied object.
  */
-void *copy_object(void *object);
+export void *copy_object(void *object);
 
 /**
  * Copy the objects directly referenced by @a object to the new heap,

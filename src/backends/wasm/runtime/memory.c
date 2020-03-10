@@ -187,3 +187,9 @@ void memcopy(char *dest, const char *src, size_t size) {
 int is_managed(const void *ptr) {
     return (uintptr_t)ptr >= (uintptr_t)heap_base;
 }
+
+void memclear(char *ptr, size_t size) {
+    while (size--) {
+        *ptr = 0;
+    }
+}

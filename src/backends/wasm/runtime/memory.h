@@ -84,7 +84,8 @@ export void run_gc(void);
  *
  * @param size Number of bytes to copy.
  */
-void memcopy(char *dest, const char *src, size_t size);
+export void memcopy(char *dest, const char *src, size_t size);
+
 
 /**
  * Checks whether a pointer points to a memory location within the
@@ -96,5 +97,13 @@ void memcopy(char *dest, const char *src, size_t size);
  *   heap.
  */
 int is_managed(const void *ptr);
+
+/**
+ * Set all bytes in a block of memory to zero.
+ *
+ * @param ptr Pointer to the block.
+ * @param size Size of the block.
+ */
+export void memclear(char *ptr, size_t size);
 
 #endif /* TRIDASH_MEMORY_H */
