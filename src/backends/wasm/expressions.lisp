@@ -259,7 +259,7 @@
                locals))
 
         (make-wasm-function-spec
-         :params (repeat 'i32 (length operands))
+         :params (coerce (repeat 'i32 (length operands)) 'list)
          :results '(i32)
          :locals locals
          :code code)))))
@@ -423,7 +423,7 @@
           (body (map-wasm #'map-instruction instructions)))
 
       (values
-       (repeat 'i32 (- (length local-map) operands))
+       (coerce (repeat 'i32 (- (length local-map) operands)) 'list)
        body))))
 
 (defun make-branches (instructions)
