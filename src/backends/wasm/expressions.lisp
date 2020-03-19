@@ -208,7 +208,14 @@
     :accessor strict-blocks
     :documentation
     "Strictness expression of the `EXPRESSION-BLOCK' objects in the
-     function's expression."))
+     function's expression.")
+
+   (get-operand
+    :accessor get-operand
+    :initarg :get-operand
+    :documentation
+    "Function which returns the `value-block' for an operand of a
+     meta-node or node context function."))
 
   (:documentation
    "Stores the compilation state for a function."))
@@ -232,11 +239,22 @@
   locals
   code)
 
-(defun compile-function (expression operands &key (epilogue (constantly nil)))
+(defun get-operand-local (operand)
+  "Returns the value block which references the parameter local
+   variable in which the value of OPERAND is stored."
+
+  (with-slots (argument-locals) *function-block-state*
+    (ematch operand
+      ((node-link- (node))
+       (get node argument-locals)))))
+
+(defun compile-function (expression operands &key (get-operand #'get-operand-local) (epilogue (constantly nil)))
   "Compiles a function comprising the expression EXPRESSION with
    operand nodes OPERANDS. Returns a WASM-FUNCTION-SPEC object."
 
-  (let ((*function-block-state* (make-instance 'function-block-state)))
+  (let ((*function-block-state*
+         (make-instance 'function-block-state
+                        :get-operand get-operand)))
     (foreach #'add-operand operands)
 
     (let ((tridash.frontend.strictness:*analyze-nodes* nil)
@@ -983,8 +1001,7 @@
     (map #'compile-operand operands strict-operands)))
 
 (defmethod compile-expression ((link node-link) &key)
-  (get (node-link-node link)
-       (argument-locals *function-block-state*)))
+  (funcall (get-operand *function-block-state*) link))
 
 (defmethod compile-expression ((list argument-list) &key)
   "Compile rest argument lists to an expression which creates an array
