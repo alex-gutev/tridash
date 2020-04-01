@@ -402,7 +402,7 @@
       fold-constant-locals
 
       ;; Making Reference Load and Stores
-      optimize-reference-loads
+      optimize-references
       make-load-references
       patch-stack-offsets
 
@@ -671,11 +671,11 @@
 
 (defconstant +arithmetic-operators+
   (alist-hash-map
-   `(("+" . add)
-     ("-" . sub)
-     ("*" . mul)
-     ("/" . div_s)
-     ("%" . rem_s))))
+   `(("+" . ((i32 . i32.add) (f32 . f32.add)))
+     ("-" . ((i32 . i32.sub) (f32 . f32.sub)))
+     ("*" . ((i32 . i32.mul) (f32 . f32.mul)))
+     ("/" . ((i32 . i32.div_s) (f32 . f32.div_s)))
+     ("%" . ((i32 . i32.rem_s) (f32 . f32.rem_s))))))
 
 (defmethod compile-expression ((expression functor-expression) &key)
   (with-struct-slots functor-expression- (meta-node arguments outer-nodes)
@@ -762,9 +762,11 @@
           arguments))))
 
 
+;;;; Arithmetic Expressions
+
 (defun compile-arithmetic-expression (instruction operands result)
-  (let ((finst (symb 'f32. instruction))
-        (iinst (symb 'i32. instruction)))
+  (let ((finst (get 'f32 instruction))
+        (iinst (get 'i32 instruction)))
 
     (flet ((unbox (label)
              `((block $fail
@@ -1466,8 +1468,13 @@
      :value-p t)))
 
 (defun number-literal (value type result)
-  `((,(symb type '.const) ,value)
-    (box ,result (type ,type))))
+  (let ((instruction
+         (ecase type
+           (i32 'i32.const)
+           (f32 'f32.const))))
+
+    `((,instruction ,value)
+      (box ,result (type ,type)))))
 
 
 ;;;; Strings
@@ -1640,32 +1647,48 @@
 
       (add-store-operands (map-wasm #'expand instructions)))))
 
-(defun optimize-reference-loads (instructions)
-  "Optimize the loading/storing of reference from/onto the stack.
+(defun optimize-references (instructions)
+  "Optimize the loading/storing of references from/onto the stack.
 
    LOCAL.GET/SET/TEE instructions for REF locals, are replaced with
    instructions for regular locals if it can be determined that there
    is no need to refresh or save the reference at that point."
 
-  (let ((live (make-hash-map))
-        (at-start t)
-        (store-indices (make-hash-map))
-        (load-counts (make-hash-map)))
+  (->> instructions
+       optimize-reference-loads
+       optimize-reference-stores))
 
-    (labels ((optimize-load (instruction)
+(defun optimize-reference-loads (instructions)
+  "Replace LOCAL.GET REF instructions with regular LOCAL.GET
+   instructions where it can be determined that the reference has
+   already been loaded from the stack."
+
+  (let ((live (make-hash-map))
+        (at-start t))
+
+    (labels ((optimize (instruction branches)
                "Replace REF locals with regular locals in LOCAL.GET
                 instructions."
 
                (match instruction
+                 ;; Reference Loads
+
                  ((list 'local.get (list 'ref label))
                   (list
-                   (if (or (get label live) at-start)
+                   (if (or (memberp label live) at-start)
                        (list 'local.get label)
-                       (prog1 (list 'local.get (list 'ref label))
-                         (setf (get label live) t)))))
+
+                       (progn
+                         (setf (get label live) branches)
+                         (list 'local.get (list 'ref label))))))
+
+
+                 ;; Reference Stores
 
                  ((list (or 'local.set 'local.tee) (list 'ref label))
-                  (setf (get label live) t)
+                  (unless (memberp label live)
+                    (setf (get label live) branches))
+
                   (list instruction))
 
                  ((list* (or 'call 'call_indirect) _)
@@ -1676,28 +1699,67 @@
                  (_
                   (list instruction))))
 
-             (match-load-stores (instruction)
+             (exit-block (label branches)
+               (declare (ignore branches))
+
+               (->> (remove-if (curry #'memberp label) live :key #'cdr)
+                    (setf live))))
+
+      (optimize-with-blocks instructions #'optimize :block-exit #'exit-block))))
+
+(defun optimize-reference-stores (instructions)
+  "Replace LOCAL.SET REF instructions with regular LOCAL.SET
+   instructions where it can be determined that there is not need to
+   save the reference on the stack."
+
+  (let ((store-indices (make-hash-map))
+        (store-blocks (make-hash-map))
+        (load-counts (make-hash-map)))
+
+    (labels ((match-load-stores (instruction branches)
                "If INSTRUCTION is a LOCAL.SET REF, assign it a unique
                 index. If INSTRUCTION is a LOCAL.GET REF, increment
                 the number of loads for the last store (for that
-                label) in load-COUNTS."
+                label) in LOAD-COUNTS."
 
                (match instruction
+                 ;; Set Local Instructions
+
                  ((list (and (or 'local.set 'local.tee) instruction)
                         (list 'ref label))
+
                   (let ((index (length load-counts)))
-                    (setf (get label store-indices) index)
+                    (add-index index label branches)
                     (setf (get index load-counts) 0)
+                    (setf (get index store-blocks) branches)
 
                     (list (list instruction (list 'ref label index)))))
 
+                 ((list (or 'local.set 'local.tee)
+                        (list 'ref label index))
+
+                  (add-index index label branches)
+                  (list instruction))
+
+                 ;; Get Local Instructions
+
                  ((list 'local.get (list 'ref label))
-                  (awhen (get label store-indices)
-                    (incf (get it load-counts)))
+                  (dolist (index (get label store-indices))
+                    (incf (get index load-counts)))
 
                   (list instruction))
 
                  (_ (list instruction))))
+
+             (add-index (index label branches)
+               (with-hash-keys ((indices label)) store-indices
+                 (setf
+                  indices
+                  (if (and (not (emptyp indices))
+                           (= (get (first indices) store-blocks) branches))
+
+                      (cons index (rest indices))
+                      (cons index indices)))))
 
              (optimize-store (instruction)
                "Replace LOCAL.SET REF instructions, for which the load
@@ -1715,13 +1777,7 @@
 
                  (_ (list instruction)))))
 
-      ;; Optimizing Stores
-      ;;
-      ;; Stores (local.set (ref $x)) for which there is no following
-      ;; (local.get (ref $x)) can be removed
-
-      (->> (map-wasm #'optimize-load instructions)
-           (map-wasm #'match-load-stores)
+      (->> (optimize-with-blocks instructions #'match-load-stores)
            (map-wasm #'optimize-store)))))
 
 (defun patch-stack-offsets (instructions)
@@ -1790,10 +1846,17 @@
 
              (zero-offset (type offset)
                "Create instructions which zero out the stack location
-                at OFFSET. Type is the element size, I32 or I64."
+                at OFFSET. TYPE is the element size, I32 or I64."
                `((local.get $stack-base)
-                 (,(symb type '.const) 0)
-                 (,(symb type '.store) (offset ,offset)))))
+                 (,(ecase type
+                     (i32 'i32.const)
+                     (i64 'i64.const))
+                   0)
+
+                 (,(ecase type
+                     (i32 'i32.store)
+                     (i64 'i64.store))
+                   (offset ,offset)))))
 
       (let ((patched (map-wasm #'patch-offset instructions)))
         (if (zerop size)
@@ -1999,6 +2062,124 @@
 
              (resolved? (local)
                (memberp local resolved)))
+
+      (optimize-instructions instructions))))
+
+
+;;;; Block Optimization
+
+(defpattern wasm-block (label body)
+  `(or (list* 'block (and (type symbol) ,label) ,body)
+       (list* 'block ,body)))
+
+(defpattern wasm-loop (label body)
+  `(or (list* 'loop (and (type symbol) ,label) ,body)
+       (list* 'loop ,body)))
+
+(defun optimize-with-blocks (instructions fn &key block-enter block-exit)
+  "Apply the function FN on each instruction in INSTRUCTIONS.
+
+   The function is passed to arguments: the instruction and the set of
+   possible branches preceding the instruction, which may result in
+   the instruction not being executed.
+
+   The function is not called on structured BLOCK, LOOP, IF, THEN,
+   ELSE but only on the sub-instructions comprising the body.
+
+   The function is not applied on branch instructions.
+
+   For LOOP instructions the function is applied twice with the result
+   of the first application passed to the second application.
+
+   BLOCK-ENTER, if provided, is a function which is called prior to
+   applying FN on the body of a block, with the block label and set of
+   possible branches prior to the block, passed as
+   arguments. BLOCK-EXIT is called after applying FN on all
+   instructions in the body of a block."
+
+  (let ((branches (make-hash-set))
+        (blocks (make-hash-map))
+        (label-counter 0)
+        (depth 0))
+    (declare (special branches blocks depth))
+
+    (labels ((optimize-instructions (instructions)
+               (map-extend #'optimize instructions))
+
+             (optimize (instruction)
+               (match instruction
+                 ;; Blocks
+
+                 ((wasm-block label body)
+                  `((block ,@(ensure-list label)
+                      ,@(optimize-block label body))))
+
+                 ;; Loops
+
+                 ((wasm-loop label body)
+                  `((loop ,@(ensure-list label)
+                       ,@(optimize-loop label body))))
+
+
+                 ;; If Blocks
+
+                 ((list* 'if body)
+                  `((if ,@(optimize-instructions body))))
+
+                 ((list* 'then body)
+                  `((then ,@(optimize-block nil body))))
+
+                 ((list* 'else body)
+                  `((else ,@(optimize-block nil body))))
+
+
+                 ;; Branch Instructions
+
+                 ((list (or 'br 'br_if) label)
+                  (setf branches
+                        (adjoin (convert-branch label) branches))
+                  (list instruction))
+
+                 ((list* 'br_table labels)
+                  (-<> (map #'convert-branch labels)
+                       (coerce 'hash-set)
+                       (union branches)
+                       (setf branches <>))
+
+                  (list instruction))
+
+                 (_ (funcall fn instruction branches))))
+
+             (optimize-loop (label body)
+               (->> (optimize-block label body)
+                    (optimize-block label)))
+
+             (optimize-block (label body)
+               (let* ((depth (1+ depth))
+                      (blocks (copy blocks))
+                      (label (add-label (or label depth))))
+                 (declare (special depth blocks))
+
+                 (when block-enter
+                   (funcall block-enter label branches))
+
+                 (prog1 (optimize-instructions body)
+                   (erase branches label)
+
+                   (when block-exit
+                     (funcall block-exit label branches)))))
+
+             (add-label (label)
+               (prog1 (setf (get label blocks) label-counter)
+                 (incf label-counter)))
+
+             (convert-branch (label)
+               (get
+                (etypecase label
+                  (integer (- depth label))
+                  (symbol label))
+
+                blocks)))
 
       (optimize-instructions instructions))))
 
