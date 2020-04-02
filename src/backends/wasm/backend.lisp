@@ -23,14 +23,11 @@
 (defconstant +tridash-namespace+ "Tridash"
   "Namespace containing the Tridash runtime library")
 
-(defconstant +tridash-prefix+ (mkstr +tridash-namespace+ ".")
-  "Namespace containing the Tridash runtime library definitions.")
+(defconstant +node-interface-class+ (js-member +tridash-namespace+ "Node")
+  "Node class type which servers as an interface to the node object.")
 
-(defconstant +node-class+ (mkstr +tridash-prefix+ "Node")
-  "Runtime node class name.")
-
-(defconstant +node-context-class+ (mkstr +tridash-prefix+ "NodeContext")
-  "Runtime node context class name.")
+(defconstant +module-class+ (js-member +tridash-namespace+ "Module")
+  "Tridash module class.")
 
 
 ;;; Linker Options
@@ -75,6 +72,20 @@
           :type 'func
           :desc '((i32 i32 i32) nil)))
 
+     ("memclear"
+      . ,(make-wasm-import
+          :module "runtime"
+          :name "memclear"
+          :type 'func
+          :desc '((i32 i32) nil)))
+
+     ("copy_object"
+      . ,(make-wasm-import
+          :module "runtime"
+          :name "copy_object"
+          :type 'func
+          :desc '((i32) (i32))))
+
      ("empty_list"
       . ,(make-wasm-import
           :module "runtime"
@@ -115,44 +126,51 @@
     :documentation
     "Map from `node' objects to their indices.")
 
-   (context-ids
+   (context-indices
     :initform (make-hash-map)
-    :accessor context-ids
+    :accessor context-indices
     :documentation
     "Map storing the context identifiers of each context of each
      node. Each key is a `NODE' object and the corresponding value is
      a map from context identifiers to their JS identifiers.")
 
-   (context-counter
-    :initform 0
-    :accessor context-counter
-    :documentation
-    "Counter for generating globally unique context identifiers.")
-
-   (node-link-indices
+   (public-nodes
     :initform (make-hash-map)
-    :accessor node-link-indices
+    :accessor public-nodes
     :documentation
-    "Map storing the dependency indices of each dependency of each
-     node context. Each key is a `NODE-CONTEXT' object and the
-     corresponding value is a map from `NODE-LINK' objects (of the
-     dependency node) to their dependency indices.")
+    "Map from public node identifiers to the corresponding node index
+     or meta-node identifier.")
+
+   (initial-values
+    :initform nil
+    :accessor initial-values
+    :documentation
+    "List of initial node values to set, where each element is an
+     INITIAL-VALUE object.")
 
    (imports
     :initform (make-hash-map)
     :accessor imports
     :documentation
     "Map from import names to the corresponding WASM-IMPORT
-     entries.")))
+     entries."))
+
+  (:documentation
+   "WebAssembly Module Linker State."))
+
+(defstruct initial-value
+  "Node Initial Value.
+
+   NODE-INDEX - Index of the node.
+   CONTEXT-INDEX - Index of the context.
+   EXPRESSION - Initial value expression"
+
+  node-index
+  context-index)
 
 (defvar *linker-state* nil
   "Global linker state")
 
-(defun node-path (node)
-  "Return the name of the variable storing the runtime node object for
-   NODE."
-
-  (mkstr "node" (node-index node)))
 
 (defun node-index (node)
   "Returns the index of NODE within the node table object."
@@ -172,30 +190,29 @@
            (*linker-state* (make-instance 'linker-state))
            (out-nodes (create-nodes nodes))
            (out-meta-nodes (create-meta-nodes meta-nodes))
-           (bindings (init-nodes nodes)))
+           (compute (create-compute-function table)))
 
       (multiple-value-bind (wasm-module table-size memory-size)
-          (link-wasm-module out-nodes out-meta-nodes)
+          (link-wasm-module compute out-nodes out-meta-nodes)
 
         (output-wasm-file out-file wasm-module)
 
         (output-js-file
          (js-file-name (pathname out-file))
 
-         (concatenate
-          (make-loader-code
-           out-file
+         (make-loader-code
+          out-file
 
-           (concatenate
-            (map-extend-to 'list #'first out-nodes)
-            bindings)
+          (concatenate
+           (map-extend-to 'list #'first out-nodes))
 
-           options
+          options
 
-           :table-size table-size
-           :memory-size (1+ (ceiling memory-size (* 64 1024)))
-           :runtime-base memory-size
-           :num-nodes (length out-nodes)))
+          :table-size table-size
+          :memory-size (1+ (ceiling memory-size (* 64 1024)))
+          :runtime-base memory-size
+          :num-nodes (length out-nodes)
+          :stack-size *stack-size*)
 
          options)))))
 
@@ -230,7 +247,7 @@
    (with-open-file (*standard-output* out-file :direction :output :if-exists :supersede)
      (output-code code))))
 
-(defun make-loader-code (out-file code options &key table-size memory-size runtime-base num-nodes)
+(defun make-loader-code (out-file code options &key table-size memory-size runtime-base num-nodes stack-size)
   "Generate the code which loads the WebAssembly runtime and compiled
    modules. CODE is the JavaScript node initialization code which
    should be executed after the modules are loaded."
@@ -250,6 +267,8 @@
          (list "table_size" table-size)
          (list "memory_size" memory-size)
          (list "memory_base" runtime-base)
+
+         (list "stack_size" stack-size)
          (list "num_nodes" num-nodes))))
 
       (js-member "then")
@@ -259,22 +278,62 @@
          (js-object
           (list
            (list "module" "mod")
+           (list "marshaller" "marshaller")
            (list "runtime" "runtime")
            (list "memory" "memory"))))
 
         (concatenate
-         (list (js-var "nodes" (js-object)))
+         (list
+          (make-module
+           (js-members "mod" "exports" "compute")
+           "marshaller"
+           num-nodes)
+
+          (js-var "nodes" (make-exported-nodes (public-nodes *linker-state*))))
+
          code
          (list
           (js-return
            (js-object
-            (list (list "module" "mod")
-                  (list "runtime" "runtime")
-                  (list "memory" "memory")
-                  (list "nodes" "nodes"))))))))
+            (list
+             (list "module" "module")
+             (list "runtime" "runtime")
+             (list "memory" "memory")
+             (list "nodes" "nodes"))))))))
 
       (js-call "=" (js-member "exports" "module") <>)))))
 
+(defun make-exported-nodes (public-nodes)
+  "Generate code which creates the object storing the exported
+   nodes (in PUBLIC-NODES)."
+
+  (js-object
+   (map-to
+    'list
+
+    (lambda (export)
+      (destructuring-bind (name node-index context-index) export
+        (list
+         (js-string name)
+         (js-new +node-interface-class+
+                 (list* "module" node-index (ensure-list context-index))))))
+
+    public-nodes)))
+
+
+;;; Tridash Module
+
+(defun make-module (compute marshaller num_nodes)
+  "Generate code which creates the Tridash Module and assigns it to
+   the variable `module`."
+
+  (js-var
+   "module"
+
+   (js-new
+    +module-class+
+
+    (list compute marshaller num_nodes))))
 
 
 ;;; Imports
@@ -310,6 +369,240 @@
             :meta-node meta-node))))
 
 
+;;; Main State Computation Function
+
+(defun create-compute-function (table)
+  "Generate the main state computation function."
+
+  (with-slots (nodes) table
+    (with-slots (context-indices) *linker-state*
+
+      (labels ((make-context-blocks ()
+                 (let ((contexts
+                        (-> (coerce context-indices 'alist)
+                            (sort :key #'third))))
+
+                   (reduce #'make-context-block
+                           contexts
+
+                           :from-end t
+                           :initial-value
+                           `((local.get $current)
+                             (br_table
+                              ,@(map (compose (curry #'symb '$c) #'third) contexts))))))
+
+               (make-context-block (context prev)
+                 "Generate code which updates the state of the node
+                  using the function of CONTEXT and pushes its
+                  observers to the dirtied queue."
+
+                 (destructuring-bind (context node index) context
+                   (multiple-value-bind (byte bit)
+                       (floor (node-index node) 32)
+
+                     `((block ,(symb '$c index)
+                         ,@prev)
+
+                       ;; Mark node as visited in visited node array.
+                       (local.get (ref $visited))
+                       (local.get (ref $visited))
+                       (i32.load (offset ,(+ 8 byte)))
+                       (i32.const ,(ash 1 bit))
+                       i32.or
+                       (i32.store (offset ,(+ 8 byte)))
+
+                       ,@(add-dirtied node context)
+
+                       ,@(unless (emptyp (operands context))
+                           ;; Call Context Function
+                           `((local.get (ref $state))
+                             (call (context ,node ,context))
+                             (local.set $value)
+
+                             ;; Store Value
+                             (local.get (ref $state))
+                             (local.get $value)
+                             (i32.store (offset ,(+ 8 (* 4 (node-index node)))))))
+
+                       (br $loop)))))
+
+               (add-dirtied (node context)
+                 "Generate instructions which add the contexts of the
+                  observers of NODE, in the `NODE-CONTEXT' CONTEXT, to
+                  the dirty queue."
+
+                 (with-slots (operands) context
+                   (when-let (observers (context-observers node context))
+                     (map-extend #'dirty-context observers))))
+
+               (context-observers (node context)
+                 "Return the list of context indices of the observers
+                  of NODE in the context CONTEXT."
+
+                 (->> (observers node)
+                      (remove-if
+                       (lambda (observer)
+                         (destructuring-bind (node . link) observer
+                           (or
+                            (and (node-link-two-way-p link)
+                                 (memberp node (operands context)))
+
+                            (node-link-weak-p link)))))
+
+                      (map-to 'list #'observer-index)))
+
+               (observer-index (observer)
+                 "Return the context index of the observer entry
+                  OBSERVER."
+
+                 (destructuring-bind (node . link) observer
+                   (->> link
+                        node-link-context
+                        (context node)
+                        (context-index node))))
+
+               (dirty-context (index)
+                 "Generate instructions which add the context with
+                  index INDEX to the dirty queue."
+
+                 (multiple-value-bind (byte bit) (floor index 32)
+                   (let ((byte (+ 8 byte))
+                         (mask (ash 1 bit)))
+                     `((block $check
+                         (local.get (ref $dirtied))
+                         (i32.load (offset ,byte))
+                         (i32.const ,mask)
+                         i32.and
+                         (br_if $check)
+
+                         ;; Mark context as dirtied
+                         (local.get (ref $dirtied))
+                         (local.get (ref $dirtied))
+                         (i32.load (offset ,byte))
+                         (i32.const ,mask)
+                         i32.or
+                         (i32.store (offset ,byte))
+
+                         ;; Add to queue
+                         (local.get $queue-top)
+                         (i32.const 4)
+                         i32.sub
+                         (local.tee $queue-top)
+                         (i32.const ,index)
+                         i32.store)))))
+
+               (make-array-set (var size)
+                 `((i32.const ,(+ 8 (* +word-byte-size+ size)))
+                   (call (import "runtime" "alloc"))
+                   (local.tee (ref ,var))
+                   (i32.const ,(+ 8 (* +word-byte-size+ size)))
+                   (call (import "runtime" "memclear"))
+
+                   ;; Set Type to Integer Array
+                   (local.get (ref ,var))
+                   (i32.const ,+type-int-array+)
+                   i32.store
+
+                   ;; Set Size
+                   (local.get (ref ,var))
+                   (i32.const ,size)
+                   (i32.store (offset ,+word-byte-size+)))))
+
+        ;; Add Context Indices
+        (doseq (node nodes)
+          (foreach (curry #'context-index node)
+                   (map-values (contexts node))))
+
+        (let ((*function-block-state*
+               (make-instance 'function-block-state)))
+
+          (create-compute-function-spec
+           `((local.get (ref $old-state))
+             (call (import "runtime" "copy_object"))
+             (local.set (ref $state))
+
+             ;; Create Dirtied Context Set
+             ,@(make-array-set '$dirtied (ceiling (length context-indices) +word-size+))
+
+             ;; Create Visited Node Array
+             ,@(make-array-set '$visited (ceiling (length nodes) +word-size+))
+
+             ;; Reserve space for dirty queue on value stack
+             (global.get $value-stack-ptr)
+             (local.tee $queue-base)
+
+             ;; Get size of queue
+             (local.get (ref $dirty-queue))
+             (i32.load (offset 4))
+             (i32.const ,+word-byte-size+)
+             i32.mul
+             (local.tee $queue-size)
+             i32.sub
+             (local.tee $queue-top)
+
+             ;; Copy queue onto value stack
+             (local.get (ref $dirty-queue))
+             (i32.const 8)
+             i32.add
+             (local.get $queue-size)
+             (call (import "runtime" "memcopy"))
+
+             ;; Update Loop
+             (block $out
+               (loop $loop
+                  ;; Check if dirty queue is empty
+                  (local.get $queue-top)
+                  (local.get $queue-base)
+                  i32.gt_u
+
+                  (br_if $out)
+
+                  ;; Dequeue next dirty node context
+                  (local.get $queue-top)
+                  i32.load
+                  (local.set $current)
+
+                  ;; Bump Queue Top Pointer
+                  (local.get $queue-top)
+                  (i32.const ,+word-byte-size+)
+                  i32.add
+                  (local.set $queue-top)
+
+                  ,@(make-context-blocks)))
+
+             (local.get $new-state)
+             (local.get (ref $state))
+             i32.store
+
+             (local.get (ref $visited)))))))))
+
+(defun create-compute-function-spec (instructions)
+  "Create a WASM-FUNCTION-SPEC containing the instructions
+   INSTRUCTIONS."
+
+  (multiple-value-bind (locals code)
+      (make-function-body
+       instructions
+       (alist-hash-map '(($dirty-queue . 0) ($old-state . 1) ($new-state . 2)))
+       nil)
+
+    (make-wasm-function-spec
+     :params '(i32 i32 i32)
+     :results '(i32)
+     :locals locals
+     :code code
+
+     :export-name "compute")))
+
+(defun context-index (node context)
+  "Returns the index of the `NODE-CONTEXT' CONTEXT of NODE."
+
+  (with-slots (context-indices) *linker-state*
+    (second
+     (ensure-get context context-indices
+       (list node (length context-indices))))))
+
+
 ;;; Nodes
 
 (defun create-nodes (nodes)
@@ -331,225 +624,103 @@
     implementing each context's value function"))
 
 (defmethod create-node (node)
-  (flet ((make-context (context)
-           (multiple-value-bind (js-code wasm-fn)
-               (create-context node context)
+  (let* ((context-functions
+          (remove nil (map-to 'list (curry #'create-context node) (contexts node)))))
 
-             (list js-code (ensure-list wasm-fn)))))
+    (awhen (attribute :public-name node)
+      (setf (get it (public-nodes *linker-state*))
+            (list
+             (node-index node)
+             (awhen (get :input (contexts node))
+               (context-index node it)))))
 
-    (let* ((contexts (map-to 'list #'make-context (contexts node)))
-           (code (map #'first contexts))
-           (fns (map-extend #'second contexts)))
+    ;; If the node has an INIT context, add its initial value to
+    ;; INITIAl-VALUES of *LINKER-STATE* and ensure it has an input
+    ;; context.
 
-      (values
-       (concatenate
-        (list (js-var (node-path node) (js-new +node-class+)))
-        (store-in-public-nodes node (node-path node))
-        code)
+    (awhen (cdr (get-init-context node))
+      (context node :input)
 
-       fns))))
+      (push
+       (make-initial-value
+        :node-index (node-index node)
+        :context-index (context-index node it))
+
+       (initial-values *backend-state*)))
+
+    (values
+     nil
+     context-functions)))
 
 (defun create-context (node context)
   "Generate the initialization code for a `node-context', returned in
    the first value, and its WebAssembly function, returned in the
    second value."
 
-  (flet ((make-store-value (label)
-           `((i32.const $stack-base)
-             (i32.const ,(* 4 (node-index node)))
-             i32.add
-             (local.get ,label)
-             i32.store)))
+  ;; Generate a context function which takes a single argument, the
+  ;; node state array.
 
-   (destructuring-bind (id . context) context
-     (with-slots (value-function operands) context
-       (let* ((node-path (node-path node))
-              (gcid (global-context-id)))
+  ;; The context function should always return a thunk which, then
+  ;; extracts the values from the state vector and performs the
+  ;; computation.
 
-         (let*-if ((export-name (mkstr "c" gcid))
-                   (context-fn
-                    (compile-function value-function (map-keys operands)
-                                      :epilogue #'make-store-value)))
+  (let* ((context (cdr context)))
+    (with-slots (value-function operands) context
+      (context-index node context)
 
-             value-function
+      (when value-function
+        (make-context-function context)))))
 
-           (establish-dependency-indices context)
+(defun make-context-function (context)
+  "Generate the WASM code for the value computation function of
+   CONTEXT."
 
-           (when context-fn
-             (setf (wasm-function-spec-export-name context-fn)
-                   export-name))
+  (let ((operands (make-hash-map)))
+    (labels ((get-operand (operand)
+               (ematch operand
+                 ((node-link- node)
+                  (ensure-get operand operands
+                    (make-get-operand node)))))
 
-           (values
-            (lexical-block
-             (js-var "context" (make-context-expression node-path id context gcid))
+             (make-get-operand (node)
+               (let ((state (get 'state (argument-locals *function-block-state*)))
+                     (result (next-local)))
 
-             (when context-fn
-               (js-call "="
-                        (js-member "context" "compute")
-                        (js-lambda
-                         (list "previous" "values")
-                         (list
-                          (js-return
-                           (make-js-call
-                            (js-members "mod" "exports" export-name)
-                            (map-to 'list
-                                    (curry #'js-element "values")
-                                    (range 0 (length operands)))))))))
+                 (make-value-block
+                  :label result
+                  :operands (list state)
+                  :value-p t
 
-             (js-call "=" (context-path node id) "context"))
+                  :instructions
+                  `((local.get (ref ,state))
+                    (i32.const ,(node-index node))
+                    (i32.const 4)
+                    i32.mul
+                    i32.add
 
-            context-fn)))))))
+                    (i32.load (offset 8))
+                    (local.set (ref ,result)))))))
 
-(defun context-path (node context-id)
-  "Returns a JS expression which references the context, with
-   identifier CONTEXT-ID, of NODE."
+      (with-slots (value-function operands) context
+        (compile-function value-function '(state)
+                          :get-operand #'get-operand
+                          :thunk t)))))
 
-  (js-element (js-member (node-path node) "contexts")
-              (context-js-id node context-id)))
+(defun get-init-context (node)
+  "If NODE has an initial value context, that is a context with no
+   operands and a constant value function, it is returned otherwise
+   NIL is returned."
 
-(defun context-js-id (node context-id)
-  "Returns the JavaScript context identifier for the context with
-   identifier CONTEXT-ID of NODE."
+  (find-if #'init-context? (contexts node)))
 
-  (let ((ids (ensure-get node (context-ids *linker-state*) (make-hash-map))))
-    (case context-id
-      (:input
-       (js-string "input"))
-
-      (otherwise
-       (ensure-get context-id ids (length ids))))))
-
-
-(defun make-context-expression (node-path id context gcid)
-  "Creates an expression which creates a new context for the context
-   CONTEXT with id ID of the node which is referenced by the
-   expression NODE-PATH. GCID is the global context identifier of the
-   context."
-
-  (case id
-    (:input
-     (js-call (js-member +node-context-class+ "create_input")
-              node-path
-              (global-context-id)))
-
-    (otherwise
-     (js-call (js-member +node-context-class+ "create")
-              node-path
-              (length (operands context))
-              gcid))))
-
-(defun global-context-id ()
-  "Returns a new unique global context identifier."
-
-  (with-slots (context-counter) *linker-state*
-    (prog1 context-counter
-      (incf context-counter))))
-
-(defun establish-dependency-indices (context)
-  "Establishes the indices of the operands of the `NODE-CONTEXT'
-   CONTEXT, and adds them to the node link indices map of
-   *LINKER-STATE*."
-
-  (setf (get context (node-link-indices *linker-state*))
-        (map-to 'hash-map #'cons
-                (map-keys (operands context))
-                (range 0))))
-
-
-(defun store-in-public-nodes (node expr)
-  "If NODE has a :PUBLIC-NAME attribute returns an assignment
-   expression which stores EXPR in 'Tridash.nodes' under the key,
-   given by the value of the :PUBLIC-NAME attribute"
-
-  (awhen (attribute :public-name node)
-    (-<>(js-element "nodes" (js-string it))
-         (js-call "=" <> expr)
-         list)))
-
-
-;;; Node Bindings
-
-(defun init-nodes (nodes)
-  "Generate the binding initialization code of each `NODE' in NODES."
-
-  (map-extend-to 'list #'init-node nodes))
-
-(defun init-node (node)
-  "Generate the JS code which initializes the bindings of NODE to its
-   observers."
-
-  (map-extend-to 'list (curry #'init-context node) (contexts node)))
-
-(defun init-context (node context)
-  "Generate the JS code which initializes the bindings of a node
-   context to the node's observers."
+(defun init-context? (context)
+  "Returns true if the node context CONTEXT with identifier ID is an
+   initial value context, that is a context with no operands and a
+   constant value function."
 
   (destructuring-bind (id . context) context
-    (bind-observers node id context)))
-
-(defun bind-observers (node context-id context)
-  "Generates code which binds the `NODE' NODE to its observers."
-
-  (with-slots (operands) context
-    (let ((context-path (context-path node context-id)))
-      (labels ((reserve-observer (observer index weak-p)
-                 (-> (js-member observer "reserve")
-                     (js-call
-                      "start" index "path" "value" "visited" (if weak-p "true" "false"))))
-
-               (observer-index (observer link)
-                 (-<>> link
-                       node-link-context
-                       (context observer)
-                       (dependency-index <> node)))
-
-               (dependency-index (context node)
-                 (->> (node-link-indices *linker-state*)
-                      (get context)
-                      (get node)))
-
-               (observer-context (observer link)
-                 (->> link
-                      node-link-context
-                      (context-path observer)))
-
-               (make-reserve (observer)
-                 (destructuring-bind (observer . link) observer
-                   (reserve-observer
-                    (observer-context observer link)
-                    (observer-index observer link)
-                    (node-link-weak-p link))))
-
-               (two-way-p (observer)
-                 (and (node-link-two-way-p (cdr observer))
-                      (get (car observer) operands)))
-
-               (add-observer (observer)
-                 (js-call
-                  (js-member context-path "add_observer")
-                  (context-path (car observer)
-                                (node-link-context (cdr observer)))
-                  (observer-index (car observer) (cdr observer)))))
-
-
-        (let ((observers (coerce (remove-if #'two-way-p (observers node)) 'alist)))
-          (concatenate
-           (map #'add-observer observers)
-
-           (list
-            (js-call
-             "="
-             (js-member context-path "reserveObservers")
-
-             (js-lambda
-              '("start" "value" "path" "visited")
-
-              (list
-               (js-return
-                (js-call
-                 (js-member "Promise" "all")
-                 (js-array
-                  (map #'make-reserve observers))))))))))))))
+    (and (not (eq id :input))
+         (emptyp (operands context)))))
 
 
 ;;; Meta-Nodes
@@ -601,15 +772,16 @@
 
 ;;; Linking WebAssembly Code
 
-(defun link-wasm-module (nodes meta-nodes)
-  "Link the WebAssembly functions of NODES and META-NODES into a
-   single module."
+(defun link-wasm-module (compute nodes meta-nodes)
+  "Link the compute function, node context functions and meta-node
+   functions into a single web assembly module."
 
   (with-slots (imports) *linker-state*
     (multiple-value-bind (functions function-indices table)
         (link-functions
          (map-extend #'second nodes)
-         meta-nodes)
+         meta-nodes
+         compute)
 
       (extract-runtime-imports functions imports)
 
@@ -620,16 +792,17 @@
           (multiple-value-bind (functions index-offset)
               (patch-imports functions imports)
 
-            (let* ((functions
+            (let* ((data-start (+ *stack-size* (* 4 2 (length nodes))))
+                   (functions
                     (->
                      (patch-function-indices functions index-offset function-indices table)
-                     (patch-data-references *stack-size*)))
+                     (patch-data-references data-start)))
 
                    (exports (make-exports export-names function-indices index-offset))
                    (table-size (length table))
                    (table (make-table table index-offset))
-                   (data (make-data-section (data-section *backend-state*) *stack-size*))
-                   (memory-size (+ *stack-size* (length (data-section *backend-state*)))))
+                   (data (make-data-section (data-section *backend-state*) data-start))
+                   (memory-size (+ data-start (length (data-section *backend-state*)))))
 
               (values
                (make-wasm-module
@@ -638,7 +811,14 @@
                 :functions functions
                 :exports exports
                 :elements (list table)
-                :data (list data))
+                :data (list data)
+
+                :globals
+                (list
+                 (make-wasm-global
+                  :type 'i32
+                  :mutable-p t
+                  :init `((i32.const ,(- data-start 4))))))
 
                (+ 2 table-size)
                memory-size))))))))
@@ -663,9 +843,11 @@
 
    imports))
 
-(defun link-functions (context-fns meta-node-fns)
+
+(defun link-functions (context-fns meta-node-fns compute)
   "Combine node context functions, meta-node functions, meta-node
-   reference functions and thunk functions into a list.
+   reference functions, thunk functions and COMPUTE function into a
+   single list.
 
    Returns three values:
 
@@ -689,10 +871,10 @@
                                  :initial-contents context-fns)))
 
       (labels ((add-function-index (entity function)
-                 (->> (setf (get entity function-indices)
+                 (aprog1 (setf (get entity function-indices)
                             (length functions))
 
-                      (add-export function)))
+                   (add-export function it)))
 
                (add-export (function index)
                  (awhen (wasm-function-spec-export-name function)
@@ -719,6 +901,9 @@
                (add-to-table (list 'thunk thunk)))
 
           (vector-push-extend fn functions))
+
+        (vector-push-extend compute functions)
+        (add-export compute (1- (length functions)))
 
         (values
          functions
@@ -864,6 +1049,9 @@
   (patch-function-instructions
    (lambda (instruction)
      (match instruction
+       ((list 'call (list 'context node context))
+        (list 'call (+ offset (context-index node context))))
+
        ((list 'call (list 'meta-node (and (type meta-node) meta-node)))
         (let ((index (get meta-node indices)))
           (check-type index (integer 0))
@@ -908,8 +1096,8 @@
          ((list 'i32.const '$stack-ptr)
           (list 'i32.const stack-ptr))
 
-         ((list 'i32.const '$stack-base)
-          (list 'i32.const (- *stack-size* 4)))
+         ((list 'global.get '$value-stack-ptr)
+          '(global.get 0))
 
          (_ instruction)))
 

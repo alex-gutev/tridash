@@ -28,21 +28,15 @@
 
 /* Export Runtime Symbols */
 
-exports.Node = Node;
-exports.NodeContext = NodeContext;
+/* Tridash Module */
 
-exports.set_values = set_values;
+exports.Module = TridashModule;
+exports.Node = Node;
+exports.NodeRef = NodeRef;
+
+exports.Marshaller = Marshaller;
 
 
 /* Wasm Module Loading */
 
 exports.load_sync = load_module_sync;
-
-exports.Marshaller = Marshaller;
-
-/* Node Tables */
-
-/* Public Nodes Table */
-exports.nodes = {};
-/* Type Nodes Table */
-exports.type_nodes = {};

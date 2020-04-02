@@ -116,6 +116,9 @@ async function load_module_sync({
         return new Uint8Array(buf);
     };
 
+
+    // Create WebAssembly Table and Memory objects
+
     var table = new WebAssembly.Table({
         element: "anyfunc",
         initial: table_size
@@ -124,6 +127,9 @@ async function load_module_sync({
     var memory = new WebAssembly.Memory({
         initial: memory_size
     });
+
+
+    // Load Runtime Library Module
 
     var runtime = await WebAssembly.compile(load_bytes(runtime_path));
     var runtime_mem_size = dylink_mem_size(runtime);
@@ -140,15 +146,18 @@ async function load_module_sync({
         }
     );
 
+    runtime.exports.__post_instantiate();
+
+    // Initialize Garbage Collector
+
     runtime.exports.initialize(
         stack_size - 4,
         memory_base + runtime_mem_size,
         (memory_size * 64 * 1024) - (memory_base + runtime_mem_size)
     );
 
-    // Reserve Space for Node Values
-    var bytes = new Uint32Array(memory.buffer, memory_base, 1);
-    bytes[0] = stack_size - num_nodes * 4;
+
+    // Load Tridash WebAssembly Module
 
     var imports = {
         runtime: {
@@ -164,8 +173,11 @@ async function load_module_sync({
         imports
     );
 
+    var marshaller = new Marshaller(runtime, memory, memory_base, stack_size - 4);
+
     return {
         module: module.instance,
+        marshaller: marshaller,
         runtime: runtime,
         memory: memory
     };

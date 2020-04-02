@@ -38,6 +38,7 @@
   "Function reference with optional/outer node arguments.")
 
 (defconstant +type-array+ 8)
+(defconstant +type-int-array+ 12)
 
 (defconstant +type-symbol+ 9)
 (defconstant +type-charecter+ 10)
@@ -54,6 +55,12 @@
 
 (defconstant +word-alignment+ 4
   "Byte boundary to which objects should be aligned.")
+
+
+;;; Sizes
+
+(defconstant +word-size+ 32)
+(defconstant +word-byte-size+ (/ +word-size+ 8))
 
 
 ;;; Backend State
@@ -248,7 +255,7 @@
       ((node-link- (node))
        (get node argument-locals)))))
 
-(defun compile-function (expression operands &key (get-operand #'get-operand-local) (epilogue (constantly nil)))
+(defun compile-function (expression operands &key (get-operand #'get-operand-local) (epilogue (constantly nil)) thunk)
   "Compiles a function comprising the expression EXPRESSION with
    operand nodes OPERANDS. Returns a WASM-FUNCTION-SPEC object."
 
@@ -262,7 +269,7 @@
       (setf (strict-blocks *function-block-state*)
             (analyze-expression expression)))
 
-    (let* ((block (compile-expression expression))
+    (let* ((block (compile-expression expression :thunk thunk))
            (blocks (flatten-block block))
            (locals (locals-map blocks)))
 

@@ -37,11 +37,21 @@ class Marshaller {
      * Constructor
      *
      * @param module Runtime library module instance
+     *
      * @param memory WebAssembly Memory Object
+     *
+     * @param stack_top Pointer to the memory location at which the
+     *   pointer to the top of the stack is stored.
+     *
+     * @param stack_base Pointer to the element at the bottom of the
+     *   stack.
      */
-    constructor(module, memory) {
+    constructor(module, memory, stack_top, stack_base) {
         this.module = module;
         this.memory = memory;
+
+        this.stack_top = stack_top;
+        this.stack_base = stack_base;
     };
 
 
@@ -85,11 +95,11 @@ class Marshaller {
             return (value << 2) | Marshaller.tag_int;
         }
 
-        var ptr = this.module.exports.alloc(8);
-        var words = new Uint32Array(this.memory.buffer, ptr, 2);
+        const ptr = this.module.exports.alloc(8);
+        const view = new DataView(this.memory.buffer, ptr);
 
-        ptr[0] = Marshaller.type_int;
-        ptr[1] = value;
+        view.setUint32(0, Marshaller.type_int, true);
+        view.setInt32(4, value, true);
 
         return ptr;
     }
@@ -102,12 +112,13 @@ class Marshaller {
      * @return Tridash value pointer
      */
     to_tridash_float(value) {
-        var ptr = this.alloc(8);
-        var words = new Uint32Array(this.memory.buffer, ptr, 1);
-        var floats = new Float32Array(this.memory.buffer, ptr+4, 1);
+        const ptr = this.alloc(8);
+        const view = new DataView(this.memory.buffer, ptr);
 
-        words[0] = Marshaller.type_float;
-        floats[0] = value;
+        view.setUint32(0, Marshaller.type_float, true);
+        view.setFloat32(4, value, true);
+
+        return ptr;
     }
 
     /**
@@ -121,15 +132,20 @@ class Marshaller {
         const encoder = new TextEncoder();
         const utf8 = encoder.encode(value);
 
-        var ptr = this.alloc(8 + utf8.length);
-        var words = new Uint32Array(this.memory.buffer, ptr, 2);
+        const ptr = this.alloc(8 + utf8.length);
+        const view = new DataView(this.memory.buffer, ptr);
 
-        words[0] = Marshaller.type_string;
-        words[1] = utf8.length;
+        view.setUint32(0, Marshaller.type_string, true);
+        view.setUint32(4, utf8.length, true);
 
         var bytes = new Uint8Array(this.memory.buffer, ptr + 8, utf8.length);
         bytes.set(utf8);
+
+        return ptr;
     }
+
+
+    /* Runtime Library Functions */
 
     /**
      * Allocate a block of memory in the Tridash module's memory
@@ -140,7 +156,79 @@ class Marshaller {
      * @return Pointer to the first byte of the block.
      */
     alloc(size) {
-        return this.exports.alloc(size);
+        return this.module.exports.alloc(size);
+    }
+
+    /**
+     * If a Tridash value is a thunk, evaluate it and return a pointer
+     * to the computed value.
+     *
+     * @param ptr Pointer to the Tridash value or thunk.
+     *
+     * @return Pointer to the computed value, if @a ptr is a thunk,
+     *   or @a ptr itself if it is not a thunk.
+     */
+    resolve(ptr) {
+        return this.module.exports.resolve(ptr);
+    }
+
+
+    /* Arrays */
+
+    /**
+     * Create an array of a given size on the Tridash heap.
+     *
+     * @param size Size of the array in 32-bit words.
+     * @param type Type of array, by default array of objects.
+     *
+     * @return Pointer to the array.
+     */
+    make_array(size, type = Marshaller.type_array) {
+        var ptr = this.alloc(8 + 4 * size);
+        var words = new Uint32Array(this.memory.buffer, ptr, 2);
+
+        words[0] = type;
+        words[1] = size;
+
+        return ptr;
+    }
+
+    /**
+     * Set an element of a Tridash array.
+     *
+     * @param ptr Pointer to the array object.
+     * @param index Element index.
+     * @param value Value to which to set the element.
+     */
+    set_array_elem(ptr, index, value) {
+        var words = new Uint32Array(this.memory.buffer, ptr + 8 + 4 * index, 1);
+        words[0] = value;
+    }
+
+    /**
+     * Set the values of the elements of a Tridash array.
+     *
+     * @param ptr Pointer to the array object.
+     *
+     * @param values Array of values to which the elements of the
+     *   array are set.
+     */
+    set_array_elems(ptr, values) {
+        var words = new Uint32Array(this.memory.buffer, ptr + 8, values.length);
+        words.set(values);
+    }
+
+    /**
+     * Return the value of an array element.
+     *
+     * @param ptr Pointer to the array object.
+     * @param index Index of the element.
+     *
+     * @return The element value.
+     */
+    get_array_elem(ptr, index) {
+        var words = new Uint32Array(this.memory.buffer, ptr + 8 + 4 * index, 1);
+        return words[0];
     }
 
 
@@ -173,24 +261,40 @@ class Marshaller {
      * @return The JavaScript object.
      */
     unbox(ptr) {
-        var words = new Uint32Array(this.memory.buffer, ptr, 2);
+        const view = new DataView(this.memory.buffer, ptr);
+        const type = view.getUint32(0, true);
 
-        switch (words[0]) {
-        case Marshaller.type_int: {
-            var ints = new Int32Array(this.memory.buffer, ptr + 4, 1);
-            return ints[0];
-        } break;
+        switch (type) {
+        case Marshaller.type_thunk:
+        case Marshaller.type_resolved_thunk:
+            return new Marshaller.Thunk(ptr);
 
-        case Marshaller.type_float: {
-            var floats = new Float32Array(this.memory.buffer, ptr + 4, 1);
-            return floats[0];
-        } break;
+        case Marshaller.type_int:
+            return view.getInt32(4, true);
+
+        case Marshaller.type_float:
+            return view.getFloat32(4, true);
 
         case Marshaller.type_string:
             return this.decode_string(ptr);
+
+
+        case Marshaller.type_array:
+            return this.to_js_array(ptr, view);
+
+        case Marshaller.type_int_array:
+            return this.to_js_int_array(ptr, view);
+
+
+        case Marshaller.type_char:
+            return new Marshaller.Char(view.getUint32(4, true));
+
+        case Marshaller.type_symbol:
+            return new Marshaller.Symbol(this.decode_string(ptr));
+
         }
 
-        throw Marshaller.DecodeError(words[0]);
+        throw new Marshaller.DecodeError(type);
     }
 
     /**
@@ -201,11 +305,116 @@ class Marshaller {
      * @return The JavaScript string.
      */
     decode_string(ptr) {
-        const words = new Uint32Array(this.memory.buffer, ptr, 2);
-        const bytes = new Uint8Array(this.memory.buffer, ptr + 8, words[1]);
+        const view = new DataView(this.memory.buffer, ptr);
+        const bytes = new Uint8Array(this.memory.buffer, ptr + 8, view.getUint32(4, true));
 
         const decoder = new TextDecoder();
         return decoder.decode(bytes);
+    }
+
+    /**
+     * Convert a Tridash object array to a JavaScript array of
+     * JavaScript objects.
+     *
+     * @param ptr Pointer to the array object.
+     *
+     * @param view DataView object for the memory region beginning
+     *   at @a ptr.
+     */
+    to_js_array(ptr, view) {
+        const objects = this.to_js_int_array(ptr, view);
+        return Array.prototype.map.call(objects, this.to_js.bind(this));
+    }
+
+    /**
+     * Convert a Tridash integer array object a JavaScript
+     * Uint32Array.
+     *
+     * @param ptr Pointer to the array object.
+     *
+     * @param view DataView object for the memory region beginning
+     *   at @a ptr.
+     */
+    to_js_int_array(ptr, view) {
+        const size = view.getUint32(4, true);
+        return new Uint32Array(this.memory.buffer, ptr + 8, size);
+    }
+
+
+    /** Stack Manipulation */
+
+    /**
+     * Return the stack element at index @a index from the bottom of
+     * the stack.
+     *
+     * @param index Index of the element to return.
+     *
+     * @return The value of the stack element.
+     */
+    stack_elem(index) {
+        const words = new Uint32Array(this.memory.buffer, this.stack_base - index, 1);
+        return words[0];
+    }
+
+    /**
+     * Set the value of the stack element at index @a index from the
+     * bottom of the stack.
+     *
+     * @param index Index of the element to set.
+     * @param ptr Value (reference) to the set the element to.
+     */
+    set_stack_elem(index, ptr) {
+        const words = new Uint32Array(this.memory.buffer, this.stack_base - index, 1);
+        words[index] = ptr;
+    }
+
+    /**
+     * Push a value on the stack.
+     *
+     * @param value The value to push, interpreted as a reference.
+     *
+     * @return Pointer to the stack element at which @a value is
+     *   stored.
+     */
+    stack_push(value) {
+        const view = new DataView(this.memory.buffer);
+        const top = view.getUint32(this.stack_top, true);
+
+        view.setUint32(top, value, true);
+        view.setUint32(this.stack_top, top - 4, true);
+
+        return top;
+    }
+
+    /**
+     * Pop an element of the stack and return it.
+     *
+     * @return The value at the top of the stack.
+     */
+    stack_pop() {
+        const view = new DataView(this.memory.buffer);
+        const top = view.getUint32(this.stack_top, true) + 4;
+
+        const value = view.getUint32(top, true);
+
+        view.setUint32(this.stack_top, top, true);
+
+        return value;
+    }
+
+
+    /* Raw Memory Access */
+
+    /**
+     * Return the value of a given word in memory.
+     *
+     * @param ptr Pointer to the 32-bit word.
+     *
+     * @return 32-bit unsigned integer value.
+     */
+    get_word(ptr) {
+        const view = new DataView(this.memory.buffer);
+        return view.getUint32(ptr, true);
     }
 }
 
@@ -226,12 +435,57 @@ Marshaller.min_int = -Math.pow(2, 29);
 
 /* Object Types */
 
+/** Thunks */
+Marshaller.type_thunk = 0;
+Marshaller.type_resolved_thunk = 1;
+
 /** Boxed Integer */
 Marshaller.type_int = 2;
 /** Boxed Float */
 Marshaller.type_float = 3;
+
 /** String Object */
 Marshaller.type_string = 4;
+
+/** Failure Value */
+Marshaller.type_fail = 5;
+
+/** Arrays */
+Marshaller.type_array = 8; /* Object Array */
+Marshaller.type_int_array = 12; /* Integer Array */
+
+/** Symbols */
+Marshaller.type_symbol = 9;
+
+/** Characters */
+Marshaller.type_char = 10;
+
+
+/* JS Object Types */
+
+/**
+ * Represents a thunk on the Tridash heap.
+ */
+Marshaller.Thunk = function(marshaller, ptr) {
+    this.resolve = () => {
+        ptr = marshaller.resolve(ptr);
+        return ptr;
+    };
+};
+
+/**
+ * Represents a character, with code @a code.
+ */
+Marshaller.Char = function(code) {
+    this.code = code;
+};
+
+/**
+ * Represents a Tridash symbol with name string @a name.
+ */
+Marshaller.Symbol = function(name) {
+    this.name = name;
+};
 
 
 /* Errors */

@@ -103,11 +103,9 @@ runtime/hash-table.o: runtime/hash-table.c $(hash_table_h_deps)
 
 ## JavaScript Loader Library
 
-loader_sources = loader/loader.js \
-	loader/runtime.js \
-	loader/queue.js \
+loader_sources = loader/marshaller.js \
+	loader/module.js \
 	loader/loader.js \
-	loader/marshaller.js \
 	loader/exports.js
 
 loader/tridash.min.js: $(loader_sources)
