@@ -269,7 +269,7 @@
       (setf (strict-blocks *function-block-state*)
             (analyze-expression expression)))
 
-    (let* ((block (compile-expression expression :thunk thunk))
+    (let* ((block (compile-expression expression :force-thunk thunk))
            (blocks (flatten-block block))
            (locals (locals-map blocks)))
 
@@ -507,7 +507,7 @@
 
 ;;;; Thunks
 
-(defmethod compile-expression :around (expression &key (thunk nil))
+(defmethod compile-expression :around (expression &key (thunk nil) (force-thunk nil))
   "If :THUNK is true, compiles EXPRESSION to a thunk function,
    which is added to the THUNK-FUNCTIONS list of *BACKEND-STATE*, and
    returns a `value-block' which creates the thunk object."
@@ -516,7 +516,7 @@
     (with-struct-slots value-block- (instructions common-p value-p)
         block
 
-      (if (and thunk instructions (not common-p) (not value-p))
+      (if (or force-thunk (and thunk instructions (not common-p) (not value-p)))
           (multiple-value-bind (fn closure)
               (make-thunk-function block)
 
@@ -1805,7 +1805,7 @@
                               (list 'local-offset label)))
 
                   (unless (get label offsets)
-                    (setf (get label offsets) size)
+                    (setf (get label offsets) (+ 4 size))
                     (incf size 4))
 
                   `((,op (offset ,(get label offsets)))))
@@ -1863,7 +1863,7 @@
                  (,(ecase type
                      (i32 'i32.store)
                      (i64 'i64.store))
-                   (offset ,offset)))))
+                   (offset ,(+ 4 offset))))))
 
       (let ((patched (map-wasm #'patch-offset instructions)))
         (if (zerop size)

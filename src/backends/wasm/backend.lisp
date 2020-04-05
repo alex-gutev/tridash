@@ -485,11 +485,14 @@
 
                          ;; Add to queue
                          (local.get $queue-top)
+                         (i32.const ,index)
+                         i32.store
+
+                         ;; Bump queue top pointer
+                         (local.get $queue-top)
                          (i32.const 4)
                          i32.sub
-                         (local.tee $queue-top)
-                         (i32.const ,index)
-                         i32.store)))))
+                         (local.set $queue-top))))))
 
                (make-array-set (var size)
                  `((i32.const ,(+ 8 (* +word-byte-size+ size)))
@@ -539,6 +542,8 @@
              (local.tee $queue-size)
              i32.sub
              (local.tee $queue-top)
+             (i32.const 4)
+             i32.add
 
              ;; Copy queue onto value stack
              (local.get (ref $dirty-queue))
@@ -553,20 +558,20 @@
                   ;; Check if dirty queue is empty
                   (local.get $queue-top)
                   (local.get $queue-base)
-                  i32.gt_u
+                  i32.ge_u
 
                   (br_if $out)
-
-                  ;; Dequeue next dirty node context
-                  (local.get $queue-top)
-                  i32.load
-                  (local.set $current)
 
                   ;; Bump Queue Top Pointer
                   (local.get $queue-top)
                   (i32.const ,+word-byte-size+)
                   i32.add
                   (local.set $queue-top)
+
+                  ;; Dequeue next dirty node context
+                  (local.get $queue-top)
+                  i32.load
+                  (local.set $current)
 
                   ,@(make-context-blocks)))
 
@@ -666,10 +671,10 @@
 
   (let* ((context (cdr context)))
     (with-slots (value-function operands) context
-      (context-index node context)
-
       (when value-function
-        (make-context-function context)))))
+        (cons
+         (context-index node context)
+         (make-context-function context))))))
 
 (defun make-context-function (context)
   "Generate the WASM code for the value computation function of
@@ -692,13 +697,8 @@
                   :value-p t
 
                   :instructions
-                  `((local.get (ref ,state))
-                    (i32.const ,(node-index node))
-                    (i32.const 4)
-                    i32.mul
-                    i32.add
-
-                    (i32.load (offset 8))
+                  `((local.get (ref ,(value-block-label state)))
+                    (i32.load (offset ,(+ 8 (* 4 (node-index node)))))
                     (local.set (ref ,result)))))))
 
       (with-slots (value-function operands) context
@@ -865,10 +865,7 @@
 
     (let ((function-indices (make-hash-map))
           (table (make-hash-map))
-          (functions (make-array (length context-fns)
-                                 :adjustable t
-                                 :fill-pointer t
-                                 :initial-contents context-fns)))
+          (functions (make-array 0 :adjustable t :fill-pointer t)))
 
       (labels ((add-function-index (entity function)
                  (aprog1 (setf (get entity function-indices)
@@ -884,7 +881,9 @@
                  (setf (get thing table)
                        (list (+ 2 (length table)) index))))
 
-        (foreach #'add-export functions (range 0))
+        (doseq ((context-index . fn) context-fns)
+          (add-function-index (list 'context context-index) fn)
+          (vector-push-extend fn functions))
 
         (doseq ((meta-node . fn) meta-node-fns)
           (add-function-index meta-node fn)
@@ -1050,7 +1049,9 @@
    (lambda (instruction)
      (match instruction
        ((list 'call (list 'context node context))
-        (list 'call (+ offset (context-index node context))))
+        (let ((index (get (list 'context (context-index node context)) indices)))
+          (check-type index (integer 0))
+          (list 'call (+ offset index))))
 
        ((list 'call (list 'meta-node (and (type meta-node) meta-node)))
         (let ((index (get meta-node indices)))
@@ -1065,7 +1066,7 @@
 
         (let ((index (first (get thing table))))
           (check-type index (integer 0))
-          (list 'i32.const (+ offset index))))
+          (list 'i32.const index)))
 
        (_ instruction)))
 
