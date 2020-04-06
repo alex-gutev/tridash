@@ -44,3 +44,4 @@ sources:
   - core/macros.trd
   - core/strings.trd
   - core/js-backend.trd
+  - core/wasm32-backend.trd
