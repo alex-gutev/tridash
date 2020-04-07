@@ -29,7 +29,7 @@
 
         :babel
         :babel-encodings
-        :ieee-floats
+        :wasm-encoder
 
         :tridash.util
         :tridash.parser

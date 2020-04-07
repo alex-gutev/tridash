@@ -41,77 +41,77 @@
       . ,(make-wasm-import
           :module "runtime"
           :name "memory"
-          :type 'memory
+          :type :memory
           :desc (make-wasm-limit :min 1)))
 
      ("table"
       . ,(make-wasm-import
           :module "runtime"
           :name "table"
-          :type 'table
+          :type :table
           :desc (make-wasm-limit :min 2)))
 
      ("resolve"
       . ,(make-wasm-import
           :module "runtime"
           :name "resolve"
-          :type 'func
+          :type :func
           :desc '((i32) (i32))))
 
      ("alloc"
       . ,(make-wasm-import
           :module "runtime"
           :name "alloc"
-          :type 'func
+          :type :func
           :desc '((i32) (i32))))
 
      ("memcopy"
       . ,(make-wasm-import
           :module "runtime"
           :name "memcopy"
-          :type 'func
+          :type :func
           :desc '((i32 i32 i32) nil)))
 
      ("memclear"
       . ,(make-wasm-import
           :module "runtime"
           :name "memclear"
-          :type 'func
+          :type :func
           :desc '((i32 i32) nil)))
 
      ("copy_object"
       . ,(make-wasm-import
           :module "runtime"
           :name "copy_object"
-          :type 'func
+          :type :func
           :desc '((i32) (i32))))
 
      ("empty_list"
       . ,(make-wasm-import
           :module "runtime"
           :name "empty_list"
-          :type 'func
+          :type :func
           :desc '(nil (i32))))
 
      ("fail_type_error"
       . ,(make-wasm-import
           :module "runtime"
           :name "fail_type_error"
-          :type 'func
+          :type :func
           :desc '(nil (i32))))
 
      ("arity_error"
       . ,(make-wasm-import
           :module "runtime"
           :name "arity_error"
-          :type 'func
+          :type :func
           :desc '(nil (i32))))
 
      ("fail_no_value"
       . ,(make-wasm-import
           :module "runtime"
           :name "fail_no_value"
-          :type 'func
+          :type :func
           :desc '(nil (i32))))))
 
   "Runtime library functions import entries.")
@@ -358,7 +358,7 @@
          (make-wasm-import
           :module module
           :name name
-          :type 'func
+          :type :func
           :desc (list (repeat 'i32 (length (operands meta-node))) '(i32))))
 
        key))
@@ -832,13 +832,13 @@
     (make-wasm-import
      :module "runtime"
      :name "table"
-     :type 'table
+     :type :table
      :desc (make-wasm-limit :min table-size))
 
     (make-wasm-import
      :module "runtime"
      :name "memory"
-     :type 'memory
+     :type :memory
      :desc (make-wasm-limit :min mem-size)))
 
    imports))
@@ -956,7 +956,7 @@
 
              (patch-import (import)
                (match import
-                 ((wasm-import- (type (eq 'func))
+                 ((wasm-import- (type (eq :func))
                                 (desc (list params results))
                                 module
                                 name)
@@ -964,7 +964,7 @@
                   (make-wasm-import
                    :module module
                    :name name
-                   :type 'func
+                   :type :func
                    :desc (type-index params results)))
 
                  (_ import)))
@@ -1017,7 +1017,7 @@
              (with-struct-slots wasm-import- (module name) import
                (cons (list module name) index)))
 
-           (remove-if-not (curry #'= 'func) imports :key #'wasm-import-type)
+           (remove-if-not (curry #'= :func) imports :key #'wasm-import-type)
            (range 0))))
 
     (values
@@ -1127,7 +1127,7 @@
 
        (make-wasm-export
         :name name
-        :type 'func
+        :type :func
         :index (+ offset index))))
    names))
 

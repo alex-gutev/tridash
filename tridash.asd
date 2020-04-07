@@ -83,7 +83,6 @@
                           :serial t
                           :components ((:file "package")
                                        (:file "expressions")
-                                       (:file "serialization")
                                        (:file "backend"))))))
 
   :depends-on (:anaphora
@@ -104,10 +103,10 @@
                :trivial-gray-streams
                :flexi-streams
                :babel
-               :ieee-floats
 
                :generic-cl
                :generic-cl.util
+               :wasm-encoder
 
                ;; Plump dependencies
                :array-utils)
