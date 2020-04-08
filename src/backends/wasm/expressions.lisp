@@ -1057,7 +1057,7 @@
 (defun make-type-error (local)
   "Generate code which creates a type error failure."
 
-  `((call (import "runtime" "fail_type_error"))
+  `((call (import "runtime" "make_fail_type_error"))
     (box ,local (type fail))))
 
 
@@ -1581,7 +1581,7 @@
     (make-value-block
      :label result
      :instructions
-     `((call (import "runtime" "fail_no_value"))
+     `((call (import "runtime" "make_fail_no_value"))
        (local.set (ref ,result)))
 
      :value-p t)))

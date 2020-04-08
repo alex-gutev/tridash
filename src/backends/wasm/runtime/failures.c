@@ -70,13 +70,28 @@ void *copy_failure_type(void *src) {
 
 /// Builtin Failure Types
 
-static const struct tridash_node node_fail_no_value = {index_fail_no_value};
-static const struct tridash_node node_fail_type_error = {index_fail_type_error};
+static const struct tridash_object node_fail_no_value = {
+    .type = TRIDASH_TYPE_NODE,
+    .node = {index_fail_no_value}
+};
+
+static const struct tridash_object node_fail_type_error = {
+    .type = TRIDASH_TYPE_NODE,
+    .node = {index_fail_type_error}
+};
 
 uintptr_t fail_type_error(void) {
+    return (uintptr_t)&node_fail_type_error;
+}
+
+uintptr_t make_fail_type_error(void) {
     return make_failure((uintptr_t)&node_fail_type_error);
 }
 
-uintptr_t fail_type_no_value(void) {
+uintptr_t fail_no_value(void) {
+    return (uintptr_t)&node_fail_no_value;
+}
+
+uintptr_t make_fail_no_value(void) {
     return make_failure((uintptr_t)&node_fail_no_value);
 }

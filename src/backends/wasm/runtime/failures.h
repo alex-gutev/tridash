@@ -63,8 +63,11 @@ void *copy_failure_type(void *src);
 
 /* Type-Error */
 export uintptr_t fail_type_error(void);
+export uintptr_t make_fail_type_error(void);
 
 /* No-Value */
-export uintptr_t fail_type_no_value(void);
+export uintptr_t fail_no_value(void);
+export uintptr_t make_fail_no_value(void);
+
 
 #endif /* TRIDASH_FAILURES_H */
