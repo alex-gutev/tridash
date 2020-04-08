@@ -33,50 +33,43 @@
  * so, delete this exception statement from your version.
  */
 
-#include "failures.h"
+#ifndef TRIDASH_NODES_H
+#define TRIDASH_NODES_H
 
-#include "types.h"
-#include "memory.h"
-#include "copying.h"
-#include "nodes.h"
+#include <stdint.h>
 
-#define TRIDASH_FAIL_SIZE (offsetof(struct tridash_object, fail_type) + sizeof(uintptr_t))
-
-uintptr_t make_failure(uintptr_t type) {
-    struct tridash_object *object = alloc(TRIDASH_FAIL_SIZE);
-
-    object->type = TRIDASH_TYPE_FAILURE;
-    object->fail_type = type;
-
-    uintptr_t ptr = (uintptr_t)((void*)object);
-    return ptr | TAG_TYPE_FAIL;
-}
-
-void *copy_failure(const void *src) {
-    void *dest = alloc(TRIDASH_FAIL_SIZE);
-    memcopy(dest, src, TRIDASH_FAIL_SIZE);
-
-    return dest;
-}
-
-void *copy_failure_type(void *src) {
-    struct tridash_object *object = src;
-
-    object->fail_type = (uintptr_t)copy_object((void*)object->fail_type);
-
-    return &object->fail_type + 1;
-}
+/**
+ * Represents a Tridash Node Object.
+ *
+ * An object of this type is created when taking a reference of a
+ * node.
+ */
+struct tridash_node {
+    /** Unique Node Index */
+    uintptr_t index;
+};
 
 
-/// Builtin Failure Types
+/* Builtin Type Nodes */
 
-static const struct tridash_node node_fail_no_value = {index_fail_no_value};
-static const struct tridash_node node_fail_type_error = {index_fail_type_error};
+enum builtin_node_index {
+    /** Failure Type: No Value */
+    index_fail_no_value = 0,
+    /** Failure Type: Type Error */
+    index_fail_type_error = 1,
 
-uintptr_t fail_type_error(void) {
-    return make_failure((uintptr_t)&node_fail_type_error);
-}
+    /** Failure Type: Invalid Integer */
+    index_fail_invalid_integer = 2,
+    /** Failure Type: Invalid Real */
+    index_fail_invalid_real = 3,
 
-uintptr_t fail_type_no_value(void) {
-    return make_failure((uintptr_t)&node_fail_no_value);
-}
+    /** Failure Type: Arity Error */
+    index_fail_arity_error = 4,
+    /** Failure Type: Index Out of Bounds */
+    index_fail_out_bounds = 5,
+
+    /** Node Representing the empty list */
+    index_empty_list = 6
+};
+
+#endif /* TRIDASH_NODES_H */

@@ -44,6 +44,8 @@
 #include "funcrefs.h"
 #include "arrays.h"
 #include "objects.h"
+#include "lists.h"
+#include "nodes.h"
 
 /// Object Type Constants
 
@@ -72,6 +74,9 @@ enum tridash_type {
 
     /* Integer Array */
     TRIDASH_TYPE_INT_ARRAY = 12,
+
+    /* Tridash Node */
+    TRIDASH_TYPE_NODE = 14,
 
     /**
      * Indicates object was copied to new heap during garbage
@@ -123,6 +128,9 @@ struct tridash_object {
 
         /* User Objects */
         struct user_object object;
+
+        /* Tridash Node Reference */
+        struct tridash_node node;
     };
 };
 
