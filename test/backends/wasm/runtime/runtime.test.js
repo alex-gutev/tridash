@@ -270,7 +270,8 @@ const Types =  {
     symbol: 9,
     character: 10,
     object: 11,
-    int_array: 12
+    int_array: 12,
+    list_node: 13
 };
 
 Object.freeze(Tags);
@@ -556,6 +557,21 @@ class TestUtil {
     }
 
 
+    /* Linked Lists */
+
+    /**
+     * Create a linked list node.
+     *
+     * @param head Element value stored in the node.
+     * @param Pointer to next node.
+     *
+     * @return Pointer to the linked list node.
+     */
+    make_list(head, tail) {
+        return this.runtime.make_list_node(head, tail);
+    }
+
+
     /* Checking Addresses */
 
     /**
@@ -738,6 +754,18 @@ class TestUtil {
         assert.equal(words[1], descriptor, 'Incorrect object descriptor');
     }
 
+    /**
+     * Assert that a memory locations contains a linked list node
+     * object.
+     *
+     * @param ref The memory location.
+     */
+    check_is_list(ref) {
+        const view = new DataView(this.memory.buffer, ref);
+
+        assert.equal(view.getUint32(0, true), Types.list_node, 'Object not linked list node');
+    }
+
 
     /* Checking Failures */
 
@@ -901,6 +929,139 @@ describe('Core Functions', function() {
 
                 ref = TestUtil.fail_ptr(ref);
                 util.check_is_failure(ref, im(3));
+            });
+        });
+    });
+
+    describe('Lists', function() {
+        describe('make_list_node', function() {
+            it('Should create a linked list node', function() {
+                const node = runtime.exports.make_list_node(im(53), runtime.exports.empty_list());
+
+                util.check_is_list(node);
+            });
+        });
+
+        describe('list_node_head', function() {
+            it('Should return the element stored in a linked list node', function() {
+                const node = runtime.exports.make_list_node(im(53), runtime.exports.empty_list());
+
+                assert.equal(runtime.exports.list_node_head(node), im(53));
+            });
+
+            it('Should return a failure of type Empty when given an empty list', function() {
+                const list = runtime.exports.empty_list();
+                var head = runtime.exports.list_node_head(list);
+
+                assert(TestUtil.is_tag_fail(head), 'Not tagged failure pointer');
+                head = TestUtil.fail_ptr(head);
+
+                util.check_is_failure(head, runtime.exports.empty_list());
+            });
+
+            it('Should return Type-Error failure when given immediate integer', function() {
+                var head = runtime.exports.list_node_head(im(7));
+
+                assert(TestUtil.is_tag_fail(head), 'Not tagged failure pointer');
+                head = TestUtil.fail_ptr(head);
+
+                util.check_is_failure(head, runtime.exports.fail_type_error());
+            });
+
+            it('Should return Type-Error failure when given immediate function reference', function() {
+                var head = runtime.exports.list_node_head(im(19, Tags.funcref));
+
+                assert(TestUtil.is_tag_fail(head), 'Not tagged failure pointer');
+                head = TestUtil.fail_ptr(head);
+
+                util.check_is_failure(head, runtime.exports.fail_type_error());
+            });
+
+            it('Should return Type-Error failure when not given list node object', function() {
+                var int_ref = util.make_int(78);
+                var head = runtime.exports.list_node_head(int_ref);
+
+                assert(TestUtil.is_tag_fail(head), 'Not tagged failure pointer');
+                head = TestUtil.fail_ptr(head);
+
+                util.check_is_failure(head, runtime.exports.fail_type_error());
+            });
+
+            it('Should return failure argument directly', function() {
+                var head = runtime.exports.list_node_head(runtime.exports.make_fail_no_value());
+
+                assert(TestUtil.is_tag_fail(head), 'Not tagged failure pointer');
+                head = TestUtil.fail_ptr(head);
+
+                util.check_is_failure(head, runtime.exports.fail_no_value());
+            });
+        });
+
+        describe('list_node_tail', function() {
+            it('Should return a pointer to the next node', function() {
+                const node2 = runtime.exports.make_list_node(im(47), runtime.exports.empty_list());
+                const node1 = runtime.exports.make_list_node(im(53), node2);
+
+                assert.equal(runtime.exports.list_node_tail(node1), node2);
+                assert.equal(runtime.exports.list_node_tail(node2), runtime.exports.empty_list());
+            });
+
+            it('Should return a failure of type Empty when given an empty list', function() {
+                const list = runtime.exports.empty_list();
+                var tail = runtime.exports.list_node_tail(list);
+
+                assert(TestUtil.is_tag_fail(tail), 'Not tagged failure pointer');
+                tail = TestUtil.fail_ptr(tail);
+
+                util.check_is_failure(tail, runtime.exports.empty_list());
+            });
+
+            it('Should return Type-Error failure when given immediate integer', function() {
+                var tail = runtime.exports.list_node_tail(im(7));
+
+                assert(TestUtil.is_tag_fail(tail), 'Not tagged failure pointer');
+                tail = TestUtil.fail_ptr(tail);
+
+                util.check_is_failure(tail, runtime.exports.fail_type_error());
+            });
+
+            it('Should return Type-Error failure when given immediate function reference', function() {
+                var tail = runtime.exports.list_node_tail(im(19, Tags.funcref));
+
+                assert(TestUtil.is_tag_fail(tail), 'Not tagged failure pointer');
+                tail = TestUtil.fail_ptr(tail);
+
+                util.check_is_failure(tail, runtime.exports.fail_type_error());
+            });
+
+            it('Should return Type-Error failure when not given list node object', function() {
+                var int_ref = util.make_int(78);
+                var tail = runtime.exports.list_node_tail(int_ref);
+
+                assert(TestUtil.is_tag_fail(tail), 'Not tagged failure pointer');
+                tail = TestUtil.fail_ptr(tail);
+
+                util.check_is_failure(tail, runtime.exports.fail_type_error());
+            });
+
+            it('Should return Type-Error failure when tail is not a list', function() {
+                const node = runtime.exports.make_list_node(im(47), im(10));
+                var tail = runtime.exports.list_node_tail(node);
+
+                assert(TestUtil.is_tag_fail(tail), 'Not tagged failure pointer');
+                tail = TestUtil.fail_ptr(tail);
+
+                util.check_is_failure(tail, runtime.exports.fail_type_error());
+
+            });
+
+            it('Should return failure argument directly', function() {
+                var tail = runtime.exports.list_node_tail(runtime.exports.make_fail_no_value());
+
+                assert(TestUtil.is_tag_fail(tail), 'Not tagged failure pointer');
+                tail = TestUtil.fail_ptr(tail);
+
+                util.check_is_failure(tail, runtime.exports.fail_no_value());
             });
         });
     });
@@ -1214,6 +1375,37 @@ describe('Memory', function() {
                 // Check Field 2 - Boxed Integer
                 int_ref = TestUtil.check_copied(int_ref, words[1]);
                 util.check_int(int_ref, 17);
+            });
+
+            it('Linked List Nodes copied', function() {
+                var int_ref = util.make_int(24);
+                var node2 = util.make_list(im(122), runtime.exports.empty_list());
+                var node1 = util.make_list(int_ref, node2);
+
+                runtime.stack_push(node1);
+
+                // Run garbage collection
+                runtime.exports.run_gc();
+
+                // Check node1 reference
+                node1 = TestUtil.check_copied(node1, runtime.stack_elem(0));
+                util.check_is_list(node1);
+
+                /// Check node1.head
+                var words = new Uint32Array(runtime.memory.buffer, node1 + 4, 2);
+
+                int_ref = TestUtil.check_copied(int_ref, words[0]);
+                util.check_int(int_ref, 24);
+
+                // Check node1.tail
+
+                node2 = TestUtil.check_copied(node2, words[1]);
+                util.check_is_list(node2);
+
+                words = new Uint32Array(runtime.memory.buffer, node2 + 4, 2);
+
+                assert.equal(words[0], im(122), 'Head of node 2 not copied');
+                assert.equal(words[1], runtime.exports.empty_list(), 'Tail of node 2 not copied');
             });
         });
 

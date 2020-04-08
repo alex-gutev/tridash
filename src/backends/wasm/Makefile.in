@@ -31,7 +31,8 @@ types_h_deps = runtime/types.h $(thunk_h_deps) \
 	$(strings_h_deps) \
 	$(arrays_h_deps) \
 	$(funcrefs_h_deps) \
-	$(object_h_deps)
+	$(object_h_deps) \
+	$(nodes_h_deps)
 
 memory_h_deps = runtime/memory.h $(types_h_deps)
 strings_h_deps = runtime/strings.h
@@ -40,6 +41,7 @@ arrays_h_deps = runtime/arrays.h $(macros_h_deps)
 funcrefs_h_deps = runtime/funcrefs.h
 hash_table_h_deps = runtime/hash-table.h $(strings_h_deps)
 objects_h_deps = runtime/objects.h $(hash_table_h_deps) $(macros_h_deps)
+lists_h_deps = runtime/lists.h $(macros_h_deps) $(nodes_h_deps)
 nodes_h_deps = runtime/nodes.h
 
 ## Wasm Runtime Library
@@ -54,7 +56,8 @@ runtime_objects = runtime/thunk.o \
 	runtime/arrays.o \
 	runtime/funcrefs.o \
 	runtime/objects.o \
-	runtime/hash-table.o
+	runtime/hash-table.o \
+	runtime/lists.o
 
 runtime/runtime.wasm: $(runtime_objects)
 	$(EMCC) -O2 $^ -o $@ -s SIDE_MODULE
@@ -100,6 +103,14 @@ runtime/objects.o: runtime/objects.c $(objects_h_deps) \
 runtime/hash-table.o: runtime/hash-table.c $(hash_table_h_deps)
 	$(EMCC) -O2 $< -o $@ -c
 
+runtime/lists.o: runtime/lists.c $(lists_h_deps) \
+	$(types_h_deps) \
+	$(memory_h_deps) \
+	$(copying_h_deps) \
+	$(thunk_h_deps) \
+	$(failures_h_deps)
+	$(EMCC) -fPIC -O2 $< -o $@ -c
+
 
 ## JavaScript Loader Library
 
@@ -140,6 +151,7 @@ clean:
 	rm -f runtime/funcrefs.o
 	rm -f runtime/objects.o
 	rm -f runtime/hash-table.o
+	rm -f runtime/lists.o
 	rm -f runtime/runtime.wasm
 	rm -f loader/tridash.min.js
 

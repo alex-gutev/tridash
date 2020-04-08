@@ -43,6 +43,7 @@
 #include "arrays.h"
 #include "funcrefs.h"
 #include "objects.h"
+#include "lists.h"
 
 /**
  * Copy an object comprising two 32-bit words.
@@ -105,6 +106,10 @@ void *copy_object(void *ptr) {
         dest = copy_user_object(object);
         break;
 
+    case TRIDASH_TYPE_LIST_NODE:
+        dest = copy_list_node(object);
+        break;
+
 
     case TRIDASH_TYPE_FORWARD:
         return object->forward_ptr;
@@ -149,6 +154,9 @@ void *copy_referenced_objects(void *ptr) {
 
     case TRIDASH_TYPE_INT_ARRAY:
         return &object->array.elements[object->array.size];
+
+    case TRIDASH_TYPE_LIST_NODE:
+        return copy_list_node_objects(object);
     }
 
     // Only here to prevent compilation errors

@@ -75,6 +75,9 @@ enum tridash_type {
     /* Integer Array */
     TRIDASH_TYPE_INT_ARRAY = 12,
 
+    /* Linked List */
+    TRIDASH_TYPE_LIST_NODE = 13,
+
     /* Tridash Node */
     TRIDASH_TYPE_NODE = 14,
 
@@ -125,6 +128,9 @@ struct tridash_object {
 
         /* Arrays */
         struct array array;
+
+        /* Linked Lists */
+        struct list_node list_node;
 
         /* User Objects */
         struct user_object object;
