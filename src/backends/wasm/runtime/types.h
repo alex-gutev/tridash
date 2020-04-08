@@ -123,8 +123,7 @@ struct tridash_object {
 
         /* User Objects */
         struct user_object object;
-
-    } object;
+    };
 };
 
 #endif /* TRIDASH_TYPES_H */

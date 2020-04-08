@@ -39,13 +39,13 @@
 #include "memory.h"
 #include "copying.h"
 
-#define TRIDASH_FAIL_SIZE (offsetof(struct tridash_object, object.fail_type) + sizeof(uintptr_t))
+#define TRIDASH_FAIL_SIZE (offsetof(struct tridash_object, fail_type) + sizeof(uintptr_t))
 
 uintptr_t make_failure(uintptr_t type) {
     struct tridash_object *object = alloc(TRIDASH_FAIL_SIZE);
 
     object->type = TRIDASH_TYPE_FAILURE;
-    object->object.fail_type = type;
+    object->fail_type = type;
 
     uintptr_t ptr = (uintptr_t)((void*)object);
     return ptr | TAG_TYPE_FAIL;
@@ -61,9 +61,9 @@ void *copy_failure(const void *src) {
 void *copy_failure_type(void *src) {
     struct tridash_object *object = src;
 
-    object->object.fail_type = (uintptr_t)copy_object((void*)object->object.fail_type);
+    object->fail_type = (uintptr_t)copy_object((void*)object->fail_type);
 
-    return &object->object.fail_type + 1;
+    return &object->fail_type + 1;
 }
 
 

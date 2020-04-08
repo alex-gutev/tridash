@@ -39,7 +39,7 @@
 
 void *copy_string(const void *ptr) {
     const struct tridash_object *object = ptr;
-    size_t size = offsetof(struct tridash_object, object.string.data) + object->object.string.size;
+    size_t size = offsetof(struct tridash_object, string.data) + object->string.size;
 
     void *dest = alloc(size);
     memcopy(dest, ptr, size);

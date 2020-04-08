@@ -38,11 +38,11 @@
 #include "memory.h"
 #include "copying.h"
 
-#define FUNCREF_SIZE offsetof(struct tridash_object, object.funcref.index) + sizeof(struct funcref)
+#define FUNCREF_SIZE offsetof(struct tridash_object, funcref.index) + sizeof(struct funcref)
 
 void *copy_funcref(const void *src) {
     const struct tridash_object *object = src;
-    size_t size = FUNCREF_SIZE + object->object.funcref.num_args * sizeof(uintptr_t);
+    size_t size = FUNCREF_SIZE + object->funcref.num_args * sizeof(uintptr_t);
 
     void *dest = alloc(size);
     memcopy(dest, src, size);
@@ -52,11 +52,11 @@ void *copy_funcref(const void *src) {
 
 void *copy_funcref_args(void *src) {
     struct tridash_object *object = src;
-    size_t size = object->object.funcref.num_args;
+    size_t size = object->funcref.num_args;
 
     for (size_t i = 0; i < size; ++i) {
-        object->object.funcref.args[i] = (uintptr_t)copy_object((void*)object->object.funcref.args[i]);
+        object->funcref.args[i] = (uintptr_t)copy_object((void*)object->funcref.args[i]);
     }
 
-    return &object->object.funcref.args[size];
+    return &object->funcref.args[size];
 };

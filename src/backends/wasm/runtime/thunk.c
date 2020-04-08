@@ -53,14 +53,14 @@ uintptr_t resolve(uintptr_t value) {
 
         switch (object->type) {
         case TRIDASH_TYPE_RESOLVED_THUNK:
-            value = object->object.resolved_value;
+            value = object->resolved_value;
             break;
 
         case TRIDASH_TYPE_THUNK: {
             uintptr_t res = resolve_thunk(object);
 
             object->type = TRIDASH_TYPE_RESOLVED_THUNK;
-            object->object.resolved_value = res;
+            object->resolved_value = res;
 
             value = res;
         } break;
@@ -74,7 +74,7 @@ uintptr_t resolve(uintptr_t value) {
 }
 
 uintptr_t resolve_thunk(struct tridash_object *object) {
-    return object->object.thunk.fn(&object->object.thunk.closure_size);
+    return object->thunk.fn(&object->thunk.closure_size);
 }
 
 
@@ -82,8 +82,8 @@ uintptr_t resolve_thunk(struct tridash_object *object) {
 
 void *copy_thunk(const void *src) {
     const struct tridash_object *object = src;
-    size_t size = offsetof(struct tridash_object, object) + sizeof(struct thunk) +
-        object->object.thunk.closure_size * sizeof(uintptr_t);
+    size_t size = offsetof(struct tridash_object, thunk) + sizeof(struct thunk) +
+        object->thunk.closure_size * sizeof(uintptr_t);
 
     void *dest = alloc(size);
     memcopy(dest, src, size);
@@ -95,7 +95,7 @@ void *copy_thunk_result(void *src) {
     struct tridash_object *object = src;
 
     while (object->type == TRIDASH_TYPE_RESOLVED_THUNK) {
-        src = (void*)object->object.resolved_value;
+        src = (void*)object->resolved_value;
 
         if (!IS_REF(src))
             return src;
@@ -108,12 +108,12 @@ void *copy_thunk_result(void *src) {
 
 void *copy_thunk_closure(void *ptr) {
     struct tridash_object *object = ptr;
-    size_t size = object->object.thunk.closure_size;
+    size_t size = object->thunk.closure_size;
 
     for (size_t i = 0; i < size; i++) {
-        object->object.thunk.closure[i] =
-            (uintptr_t)copy_object((void*)object->object.thunk.closure[i]);
+        object->thunk.closure[i] =
+            (uintptr_t)copy_object((void*)object->thunk.closure[i]);
     }
 
-    return &object->object.thunk.closure[size];
+    return &object->thunk.closure[size];
 }

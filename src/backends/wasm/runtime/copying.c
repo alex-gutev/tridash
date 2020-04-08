@@ -107,11 +107,11 @@ void *copy_object(void *ptr) {
 
 
     case TRIDASH_TYPE_FORWARD:
-        return object->object.forward_ptr;
+        return object->forward_ptr;
     }
 
     object->type = TRIDASH_TYPE_FORWARD;
-    object->object.forward_ptr = dest;
+    object->forward_ptr = dest;
 
     return dest;
 }
@@ -124,16 +124,16 @@ void *copy_referenced_objects(void *ptr) {
         return copy_thunk_closure(ptr);
 
     case TRIDASH_TYPE_RESOLVED_THUNK:
-        return &object->object.thunk.closure[object->object.thunk.closure_size];
+        return &object->thunk.closure[object->thunk.closure_size];
 
     case TRIDASH_TYPE_INT:
     case TRIDASH_TYPE_FLOAT:
     case TRIDASH_TYPE_CHAR:
-        return &object->object.integer+1;
+        return &object->integer + 1;
 
     case TRIDASH_TYPE_STRING:
     case TRIDASH_TYPE_SYMBOL:
-        return &object->object.string.data[object->object.string.size];
+        return &object->string.data[object->string.size];
 
     case TRIDASH_TYPE_FAILURE:
         return copy_failure_type(ptr);
@@ -148,7 +148,7 @@ void *copy_referenced_objects(void *ptr) {
         return copy_user_object_subnodes(ptr);
 
     case TRIDASH_TYPE_INT_ARRAY:
-        return &object->object.array.elements[object->object.array.size];
+        return &object->array.elements[object->array.size];
     }
 
     // Only here to prevent compilation errors

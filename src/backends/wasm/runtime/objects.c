@@ -43,13 +43,13 @@
 #include "failures.h"
 
 
-#define USER_OBJECT_SIZE offsetof(struct tridash_object, object.object) + sizeof(struct user_object)
+#define USER_OBJECT_SIZE offsetof(struct tridash_object, object) + sizeof(struct user_object)
 
 /// Copying
 
 void *copy_user_object(const void *src) {
     const struct tridash_object *object = src;
-    size_t size = USER_OBJECT_SIZE + object->object.object.descriptor->num_fields * sizeof(uintptr_t);
+    size_t size = USER_OBJECT_SIZE + object->object.descriptor->num_fields * sizeof(uintptr_t);
 
     void *dest = alloc(size);
     memcopy(dest, src, size);
@@ -59,13 +59,13 @@ void *copy_user_object(const void *src) {
 
 void *copy_user_object_subnodes(void *src) {
     struct tridash_object *object = src;
-    size_t size = object->object.object.descriptor->num_fields;
+    size_t size = object->object.descriptor->num_fields;
 
     for (size_t i = 0; i < size; ++i) {
-        object->object.object.fields[i] = (uintptr_t)copy_object((void *)object->object.object.fields[i]);
+        object->object.fields[i] = (uintptr_t)copy_object((void *)object->object.fields[i]);
     }
 
-    return &object->object.object.fields[size];
+    return &object->object.fields[size];
 }
 
 
@@ -103,7 +103,7 @@ uintptr_t object_member(uintptr_t object, uintptr_t field) {
         return fail_type_error();
     }
 
-    struct hash_bucket *bucket = hash_table_lookup(&obj->object.object.descriptor->fields, &key->object.string);
+    struct hash_bucket *bucket = hash_table_lookup(&obj->object.descriptor->fields, &key->string);
 
-    return bucket ? obj->object.object.fields[bucket->value] : fail_type_no_value();
+    return bucket ? obj->object.fields[bucket->value] : fail_type_no_value();
 }

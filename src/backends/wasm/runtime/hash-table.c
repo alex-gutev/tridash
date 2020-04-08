@@ -35,8 +35,6 @@
 
 #include "hash-table.h"
 
-#define HASH_TABLE_SIZE offsetof(struct tridash_object, object.table) + sizeof(struct hash_table)
-
 /**
  * Compute a hash code for a string.
  *
