@@ -77,7 +77,7 @@ uintptr_t object_member(uintptr_t object, uintptr_t field) {
     switch (PTR_TAG(object)) {
     case TAG_TYPE_INT:
     case TAG_TYPE_FUNCREF:
-        return fail_type_error();
+        return make_fail_type_error();
 
     case TAG_TYPE_FAIL:
         return object;
@@ -88,7 +88,7 @@ uintptr_t object_member(uintptr_t object, uintptr_t field) {
     switch (PTR_TAG(field)) {
     case TAG_TYPE_INT:
     case TAG_TYPE_FUNCREF:
-        return fail_type_error();
+        return make_fail_type_error();
 
     case TAG_TYPE_FAIL:
         return object;
@@ -100,10 +100,10 @@ uintptr_t object_member(uintptr_t object, uintptr_t field) {
     if (obj->type != TRIDASH_TYPE_OBJECT ||
         key->type != TRIDASH_TYPE_SYMBOL ||
         key->type != TRIDASH_TYPE_STRING) {
-        return fail_type_error();
+        return make_fail_type_error();
     }
 
     struct hash_bucket *bucket = hash_table_lookup(&obj->object.descriptor->fields, &key->string);
 
-    return bucket ? obj->object.fields[bucket->value] : fail_type_no_value();
+    return bucket ? obj->object.fields[bucket->value] : make_fail_no_value();
 }
