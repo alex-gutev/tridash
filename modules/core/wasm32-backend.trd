@@ -43,3 +43,10 @@
 /attribute(*, wasm-name, "*")
 /attribute(/, wasm-name, "/")
 /attribute(%, wasm-name, "%")
+### Lists
+
+/attribute(cons, wasm-name, runtime.make_list_node)
+/attribute(head, wasm-name, runtime.list_node_head)
+/attribute(tail, wasm-name, runtime.list_node_tail)
+
+/attribute(Empty-List, wasm-name, runtime.empty_list)
