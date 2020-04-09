@@ -313,7 +313,11 @@
              (list "module" "module")
              (list "runtime" "runtime")
              (list "memory" "memory")
-             (list "nodes" "nodes"))))))))
+             (list "nodes" "nodes")
+             (list "set_values"
+                   (js-call
+                    (js-members "module" "set_node_values" "bind")
+                    "module")))))))))
 
       (js-call "=" (js-member "exports" "module") <>)))))
 
