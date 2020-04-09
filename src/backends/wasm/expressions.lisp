@@ -25,6 +25,7 @@
 ;;; Type Constants
 
 (defconstant +type-thunk+ 0)
+(defconstant +type-resolved-thunk+ 1)
 
 (defconstant +type-i32+ 2)
 (defconstant +type-f32+ 3)
@@ -210,6 +211,13 @@
     :documentation
     "Map from `expression-block' objects to the `value-block' objects
      containing the instructions for computing their values.")
+
+   (cyclic-references
+    :initform (make-hash-map)
+    :accessor cyclic-references
+    :documentation
+    "Map form `expression-block' objects to the number of cyclic
+     references to the block.")
 
    (strict-blocks
     :accessor strict-blocks
@@ -619,7 +627,7 @@
         (apply #'compile-expression expression args))))
 
 (defun compile-expression-block (block)
-  (with-slots (expression-blocks strict-blocks) *function-block-state*
+  (with-slots (expression-blocks strict-blocks cyclic-references) *function-block-state*
     (with-struct-slots expression-block- (count expression) block
       (or (get block expression-blocks)
 
@@ -637,16 +645,60 @@
             (let ((value
                    (compile-expression
                     expression
-                    :thunk (not (strict? strict-blocks block)))))
+                    :thunk (not (strict? strict-blocks block))))
 
-              (setf (value-block-operands vblock)
-                    (list value))
+                  (cycles (get block cyclic-references))
+                  (ref-count (value-block-count vblock)))
 
-              (setf (value-block-instructions vblock)
-                    `((local.get (ref ,(value-block-label value)))
-                      (local.set (ref ,result)))))
+              ;; If VBLOCK is referenced in a cyclic reference, set
+              ;; its instructions to create an uninitialized resolved
+              ;; thunk. No operands are added to VBLOCK
+              ;;
+              ;; Then return a new block, with the same label as
+              ;; VBLOCK, which depends on VBLOCK and VALUE. The
+              ;; instructions of this block initialize the resolved
+              ;; thunk's value to VALUE.
 
-            vblock)))))
+              (cond
+                (cycles
+                 (setf (value-block-count vblock) (1+ cycles))
+
+                 (setf
+                  (value-block-instructions vblock)
+
+                  `((i32.const ,(* 3 +word-byte-size+))
+                    (call (import "runtime" "alloc"))
+                    (local.tee (ref ,result))
+
+                    (i32.const ,+type-resolved-thunk+)
+                    i32.store
+
+                    (local.get (ref ,result))
+                    (i64.const 0)
+                    (i64.store (offset 4))))
+
+                 (make-value-block
+                  :label result
+                  :operands (list vblock value)
+
+                  :count ref-count
+                  :common-p t
+
+                  :instructions
+
+                  `((local.get (ref ,result))
+                    (local.get (ref ,(value-block-label value)))
+                    (i32.store (offset 4)))))
+
+                (t
+                 (setf (value-block-operands vblock)
+                       (list value))
+
+                 (setf (value-block-instructions vblock)
+                       `((local.get (ref ,(value-block-label value)))
+                         (local.set (ref ,result))))
+
+                 vblock))))))))
 
 (defmethod compile-expression ((cycle cyclic-reference) &key)
   "Handles cyclic references. Returns the `value-block' of the
@@ -658,17 +710,16 @@
     (let ((block (get expression (expression-blocks *function-block-state*))))
       (assert block)
 
-      ;; Decrement reference count by 1 and return raw reference to
-      ;; the `VALUE-BLOCK' object.
-      ;;
-      ;; NOTE: The `VALUE-BLOCK' object is not added to the operands
-      ;; of the return block to prevent an infinite loop.
+      ;; Decrement reference count of block and increment its cyclic
+      ;; reference count.
 
       (decf (value-block-count block))
+      (incf (get expression (cyclic-references *function-block-state*) 0))
 
       (let ((result (next-local)))
         (make-value-block
          :label result
+         :operands (list block)
          :instructions
          `((local.get (ref ,(value-block-label block)))
            (local.set (ref ,result))))))))
