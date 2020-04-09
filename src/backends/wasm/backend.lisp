@@ -362,12 +362,15 @@
 
   (match (attribute :wasm-name meta-node)
     ((or (list (eq (id-symbol "."))
-               (and (type string) module)
-               (and (type string) name))
+               (and (type (or string symbol)) module)
+               (and (type (or string symbol)) name))
 
-         (list (and (type string) name)))
+         (list (and (type (or string symbol)) name)))
 
-     (let ((key (list (or module "default") name)))
+     (let* ((module (if module (string module) "default"))
+            (name (string name))
+            (key (list module name)))
+
        (ensure-get key (imports state)
          (make-wasm-import
           :module module
