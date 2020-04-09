@@ -80,7 +80,7 @@ class Marshaller {
             return this.to_tridash_string(value);
         }
 
-        throw Marshaller.EncodeError(value);
+        throw new Marshaller.EncodeError(value);
     }
 
     /**
@@ -267,7 +267,7 @@ class Marshaller {
         switch (type) {
         case Marshaller.type_thunk:
         case Marshaller.type_resolved_thunk:
-            return new Marshaller.Thunk(ptr);
+            return new Marshaller.Thunk(this, ptr);
 
         case Marshaller.type_int:
             return view.getInt32(4, true);
@@ -461,15 +461,29 @@ Marshaller.type_symbol = 9;
 Marshaller.type_char = 10;
 
 
+/** Linked List Node */
+Marshaller.type_list_node = 13;
+
+
 /* JS Object Types */
 
 /**
  * Represents a thunk on the Tridash heap.
+ *
+ * Methods:
+ *
+ * resolve():
+ *
+ *   Resolve the thunk and return the resolved value.
+ *
+ *   NOTE: Must be called before any operations are performed on the
+ *   Tridash heap.
  */
 Marshaller.Thunk = function(marshaller, ptr) {
     this.resolve = () => {
-        ptr = marshaller.resolve(ptr);
-        return ptr;
+        return this.value === undefined ?
+            (this.value = marshaller.to_js(marshaller.resolve(ptr))) :
+            this.value;
     };
 };
 
