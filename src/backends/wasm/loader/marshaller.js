@@ -292,6 +292,14 @@ class Marshaller {
         case Marshaller.type_symbol:
             return new Marshaller.Symbol(this.decode_string(ptr));
 
+
+        case Marshaller.type_list_node:
+            return new Marshaller.ListNode(
+                this,
+                view.getUint32(4, true),
+                view.getUint32(8, true)
+            );
+
         }
 
         throw new Marshaller.DecodeError(type);
@@ -499,6 +507,49 @@ Marshaller.Char = function(code) {
  */
 Marshaller.Symbol = function(name) {
     this.name = name;
+};
+
+/**
+ * Represents a linked list node.
+ *
+ * Members:
+ *
+ *  head: The element stored in the list node.
+ *  tail: Pointer to the next list node.
+ *
+ * Initially both `head` and `tail` contain pointers to the actual
+ * objects in the Tridash heap. The `resolve` method converts those
+ * pointers to JavaScript objects.
+ *
+ * Methods:
+ *
+ *  resolve():
+ *
+ *    Convert the `head` and `tail` to JavaScript objects, resolving
+ *    any thunks if necessary.
+ *
+ *    NOTE: This method must be called before any operations are
+ *    performed on the Tridash heap.
+ *
+ */
+Marshaller.ListNode = function(marshaller, head, tail) {
+    var resolved = false;
+
+    this.head = head;
+    this.tail = tail;
+
+    this.resolve = () => {
+        if (!resolved) {
+            marshaller.stack_push(tail);
+            marshaller.stack_push(head);
+
+            this.head = marshaller.to_js(marshaller.resolve(head));
+            marshaller.stack_pop();
+
+            this.tail = marshaller.to_js(marshaller.resolve(marshaller.stack_pop()));
+            resolved = true;
+        }
+    };
 };
 
 
