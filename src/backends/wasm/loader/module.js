@@ -38,8 +38,9 @@ class TridashModule {
      * @param marshaller Marshaller object
      * @param num_nodes Number of Nodes
      */
-    constructor(compute, marshaller, num_nodes) {
+    constructor(compute, init, marshaller, num_nodes) {
         this.compute = compute;
+        this.init = init;
         this.marshaller = marshaller;
 
         this.init_state(num_nodes);
@@ -54,8 +55,8 @@ class TridashModule {
      * @param num_nodes Number of nodes.
      */
     init_state(num_nodes) {
-        var ptr = this.marshaller.make_array(num_nodes);
-        this.state_ptr = this.marshaller.stack_push(ptr);
+        this.state_ptr = this.marshaller.stack_push(0);
+        this.init(this.state_ptr);
     }
 
     /** Setting Node Values */

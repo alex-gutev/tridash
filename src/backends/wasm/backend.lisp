@@ -204,10 +204,12 @@
            (*linker-state* (make-instance 'linker-state))
            (out-nodes (create-nodes nodes))
            (out-meta-nodes (create-meta-nodes meta-nodes))
-           (compute (create-compute-function table)))
+           (compute (create-compute-function table))
+           (init-state
+            (create-init-state-function (length nodes) (initial-values *linker-state*))))
 
       (multiple-value-bind (wasm-module table-size memory-size)
-          (link-wasm-module compute out-nodes out-meta-nodes)
+          (link-wasm-module compute init-state out-nodes out-meta-nodes)
 
         (output-wasm-file out-file wasm-module)
 
@@ -300,6 +302,7 @@
          (list
           (make-module
            (js-members "mod" "exports" "compute")
+           (js-members "mod" "exports" "init")
            "marshaller"
            num-nodes)
 
@@ -341,7 +344,7 @@
 
 ;;; Tridash Module
 
-(defun make-module (compute marshaller num_nodes)
+(defun make-module (compute init_state marshaller num_nodes)
   "Generate code which creates the Tridash Module and assigns it to
    the variable `module`."
 
@@ -351,7 +354,7 @@
    (js-new
     +module-class+
 
-    (list compute marshaller num_nodes))))
+    (list compute init_state marshaller num_nodes))))
 
 
 ;;; Imports
@@ -434,7 +437,7 @@
 
                        ,@(add-dirtied node context)
 
-                       ,@(unless (emptyp (operands context))
+                       ,@(unless (null (value-function context))
                            ;; Call Context Function
                            `((local.get (ref $state))
                              (call (context ,node ,context))
@@ -628,6 +631,52 @@
      (ensure-get context context-indices
        (list node (length context-indices))))))
 
+
+(defun create-init-state-function (num-nodes initial-values)
+  "Generate the function which initializes the state of the nodes to
+   their initial values, if any. If there are no initial values the
+   function simply creates an empty state array."
+
+  (flet ((add-to-queue (init index)
+           (with-struct-slots initial-value- (context-index) init
+             `((local.get (ref $dirtied))
+               (i32.const ,context-index)
+               (i32.store (offset ,(* (+ index 2) +word-byte-size+)))))))
+
+    (multiple-value-bind (locals code)
+        (make-function-body
+         (concatenate
+          (make-tridash-array '$state num-nodes :clear t)
+
+          `((local.get $new-state)
+            (local.get (ref $state))
+            i32.store)
+
+          ;; Create initial dirty queue
+          (unless (emptyp initial-values)
+            `(,@(make-tridash-array '$dirtied (length initial-values))
+
+                ,@(-<> (sort initial-values :key #'initial-value-context-index)
+                       (map-extend #'add-to-queue <> (range 0)))
+
+                (local.get (ref $dirtied))
+                (local.get (ref $state))
+                (local.get $new-state)
+
+                (call $compute)
+                drop)))
+
+         (alist-hash-map '(($new-state . 0)))
+         nil)
+
+      (make-wasm-function-spec
+       :params '(i32)
+       :results nil
+       :locals locals
+       :code code
+
+       :export-name "init"))))
+
 
 ;;; Nodes
 
@@ -672,7 +721,7 @@
         :node-index (node-index node)
         :context-index (context-index node it))
 
-       (initial-values *backend-state*)))
+       (initial-values *linker-state*)))
 
     (values
      nil
@@ -793,7 +842,7 @@
 
 ;;; Linking WebAssembly Code
 
-(defun link-wasm-module (compute nodes meta-nodes)
+(defun link-wasm-module (compute init-state nodes meta-nodes)
   "Link the compute function, node context functions and meta-node
    functions into a single web assembly module."
 
@@ -802,7 +851,9 @@
         (link-functions
          (map-extend #'second nodes)
          meta-nodes
-         compute)
+
+         compute
+         init-state)
 
       (extract-runtime-imports functions imports)
 
@@ -865,7 +916,7 @@
    imports))
 
 
-(defun link-functions (context-fns meta-node-fns compute)
+(defun link-functions (context-fns meta-node-fns compute init-state)
   "Combine node context functions, meta-node functions, meta-node
    reference functions, thunk functions and COMPUTE function into a
    single list.
@@ -923,7 +974,11 @@
           (vector-push-extend fn functions))
 
         (vector-push-extend compute functions)
+        (setf (get '$compute function-indices) (1- (length functions)))
         (add-export compute (1- (length functions)))
+
+        (vector-push-extend init-state functions)
+        (add-export init-state (1- (length functions)))
 
         (values
          functions
@@ -1078,6 +1133,9 @@
         (let ((index (get meta-node indices)))
           (check-type index (integer 0))
           (list 'call (+ offset index))))
+
+       ((list 'call '$compute)
+        (list 'call (+ offset (get '$compute indices))))
 
        ((list 'i32.const
               (and

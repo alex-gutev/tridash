@@ -1638,6 +1638,39 @@
      :value-p t)))
 
 
+;;; Object Creation
+
+(defun make-tridash-array (var size &key clear (type +type-array+))
+  "Generate code which creates a Tridash array, of SIZE elements, and
+   stores the reference to the array in the local variable VAR.
+
+   If :CLEAR is true, the generated code initializes the contents of the
+   array to zero.
+
+   If :TYPE is provided an array of that TYPE is created, rather than
+   an ordinary array."
+
+  ;; Allocate Memory for Array
+  `((i32.const ,(* +word-byte-size+ (+ 2 size)))
+    (call (import "runtime" "alloc"))
+    (local.set (ref ,var))
+
+    ,@(when clear
+        `((local.get (ref ,var))
+          (i32.const ,(* +word-byte-size+ (+ 2 size)))
+          (call (import "runtime" "memclear"))))
+
+    ;; Set Type
+    (local.get (ref ,var))
+    (i32.const ,type)
+    i32.store
+
+    ;; Set Size
+    (local.get (ref ,var))
+    (i32.const ,size)
+    (i32.store (offset ,+word-byte-size+))))
+
+
 ;;; Managing Pointers
 
 (defun make-load-references (instructions)
