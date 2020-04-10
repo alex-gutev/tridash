@@ -846,6 +846,10 @@ describe('Lazy Evaluation', function() {
             assert.equal(fns.resolve(val), val);
         });
 
+        it('Should directly return boolean false', function() {
+            assert.equal(fns.resolve(0), 0);
+        });
+
         it('Should directly return pointers to boxed values', function() {
             util.box_int(4, 24);
             util.box_float(12, 7.5);

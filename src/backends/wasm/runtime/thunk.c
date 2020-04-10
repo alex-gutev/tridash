@@ -48,7 +48,7 @@ static uintptr_t resolve_thunk(struct tridash_object *thunk);
 
 
 uintptr_t resolve(uintptr_t value) {
-    while (IS_REF(value)) {
+    while (value && IS_REF(value)) {
         struct tridash_object *object = (void*)value;
 
         switch (object->type) {
