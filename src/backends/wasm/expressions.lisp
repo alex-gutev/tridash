@@ -804,7 +804,7 @@
        (compile-if-expression arguments))
 
       (t
-       (call-next-method meta-node (remove-nil-arguments arguments))))))
+       (call-next-method)))))
 
 (defun remove-nil-arguments (arguments)
   "Removes NIL's from the end of the list ARGUMENTS."

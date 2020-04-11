@@ -69,6 +69,15 @@ struct thunk {
 };
 
 /**
+ * Thunk with an alternative value which should be returned when the
+ * main value is a failure value.
+ */
+struct catch_thunk {
+    uintptr_t value;
+    uintptr_t fail_value;
+};
+
+/**
  * Returns the value of a thunk, computing it if it has not been
  * computed already.
  *
@@ -112,5 +121,42 @@ void *copy_thunk_result(void *src);
  * @return The pointer to the first byte following the thunk object.
  */
 void *copy_thunk_closure(void *object);
+
+
+/// Catch Thunks
+
+/**
+ * Create a catch thunk.
+ *
+ * @param value The main value.
+ *
+ * @param fail_value The value to be returned when @a value evaluates
+ *   to a failure.
+ *
+ * @param test Failure type test function (currently unused).
+ *
+ * @return The catch thunk object.
+ */
+export void *make_catch_thunk(uintptr_t value, uintptr_t fail_value, uintptr_t test);
+
+/**
+ * Copy a catch thunk object.
+ *
+ * Note: Does not copy the main or failure value objects.
+ *
+ * @param src The catch thunk object.
+ *
+ * @return A copy of the object.
+ */
+void *copy_catch_thunk(const void *src);
+
+/**
+ * Copy the main and failure value objects of a catch thunk.
+ *
+ * @param object The catch thunk object.
+ *
+ * @return Pointer to the first byte following the catch thunk.
+ */
+void *copy_catch_thunk_objects(void *object);
 
 #endif /* TRIDASH_THUNK_H */

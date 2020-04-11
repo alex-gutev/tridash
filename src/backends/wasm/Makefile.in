@@ -25,13 +25,14 @@ module_dir = $(top_srcdir)/modules/
 
 macros_h_deps = runtime/macros.h
 thunk_h_deps = runtime/thunk.h $(macros_h_deps)
-copying_h_deps = runtime/copying.h
+copying_h_deps = runtime/copying.h $(macros_h_deps)
 
 types_h_deps = runtime/types.h $(thunk_h_deps) \
 	$(strings_h_deps) \
 	$(arrays_h_deps) \
 	$(funcrefs_h_deps) \
-	$(object_h_deps) \
+	$(objects_h_deps) \
+	$(lists_h_deps) \
 	$(nodes_h_deps)
 
 memory_h_deps = runtime/memory.h $(types_h_deps)
@@ -41,7 +42,7 @@ arrays_h_deps = runtime/arrays.h $(macros_h_deps)
 funcrefs_h_deps = runtime/funcrefs.h
 hash_table_h_deps = runtime/hash-table.h $(strings_h_deps)
 objects_h_deps = runtime/objects.h $(hash_table_h_deps) $(macros_h_deps)
-lists_h_deps = runtime/lists.h $(macros_h_deps) $(nodes_h_deps)
+lists_h_deps = runtime/lists.h $(macros_h_deps)
 nodes_h_deps = runtime/nodes.h
 
 ## Wasm Runtime Library
@@ -62,7 +63,7 @@ runtime_objects = runtime/thunk.o \
 runtime/runtime.wasm: $(runtime_objects)
 	$(EMCC) -O2 $^ -o $@ -s SIDE_MODULE
 
-runtime/thunk.o: runtime/thunk.c $(thunk_h_deps) $(copying_h_deps) $(memory_h_deps)
+runtime/thunk.o: runtime/thunk.c $(thunk_h_deps) $(copying_h_deps) $(memory_h_deps) $(lists_h_deps)
 	$(EMCC) -O2 $< -o $@ -c
 
 runtime/memory.o: runtime/memory.c $(memory_h_deps) $(copying_h_deps)
@@ -76,7 +77,8 @@ runtime/copying.o: runtime/copying.c $(copying_h_deps) \
 	$(failures_h_deps) \
 	$(arrays_h_deps) \
 	$(funcrefs_h_deps) \
-	$(object_h_deps)
+	$(objects_h_deps) \
+	$(lists_h_deps)
 	$(EMCC) -O2 $< -o $@ -c
 
 runtime/strings.o: runtime/strings.c $(strings_h_deps) $(types_h_deps) $(memory_h_deps)
@@ -127,15 +129,17 @@ loader/tridash.min.js: $(loader_sources)
 
 wasm_test_inputs = $(testdir)/runtime/thunks.wasm
 
-test_inputs = \
-	$(testdir)/tests/test001.wasm \
-	$(testdir)/tests/test002.wasm \
-	$(testdir)/tests/test003.wasm \
-	$(testdir)/tests/test004.wasm \
-	$(testdir)/tests/test005.wasm \
-	$(testdir)/tests/test006.wasm \
-	$(testdir)/tests/test007.wasm \
-	$(testdir)/tests/test008.wasm
+test_files = test001.wasm \
+	test002.wasm \
+	test003.wasm \
+	test004.wasm \
+	test005.wasm \
+	test006.wasm \
+	test007.wasm \
+	test008.wasm \
+	test009.wasm
+
+test_inputs = $(addprefix $(testdir)/tests/, $(test_files));
 
 check: $(testdir)/runtime/runtime.wasm \
 	$(testdir)/tests/tridash.min.js \
@@ -170,16 +174,7 @@ $(testdir)/runtime/thunks.wasm: $(testdir)/runtime/thunks.wat
 # Cleaning
 
 clean: $(test_inputs:.wasm=.clean)
-	rm -f runtime/thunk.o
-	rm -f runtime/memory.o
-	rm -f runtime/copying.o
-	rm -f runtime/strings.o
-	rm -f runtime/failures.o
-	rm -f runtime/arrays.o
-	rm -f runtime/funcrefs.o
-	rm -f runtime/objects.o
-	rm -f runtime/hash-table.o
-	rm -f runtime/lists.o
+	rm -f $(runtime_objects)
 	rm -f runtime/runtime.wasm
 	rm -f loader/tridash.min.js
 	rm -f $(testdir)/runtime/runtime.wasm

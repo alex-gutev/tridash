@@ -78,6 +78,11 @@ void *copy_object(void *ptr) {
         dest = copy_thunk_result(object);
         break;
 
+    case TRIDASH_TYPE_CATCH_THUNK:
+        dest = copy_catch_thunk(object);
+        break;
+
+
     case TRIDASH_TYPE_INT:
     case TRIDASH_TYPE_FLOAT:
     case TRIDASH_TYPE_CHAR:
@@ -130,6 +135,10 @@ void *copy_referenced_objects(void *ptr) {
 
     case TRIDASH_TYPE_RESOLVED_THUNK:
         return &object->thunk.closure[object->thunk.closure_size];
+
+    case TRIDASH_TYPE_CATCH_THUNK:
+        return copy_catch_thunk_objects(object);
+
 
     case TRIDASH_TYPE_INT:
     case TRIDASH_TYPE_FLOAT:

@@ -261,6 +261,7 @@ const Tags = {
 const Types =  {
     thunk: 0,
     resolved_thunk: 1,
+    catch_thunk: 15,
     integer: 2,
     real: 3,
     string: 4,
@@ -918,7 +919,7 @@ describe('Core Functions', function() {
     var util;
 
     beforeEach(async function() {
-        runtime = new Runtime();
+        runtime = new Runtime(64);
 
         await runtime.load();
         util = new TestUtil(runtime.table, runtime.memory, runtime.instance);
@@ -933,6 +934,171 @@ describe('Core Functions', function() {
 
                 ref = TestUtil.fail_ptr(ref);
                 util.check_is_failure(ref, im(3));
+            });
+        });
+    });
+
+    describe('Handling Failures', function() {
+        describe('make_catch_thunk', function() {
+            it('Should directly return primary value when it is not a failure', async function() {
+                const thunks = await runtime.load_module('./runtime/thunks.wasm');
+
+                const thunk = runtime.exports.make_catch_thunk(im(3), im(10), 0);
+
+                // Test that the primary value is returned
+                assert.equal(runtime.exports.resolve(thunk), im(3));
+
+                // Test that the same value is returned when the thunk has
+                // already been resolved.
+                assert.equal(runtime.exports.resolve(thunk), im(3));
+            });
+
+            it('Should return result of computing primary thunk value, when it is not a failure', async function() {
+                const thunks = await runtime.load_module('./runtime/thunks.wasm');
+
+                const thunk = runtime.exports.make_catch_thunk(
+                    util.make_thunk(4,[]),
+                    im(1),
+                    0
+                );
+
+                // Test that the primary value is returned
+                assert.equal(runtime.exports.resolve(thunk), im(1));
+
+                // Test that the same value is returned when the thunk has
+                // already been resolved.
+                assert.equal(runtime.exports.resolve(thunk), im(1));
+            });
+
+            it('Should return alternative value when main value is a failure', async function() {
+                const thunks = await runtime.load_module('./runtime/thunks.wasm');
+
+                const fail = runtime.exports.make_failure(0);
+
+                // Create Catch Thunk with main value being a failure and
+                // alternative value the immediate integer 5.
+                const thunk = runtime.exports.make_catch_thunk(fail, im(15));
+
+                // Test that the alternative value (immediate integer 5) is
+                // returned.
+                assert.equal(runtime.exports.resolve(thunk), im(15));
+
+                // Test that the same value is returned when the thunk has
+                // already been resolved.
+                assert.equal(runtime.exports.resolve(thunk), im(15));
+            });
+
+            it('Should return alternative value when main thunk value returns failure', async function() {
+                const thunks = await runtime.load_module('./runtime/thunks.wasm');
+
+                // Create Catch Thunk with main value being a thunk
+                // returning a failure and alternative value the immediate
+                // integer 5.
+                const thunk = runtime.exports.make_catch_thunk(
+                    util.make_thunk(4, []),
+                    im(5),
+                    0
+                );
+
+                // Test that the failure value (immediate integer 5) is
+                // returned.
+                assert.equal(runtime.exports.resolve(thunk), im(5));
+
+                // Test that the same value is returned when the thunk has
+                // already been resolved.
+                assert.equal(runtime.exports.resolve(thunk), im(5));
+            });
+
+            it('Should return first alternative value which is not a failure', async function() {
+                const thunks = await runtime.load_module('./runtime/thunks.wasm');
+
+                // Create Catch Thunk with main value being a thunk
+                // returning a failure and alternative value being a
+                // failure value.
+                const thunk1 = runtime.exports.make_catch_thunk(
+                    util.make_thunk(4, []),
+                    runtime.exports.make_failure(im(6)),
+                    0
+                );
+
+                // Create another catch thunk in which the main value
+                // is a thunk1 and the alternative is the immediate
+                // integer 7
+                const thunk2 = runtime.exports.make_catch_thunk(
+                    thunk1,
+                    im(7),
+                    0
+                );
+
+                // Test that the alternative value (immediate integer 7) is
+                // returned.
+                assert.equal(runtime.exports.resolve(thunk2), im(7));
+
+                // Test that the same value is returned when the thunk has
+                // already been resolved.
+                assert.equal(runtime.exports.resolve(thunk2), im(7));
+            });
+
+            it('Should handle failures in alternative values', async function() {
+                const thunks = await runtime.load_module('./runtime/thunks.wasm');
+
+                // Create Catch Thunk with main value being a thunk
+                // returning a failure and alternative value the immediate
+                // integer 5.
+                const thunk1 = runtime.exports.make_catch_thunk(
+                    util.make_thunk(4, []),
+                    im(5),
+                    0
+                );
+
+                // Create another catch thunk in which the main value is a
+                // failure and the alternative value is the above catch
+                // thunk
+                const thunk2 = runtime.exports.make_catch_thunk(
+                    runtime.exports.make_failure(im(6)),
+                    thunk1,
+                    0
+                );
+
+                // Test that the alternative value (immediate integer 5) is
+                // returned.
+                assert.equal(runtime.exports.resolve(thunk2), im(5));
+
+                // Test that the same value is returned when the thunk has
+                // already been resolved.
+                assert.equal(runtime.exports.resolve(thunk2), im(5));
+            });
+
+            it('Should return last alternative value if all values are failures', async function() {
+                const thunks = await runtime.load_module('./runtime/thunks.wasm');
+
+                const fail1 = runtime.exports.make_failure(im(1));
+
+                // Create Catch Thunk with main value being a thunk
+                // returning a failure and the alternative value being
+                // another failure.
+                const thunk1 = runtime.exports.make_catch_thunk(
+                    util.make_thunk(4, []),
+                    fail1,
+                    0
+                );
+
+                // Create another catch thunk in which the main value is a
+                // failure and the alternative value is the above catch
+                // thunk
+                const thunk2 = runtime.exports.make_catch_thunk(
+                    runtime.exports.make_failure(im(1)),
+                    thunk1,
+                    0
+                );
+
+                // Test that the last alternative value fail1 is
+                // returned.
+                assert.equal(runtime.exports.resolve(thunk2), fail1);
+
+                // Test that the same value is returned when the thunk has
+                // already been resolved.
+                assert.equal(runtime.exports.resolve(thunk2), fail1);
             });
         });
     });
@@ -1563,6 +1729,48 @@ describe('Memory', function() {
 
                 str_ref = TestUtil.check_copied(str_ref, closure[0]);
                 util.check_string(str_ref, str);
+            });
+
+            it('Catch Thunks Copied with their objects', function() {
+                var str = "hello world!";
+                var str_ref = util.make_string(str);
+
+                var int_ref = util.make_int(57);
+
+                var thunk1_ref = util.make_thunk(4, [str_ref]);
+                var thunk2_ref = runtime.exports.make_catch_thunk(thunk1_ref, int_ref);;
+
+                runtime.stack_push(thunk2_ref);
+
+                // Run Garbage Collection
+                runtime.exports.run_gc();
+
+                // Tests
+
+                /// Check CatchThunk
+
+                thunk2_ref = TestUtil.check_copied(thunk2_ref, runtime.stack_elem(0));
+                var thunk = new Uint32Array(runtime.memory.buffer, thunk2_ref, 3);
+
+                assert.equal(thunk[0], Types.catch_thunk, 'Object type not catch thunk');
+
+
+                /// Check Main Value
+
+                thunk1_ref = TestUtil.check_copied(thunk1_ref, thunk[1]);
+                util.check_thunk(thunk1_ref, 4, 1);
+
+                //// Check Closure of Main Value Thunk
+
+                var thunk2 = new Uint32Array(runtime.memory.buffer, thunk1_ref + 3 * 4, 1);
+                str_ref = TestUtil.check_copied(str_ref, thunk2[0]);
+                util.check_string(str_ref, str);
+
+
+                /// Check Alternative Value
+
+                int_ref = TestUtil.check_copied(int_ref, thunk[2]);
+                util.check_int(int_ref, 57);
             });
         });
 

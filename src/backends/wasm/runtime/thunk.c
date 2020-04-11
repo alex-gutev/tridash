@@ -36,6 +36,7 @@
 #include "thunk.h"
 #include "copying.h"
 #include "memory.h"
+#include "lists.h"
 
 /**
  * Calls a thunk function.
@@ -46,8 +47,24 @@
  */
 static uintptr_t resolve_thunk(struct tridash_object *thunk);
 
+/**
+ * If @a val is a failure value, return the first alternative value,
+ * in the linked list @a fail_values, which is not a failure.
+ *
+ * @param val The primary value.
+ *
+ * @param fail_values Linked list of alternative values. Note this is
+ *   expected to be a well formed linked list with the last next node
+ *   pointer equal to NULL.
+ *
+ * @return The resulting value.
+ */
+static uintptr_t handle_failures(uintptr_t val, const struct tridash_object * fail_values);
+
 
 uintptr_t resolve(uintptr_t value) {
+    struct tridash_object *fail_value = NULL;
+
     while (value && IS_REF(value)) {
         struct tridash_object *object = (void*)value;
 
@@ -65,16 +82,32 @@ uintptr_t resolve(uintptr_t value) {
             value = res;
         } break;
 
+        case TRIDASH_TYPE_CATCH_THUNK:
+            fail_value = make_list_node((uintptr_t)object->catch_thunk.fail_value, (uintptr_t)fail_value);
+            value = object->catch_thunk.value;
+            break;
+
         default:
-            return value;
+            goto return_value;
         }
     }
 
-    return value;
+return_value:
+
+    return handle_failures(value, fail_value);
 }
 
 uintptr_t resolve_thunk(struct tridash_object *object) {
     return object->thunk.fn(&object->thunk.closure_size);
+}
+
+uintptr_t handle_failures(uintptr_t val, const struct tridash_object * fail_value) {
+    while (IS_FAIL(val) && fail_value) {
+        val = resolve(fail_value->list_node.head);
+        fail_value = (struct tridash_object *)fail_value->list_node.tail;
+    }
+
+    return val;
 }
 
 
@@ -116,4 +149,36 @@ void *copy_thunk_closure(void *ptr) {
     }
 
     return &object->thunk.closure[size];
+}
+
+
+/// Catch Thunks
+
+void *make_catch_thunk(uintptr_t value, uintptr_t fail_value, uintptr_t test) {
+    struct tridash_object *thunk =
+        alloc(offsetof(struct tridash_object, catch_thunk) + sizeof(struct catch_thunk));
+
+    thunk->type = TRIDASH_TYPE_CATCH_THUNK;
+
+    thunk->catch_thunk.value = value;
+    thunk->catch_thunk.fail_value = fail_value;
+
+    return thunk;
+}
+
+void *copy_catch_thunk(const void *src) {
+    const struct tridash_object *object = src;
+
+    return make_catch_thunk(object->catch_thunk.value,
+                            object->catch_thunk.fail_value,
+                            0);
+}
+
+void *copy_catch_thunk_objects(void *ptr) {
+    struct tridash_object *object = ptr;
+
+    object->catch_thunk.value = (uintptr_t)copy_object((void *)object->catch_thunk.value);
+    object->catch_thunk.fail_value = (uintptr_t)copy_object((void *)object->catch_thunk.fail_value);
+
+    return &object->catch_thunk.fail_value + 1;
 }

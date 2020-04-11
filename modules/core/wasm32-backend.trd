@@ -43,6 +43,7 @@
 /attribute(*, wasm-name, "*")
 /attribute(/, wasm-name, "/")
 /attribute(%, wasm-name, "%")
+
 ### Lists
 
 /attribute(cons, wasm-name, runtime.make_list_node)
@@ -50,3 +51,8 @@
 /attribute(tail, wasm-name, runtime.list_node_tail)
 
 /attribute(Empty-List, wasm-name, runtime.empty_list)
+
+### Failures
+
+/attribute(fail, wasm-name, runtime.make_failure)
+/attribute(catch, wasm-name, runtime.make_catch_thunk);

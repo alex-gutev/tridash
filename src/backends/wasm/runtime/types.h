@@ -50,8 +50,12 @@
 /// Object Type Constants
 
 enum tridash_type {
+    /* Thunks */
     TRIDASH_TYPE_THUNK = 0,
     TRIDASH_TYPE_RESOLVED_THUNK = 1,
+
+    /* Thunk with failure handler */
+    TRIDASH_TYPE_CATCH_THUNK = 15,
 
     TRIDASH_TYPE_INT = 2,
     TRIDASH_TYPE_FLOAT = 3,
@@ -86,7 +90,7 @@ enum tridash_type {
      * collection. The pointer to the copied object is stored in the
      * old object.
      */
-    TRIDASH_TYPE_FORWARD
+    TRIDASH_TYPE_FORWARD = 100
 };
 
 /**
@@ -108,6 +112,7 @@ struct tridash_object {
 
         /* Thunks */
         struct thunk thunk;
+        struct catch_thunk catch_thunk;
         uintptr_t resolved_value;
 
         /* Strings */

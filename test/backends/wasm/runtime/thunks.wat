@@ -35,7 +35,19 @@
  (func $chained_thunk (param i32) (result i32)
        i32.const 4)
 
- (elem (i32.const 1) $simple_thunk $closure_thunk $chained_thunk)
+ (func $fail_thunk (param i32) (result i32)
+       i32.const 16
+       i32.const 3
+       i32.or)
+
+ (elem (i32.const 1)
+       $simple_thunk
+       $closure_thunk
+       $chained_thunk
+       $fail_thunk)
 
  ;; Create a simple thunk at address 4
- (data (i32.const 4) "\00\00\00\00\01\00\00\00\00\00\00\00"))
+ (data (i32.const 4) "\00\00\00\00\01\00\00\00\00\00\00\00")
+
+ ;; Create a failure value at address 16
+ (data (i32.const 16) "\05\00\00\00\00\00\00\00"))
