@@ -44,6 +44,20 @@
 /attribute(/, wasm-name, "/")
 /attribute(%, wasm-name, "%")
 
+
+### Relational Operators
+
+/attribute(<, wasm-name, "<")
+/attribute(<=, wasm-name, "<=")
+/attribute(>, wasm-name, ">")
+/attribute(>=, wasm-name, ">=")
+
+
+### Selection Operator
+
+/attribute(if, wasm-name, "if")
+
+
 ### Lists
 
 /attribute(cons, wasm-name, runtime.make_list_node)

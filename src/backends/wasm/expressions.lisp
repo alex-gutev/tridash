@@ -735,6 +735,14 @@
      ("/" . ((i32 . i32.div_s) (f32 . f32.div_s)))
      ("%" . ((i32 . i32.rem_s) (f32 . f32.rem_s))))))
 
+(defconstant +relational-operators+
+  (alist-hash-map
+   '(("<" . ((i32 . i32.lt_s) (f32 . f32.lt)))
+     ("<=" . ((i32 . i32.le_s) (f32 . f32.le)))
+     (">" . ((i32 . i32.gt_s) (f32 . f32.ge)))
+     (">=" . ((i32 . i32.ge_s) (f32 . f32.ge))))))
+
+
 (defmethod compile-expression ((expression functor-expression) &key)
   (with-struct-slots functor-expression- (meta-node arguments outer-nodes)
       expression
@@ -794,6 +802,18 @@
               (result (next-local)))
 
          (->> (compile-arithmetic-expression it operand-labels result)
+              (make-value-block :label result
+                                :operands operands
+                                :strict-p t
+                                :immediate-p t
+                                :instructions))))
+
+      ((get name +relational-operators+)
+       (let* ((operands (compile-operands arguments (strict-arguments meta-node)))
+              (operand-labels (map #'value-block-label operands))
+              (result (next-local)))
+
+         (->> (compile-relational-expression it operand-labels result)
               (make-value-block :label result
                                 :operands operands
                                 :strict-p t
@@ -921,6 +941,112 @@
             ;; value
 
             ,@(make-type-error result)))))))
+
+
+;;;; Comparison Expression
+
+(defun compile-relational-expression (instruction operands result)
+  (let ((finst (get 'f32 instruction))
+        (iinst (get 'i32 instruction)))
+
+    (flet ((unbox (label)
+             `((block $fail
+                 (resolve ,label)
+                 (unbox ,label (type number))
+
+                 ;; Branch to either integer or float block This
+                 ;; assumes that the type is checked beforehand and
+                 ;; cannot be anything other than integer or float
+
+                 (local.get (type ,label))
+                 (i32.const ,+type-i32+)
+                 i32.eq
+                 (br_if $int)
+                 (br $float))
+
+               ;; Handle Failure
+               (get-fail ,label)
+               (box ,result (type fail))
+               (br $out))))
+
+      (destructuring-bind (l r) operands
+        `((block $out
+            (block $type-error
+              (block $float
+                (block $int
+                  ,@(unbox l))
+
+                ;; Left operand is an integer
+
+                (block $float
+                  (block $int
+                    ,@(unbox r))
+
+                  ;; Right operand is an integer
+
+                  ;; Integer Comparison
+                  (local.get (value ,l))
+                  (local.get (value ,r))
+                  ,iinst
+
+                  (box ,result (type boolean))
+                  (br $out))
+
+                ;; Right operand is a float
+
+                ;; Convert left operand to float
+                (local.get (value ,l))
+                f32.convert_i32_s
+
+                ;; Reinterpret right operand as a float
+                (local.get (value ,r))
+                f32.reinterpret_i32
+
+                ;; Floating Point Comparison
+                ,finst
+                (box ,result (type boolean))
+                (br $out))
+
+              ;; Left operand is a float
+
+              (block $float
+                (block $int
+                  ,@(unbox r))
+
+                ;; Right operand is an integer
+
+                ;; Reinterpret left operand as float
+                (local.get (value ,l))
+                f32.reinterpret_i32
+
+                ;; Convert right operand to float
+                (local.get (value ,r))
+                f32.convert_i32_s
+
+                ;; Floating Point Comparison
+                ,finst
+                (box ,result (type boolean))
+                (br $out))
+
+              ;; Right operand is a float
+
+              ;; Reinterpret both operands as floats
+              (local.get (value ,l))
+              f32.reinterpret_i32
+              (local.get (value ,r))
+              f32.reinterpret_i32
+
+              ,finst
+              (box ,result (type boolean))
+              (br $out))
+
+            ;; Type error - At least one operand is not a numeric
+            ;; value
+
+            ,@(make-type-error result)))))))
+
+
+;;;; Selection Expression
 
 (defun compile-if-expression (operands)
   "Returns a block which computes the result of an if expression with
@@ -1977,10 +2103,11 @@
                  (_ (list instruction))))
 
              (set-value (local type)
-               (ecase type
+               (case type
                  (f32 (set-float-value local))
                  (i32 (set-int-value local))
-                 (fail (set-fail-value local))))
+                 (otherwise
+                  `((box ,local (type ,type))))))
 
              (set-float-value (local)
                `(i32.reinterpret_f32
@@ -1992,10 +2119,7 @@
              (set-int-value (local)
                `((local.set (value ,local))
                  (i32.const ,+type-i32+)
-                 (local.set (type ,local))))
-
-             (set-fail-value (local)
-               `((local.set (ref ,local)))))
+                 (local.set (type ,local)))))
 
       (walk-wasm #'mark-used instructions)
       (map-wasm #'replace-box instructions))))
@@ -2420,7 +2544,8 @@
   "Generate code that checks that LOCAL is of type TYPE."
 
   (ecase type
-    (number (check-number local))))
+    (number (check-number local))
+    (boolean (check-boolean local))))
 
 (defun check-number (local)
   "Generate code that checks that LOCAL is a number."
@@ -2429,6 +2554,18 @@
     (i32.const ,+type-f32+)
     i32.gt_u
     (br_if $type-error)))
+
+(defun check-boolean (local)
+  "Generate code which checks that LOCAL is a boolean."
+
+  `((block $unbox                       ; Untag
+      (local.get (ref ,local))
+      (i32.const ,+tag-mask+)
+      i32.and
+      (br_table $type-error $type-error $unbox $fail))
+
+    (local.get (value ,local))
+    (br_table $false $true $type-error)))
 
 
 ;;;; Constants
@@ -2480,7 +2617,9 @@
     (character (box-character local))
     (funcref (box-funcref local))
     (fail
-     `((local.set (ref ,local))))))
+     `((local.set (ref ,local))))
+
+    (boolean (box-boolean local))))
 
 (defun box-float (local)
   `(i32.reinterpret_f32
@@ -2559,6 +2698,19 @@
 
     (i32.const ,+type-funcref+)
     (local.set (type local))))
+
+(defun box-boolean (local)
+  "Generate code which boxes the value of LOCAL into a boxed Boolean
+   value."
+
+  `((local.set (value ,local))
+
+    (i32.const 6)
+    (i32.const 2)
+    (local.get (value ,local))
+    select
+
+    (local.set (ref ,local))))
 
 
 ;;; Utilities
