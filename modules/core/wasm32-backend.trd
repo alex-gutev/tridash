@@ -53,6 +53,12 @@
 /attribute(>=, wasm-name, ">=")
 
 
+### Equality Operators
+
+/attribute(=, wasm-name, runtime.object_eq)
+/attribute(!=, wasm-name, runtime.object_neq)
+
+
 ### Selection Operator
 
 /attribute(if, wasm-name, "if")

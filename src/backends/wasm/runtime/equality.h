@@ -33,38 +33,33 @@
  * so, delete this exception statement from your version.
  */
 
-#ifndef TRIDASH_STRINGS_H
-#define TRIDASH_STRINGS_H
+#ifndef TRIDASH_EQUALITY_H
+#define TRIDASH_EQUALITY_H
 
-#include <stddef.h>
+#include <stdint.h>
 
-/**
- * Tridash string object
- */
-struct string {
-    /** String size in bytes */
-    size_t size;
-    /** String byte data */
-    char data[];
-};
+#include "macros.h"
 
 /**
- * Copy a string object.
+ * Checks whether two objects are equal.
  *
- * @param ptr Pointer to the string object
+ * @param a Tridash Object
+ * @param b Tridash Object
  *
- * @return Pointer to the copied string.
+ * @return Tridash Boolean indicating whether @a a is equal to
+ *   @a b.
  */
-void *copy_string(const void *ptr);
+export int object_eq(uintptr_t a, uintptr_t b);
 
 /**
- * Check whether two strings are byte-equal.
+ * Checks whether two objects are not equal.
  *
- * @param str1 String 1
- * @param str2 String 2
+ * @param a Tridash Object
+ * @param b Tridash Object
  *
- * @return True (1) if the strings are equal, false (0) otherwise.
+ * @return Tridash Boolean indicating whether @a a is not equal
+ *   to @a b.
  */
-int string_equal(const struct string *str1, const struct string *str2);
+export int object_neq(uintptr_t a, uintptr_t b);
 
-#endif /* TRIDASH_STRINGS_H */
+#endif /* TRIDASH_EQUALITY_H */

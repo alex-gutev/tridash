@@ -139,4 +139,18 @@
 #define MIN_IMMEDIATE_INT ((int32_t)(INT32_MIN) >> 1)
 
 
+//// Boolean Values
+
+/**
+ * Boxed Tridash Boolean Values
+ */
+#define TRIDASH_FALSE TAG_VALUE(0, TAG_TYPE_FUNCREF)
+#define TRIDASH_TRUE TAG_VALUE(1, TAG_TYPE_FUNCREF)
+
+/**
+ * Converts @a x (interpreted as a C Boolean) to a Boxed Tridash
+ * Boolean Value.
+ */
+#define TRIDASH_BOOL(x) ((x) ? TRIDASH_TRUE : TRIDASH_FALSE)
+
 #endif /* TRIDASH_MACROS_H */

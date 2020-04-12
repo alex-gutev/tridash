@@ -43,16 +43,6 @@
  */
 size_t string_hash(const struct string *key);
 
-/**
- * Check whether two strings are byte-equal.
- *
- * @param str1 String 1
- * @param str2 String 2
- *
- * @return True (1) if the strings are equal, false (0) otherwise.
- */
-int string_equal(const struct string *str1, const struct string *str2);
-
 
 struct hash_bucket *hash_table_lookup(struct hash_table *table, const struct string *key) {
     uintptr_t index = string_hash(key) % table->num_buckets;
