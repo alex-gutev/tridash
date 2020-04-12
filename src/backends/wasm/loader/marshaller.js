@@ -79,6 +79,11 @@ class Marshaller {
         else if (typeof value === 'string') {
             return this.to_tridash_string(value);
         }
+        else if (value instanceof Marshaller.Fail) {
+            return this.module.exports.make_failure(
+                this.to_tridash(value.type)
+            );
+        }
 
         throw new Marshaller.EncodeError(value);
     }
@@ -247,6 +252,9 @@ class Marshaller {
         case Marshaller.tag_int:
             return ptr >> 2;
 
+        case Marshaller.tag_fail:
+            ptr = ptr & ~0x3;
+
         default:
             return this.unbox(ptr);
         }
@@ -300,6 +308,11 @@ class Marshaller {
                 view.getUint32(8, true)
             );
 
+
+        case Marshaller.type_failure:
+            return new Marshaller.Fail(
+                this.to_js(view.getUint32(4, true))
+            );
         }
 
         throw new Marshaller.DecodeError(type);
@@ -434,6 +447,10 @@ Marshaller.tag_bits = 0x3;
 Marshaller.tag_pointer = 0;
 /** Immediate Integer Tag */
 Marshaller.tag_int = 0x1;
+/** Function Reference */
+Marshaller.tag_funcref = 0x2;
+/** Failure Value */
+Marshaller.tag_fail = 0x3;
 
 /** Maximum Immediate Integer Value */
 Marshaller.max_int = Math.pow(2, 29) - 1;
@@ -471,6 +488,10 @@ Marshaller.type_char = 10;
 
 /** Linked List Node */
 Marshaller.type_list_node = 13;
+
+
+/** Failure */
+Marshaller.type_failure = 5;
 
 
 /* JS Object Types */
@@ -551,6 +572,17 @@ Marshaller.ListNode = function(marshaller, head, tail) {
         }
     };
 };
+
+/**
+ * Represents a Tridash Failure Value of type @a type.
+ *
+ * Members:
+ *
+ *  type: Value identifying type of failure.
+ */
+Marshaller.Fail = function(type) {
+    this.type = type;
+}
 
 
 /* Errors */
