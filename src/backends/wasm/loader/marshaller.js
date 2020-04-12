@@ -247,10 +247,19 @@ class Marshaller {
      * @return The JavaScript value.
      */
     to_js(ptr) {
-
         switch (ptr & Marshaller.tag_bits) {
         case Marshaller.tag_int:
             return ptr >> 2;
+
+        case Marshaller.tag_funcref: {
+            const index = ptr >>> 2;
+
+            if (index < 2) {
+                return index === 0 ? false : true;
+            }
+
+            return new Marshaller.Funcref(ptr);
+        } break;
 
         case Marshaller.tag_fail:
             ptr = ptr & ~0x3;
@@ -318,6 +327,9 @@ class Marshaller {
             return new Marshaller.Node(
                 view.getUint32(4, true)
             );
+
+        case Marshaller.type_funcref_args:
+            return new Marshaller.Funcref(ptr);
         }
 
         throw new Marshaller.DecodeError(type);
@@ -502,6 +514,9 @@ Marshaller.type_failure = 5;
 /** Raw Node Object */
 Marshaller.type_node = 14;
 
+/* Meta-Node Reference Object */
+Marshaller.type_funcref = 6;
+Marshaller.type_funcref_args = 7;
 
 /* JS Object Types */
 
@@ -602,6 +617,15 @@ Marshaller.Node = function(id) {
     this.id = id;
 };
 
+/**
+ * Represents a meta-node reference object.
+ *
+ * @param ptr Pointer to the function reference object (can be either
+ *   a tagged pointer or pointer to object).
+ */
+Marshaller.Funcref = function(ptr) {
+    this.ptr = ptr;
+};
 
 /* Errors */
 
