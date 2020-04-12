@@ -2582,7 +2582,7 @@
 
       (local.get (ref ,local))
       (i32.const 2)
-      i32.shr_s
+      i32.shr_u
       (local.tee (value ,local))
 
       ;; Check that value is not a boolean
@@ -2601,7 +2601,7 @@
 
     (local.get (ref ,local))
     (i32.const 2)
-    i32.shr_s
+    i32.shr_u
     (br_table $false $true $type-error)))
 
 
