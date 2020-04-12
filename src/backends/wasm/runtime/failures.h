@@ -51,6 +51,16 @@
  */
 export uintptr_t make_failure(uintptr_t type);
 
+/**
+ * Return the value identifying the type of a failure value.
+ *
+ * @param object The object.
+ *
+ * @return The failure type of @a object. If @a object is not a
+ *   failure value, returns a Type-Error failure.
+ */
+export uintptr_t failure_type(uintptr_t object);
+
 
 /// Copying
 

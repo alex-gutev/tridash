@@ -84,7 +84,13 @@ runtime/copying.o: runtime/copying.c $(copying_h_deps) \
 runtime/strings.o: runtime/strings.c $(strings_h_deps) $(types_h_deps) $(memory_h_deps)
 	$(EMCC) -O2 $< -o $@ -c
 
-runtime/failures.o: runtime/failures.c $(failures_h_deps) $(types_h_deps) $(memory_h_deps) $(copying_h_deps) $(nodes_h_deps)
+runtime/failures.o: runtime/failures.c \
+	$(failures_h_deps) \
+	$(types_h_deps) \
+	$(thunk_h_deps) \
+	$(memory_h_deps) \
+	$(copying_h_deps) \
+	$(nodes_h_deps)
 	$(EMCC) -fPIC -O2 $< -o $@ -c
 
 runtime/arrays.o: runtime/arrays.c $(arrays_h_deps) $(types_h_deps) $(memory_h_deps) $(copying_h_deps)

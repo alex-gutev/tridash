@@ -36,6 +36,7 @@
 #include "failures.h"
 
 #include "types.h"
+#include "thunk.h"
 #include "memory.h"
 #include "copying.h"
 #include "nodes.h"
@@ -51,6 +52,20 @@ uintptr_t make_failure(uintptr_t type) {
     uintptr_t ptr = (uintptr_t)((void*)object);
     return ptr | TAG_TYPE_FAIL;
 }
+
+uintptr_t failure_type(uintptr_t ptr) {
+    ptr = resolve(ptr);
+
+    if (!IS_FAIL(ptr))
+       return fail_type_error();
+
+    struct tridash_object *object = (void *)(ptr & ~(uintptr_t)TAG_MASK);
+
+    return object->fail_type;
+}
+
+
+/// Copying
 
 void *copy_failure(const void *src) {
     void *dest = alloc(TRIDASH_FAIL_SIZE);

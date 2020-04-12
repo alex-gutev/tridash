@@ -66,7 +66,10 @@
 
 /attribute(Empty-List, wasm-name, runtime.empty_list)
 
+
 ### Failures
 
 /attribute(fail, wasm-name, runtime.make_failure)
+/attribute(fail-type, wasm-name, runtime.failure_type);
+
 /attribute(catch, wasm-name, runtime.make_catch_thunk);
