@@ -313,6 +313,11 @@ class Marshaller {
             return new Marshaller.Fail(
                 this.to_js(view.getUint32(4, true))
             );
+
+        case Marshaller.type_node:
+            return new Marshaller.Node(
+                view.getUint32(4, true)
+            );
         }
 
         throw new Marshaller.DecodeError(type);
@@ -494,6 +499,10 @@ Marshaller.type_list_node = 13;
 Marshaller.type_failure = 5;
 
 
+/** Raw Node Object */
+Marshaller.type_node = 14;
+
+
 /* JS Object Types */
 
 /**
@@ -582,7 +591,16 @@ Marshaller.ListNode = function(marshaller, head, tail) {
  */
 Marshaller.Fail = function(type) {
     this.type = type;
-}
+};
+
+/**
+ * Represents a reference to a raw node object.
+ *
+ * @param id Node index identifier
+ */
+Marshaller.Node = function(id) {
+    this.id = id;
+};
 
 
 /* Errors */
