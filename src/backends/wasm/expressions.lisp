@@ -26,6 +26,7 @@
 
 (defconstant +type-thunk+ 0)
 (defconstant +type-resolved-thunk+ 1)
+(defconstant +type-catch-thunk+ 15)
 
 (defconstant +type-i32+ 2)
 (defconstant +type-f32+ 3)
@@ -43,6 +44,11 @@
 
 (defconstant +type-symbol+ 9)
 (defconstant +type-charecter+ 10)
+
+(defconstant +type-list-node+ 13)
+
+(defconstant +type-node+ 14)
+
 
 ;;;; Type Tags
 
@@ -107,6 +113,13 @@
     :documentation
     "Map mapping symbols/strings to their offsets within the data
      section.")
+
+   (node-refs
+    :initform (make-hash-map)
+    :accessor node-refs
+    :documentation
+    "Map from `NODE' objects to the offsets, within the data section,
+     of the runtime node objects.")
 
    (object-descriptors
     :initform nil
@@ -1626,6 +1639,35 @@
      (repeat 0 (* 8 num-buckets)))))
 
 
+;;; Node References
+
+(defconstant +builtin-node-index-offset+ 6)
+
+(defmethod compile-expression ((ref node-ref) &key)
+  "Add a Tridash Node object to the constant data section and generate
+   code which references the object."
+
+  (with-slots (node-refs) *backend-state*
+    (with-struct-slots node-ref- (node) ref
+      (ensure-get node node-refs
+        (let ((result (next-local))
+              (object
+               (concatenate
+                (byte-encode +type-node+)
+                (byte-encode
+                 (+ +builtin-node-index-offset+
+                    (node-index node))))))
+
+          (make-value-block
+           :label result
+           :instructions
+           `((i32.const (data ,(add-constant-data object)))
+             (local.set (ref ,result)))
+
+           :strict-p t
+           :value-p t))))))
+
+
 ;;; Literals
 
 ;;;; Numbers
@@ -1762,6 +1804,31 @@
        (local.set (ref ,result)))
 
      :value-p t)))
+
+
+;;; Data Section
+
+(defun add-constant-data (bytes)
+  "Add the byte vector BYTES to the constant data section. The offset
+   of the location where the byte vector is stored, relative to the
+   start of the data section is returned.
+
+   The byte vector is followed by the appropriate amount of padding
+   bytes."
+
+  (with-slots (data-section constant-offset) *backend-state*
+    (let* ((size (length bytes))
+           (padding (mod (- size) +word-alignment+)))
+
+      (setf data-section
+            (concatenate
+             data-section
+             bytes
+
+             (repeat 0 padding)))
+
+      (prog1 constant-offset
+        (incf constant-offset (+ size padding))))))
 
 
 ;;; Object Creation
