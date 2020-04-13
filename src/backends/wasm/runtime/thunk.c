@@ -49,21 +49,27 @@ static uintptr_t resolve_thunk(struct tridash_object *thunk);
 
 /**
  * If @a val is a failure value, return the first alternative value,
- * in the linked list @a fail_values, which is not a failure.
+ * which is not a failure.
+ *
+ * If all alternative values evaluate to failures, the last
+ * alternative value is returned.
  *
  * @param val The primary value.
  *
- * @param fail_values Linked list of alternative values. Note this is
- *   expected to be a well formed linked list with the last next node
- *   pointer equal to NULL.
+ * @param first Pointer to the stack element containing the pointer to
+ *   the first alternative value (to be considered).
+ *
+ * @param last Pointer to the stack element containing the pointer to
+ *   the last alternative value (to be considered).
  *
  * @return The resulting value.
  */
-static uintptr_t handle_failures(uintptr_t val, const struct tridash_object * fail_values);
+static uintptr_t handle_failures(uintptr_t val, char ** first, char ** last);
 
 
 uintptr_t resolve(uintptr_t value) {
-    struct tridash_object *fail_value = NULL;
+    char ** last_alternative = stack_top;
+    uintptr_t result;
 
     while (value && IS_REF(value)) {
         struct tridash_object *object = (void*)value;
@@ -83,7 +89,9 @@ uintptr_t resolve(uintptr_t value) {
         } break;
 
         case TRIDASH_TYPE_CATCH_THUNK:
-            fail_value = make_list_node((uintptr_t)object->catch_thunk.fail_value, (uintptr_t)fail_value);
+            *stack_top = (char *)object->catch_thunk.fail_value;
+            stack_top--;
+
             value = object->catch_thunk.value;
             break;
 
@@ -93,18 +101,20 @@ uintptr_t resolve(uintptr_t value) {
     }
 
 return_value:
+    result = handle_failures(value, stack_top+1, last_alternative);
+    stack_top = last_alternative;
 
-    return handle_failures(value, fail_value);
+    return result;
 }
 
 uintptr_t resolve_thunk(struct tridash_object *object) {
     return object->thunk.fn(&object->thunk.closure_size);
 }
 
-uintptr_t handle_failures(uintptr_t val, const struct tridash_object * fail_value) {
-    while (IS_FAIL(val) && fail_value) {
-        val = resolve(fail_value->list_node.head);
-        fail_value = (struct tridash_object *)fail_value->list_node.tail;
+uintptr_t handle_failures(uintptr_t val, char **first, char **last) {
+    while (IS_FAIL(val) && ((uintptr_t)first <= (uintptr_t)last)) {
+        val = resolve((uintptr_t)*first);
+        first++;
     }
 
     return val;
