@@ -33,30 +33,26 @@
  * so, delete this exception statement from your version.
  */
 
-#include "funcrefs.h"
+#ifndef TRIDASH_META_NODES_h
+#define TRIDASH_META_NODES_h
 
-#include "memory.h"
-#include "copying.h"
+/**
+ * Functions for invoking Tridash meta node reference functions from
+ * C.
+ */
 
-#define FUNCREF_SIZE offsetof(struct tridash_object, funcref.fn) + sizeof(struct funcref)
+#include <stdint.h>
 
-void *copy_funcref(const void *src) {
-    const struct tridash_object *object = src;
-    size_t size = FUNCREF_SIZE + object->funcref.num_args * sizeof(uintptr_t);
+/**
+ * Call a meta-node function, by meta-node reference, with a single
+ * argument.
+ *
+ * @param ref The meta-node reference (does not need to be resolved).
+ * @param arg The argument.
+ *
+ * @return Result returned by the meta-node function, or Type-Error if
+ *   @a ref is not a meta-node reference.
+ */
+uintptr_t call_meta_node_ref(uintptr_t ref, uintptr_t arg);
 
-    void *dest = alloc(size);
-    memcopy(dest, src, size);
-
-    return dest;
-};
-
-void *copy_funcref_args(void *src) {
-    struct tridash_object *object = src;
-    size_t size = object->funcref.num_args;
-
-    for (size_t i = 0; i < size; ++i) {
-        object->funcref.args[i] = (uintptr_t)copy_object((void*)object->funcref.args[i]);
-    }
-
-    return &object->funcref.args[size];
-};
+#endif /* TRIDASH_META_NODES_h */

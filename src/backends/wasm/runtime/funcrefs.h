@@ -40,13 +40,23 @@
 #include <stddef.h>
 
 /**
+ * Pointer to Meta-node reference function with closure.
+ *
+ * Arguments:
+ *
+ * - Array of arguments
+ * - Closure array
+ */
+typedef uintptr_t(*funcref_fn)(void *, void *);
+
+/**
  * Function reference with optional and/or outer node arguments
  */
 struct funcref {
 	/**
 	 * Index of referenced function
 	 */
-	uintptr_t index;
+	funcref_fn fn;
 
 	/**
 	 * Number of optional and outer node arguments
