@@ -168,7 +168,9 @@ test_files = test001.wasm \
 	test010.wasm \
 	test011.wasm \
 	test012.wasm \
-	test013.wasm
+	test013.wasm \
+	test014.wasm \
+	test015.wasm
 
 test_inputs = $(addprefix $(testdir)/tests/, $(test_files));
 
