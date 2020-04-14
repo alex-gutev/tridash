@@ -1342,7 +1342,7 @@
                "Generate code which loads an operand from the
                 arguments array parameter."
 
-               `((local.get (ref $args))
+               `((local.get $args)
                  (i32.load (offset ,(+ 4 (* index 4))))
                  (local.set (ref ,index))))
 
@@ -1386,7 +1386,7 @@
                (load-default-value (+ start index) (* 4 index)))
 
              (load-default-value (local offset)
-               `((local.get (ref $defaults))
+               `((local.get $defaults)
                  (i32.load (offset ,offset))
                  (local.set (ref ,local))))
 
@@ -1467,7 +1467,7 @@
 
         (multiple-value-bind (locals code)
             (->
-             `((local.get (ref $args))
+             `((local.get $args)
                i32.load
                (local.set $count)
 
