@@ -837,7 +837,10 @@
        (compile-if-expression arguments))
 
       (t
-       (call-next-method)))))
+       (call-next-method
+        meta-node
+        (replace-nil arguments)
+        outer-nodes)))))
 
 (defun remove-nil-arguments (arguments)
   "Removes NIL's from the end of the list ARGUMENTS."
@@ -851,6 +854,25 @@
       (if (and first-nil (every #'null-arg (subseq arguments first-nil)))
           (subseq arguments 0 first-nil)
           arguments))))
+
+(defun replace-nil (arguments)
+  "Replace all NIL values in ARGUMENTS with a `value-block' that
+   simply sets the argument value to the constant 0 (NULL pointer)."
+
+  (map
+   (lambda (arg)
+     (or arg
+         (let ((label (next-local)))
+           (make-value-block
+            :label label
+            :strict-p t
+            :value-p t
+
+            :instructions
+            `((i32.const 0)
+              (local.set ,label))))))
+
+   arguments))
 
 
 ;;;; Arithmetic Expressions

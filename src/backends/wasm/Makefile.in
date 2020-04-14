@@ -70,7 +70,8 @@ runtime/runtime.wasm: $(runtime_objects)
 runtime/thunk.o: runtime/thunk.c $(thunk_h_deps) \
 	$(copying_h_deps) \
 	$(memory_h_deps) \
-	$(lists_h_deps)
+	$(lists_h_deps) \
+	$(meta_nodes_h_deps)
 	$(EMCC) -fPIC -O2 $< -o $@ -c
 
 runtime/memory.o: runtime/memory.c $(memory_h_deps) $(copying_h_deps)

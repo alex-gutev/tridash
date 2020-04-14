@@ -37,6 +37,7 @@
 #include "copying.h"
 #include "memory.h"
 #include "lists.h"
+#include "meta-nodes.h"
 
 /**
  * Calls a thunk function.
@@ -89,8 +90,8 @@ uintptr_t resolve(uintptr_t value) {
         } break;
 
         case TRIDASH_TYPE_CATCH_THUNK:
-            *stack_top = (char *)object->catch_thunk.fail_value;
-            stack_top--;
+            *stack_top-- = (char *)object->catch_thunk.fail_value;
+            *stack_top-- = (char *)object->catch_thunk.test;
 
             value = object->catch_thunk.value;
             break;
@@ -113,7 +114,12 @@ uintptr_t resolve_thunk(struct tridash_object *object) {
 
 uintptr_t handle_failures(uintptr_t val, char **first, char **last) {
     while (IS_FAIL(val) && ((uintptr_t)first <= (uintptr_t)last)) {
-        val = resolve((uintptr_t)*first);
+        const struct tridash_object *obj = (void *)(val & ~TAG_MASK);
+        uintptr_t test = (uintptr_t)*first++;
+
+        if (!test || resolve(call_meta_node_ref(test, obj->fail_type)) == TRIDASH_TRUE)
+            val = resolve((uintptr_t)*first);
+
         first++;
     }
 
@@ -173,6 +179,8 @@ void *make_catch_thunk(uintptr_t value, uintptr_t fail_value, uintptr_t test) {
     thunk->catch_thunk.value = value;
     thunk->catch_thunk.fail_value = fail_value;
 
+    thunk->catch_thunk.test = test;
+
     return thunk;
 }
 
@@ -181,7 +189,7 @@ void *copy_catch_thunk(const void *src) {
 
     return make_catch_thunk(object->catch_thunk.value,
                             object->catch_thunk.fail_value,
-                            0);
+                            object->catch_thunk.test);
 }
 
 void *copy_catch_thunk_objects(void *ptr) {
@@ -189,6 +197,7 @@ void *copy_catch_thunk_objects(void *ptr) {
 
     object->catch_thunk.value = (uintptr_t)copy_object((void *)object->catch_thunk.value);
     object->catch_thunk.fail_value = (uintptr_t)copy_object((void *)object->catch_thunk.fail_value);
+    object->catch_thunk.test = (uintptr_t)copy_object((void *)object->catch_thunk.test);
 
     return &object->catch_thunk.fail_value + 1;
 }

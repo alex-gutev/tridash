@@ -73,8 +73,13 @@ struct thunk {
  * main value is a failure value.
  */
 struct catch_thunk {
+    /* Primary Value */
     uintptr_t value;
+    /* Alternative Value */
     uintptr_t fail_value;
+
+    /* Failure Type Test Function */
+    uintptr_t test;
 };
 
 /**
