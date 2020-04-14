@@ -95,6 +95,12 @@ static const struct tridash_object node_fail_type_error = {
     .node = {index_fail_type_error}
 };
 
+static const struct tridash_object node_fail_arity_error = {
+    .type = TRIDASH_TYPE_NODE,
+    .node = {index_fail_arity_error}
+};
+
+
 uintptr_t fail_type_error(void) {
     return (uintptr_t)&node_fail_type_error;
 }
@@ -109,4 +115,12 @@ uintptr_t fail_no_value(void) {
 
 uintptr_t make_fail_no_value(void) {
     return make_failure((uintptr_t)&node_fail_no_value);
+}
+
+uintptr_t fail_arity_error(void) {
+    return (uintptr_t)&node_fail_arity_error;
+}
+
+uintptr_t make_fail_arity_error(void) {
+    return make_failure((uintptr_t)&node_fail_arity_error);
 }

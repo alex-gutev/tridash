@@ -79,5 +79,8 @@ export uintptr_t make_fail_type_error(void);
 export uintptr_t fail_no_value(void);
 export uintptr_t make_fail_no_value(void);
 
+/* Arity Error */
+export uintptr_t fail_arity_error(void);
+export uintptr_t make_fail_arity_error(void);
 
 #endif /* TRIDASH_FAILURES_H */

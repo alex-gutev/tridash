@@ -107,12 +107,19 @@
           :type :func
           :desc '(nil (i32))))
 
-     ("arity_error"
+     ("fail_arity_error"
       . ,(make-wasm-import
           :module "runtime"
-          :name "arity_error"
+          :name "fail_arity_error"
           :type :func
           :desc '(nil (i32))))
+
+     ("make_fail_arity_error"
+      . ,(make-wasm-import
+	  :module "runtime"
+	  :name "make_fail_arity_error"
+	  :type :func
+	  :desc '(nil (i32))))
 
      ("fail_no_value"
       . ,(make-wasm-import

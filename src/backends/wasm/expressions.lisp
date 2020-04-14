@@ -1544,7 +1544,7 @@
 
        (br_if $out)
 
-       (call (import "runtime" "arity_error"))
+       (call (import "runtime" "make_fail_arity_error"))
        return)))
 
 
