@@ -41,6 +41,7 @@
 
 (defconstant +type-array+ 8)
 (defconstant +type-int-array+ 12)
+(defconstant +type-object+ 11)
 
 (defconstant +type-symbol+ 9)
 (defconstant +type-charecter+ 10)
@@ -1594,20 +1595,25 @@
         (flet ((store-field (value index)
                  `((local.get (ref ,result))
                    (local.get (ref ,(value-block-label value)))
-                   (i32.store (offset ,(+ 4 (* 4 index)))))))
+                   (i32.store (offset ,(+ 8 (* 4 index)))))))
 
           (make-value-block
            :label result
            :operands values
 
            :instructions
-           `((i32.const ,(+ 4 (* 4 (length values))))
+           `((i32.const ,(* 4 (+ 2 (length values))))
              (call (import "runtime" "alloc"))
              (local.tee (ref ,result))
 
-             ;; Store object descriptor
-             (i32.const (data ,descriptor))
+             ;; Set type to object
+             (i32.const ,+type-object+)
              i32.store
+
+             ;; Store object descriptor
+             (local.get (ref ,result))
+             (i32.const (data ,descriptor))
+             (i32.store (offset 4))
 
              ;; Store each value
              ,@(map-extend #'store-field values (range 0)))))))))
@@ -1623,42 +1629,68 @@
   (with-slots (data-section constant-offset object-descriptors)
       *backend-state*
 
-    (let ((table (reserve-hash-table (length fields)))
-          (fields
-           (-> (compose (curry #'+ 4)
-                        (rcurry #'add-string-constant +type-symbol+)
-                        #'symbol-name)
-               (map fields))))
+    (let* ((buckets (make-descriptor-buckets fields))
+           (offset
+            (add-constant-data
+             (concatenate
+              (byte-encode (length fields))
+              (reserve-hash-table (length buckets))))))
 
-      ;; Reserve space for table in data section
-      (setf data-section
+      (push (list offset buckets) object-descriptors)
+      offset)))
 
-            (concatenate
-             data-section
-
-             (byte-encode (length fields))
-             table))
-
-      ;; Add object descriptor
-      (push (cons constant-offset fields)
-            object-descriptors)
-
-      (prog1 constant-offset
-        (incf constant-offset (+ 4 (length table)))))))
-
-(defun reserve-hash-table (num-fields &key (load-factor 0.7))
+(defun reserve-hash-table (num-buckets)
   "Returns an array of bytes, the size of which corresponds to a hash
-   table containing NUM-FIELDS fields, with a load factor of
-   LOAD-FACTOR.
+   table containing NUM-BUCKETS buckets.
 
    The size field of the hash-table is initialized to the correct
    number of buckets however the remaining fields are initialized to
    zero."
 
-  (let ((num-buckets (ceiling num-fields load-factor)))
-    (concatenate
-     (byte-encode num-buckets)
-     (repeat 0 (* 8 num-buckets)))))
+  (concatenate
+   (byte-encode num-buckets)
+   (repeat 0 (* 8 num-buckets))))
+
+(defun make-descriptor-buckets (fields &key (load-factor 0.7))
+  "Generate the buckets, storing the entries FIELDS. The hash-table
+   size is determined from the given LOAD-FACTOR.
+
+   This function returns a sequence where each element is of the
+   form (OFFSET FIELD-INDEX) where OFFSET is the offset, within the
+   data section at which the key string is stored and FIELD-INDEX is
+   the corresponding index within the object."
+
+  (let* ((num-buckets (ceiling (length fields) load-factor))
+         (buckets (repeat nil num-buckets 'vector)))
+
+    (labels ((add-field (field field-index)
+               (multiple-value-bind (offset code)
+                   (hash-field field)
+
+                 (loop
+                    for index = (mod code num-buckets)
+                    for bucket = (elt buckets index)
+                    while bucket
+                    finally
+                      (setf (elt buckets index)
+                            (list (+ 4 offset) field-index)))))
+
+             (hash-field (field)
+               (multiple-value-bind (offset octets)
+                   (add-string-constant (symbol-name field) +type-symbol+)
+
+                 (values
+                  offset
+
+                  (reduce
+                   (lambda (code byte)
+                     (+ (* code 31) byte))
+
+                   octets
+                   :initial-value 1)))))
+
+      (foreach #'add-field fields (range 0))
+      buckets)))
 
 
 ;;; Node References
@@ -1760,26 +1792,29 @@
    offset to the object is returned."
 
   (with-slots (data-section constant-offset symbol-table) *backend-state*
-    (ensure-get (cons value type) symbol-table
-      (let* ((octet-string
-              (string-to-octets
-               value
-               :encoding :utf-8
-               :use-bom nil))
+    (values-list
+     (ensure-get (cons value type) symbol-table
+       (let* ((octet-string
+               (string-to-octets
+                value
+                :encoding :utf-8
+                :use-bom nil))
 
-             (size (+ 8 (length octet-string)))
-             (padding (mod (- size) +word-alignment+)))
+              (size (+ 8 (length octet-string)))
+              (padding (mod (- size) +word-alignment+)))
 
-        (setf data-section
-              (concatenate
-               data-section
-               (byte-encode type)
-               (byte-encode (length octet-string))
-               octet-string
-               (make-list padding :initial-element 0)))
+         (setf data-section
+               (concatenate
+                data-section
+                (byte-encode type)
+                (byte-encode (length octet-string))
+                octet-string
+                (make-list padding :initial-element 0)))
 
-        (prog1 constant-offset
-          (incf constant-offset (+ size padding)))))))
+         (list
+          (prog1 constant-offset
+            (incf constant-offset (+ size padding)))
+          octet-string))))))
 
 
 ;;;; Characters

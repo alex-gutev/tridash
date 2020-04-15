@@ -79,3 +79,8 @@
 /attribute(fail-type, wasm-name, runtime.failure_type);
 
 /attribute(catch, wasm-name, runtime.make_catch_thunk);
+
+
+### Objects
+
+/attribute(member, wasm-name, runtime.object_member);

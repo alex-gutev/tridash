@@ -303,6 +303,10 @@ class Marshaller {
             return this.to_js_int_array(ptr, view);
 
 
+        case Marshaller.type_object:
+            return this.to_js_object(ptr, view);
+
+
         case Marshaller.type_char:
             return new Marshaller.Char(view.getUint32(4, true));
 
@@ -378,6 +382,64 @@ class Marshaller {
         return new Uint32Array(this.memory.buffer, ptr + 8, size);
     }
 
+
+    /** Objects */
+
+    /**
+     * Convert a user-defined Tridash object to a JavaScript object
+     * with equivalent fields.
+     *
+     * Note: The values of the object fields are not resolved, nor
+     * converted to JavaScript objects. Rather the pointers to the
+     * field values are stored.
+     *
+     * @param ptr Pointer to the user-defined object.
+     *
+     * @param view DataView object for the memory region beginning
+     *   at @a ptr.
+     *
+     * @return The JavaScript Object
+     */
+    to_js_object(ptr, view) {
+        const descriptor = view.getUint32(4, true);
+        const desc_view = new DataView(this.memory.buffer, descriptor);
+
+        var object = {}
+
+        for (var i = 0; i < desc_view.getUint32(4, true); i++) {
+            const bucket = 8 + i * 8;
+
+            const key = desc_view.getUint32(bucket, true);
+            const index = desc_view.getUint32(bucket + 4, true);
+
+            if (key !== 0) {
+                object[this.decode_string(key - 4)] =
+                    view.getUint32(8 + index * 4, true);
+            }
+        }
+
+        return object;
+    }
+
+    /**
+     * Resolve, and convert to a JavaScript value, the value of each
+     * field in an object.
+     *
+     * @param object JavaScript object, converted from a Tridash
+     *   user-defined object, in which the fields are pointers to the
+     *   objects.
+     */
+    resolve_object_fields(object) {
+        const fields = Object.keys(object);
+
+        fields.forEach((field) => {
+            this.stack_push(object[field]);
+        });
+
+        fields.reverse().forEach((field) => {
+            object[field] = this.to_js(this.resolve(this.stack_pop()));
+        });
+    }
 
     /** Stack Manipulation */
 
@@ -495,6 +557,9 @@ Marshaller.type_fail = 5;
 /** Arrays */
 Marshaller.type_array = 8; /* Object Array */
 Marshaller.type_int_array = 12; /* Integer Array */
+
+/** Objects */
+Marshaller.type_object = 11;
 
 /** Symbols */
 Marshaller.type_symbol = 9;

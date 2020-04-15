@@ -880,7 +880,9 @@
                    (exports (make-exports export-names function-indices index-offset))
                    (table-size (length table))
                    (table (make-table table index-offset))
-                   (data (make-data-section (data-section *backend-state*) data-start))
+                   (data (-> (data-section *backend-state*)
+                             (make-object-descriptors data-start (object-descriptors *backend-state*))
+                             (make-data-section data-start)))
                    (memory-size (+ data-start (length (data-section *backend-state*)))))
 
               (values
@@ -1243,6 +1245,23 @@
 
   (make-wasm-data :offset `((i32.const ,start)) :bytes bytes))
 
+(defun make-object-descriptors (data-section data-start descriptors)
+  "Initialize the buckets of the object descriptors, within the
+   constant data section, with the correct key offsets."
+
+  (flet ((make-bucket (bucket)
+           (destructuring-bind (&optional key (value 0)) bucket
+             (concatenate
+              (byte-encode
+               (if key (+ data-start key) 0))
+
+              (byte-encode value)))))
+
+    (doseq ((offset buckets) descriptors)
+      (setf (subseq data-section (+ offset 8))
+            (map-extend #'make-bucket buckets)))
+
+    data-section))
 
 ;;;; Utility Functions
 

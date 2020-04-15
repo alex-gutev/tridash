@@ -97,9 +97,9 @@ uintptr_t object_member(uintptr_t object, uintptr_t field) {
     struct tridash_object *obj = (void*)object;
     struct tridash_object *key = (void*)field;
 
-    if (obj->type != TRIDASH_TYPE_OBJECT ||
-        key->type != TRIDASH_TYPE_SYMBOL ||
-        key->type != TRIDASH_TYPE_STRING) {
+    if (obj->type != TRIDASH_TYPE_OBJECT &&
+        (key->type != TRIDASH_TYPE_SYMBOL &&
+         key->type != TRIDASH_TYPE_STRING)) {
         return make_fail_type_error();
     }
 
