@@ -1,0 +1,22 @@
+## Test Optional Arguments with Node Default Values
+
+/import(core, +, <-)
+
+increment(n, d : delta) : n + d
+
+output1 <- increment(n)
+output2 <- increment(n, 1)
+
+
+## Input Attributes
+
+/attribute(n, input, 1)
+/attribute(delta, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output1, public-name, "output1")
+/attribute(output2, public-name, "output2")
+/attribute(n, public-name, "n")
+/attribute(delta, public-name, "delta")

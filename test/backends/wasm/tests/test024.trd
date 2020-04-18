@@ -1,0 +1,19 @@
+## Test Optional Arguments
+
+/import(core, +, <-)
+
+increment(n, d : 1) : n + d
+
+output1 <- increment(n)
+output2 <- increment(n, 2)
+
+## Input Attributes
+
+/attribute(n, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output1, public-name, "output1")
+/attribute(output2, public-name, "output2")
+/attribute(n, public-name, "n")

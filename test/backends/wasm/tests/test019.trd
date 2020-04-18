@@ -1,0 +1,37 @@
+## Tests stateful bindings in which the value of the state node is
+## itself determined by a stateful binding.
+
+/import(core)
+
+counter + 1 -> counter :: state1 => state2
+start -> counter
+
+'(state1) -> counter-state :: clicked1
+'(state2) -> counter-state :: clicked2
+
+case(
+    clicked1? : '(clicked1),
+    clicked2? : '(clicked2),
+    '(default)
+) -> /state(counter-state)
+
+counter-state -> /state(counter)
+'(state1) -> /state(counter)
+
+'(clicked1) -> /state(counter-state)
+
+
+## Input Attributes
+
+/attribute(start, input, 1)
+/attribute(clicked1?, input, 1)
+/attribute(clicked2?, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(start, public-name, "start")
+/attribute(counter, public-name, "counter")
+
+/attribute(clicked1?, public-name, "clicked1")
+/attribute(clicked2?, public-name, "clicked2")

@@ -1,0 +1,26 @@
+## Tests bindings between different states of a node, in which the
+## state node is dependent on more than a single node.
+
+/import(core)
+
+counter + delta -> counter :: increment
+start -> counter
+
+0 -> delta
+
+if(clicked?, '(increment), '(default)) -> /state(counter)
+
+
+## Input Attributes
+
+/attribute(start, input, 1)
+/attribute(clicked?, input, 1)
+/attribute(delta, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(start, public-name, "start")
+/attribute(counter, public-name, "counter")
+/attribute(clicked?, public-name, "clicked?")
+/attribute(delta, public-name, "delta")
