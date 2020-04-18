@@ -49,7 +49,7 @@
  * @return Tridash Boolean indicating whether @a a is equal to
  *   @a b.
  */
-export int object_eq(uintptr_t a, uintptr_t b);
+export uintptr_t object_eq(uintptr_t a, uintptr_t b);
 
 /**
  * Checks whether two objects are not equal.
@@ -60,6 +60,6 @@ export int object_eq(uintptr_t a, uintptr_t b);
  * @return Tridash Boolean indicating whether @a a is not equal
  *   to @a b.
  */
-export int object_neq(uintptr_t a, uintptr_t b);
+export uintptr_t object_neq(uintptr_t a, uintptr_t b);
 
 #endif /* TRIDASH_EQUALITY_H */

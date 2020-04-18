@@ -51,7 +51,7 @@
  *
  * @return Tridash Boolean.
  */
-static int int_eq(int32_t value, uintptr_t obj);
+static uintptr_t int_eq(int32_t value, uintptr_t obj);
 
 /**
  * Checks whether an object is equivalent to an integer value.
@@ -65,10 +65,10 @@ static int int_eq(int32_t value, uintptr_t obj);
  *
  * @return Tridash Boolean.
  */
-static int float_eq(float value, uintptr_t obj);
+static uintptr_t float_eq(float value, uintptr_t obj);
 
 
-int object_eq(uintptr_t a, uintptr_t b) {
+uintptr_t object_eq(uintptr_t a, uintptr_t b) {
     struct tridash_object *obj_a, *obj_b;
 
     a = resolve(a);
@@ -121,14 +121,15 @@ int object_eq(uintptr_t a, uintptr_t b) {
     }
 }
 
-int object_neq(uintptr_t a, uintptr_t b) {
-    return !(object_eq(a, b));
+uintptr_t object_neq(uintptr_t a, uintptr_t b) {
+    return object_eq(a, b) ^ 0x2;
+}
 }
 
 
 /// Internal Comparison Functions
 
-int int_eq(int32_t value, uintptr_t obj) {
+uintptr_t int_eq(int32_t value, uintptr_t obj) {
     struct tridash_object *object;
 
     switch (PTR_TAG(obj)) {
@@ -158,7 +159,7 @@ int int_eq(int32_t value, uintptr_t obj) {
     }
 }
 
-int float_eq(float value, uintptr_t obj) {
+uintptr_t float_eq(float value, uintptr_t obj) {
     struct tridash_object *object;
 
     switch (PTR_TAG(obj)) {
