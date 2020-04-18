@@ -84,6 +84,9 @@ class Marshaller {
                 this.to_tridash(value.type)
             );
         }
+        else if (value instanceof Marshaller.TridashValue) {
+            return value.ptr;
+        }
 
         throw new Marshaller.EncodeError(value);
     }
@@ -689,6 +692,19 @@ Marshaller.Node = function(id) {
  *   a tagged pointer or pointer to object).
  */
 Marshaller.Funcref = function(ptr) {
+    this.ptr = ptr;
+};
+
+
+/** Tridash Value Wrapper */
+
+/**
+ * Represents a value which has been already marshalled from
+ * JavaScript to the Tridash heap.
+ *
+ * @param ptr Pointer to the Tridash value.
+ */
+Marshaller.TridashValue = function(ptr) {
     this.ptr = ptr;
 };
 
