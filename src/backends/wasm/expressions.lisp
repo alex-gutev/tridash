@@ -837,6 +837,10 @@
       ((= name "if")
        (compile-if-expression arguments))
 
+      ((eq meta-node (get :previous-value *core-meta-nodes*))
+       (funcall (get-operand *function-block-state*)
+                (list :previous-value (first arguments))))
+
       (t
        (call-next-method
         meta-node

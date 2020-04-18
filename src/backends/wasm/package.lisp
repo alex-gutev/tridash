@@ -39,6 +39,9 @@
 
         :tridash.backend.js.ast)
 
+  (:import-from :tridash.frontend
+                :*core-meta-nodes*)
+
   (:import-from :tridash.frontend.strictness
                 :strict-arguments
                 :strict-outer-operands)

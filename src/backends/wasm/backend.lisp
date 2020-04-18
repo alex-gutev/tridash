@@ -467,6 +467,7 @@
                        ,@(unless (null (value-function context))
                            ;; Call Context Function
                            `((local.get (ref $state))
+                             (local.get (ref $old-state))
                              (call (context ,node ,context))
                              (local.set $value)
 
@@ -784,10 +785,14 @@
                (ematch operand
                  ((node-link- node)
                   (ensure-get operand operands
-                    (make-get-operand node)))))
+                    (make-get-operand node 'state)))
 
-             (make-get-operand (node)
-               (let ((state (get 'state (argument-locals *function-block-state*)))
+                 ((list :previous-value (and (node-ref node) ref))
+                  (ensure-get ref operands
+                    (make-get-operand node 'old-state)))))
+
+             (make-get-operand (node state)
+               (let ((state (get state (argument-locals *function-block-state*)))
                      (result (next-local)))
 
                  (make-value-block
@@ -801,7 +806,7 @@
                     (local.set (ref ,result)))))))
 
       (with-slots (value-function operands) context
-        (compile-function value-function '(state)
+        (compile-function value-function '(state old-state)
                           :get-operand #'get-operand
                           :thunk t)))))
 
