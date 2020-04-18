@@ -189,6 +189,18 @@
   node-index
   context-index)
 
+(defstruct node-export
+  "Represents a node which is to be exported from the generated
+   module.
+
+   TYPE is the type of node, NODE or META-NODE.
+
+   ID is the identifier with which the node is made available to
+   external callers."
+
+  type
+  id)
+
 (defvar *linker-state* nil
   "Global linker state")
 
@@ -340,11 +352,19 @@
     'list
 
     (lambda (export)
-      (destructuring-bind (name node-index context-index) export
+      (destructuring-bind (name . export) export
         (list
          (js-string name)
-         (js-new +node-interface-class+
-                 (list* "module" node-index (ensure-list context-index))))))
+
+         (with-struct-slots node-export- (type id) export
+           (ecase type
+             (node
+              (destructuring-bind (node-index context-index) id
+                (js-new +node-interface-class+
+                        (list* "module" node-index (ensure-list context-index)))))
+
+             (meta-node
+              (js-members "mod" "exports" name)))))))
 
     public-nodes)))
 
@@ -711,10 +731,12 @@
 
     (awhen (attribute :public-name node)
       (setf (get it (public-nodes *linker-state*))
-            (list
-             (node-index node)
-             (awhen (get :input (contexts node))
-               (context-index node it)))))
+            (make-node-export
+             :type 'node
+             :id (list
+                  (node-index node)
+                  (awhen (get :input (contexts node))
+                    (context-index node it))))))
 
     ;; If the node has an INIT context, add its initial value to
     ;; INITIAl-VALUES of *LINKER-STATE* and ensure it has an input
@@ -843,8 +865,14 @@
            (context (cdr (first contexts))))
 
       (with-slots (value-function) context
-        (cons meta-node
-              (compile-function value-function operands))))))
+        (let ((fn (compile-function value-function operands)))
+          (awhen (attribute :public-name meta-node)
+            (setf (get it (public-nodes *linker-state*))
+                  (make-node-export :type 'meta-node :id it))
+
+            (setf (wasm-function-spec-export-name fn) it))
+
+          (cons meta-node fn))))))
 
 
 ;;; Linking WebAssembly Code
