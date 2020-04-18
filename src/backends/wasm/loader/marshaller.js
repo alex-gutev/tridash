@@ -708,6 +708,14 @@ Marshaller.TridashValue = function(ptr) {
     this.ptr = ptr;
 };
 
+
+/** Builtin Failure Types */
+
+Marshaller.FailTypes = {
+    TypeError: new Marshaller.Node(1)
+};
+
+
 /* Errors */
 
 /**
