@@ -58,6 +58,8 @@
 /attribute(=, wasm-name, runtime.object_eq)
 /attribute(!=, wasm-name, runtime.object_neq)
 
+/attribute(symbol-equal, wasm-name, runtime.symbol_eq)
+
 
 ### Selection Operator
 

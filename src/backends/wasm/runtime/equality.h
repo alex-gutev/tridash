@@ -62,4 +62,21 @@ export uintptr_t object_eq(uintptr_t a, uintptr_t b);
  */
 export uintptr_t object_neq(uintptr_t a, uintptr_t b);
 
+/**
+ * Checks whether two symbol objects are equal.
+ *
+ * If at least one of the objects is not a symbol, false is returned.
+ *
+ * NOTE: It is assumed that all symbol objects are created at
+ * compile-time, in the constant data section of memory, with a unique
+ * symbol object per symbol name.
+ *
+ * @param a Tridash Symbol Object
+ * @param b Tridash Symbol Object
+ *
+ * @return Tridash Boolean indicating whether @a a and @a b represent
+ *   the same Tridash symbol.
+ */
+export uintptr_t symbol_eq(uintptr_t a, uintptr_t b);
+
 #endif /* TRIDASH_EQUALITY_H */

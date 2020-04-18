@@ -124,6 +124,27 @@ uintptr_t object_eq(uintptr_t a, uintptr_t b) {
 uintptr_t object_neq(uintptr_t a, uintptr_t b) {
     return object_eq(a, b) ^ 0x2;
 }
+
+uintptr_t symbol_eq(uintptr_t a, uintptr_t b) {
+    a = resolve(a);
+    b = resolve(b);
+
+    if (IS_FAIL(a)) return a;
+    if (IS_FAIL(b)) return b;
+
+    if (PTR_TAG(a) || PTR_TAG(b))
+        return TRIDASH_FALSE;
+
+    const struct tridash_object *obj_a = (void *)a;
+    const struct tridash_object *obj_b = (void *)b;
+
+    // The following assumes that all symbols are created at
+    // compile-time and stored in the constant data section, with a
+    // unique symbol object per symbol name.
+
+    return TRIDASH_BOOL(obj_a->type == TRIDASH_TYPE_SYMBOL &&
+                        obj_b->type == TRIDASH_TYPE_SYMBOL &&
+                        a == b);
 }
 
 
