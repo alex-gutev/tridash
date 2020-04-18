@@ -87,6 +87,12 @@ class Marshaller {
         else if (value instanceof Marshaller.TridashValue) {
             return value.ptr;
         }
+        else if (value === true) {
+            return Marshaller.True;
+        }
+        else if (value === false) {
+            return Marshaller.False;
+        }
 
         throw new Marshaller.EncodeError(value);
     }
@@ -539,6 +545,11 @@ Marshaller.max_int = Math.pow(2, 29) - 1;
 /** Minimum Immediate Integer Value */
 Marshaller.min_int = -Math.pow(2, 29);
 
+
+/* Boolean Values */
+
+Marshaller.True = 4 | Marshaller.tag_funcref;
+Marshaller.False = Marshaller.tag_funcref;
 
 /* Object Types */
 
