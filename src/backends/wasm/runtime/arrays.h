@@ -58,7 +58,7 @@ struct array {
  * @param src Pointer to the array object.
  * @return Pointer to the copied object.
  */
-void *copy_array(const void *src);
+export void *copy_array(const void *src);
 
 /**
  * Copy the elements stored in an array and update the references.

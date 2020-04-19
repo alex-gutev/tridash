@@ -79,10 +79,10 @@
           :type :func
           :desc '((i32 i32) nil)))
 
-     ("copy_object"
+     ("copy_array"
       . ,(make-wasm-import
           :module "runtime"
-          :name "copy_object"
+          :name "copy_array"
           :type :func
           :desc '((i32) (i32))))
 
@@ -573,7 +573,7 @@
 
           (create-compute-function-spec
            `((local.get (ref $old-state))
-             (call (import "runtime" "copy_object"))
+             (call (import "runtime" "copy_array"))
              (local.set (ref $state))
 
              ;; Create Dirtied Context Set
