@@ -70,6 +70,12 @@
 (defconstant +word-size+ 32)
 (defconstant +word-byte-size+ (/ +word-size+ 8))
 
+
+;;; Boolean Constants
+
+(defconstant +bool-false+ +tag-funcref+)
+(defconstant +bool-true+ (logior 4 +tag-funcref+))
+
 
 ;;; Backend State
 
@@ -1707,23 +1713,36 @@
 
   (with-slots (node-refs) *backend-state*
     (with-struct-slots node-ref- (node) ref
-      (ensure-get node node-refs
-        (let ((result (next-local))
-              (object
-               (concatenate
-                (byte-encode +type-node+)
-                (byte-encode
-                 (+ +builtin-node-index-offset+
-                    (node-index node))))))
+      (if (or (= node *node-true*)
+              (= node *node-false*))
 
-          (make-value-block
-           :label result
-           :instructions
-           `((i32.const (data ,(add-constant-data object)))
-             (local.set (ref ,result)))
+          (let ((result (next-local)))
+            (make-value-block
+             :label result
+             :instructions
+             `((constant ,result ,(and (= node *node-true*) :true)))
 
-           :strict-p t
-           :value-p t))))))
+             :immediate-p t
+             :strict-p t
+             :value-p t))
+
+          (ensure-get node node-refs
+            (let ((result (next-local))
+                  (object
+                   (concatenate
+                    (byte-encode +type-node+)
+                    (byte-encode
+                     (+ +builtin-node-index-offset+
+                        (node-index node))))))
+
+              (make-value-block
+               :label result
+               :instructions
+               `((i32.const (data ,(add-constant-data object)))
+                 (local.set (ref ,result)))
+
+               :strict-p t
+               :value-p t)))))))
 
 
 ;;; Literals
@@ -2704,7 +2723,10 @@
 
   (etypecase value
     (integer
-     (constant-integer local value))))
+     (constant-integer local value))
+
+    ((or null (eql :true))
+     (constant-boolean local value))))
 
 (defun constant-integer (local value)
   "Generate instructions which create a boxed integer with value
@@ -2735,6 +2757,15 @@
             (i32.const ,value)
             (i32.store (offset 4))))))
 
+(defun constant-boolean (local value)
+  "Generate code which creates a boxed Boolean with value VALUE and
+   stores it in LOCAL."
+
+  `((i32.const ,(if value 1 0))
+    (local.set (value ,local))
+
+    (i32.const ,(if value +bool-true+ +bool-false+))
+    (local.set (ref ,local))))
 
 ;;;; Boxing
 

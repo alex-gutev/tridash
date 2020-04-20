@@ -40,7 +40,9 @@
         :tridash.backend.js.ast)
 
   (:import-from :tridash.frontend
-                :*core-meta-nodes*)
+                :*core-meta-nodes*
+                :*node-true*
+                :*node-false*)
 
   (:import-from :tridash.frontend.strictness
                 :strict-arguments

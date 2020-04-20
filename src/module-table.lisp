@@ -133,10 +133,10 @@
 
   "Map of meta-nodes which comprise the language primitives.")
 
-(defparameter *node-true* (constant-node "True" 1)
+(defparameter *node-true* (constant-type-node "True")
   "Node, of which the value represents boolean True.")
 
-(defparameter *node-false* (constant-node "False" 0)
+(defparameter *node-false* (constant-type-node "False")
   "Node, of which the value represents boolean False.")
 
 
@@ -165,8 +165,8 @@
 
   ;; True and False Nodes
 
-  (setf *node-true* (constant-node "True" 1))
-  (setf *node-false* (constant-node "False" 0))
+  (setf *node-true* (constant-type-node "True"))
+  (setf *node-false* (constant-type-node "False"))
 
   (add-node (name *node-true*) *node-true* builtin)
   (add-node (name *node-false*) *node-false* builtin)

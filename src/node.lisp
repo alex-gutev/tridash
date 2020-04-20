@@ -118,6 +118,14 @@
     (add-constant-function value node)
     node))
 
+(defun constant-type-node (id)
+  "Creates a constant type node with identifier ID."
+
+  (let* ((name (id-symbol id))
+         (node (make-instance 'node :name name)))
+    (add-constant-function (node-ref node) node)
+    node))
+
 
 ;;;; Hash Function
 

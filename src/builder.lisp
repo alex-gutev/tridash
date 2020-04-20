@@ -965,7 +965,7 @@
           (if-expression
            (state-check (previous-value state-node) from-state)
            (state-check state-link to-state)
-           0))
+           (node-ref *node-false*)))
 
         (state-check state-link from-state))))
 
