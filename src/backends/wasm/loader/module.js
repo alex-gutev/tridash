@@ -40,23 +40,24 @@ class TridashModule {
      */
     constructor(compute, init, marshaller, num_nodes) {
         this.compute = compute;
-        this.init = init;
         this.marshaller = marshaller;
 
-        this.init_state(num_nodes);
+        this.init_state(init);
 
         this.watches = {};
     }
 
     /**
-     * Create the array storing the node values and store it at the
-     * top of the stack.
+     * Call the Tridash module's state initialization function and
+     * push the initial state array to the top of the stack.
      *
-     * @param num_nodes Number of nodes.
+     * The pointer to the stack location at which the state array is
+     * stored is saved in the member variable 'state_ptr'
+     *
+     * @param init Module state initialization function.
      */
-    init_state(num_nodes) {
-        this.state_ptr = this.marshaller.stack_push(0);
-        this.init(this.state_ptr);
+    init_state(init) {
+        this.state_ptr = this.marshaller.stack_push(init());
     }
 
     /** Setting Node Values */
@@ -69,23 +70,40 @@ class TridashModule {
      * @param value The value
      */
     set_value(index, input_index, value) {
-        this.update_node_state(index, value);
+        const state_ptr = this.marshaller.stack_push(this.copy_state());
 
+        this.update_node_state(state_ptr, index, value);
         this.update([input_index]);
     }
 
     /**
      * Update the value of a node within the node state array.
      *
+     * @param state_ptr Pointer to the stack location where the
+     *   pointer to the state array is stored.
+     *
      * @param index Node value index.
+     *
      * @param value Node value as a JS Value.
      */
-    update_node_state(index, value) {
+    update_node_state(state_ptr, index, value) {
         var ptr = this.marshaller.to_tridash(value);
+
         this.marshaller.set_array_elem(
-            this.marshaller.get_word(this.state_ptr),
+            this.marshaller.get_word(state_ptr),
             index,
             ptr
+        );
+    }
+
+    /**
+     * Copy the state array.
+     *
+     * @return Pointer to the new state array.
+     */
+    copy_state() {
+        return this.marshaller.module.exports.copy_array(
+            this.marshaller.get_word(this.state_ptr)
         );
     }
 
@@ -100,8 +118,10 @@ class TridashModule {
      * @param values Array of values
      */
     set_values(values) {
+        const state_ptr = this.marshaller.stack_push(this.copy_state());
+
         values.forEach(([_, index, value]) => {
-            this.update_node_state(index, value);
+            this.update_node_state(state_ptr, index, value);
         });
 
         this.update(values.map(([index]) => index));
@@ -145,14 +165,22 @@ class TridashModule {
     /**
      * Recompute the state of the module.
      *
+     * This method assumes that the pointer to the new state array,
+     * which will be modified by the compute function, is stored at
+     * the top of the Tridash stack. The pointer is popped off the
+     * stack.
+     *
      * @param dirtied Array of indices of the input contexts of the
      *   nodes which have had their values changed.
      */
     update(dirtied) {
-        var dirty_queue = this.make_dirtied_queue(dirtied);
-        var state = this.marshaller.get_word(this.state_ptr);
+        const dirty_queue = this.make_dirtied_queue(dirtied);
+        const old_state = this.marshaller.get_word(this.state_ptr);
+        const state = this.marshaller.stack_pop();
 
-        var visited = this.marshaller.to_js(this.compute(dirty_queue, state, this.state_ptr));
+        this.marshaller.set_word(this.state_ptr, state);
+
+        const visited = this.marshaller.to_js(this.compute(dirty_queue, old_state, state));
 
         this.notify_changes(visited);
     }

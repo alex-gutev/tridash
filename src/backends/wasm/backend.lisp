@@ -572,12 +572,8 @@
                (make-instance 'function-block-state)))
 
           (create-compute-function-spec
-           `((local.get (ref $old-state))
-             (call (import "runtime" "copy_array"))
-             (local.set (ref $state))
-
-             ;; Create Dirtied Context Set
-             ,@(make-array-set '$dirtied (ceiling (length context-indices) +word-size+))
+           ;; Create Dirtied Context Set
+           `(,@(make-array-set '$dirtied (ceiling (length context-indices) +word-size+))
 
              ;; Create Visited Node Array
              ,@(make-array-set '$visited (ceiling (length nodes) +word-size+))
@@ -627,10 +623,6 @@
 
                   ,@(make-context-blocks)))
 
-             (local.get $new-state)
-             (local.get (ref $state))
-             i32.store
-
              (local.get (ref $visited)))))))))
 
 (defun create-compute-function-spec (instructions)
@@ -640,7 +632,7 @@
   (multiple-value-bind (locals code)
       (make-function-body
        instructions
-       (alist-hash-map '(($dirty-queue . 0) ($old-state . 1) ($new-state . 2)))
+       (alist-hash-map '(($dirty-queue . 0) ($old-state . 1) ($state . 2)))
        nil)
 
     (make-wasm-function-spec
@@ -674,32 +666,38 @@
     (multiple-value-bind (locals code)
         (make-function-body
          (concatenate
-          (make-tridash-array '$state num-nodes :clear t)
+          (make-tridash-array '$old-state num-nodes :clear t)
 
           `((local.get $new-state)
             (local.get (ref $state))
             i32.store)
 
           ;; Create initial dirty queue
-          (unless (emptyp initial-values)
-            `(,@(make-tridash-array '$dirtied (length initial-values))
+          (if (emptyp initial-values)
+              '((local.get (ref $old-state)))
 
-                ,@(-<> (sort initial-values :key #'initial-value-context-index)
-                       (map-extend #'add-to-queue <> (range 0)))
+              `(,@(make-tridash-array '$dirtied (length initial-values))
 
-                (local.get (ref $dirtied))
-                (local.get (ref $state))
-                (local.get $new-state)
+                  ,@(-<> (sort initial-values :key #'initial-value-context-index)
+                         (map-extend #'add-to-queue <> (range 0)))
 
-                (call $compute)
-                drop)))
+                  ,@(make-tridash-array '$new-state num-nodes :clear t)
 
-         (alist-hash-map '(($new-state . 0)))
+                  (local.get (ref $dirtied))
+                  (local.get (ref $old-state))
+                  (local.get (ref $new-state))
+
+                  (call $compute)
+                  drop
+
+                  (local.get (ref $new-state)))))
+
+         (make-hash-map)
          nil)
 
       (make-wasm-function-spec
-       :params '(i32)
-       :results nil
+       :params nil
+       :results '(i32)
        :locals locals
        :code code
 
@@ -787,8 +785,8 @@
                   (ensure-get operand operands
                     (make-get-operand node 'state)))
 
-                 ((list :previous-value (and (node-ref node) ref))
-                  (ensure-get ref operands
+                 ((list :previous-value (node-ref node))
+                  (ensure-get (list 'old node) operands
                     (make-get-operand node 'old-state)))))
 
              (make-get-operand (node state)

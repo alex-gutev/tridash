@@ -525,6 +525,17 @@ class Marshaller {
         const view = new DataView(this.memory.buffer);
         return view.getUint32(ptr, true);
     }
+
+    /**
+     * Set the value of a given 32-bit word in memory.
+     *
+     * @param ptr Pointer to the word.
+     * @param value Raw word value.
+     */
+    set_word(ptr, value) {
+        const view = new DataView(this.memory.buffer);
+        view.setUint32(ptr, value, true);
+    }
 }
 
 /* Pointer Tags */
