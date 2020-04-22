@@ -26,6 +26,8 @@
 const assert = require('assert');
 const fs = require('fs');
 
+const Tridash = require('../tests/tridash.min.js');
+
 /* Utility Functions */
 
 /**
@@ -925,6 +927,335 @@ describe('Core Functions', function() {
         util = new TestUtil(runtime.table, runtime.memory, runtime.instance);
     });
 
+    describe('Comparison', function() {
+        describe('Equal - object_eq', function() {
+            it('Should return true for equal integers', function() {
+                assert.equal(
+                    runtime.exports.object_eq(im(152), im(152)),
+                    Tridash.Marshaller.True,
+                    "Immediate Integers not Equal"
+                );
+
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_int(547),
+                        util.make_int(547)
+                    ),
+                    Tridash.Marshaller.True,
+                    "Boxed Integers not Equal"
+                );
+            });
+
+            it('Should return true for equal floats', function() {
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_float(16.25),
+                        util.make_float(16.25)
+                    ),
+                    Tridash.Marshaller.True,
+                    "Boxed Floats not Equal"
+                );
+            });
+
+            it('Should return true for equal numbers', function() {
+                assert.equal(
+                    runtime.exports.object_eq(
+                        im(90),
+                        util.make_float(90.0)
+                    ),
+                    Tridash.Marshaller.True,
+                    "Immediate integer not equal to float"
+                );
+
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_float(90.0),
+                        im(90)
+                    ),
+                    Tridash.Marshaller.True,
+                    "Float not equal to immediate integer."
+                );
+
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_int(108),
+                        util.make_float(108.0)
+                    ),
+                    Tridash.Marshaller.True,
+                    "Boxed integer not equal to float"
+                );
+
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_float(108.0),
+                        util.make_int(108)
+                    ),
+                    Tridash.Marshaller.True,
+                    "Boxed integer not equal to float"
+                );
+            });
+
+            it('Should return true for equal characters', function() {
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_char(10),
+                        util.make_char(10)
+                    ),
+                    Tridash.Marshaller.True
+                );
+            });
+
+            it('Should return true for equal strings', function() {
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_string("Hello"),
+                        util.make_string("Hello")
+                    ),
+                    Tridash.Marshaller.True,
+                    'Strings not equal'
+                );
+            });
+
+            it('Should return true for identical objects', function() {
+                const obj = runtime.exports.fail_type_error();
+
+                assert.equal(
+                    runtime.exports.object_eq(obj, obj),
+                    Tridash.Marshaller.True,
+                    'Identical node objects not equal'
+                );
+            });
+
+            it('Should return false for non-equal integers', function() {
+                assert.equal(
+                    runtime.exports.object_eq(im(234), im(875)),
+                    Tridash.Marshaller.False,
+                    'Non-Equal immediate integers compare equal'
+                );
+
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_int(234),
+                        util.make_int(875)),
+                    Tridash.Marshaller.False,
+                    'Non-equal boxed integers compare equal'
+                );
+            });
+
+            it('Should return false for non-equal floats', function() {
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_float(5.2),
+                        util.make_float(8.367)
+                    ),
+                    Tridash.Marshaller.False,
+                    'Non-equal floats compare equal'
+                );
+            });
+
+            it('Should return false for non-equal numbers', function() {
+                assert.equal(
+                    runtime.exports.object_eq(
+                        im(87),
+                        util.make_float(120.45)
+                    ),
+                    Tridash.Marshaller.False,
+                    'Non-equal immediate integer and float compare equal'
+                );
+
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_float(120.45),
+                        im(87)
+                    ),
+                    Tridash.Marshaller.False,
+                    'Non-equal float and immediate integer compare equal'
+                );
+
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_int(87),
+                        util.make_float(120.45)
+                    ),
+                    Tridash.Marshaller.False,
+                    'Non-equal boxed integer and float compare equal'
+                );
+
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_float(120.45),
+                        util.make_int(87)
+                    ),
+                    Tridash.Marshaller.False,
+                    'Non-equal float and boxed integer compare equal'
+                );
+            });
+
+            it('Should return false for non-equal characters', function() {
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_char(10),
+                        util.make_char(31)
+                    ),
+                    Tridash.Marshaller.False
+                );
+            });
+
+            it('Should return false for non-equal strings', function() {
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_string("Hello"),
+                        util.make_string("hello")
+                    ),
+                    Tridash.Marshaller.False
+                );
+
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_string("hello"),
+                        util.make_string("hello world")
+                    ),
+                    Tridash.Marshaller.False
+                );
+            });
+
+            it('Should return false for non-identical objects', function() {
+                assert.equal(
+                    runtime.exports.object_eq(
+                        runtime.exports.fail_type_error(),
+                        runtime.exports.fail_arity_error()
+                    ),
+                    Tridash.Marshaller.False,
+                    'Non-identical node objects compare equal'
+                );
+            });
+
+            it("Should return false if types don't match", function() {
+                assert.equal(
+                    runtime.exports.object_eq(
+                        util.make_int(879),
+                        util.make_string("879")
+                    ),
+                    Tridash.Marshaller.False
+                );
+            });
+
+            it('Should return failures in arguments', function() {
+                const f = runtime.exports.make_failure("my-type");
+
+                assert.equal(
+                    runtime.exports.object_eq(f, im(9)),
+                    f
+                );
+
+                assert.equal(
+                    runtime.exports.object_eq(im(9), f),
+                    f
+                );
+
+                assert.equal(
+                    runtime.exports.object_eq(f, f),
+                    f
+                );
+            });
+        });
+
+        describe('Not Equal - object_neq', function() {
+            it('Should return false for equal numbers', function() {
+                assert.equal(
+                    runtime.exports.object_neq(im(87), im(87)),
+                    Tridash.Marshaller.False
+                );
+            });
+
+            it('Should return false for equal characters', function() {
+                assert.equal(
+                    runtime.exports.object_neq(
+                        util.make_char(10),
+                        util.make_char(10)
+                    ),
+                    Tridash.Marshaller.False
+                );
+            });
+
+            it('Should return false for equal strings', function() {
+                assert.equal(
+                    runtime.exports.object_neq(
+                        util.make_string("abc"),
+                        util.make_string("abc")
+                    ),
+                    Tridash.Marshaller.False
+                );
+            });
+
+            it('Should return false for identical objects', function() {
+                assert.equal(
+                    runtime.exports.object_neq(
+                        runtime.exports.fail_type_error(),
+                        runtime.exports.fail_type_error()
+                    ),
+                    Tridash.Marshaller.False
+                );
+            });
+
+            it('Should return true for non-equal numbers', function() {
+                assert.equal(
+                    runtime.exports.object_neq(im(87), im(915)),
+                    Tridash.Marshaller.True
+                );
+            });
+
+            it('Should return true for non-equal characters', function() {
+                assert.equal(
+                    runtime.exports.object_neq(
+                        util.make_char(31),
+                        util.make_char(10)
+                    ),
+                    Tridash.Marshaller.True
+                );
+            });
+
+            it('Should return true for non-equal strings', function() {
+                assert.equal(
+                    runtime.exports.object_neq(
+                        util.make_string("abcdefg"),
+                        util.make_string("abc")
+                    ),
+                    Tridash.Marshaller.True
+                );
+            });
+
+            it('Should return true for non-identical objects', function() {
+                assert.equal(
+                    runtime.exports.object_neq(
+                        runtime.exports.fail_arity_error(),
+                        runtime.exports.fail_type_error()
+                    ),
+                    Tridash.Marshaller.True
+                );
+            });
+
+            it('Should return failures in arguments', function() {
+                const f = runtime.exports.make_failure("my-type");
+
+                assert.equal(
+                    runtime.exports.object_neq(f, im(9)),
+                    f
+                );
+
+                assert.equal(
+                    runtime.exports.object_neq(im(9), f),
+                    f
+                );
+
+                assert.equal(
+                    runtime.exports.object_neq(f, f),
+                    f
+                );
+            });
+        });
+    });
+
     describe('Failures', function() {
         describe('make_failure', function() {
             it('Should create a failure on the heap', function() {
@@ -1119,6 +1450,15 @@ describe('Core Functions', function() {
                 assert.equal(runtime.exports.list_node_head(node), im(53));
             });
 
+            it('Should return the first element of an array', function() {
+                const array = util.make_array([im(76), im(8), util.make_float(56.7)]);
+
+                assert.equal(
+                    runtime.exports.list_node_head(array),
+                    im(76)
+                );
+            });
+
             it('Should return a failure of type Empty when given an empty list', function() {
                 const list = runtime.exports.empty_list();
                 var head = runtime.exports.list_node_head(list);
@@ -1174,6 +1514,24 @@ describe('Core Functions', function() {
 
                 assert.equal(runtime.exports.list_node_tail(node1), node2);
                 assert.equal(runtime.exports.list_node_tail(node2), runtime.exports.empty_list());
+            });
+
+            it('Should return linked list of remaining elements of array', function() {
+                const array = util.make_array([im(1), im(2), im(3)]);
+
+                const tail1 = runtime.exports.list_node_tail(array);
+                const tail2 = runtime.exports.list_node_tail(tail1);
+                const tail3 = runtime.exports.list_node_tail(tail2);
+
+                assert.equal(runtime.exports.list_node_head(tail1), im(2));
+                assert.equal(runtime.exports.list_node_head(tail2), im(3));
+                assert.equal(tail3, runtime.exports.empty_list());
+            });
+
+            it('Should return Empty list when given array of one element', function() {
+                const array = util.make_array([im(1)]);
+
+                assert.equal(runtime.exports.list_node_tail(array), runtime.exports.empty_list());
             });
 
             it('Should return a failure of type Empty when given an empty list', function() {
