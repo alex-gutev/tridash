@@ -403,6 +403,9 @@
 (define-tridash-function |cons?| (thing)
   (consp (resolve% thing)))
 
+(define-tridash-function |Empty-List| ()
+  (progn +empty-list+))
+
 (defun empty-list ()
   "Returns a `THUNK' which signals a `TRIDASH-FAIL' condition with the
    empty list type."
