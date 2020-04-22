@@ -51,6 +51,8 @@
                 :with-struct-slots)
 
   (:import-from :tridash.frontend
+                :*node-true*
+                :*node-false*
                 :outer-nodes
                 :change-module)
 
@@ -1570,7 +1572,7 @@
       (with-module-table modules
         (build "/external(not, x)"
                "not(on) -> /state(on, default, toggle)"
-               "0 -> on"
+               "False -> on"
 
                "the-state -> /state(on)")
 
@@ -1579,7 +1581,9 @@
                      (toggle-state-on ("/state" "on" "default" "toggle"))
                      (not-on ("not" "on"))
                      (the-state "the-state")
-                     (if "if"))
+                     (if "if")
+
+                     (false "False"))
             modules
 
           (let ((equal (get :symbol-equal tridash.frontend::*core-meta-nodes*))
@@ -1591,12 +1595,12 @@
               `(,if
                 (,if (,equal (,previous ,(node-ref state-on)) ,(id-symbol "default"))
                      (,equal ,state ,(id-symbol "toggle"))
-                     0)
+                     ,(node-ref *node-false*))
 
                 (,previous ,(node-ref toggle-state-on))
                 (,previous ,(node-ref on))))
 
-            (test-value-function on :init 0)
+            (test-simple-binding false on)
 
             (test-binding not-on toggle-state-on)
             (test-binding the-state state-on))))))
@@ -2476,7 +2480,7 @@
               `(,if
                 (,if (,equal (,previous ,(node-ref state-on)) ,(id-symbol "default"))
                      (,equal ,state ,(id-symbol "toggle"))
-                     0)
+                     ,(node-ref *node-false*))
 
                 (,previous ,(node-ref toggle-state-on))
                 (,previous ,(node-ref on))))
