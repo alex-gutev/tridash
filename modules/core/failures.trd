@@ -45,8 +45,11 @@
 ## Evaluates to true if `x` fails, false otherwise.
 
 fails?(x) : {
-    x and 0 -> @(self)
-    1 -> @(self)
+    # If `x` evaluates to a failure value then so does the expression
+    # x != x, otherwise the expression evaluates to False.
+
+    x != x -> @(self)
+    True -> @(self)
 }
 
 ## Checks whether `x` fails with failure type `type`
@@ -59,7 +62,7 @@ fails?(x) : {
 
 fail-type?(x, type) : {
     fail-type(x) = type -> @(self)
-    0 -> @(self)
+    False -> @(self)
 }
 
 ## Checks whether `x` evaluates to a value.
@@ -79,7 +82,7 @@ fail-type?(x, type) : {
 ## Evaluates to true if `x` evaluates to a value (does not fail).
 ## If `x` fails, this node also fails.
 
-!!(x) : not(x and 0)
+!!(x) : not(x != x)
 
 ## If `test` fails, the entire node fails with the same failure type,
 ## otherwise the node evaluates to `value`.
