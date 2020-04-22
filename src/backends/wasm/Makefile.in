@@ -124,7 +124,8 @@ runtime/lists.o: runtime/lists.c $(lists_h_deps) \
 	$(memory_h_deps) \
 	$(copying_h_deps) \
 	$(thunk_h_deps) \
-	$(failures_h_deps)
+	$(failures_h_deps) \
+	$(arrays_h_deps)
 	$(EMCC) -fPIC -O2 $< -o $@ -c
 
 runtime/meta-nodes.o: runtime/meta-nodes.c $(meta_nodes_h_deps) \

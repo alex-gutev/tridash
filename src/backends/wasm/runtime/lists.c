@@ -40,8 +40,34 @@
 #include "copying.h"
 #include "thunk.h"
 #include "failures.h"
+#include "arrays.h"
 
 #define TRIDASH_LIST_NODE_SIZE offsetof(struct tridash_object, list_node) + sizeof(struct list_node)
+
+/**
+ * Return the first element of an array.
+ *
+ * If the array is empty (which should not occur in generated Tridash
+ * code), a Type-Error failure is returned.
+ *
+ * @param array The array.
+ *
+ * @return The first element.
+ */
+static uintptr_t array_first(const struct array *array);
+
+/**
+ * Return the remaining elements of an array, after the first, in a
+ * linked list.
+ *
+ * If the array is empty (which should not occur in generated Tridash
+ * code), a Type-Error failure is returned.
+ *
+ * @param array The array.
+ *
+ * @return Linked list of the remainder of the array
+ */
+static uintptr_t array_tail(const struct array *array);
 
 
 void * make_list_node(uintptr_t head, uintptr_t tail) {
@@ -117,6 +143,9 @@ uintptr_t list_node_head(uintptr_t ptr) {
     case TRIDASH_TYPE_LIST_NODE:
         return obj->list_node.head;
 
+    case TRIDASH_TYPE_ARRAY:
+        return array_first(&obj->array);
+
     default:
         return make_fail_type_error();
     }
@@ -147,7 +176,46 @@ uintptr_t list_node_tail(uintptr_t ptr) {
             make_fail_type_error();
     }
 
+    case TRIDASH_TYPE_ARRAY:
+        return array_tail(&obj->array);
+
     default:
         return make_fail_type_error();
     }
+}
+
+
+/** Array Elements */
+
+uintptr_t array_first(const struct array *array) {
+    if (!array->size)
+        return make_fail_type_error();
+
+    return array->elements[0];
+}
+
+uintptr_t array_tail(const struct array *array) {
+    if (!array->size)
+        return make_fail_type_error();
+
+    if (array->size == 1)
+        return empty_list();
+
+    size_t n = array->size - 1;
+    const uintptr_t *element = &array->elements[1];
+
+    struct tridash_object *node = make_list_node(*element, empty_list());
+    uintptr_t head = (uintptr_t)node;
+
+    n--;
+    element++;
+
+    while (n--) {
+        struct tridash_object *new_node = make_list_node(*element, empty_list());
+        node->list_node.tail = (uintptr_t)new_node;
+
+        node = new_node;
+    }
+
+    return head;
 }
