@@ -465,7 +465,12 @@
     (ensure-get name *operand-vars* (gensym (mkstr name)))))
 
 (defmethod tridash->cl ((ref node-ref) &key)
-  (node-ref-node ref))
+  (with-struct-slots node-ref- (node) ref
+    (if (or (= node *node-true*)
+            (= node *node-false*))
+
+        (= node *node-true*)
+        node)))
 
 
 ;;; Object Expressions

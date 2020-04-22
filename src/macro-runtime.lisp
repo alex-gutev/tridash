@@ -206,6 +206,9 @@
 (deftype tridash-value ()
   `(or string symbol number))
 
+(deftype tridash-bool ()
+  `(or null (eql t)))
+
 (defmacro check-tridash-types ((&rest vars) &body body)
   "Performs type checking and signals a `TRIDASH-FAIL' condition if
    type checking fails. Each element of VARS is a list where the first
@@ -232,7 +235,8 @@
 ;;; Conditionals
 
 (define-tridash-function |if| (cond then &optional (else (fail-thunk)))
-  (if (bool-value (resolve% cond)) then else))
+  (check-tridash-types ((cond tridash-bool))
+    (if cond then else)))
 
 (define-tridash-function |member| (object key)
   (check-tridash-types ((object hash-map))
@@ -253,24 +257,16 @@
    (if testp
        (lambda (fail)
          (thunk
-          (let ((type (fail-type fail)))
-            (if (bool-value (resolve (call-node test (list type))))
-                catch
-                (fail-thunk type)))))
+          (if-let (type (fail-type fail))
+            (let ((test (call-node test (list type))))
+              (check-tridash-types ((test tridash-bool))
+                (if test catch (fail-thunk type))))
+
+            (fail-thunk))))
 
        (lambda (fail)
          (declare (ignore fail))
          catch))))
-
-(defun test-fail-type (try catch test)
-  "Applies the function/meta-node TEST on the failure type of TRY. If
-   the result is true, returns CATCH otherwise returns a thunk which
-   fails with the same type as TRY."
-
-  (let ((type (get-fail-type try)))
-    (if (bool-value (call-node test (list type)))
-        catch
-        (fail-thunk type))))
 
 
 (define-tridash-function% |fail| (&optional type)
@@ -299,13 +295,14 @@
 ;;; Boolean Expressions
 
 (define-tridash-function |and| (a b)
-  (if (bool-value (resolve% a)) b 0))
+  (check-tridash-types ((a tridash-bool))
+    (and a (check-tridash-types ((b tridash-bool)) b))))
 
 (define-tridash-function |or| (a b)
-  (or (bool-value (resolve% a)) b))
+  (check-tridash-types ((a tridash-bool))
+    (or a (check-tridash-types ((b tridash-bool)) b))))
 
-(define-tridash-function |not| (a)
-  (if (bool-value (resolve% a)) 0 1))
+(define-tridash-function |not| ((a tridash-bool)) not)
 
 
 ;;; Arithmetic
