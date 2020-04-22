@@ -122,7 +122,9 @@ uintptr_t object_eq(uintptr_t a, uintptr_t b) {
 }
 
 uintptr_t object_neq(uintptr_t a, uintptr_t b) {
-    return object_eq(a, b) ^ 0x2;
+    uintptr_t result = object_eq(a, b);
+
+    return IS_FAIL(result) ? result : result ^ 0x4;
 }
 
 uintptr_t symbol_eq(uintptr_t a, uintptr_t b) {
