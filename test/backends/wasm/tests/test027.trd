@@ -1,0 +1,25 @@
+## Test Rest Arguments
+
+/import(core, +, foldl', <-)
+
+add(x, ..(xs)) : foldl'(x, +, xs)
+
+output1 <- add(1, x, y)
+output2 <- add(x, y)
+output3 <- add(x) + add(y)
+
+
+## Input Attributes
+
+/attribute(x, input, 1)
+/attribute(y, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output1, public-name, "output1")
+/attribute(output2, public-name, "output2")
+/attribute(output3, public-name, "output3")
+
+/attribute(x, public-name, "x")
+/attribute(y, public-name, "y")

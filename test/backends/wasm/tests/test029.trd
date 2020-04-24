@@ -1,0 +1,28 @@
+## Test Local Nodes: Cyclic Bindings
+
+/import(core, cons, <-)
+
+cycle(a, b) : {
+    x; y;
+
+    x <- cons(a, y)
+    y <- cons(b, x)
+
+    x
+}
+
+
+output <- cycle(x, y)
+
+
+## Input Attributes
+
+/attribute(x, input, 1)
+/attribute(y, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output, public-name, "output")
+/attribute(x, public-name, "x")
+/attribute(y, public-name, "y")

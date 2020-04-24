@@ -182,7 +182,20 @@ test_files = test001.wasm \
 	test023.wasm \
 	test024.wasm \
 	test025.wasm \
-	test026.wasm
+	test026.wasm \
+	test027.wasm \
+	test028.wasm \
+	test029.wasm \
+	test030.wasm \
+	test031.wasm \
+	test032.wasm \
+	test033.wasm \
+	test034.wasm \
+	test035.wasm \
+	test036.wasm \
+	test037.wasm \
+	test038.wasm \
+	test039.wasm
 
 test_inputs = $(addprefix $(testdir)/tests/, $(test_files));
 

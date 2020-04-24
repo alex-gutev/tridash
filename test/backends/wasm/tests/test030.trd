@@ -1,0 +1,21 @@
+## Test Self Node Bindings
+
+/import(core, cons, <-)
+
+Person(first, last) : {
+    first -> self.first
+    last -> self.last
+}
+
+output <- Person(name, "Smith")
+
+
+## Input Attributes
+
+/attribute(name, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output, public-name, "output")
+/attribute(name, public-name, "name")
