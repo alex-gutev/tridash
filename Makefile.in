@@ -95,6 +95,7 @@ sources = tridash.asd \
         src/backends/javascript/html.lisp \
 	src/backends/wasm/package.lisp \
 	src/backends/wasm/backend.lisp \
+	src/backends/wasm/builtin.lisp \
 	src/backends/wasm/expressions.lisp \
 	$(plump_sources)
 

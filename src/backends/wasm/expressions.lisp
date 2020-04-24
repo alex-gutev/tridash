@@ -762,6 +762,12 @@
      (">" . ((i32 . i32.gt_s) (f32 . f32.ge)))
      (">=" . ((i32 . i32.ge_s) (f32 . f32.ge))))))
 
+(defconstant +builtin-operators+
+  (alist-hash-map
+   '(("not" . not)
+     ("and" . and)
+     ("or" . or))))
+
 
 (defmethod compile-expression ((expression functor-expression) &key)
   (with-struct-slots functor-expression- (meta-node arguments outer-nodes)
@@ -839,6 +845,9 @@
                                 :strict-p t
                                 :immediate-p t
                                 :instructions))))
+
+      ((get name +builtin-operators+)
+       (compile-builtin it arguments))
 
       ((= name "if")
        (compile-if-expression arguments))

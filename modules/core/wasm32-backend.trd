@@ -66,6 +66,13 @@
 /attribute(if, wasm-name, "if")
 
 
+### Boolean Operators
+
+/attribute(not, wasm-name, "not")
+/attribute(or, wasm-name, "or")
+/attribute(and, wasm-name, "and")
+
+
 ### Lists
 
 /attribute(cons, wasm-name, runtime.make_list_node)

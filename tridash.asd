@@ -83,6 +83,7 @@
                           :serial t
                           :components ((:file "package")
                                        (:file "expressions")
+                                       (:file "builtin")
                                        (:file "backend"))))))
 
   :depends-on (:anaphora
