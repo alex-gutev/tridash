@@ -752,8 +752,8 @@
    `(("+" . ((i32 . i32.add) (f32 . f32.add)))
      ("-" . ((i32 . i32.sub) (f32 . f32.sub)))
      ("*" . ((i32 . i32.mul) (f32 . f32.mul)))
-     ("/" . ((i32 . i32.div_s) (f32 . f32.div_s)))
-     ("%" . ((i32 . i32.rem_s) (f32 . f32.rem_s))))))
+     ("/" . ((i32 . i32.div_s) (f32 . f32.div)))
+     ("%" . ((i32 . i32.rem_s) (f32 . f32.rem))))))
 
 (defconstant +relational-operators+
   (alist-hash-map
@@ -1990,6 +1990,11 @@
                    (expand `(local.set (ref ,label)))
                    `((local.get ,label))))
 
+                 ((list (or 'local.set 'local.tee) label)
+                  (ensure-get label store-operands nil)
+
+                  (list instruction))
+
                  (_ (list instruction))))
 
              (add-store-operands (instructions)
@@ -2498,10 +2503,10 @@
                   `((if ,@(optimize-instructions body))))
 
                  ((list* 'then body)
-                  `((then ,@(optimize-block nil body))))
+                  `((then ,@(optimize-block nil body t))))
 
                  ((list* 'else body)
-                  `((else ,@(optimize-block nil body))))
+                  `((else ,@(optimize-block nil body t))))
 
 
                  ;; Branch Instructions
@@ -2521,11 +2526,20 @@
 
                  (_ (funcall fn instruction branches))))
 
+             (add-branch (label)
+               (setf branches
+                     (adjoin (convert-branch label) branches)))
+
              (optimize-loop (label body)
                (->> (optimize-block label body)
                     (optimize-block label)))
 
-             (optimize-block (label body)
+             (optimize-block (label body &optional pre-branch)
+               "Apply the optimizations on a block, with instructions
+                BODY and label LABEL. If PRE-BRANCH is true the block
+                is optimized as though its first instruction is a
+                conditional branch out of the block."
+
                (let* ((depth (1+ depth))
                       (blocks (copy blocks))
                       (label (add-label (or label depth))))
@@ -2533,6 +2547,9 @@
 
                  (when block-enter
                    (funcall block-enter label branches))
+
+                 (when pre-branch
+                   (add-branch 0))
 
                  (prog1 (optimize-instructions body)
                    (erase branches label)
@@ -2821,7 +2838,7 @@
          i32.shl
          (i32.const ,+tag-int+)
          i32.or
-         (local.set ,local))
+         (local.set (ref ,local)))
 
         (else
          (i32.const 8)
