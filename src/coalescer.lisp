@@ -458,7 +458,8 @@
              (erase (dependencies obs) node)
              (erase (observers obs) node)
 
-             (setf (node-link-node link) value)
+             (setf (node-link-node link)
+                   (copy-value-expression value))
 
              (let ((context (context obs (node-link-context link))))
                (fold-constant-outer-node-operands context)
@@ -500,6 +501,7 @@
              (destructuring-bind (node . expression) outer-node
                (when (constant-expression? expression)
                  (mark-constant-outer-node meta-node node expression)
+                 (decrease-block-count expression)
                  t)))
 
            (constant-expression? (expression)
@@ -510,7 +512,12 @@
                    (return-from constant-expression? nil)))
                 t)
               expression)
-             t))
+             t)
+
+           (decrease-block-count (expression)
+             (match expression
+               ((expression-block (count (place count)))
+                (decf count)))))
 
     (walk-expression #'fold-in-expression (value-function context))))
 
@@ -529,7 +536,9 @@
           (erase (contexts local-node) :input)
 
           (setf (attribute :input local-node) nil)
-          (setf (value-function (context local-node :init)) value)
+
+          (setf (value-function (context local-node :init))
+                (copy-value-expression value))
 
           local-node)))))
 
@@ -564,6 +573,39 @@
     (slet (get :outer-operands attributes)
       (setf it (remove-if-not #'input-node? it :key #'cdr)))))
 
+(defun copy-value-expression (expression)
+  "Copy a node value expression. `NODE-LINK' objects, which point to
+   expressions rather than nodes are replaced directly with a copy of
+   the pointed to expressions, without creating an `EXPRESSION-BLOCK'
+   object."
+
+  (let ((blocks (make-hash-map)))
+    (labels ((copy-expression (expression)
+               (match expression
+                 ((node-link- (node (and (not (type node)) expression)))
+                  (copy-expression expression))
+
+                 ((and (expression-block expression count) block)
+                  (ensure-get block blocks
+                    (expression-block
+                     (copy-expression expression)
+                     :count count)))
+
+                 ((cyclic-reference- expression)
+                  (cyclic-reference (copy-expression expression)))
+
+                 (_ (map-expression! #'copy-expression expression))))
+
+             (strip-blocks (expression)
+               (match expression
+                 ((expression-block- expression)
+                  (strip-blocks expression))
+
+                 (_ expression))))
+
+      (-> expression
+          copy-expression
+          strip-blocks))))
 
 
 ;;;; Structure Checking
