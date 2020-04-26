@@ -56,7 +56,9 @@ function resolve_list(thing, n) {
         thing = thing.tail;
     };
 
-    return thing;
+    assert.deepStrictEqual(thing, Tridash.Marshaller.FailTypes.Empty, 'Last list node not Empty list.');
+
+    return result;
 }
 
 exports.resolve_list = resolve_list;
