@@ -757,7 +757,8 @@ Marshaller.TridashValue = function(ptr) {
 
 Marshaller.FailTypes = {
     NoValue   : new Marshaller.Node(0),
-    TypeError : new Marshaller.Node(1)
+    TypeError : new Marshaller.Node(1),
+    Empty     : new Marshaller.Node(6)
 };
 
 
