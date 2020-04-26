@@ -247,7 +247,8 @@
           :memory-size (1+ (ceiling memory-size (* 64 1024)))
           :runtime-base memory-size
           :num-nodes (length out-nodes)
-          :stack-size *stack-size*)
+          :stack-size *stack-size*
+          :imports (map-values (imports *linker-state*)))
 
          options)))))
 
@@ -282,7 +283,7 @@
    (with-open-file (*standard-output* out-file :direction :output :if-exists :supersede)
      (output-code code))))
 
-(defun make-loader-code (out-file code options &key table-size memory-size runtime-base num-nodes stack-size)
+(defun make-loader-code (out-file code options &key table-size memory-size runtime-base num-nodes stack-size imports)
   "Generate the code which loads the WebAssembly runtime and compiled
    modules. CODE is the JavaScript node initialization code which
    should be executed after the modules are loaded."
@@ -304,7 +305,9 @@
          (list "memory_base" runtime-base)
 
          (list "stack_size" stack-size)
-         (list "num_nodes" num-nodes))))
+         (list "num_nodes" num-nodes)
+
+         (list "imports" (make-import-functions imports)))))
 
       (js-member "then")
       (js-call
@@ -368,6 +371,67 @@
 
     public-nodes)))
 
+(defun make-import-functions (imports)
+  "Generate code which creates the object containing the functions
+   imported by the module."
+
+  (labels ((make-import-module (module)
+             (destructuring-bind (name . imports) module
+               (list
+                (js-string name)
+
+                (js-object
+                 (map #'make-import imports)))))
+
+           (make-import (import)
+             (with-struct-slots wasm-import- (module name) import
+               (list (js-string name) (function-name module name))))
+
+           (function-name (module name)
+             (if (= module "default")
+                 name
+                 (js-member module name)))
+
+           (group-by-module (imports)
+             (unless (emptyp imports)
+               (let ((it (iterator imports)))
+                 (nlet group ((groups nil))
+                   (if (endp it)
+                       groups
+
+                       (let ((module (-> (at it)
+                                         wasm-import-module
+                                         module-name)))
+
+                         (-<> (keep-same-module module it)
+                              (cons module <>)
+                              (cons groups)
+                              group)))))))
+
+           (keep-same-module (module it)
+             (nlet keep ((imports nil))
+               (if (endp it)
+                   imports
+
+                   (let ((import (at it)))
+                     (if (= (module-name (wasm-import-module import)) module)
+                         (progn
+                           (advance it)
+                           (keep (cons import imports)))
+                         imports)))))
+
+           (module-name (module)
+             (typecase module
+               ((or string symbol) (string module))
+               (otherwise module))))
+
+    (-<> (remove-if-not (curry #'= :func) imports :key #'wasm-import-type)
+         (remove "runtime" <> :key #'wasm-import-module)
+         (sort :key (compose #'module-name #'wasm-import-module))
+         group-by-module
+         (map #'make-import-module <>)
+         js-object)))
+
 
 ;;; Tridash Module
 
@@ -399,7 +463,7 @@
                (and (type (or string symbol)) module)
                (and (type (or string symbol)) name))
 
-         (list (and (type (or string symbol)) name)))
+         (and (not nil) (type (or string symbol)) name))
 
      (let* ((module (if module (string module) "default"))
             (name (string name))

@@ -93,6 +93,9 @@ function decode_u32(bytes, offset) {
  *
  * @param num_nodes Number of nodes in the module.
  *
+ * @param imports Module imports object, excluding the runtime library
+ *   imports.
+ *
  * @return An object with the following properties:
  *
  *   module:  Tridash Module Instance
@@ -108,6 +111,8 @@ async function load_module_sync({
 
     stack_size,
     num_nodes,
+
+    imports,
 }) {
     const fs = require('fs');
 
@@ -159,11 +164,9 @@ async function load_module_sync({
 
     // Load Tridash WebAssembly Module
 
-    var imports = {
-        runtime: {
-            table: table,
-            memory: memory
-        }
+    imports.runtime = {
+        table: table,
+        memory: memory
     };
 
     Object.assign(imports.runtime, runtime.exports);
