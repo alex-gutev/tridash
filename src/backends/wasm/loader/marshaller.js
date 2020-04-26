@@ -79,6 +79,9 @@ class Marshaller {
         else if (typeof value === 'string') {
             return this.to_tridash_string(value);
         }
+        else if (Array.isArray(value)) {
+            return this.to_tridash_array(value);
+        }
         else if (value instanceof Marshaller.Fail) {
             return this.module.exports.make_failure(
                 this.to_tridash(value.type)
@@ -156,6 +159,25 @@ class Marshaller {
         bytes.set(utf8);
 
         return ptr;
+    }
+
+    /**
+     * Convert a JavaScript array to a Tridash object array. Each
+     * object in the array is converted to a Tridash object, by
+     * to_tridash.
+     *
+     * @param array JavaScript array.
+     *
+     * @return Pointer to the Tridash array.
+     */
+    to_tridash_array(array) {
+        const loc = this.stack_push(this.make_array(array.length));
+
+        for (var i = 0; i < array.length; i++) {
+            this.set_array_elem(this.get_word(loc), i, this.to_tridash(array[i]));
+        }
+
+        return this.stack_pop();
     }
 
 
