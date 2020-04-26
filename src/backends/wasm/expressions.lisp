@@ -1211,7 +1211,7 @@
                           i32.add
 
                           (local.get (ref ,operator))
-                          (i32.const 8)
+                          (i32.const 12)
                           i32.add
 
                           (local.get (ref ,operator))
