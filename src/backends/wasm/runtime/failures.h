@@ -83,4 +83,16 @@ export uintptr_t make_fail_no_value(void);
 export uintptr_t fail_arity_error(void);
 export uintptr_t make_fail_arity_error(void);
 
+/* Invalid Integer */
+export uintptr_t fail_invalid_integer(void);
+uintptr_t make_fail_invalid_integer(void);
+
+/* Invalid Real */
+export uintptr_t fail_invalid_real(void);
+uintptr_t make_fail_invalid_real(void);
+
+/* Index Out of Bounds */
+export uintptr_t fail_index_out_bounds(void);
+uintptr_t make_fail_index_out_bounds(void);
+
 #endif /* TRIDASH_FAILURES_H */

@@ -66,7 +66,7 @@ enum builtin_node_index {
     /** Failure Type: Arity Error */
     index_fail_arity_error = 4,
     /** Failure Type: Index Out of Bounds */
-    index_fail_out_bounds = 5,
+    index_fail_index_out_bounds = 5,
 
     /** Node Representing the empty list */
     index_empty_list = 6

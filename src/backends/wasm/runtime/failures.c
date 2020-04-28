@@ -100,13 +100,29 @@ static const struct tridash_object node_fail_arity_error = {
     .node = {index_fail_arity_error}
 };
 
+static const struct tridash_object node_fail_invalid_integer = {
+    .type = TRIDASH_TYPE_NODE,
+    .node = {index_fail_invalid_integer}
+};
+
+static const struct tridash_object node_fail_invalid_real = {
+    .type = TRIDASH_TYPE_NODE,
+    .node = {index_fail_invalid_real}
+};
+
+static const struct tridash_object node_fail_index_out_bounds = {
+    .type = TRIDASH_TYPE_NODE,
+    .node = {index_fail_index_out_bounds}
+};
+
+
 
 uintptr_t fail_type_error(void) {
     return (uintptr_t)&node_fail_type_error;
 }
 
 uintptr_t make_fail_type_error(void) {
-    return make_failure((uintptr_t)&node_fail_type_error);
+    return make_failure(fail_type_error());
 }
 
 uintptr_t fail_no_value(void) {
@@ -114,7 +130,7 @@ uintptr_t fail_no_value(void) {
 }
 
 uintptr_t make_fail_no_value(void) {
-    return make_failure((uintptr_t)&node_fail_no_value);
+    return make_failure(fail_no_value());
 }
 
 uintptr_t fail_arity_error(void) {
@@ -122,5 +138,29 @@ uintptr_t fail_arity_error(void) {
 }
 
 uintptr_t make_fail_arity_error(void) {
-    return make_failure((uintptr_t)&node_fail_arity_error);
+    return make_failure(fail_arity_error());
+}
+
+uintptr_t fail_invalid_integer(void) {
+    return (uintptr_t)&node_fail_invalid_integer;
+}
+
+uintptr_t make_fail_invalid_integer(void) {
+    return make_failure(fail_invalid_integer());
+}
+
+uintptr_t fail_invalid_real(void) {
+    return (uintptr_t)&node_fail_invalid_real;
+}
+
+uintptr_t make_fail_invalid_real(void) {
+    return make_failure(fail_invalid_real());
+}
+
+uintptr_t fail_index_out_bounds(void) {
+    return (uintptr_t)&node_fail_index_out_bounds;
+}
+
+uintptr_t make_fail_index_out_bounds(void) {
+    return make_failure(fail_index_out_bounds());
 }

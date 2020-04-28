@@ -82,6 +82,9 @@
 /attribute(Empty-List, wasm-name, runtime.empty_list)
 
 
+### Objects
+
+/attribute(member, wasm-name, runtime.object_member);
 ### Failures
 
 /attribute(fail, wasm-name, runtime.make_failure)
@@ -90,6 +93,11 @@
 /attribute(catch, wasm-name, runtime.make_catch_thunk);
 
 
-### Objects
+### Builtin Failure Types
 
-/attribute(member, wasm-name, runtime.object_member);
+/attribute(No-Value%, wasm-name, runtime.fail_no_value)
+/attribute(Type-Error%, wasm-name,  runtime.fail_type_error)
+/attribute(Index-Out-Bounds%, wasm-name, runtime.fail_index_out_bounds)
+/attribute(Invalid-Integer%, wasm-name, runtime.fail_invalid_integer)
+/attribute(Invalid-Real%, wasm-name, runtime.fail_invalid_real)
+/attribute(Arity-Error%, wasm-name, runtime.fail_arity_error)
