@@ -1,0 +1,43 @@
+## This test file is adapted from tutorial 9, from which, when
+## compiling, a bug in the JS backend was discovered.
+
+/import(core)
+
+Negative-Number  <- &(Negative-Number)
+Negative-Number! <- fail(Negative-Number)
+
+validate(x) :
+    case(
+        x >= 0 : x,
+        Negative-Number!
+    )
+
+valid-int(value) : {
+    x <- int(value)
+
+    validate(x)
+}
+
+/attribute(valid-int, target-node, valid-int)
+
+x -> node @ context
+y -> node @ context when Invalid-Integer
+z -> node @ context when Negative-Number
+
+in-x -> valid-int(x)
+in-y -> valid-int(y)
+in-z -> valid-int(z)
+
+# Input Attributes
+
+/attribute(in-x, input, 1)
+/attribute(in-y, input, 1)
+/attribute(in-z, input, 1)
+
+
+# Public Name Attributes
+
+/attribute(in-x, public-name, "in_x")
+/attribute(in-y, public-name, "in_y")
+/attribute(in-z, public-name, "in_z")
+/attribute(node, public-name, "output")
