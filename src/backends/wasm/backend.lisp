@@ -778,6 +778,10 @@
   (flet ((make-node (node)
            (multiple-value-list
             (create-node node))))
+
+    ;; Ensure each node has a unique index
+    (foreach #'node-index nodes)
+
     (map-to 'list #'make-node nodes)))
 
 (defgeneric create-node (node)
