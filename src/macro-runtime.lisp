@@ -473,3 +473,25 @@
                    tail))))
 
     (call-node f (resolve-list args))))
+
+
+;;; Builtin Failure Types
+
+(define-tridash-function |No-Value%| ()
+  (progn +fail-type-no-value+))
+
+(define-tridash-function |Type-Error%| ()
+  (progn +fail-type-type-error+))
+
+(define-tridash-function |Arity-Error%| ()
+  (progn +fail-type-arity-error+))
+
+
+(define-tridash-function |Invalid-Integer%| ()
+  (progn +fail-type-invalid-integer+))
+
+(define-tridash-function |Invalid-Real%| ()
+  (progn +fail-type-invalid-real+))
+
+(define-tridash-function |Index-Out-Bounds%| ()
+  (progn +fail-type-index-out-bounds+))

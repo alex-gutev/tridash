@@ -35,6 +35,10 @@
 
 (define-symbol-macro +fail-type-index-out-bounds+ (get :index-out-bounds *core-meta-nodes*))
 
+(define-symbol-macro +fail-type-invalid-integer+ (get :invalid-integer *core-meta-nodes*))
+
+(define-symbol-macro +fail-type-invalid-real+ (get :invalid-real *core-meta-nodes*))
+
 
 ;;; Macro Compiler State
 
