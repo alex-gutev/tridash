@@ -56,15 +56,12 @@ function dylink_mem_size(module) {
 function decode_u32(bytes, offset) {
     var result = 0;
     var shift = 0;
-
     var i = offset;
 
     do {
         result |= (bytes[i] & 0x7F) << shift;
-
-        i++;
-        shift += 1;
-    } while (bytes[i] & 0x80);
+        shift += 7;
+    } while (bytes[i++] & 0x80);
 
     return result;
 }
