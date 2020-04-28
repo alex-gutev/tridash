@@ -85,6 +85,13 @@
 ### Objects
 
 /attribute(member, wasm-name, runtime.object_member);
+
+
+### Type Conversions
+
+/attribute(int, wasm-name, runtime.object_to_int)
+
+
 ### Failures
 
 /attribute(fail, wasm-name, runtime.make_failure)
