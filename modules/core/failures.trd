@@ -101,37 +101,37 @@ fail-type?(x, type) : {
 
 ## Failure type indicating that an optional argument was not provided.
 
-&(No-Value%) -> No-Value
+No-Value%() -> No-Value
 fail(No-Value) -> No-Value!
 
 ## Failure type indicating that an argument to a meta-node is of an
 ## incorrect type.
 
-&(Type-Error%) -> Type-Error
+Type-Error%() -> Type-Error
 fail(Type-Error) -> Type-Error!
 
 ## Failure type indicating that an integer could not be parsed from a
 ## string value.
 
-&(Invalid-Integer%) -> Invalid-Integer
+Invalid-Integer%() -> Invalid-Integer
 fail(Invalid-Integer) -> Invalid-Integer!
 
 ## Failure type indicating that a real number could not be parsed from
 ## a string value.
 
-&(Invalid-Real%) -> Invalid-Real
+Invalid-Real%() -> Invalid-Real
 fail(Invalid-Real) -> Invalid-Real!
 
 ## Failure type indicating that a meta-node was invoked with an
 ## incorrect number of arguments.
 
-&(Arity-Error%) -> Arity-Error
+Arity-Error%() -> Arity-Error
 fail(Arity-Error) -> Arity-Error!
 
 ## Failure type indicating that an index into a list or string is out
 ## of bounds.
 
-&(Index-Out-Bounds%) -> Index-Out-Bounds
+Index-Out-Bounds%() -> Index-Out-Bounds
 fail(Index-Out-Bounds) -> Index-Out-Bounds!
 
 
