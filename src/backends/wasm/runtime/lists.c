@@ -215,6 +215,7 @@ uintptr_t array_tail(const struct array *array) {
         node->list_node.tail = (uintptr_t)new_node;
 
         node = new_node;
+        element++;
     }
 
     return head;

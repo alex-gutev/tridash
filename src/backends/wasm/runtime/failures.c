@@ -57,11 +57,11 @@ uintptr_t failure_type(uintptr_t ptr) {
     ptr = resolve(ptr);
 
     if (!IS_FAIL(ptr))
-       return fail_type_error();
+       return make_fail_type_error();
 
     struct tridash_object *object = (void *)(ptr & ~(uintptr_t)TAG_MASK);
 
-    return object->fail_type;
+    return object->fail_type ? object->fail_type : make_fail_no_value();
 }
 
 
@@ -114,7 +114,6 @@ static const struct tridash_object node_fail_index_out_bounds = {
     .type = TRIDASH_TYPE_NODE,
     .node = {index_fail_index_out_bounds}
 };
-
 
 
 uintptr_t fail_type_error(void) {

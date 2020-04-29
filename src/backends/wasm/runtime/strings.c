@@ -46,3 +46,10 @@ void *copy_string(const void *ptr) {
 
     return dest;
 }
+
+void *string_end_ptr(struct string *str) {
+    void *ptr = &str->data[str->size];
+    ptr += ~(uintptr_t)ptr + 1 & TAG_MASK;
+
+    return ptr;
+}

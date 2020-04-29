@@ -1687,9 +1687,12 @@
                    (hash-field field)
 
                  (loop
-                    for index = (mod code num-buckets)
+                    for index = (mod code num-buckets) then
+                      (mod (1+ index) num-buckets)
+
                     for bucket = (elt buckets index)
                     while bucket
+
                     finally
                       (setf (elt buckets index)
                             (list (+ 4 offset) field-index)))))

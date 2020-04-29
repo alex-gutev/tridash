@@ -153,4 +153,9 @@
  */
 #define TRIDASH_BOOL(x) ((x) ? TRIDASH_TRUE : TRIDASH_FALSE)
 
+
+//// Assertions
+
+#define ASSERT_FAIL asm("unreachable");
+
 #endif /* TRIDASH_MACROS_H */

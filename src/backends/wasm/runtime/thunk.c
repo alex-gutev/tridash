@@ -87,6 +87,7 @@ uintptr_t resolve(uintptr_t value) {
             object->resolved_value = res;
 
             value = res;
+
         } break;
 
         case TRIDASH_TYPE_CATCH_THUNK:
@@ -147,7 +148,7 @@ void *copy_thunk_result(void *src) {
         src = (void*)object->resolved_value;
 
         if (!IS_REF(src))
-            return src;
+            break;
 
         object = src;
     }
@@ -197,7 +198,9 @@ void *copy_catch_thunk_objects(void *ptr) {
 
     object->catch_thunk.value = (uintptr_t)copy_object((void *)object->catch_thunk.value);
     object->catch_thunk.fail_value = (uintptr_t)copy_object((void *)object->catch_thunk.fail_value);
-    object->catch_thunk.test = (uintptr_t)copy_object((void *)object->catch_thunk.test);
 
-    return &object->catch_thunk.fail_value + 1;
+    if (object->catch_thunk.test)
+        object->catch_thunk.test = (uintptr_t)copy_object((void *)object->catch_thunk.test);
+
+    return &object->catch_thunk.test + 1;
 }

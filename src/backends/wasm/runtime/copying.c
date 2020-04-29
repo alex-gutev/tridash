@@ -147,7 +147,7 @@ void *copy_referenced_objects(void *ptr) {
 
     case TRIDASH_TYPE_STRING:
     case TRIDASH_TYPE_SYMBOL:
-        return &object->string.data[object->string.size];
+        return string_end_ptr(&object->string);
 
     case TRIDASH_TYPE_FAILURE:
         return copy_failure_type(ptr);
@@ -168,8 +168,9 @@ void *copy_referenced_objects(void *ptr) {
         return copy_list_node_objects(object);
     }
 
-    // Only here to prevent compilation errors
-    // The object should not be of any other type.
+    // The object should not be of any other type
+    ASSERT_FAIL;
+
     return NULL;
 }
 

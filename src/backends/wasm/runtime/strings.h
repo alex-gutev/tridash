@@ -57,6 +57,8 @@ struct string {
  */
 void *copy_string(const void *ptr);
 
+void *string_end_ptr(struct string *str);
+
 /**
  * Check whether two strings are byte-equal.
  *
