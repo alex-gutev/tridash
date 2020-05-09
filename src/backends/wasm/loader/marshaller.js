@@ -435,7 +435,7 @@ class Marshaller {
         const descriptor = view.getUint32(4, true);
         const desc_view = new DataView(this.memory.buffer, descriptor);
 
-        var object = {}
+        var object = new Marshaller.Object(this);
 
         for (var i = 0; i < desc_view.getUint32(4, true); i++) {
             const bucket = 8 + i * 8;
@@ -708,6 +708,42 @@ Marshaller.ListNode = function(marshaller, head, tail) {
         }
     };
 };
+
+/**
+ * Represents a Tridash object with user-defined subnodes.
+ *
+ * @param marshaller Marshaller object.
+ *
+ * The value of each subnode is stored in an object member with the
+ * key being the same as the subnode identifier.
+ *
+ * Initially each subnode value is the raw pointer to the location
+ * within the Tridash heap, where the value is stored. The
+ * resolve_fields method resolves each subnode value and converts it
+ * to a JavaScript value.
+ */
+Marshaller.Object = function(marshaller) {
+    /**
+     * Resolve the value of each subnode and convert it to a
+     * JavaScript value.
+     */
+    this.resolve_fields = function() {
+        const fields = Object.keys(this);
+
+        fields.forEach((field) => {
+            marshaller.stack_push(this[field]);
+        });
+
+        fields.reverse().forEach((field) => {
+            this[field] = marshaller.to_js(
+                marshaller.resolve(
+                    marshaller.stack_pop()
+                )
+            );
+        });
+    };
+};
+
 
 /**
  * Represents a Tridash Failure Value of type @a type.
