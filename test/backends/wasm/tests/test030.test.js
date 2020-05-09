@@ -48,7 +48,7 @@ describe('Integration Test 30', function() {
                 name.set_value("John");
                 const value = output.get_value();
 
-                marshaller.resolve_object_fields(value);
+                Tridash.Marshaller.resolve_subnodes(value);
 
                 assert.equal(value.first, "John");
                 assert.equal(value.last, "Smith");
@@ -60,7 +60,7 @@ describe('Integration Test 30', function() {
                 name.set_value("Bob");
                 const value = output.get_value();
 
-                marshaller.resolve_object_fields(value);
+                Tridash.Marshaller.resolve_subnodes(value);
 
                 assert.equal(value.first, "Bob");
                 assert.equal(value.last, "Smith");

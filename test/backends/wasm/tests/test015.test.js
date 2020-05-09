@@ -32,7 +32,7 @@ const assert = require('assert');
 const mod = require('./test015.js');
 
 describe('Integration Test 15', function() {
-    var module, marshaller, x, y, input, dict;
+    var module, x, y, input, dict;
 
     before(async () => {
         module = await mod.module;
@@ -50,8 +50,7 @@ describe('Integration Test 15', function() {
                 module.set_values([[x, 1], [y, 2]]);
 
                 const value = dict.get_value();
-
-                marshaller.resolve_object_fields(value);
+                Tridash.Marshaller.resolve_subnodes(value);
 
                 assert.equal(value.a, 1);
                 assert.equal(value.b, 2);
