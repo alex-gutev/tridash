@@ -420,9 +420,7 @@ class Marshaller {
      * Convert a user-defined Tridash object to a JavaScript object
      * with equivalent fields.
      *
-     * Note: The values of the object fields are not resolved, nor
-     * converted to JavaScript objects. Rather the pointers to the
-     * field values are stored.
+     * Note: The values of the object fields are not resolved.
      *
      * @param ptr Pointer to the user-defined object.
      *
@@ -435,7 +433,7 @@ class Marshaller {
         const descriptor = view.getUint32(4, true);
         const desc_view = new DataView(this.memory.buffer, descriptor);
 
-        var object = new Marshaller.Object(this);
+        var object = new Marshaller.Object();
 
         for (var i = 0; i < desc_view.getUint32(4, true); i++) {
             const bucket = 8 + i * 8;
@@ -445,31 +443,11 @@ class Marshaller {
 
             if (key !== 0) {
                 object[this.decode_string(key - 4)] =
-                    view.getUint32(8 + index * 4, true);
+                    this.to_js(view.getUint32(8 + index * 4, true));
             }
         }
 
         return object;
-    }
-
-    /**
-     * Resolve, and convert to a JavaScript value, the value of each
-     * field in an object.
-     *
-     * @param object JavaScript object, converted from a Tridash
-     *   user-defined object, in which the fields are pointers to the
-     *   objects.
-     */
-    resolve_object_fields(object) {
-        const fields = Object.keys(object);
-
-        fields.forEach((field) => {
-            this.stack_push(object[field]);
-        });
-
-        fields.reverse().forEach((field) => {
-            object[field] = this.to_js(this.resolve(this.stack_pop()));
-        });
     }
 
     /** Stack Manipulation */
@@ -633,24 +611,124 @@ Marshaller.type_funcref_args = 7;
 /* JS Object Types */
 
 /**
- * Represents a thunk on the Tridash heap.
- *
- * Methods:
- *
- * resolve():
- *
- *   Resolve the thunk and return the resolved value.
- *
- *   NOTE: Must be called before any operations are performed on the
- *   Tridash heap.
+ * Represents a thunk, a value which has not yet been computed, on the
+ * Tridash heap.
  */
-Marshaller.Thunk = function(marshaller, ptr) {
-    this.resolve = () => {
+Marshaller.Thunk = class {
+    /**
+     * Constructor.
+     *
+     * @param marshaller Marshaller object.
+     * @param ptr pointer to the thunk object.
+     */
+    constructor(marshaller, ptr) {
+        this.marshaller = marshaller;
+        this.ptr = ptr;
+    }
+
+    /**
+     * Resolve the thunk, i.e. compute the thunk's value.
+     *
+     * The resolved value is saved in the 'value' member the first
+     * time this method is called. Further calls simply return the
+     * saved value.
+     *
+     * NOTE: The heap must not be manipulated between the creation of
+     * the thunk object and a call to this method. Calling this method
+     * counts as heap manipulation. To resolve multiple thunks use the
+     * Marshaller.resolve_thunks function.
+     *
+     * @return The computed value.
+     */
+    resolve() {
         return this.value === undefined ?
-            (this.value = marshaller.to_js(marshaller.resolve(ptr))) :
+            (this.value = this.marshaller.to_js(this.marshaller.resolve(this.ptr))) :
             this.value;
-    };
+    }
+
+    /**
+     * Save the pointer to the thunk object on the stack.
+     *
+     * For internal use, by the Marshaller library, only.
+     */
+    save_ptr() {
+        if (this.value === undefined)
+            this.marshaller.stack_push(this.ptr);
+    }
+
+    /**
+     * Pop the pointer to the thunk object from the stack.
+     *
+     * NOTE: This method may only be called after a call to
+     * save_ptr. If further elements are pushed onto the stack after
+     * the call to save_ptr, they must be popped off the stack prior
+     * to calling this method.
+     *
+     * For internal use, by the Marshaller library, only.
+     */
+    restore_ptr() {
+        if (this.value === undefined)
+            this.ptr = this.marshaller.stack_pop();
+    }
 };
+
+/**
+ * Resolve multiple thunks simultaneously.
+ *
+ * @param thunks of objects to resolve. All Thunk objects are resolved
+ *   and replaced with the resolved value. Remaining objects are left
+ *   unchanged.
+ *
+ * @return The @a thunks array with all Thunk objects replaced by their
+ *   resolved values.
+ */
+Marshaller.resolve_thunks = function(thunks) {
+    for (const thunk of thunks) {
+        if (thunk instanceof Marshaller.Thunk)
+            thunk.save_ptr();
+    }
+
+    for (var i = thunks.length - 1; i >= 0; i--) {
+        const thunk = thunks[i];
+
+        if (thunk instanceof Marshaller.Thunk) {
+            thunk.restore_ptr();
+            thunk.resolve();
+        }
+    }
+
+    return thunks.map((x) => x instanceof Marshaller.Thunk ? x.value : x);
+}
+
+/**
+ * Resolve the value of each member variable of an object.
+ *
+ * After this method is called, each member variable, of which the
+ * value is a Thunk object, is replaced with the result of resolving
+ * the thunk object.
+ *
+ * @param object The object.
+ */
+Marshaller.resolve_subnodes = function(object) {
+    const keys = Object.keys(object);
+
+    for (const key of keys) {
+        const value = object[key];
+
+        if (value instanceof Marshaller.Thunk)
+            value.save_ptr();
+    }
+
+    for (var i = keys.length - 1; i >= 0; i--) {
+        const key = keys[i];
+        const value = object[key];
+
+        if (value instanceof Marshaller.Thunk) {
+            value.restore_ptr();
+            object[key] = value.resolve();
+        }
+    }
+}
 
 /**
  * Represents a character, with code @a code.
@@ -712,37 +790,10 @@ Marshaller.ListNode = function(marshaller, head, tail) {
 /**
  * Represents a Tridash object with user-defined subnodes.
  *
- * @param marshaller Marshaller object.
- *
  * The value of each subnode is stored in an object member with the
  * key being the same as the subnode identifier.
- *
- * Initially each subnode value is the raw pointer to the location
- * within the Tridash heap, where the value is stored. The
- * resolve_fields method resolves each subnode value and converts it
- * to a JavaScript value.
  */
-Marshaller.Object = function(marshaller) {
-    /**
-     * Resolve the value of each subnode and convert it to a
-     * JavaScript value.
-     */
-    this.resolve_fields = function() {
-        const fields = Object.keys(this);
-
-        fields.forEach((field) => {
-            marshaller.stack_push(this[field]);
-        });
-
-        fields.reverse().forEach((field) => {
-            this[field] = marshaller.to_js(
-                marshaller.resolve(
-                    marshaller.stack_pop()
-                )
-            );
-        });
-    };
-};
+Marshaller.Object = function() {};
 
 
 /**
