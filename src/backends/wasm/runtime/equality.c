@@ -38,6 +38,7 @@
 #include "thunk.h"
 #include "strings.h"
 #include "types.h"
+#include "memory.h"
 
 /**
  * Checks whether an object is equivalent to an integer value.
@@ -71,8 +72,8 @@ static uintptr_t float_eq(float value, uintptr_t obj);
 uintptr_t object_eq(uintptr_t a, uintptr_t b) {
     struct tridash_object *obj_a, *obj_b;
 
-    a = resolve(a);
-    b = resolve(b);
+    SAVED_TPTR(b, a = resolve(a));
+    SAVED_TPTR(a, b = resolve(b));
 
     switch (PTR_TAG(a)) {
     case TAG_TYPE_INT:
@@ -117,7 +118,7 @@ uintptr_t object_eq(uintptr_t a, uintptr_t b) {
         return TRIDASH_BOOL(obj_b->type == TRIDASH_TYPE_CHAR && obj_a->char_code == obj_b->char_code);
 
     default:
-        return TRIDASH_BOOL(obj_a == obj_b);
+        return TRIDASH_BOOL(a == b);
     }
 }
 
@@ -128,8 +129,8 @@ uintptr_t object_neq(uintptr_t a, uintptr_t b) {
 }
 
 uintptr_t symbol_eq(uintptr_t a, uintptr_t b) {
-    a = resolve(a);
-    b = resolve(b);
+    SAVED_TPTR(b, a = resolve(a));
+    SAVED_TPTR(a, b = resolve(b));
 
     if (IS_FAIL(a)) return a;
     if (IS_FAIL(b)) return b;

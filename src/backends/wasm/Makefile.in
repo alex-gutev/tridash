@@ -115,7 +115,8 @@ runtime/objects.o: runtime/objects.c $(objects_h_deps) \
 	$(memory_h_deps) \
 	$(copying_h_deps) \
 	$(thunk_h_deps) \
-	$(failures_h_deps)
+	$(failures_h_deps) \
+	$(memory_h_deps)
 	$(EMCC) -O2 $< -o $@ -c
 
 runtime/hash-table.o: runtime/hash-table.c $(hash_table_h_deps)
@@ -140,7 +141,8 @@ runtime/meta-nodes.o: runtime/meta-nodes.c $(meta_nodes_h_deps) \
 runtime/equality.o: runtime/equality.c $(equality_h_deps) \
 	$(thunk_h_deps) \
 	$(strings_h_deps) \
-	$(types_h_deps)
+	$(types_h_deps) \
+	$(memory_h_deps) \
 	$(EMCC) -O2 $< -o $@ -c
 
 runtime/conversions.o: runtime/conversions.c \

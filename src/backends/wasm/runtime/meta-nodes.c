@@ -66,7 +66,7 @@ static void *make_arg_list(uintptr_t arg);
 
 
 uintptr_t call_meta_node_ref(uintptr_t ref, uintptr_t arg) {
-    ref = resolve(ref);
+    SAVED_TPTR(arg, ref = resolve(ref));
 
     if (ref) {
         switch (PTR_TAG(ref)) {
@@ -84,7 +84,7 @@ uintptr_t call_meta_node_ref(uintptr_t ref, uintptr_t arg) {
             struct tridash_object *obj = (void*)ref;
 
             if (obj->type == TRIDASH_TYPE_FUNCREF_ARGS) {
-                void *args = make_arg_list(arg);
+                SAVED_PTR(obj, void *args = make_arg_list(arg));
                 void *defaults = &obj->funcref.args[0];
 
                 return obj->funcref.fn(args, defaults);
@@ -115,11 +115,12 @@ meta_node_ref_fn get_ref_fn(uintptr_t ptr) {
 }
 
 void *make_arg_list(uintptr_t arg) {
+    save_ptr((void *)arg);
     struct tridash_object *obj = alloc(3 * 4);
 
     obj->type = TRIDASH_TYPE_ARRAY;
     obj->array.size = 1;
-    obj->array.elements[0] = arg;
+    obj->array.elements[0] = (uintptr_t)restore_ptr();
 
     return (void *)&obj->array.size;
 }

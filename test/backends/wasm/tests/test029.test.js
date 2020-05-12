@@ -28,7 +28,6 @@
 
 const Tridash = require('./tridash.min.js');
 const assert = require('assert');
-const util = require('./test_util.js');
 
 const mod = require('./test029.js');
 
@@ -48,10 +47,7 @@ describe('Integration Test 29', function() {
             it('`output` = [1, 2, 1, ...]', function() {
                 module.set_values([[x, 1], [y, 2]]);
 
-                assert.deepEqual(
-                    util.resolve_list(output.get_value(), 3),
-                    [1, 2, 1]
-                );
+                assert.deepEqual(output.get_value(), [1, 2, 1]);
             });
         });
 
@@ -59,10 +55,7 @@ describe('Integration Test 29', function() {
             it('`output` = [2, 3, 2, ...]', function() {
                 module.set_values([[x, 2], [y, 3]]);
 
-                assert.deepEqual(
-                    util.resolve_list(output.get_value(), 3),
-                    [2, 3, 2]
-                );
+                assert.deepEqual(output.get_value(), [2, 3, 2]);
             });
         });
     });

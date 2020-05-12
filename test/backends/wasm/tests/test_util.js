@@ -50,9 +50,7 @@ function resolve_list(thing, n) {
         else if (n !== undefined)
             n--;
 
-        thing.resolve();
         result.push(thing.head);
-
         thing = thing.tail;
     };
 

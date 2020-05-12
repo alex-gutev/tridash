@@ -5,7 +5,11 @@
 a <- cons(i, b)
 b <- cons(j, a)
 
-output <- a
+output <- list(
+    head(a),
+    head(tail(a)),
+    head(tail(tail(a)))
+)
 
 
 ## Input Attributes

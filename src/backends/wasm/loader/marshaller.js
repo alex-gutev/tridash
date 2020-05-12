@@ -312,10 +312,13 @@ class Marshaller {
         const view = new DataView(this.memory.buffer, ptr);
         const type = view.getUint32(0, true);
 
+        if (ptr === 0) return null;
+
         switch (type) {
         case Marshaller.type_thunk:
         case Marshaller.type_resolved_thunk:
-            return new Marshaller.Thunk(this, ptr);
+        case Marshaller.type_catch_thunk:
+            return this.to_js(this.resolve(ptr));
 
         case Marshaller.type_int:
             return view.getInt32(4, true);
@@ -346,11 +349,7 @@ class Marshaller {
 
 
         case Marshaller.type_list_node:
-            return new Marshaller.ListNode(
-                this,
-                view.getUint32(4, true),
-                view.getUint32(8, true)
-            );
+            return this.to_js_list_node(ptr);
 
 
         case Marshaller.type_failure:
@@ -393,10 +392,22 @@ class Marshaller {
      *
      * @param view DataView object for the memory region beginning
      *   at @a ptr.
+     *
+     * @return JavaScript Array of Objects
      */
     to_js_array(ptr, view) {
-        const objects = this.to_js_int_array(ptr, view);
-        return Array.prototype.map.call(objects, this.to_js.bind(this));
+        const mem = new DataView(this.memory.buffer, 0);
+        const size = view.getUint32(4, true);
+
+        var objects = [];
+
+        for (var i = 0; i < size; i++) {
+            this.stack_push(ptr);
+            objects.push(this.to_js(mem.getUint32(ptr + 8 + i * 4, true)));
+            ptr = this.stack_pop(ptr);
+        }
+
+        return objects;
     }
 
     /**
@@ -420,8 +431,6 @@ class Marshaller {
      * Convert a user-defined Tridash object to a JavaScript object
      * with equivalent fields.
      *
-     * Note: The values of the object fields are not resolved.
-     *
      * @param ptr Pointer to the user-defined object.
      *
      * @param view DataView object for the memory region beginning
@@ -430,6 +439,7 @@ class Marshaller {
      * @return The JavaScript Object
      */
     to_js_object(ptr, view) {
+        const mem = new DataView(this.memory.buffer, 0);
         const descriptor = view.getUint32(4, true);
         const desc_view = new DataView(this.memory.buffer, descriptor);
 
@@ -442,12 +452,38 @@ class Marshaller {
             const index = desc_view.getUint32(bucket + 4, true);
 
             if (key !== 0) {
+                this.stack_push(ptr);
+
                 object[this.decode_string(key - 4)] =
-                    this.to_js(view.getUint32(8 + index * 4, true));
+                    this.to_js(mem.getUint32(ptr + 8 + index * 4, true));
+
+                ptr = this.stack_pop(ptr);
             }
         }
 
         return object;
+    }
+
+    /**
+     * Convert a Tridash linked list node to a JavaScript linked list
+     * node represented by a Marshaller.ListNode object.
+     *
+     * @param ptr Pointer to the Tridash object.
+     *
+     * @return A Marshaller.ListNode object.
+     */
+    to_js_list_node(ptr) {
+        const mem = new DataView(this.memory.buffer, 0);
+
+        const node = new Marshaller.ListNode();
+
+        this.stack_push(ptr);
+        node.head = this.to_js(mem.getUint32(ptr + 4, true));
+
+        ptr = this.stack_pop();
+        node.tail = this.to_js(mem.getUint32(ptr + 8, true));
+
+        return node;
     }
 
     /** Stack Manipulation */
@@ -567,6 +603,7 @@ Marshaller.False = Marshaller.tag_funcref;
 /** Thunks */
 Marshaller.type_thunk = 0;
 Marshaller.type_resolved_thunk = 1;
+Marshaller.type_catch_thunk = 15;
 
 /** Boxed Integer */
 Marshaller.type_int = 2;
@@ -611,126 +648,6 @@ Marshaller.type_funcref_args = 7;
 /* JS Object Types */
 
 /**
- * Represents a thunk, a value which has not yet been computed, on the
- * Tridash heap.
- */
-Marshaller.Thunk = class {
-    /**
-     * Constructor.
-     *
-     * @param marshaller Marshaller object.
-     * @param ptr pointer to the thunk object.
-     */
-    constructor(marshaller, ptr) {
-        this.marshaller = marshaller;
-        this.ptr = ptr;
-    }
-
-    /**
-     * Resolve the thunk, i.e. compute the thunk's value.
-     *
-     * The resolved value is saved in the 'value' member the first
-     * time this method is called. Further calls simply return the
-     * saved value.
-     *
-     * NOTE: The heap must not be manipulated between the creation of
-     * the thunk object and a call to this method. Calling this method
-     * counts as heap manipulation. To resolve multiple thunks use the
-     * Marshaller.resolve_thunks function.
-     *
-     * @return The computed value.
-     */
-    resolve() {
-        return this.value === undefined ?
-            (this.value = this.marshaller.to_js(this.marshaller.resolve(this.ptr))) :
-            this.value;
-    }
-
-    /**
-     * Save the pointer to the thunk object on the stack.
-     *
-     * For internal use, by the Marshaller library, only.
-     */
-    save_ptr() {
-        if (this.value === undefined)
-            this.marshaller.stack_push(this.ptr);
-    }
-
-    /**
-     * Pop the pointer to the thunk object from the stack.
-     *
-     * NOTE: This method may only be called after a call to
-     * save_ptr. If further elements are pushed onto the stack after
-     * the call to save_ptr, they must be popped off the stack prior
-     * to calling this method.
-     *
-     * For internal use, by the Marshaller library, only.
-     */
-    restore_ptr() {
-        if (this.value === undefined)
-            this.ptr = this.marshaller.stack_pop();
-    }
-};
-
-/**
- * Resolve multiple thunks simultaneously.
- *
- * @param thunks of objects to resolve. All Thunk objects are resolved
- *   and replaced with the resolved value. Remaining objects are left
- *   unchanged.
- *
- * @return The @a thunks array with all Thunk objects replaced by their
- *   resolved values.
- */
-Marshaller.resolve_thunks = function(thunks) {
-    for (const thunk of thunks) {
-        if (thunk instanceof Marshaller.Thunk)
-            thunk.save_ptr();
-    }
-
-    for (var i = thunks.length - 1; i >= 0; i--) {
-        const thunk = thunks[i];
-
-        if (thunk instanceof Marshaller.Thunk) {
-            thunk.restore_ptr();
-            thunk.resolve();
-        }
-    }
-
-    return thunks.map((x) => x instanceof Marshaller.Thunk ? x.value : x);
-}
-
-/**
- * Resolve the value of each member variable of an object.
- *
- * After this method is called, each member variable, of which the
- * value is a Thunk object, is replaced with the result of resolving
- * the thunk object.
- *
- * @param object The object.
- */
-Marshaller.resolve_subnodes = function(object) {
-    const keys = Object.keys(object);
-
-    for (const key of keys) {
-        const value = object[key];
-
-        if (value instanceof Marshaller.Thunk)
-            value.save_ptr();
-    }
-
-    for (var i = keys.length - 1; i >= 0; i--) {
-        const key = keys[i];
-        const value = object[key];
-
-        if (value instanceof Marshaller.Thunk) {
-            value.restore_ptr();
-            object[key] = value.resolve();
-        }
-    }
-}
-
-/**
  * Represents a character, with code @a code.
  */
 Marshaller.Char = function(code) {
@@ -750,41 +667,12 @@ Marshaller.Symbol = function(name) {
  * Members:
  *
  *  head: The element stored in the list node.
- *  tail: Pointer to the next list node.
- *
- * Initially both `head` and `tail` contain pointers to the actual
- * objects in the Tridash heap. The `resolve` method converts those
- * pointers to JavaScript objects.
- *
- * Methods:
- *
- *  resolve():
- *
- *    Convert the `head` and `tail` to JavaScript objects, resolving
- *    any thunks if necessary.
- *
- *    NOTE: This method must be called before any operations are
- *    performed on the Tridash heap.
+ *  tail: The next node in the linked list.
  *
  */
-Marshaller.ListNode = function(marshaller, head, tail) {
-    var resolved = false;
-
+Marshaller.ListNode = function(head, tail) {
     this.head = head;
     this.tail = tail;
-
-    this.resolve = () => {
-        if (!resolved) {
-            marshaller.stack_push(tail);
-            marshaller.stack_push(head);
-
-            this.head = marshaller.to_js(marshaller.resolve(head));
-            marshaller.stack_pop();
-
-            this.tail = marshaller.to_js(marshaller.resolve(marshaller.stack_pop()));
-            resolved = true;
-        }
-    };
 };
 
 /**

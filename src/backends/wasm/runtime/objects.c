@@ -41,6 +41,7 @@
 #include "copying.h"
 #include "thunk.h"
 #include "failures.h"
+#include "memory.h"
 
 
 #define USER_OBJECT_SIZE offsetof(struct tridash_object, object) + sizeof(struct user_object)
@@ -72,7 +73,7 @@ void *gc_copy_user_object_subnodes(void *src) {
 /// Public Interface
 
 uintptr_t object_member(uintptr_t object, uintptr_t field) {
-    object = resolve(object);
+    SAVED_TPTR(field, object = resolve(object));
 
     switch (PTR_TAG(object)) {
     case TAG_TYPE_INT:
@@ -83,7 +84,7 @@ uintptr_t object_member(uintptr_t object, uintptr_t field) {
         return object;
     }
 
-    field = resolve(field);
+    SAVED_TPTR(object, field = resolve(field));
 
     switch (PTR_TAG(field)) {
     case TAG_TYPE_INT:

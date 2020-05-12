@@ -44,10 +44,11 @@
 #define TRIDASH_FAIL_SIZE (offsetof(struct tridash_object, fail_type) + sizeof(uintptr_t))
 
 uintptr_t make_failure(uintptr_t type) {
+    save_ptr((void *)type);
     struct tridash_object *object = alloc(TRIDASH_FAIL_SIZE);
 
     object->type = TRIDASH_TYPE_FAILURE;
-    object->fail_type = type;
+    object->fail_type = (uintptr_t)restore_ptr();
 
     uintptr_t ptr = (uintptr_t)((void*)object);
     return ptr | TAG_TYPE_FAIL;

@@ -50,7 +50,6 @@ describe('Integration Test 15', function() {
                 module.set_values([[x, 1], [y, 2]]);
 
                 const value = dict.get_value();
-                Tridash.Marshaller.resolve_subnodes(value);
 
                 assert.equal(value.a, 1);
                 assert.equal(value.b, 2);

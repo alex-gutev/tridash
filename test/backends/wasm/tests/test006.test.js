@@ -28,7 +28,6 @@
 
 const Tridash = require('./tridash.min.js');
 const assert = require('assert');
-const util = require('./test_util.js');
 
 const mod = require('./test006.js');
 
@@ -47,7 +46,7 @@ describe('Integration Test 6', function() {
         describe('Set `i` = 0, `j` = 1', function() {
             it('Output is cyclic list [0, 1, 0, 1 ...]', function() {
                 module.set_values([[i, 0], [j, 1]]);
-                assert.deepEqual(util.resolve_list(output.get_value(), 3), [0,1,0]);
+                assert.deepEqual(output.get_value(), [0,1,0]);
             });
         });
     });

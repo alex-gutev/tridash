@@ -67,18 +67,22 @@ static uintptr_t array_first(const struct array *array);
  *
  * @return Linked list of the remainder of the array
  */
-static uintptr_t array_tail(const struct array *array);
+static uintptr_t array_tail(const struct tridash_object *obj);
 
 
 void * make_list_node(uintptr_t head, uintptr_t tail) {
+    save_ptr((void *)tail);
+    save_ptr((void *)head);
+
     struct tridash_object *object = alloc(TRIDASH_LIST_NODE_SIZE);
 
     object->type = TRIDASH_TYPE_LIST_NODE;
-    object->list_node.head = head;
-    object->list_node.tail = tail;
+    object->list_node.head = (uintptr_t)restore_ptr();
+    object->list_node.tail = (uintptr_t)restore_ptr();
 
     return object;
 }
+
 
 void * gc_copy_list_node(const void * src) {
     const struct tridash_object * node = src;
@@ -177,7 +181,7 @@ uintptr_t list_node_tail(uintptr_t ptr) {
     }
 
     case TRIDASH_TYPE_ARRAY:
-        return array_tail(&obj->array);
+        return array_tail(obj);
 
     default:
         return make_fail_type_error();
@@ -194,29 +198,21 @@ uintptr_t array_first(const struct array *array) {
     return array->elements[0];
 }
 
-uintptr_t array_tail(const struct array *array) {
-    if (!array->size)
+uintptr_t array_tail(const struct tridash_object *obj) {
+    if (!obj->array.size)
         return make_fail_type_error();
 
-    if (array->size == 1)
+    if (obj->array.size == 1)
         return empty_list();
 
-    size_t n = array->size - 1;
-    const uintptr_t *element = &array->elements[1];
+    struct tridash_object *node = (void *)empty_list();
 
-    struct tridash_object *node = make_list_node(*element, empty_list());
-    uintptr_t head = (uintptr_t)node;
-
-    n--;
-    element++;
-
-    while (n--) {
-        struct tridash_object *new_node = make_list_node(*element, empty_list());
-        node->list_node.tail = (uintptr_t)new_node;
-
-        node = new_node;
-        element++;
+    for (size_t i = obj->array.size - 1; i > 0; i--) {
+        SAVED_PTR(
+            obj,
+            node = make_list_node(obj->array.elements[i], (uintptr_t)node);
+            );
     }
 
-    return head;
+    return (uintptr_t)node;
 }

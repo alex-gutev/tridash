@@ -46,9 +46,8 @@ describe('Integration Test 30', function() {
         describe('Set `name` to "John"', function () {
             it('`output` = { first: "John"; last: "Smith" }', function() {
                 name.set_value("John");
-                const value = output.get_value();
 
-                Tridash.Marshaller.resolve_subnodes(value);
+                const value = output.get_value();
 
                 assert.equal(value.first, "John");
                 assert.equal(value.last, "Smith");
@@ -58,9 +57,8 @@ describe('Integration Test 30', function() {
         describe('Set `name` to "Bob"', function () {
             it('`output` = { first: "Bob"; last: "Smith" }', function() {
                 name.set_value("Bob");
-                const value = output.get_value();
 
-                Tridash.Marshaller.resolve_subnodes(value);
+                const value = output.get_value();
 
                 assert.equal(value.first, "Bob");
                 assert.equal(value.last, "Smith");

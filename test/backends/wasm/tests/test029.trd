@@ -1,6 +1,6 @@
 ## Test Local Nodes: Cyclic Bindings
 
-/import(core, cons, <-)
+/import(core, cons, list, head, tail, <-)
 
 cycle(a, b) : {
     x; y;
@@ -12,7 +12,13 @@ cycle(a, b) : {
 }
 
 
-output <- cycle(x, y)
+cyclic-list <- cycle(x, y)
+
+output <- list(
+    head(cyclic-list),
+    head(tail(cyclic-list)),
+    head(tail(tail(cyclic-list)))
+)
 
 
 ## Input Attributes

@@ -81,7 +81,7 @@ uintptr_t resolve(uintptr_t value) {
             break;
 
         case TRIDASH_TYPE_THUNK: {
-            uintptr_t res = resolve_thunk(object);
+            SAVED_PTR(object, uintptr_t res = resolve_thunk(object));
 
             object->type = TRIDASH_TYPE_RESOLVED_THUNK;
             object->resolved_value = res;
@@ -118,8 +118,15 @@ uintptr_t handle_failures(uintptr_t val, char **first, char **last) {
         const struct tridash_object *obj = (void *)(val & ~TAG_MASK);
         uintptr_t test = (uintptr_t)*first++;
 
-        if (!test || resolve(call_meta_node_ref(test, obj->fail_type)) == TRIDASH_TRUE)
+        save_ptr((void*)val);
+
+        if (!test || resolve(call_meta_node_ref(test, obj->fail_type)) == TRIDASH_TRUE) {
+            restore_ptr();
             val = resolve((uintptr_t)*first);
+        }
+        else {
+            val = (uintptr_t)restore_ptr();
+        }
 
         first++;
     }
@@ -172,15 +179,19 @@ void *gc_copy_thunk_closure(void *ptr) {
 /// Catch Thunks
 
 void *make_catch_thunk(uintptr_t value, uintptr_t fail_value, uintptr_t test) {
+    save_ptr((void *)test);
+    save_ptr((void *)fail_value);
+    save_ptr((void *)value);
+
     struct tridash_object *thunk =
         alloc(offsetof(struct tridash_object, catch_thunk) + sizeof(struct catch_thunk));
 
     thunk->type = TRIDASH_TYPE_CATCH_THUNK;
 
-    thunk->catch_thunk.value = value;
-    thunk->catch_thunk.fail_value = fail_value;
+    thunk->catch_thunk.value = (uintptr_t)restore_ptr();
+    thunk->catch_thunk.fail_value = (uintptr_t)restore_ptr();
 
-    thunk->catch_thunk.test = test;
+    thunk->catch_thunk.test = (uintptr_t)restore_ptr();
 
     return thunk;
 }
