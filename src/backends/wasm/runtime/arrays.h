@@ -55,10 +55,26 @@ struct array {
  * Copy an array structure. Only the references to the elements of the
  * array are copied, not the elements themselves.
  *
+ * The difference between this function and gc_copy_array is that the
+ * latter is only intended to be used during garbage collection and
+ * thus does not take into account the possibility of a garbage
+ * collection being initiated during copying. This function can be
+ * used safely even if a garbage collection is initiated during
+ * copying.
+ *
  * @param src Pointer to the array object.
  * @return Pointer to the copied object.
  */
-export void *copy_array(const void *src);
+void *copy_array(const void *src);
+
+/**
+ * Copy an array structure. Only the references to the elements of the
+ * array are copied, not the elements themselves.
+ *
+ * @param src Pointer to the array object.
+ * @return Pointer to the copied object.
+ */
+void *gc_copy_array(const void *src);
 
 /**
  * Copy the elements stored in an array and update the references.
@@ -66,6 +82,6 @@ export void *copy_array(const void *src);
  * @param src Pointer to the array object.
  * @return Pointer to the first byte following the array object.
  */
-void *copy_array_elements(void *src);
+void *gc_copy_array_elements(void *src);
 
 #endif /* TRIDASH_ARRAYS_H */

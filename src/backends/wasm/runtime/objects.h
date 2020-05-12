@@ -77,7 +77,7 @@ struct user_object {
  * @param src Pointer to the object
  * @return Pointer to the copied object
  */
-void *copy_user_object(const void *src);
+void *gc_copy_user_object(const void *src);
 
 /**
  * Copy the subnode values stored in a user defined object and update
@@ -86,7 +86,7 @@ void *copy_user_object(const void *src);
  * @param src Pointer to the object
  * @return Pointer to the first byte following the object
  */
-void *copy_user_object_subnodes(void *src);
+void *gc_copy_user_object_subnodes(void *src);
 
 
 /// Public Interface

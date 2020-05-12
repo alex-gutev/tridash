@@ -130,7 +130,7 @@ uintptr_t handle_failures(uintptr_t val, char **first, char **last) {
 
 /// Copying
 
-void *copy_thunk(const void *src) {
+void *gc_copy_thunk(const void *src) {
     const struct tridash_object *object = src;
     size_t size = offsetof(struct tridash_object, thunk) + sizeof(struct thunk) +
         object->thunk.closure_size * sizeof(uintptr_t);
@@ -141,7 +141,7 @@ void *copy_thunk(const void *src) {
     return dest;
 }
 
-void *copy_thunk_result(void *src) {
+void *gc_copy_thunk_result(void *src) {
     struct tridash_object *object = src;
 
     while (object->type == TRIDASH_TYPE_RESOLVED_THUNK) {
@@ -153,16 +153,16 @@ void *copy_thunk_result(void *src) {
         object = src;
     }
 
-    return copy_object(src);
+    return gc_copy_object(src);
 }
 
-void *copy_thunk_closure(void *ptr) {
+void *gc_copy_thunk_closure(void *ptr) {
     struct tridash_object *object = ptr;
     size_t size = object->thunk.closure_size;
 
     for (size_t i = 0; i < size; i++) {
         object->thunk.closure[i] =
-            (uintptr_t)copy_object((void*)object->thunk.closure[i]);
+            (uintptr_t)gc_copy_object((void*)object->thunk.closure[i]);
     }
 
     return &object->thunk.closure[size];
@@ -185,7 +185,7 @@ void *make_catch_thunk(uintptr_t value, uintptr_t fail_value, uintptr_t test) {
     return thunk;
 }
 
-void *copy_catch_thunk(const void *src) {
+void *gc_copy_catch_thunk(const void *src) {
     const struct tridash_object *object = src;
 
     return make_catch_thunk(object->catch_thunk.value,
@@ -193,14 +193,14 @@ void *copy_catch_thunk(const void *src) {
                             object->catch_thunk.test);
 }
 
-void *copy_catch_thunk_objects(void *ptr) {
+void *gc_copy_catch_thunk_objects(void *ptr) {
     struct tridash_object *object = ptr;
 
-    object->catch_thunk.value = (uintptr_t)copy_object((void *)object->catch_thunk.value);
-    object->catch_thunk.fail_value = (uintptr_t)copy_object((void *)object->catch_thunk.fail_value);
+    object->catch_thunk.value = (uintptr_t)gc_copy_object((void *)object->catch_thunk.value);
+    object->catch_thunk.fail_value = (uintptr_t)gc_copy_object((void *)object->catch_thunk.fail_value);
 
     if (object->catch_thunk.test)
-        object->catch_thunk.test = (uintptr_t)copy_object((void *)object->catch_thunk.test);
+        object->catch_thunk.test = (uintptr_t)gc_copy_object((void *)object->catch_thunk.test);
 
     return &object->catch_thunk.test + 1;
 }

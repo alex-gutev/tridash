@@ -80,17 +80,17 @@ void * make_list_node(uintptr_t head, uintptr_t tail) {
     return object;
 }
 
-void * copy_list_node(const void * src) {
+void * gc_copy_list_node(const void * src) {
     const struct tridash_object * node = src;
 
     return make_list_node(node->list_node.head, node->list_node.tail);
 }
 
-void * copy_list_node_objects(void * src) {
+void * gc_copy_list_node_objects(void * src) {
     struct tridash_object * node = src;
 
-    node->list_node.head = (uintptr_t)copy_object((void *)node->list_node.head);
-    node->list_node.tail = (uintptr_t)copy_object((void *)node->list_node.tail);
+    node->list_node.head = (uintptr_t)gc_copy_object((void *)node->list_node.head);
+    node->list_node.tail = (uintptr_t)gc_copy_object((void *)node->list_node.tail);
 
     return &node->list_node.tail + 1;
 }

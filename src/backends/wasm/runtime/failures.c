@@ -67,17 +67,17 @@ uintptr_t failure_type(uintptr_t ptr) {
 
 /// Copying
 
-void *copy_failure(const void *src) {
+void *gc_copy_failure(const void *src) {
     void *dest = alloc(TRIDASH_FAIL_SIZE);
     memcopy(dest, src, TRIDASH_FAIL_SIZE);
 
     return dest;
 }
 
-void *copy_failure_type(void *src) {
+void *gc_copy_failure_type(void *src) {
     struct tridash_object *object = src;
 
-    object->fail_type = (uintptr_t)copy_object((void*)object->fail_type);
+    object->fail_type = (uintptr_t)gc_copy_object((void*)object->fail_type);
 
     return &object->fail_type + 1;
 }

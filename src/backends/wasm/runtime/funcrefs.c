@@ -40,7 +40,7 @@
 
 #define FUNCREF_SIZE offsetof(struct tridash_object, funcref.fn) + sizeof(struct funcref)
 
-void *copy_funcref(const void *src) {
+void *gc_copy_funcref(const void *src) {
     const struct tridash_object *object = src;
     size_t size = FUNCREF_SIZE + object->funcref.num_args * sizeof(uintptr_t);
 
@@ -50,12 +50,12 @@ void *copy_funcref(const void *src) {
     return dest;
 };
 
-void *copy_funcref_args(void *src) {
+void *gc_copy_funcref_args(void *src) {
     struct tridash_object *object = src;
     size_t size = object->funcref.num_args;
 
     for (size_t i = 0; i < size; ++i) {
-        object->funcref.args[i] = (uintptr_t)copy_object((void*)object->funcref.args[i]);
+        object->funcref.args[i] = (uintptr_t)gc_copy_object((void*)object->funcref.args[i]);
     }
 
     return &object->funcref.args[size];

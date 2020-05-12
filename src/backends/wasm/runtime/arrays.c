@@ -45,19 +45,30 @@ void *copy_array(const void *src) {
     const struct tridash_object *object = src;
     size_t size = TRIDASH_ARRAY_SIZE + object->array.size * sizeof(uintptr_t);
 
+    save_ptr(object);
+    void *dest = alloc(size);
+    memcopy(dest, restore_ptr(), size);
+
+    return dest;
+}
+
+void *gc_copy_array(const void *src) {
+    const struct tridash_object *object = src;
+    size_t size = TRIDASH_ARRAY_SIZE + object->array.size * sizeof(uintptr_t);
+
     void *dest = alloc(size);
     memcopy(dest, src, size);
 
     return dest;
 }
 
-void *copy_array_elements(void *src) {
+void *gc_copy_array_elements(void *src) {
     struct tridash_object *object = src;
 
     size_t size = object->array.size;
 
     for (size_t i = 0; i < size; ++i) {
-        object->array.elements[i] = (uintptr_t)copy_object((void*)object->array.elements[i]);
+        object->array.elements[i] = (uintptr_t)gc_copy_object((void*)object->array.elements[i]);
     }
 
     return &object->array.elements[size];

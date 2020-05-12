@@ -106,4 +106,31 @@ int is_managed(const void *ptr);
  */
 export void memclear(char *ptr, size_t size);
 
+
+/** Manipulating Root Set */
+
+/**
+ * Save a pointer onto the GC root set stack.
+ *
+ * @param ptr The pointer (may be a tagged immediate value).
+ */
+void save_ptr(const void *ptr);
+
+/**
+ * Pop a pointer off the GC root set stack.
+ */
+void *restore_ptr(void);
+
+/**
+ * Generate statements which save @a ptr onto the GC root set stack,
+ * followed by the statement BLOCK, followed by a statement which sets
+ * @a ptr to the value popped off the GC root set stack.
+ */
+#define SAVED_PTR(ptr, block) save_ptr(ptr); block; ptr = restore_ptr();
+
+/**
+ * Same as SAVED_PTR except intended to be used with tagged pointers.
+ */
+#define SAVED_TPTR(ptr, block) save_ptr((void*)ptr); block; ptr = (uintptr_t)restore_ptr();
+
 #endif /* TRIDASH_MEMORY_H */

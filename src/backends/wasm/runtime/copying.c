@@ -56,7 +56,7 @@ static void *copy_dword(const void *src);
 
 /// Generic Copy Function
 
-void *copy_object(void *ptr) {
+void *gc_copy_object(void *ptr) {
     if (IS_FAIL(ptr))
         ptr = (void*)((uintptr_t)ptr & ~(uintptr_t)TAG_MASK);
 
@@ -71,15 +71,15 @@ void *copy_object(void *ptr) {
 
     switch(object->type) {
     case TRIDASH_TYPE_THUNK:
-        dest = copy_thunk(object);
+        dest = gc_copy_thunk(object);
         break;
 
     case TRIDASH_TYPE_RESOLVED_THUNK:
-        dest = copy_thunk_result(object);
+        dest = gc_copy_thunk_result(object);
         break;
 
     case TRIDASH_TYPE_CATCH_THUNK:
-        dest = copy_catch_thunk(object);
+        dest = gc_copy_catch_thunk(object);
         break;
 
 
@@ -91,28 +91,28 @@ void *copy_object(void *ptr) {
 
     case TRIDASH_TYPE_STRING:
     case TRIDASH_TYPE_SYMBOL:
-        dest = copy_string(object);
+        dest = gc_copy_string(object);
         break;
 
     case TRIDASH_TYPE_FAILURE:
-        dest = (void*)((uintptr_t)copy_failure(object) | TAG_TYPE_FAIL);
+        dest = (void*)((uintptr_t)gc_copy_failure(object) | TAG_TYPE_FAIL);
         break;
 
     case TRIDASH_TYPE_FUNCREF_ARGS:
-        dest = copy_funcref(object);
+        dest = gc_copy_funcref(object);
         break;
 
     case TRIDASH_TYPE_ARRAY:
     case TRIDASH_TYPE_INT_ARRAY:
-        dest = copy_array(object);
+        dest = gc_copy_array(object);
         break;
 
     case TRIDASH_TYPE_OBJECT:
-        dest = copy_user_object(object);
+        dest = gc_copy_user_object(object);
         break;
 
     case TRIDASH_TYPE_LIST_NODE:
-        dest = copy_list_node(object);
+        dest = gc_copy_list_node(object);
         break;
 
 
@@ -131,13 +131,13 @@ void *copy_referenced_objects(void *ptr) {
 
     switch (object->type) {
     case TRIDASH_TYPE_THUNK:
-        return copy_thunk_closure(ptr);
+        return gc_copy_thunk_closure(ptr);
 
     case TRIDASH_TYPE_RESOLVED_THUNK:
         return &object->thunk.closure[object->thunk.closure_size];
 
     case TRIDASH_TYPE_CATCH_THUNK:
-        return copy_catch_thunk_objects(object);
+        return gc_copy_catch_thunk_objects(object);
 
 
     case TRIDASH_TYPE_INT:
@@ -150,22 +150,22 @@ void *copy_referenced_objects(void *ptr) {
         return string_end_ptr(&object->string);
 
     case TRIDASH_TYPE_FAILURE:
-        return copy_failure_type(ptr);
+        return gc_copy_failure_type(ptr);
 
     case TRIDASH_TYPE_FUNCREF_ARGS:
-        return copy_funcref_args(ptr);
+        return gc_copy_funcref_args(ptr);
 
     case TRIDASH_TYPE_ARRAY:
-        return copy_array_elements(ptr);
+        return gc_copy_array_elements(ptr);
 
     case TRIDASH_TYPE_OBJECT:
-        return copy_user_object_subnodes(ptr);
+        return gc_copy_user_object_subnodes(ptr);
 
     case TRIDASH_TYPE_INT_ARRAY:
         return &object->array.elements[object->array.size];
 
     case TRIDASH_TYPE_LIST_NODE:
-        return copy_list_node_objects(object);
+        return gc_copy_list_node_objects(object);
     }
 
     // The object should not be of any other type

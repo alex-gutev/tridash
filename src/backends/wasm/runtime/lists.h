@@ -66,7 +66,7 @@ export void * make_list_node(uintptr_t head, uintptr_t tail);
  *
  * @return The new node.
  */
-void * copy_list_node(const void * node);
+void * gc_copy_list_node(const void * node);
 
 /**
  * Copy the head (value) and tail (next node pointer) of a linked list
@@ -76,7 +76,7 @@ void * copy_list_node(const void * node);
  *
  * @return Pointer to the first byte after the linked list node.
  */
-void * copy_list_node_objects(void * node);
+void * gc_copy_list_node_objects(void * node);
 
 
 /* Exported API Functions */

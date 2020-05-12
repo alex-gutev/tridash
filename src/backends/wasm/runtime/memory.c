@@ -144,16 +144,12 @@ void run_gc(void) {
     char ** stack = (char**)stack_base;
 
     while ((uintptr_t)stack > (uintptr_t)stack_top) {
-        *stack = copy_object(*stack);
+        *stack = gc_copy_object(*stack);
         stack--;
     }
 
     copy_live();
 }
-
-
-//// Copying Objects
-
 
 
 //// Copying Referenced Objects
@@ -192,4 +188,14 @@ void memclear(char *ptr, size_t size) {
     while (size--) {
         *ptr = 0;
     }
+}
+
+
+//// Saving and Restoring Pointers
+
+void save_ptr(const void *ptr) {
+    *stack_top-- = (char*)ptr;
+}
+void *restore_ptr(void) {
+    return *++stack_top;
 }

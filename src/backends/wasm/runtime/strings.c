@@ -37,12 +37,24 @@
 #include "types.h"
 #include "memory.h"
 
-void *copy_string(const void *ptr) {
+void *gc_copy_string(const void *ptr) {
     const struct tridash_object *object = ptr;
     size_t size = offsetof(struct tridash_object, string.data) + object->string.size;
 
     void *dest = alloc(size);
     memcopy(dest, ptr, size);
+
+    return dest;
+}
+
+void *copy_string(const void *ptr) {
+    const struct tridash_object *object = ptr;
+    size_t size = offsetof(struct tridash_object, string.data) + object->string.size;
+
+    save_ptr(ptr);
+
+    void *dest = alloc(size);
+    memcopy(dest, restore_ptr(), size);
 
     return dest;
 }

@@ -64,9 +64,9 @@ export uintptr_t failure_type(uintptr_t object);
 
 /// Copying
 
-void *copy_failure(const void *src);
+void *gc_copy_failure(const void *src);
 
-void *copy_failure_type(void *src);
+void *gc_copy_failure_type(void *src);
 
 
 /// Builtin Failure Types

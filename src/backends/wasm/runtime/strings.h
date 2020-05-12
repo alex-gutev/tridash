@@ -37,6 +37,9 @@
 #define TRIDASH_STRINGS_H
 
 #include <stddef.h>
+#include <stdint.h>
+
+#include "macros.h"
 
 /**
  * Tridash string object
@@ -55,9 +58,30 @@ struct string {
  *
  * @return Pointer to the copied string.
  */
+void *gc_copy_string(const void *ptr);
+
+/**
+ * Return the pointer immediately following the string object, taking
+ * into account the trailing padding bytes.
+ *
+ * @param str String object.
+ *
+ * @return The pointer to the first byte after the string object.
+ */
+void *string_end_ptr(struct string *str);
+
+/**
+ * Copy a string object.
+ *
+ * Unlike gc_copy_string this function can be used safely even if a
+ * garbage collection cycle is initiated during copying.
+ *
+ * @param ptr Pointer to the string object
+ *
+ * @return Pointer to the copied string.
+ */
 void *copy_string(const void *ptr);
 
-void *string_end_ptr(struct string *str);
 
 /**
  * Check whether two strings are byte-equal.

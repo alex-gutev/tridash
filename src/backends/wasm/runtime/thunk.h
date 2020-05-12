@@ -105,7 +105,7 @@ export uintptr_t resolve(uintptr_t val);
  * @param src Pointer to the thunk.
  * @return Pointer to the copied thunk.
  */
-void *copy_thunk(const void *src);
+void *gc_copy_thunk(const void *src);
 
 /**
  * Copy the result computed by a thunk.
@@ -115,7 +115,7 @@ void *copy_thunk(const void *src);
  *
  * @param src Pointer to a resolved thunk.
  */
-void *copy_thunk_result(void *src);
+void *gc_copy_thunk_result(void *src);
 
 /**
  * Copies the objects referenced in the thunk's closure, and updates
@@ -125,7 +125,7 @@ void *copy_thunk_result(void *src);
  *
  * @return The pointer to the first byte following the thunk object.
  */
-void *copy_thunk_closure(void *object);
+void *gc_copy_thunk_closure(void *object);
 
 
 /// Catch Thunks
@@ -153,7 +153,7 @@ export void *make_catch_thunk(uintptr_t value, uintptr_t fail_value, uintptr_t t
  *
  * @return A copy of the object.
  */
-void *copy_catch_thunk(const void *src);
+void *gc_copy_catch_thunk(const void *src);
 
 /**
  * Copy the main and failure value objects of a catch thunk.
@@ -162,6 +162,6 @@ void *copy_catch_thunk(const void *src);
  *
  * @return Pointer to the first byte following the catch thunk.
  */
-void *copy_catch_thunk_objects(void *object);
+void *gc_copy_catch_thunk_objects(void *object);
 
 #endif /* TRIDASH_THUNK_H */

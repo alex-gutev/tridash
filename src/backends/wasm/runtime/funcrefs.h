@@ -77,7 +77,7 @@ struct funcref {
  * @param src Pointer to the function reference object.
  * @return Pointer to the copied function reference.
  */
-void *copy_funcref(const void *src);
+void *gc_copy_funcref(const void *src);
 
 /**
  * Copy the argument values stored in the function reference object
@@ -86,6 +86,6 @@ void *copy_funcref(const void *src);
  * @param src Pointer to the function reference object.
  * @return Pointer to the first byte following the function reference object.
  */
-void *copy_funcref_args(void *src);
+void *gc_copy_funcref_args(void *src);
 
 #endif /* TRIDASH_FUNCREFS_H */
