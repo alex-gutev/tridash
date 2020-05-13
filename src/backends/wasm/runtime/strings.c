@@ -36,6 +36,7 @@
 #include "strings.h"
 #include "types.h"
 #include "memory.h"
+#define STRING_OBJECT_SIZE offsetof(struct tridash_object, string.data)
 
 void *gc_copy_string(const void *ptr) {
     const struct tridash_object *object = ptr;
@@ -57,6 +58,16 @@ void *copy_string(const void *ptr) {
     memcopy(dest, restore_ptr(), size);
 
     return dest;
+}
+
+
+void *alloc_string(size_t size) {
+    struct tridash_object *str = alloc(STRING_OBJECT_SIZE + size);
+
+    str->type = TRIDASH_TYPE_STRING;
+    str->string.size = size;
+
+    return str;
 }
 
 void *string_end_ptr(struct string *str) {

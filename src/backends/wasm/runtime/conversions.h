@@ -49,4 +49,56 @@
  */
 export uintptr_t object_to_int(uintptr_t obj);
 
+
+/// To String Conversions
+
+/**
+ * Convert an integer to a string.
+ *
+ * @param ptr The object. If not an integer a type error failure is
+ *   returned.
+ *
+ * @return The string object representation of the integer.
+ */
+export uintptr_t int_to_string(uintptr_t ptr);
+
+/**
+ * Convert an real valued number to a string.
+ *
+ * @param ptr The object. If not an real-valued number a type error
+ *   failure is returned.
+ *
+ * @return The string object representation of the real-value.
+ */
+export uintptr_t real_to_string(uintptr_t ptr);
+
+/**
+ * Convert a character to a string containing just that character.
+ *
+ * @param ptr The object. If not a character a type error failure is
+ *   returned.
+ *
+ * @return The string object representation of the character.
+ */
+export uintptr_t char_to_string(uintptr_t ptr);
+
+/**
+ * Return the identifier name of a symbol as a string.
+ *
+ * @param ptr The symbol object. If not a symbol object a type error
+ *   failure is returned.
+ *
+ * @return The symbol name string.
+ */
+export uintptr_t symbol_name(uintptr_t ptr);
+
+
+/// Type Checks
+
+export uintptr_t is_int(uintptr_t ptr);
+export uintptr_t is_real(uintptr_t ptr);
+export uintptr_t is_char(uintptr_t ptr);
+export uintptr_t is_string(uintptr_t ptr);
+export uintptr_t is_symbol(uintptr_t ptr);
+
 #endif /* TRIDASH_CONVERSIONS_H */

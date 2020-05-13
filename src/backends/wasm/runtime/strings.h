@@ -82,6 +82,14 @@ void *string_end_ptr(struct string *str);
  */
 void *copy_string(const void *ptr);
 
+/**
+ * Allocate a string object of a given size.
+ *
+ * @param size Size in bytes of the string buffer.
+ *
+ * @return The string object.
+ */
+void *alloc_string(size_t size);
 
 /**
  * Check whether two strings are byte-equal.
