@@ -1932,25 +1932,7 @@
 
                    (list
                     (js-return
-                     (js-call "Tridash.cast_real" ($ x))))))))))
-
-        (subtest "string"
-          (with-module-table modules
-            (build-core-module)
-            (build "/import(core)")
-            (build "my-string(x) : string(x)")
-            (finish-build)
-
-            (with-nodes ((my-string "my-string")) modules
-              (mock-backend-state
-                (test-meta-node-function my-string
-                  (js-function
-                   (meta-node-id my-string)
-                   '(($ x))
-
-                   (list
-                    (js-return
-                     (js-call "Tridash.cast_string" ($ x)))))))))))
+                     (js-call "Tridash.cast_real" ($ x)))))))))))
 
       (subtest "Type Checks"
         (subtest "int"

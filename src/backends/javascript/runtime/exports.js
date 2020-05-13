@@ -60,11 +60,17 @@ exports.uncatch_thunk = uncatch_thunk;
 
 exports.cast_int = cast_int;
 exports.cast_real = cast_real;
-exports.cast_string = cast_string;
+
+exports.int_to_string = int_to_string;
+exports.real_to_string = real_to_string;
+exports.char_to_string = char_to_string;
+exports.symbol_name = symbol_name;
 
 exports.is_int = is_int;
 exports.is_real = is_real;
 exports.is_string = is_string;
+exports.is_char = is_char;
+exports.is_symbol = is_symbol;
 exports.is_inf = is_inf;
 exports.is_nan = is_nan;
 

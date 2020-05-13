@@ -321,6 +321,7 @@ function cast_int(x) {
         return new Thunk(() => { throw e; });
     }
 };
+
 function cast_real(x) {
     try {
         x = resolve(x);
@@ -340,16 +341,46 @@ function cast_real(x) {
         return new Thunk(() => { throw e; });
     }
 };
-function cast_string(x) {
+
+
+function int_to_string(x) {
+    try {
+        x = check_integer(resolve(x));
+
+        return String(x);
+
+    } catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
+
+function real_to_string(x) {
+    try {
+        x = check_number(resolve(x));
+
+        return String(x);
+
+    } catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
+
+function char_to_string(x) {
     try {
         x = resolve(x);
+        return x instanceof Char ? x.chr : TridashTypeError();
 
-        if (x instanceof Char)
-            return x.chr;
-        else
-            return String(x);
+    } catch (e) {
+        return new Thunk(() => { throw e; });
     }
-    catch (e) {
+}
+
+function symbol_name(x) {
+    try {
+        x = resolve(x);
+        return x instanceof Symbol ? x.symbol : TridashTypeError();
+
+    } catch (e) {
         return new Thunk(() => { throw e; });
     }
 };
@@ -407,6 +438,25 @@ function is_nan(value) {
         return new Thunk(() => { throw e; });
     }
 };
+
+
+function is_char(value) {
+    try {
+        return typeof resolve(value) instanceof Char;
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
+
+function is_symbol(value) {
+    try {
+        return typeof resolve(value) instanceof Symbol;
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
 
 
 /* Lists */
