@@ -107,6 +107,11 @@
 /attribute(symbol?, wasm-name, runtime.is_symbol);
 
 
+### Strings
+
+/attribute(string-concat, wasm-name, runtime.string_concat);
+
+
 ### Failures
 
 /attribute(fail, wasm-name, runtime.make_failure)

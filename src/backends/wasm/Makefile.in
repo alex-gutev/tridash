@@ -36,7 +36,7 @@ types_h_deps = runtime/types.h $(thunk_h_deps) \
 	$(nodes_h_deps)
 
 memory_h_deps = runtime/memory.h $(types_h_deps)
-strings_h_deps = runtime/strings.h
+strings_h_deps = runtime/strings.h $(macros_h_deps)
 failures_h_deps = runtime/failures.h $(macros_h_deps)
 arrays_h_deps = runtime/arrays.h $(macros_h_deps)
 funcrefs_h_deps = runtime/funcrefs.h
@@ -91,7 +91,11 @@ runtime/copying.o: runtime/copying.c $(copying_h_deps) \
 	$(lists_h_deps)
 	$(EMCC) -O2 $< -o $@ -c
 
-runtime/strings.o: runtime/strings.c $(strings_h_deps) $(types_h_deps) $(memory_h_deps)
+runtime/strings.o: runtime/strings.c \
+	$(strings_h_deps) \
+	$(types_h_deps) \
+	$(memory_h_deps) \
+	$(failures_h_deps)
 	$(EMCC) -O2 $< -o $@ -c
 
 runtime/failures.o: runtime/failures.c \

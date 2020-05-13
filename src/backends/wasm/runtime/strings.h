@@ -101,4 +101,9 @@ void *alloc_string(size_t size);
  */
 int string_equal(const struct string *str1, const struct string *str2);
 
+
+/// Core Module String Functions
+
+export uintptr_t string_concat(uintptr_t str1, uintptr_t str2);
+
 #endif /* TRIDASH_STRINGS_H */

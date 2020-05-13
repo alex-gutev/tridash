@@ -36,6 +36,8 @@
 #include "strings.h"
 #include "types.h"
 #include "memory.h"
+#include "failures.h"
+
 #define STRING_OBJECT_SIZE offsetof(struct tridash_object, string.data)
 
 void *gc_copy_string(const void *ptr) {
@@ -75,4 +77,125 @@ void *string_end_ptr(struct string *str) {
     ptr += ~(uintptr_t)ptr + 1 & TAG_MASK;
 
     return ptr;
+}
+
+
+/// Core Module String Functions
+
+uintptr_t string_at(uintptr_t ptr, uintptr_t index) {
+    save_ptr((void *)index);
+    ptr = resolve(ptr);
+    index = (uintptr_t)restore_ptr();
+
+    switch (PTR_TAG(ptr)) {
+    case TAG_TYPE_INT:
+    case TAG_TYPE_FUNCREF:
+        return make_fail_type_error();
+
+    case TAG_TYPE_FAIL:
+        return ptr;
+    }
+
+    struct tridash_object *obj = (void *)ptr;
+
+    if (obj->type != TRIDASH_TYPE_STRING) {
+        return make_fail_type_error();
+    }
+
+    unsigned char *chr = (unsigned char *)obj->string.data;
+    unsigned char *end = chr + obj->string.size;
+
+    uint32_t code = 0;
+
+    while ((uintptr_t)chr < (uintptr_t)end) {
+        if ((*chr & 0xF8) == 0xF0) {
+            code = (uint32_t)(*chr & 0x07) << 18;
+            code |= (uint32_t)(chr[1] & 0x3F) << 12;
+            code |= (chr[2] & 0x3F) << 6;
+            code |= (chr[3] & 0x3F);
+
+            chr += 4;
+        }
+        else if ((*chr & 0xF0) == 0xE0) {
+            code = (uint32_t)(chr[0] & 0x0F) << 12;
+            code |= (chr[1] & 0x3F) << 6;
+            code |= (chr[2] & 0x3F);
+
+            chr += 3;
+        }
+        else if ((*chr & 0xF0) == 0xC0) {
+            code = (chr[0] & 0x1F) << 6;
+            code |= (chr[1] & 0x3F);
+
+            chr += 2;
+        }
+        else {
+            code = *chr;
+            chr++;
+        }
+    }
+
+    struct tridash_object *chr_obj = alloc(CHAR_OBJECT_SIZE);
+    chr_obj->type = TRIDASH_TYPE_CHAR;
+    chr_obj->char_code = code;
+
+    return (uintptr_t)chr_obj;
+}
+
+uintptr_t string_concat(uintptr_t ptr1, uintptr_t ptr2) {
+    // Resolve and check type of Object 1
+
+    SAVED_TPTR(ptr2, ptr1 = resolve(ptr1));
+
+    switch (PTR_TAG(ptr1)) {
+    case TAG_TYPE_INT:
+    case TAG_TYPE_FUNCREF:
+        return make_fail_type_error();
+
+    case TAG_TYPE_FAIL:
+        return ptr1;
+    }
+
+    struct tridash_object *obj1 = (void*)ptr1;
+
+    if (obj1->type != TRIDASH_TYPE_STRING)
+        return make_fail_type_error();
+
+
+    // Resolve and check type of Object 2
+
+    SAVED_PTR(obj1, ptr2 = resolve(ptr2));
+
+    switch (PTR_TAG(ptr2)) {
+    case TAG_TYPE_INT:
+    case TAG_TYPE_FUNCREF:
+        return make_fail_type_error();
+
+    case TAG_TYPE_FAIL:
+        return ptr2;
+    }
+
+    struct tridash_object *obj2 = (void*)ptr2;
+
+    if (obj2->type != TRIDASH_TYPE_STRING)
+        return make_fail_type_error();
+
+
+    // Allocate string buffer
+
+    save_ptr(obj1);
+    save_ptr(obj2);
+
+    struct tridash_object *str = alloc_string(obj1->string.size + obj2->string.size);
+
+
+    // Copy string data
+
+    obj2 = restore_ptr();
+    obj1 = restore_ptr();
+
+    memcopy(str->string.data, obj1->string.data, obj1->string.size);
+    memcopy(str->string.data + obj1->string.size, obj2->string.data, obj2->string.size);
+
+    return (uintptr_t)str;
 }
