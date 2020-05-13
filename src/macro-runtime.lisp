@@ -340,8 +340,6 @@
 
 ;;; Type Conversions
 
-(define-tridash-function |string| (x) mkstr)
-
 (define-tridash-function |int| (x)
   (typecase (resolve% x)
     (integer x)
@@ -371,7 +369,8 @@
 (define-tridash-function |int?| (x) integerp)
 (define-tridash-function |real?| (x) realp)
 (define-tridash-function |string?| (x) stringp)
-
+(define-tridash-function |symbol?| (x) symbolp)
+(define-tridash-function |char?| (x) characterp)
 
 ;;; Lists
 
@@ -451,6 +450,10 @@
   (check-tridash-types ((str1 string) (str2 string))
     (concatenate-to 'string str1 str2)))
 
+(define-tridash-function |int->string| ((x integer)) mkstr)
+(define-tridash-function |real->string| ((x number)) mkstr)
+(define-tridash-function |char->string| ((x character)) mkstr)
+(define-tridash-function |symbol-name| ((x symbol)) symbol-name)
 
 ;;; Functions
 
