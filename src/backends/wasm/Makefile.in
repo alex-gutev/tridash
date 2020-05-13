@@ -148,7 +148,7 @@ runtime/equality.o: runtime/equality.c $(equality_h_deps) \
 	$(thunk_h_deps) \
 	$(strings_h_deps) \
 	$(types_h_deps) \
-	$(memory_h_deps) \
+	$(memory_h_deps)
 	$(EMCC) -O2 $< -o $@ -c
 
 runtime/conversions.o: runtime/conversions.c \
@@ -221,7 +221,7 @@ test_files = test001.wasm \
 	test040.wasm \
 	test041.wasm
 
-test_inputs = $(addprefix $(testdir)/tests/, $(test_files));
+test_inputs = $(addprefix $(testdir)/tests/, $(test_files))
 
 check: $(testdir)/runtime/runtime.wasm \
 	$(testdir)/tests/tridash.min.js \
