@@ -827,7 +827,10 @@
               (operand-labels (map #'value-block-label operands))
               (result (next-local)))
 
-         (->> (compile-arithmetic-expression it operand-labels result)
+         (->> (if (and (= name "-") (= (length operands) 1))
+                  (make-negate-expression operand-labels result)
+                  (compile-arithmetic-expression it operand-labels result))
+
               (make-value-block :label result
                                 :operands operands
                                 :strict-p t
@@ -996,6 +999,52 @@
             ;; value
 
             ,@(make-type-error result)))))))
+
+(defun make-negate-expression (operands result)
+  (destructuring-bind (op) operands
+    `((block $out
+        (block $type-error
+          (block $fail
+            (block $float
+              (block $int
+                (resolve ,op)
+                (unbox ,op (type number))
+
+                ;; Branch to either integer or float block This
+                ;; assumes that the type is checked beforehand and
+                ;; cannot be anything other than integer or float
+
+                (local.get (type ,op))
+                (i32.const ,+type-i32+)
+                i32.eq
+                (br_if $int)
+                (br $float))
+
+              ;; Operand is an integer
+
+              (local.get (value ,op))
+              (i32.const -1)
+              i32.mul
+
+              (box ,result (type i32))
+              (br $out))
+
+            ;; Operand is a float
+
+            (local.get (value ,op))
+            f32.reinterpret_i32
+            f32.neg
+
+            (box ,result (type f32))
+            (br $out))
+
+          ;; Handle Failure
+          (get-fail ,op)
+          (box ,result (type fail))
+          (br $out))
+
+        ;; Type error - Operand is not a numeric value
+        ,@(make-type-error result)))))
 
 
 ;;;; Comparison Expression
