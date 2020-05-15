@@ -47,6 +47,7 @@ nodes_h_deps = runtime/nodes.h
 meta_nodes_h_deps = runtime/meta-nodes.h
 equality_h_deps = runtime/equality.h $(macros_h_deps)
 conversions_h_deps = runtime/conversions.h $(macros_h_deps)
+math_h_deps = runtime/math.h $(macros_h_deps);
 
 ## Wasm Runtime Library
 
@@ -64,7 +65,8 @@ runtime_objects = runtime/thunk.o \
 	runtime/lists.o \
 	runtime/meta-nodes.o \
 	runtime/equality.o \
-	runtime/conversions.o
+	runtime/conversions.o \
+	runtime/math.o
 
 runtime/runtime.wasm: $(runtime_objects)
 	$(EMCC) -O2 $^ -o $@ -s SIDE_MODULE
@@ -157,6 +159,10 @@ runtime/conversions.o: runtime/conversions.c \
 	$(strings_h_deps) \
 	$(memory_h_deps)
 	$(EMCC) -O2 $< -o $@ -c
+
+runtime/math.o: runtime/math.c $(math_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
 
 ## JavaScript Loader Library
 

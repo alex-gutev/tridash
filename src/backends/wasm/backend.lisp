@@ -133,7 +133,14 @@
           :module "runtime"
           :name "make_fail_no_value"
           :type :func
-          :desc '(nil (i32))))))
+          :desc '(nil (i32))))
+
+     ("frem"
+      . ,(make-wasm-import
+          :module "runtime"
+          :name "frem"
+          :type :func
+          :desc '((f32 f32) (f32))))))
 
   "Runtime library functions import entries.")
 

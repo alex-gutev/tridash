@@ -753,7 +753,7 @@
      ("-" . ((i32 . i32.sub) (f32 . f32.sub)))
      ("*" . ((i32 . i32.mul) (f32 . f32.mul)))
      ("/" . ((i32 . i32.div_s) (f32 . f32.div)))
-     ("%" . ((i32 . i32.rem_s) (f32 . f32.rem))))))
+     ("%" . ((i32 . i32.rem_s) (f32 . (call (import "runtime" "frem"))))))))
 
 (defconstant +relational-operators+
   (alist-hash-map
