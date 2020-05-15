@@ -114,13 +114,12 @@ uintptr_t empty_list(void) {
 
 /* Exported API Functions */
 
-int is_list_node(uintptr_t obj) {
-    obj = resolve(obj);
-
+int is_list(uintptr_t obj) {
     if (IS_REF(obj)) {
         struct tridash_object *object = (void*)obj;
 
-        return object->type == TRIDASH_TYPE_LIST_NODE;
+        return object->type == TRIDASH_TYPE_LIST_NODE ||
+            object->type == TRIDASH_TYPE_ARRAY;
     }
 
     return 0;
@@ -174,9 +173,9 @@ uintptr_t list_node_tail(uintptr_t ptr) {
 
     switch (obj->type) {
     case TRIDASH_TYPE_LIST_NODE: {
-        uintptr_t tail = obj->list_node.tail;
+        uintptr_t tail = resolve(obj->list_node.tail);
 
-        return is_list_node(tail) || tail == empty_list() || IS_FAIL(tail) ? tail :
+        return (is_list(tail) || tail == empty_list() || IS_FAIL(tail)) ? tail :
             make_fail_type_error();
     }
 

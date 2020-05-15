@@ -697,18 +697,19 @@
                     (i64.const 0)
                     (i64.store (offset 4))))
 
-                 (make-value-block
-                  :label result
-                  :operands (list vblock value)
+                 (setf (get block expression-blocks)
+                       (make-value-block
+                        :label result
+                        :operands (list vblock value)
 
-                  :count ref-count
-                  :common-p t
+                        :count ref-count
+                        :common-p t
 
-                  :instructions
+                        :instructions
 
-                  `((local.get (ref ,result))
-                    (local.get (ref ,(value-block-label value)))
-                    (i32.store (offset 4)))))
+                        `((local.get (ref ,result))
+                          (local.get (ref ,(value-block-label value)))
+                          (i32.store (offset 4))))))
 
                 (t
                  (setf (value-block-operands vblock)
@@ -759,7 +760,7 @@
   (alist-hash-map
    '(("<" . ((i32 . i32.lt_s) (f32 . f32.lt)))
      ("<=" . ((i32 . i32.le_s) (f32 . f32.le)))
-     (">" . ((i32 . i32.gt_s) (f32 . f32.ge)))
+     (">" . ((i32 . i32.gt_s) (f32 . f32.gt)))
      (">=" . ((i32 . i32.ge_s) (f32 . f32.ge))))))
 
 (defconstant +builtin-operators+
@@ -1416,12 +1417,50 @@
                       (outer-node-references meta-node)
                       (map #'make-operand (range (length operands)))))
 
-             (block (compile-functor-expression meta-node operands outer-nodes)))
+             (block (make-ref-meta-node-call meta-node operands outer-nodes)))
 
         (make-ref-function-spec
          meta-node
          (value-block-label block)
          (flatten-block block))))))
+
+(defgeneric make-ref-meta-node-call (meta-node operands outer-nodes)
+  (:documentation
+   "Generate the main block of a meta-node ref function.")
+
+  (:method ((meta-node meta-node) operands outer-nodes)
+    (compile-functor-expression meta-node operands outer-nodes))
+
+  (:method ((meta-node external-meta-node) operands outer-nodes)
+    (if (= (attribute :wasm-name meta-node) "-")
+        (make-negate-ref-function meta-node operands)
+        (call-next-method))))
+
+(defun make-negate-ref-function (meta-node operands)
+  "Generate the main block of the ref function of the subtract/negate
+   meta-node."
+
+  (let* ((operands (compile-operands operands (strict-arguments meta-node)))
+         (operand-labels (map #'value-block-label operands))
+         (result (next-local)))
+
+    (make-value-block
+     :label result
+     :operands operands
+     :instructions
+     `((block $out
+         (block $subtract
+           (local.get $count)
+           (i32.const 2)
+           i32.eq
+           (br_if $subtract)
+
+           ,@(make-negate-expression (list (first operand-labels)) result)
+           (br $out))
+
+         ,@(compile-arithmetic-expression (get "-" +arithmetic-operators+) operand-labels result)))
+
+     :strict-p t)))
 
 (defun make-ref-function-spec (meta-node result blocks)
   "Create the WASM-FUNCTION-SPEC object for a meta-node reference

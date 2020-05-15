@@ -96,7 +96,8 @@
                  (box ,result (type fail))
                  (br $out))
 
-               (constant ,result nil))
+               (constant ,result nil)
+               (br $out))
 
              ;; Handle Failure
              (get-fail ,l)
@@ -141,7 +142,8 @@
                  (box ,result (type fail))
                  (br $out))
 
-               (constant ,result :true))
+               (constant ,result :true)
+               (br $out))
 
              ;; Handle Failure
              (get-fail ,l)

@@ -836,7 +836,7 @@ describe('Lazy Evaluation', function() {
     }
 
     beforeEach(async function() {
-        runtime = new Runtime();
+        runtime = new Runtime(128);
         await runtime.load();
 
         fns = runtime.exports;
@@ -847,10 +847,6 @@ describe('Lazy Evaluation', function() {
         it('Should directly return immediate values', function() {
             const val = im(1);
             assert.equal(fns.resolve(val), val);
-        });
-
-        it('Should directly return boolean false', function() {
-            assert.equal(fns.resolve(0), 0);
         });
 
         it('Should directly return pointers to boxed values', function() {

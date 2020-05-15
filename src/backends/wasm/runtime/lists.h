@@ -87,11 +87,11 @@ void * gc_copy_list_node_objects(void * node);
 uintptr_t empty_list(void);
 
 /**
- * Checks whether @a obj is a linked list node.
+ * Checks whether @a obj is a list.
  *
- * @returns true if @a obj is a linked list node.
+ * @returns true if @a obj is a list.
  */
-int is_list_node(uintptr_t obj);
+int is_list(uintptr_t obj);
 
 /**
  * Returns the element value stored in a linked list node.
