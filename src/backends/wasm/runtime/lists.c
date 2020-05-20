@@ -125,6 +125,20 @@ int is_list(uintptr_t obj) {
     return 0;
 }
 
+uintptr_t check_is_list(uintptr_t obj) {
+    obj = resolve(obj);
+
+    switch (PTR_TAG(obj)) {
+    case TAG_TYPE_PTR:
+        return TRIDASH_BOOL(is_list(obj));
+
+    case TAG_TYPE_FAIL:
+        return obj;
+    }
+
+    return TRIDASH_FALSE;
+}
+
 uintptr_t list_node_head(uintptr_t ptr) {
     ptr = resolve(ptr);
 

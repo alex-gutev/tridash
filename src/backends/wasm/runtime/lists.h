@@ -94,6 +94,16 @@ uintptr_t empty_list(void);
 int is_list(uintptr_t obj);
 
 /**
+ * Checks whether an object is a list and returns the result as a
+ * Tridash boxed Boolean.
+ *
+ * @param obj The object.
+ *
+ * @return Boxed boolean.
+ */
+export uintptr_t check_is_list(uintptr_t obj);
+
+/**
  * Returns the element value stored in a linked list node.
  *
  * If @a node is not a linked list node, returns a failure.
