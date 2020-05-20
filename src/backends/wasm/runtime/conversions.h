@@ -49,6 +49,15 @@
  */
 export uintptr_t object_to_int(uintptr_t obj);
 
+/**
+ * Convert a Tridash object to a real numeric value.
+ *
+ * @param obj The object.
+ *
+ * @return The resulting real numeric value.
+ */
+export uintptr_t object_to_real(uintptr_t obj);
+
 
 /// To String Conversions
 

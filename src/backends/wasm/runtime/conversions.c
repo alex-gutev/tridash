@@ -42,6 +42,7 @@
 #include "memory.h"
 
 #define INT_OBJECT_SIZE (offsetof(struct tridash_object, integer) + sizeof(int32_t))
+#define FLOAT_OBJECT_SIZE (offsetof(struct tridash_object, real) + sizeof(float))
 
 /**
  * Create a boxed integer object.
@@ -140,6 +141,182 @@ uintptr_t string_to_int(const struct string *str) {
     }
 
     return make_boxed_int(value * sign);
+}
+
+
+/// Object To Real
+
+/**
+ * Parse a real number from a string.
+ *
+ * @param str The string.
+ *
+ * @return The real number object.
+ */
+static uintptr_t string_to_real(const struct string *str);
+
+/**
+ * Raise a floating point number to an integer power.
+ *
+ * @param base The base.
+ * @param exponent The exponent, which may be a negative integer.
+ *
+ * @return The result of the exponentiation
+ */
+static float fpow(float base, int exponent);
+
+
+uintptr_t object_to_real(uintptr_t ptr) {
+    ptr = resolve(ptr);
+
+    switch (PTR_TAG(ptr)) {
+    case TAG_TYPE_INT:
+    case TAG_TYPE_FAIL:
+        return ptr;
+
+    case TAG_TYPE_FUNCREF:
+        return make_fail_type_error();
+    }
+
+    const struct tridash_object *obj = (void *)ptr;
+
+    switch (obj->type) {
+    case TRIDASH_TYPE_INT:
+    case TRIDASH_TYPE_FLOAT:
+        return ptr;
+
+    case TRIDASH_TYPE_STRING:
+        return string_to_real(&obj->string);
+
+    default:
+        return make_fail_type_error();
+    }
+}
+
+static uintptr_t string_to_real(const struct string *str) {
+    const char *chr = str->data;
+    const char *end = &str->data[str->size];
+
+    if (!str->size) return make_fail_invalid_real();
+
+    int32_t int_part = 0;
+    int32_t frac_part = 0;
+    int32_t exponent = 0;
+
+    int sign = 1;
+    int has_frac = 0, has_exponent = 0;
+    int frac_digits = 0;
+
+    /* TODO: Check for Infinity and NAN */
+
+    // Check Sign
+
+    if (*chr == '-') {
+        sign = -1;
+        chr++;
+    }
+
+    // Parse Integer Part
+
+    while ((uintptr_t)chr < (uintptr_t)end) {
+        char c = *chr++;
+
+        if ('0' <= c && c <= '9') {
+            int_part = int_part * 10 + (c - '0');
+        }
+        else if (c == '.') {
+            has_frac = 1;
+            break;
+        }
+        else if (c == 'e') {
+            has_exponent = 1;
+            break;
+        }
+        else {
+            return make_fail_invalid_real();
+        }
+    }
+
+    // Parse Fractional Part
+
+    if (has_frac) {
+        while ((uintptr_t)chr < (uintptr_t)end) {
+            char c = *chr++;
+
+            if ('0' <= c && c <= '9') {
+                frac_part = frac_part * 10 + (c - '0');
+                frac_digits++;
+            }
+            else if (c == 'e') {
+                has_exponent = 1;
+                break;
+            }
+            else {
+                return make_fail_invalid_real();
+            }
+        }
+    }
+
+    // Parse Exponent
+
+    if (has_exponent && ((uintptr_t)chr < (uintptr_t)end)) {
+        int exp_sign = 1;
+
+        if (*chr == '-') {
+            exp_sign = -1;
+            chr++;
+        }
+
+        while ((uintptr_t)chr < (uintptr_t)end) {
+            char c = *chr++;
+
+            if ('0' <= c && c <= '9') {
+                exponent = exponent * 10 + (c - '0');
+            }
+            else {
+                return make_fail_invalid_real();
+            }
+        }
+
+        exponent *= exp_sign;
+    }
+
+
+    // Compute Float Value
+
+    float value = sign * (int_part + (frac_part * fpow(10, -frac_digits))) * fpow(10, exponent);
+
+    struct tridash_object *fobj = alloc(FLOAT_OBJECT_SIZE);
+
+    fobj->type = TRIDASH_TYPE_FLOAT;
+    fobj->real = value;
+
+    return (uintptr_t)fobj;
+}
+
+float fpow(float b, int n) {
+    if (n < 0)
+        return fpow(1 / b, -n);
+
+    float result = 1;
+
+    while (n) {
+        if (n == 1) {
+            result *= b;
+            break;
+        }
+        else if (n % 2) { // n is odd
+            result *= b;
+            b *= b;
+            n = (n - 1) >> 1;
+        }
+        else { // n is even
+            b *= b;
+            n >>= 1;
+        }
+    }
+
+    return result;
 }
 
 
@@ -490,9 +667,15 @@ uintptr_t is_real(uintptr_t ptr) {
     case TAG_TYPE_FAIL:
         return ptr;
 
+    case TAG_TYPE_INT:
+        return TRIDASH_TRUE;
+
     case TAG_TYPE_PTR: {
         struct tridash_object *obj = (void *)ptr;
-        return TRIDASH_BOOL(obj->type == TRIDASH_TYPE_FLOAT);
+        return TRIDASH_BOOL(
+            obj->type == TRIDASH_TYPE_FLOAT ||
+            obj->type == TRIDASH_TYPE_INT
+            );
     }
     }
 

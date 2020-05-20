@@ -90,6 +90,7 @@
 ### Type Conversions
 
 /attribute(int, wasm-name, runtime.object_to_int)
+/attribute(real, wasm-name, runtime.object_to_real)
 
 /attribute(int->string, wasm-name, runtime.int_to_string);
 /attribute(real->string, wasm-name, runtime.real_to_string);
