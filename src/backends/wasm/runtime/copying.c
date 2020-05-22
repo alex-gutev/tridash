@@ -118,6 +118,9 @@ void *gc_copy_object(void *ptr) {
 
     case TRIDASH_TYPE_FORWARD:
         return object->forward_ptr;
+
+    default:
+        ASSERT_FAIL;
     }
 
     object->type = TRIDASH_TYPE_FORWARD;

@@ -894,7 +894,7 @@
 
             :instructions
             `((i32.const 0)
-              (local.set ,label))))))
+              (local.set (ref ,label)))))))
 
    arguments))
 
@@ -2478,7 +2478,7 @@
 
                  ((list 'unbox local (list 'type type))
                   (if (or (unboxed? local)
-                          (value-block-immediate-p (get local locals)))
+                          (immediate? local))
 
                       `((check-type ,local ,type))
 
@@ -2489,7 +2489,7 @@
                  ((list 'resolve local)
                   (unless
                       (or (resolved? local)
-                          (value-block-strict-p (get local locals)))
+                          (strict? local))
 
                     (setf (get local resolved) branches)
                     (list instruction)))
@@ -2523,6 +2523,14 @@
                  (unless (memberp label branches)
                    (setf (get local old) (union branches outer-branches))))
                old)
+
+             (strict? (local)
+               (awhen (get local locals)
+                 (value-block-strict-p it)))
+
+             (immediate? (local)
+               (awhen (get local locals)
+                 (value-block-immediate-p it)))
 
              (unboxed? (local)
                (memberp local unboxed))
@@ -2799,6 +2807,7 @@
     (local.get (ref ,local))
     (i32.const 2)
     i32.shr_u
+    (local.tee (value ,local))
     (br_table $false $true $type-error)))
 
 
@@ -2970,7 +2979,7 @@
     i32.shl
     (i32.const ,+tag-funcref+)
     i32.or
-    (local.set ,local)
+    (local.set (ref ,local))
 
     (i32.const ,+type-funcref+)
     (local.set (type local))))

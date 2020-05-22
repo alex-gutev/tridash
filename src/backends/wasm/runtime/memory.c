@@ -119,10 +119,10 @@ void * alloc(size_t size) {
     // Align to word size
     size += ~size + 1 & TAG_MASK;
 
-    if ((uintptr_t)(alloc_ptr + size) >= (uintptr_t)(from_space + heap_size/2))
+    if ((uintptr_t)(alloc_ptr + size) >= (uintptr_t)(from_space + (heap_size/2 & ~TAG_MASK)))
         run_gc();
 
-    if ((uintptr_t)(alloc_ptr + size) >= (uintptr_t)(from_space + heap_size/2))
+    if ((uintptr_t)(alloc_ptr + size) >= (uintptr_t)(from_space + (heap_size/2 & ~TAG_MASK)))
         grow_memory(heap_size);
 
     char *ptr = alloc_ptr;
@@ -168,15 +168,24 @@ void grow_memory(size_t amount) {
 
     __builtin_wasm_memory_grow(0, pages);
 
-    heap_size += amount;
+    heap_size += pages * PAGE_SIZE;
+
+    if ((uintptr_t)to_space > (uintptr_t)from_space) {
+        from_space = heap_base;
+        to_space = heap_base + heap_size / 2;
+    }
+    else {
+        from_space = heap_base + heap_size / 2;
+        to_space = heap_base;
+    }
 }
 
-void memcopy(char *dest, const char *src, size_t size) {
-    while (size--) {
-        *dest = *src;
+void memcopy(void *dest, const void *src, size_t size) {
+    char *d = dest;
+    const char *s = src;
 
-        dest++;
-        src++;
+    while (size--) {
+        *d++ = *s++;
     }
 }
 

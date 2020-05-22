@@ -396,12 +396,13 @@ class Marshaller {
      * @return JavaScript Array of Objects
      */
     to_js_array(ptr, view) {
-        const mem = new DataView(this.memory.buffer, 0);
         const size = view.getUint32(4, true);
 
         var objects = [];
 
         for (var i = 0; i < size; i++) {
+            const mem = new DataView(this.memory.buffer, 0);
+
             this.stack_push(ptr);
             objects.push(this.to_js(mem.getUint32(ptr + 8 + i * 4, true)));
             ptr = this.stack_pop(ptr);
@@ -439,13 +440,16 @@ class Marshaller {
      * @return The JavaScript Object
      */
     to_js_object(ptr, view) {
-        const mem = new DataView(this.memory.buffer, 0);
         const descriptor = view.getUint32(4, true);
-        const desc_view = new DataView(this.memory.buffer, descriptor);
+        var desc_view = new DataView(this.memory.buffer, descriptor);
+        const buckets = desc_view.getUint32(4, true);
 
         var object = new Marshaller.Object();
 
-        for (var i = 0; i < desc_view.getUint32(4, true); i++) {
+        for (var i = 0; i < buckets; i++) {
+            const mem = new DataView(this.memory.buffer, 0);
+            desc_view = new DataView(this.memory.buffer, descriptor);
+
             const bucket = 8 + i * 8;
 
             const key = desc_view.getUint32(bucket, true);
@@ -473,13 +477,13 @@ class Marshaller {
      * @return A Marshaller.ListNode object.
      */
     to_js_list_node(ptr) {
-        const mem = new DataView(this.memory.buffer, 0);
-
+        var mem = new DataView(this.memory.buffer, 0);
         const node = new Marshaller.ListNode();
 
         this.stack_push(ptr);
         node.head = this.to_js(mem.getUint32(ptr + 4, true));
 
+        mem = new DataView(this.memory.buffer, 0);
         ptr = this.stack_pop();
         node.tail = this.to_js(mem.getUint32(ptr + 8, true));
 

@@ -597,19 +597,22 @@ uintptr_t char_to_string(uintptr_t ptr) {
         break;
 
     case 2:
-        str->string.data[0] = 0xDF & (code >> 8);
-        str->string.data[1] = 0xBF & code;
+        str->string.data[0] = 0xC0 | (0x1F & (code >> 6));
+        str->string.data[1] = 0x80 | (0x3F & code);
+        break;
 
     case 3:
-        str->string.data[0] = 0xEF & (code >> 16);
-        str->string.data[1] = 0xBF & (code >> 8);
-        str->string.data[2] = 0xBF & code;
+        str->string.data[0] = 0xE0 | (0x0F & (code >> 12));
+        str->string.data[1] = 0x80 | (0x3F & (code >> 6));
+        str->string.data[2] = 0x80 | (0x3F & code);
+        break;
 
     default:
-        str->string.data[0] = 0xF7 & (code >> 24);
-        str->string.data[1] = 0xBF & (code >> 16);
-        str->string.data[2] = 0xBF & (code >> 8);
-        str->string.data[3] = 0xBF & code;
+        str->string.data[0] = 0xF0 | (0x03 & (code >> 18));
+        str->string.data[1] = 0x80 | (0x3F & (code >> 12));
+        str->string.data[2] = 0x80 | (0x3F & (code >> 6));
+        str->string.data[3] = 0x80 | (0x3F & code);
+        break;
     }
 
     return (uintptr_t)str;

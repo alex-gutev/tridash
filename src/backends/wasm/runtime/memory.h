@@ -84,7 +84,7 @@ export void run_gc(void);
  *
  * @param size Number of bytes to copy.
  */
-export void memcopy(char *dest, const char *src, size_t size);
+export void memcopy(void *dest, const void *src, size_t size);
 
 
 /**
