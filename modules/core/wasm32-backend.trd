@@ -112,6 +112,7 @@
 ### Strings
 
 /attribute(string-concat, wasm-name, runtime.string_concat);
+/attribute(string-at, wasm-name, runtime.string_at)
 
 
 ### Failures

@@ -38,6 +38,7 @@
 #include "memory.h"
 #include "failures.h"
 
+#define CHAR_OBJECT_SIZE offsetof(struct tridash_object, char_code) + sizeof(uint32_t)
 #define STRING_OBJECT_SIZE offsetof(struct tridash_object, string.data)
 
 void *gc_copy_string(const void *ptr) {
@@ -83,9 +84,7 @@ void *string_end_ptr(struct string *str) {
 /// Core Module String Functions
 
 uintptr_t string_at(uintptr_t ptr, uintptr_t index) {
-    save_ptr((void *)index);
-    ptr = resolve(ptr);
-    index = (uintptr_t)restore_ptr();
+    SAVED_TPTR(index, ptr = resolve(ptr));
 
     switch (PTR_TAG(ptr)) {
     case TAG_TYPE_INT:
@@ -102,37 +101,74 @@ uintptr_t string_at(uintptr_t ptr, uintptr_t index) {
         return make_fail_type_error();
     }
 
+    SAVED_PTR(obj, index = resolve(index));
+
+    int32_t ichr = 0;
+
+    switch (PTR_TAG(index)) {
+    case TAG_TYPE_INT:
+        ichr = INT_VALUE(index);
+        break;
+
+    case TAG_TYPE_FUNCREF:
+        return make_fail_type_error();
+
+    case TAG_TYPE_FAIL:
+        return index;
+
+    default: {
+        struct tridash_object *iobj = (void *)index;
+
+        if (iobj->type != TRIDASH_TYPE_INT)
+            return make_fail_type_error();
+
+        ichr = iobj->integer;
+    } break;
+    }
+
+    if (ichr < 0) {
+        return make_fail_index_out_bounds();
+    }
+
     unsigned char *chr = (unsigned char *)obj->string.data;
     unsigned char *end = chr + obj->string.size;
 
     uint32_t code = 0;
 
-    while ((uintptr_t)chr < (uintptr_t)end) {
-        if ((*chr & 0xF8) == 0xF0) {
-            code = (uint32_t)(*chr & 0x07) << 18;
-            code |= (uint32_t)(chr[1] & 0x3F) << 12;
-            code |= (chr[2] & 0x3F) << 6;
-            code |= (chr[3] & 0x3F);
-
+    while (ichr && ((uintptr_t)chr < (uintptr_t)end)) {
+        if ((*chr & 0xF8) == 0xF0)
             chr += 4;
-        }
-        else if ((*chr & 0xF0) == 0xE0) {
-            code = (uint32_t)(chr[0] & 0x0F) << 12;
-            code |= (chr[1] & 0x3F) << 6;
-            code |= (chr[2] & 0x3F);
-
+        else if ((*chr & 0xF0) == 0xE0)
             chr += 3;
-        }
-        else if ((*chr & 0xF0) == 0xC0) {
-            code = (chr[0] & 0x1F) << 6;
-            code |= (chr[1] & 0x3F);
-
+        else if ((*chr & 0xE0) == 0xC0)
             chr += 2;
-        }
-        else {
-            code = *chr;
-            chr++;
-        }
+        else
+            chr += 1;
+
+        ichr--;
+    }
+
+    if (ichr || ((uintptr_t)chr >= (uintptr_t)end)) {
+        return make_fail_index_out_bounds();
+    }
+
+    if ((*chr & 0xF8) == 0xF0) {
+        code = (*chr & 0x07) << 18;
+        code |= (chr[1] & 0x3F) << 12;
+        code |= (chr[2] & 0x3F) << 6;
+        code |= (chr[3] & 0x3F);
+    }
+    else if ((*chr & 0xF0) == 0xE0) {
+        code = (chr[0] & 0x0F) << 12;
+        code |= (chr[1] & 0x3F) << 6;
+        code |= (chr[2] & 0x3F);
+    }
+    else if ((*chr & 0xE0) == 0xC0) {
+        code = (chr[0] & 0x1F) << 6;
+        code |= (chr[1] & 0x3F);
+    }
+    else {
+        code = *chr;
     }
 
     struct tridash_object *chr_obj = alloc(CHAR_OBJECT_SIZE);
