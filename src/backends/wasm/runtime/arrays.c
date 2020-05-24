@@ -39,11 +39,11 @@
 #include "memory.h"
 #include "copying.h"
 
-#define TRIDASH_ARRAY_SIZE offsetof(struct tridash_object, array) + sizeof(struct array)
+#define TRIDASH_ARRAY_OBJ_SIZE offsetof(struct tridash_object, array) + sizeof(struct array)
 
 void *copy_array(const void *src) {
     const struct tridash_object *object = src;
-    size_t size = TRIDASH_ARRAY_SIZE + object->array.size * sizeof(uintptr_t);
+    size_t size = TRIDASH_ARRAY_OBJ_SIZE + object->array.size * sizeof(uintptr_t);
 
     save_ptr(object);
     void *dest = alloc(size);
@@ -54,7 +54,7 @@ void *copy_array(const void *src) {
 
 void *gc_copy_array(const void *src) {
     const struct tridash_object *object = src;
-    size_t size = TRIDASH_ARRAY_SIZE + object->array.size * sizeof(uintptr_t);
+    size_t size = TRIDASH_ARRAY_OBJ_SIZE + object->array.size * sizeof(uintptr_t);
 
     void *dest = alloc(size);
     memcopy(dest, src, size);

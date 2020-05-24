@@ -82,6 +82,7 @@
 
 /attribute(Empty-List, wasm-name, runtime.empty_list)
 
+/attribute(apply%, wasm-name, runtime.meta_node_ref_apply)
 
 ### Objects
 

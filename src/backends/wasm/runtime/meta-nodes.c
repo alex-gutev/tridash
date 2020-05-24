@@ -124,3 +124,118 @@ void *make_arg_list(uintptr_t arg) {
 
     return (void *)&obj->array.size;
 }
+
+
+/// Core Module Functions
+
+/**
+ * Convert an argument list to an array.
+ *
+ * @param args The argument list.
+ *
+ * @return Array containing all the elements in @a args.
+ */
+static uintptr_t arg_list_to_array(uintptr_t args);
+
+
+uintptr_t meta_node_ref_apply(uintptr_t ref, uintptr_t args) {
+    SAVED_TPTR(args, ref = resolve(ref));
+
+    switch (PTR_TAG(ref)) {
+    case TAG_TYPE_FUNCREF: {
+        meta_node_ref_fn fn = get_ref_fn(ref);
+
+        args = arg_list_to_array(args);
+        if (IS_FAIL(args)) return args;
+
+        struct tridash_object *arr = (void*)args;
+        return fn(&arr->array.size);
+    } break;
+
+    case TAG_TYPE_FAIL:
+        return ref;
+
+    case TAG_TYPE_PTR: {
+        struct tridash_object *obj = (void*)ref;
+
+        if (obj->type == TRIDASH_TYPE_FUNCREF_ARGS) {
+            SAVED_PTR(obj, args = arg_list_to_array(args));
+            if (IS_FAIL(args)) return args;
+
+            void *defaults = &obj->funcref.args[0];
+
+            struct tridash_object *arr = (void*)args;
+            return obj->funcref.fn(&arr->array.size, defaults);
+        }
+    } break;
+    }
+
+    return make_fail_type_error();
+}
+
+uintptr_t arg_list_to_array(uintptr_t args) {
+    size_t length = 0;
+
+    uintptr_t list = args;
+    int more = 1;
+
+    while (more) {
+        SAVED_TPTR(args, list = resolve(list));
+
+        if (list == empty_list())
+            break;
+
+        if (IS_FAIL(list))
+            return list;
+        else if (!IS_REF(list))
+            return make_fail_type_error();
+
+        struct tridash_object *obj = (void*)list;
+
+        switch (obj->type) {
+        case TRIDASH_TYPE_ARRAY:
+            length += obj->array.size;
+            more = 0;
+            break;
+
+        case TRIDASH_TYPE_LIST_NODE:
+            length++;
+            list = obj->list_node.tail;
+            break;
+
+        default:
+            return make_fail_type_error();
+        }
+    }
+
+    SAVED_TPTR(args, struct tridash_object *arr = alloc(TRIDASH_ARRAY_SIZE(length)));
+
+    arr->type = TRIDASH_TYPE_ARRAY;
+    arr->array.size = length;
+
+    size_t elem = 0;
+    more = 1;
+
+    struct tridash_object *list_node = (void*)args;
+
+    while (more) {
+        SAVED_PTR(arr, list_node = (void*)resolve((uintptr_t)list_node));
+
+        if ((uintptr_t)list_node == empty_list())
+            break;
+
+        switch (list_node->type) {
+        case TRIDASH_TYPE_ARRAY:
+            memcopy(arr->array.elements + elem, list_node->array.elements, list_node->array.size * sizeof(uintptr_t));
+            more = 0;
+            break;
+
+        case TRIDASH_TYPE_LIST_NODE:
+            arr->array.elements[elem++] = list_node->list_node.head;
+            list_node = (void*)list_node->list_node.tail;
+            break;
+        }
+    }
+
+    return (uintptr_t)arr;
+}

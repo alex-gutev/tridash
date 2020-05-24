@@ -43,6 +43,8 @@
 
 #include <stdint.h>
 
+#include "macros.h"
+
 /**
  * Call a meta-node function, by meta-node reference, with a single
  * argument.
@@ -54,5 +56,20 @@
  *   @a ref is not a meta-node reference.
  */
 uintptr_t call_meta_node_ref(uintptr_t ref, uintptr_t arg);
+
+
+/* Core Module Functions */
+
+/**
+ * Apply a meta-node function, by meta-node reference, on a list of
+ * arguments.
+ *
+ * @param ref The meta-node reference.
+ * @param args Argument list.
+ *
+ * @return Result of applying @a ref on @a args, or a failure of @a
+ *   ref is not a meta-node reference or @a args is not a list.
+ */
+export uintptr_t meta_node_ref_apply(uintptr_t ref, uintptr_t args);
 
 #endif /* TRIDASH_META_NODES_h */

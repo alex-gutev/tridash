@@ -41,6 +41,8 @@
 
 #include "macros.h"
 
+#define TRIDASH_ARRAY_SIZE(n) (offsetof(struct tridash_object, array.elements) + ((n) * sizeof(uintptr_t)))
+
 /**
  * Tridash Array
  */
