@@ -1,0 +1,617 @@
+## Unit Tests for Core Module List Meta-Nodes
+
+/module(list-tests)
+/import(tridash-unit)
+/import(core)
+
+## Definitions
+
+Fail-Type  <- &(Fail-Type)
+Fail-Type! <- fail(Fail-Type)
+
+l1 <- cons(1, cons(2, Empty))
+l2 <- list(11, 12, 13)
+l3 <- list*("a", "b", list("c", "d"))
+
+malformed <- cons(1, 2)
+
+
+## Tests
+
+### Lists Tests Group
+
+all-tests <-
+    Test-Group(
+        "Lists"
+
+        , access-tests
+        , cons?-tests
+        , list!-tests
+        , nth-tests
+        , append-tests
+        , foldl'-tests
+        , foldl-tests
+        , foldr-tests
+        , map-tests
+        , filter-tests
+        , every?-tests
+        , some?-tests
+        , not-any?-tests
+        , not-every?-tests
+    )
+
+/export(all-tests)
+
+
+### Test `cons`, `list`, `list*`, `head` and `tail`
+
+Test-Group(
+    "Meta-Nodes: `head` and `tail`",
+
+    Test-Group(
+        "Constructed using `cons`",
+
+        Test-Equal(head(l1), 1, "head([1, 2])"),
+        Test-Equal(head(tail(l1)), 2, "head(tail([1, 2]))"),
+
+        Test-Equal(tail(tail(l1)), Empty, "tail(tail([1, 2]))")
+    ),
+
+    Test-Group(
+        "Constructed using `list`",
+
+        Test-Equal(head(l2), 11, "head([11, 12, 13])"),
+        Test-Equal(head(tail(l2)), 12, "head(tail([11, 12, 13]))"),
+        Test-Equal(head(tail(tail(l2))), 13, "head(tail(tail([11, 12, 13])))"),
+
+        Test-Equal(tail(tail(tail(l2))), Empty, "head(tail(tail([11, 12, 13])))")
+    ),
+
+    Test-Group(
+        "Constructed using `list*`",
+
+        Test-Equal(head(l3), "a", "head([\"a\", \"b\", \"c\", \"d\"])"),
+        Test-Equal(head(tail(l3)), "b", "head(tail([\"a\", \"b\", \"c\", \"d\"]))"),
+        Test-Equal(head(tail(tail(l3))), "c", "head(tail(tail([\"a\", \"b\", \"c\", \"d\"])))"),
+        Test-Equal(head(tail(tail(tail(l3)))), "d", "head(tail(tail(tail([\"a\", \"b\", \"c\", \"d\"]))))"),
+
+        Test-Equal(tail(tail(tail(tail(l3)))), Empty, "tail(tail(tail([\"a\", \"b\", \"c\", \"d\"])))")
+    ),
+
+    Test-Group(
+        "Empty Lists",
+
+        Test-Fails(head(Empty), "head([])", Empty),
+        Test-Fails(tail(Empty), "tail([])", Empty),
+
+        Test-Fails(head(list()), "head(list())", Empty),
+        Test-Fails(tail(list()), "tail(list())", Empty)
+    ),
+
+    Test-Group(
+        "Malformed Lists and Invalid Types",
+
+        Test-Fails(tail(malformed), "tail(cons(1, 2))", Type-Error),
+
+        Test-Fails(head(1), "head(1)", Type-Error),
+        Test-Fails(tail(1), "tail(1)", Type-Error),
+
+        Test-Fails(head('(x)), "head('(x))", Type-Error),
+        Test-Fails(tail('(x)), "tail('(x))", Type-Error),
+
+        Test-Fails(head("x"), "head(\"x\")", Type-Error),
+        Test-Fails(tail("x"), "tail(\"x\")", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(head(Fail-Type!), "head(Fail-Type!)", Fail-Type),
+        Test-Fails(tail(Fail-Type!), "tail(Fail-Type!)", Fail-Type),
+
+        Test-Fails(head(cons(Fail-Type!, Empty!)), "head([Fail-Type!])", Fail-Type),
+        Test-Fails(tail(cons(Invalid-Integer!, Fail-Type!)), "tail(cons(Invalid-Integer!, Fail-Type!))", Fail-Type)
+    )
+
+) -> access-tests
+
+
+### Test `cons?`
+
+1 -> object.head
+2 -> object.tail
+
+Test-Group(
+    "Meta-Node `cons?`",
+
+    Test(cons?(cons(1,cons(2,Empty))), "cons?(cons(1,cons(2,Empty)))"),
+    Test(cons?(list(1,2,3)), "cons?(list(1,2,3))"),
+
+    Test-Not(cons?(1), "cons?(1)"),
+    Test-Not(cons?('(x)), "cons?('(x))"),
+    Test-Not(cons?("abc"), "cons?(\"abc\")"),
+    Test-Not(cons?(object), "cons?(object)"),
+
+    Test-Fails(cons?(Fail-Type!), "cons?(Fail-Type!)", Fail-Type)
+) -> cons?-tests
+
+
+### Test `list!`
+
+l1! <- list!(1, 2, 3)
+
+Test-Group(
+    "Meta-Node `list!`",
+
+    Test-Not-Fails(list(1, 2, Fail-Type!), "list(1, 2, Fail-Type!)"),
+    Test-Fails(list!(1, 2, Fail-Type!), "list!(1, 2, Fail-Type!)", Fail-Type),
+
+    Test-Equal(head(l1!), 1, "head(list!(1, 2, 3))"),
+    Test-Equal(head(tail(l1!)), 2, "head(tail(list!(1, 2, 3)))"),
+    Test-Equal(head(tail(tail(l1!))), 3, "head(tail(tail(list!(1, 2, 3))))")
+) -> list!-tests
+
+
+### Test `nth`
+
+Test-Group(
+    "Meta-Node `nth`",
+
+    Test-Group(
+        "Within Range",
+
+        Test-Equal(nth(l1, 0), 1, "nth([1, 2], 0)"),
+        Test-Equal(nth(l1, 1), 2, "nth([1, 2], 1)"),
+
+        Test-Equal(nth(l2, 0), 11, "nth([11, 12, 13]"),
+        Test-Equal(nth(l2, 1), 12, "nth([11, 12, 13]"),
+        Test-Equal(nth(l2, 2), 13, "nth([11, 12, 13]"),
+
+        Test-Equal(nth(l3, 0), "a", "nth([\"a\", \"b\", \"c\", \"d\"])"),
+        Test-Equal(nth(l3, 1), "b", "nth([\"a\", \"b\", \"c\", \"d\"])"),
+        Test-Equal(nth(l3, 2), "c", "nth([\"a\", \"b\", \"c\", \"d\"])"),
+        Test-Equal(nth(l3, 3), "d", "nth([\"a\", \"b\", \"c\", \"d\"])")
+    ),
+
+    Test-Group(
+        "Out of Range",
+
+        Test-Fails(nth(l1, -1), "nth([1, 2], -1)", Index-Out-Bounds),
+        Test-Fails(nth(l1, 2), "nth([1, 2], 2)", Index-Out-Bounds),
+        Test-Fails(nth(l1, 10), "nth([1, 2], 10)", Index-Out-Bounds),
+
+        Test-Fails(nth(l2, 3), "nth([11, 13, 13], 3)", Index-Out-Bounds),
+        Test-Fails(nth(l3, 4), "nth([\"a\", \"b\", \"c\", \"d\"])", Index-Out-Bounds),
+
+        Test-Fails(nth(Empty, 0), "nth(Empty, 0)", Index-Out-Bounds)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(nth(Fail-Type!, 10), "nth(Fail-Type!, 10)", Fail-Type),
+        Test-Fails(nth(list(1, Fail-Type!), 1), "nth([1, Fail-Type!])", Fail-Type),
+        Test-Fails(nth(list(1, 2, Fail-Type!, 3), 2), "nth([1, 2, Empty!, 3])", Fail-Type)
+    )
+) -> nth-tests
+
+
+### Test `append`
+
+l1+l2 <- append(l1, l2)
+
+l+Empty <- append(list(1), Empty)
+Empty+l <- append(Empty, list("x"))
+Empty+Empty <- append(Empty, Empty)
+
+Test-Group(
+    "Meta-Node `append`",
+
+    Test-Group(
+        "Non-Empty Lists",
+
+        Test-Equal(nth(l1+l2, 0), 1, "nth(append([1,2], [11,12,13]), 0)"),
+        Test-Equal(nth(l1+l2, 1), 2, "nth(append([1,2], [11,12,13]), 1)"),
+        Test-Equal(nth(l1+l2, 2), 11, "nth(append([1,2], [11,12,13]), 2)"),
+        Test-Equal(nth(l1+l2, 3), 12, "nth(append([1,2], [11,12,13]), 3)"),
+        Test-Equal(nth(l1+l2, 4), 13, "nth(append([1,2], [11,12,13]), 4)"),
+
+        Test-Fails(nth(l1+l2, 5), "nth(append([1,2], [11,12,13]), 5)", Index-Out-Bounds)
+    ),
+
+    Test-Group(
+        "Empty Lists",
+
+        Test-Equal(nth(l+Empty, 0), 1, "nth(append([1], []), 0)"),
+        Test-Equal(tail(l+Empty), Empty, "tail(append([1], []))"),
+
+        Test-Equal(nth(Empty+l, 0), "x", "nth(append([], [\"x\"]), 0)"),
+        Test-Equal(tail(Empty+l), Empty, "tail(append([], [\"x\"]))"),
+
+        Test-Equal(Empty+Empty, Empty, "append([], [])")
+    ),
+
+    Test-Group(
+        "Malformed Lists",
+
+        Test-Fails(tail(append(cons(1, 2), list(3, 4))), "tail(append(cons(1, 2), [3, 4]))", Type-Error),
+        Test-Fails(tail(tail(append(list(1), cons(2, 3)))), "tail(tail(append(list(1), cons(2, 3))))", Type-Error),
+
+        Test-Fails(append("x", list(1, 2)), "append(\"x\", list(1, 2))", Type-Error),
+        Test-Fails(tail(append(list(1), "x")), "tail(append(list(1), \"x\"))", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(append(Fail-Type!, list(1, 2)), "append(Fail-Type!, list(1, 2))", Fail-Type),
+        Test-Fails(tail(append(list(1), Fail-Type!)), "tail(append(list(1, 2), Fail-Type!))", Fail-Type),
+        Test-Fails(nth(append(list(1), list(2, Fail-Type!)), 2), "nth(append(list(1), list(2, Fail-Type!)), 2)", Fail-Type)
+    )
+) -> append-tests
+
+
+### Test `fold'`
+
+f(x, y) : if (x = y, x, Fail-Type!)
+
+Test-Group(
+    "Meta-Node `foldl'`",
+
+    Test-Group(
+        "Proper Lists",
+
+        Test-Equal(foldl'(0, +, list(1,2,3)), 6, "foldl'(0, +, [1,2,3])"),
+        Test-Equal(foldl'(1, +, list(1,2,3)), 7, "foldl'(1, +, [1,2,3])"),
+        Test-Equal(foldl'(10, -, list(5, 4)), 1, "fold'(10, -, [5, 4])")
+    ),
+
+    Test-Group(
+        "Empty Lists",
+
+        Test-Equal(foldl'(15, +, Empty), 15, "foldl'(15, +, Empty!)"),
+        Test-Equal(foldl'(15, +, list()), 15, "foldl'(15, +, Empty!)")
+    ),
+
+    Test-Group(
+        "Malformed Lists",
+
+        Test-Fails(foldl'(0, +, '(x)), "fold'(0, +, '(x))", Type-Error),
+        Test-Fails(foldl'(0, +, "abc"), "fold'(0, +, \"abc\")", Type-Error),
+        Test-Fails(foldl'(0, +, cons(1, 2)), "foldl'(0, +, cons(1,2))", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(foldl'(Fail-Type!, +, list(1,2,3)), "foldl'(Fail-Type!, +, [1,2,3]))", Fail-Type),
+        Test-Fails(foldl'(1, +, list(1,Fail-Type!,3)), "foldl'(1, +, [1,Fail-Type!,3]))", Fail-Type),
+        Test-Fails(foldl'(1, +, Fail-Type!), "foldl'(1, +, Fail-Type!)", Fail-Type),
+        Test-Fails(foldl'(0, f, list(1)), "foldl'(1, f, [1])", Fail-Type)
+    )
+) -> foldl'-tests
+
+
+### Test `fold`
+
+Test-Group(
+    "Meta-Node `foldl`",
+
+    Test-Group(
+        "Proper Lists",
+
+        Test-Equal(foldl(+, list(0,1,2,3)), 6, "foldl(+, [0,1,2,3])"),
+        Test-Equal(foldl(+, list(1,1,2,3)), 7, "foldl(+, [1,1,2,3])"),
+        Test-Equal(foldl(-, list(6, 5, 4)), -3, "foldl(-, [6, 5, 4])")
+    ),
+
+    Test-Group(
+        "Empty Lists",
+
+        Test-Fails(foldl(+, Empty), "foldl(+, Empty!)", Empty),
+        Test-Fails(foldl(+, list()), "foldl(+, Empty!)", Empty)
+    ),
+
+    Test-Group(
+        "Malformed Lists",
+
+        Test-Fails(foldl(+, '(x)), "fold(+, '(x))", Type-Error),
+        Test-Fails(foldl(+, "abc"), "fold(+, \"abc\")", Type-Error),
+        Test-Fails(foldl(+, cons(1, 2)), "fold(+, cons(1,2))", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(foldl(Fail-Type!, list(1, 2)), "foldl(Fail-Type!, [1])", Fail-Type),
+        Test-Fails(foldl(+, Fail-Type!), "foldl(+, Fail-Type!)", Fail-Type),
+        Test-Fails(foldl(+, list(1, Fail-Type!, 2)), "foldl(+, [1, Fail-Type!, 2])", Fail-Type),
+        Test-Fails(foldl(f, list(1, 2)), "foldl(f, [1])", Fail-Type)
+    )
+
+) -> foldl-tests
+
+
+### Test `foldr`
+
+Test-Group(
+    "Meta-Node `foldlr`",
+
+    Test-Group(
+        "Proper Lists",
+
+        Test-Equal(foldr(+, list(1,2,3)), 6, "foldr(+, [0,1,2,3])"),
+        Test-Equal(foldr(+, list(1,2,3), 1), 7, "foldr(+, [1,1,2,3], 1)"),
+        Test-Equal(foldr(-, list(6, 5, 4)), 5, "foldr(-, [6, 5, 4])")
+    ),
+
+    Test-Group(
+        "Empty Lists",
+
+        Test-Equal(foldr(+, Empty, "x"), "x", "foldr(+, Empty!, \"x\")"),
+        Test-Fails(foldr(+, Empty), "foldr(+, Empty!)", Empty),
+
+        Test-Equal(foldr(+, list(), "x"), "x", "foldr(+, Empty!, \"x\")"),
+        Test-Fails(foldr(+, list()), "foldr(+, Empty!)", Empty)
+    ),
+
+    Test-Group(
+        "Malformed Lists",
+
+        Test-Fails(foldr(+, '(x)), "foldr(+, '(x))", Type-Error),
+        Test-Fails(foldr(+, "abc"), "foldr(+, \"abc\")", Type-Error),
+        Test-Fails(foldr(+, cons(1, 2)), "foldr(+, cons(1,2))", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(foldr(Fail-Type!, list(1, 2)), "foldr(Fail-Type!, [1])", Fail-Type),
+        Test-Fails(foldr(+, Fail-Type!), "foldr(+, Fail-Type!)", Fail-Type),
+        Test-Fails(foldr(+, list(1, Fail-Type!, 3)), "foldr(+, [1, Fail-Type!, 3])", Fail-Type),
+        Test-Fails(foldr(+, list(1, 2, 3), Fail-Type!), "foldr(+, [1, 2, 3], Fail-Type!)", Fail-Type),
+        Test-Fails(foldr(f, list(1, 2)), "foldr(f, [1])", Fail-Type)
+    )
+
+) -> foldr-tests
+
+
+### Test `map`
+
+map1 <- map(-, list(1, 2, 3))
+inc(x) : x + 1
+
+id(x) : x
+
+Test-Group(
+    "Meta-Node `map`",
+
+    Test-Group(
+        "Proper Lists",
+
+        Test-Equal(nth(map1, 0), -1, "nth(map(-, [1,2,3]), 0)"),
+        Test-Equal(nth(map1, 1), -2, "nth(map(-, [1,2,3]), 1)"),
+        Test-Equal(nth(map1, 2), -3, "nth(map(-, [1,2,3]), 2)"),
+        Test-Equal(tail(tail(tail(map1))), Empty, "tail(tail(tail(map(-, [1,2,3]))))"),
+
+        Test-Equal(head(map(inc, list(1))), 2, "head(map(inc, list(1)))")
+    ),
+
+    Test-Group(
+        "Empty Lists",
+
+        Test-Equal(map(+, Empty), Empty, "map(+, Empty!)"),
+        Test-Equal(map(-, Empty), Empty, "map(-, Empty!)"),
+        Test-Equal(map(inc, Empty), Empty, "map(inc, Empty!)"),
+
+        Test-Equal(map(+, list()), Empty, "map(+, Empty!)")
+    ),
+
+    Test-Group(
+        "Malformed Lists",
+
+        Test-Fails(tail(map(-, '(x))), "map(-, '(x))", Type-Error),
+        Test-Fails(tail(map(-, "abc")), "map(-, \"abc\")", Type-Error),
+        Test-Fails(tail(map(-, cons(1, 2))), "map(-, cons(1, 2))", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(head(map(Fail-Type!, list(1,2,3))), "head(map(Fail-Type!, [1,2,3]))", Fail-Type),
+        Test-Fails(map(id, Fail-Type!), "map(id, Fail-Type!)", Fail-Type),
+
+        Test-Equal(head(map(id, list(1, Fail-Type!))), 1, "head(map(id, [1,Fail-Type!]))"),
+        Test-Fails(nth(map(id, list(1, Fail-Type!)), 1), "nth(map(id, [1,Fail-Type!]), 1)", Fail-Type)
+    )
+) -> map-tests
+
+
+### Test `filter`
+
+is-even?(x) : x % 2 = 0
+
+filter1 <- filter(is-even?, list(1, 2, 3, 4))
+
+Test-Group(
+    "Meta-Node `filter`",
+
+    Test-Group(
+        "Proper Lists",
+
+        Test-Equal(nth(filter1, 0), 2, "nth(filter(is-even?, [1,2,3,4]), 0)"),
+        Test-Equal(nth(filter1, 1), 4, "nth(filter(is-even?, [1,2,3,4]), 1)"),
+
+        Test-Equal(tail(tail(filter1)), Empty, "tail(tail(filter(is-even?, [1,2,3,4])))"),
+        Test-Equal(filter(is-even?, list(1,3,5,7,9)), Empty, "filter(is-even?, [1,3,5,7,9])")
+    ),
+
+    Test-Group(
+        "Empty Lists",
+
+        Test-Equal(filter(is-even?, Empty), Empty, "filter(is-even?, Empty!)")
+    ),
+
+    Test-Group(
+        "Malformed Lists",
+
+        Test-Fails(tail(filter(is-even?, '(x))), "filter(is-even?, '(x))", Type-Error),
+        Test-Fails(tail(filter(is-even?, "abc")), "filter(is-even?, \"abc\")", Type-Error),
+        Test-Fails(tail(filter(is-even?, cons(2, 4))), "filter(is-even?, cons(2, 4))", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(filter(Fail-Type!, list(1,2,3)), "filter(Fail-Type!, [1,2,3])", Fail-Type),
+        Test-Fails(filter(is-even?, Fail-Type!), "filter(is-even? Fail-Type!)", Fail-Type),
+        Test-Fails(filter(is-even?, list(1, Fail-Type!, 3)), "filter(is-even?, [1, Fail-Type!, 3])", Fail-Type)
+    )
+) -> filter-tests
+
+
+### Test `every?`
+
+Test-Group(
+    "Meta-Node `every?`",
+
+    Test-Group(
+        "Proper Lists",
+
+        Test(every?(is-even?, list(0,2,4,6)), "every?(is-even?, [0,2,4,6])"),
+        Test-Not(every?(is-even?, list(1,2,3,4)), "every?(is-even?, [1,2,3,4])")
+    ),
+
+    Test-Group(
+        "Empty Lists",
+
+        Test(every?(is-even?, Empty), "every?(is-even?, Empty)")
+    ),
+
+    Test-Group(
+        "Malformed Lists",
+
+        Test-Fails(every?(is-even?, '(x)), "every?(is-even?, '(x))", Type-Error),
+        Test-Fails(every?(is-even?, "abc"), "every?(is-even?, \"abc\")", Type-Error),
+        Test-Fails(every?(is-even?, cons(1, 2)), "every?(is-even?, cons(1, 2))", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(every?(Fail-Type!, list(1,2,3)), "every?(Fail-Type!, list(1,2,3))", Fail-Type),
+        Test-Fails(every?(is-even?, Fail-Type!), "every?(is-even?, Fail-Type!)", Fail-Type),
+        Test-Fails(every?(is-even?, list(1, Fail-Type!, 3)), "every?(is-even?, list(1, Fail-Type!, 3))", Fail-Type)
+    )
+) -> every?-tests
+
+
+### Test `some?`
+
+Test-Group(
+    "Meta-Node `some?`",
+
+    Test-Group(
+        "Proper Lists",
+
+        Test(some?(is-even?, list(0,2,4,6)), "some?(is-even?, [0,2,4,6])"),
+        Test(some?(is-even?, list(1,2,3,4)), "some?(is-even?, [1,2,3,4])"),
+        Test-Not(some?(is-even?, list(1,3,5)), "some?(is-even?, [1,3,5])")
+    ),
+
+    Test-Group(
+        "Empty Lists",
+
+        Test-Not(some?(is-even?, Empty), "some?(is-even?, Empty)")
+    ),
+
+    Test-Group(
+        "Malformed Lists",
+
+        Test-Fails(some?(is-even?, '(x)), "some?(is-even?, '(x))", Type-Error),
+        Test-Fails(some?(is-even?, "abc"), "some?(is-even?, \"abc\")", Type-Error),
+        Test-Fails(some?(is-even?, cons(1, 2)), "some?(is-even?, cons(1, 2))", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(some?(Fail-Type!, list(1,2,3)), "some?(Fail-Type!, list(1,2,3))", Fail-Type),
+        Test-Fails(some?(is-even?, Fail-Type!), "some?(is-even?, Fail-Type!)", Fail-Type),
+        Test-Fails(some?(is-even?, list(1, Fail-Type!, 3)), "some?(is-even?, list(1, Fail-Type!, 3))", Fail-Type)
+    )
+) -> some?-tests
+
+
+### Test `not-any?`
+
+Test-Group(
+    "Meta-Node `not-any?`",
+
+    Test-Group(
+        "Proper Lists",
+
+        Test-Not(not-any?(is-even?, list(0,2,4,6)), "not-any?(is-even?, [0,2,4,6])"),
+        Test-Not(not-any?(is-even?, list(1,2,3,4)), "not-any?(is-even?, [1,2,3,4])"),
+        Test(not-any?(is-even?, list(1,3,5)), "not-any?(is-even?, [1,3,5])")
+    ),
+
+    Test-Group(
+        "Empty Lists",
+
+        Test(not-any?(is-even?, Empty), "not-any?(is-even?, Empty)")
+    ),
+
+    Test-Group(
+        "Malformed Lists",
+
+        Test-Fails(not-any?(is-even?, '(x)), "not-any?(is-even?, '(x))", Type-Error),
+        Test-Fails(not-any?(is-even?, "abc"), "not-any?(is-even?, \"abc\")", Type-Error),
+        Test-Fails(not-any?(is-even?, cons(1, 2)), "not-any?(is-even?, cons(1, 2))", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(not-any?(Fail-Type!, list(1,2,3)), "not-any?(Fail-Type!, list(1,2,3))", Fail-Type),
+        Test-Fails(not-any?(is-even?, Fail-Type!), "not-any?(is-even?, Fail-Type!)", Fail-Type),
+        Test-Fails(not-any?(is-even?, list(1, Fail-Type!, 3)), "not-any?(is-even?, list(1, Fail-Type!, 3))", Fail-Type)
+    )
+) -> not-any?-tests
+
+
+### Test `not-every?`
+
+Test-Group(
+    "Meta-Node `not-every?`",
+
+    Test-Group(
+        "Proper Lists",
+
+        Test-Not(not-every?(is-even?, list(0,2,4,6)), "not-every?(is-even?, [0,2,4,6])"),
+        Test(not-every?(is-even?, list(1,2,3,4)), "not-every?(is-even?, [1,2,3,4])"),
+        Test(not-every?(is-even?, list(1,3,5)), "not-every?(is-even?, [1,3,5])")
+    ),
+
+    Test-Group(
+        "Empty Lists",
+
+        Test-Not(not-every?(is-even?, Empty), "not-every?(is-even?, Empty)")
+    ),
+
+    Test-Group(
+        "Malformed Lists",
+
+        Test-Fails(not-every?(is-even?, '(x)), "not-every?(is-even?, '(x))", Type-Error),
+        Test-Fails(not-every?(is-even?, "abc"), "not-every?(is-even?, \"abc\")", Type-Error),
+        Test-Fails(not-every?(is-even?, cons(1, 2)), "not-every?(is-even?, cons(1, 2))", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(not-every?(Fail-Type!, list(1,2,3)), "not-every?(Fail-Type!, list(1,2,3))", Fail-Type),
+        Test-Fails(not-every?(is-even?, Fail-Type!), "not-every?(is-even?, Fail-Type!)", Fail-Type),
+        Test-Fails(not-every?(is-even?, list(1, Fail-Type!, 3)), "not-every?(is-even?, list(1, Fail-Type!, 3))", Fail-Type)
+    )
+) -> not-every?-tests

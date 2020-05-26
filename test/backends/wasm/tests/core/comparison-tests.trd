@@ -1,0 +1,307 @@
+## Unit Tests for Core Module Comparison Functions
+
+/module(comparison-tests)
+/import(tridash-unit)
+/import(core)
+
+
+## Definitions
+
+Fail-Type  <- &(Fail-Type)
+Fail-Type! <- fail(Fail-Type)
+
+1 -> object.x
+2 -> object.y
+
+f(x) : x
+
+## Tests
+
+### Arithmetic Test Group
+
+all-tests <-
+    Test-Group(
+        "Comparison Tests"
+        , <-tests
+        , <=-tests
+        , >-tests
+        , >=-tests
+        , =-tests
+        , !=-tests
+    )
+
+/export(all-tests)
+
+
+### Test `<`
+
+Test-Group(
+    "Meta-Node: `<`",
+
+    Test-Group(
+        "Valid Input",
+        Test(1 < 2, "1 < 2"),
+        Test(-1 < 3, "-1 < 3"),
+        Test(1.5 < 2.8, "1.5 < 2.8"),
+        Test(1 < 1.3, "1 < 1.3"),
+
+        Test-Not(5 < 3, "5 < 3"),
+        Test-Not(6 < -8, "6 < -8"),
+        Test-Not(1 < 1, "1 < 1"),
+        Test-Not(5.6 < 1.2, " 5.6 < 1.2"),
+        Test-Not(2.0 < 2, "2.0 < 2")
+    ),
+
+    Test-Group(
+        "Invalid Types",
+        Test-Fails("3" < 3, "\"3\" < 3", Type-Error),
+        Test-Fails(10 < '(x), "10 < '(x)", Type-Error),
+        Test-Fails(4 < c(4), "4 < c(4)", Type-Error),
+        Test-Fails("1" < "2", "\"1\" < \"2\"", Type-Error),
+        Test-Fails(object < 1, "object < 1", Type-Error),
+        Test-Fails(2 < f, "2 < meta-node-ref", Type-Error),
+        Test-Fails(2 < Fail-Type, "2 < &(Fail-Type)", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+        Test-Fails(Fail-Type! < 1, "Fail-Type! < 1", Fail-Type),
+        Test-Fails(1 < Fail-Type!, "1 < Fail-Type!", Fail-Type)
+    )
+) -> <-tests
+
+### Test `<=`
+
+Test-Group(
+    "Meta-Node: `<=`",
+
+    Test-Group(
+        "Valid Input",
+
+        Test(1 <= 2, "1 < 2"),
+        Test(3 <= 3, "3 <= 3"),
+        Test(-1 <= 3, "-1 < 3"),
+        Test(1.5 <= 2.8, "1.5 < 2.8"),
+        Test(1 <= 1.3, "1 <= 1.3"),
+        Test(1.0 <= 1, "1.0 <= 1"),
+
+        Test-Not(5 <= 3, "5 <= 3"),
+        Test-Not(6 <= -8, "6 <= -8"),
+        Test-Not(5.6 <= 1.2, " 5.6 <= 1.2")
+    ),
+
+    Test-Group(
+        "Invalid Types",
+        Test-Fails("3" <= 3, "\"3\" <= 3", Type-Error),
+        Test-Fails(10 <= '(x), "10 <= '(x)", Type-Error),
+        Test-Fails(4 <= c(4), "4 <= c(4)", Type-Error),
+        Test-Fails("1" <= "2", "\"1\" <= \"2\"", Type-Error),
+        Test-Fails(object <= 1, "object <= 1", Type-Error),
+        Test-Fails(2 <= f, "2 <= meta-node-ref", Type-Error),
+        Test-Fails(2 <= Fail-Type, "2 <= &(Fail-Type)", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+        Test-Fails(Fail-Type! <= 1, "Fail-Type! <= 1", Fail-Type),
+        Test-Fails(1 <= Fail-Type!, "1 <= Fail-Type!", Fail-Type)
+    )
+) -> <=-tests
+
+### Test `>`
+
+Test-Group(
+    "Meta-Node: `>`",
+
+    Test-Group(
+        "Valid Input",
+
+        Test(2 > 1, "2 > 1"),
+        Test(3 > -1, "3 > -1"),
+        Test(3.7 > 2.8, "3.7 > 2.8"),
+        Test(1.3 > 1, "1.3 > 1"),
+
+        Test-Not(3 > 5, "3 > 5"),
+        Test-Not(-8 > 6, "-8 > 6"),
+        Test-Not(4 > 4, "4 > 4"),
+        Test-Not(5.6 > 10.2, " 5.6 > 10.2"),
+        Test-Not(2.0 > 2, "2.0 > 2.0")
+    ),
+
+    Test-Group(
+        "Invalid Types",
+
+        Test-Fails("3" > 3, "\"3\" > 3", Type-Error),
+        Test-Fails(10 > '(x), "10 > '(x)", Type-Error),
+        Test-Fails(4 > c(4), "4 > c(4)", Type-Error),
+        Test-Fails("1" > "2", "\"1\" > \"2\"", Type-Error),
+        Test-Fails(object > 1, "object > 1", Type-Error),
+        Test-Fails(2 > f, "2 > meta-node-ref", Type-Error),
+        Test-Fails(2 > Fail-Type, "2 > &(Fail-Type)", Type-Error)),
+
+    Test-Group(
+        "Failure Propagation",
+        Test-Fails(Fail-Type! > 1, "Fail-Type! > 1", Fail-Type),
+        Test-Fails(1 > Fail-Type!, "1 > Fail-Type!", Fail-Type)
+    )
+) -> >-tests
+
+### Test `>=`
+
+Test-Group(
+    "Meta-Node: `>=`",
+
+    Test-Group(
+        "Valid Input",
+
+        Test(2 >= 1, "2 >= 1"),
+        Test(3 >= -1, "3 >= -1"),
+        Test(5 >= 5, "5 >= 5"),
+        Test(3.7 >= 2.8, "3.7 >= 2.8"),
+        Test(1.3 >= 1, "1.3 >= 1"),
+        Test(3.0 >= 3, "3.0 >= 3"),
+
+        Test-Not(3 >= 5, "3 >= 5"),
+        Test-Not(-8 >= 6, "-8 >= 6"),
+        Test-Not(5.6 >= 10.2, " 5.6 >= 10.2")
+    ),
+
+    Test-Group(
+        "Invalid Types",
+        Test-Fails("3" >= 3, "\"3\" >= 3", Type-Error),
+        Test-Fails(10 >= '(x), "10 >= '(x)", Type-Error),
+        Test-Fails(4 >= c(4), "4 >= c(4)", Type-Error),
+        Test-Fails("1" >= "2", "\"1\" >= \"2\"", Type-Error),
+        Test-Fails(object >= 1, "object >= 1", Type-Error),
+        Test-Fails(2 >= f, "2 >= meta-node-ref", Type-Error),
+        Test-Fails(2 >= Fail-Type, "2 >= &(Fail-Type)", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+        Test-Fails(Fail-Type! >= 1, "Fail-Type! >= 1", Fail-Type),
+        Test-Fails(1 >= Fail-Type!, "1 >= Fail-Type!", Fail-Type)
+    )
+) -> >=-tests
+
+### Test `=`
+
+Test-Group(
+    "Meta-Node: `=`",
+
+    Test-Group(
+        "Numbers",
+        Test(1 = 1, "1 = 1"),
+        Test(5 = 5, "5 = 5"),
+        Test(2.5 = 2.5, "2.5 = 2.5"),
+        Test(1.0 = 1, "1.0 = 1"),
+
+        Test-Not(1 = 2, "1 = 2"),
+        Test-Not(1.2 = 1.7, "1.2 = 1.7")
+    ),
+
+    Test-Group(
+        "Characters",
+        Test(c(1) = c(1), "c(1) = c(1)"),
+        Test(c("\n") = c("\n"), "c(\"\\n\") = c(\"\\n\")"),
+        Test(c(x) = c(x), "c(x) = c(x)"),
+
+        Test-Not(c(1) = c(2), "c(1) = c(2)"),
+        Test-Not(c("\n") = c("\t"), "c(\"\\n\") = c(\"\\t\")"),
+        Test-Not(c(x) = c(X), "c(x) = c(X)")
+    ),
+
+    Test-Group(
+        "Strings",
+        Test("hello" = "hello", "\"hello\" = \"hello\""),
+        Test("ABC" = "ABC", "\"ABC\" = \"ABC\""),
+        Test("" = "", "\"\" = \"\""),
+
+        Test-Not("Hello" = "hello", "\"Hello\" = \"hello\""),
+        Test-Not("aBc" = "abc", "\"aBc\" = \"abc\""),
+        Test-Not("hello" = "bye", "\"hello\" = \"bye\"")
+    ),
+
+    Test-Group(
+        "Other Objects",
+
+        Test(Fail-Type = Fail-Type, "Fail-Type = Fail-Type"),
+        Test('(abc) = '(abc), "'(abc) = '(abc)"),
+
+        Test-Not(f = Test, "Meta-Node-Ref<f> = Meta-Node-Ref<Test>"),
+        Test-Not(Type-Error = Fail-Type, "Meta-Node-Ref<f> = Fail-Type"),
+        Test-Not(1 = "1", "1 = \"1\""),
+        Test-Not('(abc) = "abc", "'(abc) = \"abc\""),
+        Test-Not('(a) = '(b), "'(a) = '(b)"),
+        Test-Not('(x) = '(X), "'(x) = '(X)")
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+        Test-Fails(Fail-Type! = 1, "Fail-Type! = 1", Fail-Type),
+        Test-Fails(2 = Fail-Type!, "2 = Fail-Type!", Fail-Type),
+        Test-Fails(Fail-Type! = Fail-Type!, "Fail-Type! = Fail-Type!", Fail-Type)
+    )
+) -> =-tests
+
+### Test `!=`
+
+Test-Group(
+    "Meta-Node: `!=`",
+
+    Test-Group(
+        "Numbers",
+        Test-Not(1 != 1, "1 != 1"),
+        Test-Not(5 != 5, "5 != 5"),
+        Test-Not(2.5 != 2.5, "2.5 != 2.5"),
+        Test-Not(1.0 != 1, "1.0 != 1"),
+
+        Test(1 != 2, "1 != 2"),
+        Test(1.2 != 1.7, "1.2 != 1.7")
+    ),
+
+    Test-Group(
+        "Characters",
+
+        Test-Not(c(1) != c(1), "c(1) != c(1)"),
+        Test-Not(c("\n") != c("\n"), "c(\"\\n\") != c(\"\\n\")"),
+        Test-Not(c(x) != c(x), "c(x) != c(x)"),
+
+        Test(c(1) != c(2), "c(1) != c(2)"),
+        Test(c("\n") != c("\t"), "c(\"\\n\") != c(\"\\t\")"),
+        Test(c(x) != c(X), "c(x) != c(X)")
+    ),
+
+    Test-Group(
+        "Strings",
+
+        Test-Not("hello" != "hello", "\"hello\" != \"hello\""),
+        Test-Not("ABC" != "ABC", "\"ABC\" != \"ABC\""),
+        Test-Not("" != "", "\"\" != \"\""),
+
+        Test("Hello" != "hello", "\"Hello\" != \"hello\""),
+        Test("aBc" != "abc", "\"aBc\" != \"abc\""),
+        Test("hello" != "bye", "\"hello\" != \"bye\"")
+    ),
+
+    Test-Group(
+        "Other Objects",
+
+        Test-Not(Fail-Type != Fail-Type, "Fail-Type != Fail-Type"),
+        Test-Not('(abc) != '(abc), "'(abc) != '(abc)"),
+
+        Test(f != Test, "Meta-Node-Ref<f> != Meta-Node-Ref<Test>"),
+        Test(Type-Error != Fail-Type, "Meta-Node-Ref<f> != Fail-Type"),
+        Test(1 != "1", "1 != \"1\""),
+        Test('(abc) != "abc", "'(abc) != \"abc\""),
+        Test('(a) != '(b), "'(a) != '(b)"),
+        Test('(x) != '(X), "'(x) != '(X)")
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+        Test-Fails(Fail-Type! != 1, "Fail-Type! != 1", Fail-Type),
+        Test-Fails(2 != Fail-Type!, "2 != Fail-Type!", Fail-Type),
+        Test-Fails(Fail-Type! != Fail-Type!, "Fail-Type! != Fail-Type!", Fail-Type)
+    )
+) -> !=-tests

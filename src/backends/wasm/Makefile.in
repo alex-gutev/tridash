@@ -219,11 +219,13 @@ test_files = test001.wasm \
 	test038.wasm \
 	test039.wasm \
 	test040.wasm \
-	test041.wasm
+	test041.wasm \
+	core.wasm
 
 test_inputs = $(addprefix $(testdir)/tests/, $(test_files))
 
-check: $(testdir)/runtime/runtime.wasm \
+check: $(tridashc) \
+	$(testdir)/runtime/runtime.wasm \
 	$(testdir)/tests/tridash.min.js \
 	$(wasm_test_inputs) $(test_inputs)
 	cd $(testdir); npm test
@@ -238,6 +240,30 @@ $(testdir)/tests/tridash.min.js: loader/tridash.min.js
 
 $(testdir)/runtime/thunks.wasm: $(testdir)/runtime/thunks.wat
 	$(WAT2WASM) $^ -o $@
+
+test_core_sources = tridash-unit.trd \
+	test-failures.trd \
+	arithmetic-tests.trd \
+	comparison-tests.trd \
+	logical-tests.trd \
+	selection-tests.trd \
+	type-tests.trd \
+	list-tests.trd \
+	string-tests.trd \
+	dictionary-tests.trd \
+	function-tests.trd \
+	pattern-match-tests.trd \
+	core-tests.trd
+
+test_core_deps = $(addprefix $(testdir)/tests/core/, $(test_core_sources))
+
+$(testdir)/tests/core.wasm: $(test_core_deps)
+	TRIDASH_MODULE_PATHS=$(module_dir) \
+	$(tridashc) $^ -o $@ -t wasm32 \
+	-p runtime-path="runtime/runtime.wasm" \
+	-p module-path="tests/" -p indented=1
+
+$(testdir)/tests/core.wasm: $(tridashc)
 
 
 ## Test Program Rules
