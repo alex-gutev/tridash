@@ -94,34 +94,34 @@
 /attribute(int, wasm-name, runtime.object_to_int)
 /attribute(real, wasm-name, runtime.object_to_real)
 
-/attribute(int->string, wasm-name, runtime.int_to_string);
-/attribute(real->string, wasm-name, runtime.real_to_string);
-/attribute(char->string, wasm-name, runtime.char_to_string);
-/attribute(symbol-name, wasm-name, runtime.symbol_name);
+/attribute(int->string, wasm-name, runtime.int_to_string)
+/attribute(real->string, wasm-name, runtime.real_to_string)
+/attribute(char->string, wasm-name, runtime.char_to_string)
+/attribute(symbol-name, wasm-name, runtime.symbol_name)
 
 
 ### Type Checks
 
-/attribute(int?, wasm-name, runtime.is_int);
-/attribute(real?, wasm-name, runtime.is_real);
-/attribute(int?, wasm-name, runtime.is_int);
-/attribute(char?, wasm-name, runtime.is_char);
-/attribute(string?, wasm-name, runtime.is_string);
-/attribute(symbol?, wasm-name, runtime.is_symbol);
+/attribute(int?, wasm-name, runtime.is_int)
+/attribute(real?, wasm-name, runtime.is_real)
+/attribute(int?, wasm-name, runtime.is_int)
+/attribute(char?, wasm-name, runtime.is_char)
+/attribute(string?, wasm-name, runtime.is_string)
+/attribute(symbol?, wasm-name, runtime.is_symbol)
 
 
 ### Strings
 
-/attribute(string-concat, wasm-name, runtime.string_concat);
+/attribute(string-concat, wasm-name, runtime.string_concat)
 /attribute(string-at, wasm-name, runtime.string_at)
 
 
 ### Failures
 
 /attribute(fail, wasm-name, runtime.make_failure)
-/attribute(fail-type, wasm-name, runtime.failure_type);
+/attribute(fail-type, wasm-name, runtime.failure_type)
 
-/attribute(catch, wasm-name, runtime.make_catch_thunk);
+/attribute(catch, wasm-name, runtime.make_catch_thunk)
 
 
 ### Builtin Failure Types
