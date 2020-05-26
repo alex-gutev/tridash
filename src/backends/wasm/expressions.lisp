@@ -824,7 +824,7 @@
 
     (acond
       ((get name +arithmetic-operators+)
-       (let* ((operands (compile-operands (remove-nil-arguments arguments) (strict-arguments meta-node)))
+       (let* ((operands (compile-operands (remove-none-arguments arguments) (strict-arguments meta-node)))
               (operand-labels (map #'value-block-label operands))
               (result (next-local)))
 
@@ -863,29 +863,29 @@
       (t
        (call-next-method
         meta-node
-        (replace-nil arguments)
+        (replace-none arguments)
         outer-nodes)))))
 
-(defun remove-nil-arguments (arguments)
-  "Removes NIL's from the end of the list ARGUMENTS."
+(defun remove-none-arguments (arguments)
+  "Removes :NONE arguments from the end of the argument list."
 
-  (flet ((null-arg (arg)
-           (or (null arg)
+  (flet ((none? (arg)
+           (or (= arg :none)
                (and (argument-list-p arg)
                     (null (argument-list-arguments arg))))))
 
-    (let ((first-nil (position nil arguments)))
-      (if (and first-nil (every #'null-arg (subseq arguments first-nil)))
-          (subseq arguments 0 first-nil)
+    (let ((first-none (position :none arguments)))
+      (if (and first-none (every #'none? (subseq arguments first-none)))
+          (subseq arguments 0 first-none)
           arguments))))
 
-(defun replace-nil (arguments)
-  "Replace all NIL values in ARGUMENTS with a `value-block' that
+(defun replace-none (arguments)
+  "Replace all :NONE values in ARGUMENTS with a `value-block' that
    simply sets the argument value to the constant 0 (NULL pointer)."
 
   (map
    (lambda (arg)
-     (or arg
+     (if (= arg :none)
          (let ((label (next-local)))
            (make-value-block
             :label label
@@ -894,7 +894,9 @@
 
             :instructions
             `((i32.const 0)
-              (local.set (ref ,label)))))))
+              (local.set (ref ,label)))))
+
+         arg))
 
    arguments))
 
@@ -1975,13 +1977,36 @@
 
 ;;;; No Value
 
-(defmethod compile-expression ((null null) &key)
+(defmethod compile-expression ((none (eql :none)) &key)
   (let ((result (next-local)))
     (make-value-block
      :label result
      :instructions
      `((call (import "runtime" "make_fail_no_value"))
        (local.set (ref ,result)))
+
+     :value-p t)))
+
+
+;;;; Boolean Values
+
+(defmethod compile-expression ((true (eql t)) &key)
+  (let ((result (next-local)))
+    (make-value-block
+     :label result
+     :instructions
+     `((constant ,result :true))
+
+     :immediate-p t
+     :strict-p t
+     :value-p t)))
+
+(defmethod compile-expression ((null null) &key)
+  (let ((result (next-local)))
+    (make-value-block
+     :label result
+     :instructions
+     `((constant ,result nil))
 
      :value-p t)))
 
