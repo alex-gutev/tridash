@@ -268,7 +268,7 @@
   (subtest "Fail Expressions"
     (test-compile-meta-node
      ()
-     (fail-expression nil)
+     (fail-expression)
 
      ()
      '(let nil
@@ -1243,7 +1243,7 @@
                    (if "if"))
           modules
 
-        (has-value-function (a b) a!-b `(,if ,a ,b nil))
+        (has-value-function (a b) a!-b `(,if ,a ,b :none))
         (test-simple-binding a!-b out))))
 
   (subtest "Arity Checks"

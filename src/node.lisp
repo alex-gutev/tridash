@@ -93,6 +93,7 @@
 
    (fail-test
     :initarg :fail-test
+    :initform nil
     :accessor fail-test
     :documentation
     "Failure type test node.")
@@ -275,7 +276,7 @@
          fail-test)))))
 
 
-(defun add-function (expression context &optional test)
+(defun add-function (expression context &optional (test :none))
   "Adds EXPRESSION to the value function of CONTEXT. If CONTEXT does
    not have a value function function, its VALUE-FUNCTION slot is set
    to EXPRESSION. If CONTEXT does have a value function, it is wrapped

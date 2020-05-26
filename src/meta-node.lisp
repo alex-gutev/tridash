@@ -339,7 +339,7 @@
         (return-from meta-node-arity (cons (car arity) nil)))
 
        ;; Optional Arguments
-       ((list* (eql +optional-argument+) _ _)
+       ((list (eql +optional-argument+) _ _)
         (destructuring-bind (min . max) arity
           (cons min (1+ max))))
 

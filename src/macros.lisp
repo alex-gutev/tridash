@@ -49,10 +49,6 @@
 (defvar *current-meta-node* nil
   "The meta-node currently being compiled to CL.")
 
-(defvar *return-nil* nil
-  "Flag: If true NIL expressions are compiled to NIL values, otherwise
-   they are compiled to a fail thunk.")
-
 
 
 ;;; Error Conditions
@@ -299,7 +295,7 @@
      (cons '&optional (next args)))
 
     (optional
-     (cons (list* (eql +optional-argument+) arg (or (list value) nil))
+     (cons (list (eql +optional-argument+) arg value)
            args)
      :from optional
 
@@ -307,9 +303,7 @@
        (error 'macro-outer-node-error))
 
      (cons (list (get-operand-var (name arg))
-                 (if value
-                     (tridash->cl value)
-                     '(fail-thunk +fail-type-no-value+)))
+                 (tridash->cl value))
            (next args)))
 
     (rest
@@ -539,22 +533,20 @@
 
     (match meta-node
       ((external-meta-node name)
-       (let ((*return-nil* t))
-         (->> (make-meta-node-arguments meta-node arguments)
-              (list* (external-meta-node-cl-function name)))))
+       (->> (make-meta-node-arguments meta-node arguments :keep-none nil)
+            (list* (external-meta-node-cl-function name))))
 
       ((type meta-node)
-       (let ((*return-nil* nil))
-         (-<>> (make-meta-node-arguments meta-node arguments)
-               (append <> (make-outer-operands meta-node outer-nodes))
-               (list* 'list)
-               (list 'call-tridash-meta-node meta-node))))
+       (-<>> (make-meta-node-arguments meta-node arguments :keep-none t)
+             (append <> (make-outer-operands meta-node outer-nodes))
+             (list* 'list)
+             (list 'call-tridash-meta-node meta-node)))
 
       (_
        `(call-node ,(tridash->cl meta-node :thunk nil)
                    (list ,@(map #'tridash->cl arguments)))))))
 
-(defun make-meta-node-arguments (meta-node arguments)
+(defun make-meta-node-arguments (meta-node arguments &key (keep-none t))
   "Returns expressions, wrapped in `THUNK's if necessary, for the
    arguments ARGUMENTS of the `FUNCTOR-EXPRESSION' with operator
    META-NODE."
@@ -562,7 +554,7 @@
   (loop
      for (strict? . strict-args) = (strict-arguments meta-node) then strict-args
      for arg in arguments
-     while (or arg (not *return-nil*))
+     while (or keep-none (/= arg :none))
      collect (tridash->cl arg :thunk (not strict?))))
 
 (defun strict-arguments (meta-node)
@@ -605,15 +597,14 @@
                      `(apply #',(external-meta-node-cl-function name) ,apply-args))
 
                     ((type meta-node)
-                     (let ((*return-nil* nil))
-                       (multiple-value-bind (lambda-list vars)
-                           (destructure-meta-node-args (operands node) optional)
+                     (multiple-value-bind (lambda-list vars)
+                         (destructure-meta-node-args (operands node) optional)
 
-                         `(destructuring-bind ,lambda-list ,args
-                            (call-tridash-meta-node
-                             ,node
+                       `(destructuring-bind ,lambda-list ,args
+                          (call-tridash-meta-node
+                           ,node
 
-                             (list ,@vars ,@(make-outer-operands node outer-nodes))))))))
+                           (list ,@vars ,@(make-outer-operands node outer-nodes)))))))
                  (fail-arity-error)))))))
 
 (defun fail-arity-error ()
@@ -734,8 +725,14 @@
 ;;; Literals
 
 (defmethod tridash->cl ((literal null) &key)
-  (unless *return-nil*
-    '(fail-thunk +fail-type-no-value+)))
+  nil)
+
+(defmethod tridash->cl ((literal (eql t)) &key)
+  t)
+
+
+(defmethod tridash->cl ((literal (eql :none)) &key)
+  '(fail-thunk +fail-type-no-value+))
 
 (defmethod tridash->cl (literal &key)
   (match literal

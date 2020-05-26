@@ -88,7 +88,7 @@
 ;;;; Builtin Module Definition
 
 (defconstant +core-meta-nodes+
-  `((if (cond then (,+optional-argument+ else)) ((:strictness (or cond (and then else)))))
+  `((if (cond then (,+optional-argument+ else :none)) ((:strictness (or cond (and then else)))))
     (:member (object key) ((:strictness (or object key))))
 
     ;; Reference Old Values
@@ -98,8 +98,8 @@
     ((:symbol-equal "symbol-equal") (a b) ((:strictness (or a b))))
 
     ;; Failures
-    (:catch (try catch (,+optional-argument+ test)) ((:strictness try)))
-    (:fail ((,+optional-argument+ type)))
+    (:catch (try catch (,+optional-argument+ test :none)) ((:strictness try)))
+    (:fail ((,+optional-argument+ type :none)))
     (:fail-type (thing) ((:strictness thing)))
 
     ;; Failure Types
@@ -234,7 +234,7 @@
 
 ;;;; Creating Core Expressions
 
-(defun if-expression (test then else)
+(defun if-expression (test then &optional (else :none))
   "Creates an if functor expression with test TEST, then expression
    THEN, and else expression ELSE."
 
@@ -245,9 +245,9 @@
   (functor-expression (get :member *core-meta-nodes*)
                       (list object key)))
 
-(defun fail-expression (&optional (type nil))
+(defun fail-expression (&optional (type :none))
   (functor-expression (get :fail *core-meta-nodes*) (list type)))
 
-(defun catch-expression (try catch &optional test)
+(defun catch-expression (try catch &optional (test :none))
   (functor-expression (get :catch *core-meta-nodes*)
                       (list try catch test)))

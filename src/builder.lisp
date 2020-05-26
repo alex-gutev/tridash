@@ -402,6 +402,10 @@
 
   nil)
 
+(defmethod process-declaration ((true (eql t)) (module t) &key)
+  "Literal true constant."
+  t)
+
 (defmethod process-declaration (literal module &key)
   "Method for literal values (everything which is not a symbol or list
    is considered a literal). The literal value is simply returned."
@@ -708,14 +712,25 @@
 
     (optional
      (list*
-      (list* (eql +optional-argument+)
-             (and (type symbol) operand)
-             (or (list default) nil))
+      (list (eql +optional-argument+)
+            (and (type symbol) operand)
+            default)
       rest)
 
      :from (required optional)
 
      (cons (list +optional-argument+ operand (process-declaration default module))
+           (next rest)))
+
+    (optional
+     (list*
+      (list (eql +optional-argument+)
+            (and (type symbol) operand))
+      rest)
+
+     :from (required optional)
+
+     (cons (list +optional-argument+ operand :none)
            (next rest)))
 
     (rest
@@ -870,13 +885,14 @@
                          :context-id (unwrap-declaration context-id)
                          :node node
                          :fail-test
-                         (let ((*create-nodes* nil))
-                           (-<> (process-declaration (unwrap-declaration fail-test) module)
-                                list
-                                (bind-operands node <> :context context-id)
-                                first
-                                (at-source)
-                                (and fail-test <>))))
+                         (if fail-test
+                             (let ((*create-nodes* nil))
+                               (-<> (process-declaration (unwrap-declaration fail-test) module)
+                                    list
+                                    (bind-operands node <> :context context-id)
+                                    first
+                                    (at-source)))
+                             :none))
           node))))
 
 (defmethod process-functor ((operator (eql +ref-operator+)) operands module)
@@ -1186,10 +1202,7 @@
                    (list (argument-list arguments)))
 
                   (((list*
-                     (list*
-                      (eql +optional-argument+)
-                      _
-                      (or nil (list default)))
+                     (list (eql +optional-argument+) _ default)
                      operands)
                     nil)
 
