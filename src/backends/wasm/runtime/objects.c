@@ -44,7 +44,7 @@
 #include "memory.h"
 
 
-#define USER_OBJECT_SIZE offsetof(struct tridash_object, object) + sizeof(struct user_object)
+#define USER_OBJECT_SIZE offsetof(struct tridash_object, object.fields)
 
 /// Copying
 

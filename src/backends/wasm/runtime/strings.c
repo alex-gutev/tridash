@@ -38,8 +38,8 @@
 #include "memory.h"
 #include "failures.h"
 
-#define CHAR_OBJECT_SIZE offsetof(struct tridash_object, char_code) + sizeof(uint32_t)
-#define STRING_OBJECT_SIZE offsetof(struct tridash_object, string.data)
+#define CHAR_OBJECT_SIZE (offsetof(struct tridash_object, char_code) + sizeof(uint32_t))
+#define STRING_OBJECT_SIZE (offsetof(struct tridash_object, string.data))
 
 void *gc_copy_string(const void *ptr) {
     const struct tridash_object *object = ptr;
@@ -53,7 +53,7 @@ void *gc_copy_string(const void *ptr) {
 
 void *copy_string(const void *ptr) {
     const struct tridash_object *object = ptr;
-    size_t size = offsetof(struct tridash_object, string.data) + object->string.size;
+    size_t size = STRING_OBJECT_SIZE + object->string.size;
 
     save_ptr(ptr);
 
