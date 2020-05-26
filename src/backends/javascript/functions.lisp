@@ -529,7 +529,7 @@
 
   (match meta-node
     ((eq (get 'if *core-meta-nodes*))
-     (compile-if-expression arguments))
+     (compile-if-expression (remove-none-arguments arguments)))
 
     ((eq (get :member *core-meta-nodes*))
      (destructuring-bind (object key) arguments
@@ -542,19 +542,20 @@
               (list :previous-value (first arguments))))
 
     (_
-     (call-next-method meta-node (remove-nil-arguments arguments)))))
+     (call-next-method meta-node (remove-none-arguments arguments)))))
 
-(defun remove-nil-arguments (arguments)
-  "Removes NIL's from the end of the list ARGUMENTS."
+(defun remove-none-arguments (arguments)
+  "Removes :NONE arguments from the end of the argument list."
 
-  (flet ((null-arg (arg)
-           (or (null arg)
-               (and (argument-list-p arg)
-                    (null (argument-list-arguments arg))))))
+  (flet ((none? (arg)
+           (match arg
+             ((or (eql :none)
+                  (argument-list- (arguments nil)))
+              t))))
 
-    (let ((first-nil (position nil arguments)))
-      (if (and first-nil (every #'null-arg (subseq arguments first-nil)))
-          (subseq arguments 0 first-nil)
+    (let ((first-none (position :none arguments)))
+      (if (and first-none (every #'none? (subseq arguments first-none)))
+          (subseq arguments 0 first-none)
           arguments))))
 
 
@@ -950,11 +951,17 @@
        (js-new "Tridash.Char")
        (make-value-block :expression)))
 
-(defmethod compile-expression ((null null) &key)
-  (make-value-block :expression (js-call "Tridash.fail" "Tridash.NoValue")))
-
 (defmethod compile-expression ((literal number) &key)
   (make-value-block :expression literal))
+
+(defmethod compile-expression ((null null) &key)
+  (make-value-block :expression "false"))
+
+(defmethod compile-expression ((true (eql t)) &key)
+  (make-value-block :expression "true"))
+
+(defmethod compile-expression ((none (eql :none)) &key)
+  (make-value-block :expression (js-call "Tridash.fail" "Tridash.NoValue")))
 
 
 ;;; Optimizations

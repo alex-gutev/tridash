@@ -453,7 +453,7 @@
       (mock-backend-state
         (mock-meta-nodes ((f (a (optional b)) nil))
           (mock-contexts
-              ((context (a) (functor f a nil)))
+              ((context (a) (functor f a :none)))
 
             (test-context-function
              context
