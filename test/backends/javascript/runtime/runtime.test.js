@@ -98,8 +98,8 @@ describe('Builtin Functions', function() {
                 var res1 = tridash.sub_neg("hello");
                 var res2 = tridash.sub_neg(1, "x");
 
-                assert.throws(() => tridash.resolve(res1), test_fail_type(tridash.TypeError));
-                assert.throws(() => tridash.resolve(res2), test_fail_type(tridash.TypeError));
+                assert.throws(() => tridash.resolve(res1), test_fail_type(tridash.TypeError()));
+                assert.throws(() => tridash.resolve(res2), test_fail_type(tridash.TypeError()));
             });
         });
     });
@@ -287,11 +287,11 @@ describe('Builtin Functions', function() {
             });
 
             it('Fails on empty list', function() {
-                assert.throws(() => tridash.resolve(tridash.head(tridash.Empty)), test_fail_type(tridash.Empty));
+                assert.throws(() => tridash.resolve(tridash.head(tridash.Empty())), test_fail_type(tridash.Empty()));
             });
 
             it('Fails on non-array', function() {
-                assert.throws(() => tridash.resolve(tridash.head(1)), test_fail_type(tridash.TypeError));
+                assert.throws(() => tridash.resolve(tridash.head(1)), test_fail_type(tridash.TypeError()));
             });
         });
 
@@ -299,10 +299,10 @@ describe('Builtin Functions', function() {
             it('Returns tail of ConsCell', function() {
                 var list = new tridash.Thunk(() => {
                     return tridash.cons(
-                        new tridash.Thunk(() => 1), tridash.cons(2, tridash.Empty));
+                        new tridash.Thunk(() => 1), tridash.cons(2, tridash.Empty()));
                 });
 
-                assert.deepStrictEqual(tridash.resolve(tridash.tail(list)), tridash.cons(2, tridash.Empty));
+                assert.deepStrictEqual(tridash.resolve(tridash.tail(list)), tridash.cons(2, tridash.Empty()));
             });
 
             it('Returns SubArray of Array', function() {
@@ -321,16 +321,16 @@ describe('Builtin Functions', function() {
             });
 
             it('Fails on empty list', function() {
-                assert.throws(() => tridash.resolve(tridash.tail(tridash.Empty)), test_fail_type(tridash.Empty));
+                assert.throws(() => tridash.resolve(tridash.tail(tridash.Empty())), test_fail_type(tridash.Empty()));
             });
 
             it('Fails if tail is empty SubArray', function() {
                 var sub = tridash.tail([1]);
-                assert.throws(() => tridash.resolve(tridash.tail(sub)), test_fail_type(tridash.Empty));
+                assert.throws(() => tridash.resolve(tridash.tail(sub)), test_fail_type(tridash.Empty()));
             });
 
             it('Fails on non-list', function() {
-                assert.throws(() => tridash.resolve(tridash.tail(1)), test_fail_type(tridash.TypeError));
+                assert.throws(() => tridash.resolve(tridash.tail(1)), test_fail_type(tridash.TypeError()));
             });
         });
 
@@ -522,8 +522,8 @@ describe('Builtin Functions', function() {
                 });
 
                 it('Should throw Fail exception if not a number', function() {
-                    assert.throws(() => { tridash.check_number("x"); }, test_fail_type(tridash.TypeError));
-                    assert.throws(() => { tridash.check_number({ x: 1}); }, test_fail_type(tridash.TypeError));
+                    assert.throws(() => { tridash.check_number("x"); }, test_fail_type(tridash.TypeError()));
+                    assert.throws(() => { tridash.check_number({ x: 1}); }, test_fail_type(tridash.TypeError()));
                 });
             });
 
@@ -543,7 +543,7 @@ describe('Builtin Functions', function() {
                 });
 
                 it('Should throw Fail exception if not a primitive value', function() {
-                    assert.throws(() => { tridash.check_value({ x: 1}); }, test_fail_type(tridash.TypeError));
+                    assert.throws(() => { tridash.check_value({ x: 1}); }, test_fail_type(tridash.TypeError()));
                 });
             });
 
@@ -553,8 +553,8 @@ describe('Builtin Functions', function() {
                 });
 
                 it('Should throw Fail exception if not a string', function() {
-                    assert.throws(() => { tridash.check_string(1); }, test_fail_type(tridash.TypeError));
-                    assert.throws(() => { tridash.check_string({ x: 1}); }, test_fail_type(tridash.TypeError));
+                    assert.throws(() => { tridash.check_string(1); }, test_fail_type(tridash.TypeError()));
+                    assert.throws(() => { tridash.check_string({ x: 1}); }, test_fail_type(tridash.TypeError()));
                 });
             });
         });
@@ -575,7 +575,7 @@ describe('Builtin Functions', function() {
                 assert.equal(tridash.cast_int('18'), 18);
             });
             it('Should return failure if integer could not be parsed from string', function() {
-                assert.throws(() => tridash.resolve(tridash.cast_int('foo')), test_fail_type(tridash.InvalidInteger));
+                assert.throws(() => tridash.resolve(tridash.cast_int('foo')), test_fail_type(tridash.InvalidInteger()));
             });
             it('Should return failures as thunks', function() {
                 var f = tridash.fail();
@@ -603,36 +603,12 @@ describe('Builtin Functions', function() {
             it('Should return failure if integer could not be parsed from string', function() {
                 assert.throws(
                     () => tridash.resolve(tridash.cast_real('foo')),
-                    test_fail_type(tridash.InvalidReal)
+                    test_fail_type(tridash.InvalidReal())
                 );
             });
             it('Should return failures as thunks', function() {
                 var f = tridash.fail();
                 var res = tridash.cast_real(f);
-
-                assert.ok(res);
-                assert.throws(() => tridash.resolve(res), tridash.Fail);
-            });
-        });
-
-        describe('Tridash.cast_string', function() {
-            it('Should return integer as string', function() {
-                assert.equal(tridash.cast_string(10), "10");
-            });
-
-            it('Should return character as string', function() {
-                assert.equal(tridash.cast_string(new tridash.Char("x")), "x");
-            });
-
-            it('Should return string as string', function() {
-                assert.equal(tridash.cast_string("hello"), "hello");
-
-                // Test that thunks are resolved
-                assert.equal(tridash.cast_string(new tridash.Thunk(() => "foo")), "foo");
-            });
-            it('Should return failures as thunks', function() {
-                var f = tridash.fail();
-                var res = tridash.cast_string(f);
 
                 assert.ok(res);
                 assert.throws(() => tridash.resolve(res), tridash.Fail);
@@ -685,25 +661,25 @@ describe('Builtin Functions', function() {
                 var thunk2 = tridash.string_at("hello", "world");
                 var thunk3 = tridash.string_at("hello", 1.5);
 
-                assert.throws(() => { tridash.resolve(thunk1); }, test_fail_type(tridash.TypeError));
-                assert.throws(() => { tridash.resolve(thunk2); }, test_fail_type(tridash.TypeError));
-                assert.throws(() => { tridash.resolve(thunk3); }, test_fail_type(tridash.TypeError));
+                assert.throws(() => { tridash.resolve(thunk1); }, test_fail_type(tridash.TypeError()));
+                assert.throws(() => { tridash.resolve(thunk2); }, test_fail_type(tridash.TypeError()));
+                assert.throws(() => { tridash.resolve(thunk3); }, test_fail_type(tridash.TypeError()));
             });
 
             it('Should fail if index is less than 0', function() {
                 assert.throws(() => {
                     tridash.resolve(tridash.string_at("hello", -1));
-                }, test_fail_type(tridash.IndexOutBounds));
+                }, test_fail_type(tridash.IndexOutBounds()));
             });
 
             it('Should fail if index is greater than or equal to string length', function() {
                 assert.throws(() => {
                     tridash.resolve(tridash.string_at("hello", 5));
-                }, test_fail_type(tridash.IndexOutBounds));
+                }, test_fail_type(tridash.IndexOutBounds()));
 
                 assert.throws(() => {
                     tridash.resolve(tridash.string_at("hello", 10));
-                }, test_fail_type(tridash.IndexOutBounds));
+                }, test_fail_type(tridash.IndexOutBounds()));
             });
         });
 
@@ -723,9 +699,9 @@ describe('Builtin Functions', function() {
                 var thunk2 = tridash.string_concat(1, "hello");
                 var thunk3 = tridash.string_concat(1, 2);
 
-                assert.throws(() => tridash.resolve(thunk1), test_fail_type(tridash.TypeError));
-                assert.throws(() => tridash.resolve(thunk2), test_fail_type(tridash.TypeError));
-                assert.throws(() => tridash.resolve(thunk3), test_fail_type(tridash.TypeError));
+                assert.throws(() => tridash.resolve(thunk1), test_fail_type(tridash.TypeError()));
+                assert.throws(() => tridash.resolve(thunk2), test_fail_type(tridash.TypeError()));
+                assert.throws(() => tridash.resolve(thunk3), test_fail_type(tridash.TypeError()));
             });
         });
     });
@@ -890,13 +866,13 @@ describe('Builtin Functions', function() {
 
             it('Applies a function on a linked list of arguments', function() {
                 assert.equal(
-                    tridash.mapply(add, tridash.cons(4, tridash.cons(5, tridash.cons(6, tridash.Empty)))),
+                    tridash.mapply(add, tridash.cons(4, tridash.cons(5, tridash.cons(6, tridash.Empty())))),
                     15
                 );
                 assert.equal(
                     tridash.mapply(
                         add,
-                        new tridash.Thunk(() => tridash.cons(4, new tridash.Thunk(() => tridash.cons(5, tridash.cons(6, tridash.Empty)))))
+                        new tridash.Thunk(() => tridash.cons(4, new tridash.Thunk(() => tridash.cons(5, tridash.cons(6, tridash.Empty())))))
                     ),
                     15
                 );
@@ -921,17 +897,17 @@ describe('Builtin Functions', function() {
             });
 
             it('Returns `TypeError` if first argument is not a function', function() {
-                assert.throws(() => tridash.resolve(tridash.mapply("x", [1, 2, 3])), test_fail_type(tridash.TypeError));
-                assert.throws(() => tridash.resolve(tridash.mapply(new tridash.Thunk(() => "x"), [1, 2, 3])), test_fail_type(tridash.TypeError));
+                assert.throws(() => tridash.resolve(tridash.mapply("x", [1, 2, 3])), test_fail_type(tridash.TypeError()));
+                assert.throws(() => tridash.resolve(tridash.mapply(new tridash.Thunk(() => "x"), [1, 2, 3])), test_fail_type(tridash.TypeError()));
             });
 
             it('Returns `TypeError` if second argument is not a list', function() {
-                assert.throws(() => tridash.resolve(tridash.mapply(add, 12)), test_fail_type(tridash.TypeError));
+                assert.throws(() => tridash.resolve(tridash.mapply(add, 12)), test_fail_type(tridash.TypeError()));
             });
 
             it('Returns `TypeError` if argument list is malformed', function() {
-                assert.throws(() => tridash.resolve(tridash.mapply(add, tridash.cons(1, 2))), test_fail_type(tridash.TypeError));
-                assert.throws(() => tridash.resolve(tridash.mapply(add, tridash.cons(1, new tridash.Thunk(() => 2)))), test_fail_type(tridash.TypeError));
+                assert.throws(() => tridash.resolve(tridash.mapply(add, tridash.cons(1, 2))), test_fail_type(tridash.TypeError()));
+                assert.throws(() => tridash.resolve(tridash.mapply(add, tridash.cons(1, new tridash.Thunk(() => 2)))), test_fail_type(tridash.TypeError()));
             });
         });
     });
