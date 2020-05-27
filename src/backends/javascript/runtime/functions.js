@@ -138,13 +138,13 @@ function sub_neg(a, b) {
 
     try {
         a = check_number(resolve(a));
-        b = resolve(b);
 
-        if (b === undefined) {
+        if (arguments.length == 1)
             return -a;
-        }
 
-        return a - check_number(b);
+        b = check_number(resolve(b));
+
+        return a - b;
     }
     catch (e) {
         return new Thunk(() => { throw e; });
