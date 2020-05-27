@@ -437,7 +437,7 @@ function is_nan(value) {
 
 function is_char(value) {
     try {
-        return typeof resolve(value) instanceof Char;
+        return resolve(value) instanceof Char;
     }
     catch (e) {
         return new Thunk(() => { throw e; });
