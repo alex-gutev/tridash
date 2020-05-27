@@ -17,8 +17,8 @@ module_dir = $(top_srcdir)/modules/
 
 ## Building Runtime Library
 
-runtime_sources = runtime/functions.js \
-	runtime/module.js \
+runtime_sources = runtime/module.js \
+	runtime/functions.js \
 	runtime/exports.js
 
 runtime: runtime/tridash.min.js

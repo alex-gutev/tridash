@@ -125,10 +125,6 @@ function resolve(thing) {
     return thing;
 }
 
-/** Functions */
-
-/* Comparison */
-
 
 /* Arithmetic */
 
@@ -232,7 +228,7 @@ function fail_type(value) {
     }
     catch (e) {
         if (e instanceof Fail)
-            return e.type ? e.type : NoValue();
+            return e.type ? e.type : fail(NoValue());
     }
 
     return fail(TridashTypeError);
@@ -311,10 +307,10 @@ function cast_int(x) {
         }
         else if (is_string(x)) {
             return /^[-+]?(\d+)$/.test(x) ? parseInt(x) :
-                InvalidInteger();
+                fail(InvalidInteger());
         }
 
-        return TridashTypeError();
+        return fail(TridashTypeError());
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -331,10 +327,10 @@ function cast_real(x) {
         else if (is_string(x)) {
             var realx = Number(x);
 
-            return !isNaN(realx) ? realx : InvalidReal();
+            return !isNaN(realx) ? realx : fail(InvalidReal());
         }
 
-        return TridashTypeError();
+        return fail(TridashTypeError());
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -367,7 +363,7 @@ function real_to_string(x) {
 function char_to_string(x) {
     try {
         x = resolve(x);
-        return x instanceof Char ? x.chr : TridashTypeError();
+        return x instanceof Char ? x.chr : fail(TridashTypeError());
 
     } catch (e) {
         return new Thunk(() => { throw e; });
@@ -377,7 +373,7 @@ function char_to_string(x) {
 function symbol_name(x) {
     try {
         x = resolve(x);
-        return x instanceof Symbol ? x.symbol : TridashTypeError();
+        return x instanceof Symbol ? x.symbol : fail(TridashTypeError());
 
     } catch (e) {
         return new Thunk(() => { throw e; });
@@ -486,16 +482,16 @@ function head(list) {
             if (l.length > 0)
                 return l[0];
 
-            return TridashTypeError();
+            return fail(TridashTypeError());
         }
         else if (l instanceof SubArray) {
             return l.array[l.start];
         }
-        else if (l === Empty) {
-            return fail(Empty);
+        else if (l === Empty()) {
+            return fail(Empty());
         }
         else {
-            return fail(TridashTypeError);
+            return fail(TridashTypeError());
         }
     }
     catch (e) {
@@ -509,28 +505,28 @@ function tail(list) {
 
         if (l instanceof ConsCell) {
             var tail = resolve(l.tail);
-            return is_list(tail) || tail === Empty ?
+            return is_list(tail) || tail === Empty() ?
                 l.tail :
-               TridashTypeError();
+                fail(TridashTypeError());
         }
         else if (Array.isArray(l)) {
             if (l.length > 1)
                 return new SubArray(l, 1);
             else if (l.length === 1)
-                return Empty;
+                return Empty();
 
-            return TridashTypeError();
+            return fail(TridashTypeError());
         }
         else if (l instanceof SubArray) {
             return l.array.length > (l.start + 1) ?
                 new SubArray(l.array, l.start + 1) :
-                Empty;
+                Empty();
         }
-        else if (l === Empty) {
-            return fail(Empty);
+        else if (l === Empty()) {
+            return fail(Empty());
         }
         else {
-            return TridashTypeError();
+            return fail(TridashTypeError());
         }
     }
     catch (e) {
@@ -556,8 +552,10 @@ function is_list(value) {
 }
 
 
+const node_empty = new NodeRef(-1);
+
 function Empty() {
-    return Empty;
+    return node_empty;
 }
 
 
@@ -576,7 +574,7 @@ function string_at(tstr, tindex) {
         var index = check_integer(resolve(tindex));
 
         return index >= 0 && index < str.length ?
-            new Char(str.charAt(index)) : fail(IndexOutBounds);
+            new Char(str.charAt(index)) : fail(IndexOutBounds());
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -607,11 +605,10 @@ function string_concat(tstr1, tstr2) {
  *   exception.
  */
 function check_number(value) {
-    if (typeof value === 'number') {
+    if (typeof value === 'number')
         return value;
-    }
 
-    throw new Fail(TridashTypeError);
+    throw new Fail(TridashTypeError());
 }
 
 /**
@@ -623,11 +620,10 @@ function check_number(value) {
  *   exception.
  */
 function check_integer(value) {
-    if (is_integer(value)) {
+    if (is_integer(value))
         return value;
-    }
 
-    throw new Fail(TridashTypeError);
+    throw new Fail(TridashTypeError());
 }
 
 /**
@@ -641,11 +637,10 @@ function check_integer(value) {
 function check_value(value) {
     if (typeof value === 'number' ||
         typeof value === 'string' ||
-        value instanceof Symbol) {
+        value instanceof Symbol)
         return value;
-    }
 
-    throw new Fail(TridashTypeError);
+    throw new Fail(TridashTypeError());
 }
 
 /**
@@ -657,11 +652,25 @@ function check_value(value) {
  *   exception.
  */
 function check_string(value) {
-    if (typeof value === 'string') {
+    if (typeof value === 'string')
         return value;
-    }
 
-    throw new Fail(TridashTypeError);
+    throw new Fail(TridashTypeError());
+}
+
+/**
+ * Check that a value is a boolean.
+ *
+ * @param value The value to check.
+ *
+ * @return The value if it is a boolean, otherwise a 'Fail' exception
+ *   is thrown.
+ */
+function check_bool(value) {
+    if (typeof value === 'boolean')
+        return value;
+
+    throw new Fail(TridashTypeError());
 }
 
 
@@ -701,11 +710,11 @@ function member(dict, key) {
         dict = resolve(dict);
 
         if (typeof dict !== 'object')
-            return TridashTypeError();
+            return fail(TridashTypeError());
 
         key = resolve(key);
 
-        return key in dict ? dict[key] : fail();
+        return key in dict ? dict[key] : fail(NoValue());
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -717,10 +726,10 @@ function member(dict, key) {
 
 function mapply(f, args) {
     function resolve_list(list) {
-        res = [];
+        var res = [];
         list = resolve(list);
 
-        while (list !== Empty) {
+        while (list !== Empty()) {
             if (list instanceof ConsCell) {
                 res.push(list.head);
                 list = resolve(list.tail);
@@ -734,7 +743,7 @@ function mapply(f, args) {
                 break;
             }
             else {
-                throw new Fail(TridashTypeError);
+                throw new Fail(TridashTypeError());
             }
         }
 
@@ -745,7 +754,7 @@ function mapply(f, args) {
         f = resolve(f);
 
         if (typeof f !== "function") {
-            return TridashTypeError();
+            return fail(TridashTypeError());
         }
 
         return f.apply(null, resolve_list(args));
@@ -758,26 +767,33 @@ function mapply(f, args) {
 
 /* Builtin Failure Types */
 
+const node_no_value = new NodeRef(-2);
+const node_type_error = new NodeRef(-3);
+const node_index_out_bounds = new NodeRef(-4);
+const node_invalid_integer = new NodeRef(-5);
+const node_invalid_real = new NodeRef(-6);
+const node_arity_error = new NodeRef(-7);
+
 function NoValue() {
-    return fail(NoValue);
+    return node_no_value;
 }
 
 function TridashTypeError() {
-    return fail(TridashTypeError);
+    return node_type_error;
 }
 
 function IndexOutBounds() {
-    return fail(IndexOutBounds);
+    return node_index_out_bounds;
 }
 
 function InvalidInteger() {
-    return fail(InvalidInteger);
+    return node_invalid_integer;
 }
 
 function InvalidReal() {
-    return fail(InvalidReal);
+    return node_invalid_real;
 }
 
 function ArityError() {
-    return fail(ArityError);
+    return node_arity_error;
 }

@@ -648,8 +648,7 @@
      :expression (js-array operands))))
 
 (defun empty-list ()
-  "Returns an expression which creates a failure that indicates an
-   empty list."
+  "Creates an expression which returns the empty list."
 
   (js-call "Tridash.Empty"))
 
@@ -883,7 +882,9 @@
                  (js-call "<" (js-member "arguments" "length") min)
                  (js-call ">" (js-member "arguments" "length") max))))
 
-     (js-return (js-call "Tridash.ArityError")))))
+     (js-return
+      (make-failure
+       (js-call "Tridash.ArityError"))))))
 
 (defun outer-node-operands (meta-node outer-nodes)
   "Generates the JS expressions which compute the values of the outer
@@ -967,12 +968,17 @@
   (make-bool-literal-block t))
 
 (defmethod compile-expression ((none (eql :none)) &key)
-  (make-value-block :expression (js-call "Tridash.fail" "Tridash.NoValue")))
+  (make-value-block
+   :expression
+   (make-failure (js-call "Tridash.NoValue"))))
 
 
 (defun make-bool-literal-block (value)
   (make-value-block
    :expression (if value "true" "false")))
+
+(defun make-failure (type)
+  (js-call "Tridash.fail" type))
 
 
 ;;; Optimizations
