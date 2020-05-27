@@ -193,7 +193,8 @@ function neq(ta, tb) {
 
 function and(a, b) {
     try {
-        return resolve(a) ? b : false;
+        return check_bool(resolve(a)) &&
+            check_bool(resolve(b));
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -201,10 +202,8 @@ function and(a, b) {
 }
 function or(a, b) {
     try {
-        if ((a = resolve(a)))
-            return a;
-
-        return b;
+        return check_bool(resolve(a)) ||
+            check_bool(resolve(b));
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -213,7 +212,7 @@ function or(a, b) {
 
 function not(x) {
     try {
-        return !resolve(x);
+        return !check_bool(resolve(x));
     }
     catch (e) {
         return new Thunk(() => { throw e; });

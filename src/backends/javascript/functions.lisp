@@ -35,7 +35,7 @@
      ("<=" :real :real)
      (">=" :real :real)
 
-     ("!" . t)))
+     ("!" :bool)))
 
   "Map mapping JS function names to a list indicating the type checks
    which should be performed for the arguments passed to that
@@ -48,7 +48,8 @@
 (defconstant +type-check-functions+
   (alist-hash-map
    '((:real . "Tridash.check_number")
-     (:value . "Tridash.check_value")))
+     (:value . "Tridash.check_value")
+     (:bool . "Tridash.check_bool")))
 
   "Map mapping type keywords to JS type checking function names.")
 
@@ -529,7 +530,7 @@
 
   (match meta-node
     ((eq (get 'if *core-meta-nodes*))
-     (compile-if-expression (remove-none-arguments arguments)))
+     (compile-if-expression arguments))
 
     ((eq (get :member *core-meta-nodes*))
      (destructuring-bind (object key) arguments
@@ -750,7 +751,7 @@
      (destructuring-bind (cond then &optional else) operands
 
        (list
-        (js-if (resolve cond)
+        (js-if (js-call "Tridash.check_bool" (resolve cond))
                (js-call "=" result then)
                (when else
                  (js-call "=" result else)))))
@@ -917,15 +918,20 @@
    which references the raw Node object or meta-node function."
 
   (with-struct-slots node-ref- (node) ref
-    (->>
-     (etypecase node
-       (meta-node
-        (meta-node-id node))
+    (if (or (= node *node-true*)
+            (= node *node-false*))
 
-       (node
-        (type-node-path node)))
+        (make-bool-literal-block (= node *node-true*))
 
-     (make-value-block :expression))))
+        (->>
+         (etypecase node
+           (meta-node
+            (meta-node-id node))
+
+           (node
+            (type-node-path node)))
+
+         (make-value-block :expression)))))
 
 (defun type-node-path (node)
   "Return an expression which references the type node NODE."
@@ -955,13 +961,18 @@
   (make-value-block :expression literal))
 
 (defmethod compile-expression ((null null) &key)
-  (make-value-block :expression "false"))
+  (make-bool-literal-block nil))
 
 (defmethod compile-expression ((true (eql t)) &key)
-  (make-value-block :expression "true"))
+  (make-bool-literal-block t))
 
 (defmethod compile-expression ((none (eql :none)) &key)
   (make-value-block :expression (js-call "Tridash.fail" "Tridash.NoValue")))
+
+
+(defun make-bool-literal-block (value)
+  (make-value-block
+   :expression (if value "true" "false")))
 
 
 ;;; Optimizations

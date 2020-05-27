@@ -155,6 +155,8 @@
                 :nlet-tail)
 
   (:import-from :tridash.frontend
-                :*core-meta-nodes*)
+                :*core-meta-nodes*
+                :*node-true*
+                :*node-false*)
 
   (:documentation "JavaScript Backend."))
