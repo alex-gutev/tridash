@@ -48,7 +48,7 @@ describe('Integration Test 17', function() {
             describe('Set `clicked` = true', function() {
                 it('`counter` = 1', function() {
                     delta.set_value(1);
-                    clicked.set_value(1);
+                    clicked.set_value(true);
 
                     assert.equal(counter.get_value(), 1);
                 });

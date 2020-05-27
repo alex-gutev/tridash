@@ -459,7 +459,12 @@
              context
 
              (js-return
-              (js-call f (d a) (thunk (js-return (js-call "Tridash.fail" "Tridash.NoValue"))))))))))
+              (->>
+               (js-call "Tridash.NoValue")
+               (js-call "Tridash.fail")
+               js-return
+               thunk
+               (js-call f (d a)))))))))
 
     (subtest "Rest Arguments"
       (mock-backend-state
@@ -548,7 +553,7 @@
             (test-context-function
              context
 
-             (js-if (resolve (js-call < (d a) (d b)))
+             (js-if (js-call "Tridash.check_bool" (resolve (js-call < (d a) (d b))))
                     (js-return
                      (thunk (js-return (js-call - (d b) (d a)))))
 
@@ -575,7 +580,7 @@
                  (js-var ($ arg1))
                  (js-catch
                   (list
-                   (js-if (resolve (js-call < (d a) 3))
+                   (js-if (js-call "Tridash.check_bool" (resolve (js-call < (d a) 3)))
                           (js-call "="
                                    ($ arg1)
                                    (thunk (js-return (js-call + (d b) (d c)))))
@@ -606,7 +611,7 @@
                  context
 
                  (-<>
-                  (js-if (resolve (js-call < (d a) 3))
+                  (js-if (js-call "Tridash.check_bool" (resolve (js-call < (d a) 3)))
                          (js-return
                           (thunk (js-return (js-call + (d b) (d c)))))
 
@@ -629,12 +634,12 @@
               (test-context-function
                context
 
-               (js-if (resolve (d a))
+               (js-if (js-call "Tridash.check_bool" (resolve (d a)))
 
                       (js-return
                        (thunk
                         (js-var ($ cond))
-                        (js-if (resolve (js-call < (d b) (d c)))
+                        (js-if (js-call "Tridash.check_bool" (resolve (js-call < (d b) (d c))))
                                (js-call "="
                                         ($ cond)
                                         (d b))
@@ -643,7 +648,7 @@
                                         ($ cond)
                                         (d c)))
 
-                        (js-if (resolve ($ cond))
+                        (js-if (js-call "Tridash.check_bool" (resolve ($ cond)))
                                (js-return
                                 (thunk (js-return (js-call + (d b) (d c)))))
 
@@ -690,13 +695,13 @@
                  (list
                   (list (js-string "min")
                         (thunk
-                         (js-if (resolve (js-call < (d x) (d y)))
+                         (js-if (js-call "Tridash.check_bool" (resolve (js-call < (d x) (d y))))
                                 (js-return (d x))
                                 (js-return (d y)))))
 
                   (list (js-string "max")
                         (thunk
-                         (js-if (resolve (js-call < (d y) (d x)))
+                         (js-if (js-call "Tridash.check_bool" (resolve (js-call < (d y) (d x))))
                                 (js-return (d x))
                                 (js-return (d y))))))))))))))
 
@@ -774,7 +779,7 @@
                (js-var ($ object))
                (js-catch
                 (list
-                 (js-if (resolve (d cond))
+                 (js-if (js-call "Tridash.check_bool" (resolve (d cond)))
                         (js-call "=" ($ object) (d a))
                         (js-call "=" ($ object) (d b))))
 
@@ -796,7 +801,7 @@
             (test-context-function
              context
 
-             (js-if (resolve (js-call < (d a) 0))
+             (js-if (js-call "Tridash.check_bool" (resolve (js-call < (d a) 0)))
                     (js-return (d a))
                     (js-return
                      (thunk
@@ -822,7 +827,7 @@
            (js-var ($ try))
            (js-catch
             (list
-             (js-if (resolve (js-call < (d a) (d b)))
+             (js-if (js-call "Tridash.check_bool" (resolve (js-call < (d a) (d b))))
 
                     (-<> (js-call + (d a) (d b))
                          js-return
@@ -867,7 +872,7 @@
                 (list
                  (js-if
                   (js-call "!==" (js-member "arguments" "length") 1)
-                  (js-return (js-call "Tridash.ArityError")))
+                  (js-return (js-call "Tridash.fail" (js-call "Tridash.ArityError"))))
 
                  (js-return (js-call f ($ x)))))
 
@@ -896,7 +901,7 @@
                    "||"
                    (js-call "<" (js-member "arguments" "length") 1)
                    (js-call ">" (js-member "arguments" "length") 2))
-                  (js-return (js-call "Tridash.ArityError")))
+                  (js-return (js-call "Tridash.fail" (js-call "Tridash.ArityError"))))
 
                  (js-return
                   (js-call 1+ ($ a) ($ d)))))
@@ -922,7 +927,7 @@
                 (list
                  (js-if
                   (js-call "<" (js-member "arguments" "length") 1)
-                  (js-return (js-call "Tridash.ArityError")))
+                  (js-return (js-call "Tridash.fail" (js-call "Tridash.ArityError"))))
 
                  (js-if (js-call "===" (js-member ($ xs) "length") 0)
                         (js-call "=" ($ xs) (js-call "Tridash.Empty")))
@@ -950,7 +955,7 @@
                 (list
                  (js-if
                   (js-call "!==" (js-member "arguments" "length") 1)
-                  (js-return (js-call "Tridash.ArityError")))
+                  (js-return (js-call "Tridash.fail" (js-call "Tridash.ArityError"))))
 
                  (js-return
                   (js-call f ($ a) (d b)))))
@@ -982,7 +987,7 @@
                 (list
                  (js-if
                   (js-call "<" (js-member "arguments" "length") 1)
-                  (js-return (js-call "Tridash.ArityError")))
+                  (js-return (js-call "Tridash.fail" (js-call "Tridash.ArityError"))))
 
                  (js-if (js-call "===" (js-member ($ c) "length") 0)
                         (js-call "=" ($ c) (js-call "Tridash.Empty")))
@@ -1177,11 +1182,13 @@
                 (js-catch
                  (list
                   (js-if
-                   (resolve
-                    (js-call
-                     "<"
-                     (js-call "Tridash.check_number" (resolve ($ n)))
-                     (js-call "Tridash.check_number" (resolve 1))))
+                   (js-call "Tridash.check_bool"
+                            (resolve
+                             (js-call
+                              "<"
+                              (js-call "Tridash.check_number" (resolve ($ n)))
+                              (js-call "Tridash.check_number" (resolve 1)))))
+
                    (js-return 1)
 
                    (js-return
@@ -1237,11 +1244,13 @@
                   (js-catch
                    (list
                     (js-if
-                     (resolve
-                      (js-call
-                       "<"
-                       (js-call "Tridash.check_number" (resolve ($ n2)))
-                       (js-call "Tridash.check_number" (resolve 1))))
+                     (js-call "Tridash.check_bool"
+                              (resolve
+                               (js-call
+                                "<"
+                                (js-call "Tridash.check_number" (resolve ($ n2)))
+                                (js-call "Tridash.check_number" (resolve 1)))))
+
                      (js-return ($ acc))
 
                      (js-return
@@ -1302,11 +1311,12 @@
                 (js-catch
                  (list
                   (js-if
-                   (resolve
-                    (js-call
-                     ">"
-                     (js-call "Tridash.check_number" (resolve ($ n)))
-                     (js-call "Tridash.check_number" (resolve 1))))
+                   (js-call "Tridash.check_bool"
+                            (resolve
+                             (js-call
+                              ">"
+                              (js-call "Tridash.check_number" (resolve ($ n)))
+                              (js-call "Tridash.check_number" (resolve 1)))))
 
                    (js-return
                     (thunk
@@ -1386,11 +1396,12 @@
                (list
                 (js-catch
                  (list
-                  (js-if (resolve
-                          (js-call
-                           ">"
-                           (js-call "Tridash.check_number" (resolve ($ x)))
-                           (js-call "Tridash.check_number" (resolve 0))))
+                  (js-if (js-call "Tridash.check_bool"
+                                  (resolve
+                                   (js-call
+                                    ">"
+                                    (js-call "Tridash.check_number" (resolve ($ x)))
+                                    (js-call "Tridash.check_number" (resolve 0)))))
 
                          (js-return ($ x))
                          (js-return
@@ -1895,7 +1906,7 @@
 
                    (list
                     (protected
-                     (js-return (js-call "!" (resolve ($ x)))))))))))))
+                     (js-return (js-call "!" (js-call "Tridash.check_bool" (resolve ($ x))))))))))))))
 
       (subtest "Type Conversions"
         (subtest "int"
@@ -2054,7 +2065,7 @@
                        (list
                         (js-if
                          (js-call "!==" (js-member "arguments" "length") 2)
-                         (js-return (js-call "Tridash.ArityError")))
+                         (js-return (js-call "Tridash.fail" (js-call "Tridash.ArityError"))))
 
                         (js-return
                          (js-call "+"
@@ -2112,7 +2123,7 @@
                        (list
                         (js-if
                          (js-call "!==" (js-member "arguments" "length") 2)
-                         (js-return (js-call "Tridash.ArityError")))
+                         (js-return (js-call "Tridash.fail" (js-call "Tridash.ArityError"))))
 
                         (js-return
                          (js-call "*"
@@ -2149,7 +2160,7 @@
                        (list
                         (js-if
                          (js-call "!==" (js-member "arguments" "length") 2)
-                         (js-return (js-call "Tridash.ArityError")))
+                         (js-return (js-call "Tridash.fail" (js-call "Tridash.ArityError"))))
 
                         (js-return
                          (js-call "/"
@@ -2186,7 +2197,7 @@
                        (list
                         (js-if
                          (js-call "!==" (js-member "arguments" "length") 2)
-                         (js-return (js-call "Tridash.ArityError")))
+                         (js-return (js-call "Tridash.fail" (js-call "Tridash.ArityError"))))
 
                         (js-return
                          (js-call "%"
@@ -2223,7 +2234,7 @@
                        (list
                         (js-if
                          (js-call "!==" (js-member "arguments" "length") 2)
-                         (js-return (js-call "Tridash.ArityError")))
+                         (js-return (js-call "Tridash.fail" (js-call "Tridash.ArityError"))))
 
                         (js-return
                          (js-call "<"
@@ -2260,7 +2271,7 @@
                        (list
                         (js-if
                          (js-call "!==" (js-member "arguments" "length") 2)
-                         (js-return (js-call "Tridash.ArityError")))
+                         (js-return (js-call "Tridash.fail" (js-call "Tridash.ArityError"))))
 
                         (js-return
                          (js-call ">"
@@ -2297,7 +2308,7 @@
                        (list
                         (js-if
                          (js-call "!==" (js-member "arguments" "length") 2)
-                         (js-return (js-call "Tridash.ArityError")))
+                         (js-return (js-call "Tridash.fail" (js-call "Tridash.ArityError"))))
 
                         (js-return
                          (js-call "<="
@@ -2334,7 +2345,7 @@
                        (list
                         (js-if
                          (js-call "!==" (js-member "arguments" "length") 2)
-                         (js-return (js-call "Tridash.ArityError")))
+                         (js-return (js-call "Tridash.fail" (js-call "Tridash.ArityError"))))
 
                         (js-return
                          (js-call ">="
@@ -2371,10 +2382,10 @@
                        (list
                         (js-if
                          (js-call "!==" (js-member "arguments" "length") 1)
-                         (js-return (js-call "Tridash.ArityError")))
+                         (js-return (js-call "Tridash.fail" (js-call "Tridash.ArityError"))))
 
                         (js-return
-                         (js-call "!" (resolve ($ x))))))
+                         (js-call "!" (js-call "Tridash.check_bool" (resolve ($ x)))))))
 
                       ($ l))))))))))))
 

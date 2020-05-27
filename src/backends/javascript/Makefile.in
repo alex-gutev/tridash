@@ -94,10 +94,11 @@ test_core_sources = $(testdir)/tests/core/tridash-unit.trd \
 	$(testdir)/tests/core/pattern-match-tests.trd \
 	$(testdir)/tests/core/core-tests.trd
 
-$(testdir)/tests/core.js: $(test_core_sources) $(tridashc)
+$(testdir)/tests/core.js: $(test_core_sources)
 	TRIDASH_MODULE_PATHS=$(module_dir) \
 	$(tridashc) $^ -o $@
 
+$(testdir)/tests/core.js: $(tridashc)
 
 ## Installation
 

@@ -71,7 +71,7 @@ describe('Integration Test 15', function() {
                 input.set_value(1);
 
                 assert.throws(() => x.get_value(), Tridash.Fail);
-                assert.throws(() => y.get_value(), util.test_fail_type(Tridash.TypeError));
+                assert.throws(() => y.get_value(), util.test_fail_type(Tridash.TypeError()));
             });
         });
     });

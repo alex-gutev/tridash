@@ -57,7 +57,7 @@ function test_fail_type(type) {
 function resolve_list(value, n) {
     var result = [];
 
-    while (Tridash.resolve(value) !== Tridash.Empty) {
+    while (Tridash.resolve(value) !== Tridash.Empty()) {
         if (n === 0)
             return result;
         else if (n !== undefined)
@@ -86,7 +86,7 @@ function resolve_list(value, n) {
 function list_to_array(value, n) {
     var result = [];
 
-    while (Tridash.resolve(value) !== Tridash.Empty) {
+    while (Tridash.resolve(value) !== Tridash.Empty()) {
         if (n === 0)
             return result;
         else if (n !== undefined)

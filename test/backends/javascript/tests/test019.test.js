@@ -49,7 +49,7 @@ describe('Integration Test 19', function() {
         describe('Incrementing Counter', function() {
             describe('Set Counter State = `state1`', function() {
                 it('`counter` = 0', function() {
-                    clicked1.set_value(true);
+                    module.set_values([[clicked1, true], [clicked2, false]]);
                     assert.equal(counter.get_value(), 0);
 
                     clicked1.set_value(false);

@@ -45,7 +45,7 @@ describe('Integration Test 26', function() {
             const out2 = output2.get_value();
 
             it('`output1` fails', function() {
-                assert.throws(() => Tridash.resolve(out1), util.test_fail_type(Tridash.NoValue));
+                assert.throws(() => Tridash.resolve(out1), util.test_fail_type(Tridash.NoValue()));
             });
 
             it('`output2` = 2', function() {
@@ -60,7 +60,7 @@ describe('Integration Test 26', function() {
             const out2 = output2.get_value();
 
             it('`output1` fails', function() {
-                assert.throws(() => Tridash.resolve(out1), util.test_fail_type(Tridash.NoValue));
+                assert.throws(() => Tridash.resolve(out1), util.test_fail_type(Tridash.NoValue()));
             });
 
             it('`output2` = 3', function() {
