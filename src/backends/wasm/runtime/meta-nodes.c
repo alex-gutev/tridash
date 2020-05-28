@@ -122,7 +122,7 @@ void *make_arg_list(uintptr_t arg) {
     obj->array.size = 1;
     obj->array.elements[0] = (uintptr_t)restore_ptr();
 
-    return (void *)&obj->array.size;
+    return (void *)obj;
 }
 
 
@@ -149,7 +149,7 @@ uintptr_t meta_node_ref_apply(uintptr_t ref, uintptr_t args) {
         if (IS_FAIL(args)) return args;
 
         struct tridash_object *arr = (void*)args;
-        return fn(&arr->array.size);
+        return fn(arr);
     } break;
 
     case TAG_TYPE_FAIL:
@@ -165,7 +165,7 @@ uintptr_t meta_node_ref_apply(uintptr_t ref, uintptr_t args) {
             void *defaults = &obj->funcref.args[0];
 
             struct tridash_object *arr = (void*)args;
-            return obj->funcref.fn(&arr->array.size, defaults);
+            return obj->funcref.fn(arr, defaults);
         }
     } break;
     }

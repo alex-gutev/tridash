@@ -1252,15 +1252,11 @@
                      (if (result i32)
                          (then
                           (local.get (ref ,arg-list))
-                          (i32.const 4)
-                          i32.add
                           (local.get (value ,operator))
                           (call_indirect (type (func (param i32) (result i32)))))
 
                          (else
                           (local.get (ref ,arg-list))
-                          (i32.const 4)
-                          i32.add
 
                           (local.get (ref ,operator))
                           (i32.const 12)
@@ -1475,7 +1471,7 @@
                 arguments array parameter."
 
                `((local.get $args)
-                 (i32.load (offset ,(+ 4 (* index 4))))
+                 (i32.load (offset ,(+ 8 (* index 4))))
                  (local.set (ref ,index))))
 
              (load-optional (start count)
@@ -1581,7 +1577,7 @@
                      i32.add
 
                      (local.get (ref $args))
-                     (i32.const ,(+ 4 (* 4 start)))
+                     (i32.const ,(+ 8 (* 4 start)))
                      i32.add
 
                      (local.get $rest-size)
@@ -1600,7 +1596,7 @@
         (multiple-value-bind (locals code)
             (->
              `((local.get $args)
-               i32.load
+               (i32.load (offset 4))
                (local.set $count)
 
                ;; Check Arity
