@@ -128,7 +128,8 @@
   (build-source-file #p"./modules/core/patterns.trd" modules)
   (build-source-file #p"./modules/core/macros.trd" modules)
   (build-source-file #p"./modules/core/strings.trd" modules)
-  (build-source-file #p"./modules/core/js-backend.trd" modules))
+  (build-source-file #p"./modules/core/js-backend.trd" modules)
+  (build-source-file #p"./modules/core/wasm32-backend.trd" modules))
 
 
 ;;;; Getting a Node-Table

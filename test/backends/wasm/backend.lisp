@@ -413,6 +413,27 @@
 
 ;;; Internal Unit Test Utilities
 
+(defun test-optimization (fn instructions expected)
+  "Test that applying the optimization function FN on instructions
+   results in the instructions EXPECTED.
+
+   Prior to applying FN, each symbol in INSTRUCTIONS is replaced with
+   the symbol, with the same name, in the TRIDASH.BACKEND.WASM
+   package."
+
+  (labels ((get-symbol (thing)
+             (match thing
+               ((type symbol)
+                (intern (symbol-name thing) :tridash.backend.wasm))
+
+               ((type list)
+                (map #'get-symbol thing))
+
+               (_ thing))))
+
+    (is (funcall fn (get-symbol instructions))
+        expected :test #'instruction=)))
+
 (defun test-optimize-unboxing (locals instructions expected)
   "Test that performing unboxing optimizations on INSTRUCTIONS results
    in the instructions EXPECTED. LOCALS is the list of local variable
@@ -444,27 +465,6 @@
    in the instructions EXPECTED."
 
   (test-optimization #'optimize-boxing instructions expected))
-
-(defun test-optimization (fn instructions expected)
-  "Test that applying the optimization function FN on instructions
-   results in the instructions EXPECTED.
-
-   Prior to applying FN, each symbol in INSTRUCTIONS is replaced with
-   the symbol, with the same name, in the TRIDASH.BACKEND.WASM
-   package."
-
-  (labels ((get-symbol (thing)
-             (match thing
-               ((type symbol)
-                (intern (symbol-name thing) :tridash.backend.wasm))
-
-               ((type list)
-                (map #'get-symbol thing))
-
-               (_ thing))))
-
-    (is (funcall fn (get-symbol instructions))
-        expected :test #'instruction=)))
 
 
 ;;; Tests
@@ -706,7 +706,7 @@
       (mock-backend-state
         (mock-meta-nodes ((f (a (optional b)) (a b)))
           (mock-contexts
-              ((context (a) (functor f a nil)))
+              ((context (a) (functor f a :none)))
 
             (with-alias-map
               (test-context-function
@@ -719,7 +719,7 @@
 
                 :code
 
-                 ;; Reserve Stack Space
+                ;; Reserve Stack Space
                 `((i32.const ($ global-stack))
                   (i32.const ($ global-stack))
                   i32.load
@@ -731,22 +731,22 @@
                   ;; Zero out stack elements
                   (local.get ($ stack))
                   (i32.const 0)
-                  (i32.store (offset 0))
+                  (i32.store (offset 4))
 
                   ;; Save parameter on stack
                   (local.get ($ stack))
                   (local.get 0)
-                  (i32.store (offset 0))
+                  (i32.store (offset 4))
 
                   ;; Get No Value Failure
-                  (call (import "runtime" "fail_no_value"))
+                  (call (import "runtime" "make_fail_no_value"))
                   (local.set ($ b))
 
-;;; Call Meta-Node f
+                  ;; Call Meta-Node f
 
                   ;; Refresh parameter 0 from stack
                   (local.get ($ stack))
-                  (i32.load (offset 0))
+                  (i32.load (offset 4))
                   (local.tee 0)
 
                   (local.get ($ b))
@@ -780,7 +780,7 @@
 
                 :code
 
-                 ;; Reserve Stack Space
+                ;; Reserve Stack Space
                 `((i32.const ($ global-stack))
                   (i32.const ($ global-stack))
                   i32.load
@@ -792,12 +792,12 @@
                   ;; Zero Out Stack
                   (local.get ($ stack))
                   (i64.const 0)
-                  (i64.store (offset 0))
+                  (i64.store (offset 4))
 
                   ;; Save parameter `a`
                   (local.get ($ stack))
                   (local.get 0)
-                  (i32.store (offset 0))
+                  (i32.store (offset 4))
 
                   ;; Create Character
                   (i32.const 8)
@@ -805,19 +805,19 @@
                   (local.set ($ char))
                   (local.get ($ stack))
                   (local.get ($ char))
-                  (i32.store (offset 4)) ; Save Reference on stack
+                  (i32.store (offset 8)) ; Save Reference on stack
                   (local.get ($ char))
-                  (i32.const 10)         ; Set Object Type = Character
+                  (i32.const 10)        ; Set Object Type = Character
                   i32.store
                   (local.get ($ char))
-                  (i32.const 97)         ; Set Character Code
+                  (i32.const 97)        ; Set Character Code
                   (i32.store (offset 4))
 
                   ;; Allocate space for array
                   (i32.const 16)
                   (call (import "runtime" "alloc"))
                   (local.tee ($ array))
-                  (i32.const 8)          ; Set Object Type = Array
+                  (i32.const 8)         ; Set Object Type = Array
                   i32.store
 
                   ;; Set Size = 2
@@ -828,7 +828,7 @@
                   ;; Store first rest argument (parameter `a`)
                   (local.get ($ array))
                   (local.get ($ stack))
-                  (i32.load (offset 0))  ; Refresh reference to `a`
+                  (i32.load (offset 4)) ; Refresh reference to `a`
                   (local.tee 0)
                   (i32.store (offset 8))
 
@@ -839,7 +839,7 @@
 
                   ;; Call meta-node f
                   (local.get ($ stack))
-                  (i32.load (offset 4))
+                  (i32.load (offset 8))
                   (local.tee ($ char)) ; Refresh reference to boxed character
                   (local.get ($ array))
                   (call (meta-node ,f))
@@ -872,7 +872,7 @@
 
                 :code
 
-                 ;; Reserve Stack Space
+                ;; Reserve Stack Space
                 `((i32.const ($ global-stack))
                   (i32.const ($ global-stack))
                   i32.load
@@ -884,12 +884,12 @@
                   ;; Zero out Stack
                   (local.get ($ stack))
                   (i32.const 0)
-                  (i32.store (offset 0))
+                  (i32.store (offset 4))
 
                   ;; Save parameter `a` on stack
                   (local.get ($ stack))
                   (local.get 0)
-                  (i32.store (offset 0))
+                  (i32.store (offset 4))
 
                   ;; Create Empty List
                   (call (import "runtime" "empty_list"))
@@ -897,8 +897,8 @@
 
                   ;; Call meta-node `f`
                   (local.get ($ stack))
-                  (i32.load (offset 0))
-                  (local.tee 0)      ; Refresh parameter `a` from stack
+                  (i32.load (offset 4))
+                  (local.tee 0)     ; Refresh parameter `a` from stack
                   (local.get ($ args))
                   (call (meta-node ,f))
 
@@ -961,7 +961,7 @@
 
                     :code
 
-                     ;; Reserve Stack Space
+                    ;; Reserve Stack Space
                     `((i32.const ($ global-stack))
                       (i32.const ($ global-stack))
                       i32.load
@@ -973,12 +973,12 @@
                       ;; Zero out reserved stack space
                       (local.get ($ stack))
                       (i32.const 0)
-                      (i32.store (offset 0))
+                      (i32.store (offset 4))
 
                       ;; Save parameter `a` on stack
                       (local.get ($ stack))
                       (local.get ($ a))
-                      (i32.store (offset 0))
+                      (i32.store (offset 4))
 
                       ;; Call Meta-Node `+`
                       (local.get ($ b))
@@ -988,7 +988,7 @@
 
                       ;; Call Meta-Node `f`
                       (local.get ($ stack))
-                      (i32.load (offset 0))
+                      (i32.load (offset 4))
                       (local.tee ($ a)) ; Refresh parameter `a` from stack
                       (local.get ($ a+b))
                       (call (meta-node ,f))
@@ -1025,7 +1025,7 @@
 
                     :code
 
-                     ;; Reserve Stack Space
+                    ;; Reserve Stack Space
                     `((i32.const ($ global-stack))
                       (i32.const ($ global-stack))
                       i32.load
@@ -1037,19 +1037,19 @@
                       ;; Zero out reserved stack space
                       (local.get ($ stack))
                       (i32.const 0)
-                      (i32.store (offset 0))
+                      (i32.store (offset 4))
 
                       ;; Save parameter `a` on stack
                       (local.get ($ stack))
                       (local.get ($ a))
-                      (i32.store (offset 0))
+                      (i32.store (offset 4))
 
                       ;; Create Thunk
                       (i32.const 16)
                       (call (import "runtime" "alloc"))
                       (local.tee ($ thunk))
                       (i32.const 0)
-                      i32.store          ; Set type = thunk
+                      i32.store         ; Set type = thunk
                       (local.get ($ thunk))
                       (i32.const (thunk 0))
                       (i32.store (offset 4)) ; Set thunk function = 0
@@ -1058,7 +1058,7 @@
                       (i32.store (offset 8)) ; Set closure size
                       (local.get ($ thunk))
                       (local.get ($ stack))
-                      (i32.load (offset 0)) ; Refresh a from stack
+                      (i32.load (offset 4)) ; Refresh a from stack
                       (local.tee ($ a))
                       (i32.store (offset 12))
 
@@ -1089,7 +1089,7 @@
 
                     :code
 
-                     ;; Load parameter first parameter from closure
+                    ;; Load parameter first parameter from closure
                     `((local.get 0)
                       (i32.load (offset 4))
                       (local.set ($ p1))
@@ -1122,7 +1122,7 @@
 
                 :code
 
-                 ;; Reserve Stack Space
+                ;; Reserve Stack Space
                 `((i32.const ($ global-stack))
                   (i32.const ($ global-stack))
                   i32.load
@@ -1134,12 +1134,12 @@
                   ;; Zero Out Stack Space
                   (local.get ($ stack))
                   (i64.const 0)
-                  (i64.store (offset 0))
+                  (i64.store (offset 4))
 
                   ;; Save parameter `a` on stack
                   (local.get ($ stack))
                   (local.get 0)
-                  (i32.store (offset 0))
+                  (i32.store (offset 4))
 
                   ;; Allocate space for thunk `x + 10`
                   (i32.const 16)
@@ -1149,12 +1149,12 @@
                   ;; Save reference to thunk on stack
                   (local.get ($ stack))
                   (local.get ($ thunk))
-                  (i32.store (offset 4))
+                  (i32.store (offset 8))
 
                   ;; Create Thunk
                   (local.get ($ thunk))
                   (i32.const 0)
-                  i32.store              ; Set type = thunk
+                  i32.store             ; Set type = thunk
                   (local.get ($ thunk))
                   (i32.const (thunk 0))
                   (i32.store (offset 4)) ; Set thunk function
@@ -1163,30 +1163,33 @@
                   (i32.store (offset 8)) ; Set closure size
                   (local.get ($ thunk))
                   (local.get ($ stack))
-                  (i32.load (offset 0))  ; Refresh parameter `a`
+                  (i32.load (offset 4)) ; Refresh parameter `a`
                   (local.tee 0)
                   (i32.store (offset 12)) ; Store `a` in thunk closure
 
                   ;; Allocate space for object
-                  (i32.const 12)
+                  (i32.const 16)
                   (call (import "runtime" "alloc"))
                   (local.tee ($ object))
+                  (i32.const 11)
+                  i32.store             ; Set type to object
+                  (local.get ($ object))
                   (i32.const (data ($ desc)))
-                  i32.store              ; Set Object descriptor
+                  (i32.store (offset 4)) ; Set Object descriptor
 
                   ;; Store Field `x`
                   (local.get ($ object))
                   (local.get ($ stack))
-                  (i32.load (offset 0))
+                  (i32.load (offset 4))
                   (local.tee 0)          ; Refresh parameter `a`
-                  (i32.store (offset 4)) ; Store field x = `a`
+                  (i32.store (offset 8)) ; Store field x = `a`
 
                   ;; Store Field `y`
                   (local.get ($ object))
                   (local.get ($ stack))
-                  (i32.load (offset 4))  ; Refresh thunk pointer
+                  (i32.load (offset 8)) ; Refresh thunk pointer
                   (local.tee ($ thunk))
-                  (i32.store (offset 8)) ; Store field y = thunk
+                  (i32.store (offset 12)) ; Store field y = thunk
 
                   ;; Set return value
                   (local.get ($ object))
@@ -1247,32 +1250,12 @@
                (make-wasm-function-spec
                 :params '(i32)
                 :results '(i32)
-                :locals '(i32 i32 i32 i32)
+                :locals '(i32 i32 i32)
 
                 :code
 
-                 ;; Reserve Stack Space
-                `((i32.const ($ global-stack))
-                  (i32.const ($ global-stack))
-                  i32.load
-                  (i32.const 4)
-                  i32.sub
-                  (local.tee ($ stack))
-                  i32.store
-
-                  ;; Zero out stack
-                  (local.get ($ stack))
-                  (i32.const 0)
-                  (i32.store (offset 0))
-
-                  ;; Save arguments list on stack
-                  (local.get ($ stack))
-                  (local.get 0)
-                  (i32.store (offset 0))
-
-                  ;; Load number of arguments in argument list
-                  (local.get 0)
-                  i32.load
+                `((local.get 0)
+                  (i32.load (offset 4))
                   (local.set ($ num-args))
 
                   ;; Check Arity
@@ -1281,16 +1264,12 @@
                     (i32.const 1)
                     i32.eq
                     (br_if 0)
-                    (call (import "runtime" "arity_error"))
+                    (call (import "runtime" "make_fail_arity_error"))
                     return)
 
-                  ;; Refresh argument list from stack
-                  (local.get ($ stack))
-                  (i32.load (offset 0))
-                  (local.tee 0)
-
                   ;; Load parameter `x` from argument list
-                  (i32.load (offset 4))
+                  (local.get 0)
+                  (i32.load (offset 8))
                   (local.set ($ x))
 
                   ;; Call meta-node
@@ -1299,13 +1278,7 @@
 
                   ;; Set return value
                   (local.set ($ result))
-                  (local.get ($ result))
-
-                  (i32.const ($ global-stack))
-                  (local.get ($ stack))
-                  (i32.const 4)
-                  i32.add
-                  i32.store))))))))
+                  (local.get ($ result))))))))))
 
     (subtest "With Optional Arguments"
       (mock-backend-state
@@ -1328,7 +1301,7 @@
 
                 :code
 
-                 ;; Reserve stack space
+                ;; Reserve stack space
                 `((i32.const ($ global-stack))
                   (i32.const ($ global-stack))
                   i32.load
@@ -1340,19 +1313,19 @@
                   ;; Zero out stack elements
                   (local.get ($ stack))
                   (i32.const 0)
-                  (i32.store (offset 0))
+                  (i32.store (offset 4))
 
                   ;; Save parameter `a` on stack
                   (local.get ($ stack))
                   (local.get 0)
-                  (i32.store (offset 0))
+                  (i32.store (offset 4))
 
                   ;; Allocate Meta-Node Reference Object
                   (i32.const 16)
                   (call (import "runtime" "alloc"))
                   (local.tee ($ ref))
                   (i32.const 7)
-                  i32.store            ; Set type = meta-node reference
+                  i32.store           ; Set type = meta-node reference
                   (local.get ($ ref))
                   (i32.const (meta-node-ref ,1+))
                   (i32.store (offset 4)) ; Set meta-node reference function
@@ -1368,7 +1341,7 @@
                   ;; Call Meta-Node `map`
                   (local.get ($ ref))
                   (local.get ($ stack))
-                  (i32.load (offset 0)) ; Refresh parameter a from stack
+                  (i32.load (offset 4)) ; Refresh parameter a from stack
                   (local.tee 0)
                   (call (meta-node ,map))
 
@@ -1394,33 +1367,23 @@
 
                 :code
 
-                 ;; Reserve stack space
+                ;; Reserve stack space
                 `((i32.const ($ global-stack))
                   (i32.const ($ global-stack))
                   i32.load
-                  (i32.const 8)
+                  (i32.const 4)
                   i32.sub
                   (local.tee ($ stack))
                   i32.store
 
                   ;; Zero out stack elements
                   (local.get ($ stack))
-                  (i64.const 0)
-                  (i64.store (offset 0))
-
-                  ;; Save argument list on stack
-                  (local.get ($ stack))
-                  (local.get 0)
-                  (i32.store (offset 0))
-
-                  ;; Save optional arguments on stack
-                  (local.get ($ stack))
-                  (local.get 1)
+                  (i32.const 0)
                   (i32.store (offset 4))
 
-                  ;; Load number of arguments
+                  ;; Load Number of Arguments
                   (local.get 0)
-                  i32.load
+                  (i32.load (offset 4))
                   (local.set ($ num-args))
 
                   ;; Check Arity
@@ -1433,15 +1396,13 @@
                     i32.le_u
                     i32.and
                     (br_if 0)
-                    (call (import "runtime" "arity_error"))
+                    (call (import "runtime" "make_fail_arity_error"))
                     return)
 
                   ;; Load Required Arguments
-                  (local.get ($ stack))
-                  (i32.load (offset 0))
-                  (local.tee 0)         ; Refresh argument list pointer
-                  (i32.load (offset 4))
-                  (local.set ($ n))      ; Load argument `n`
+                  (local.get 0)
+                  (i32.load (offset 8))
+                  (local.set ($ n))     ; Load argument `n`
 
                   ;; Load Optional Arguments
                   (block
@@ -1454,21 +1415,32 @@
 
                         ;; Load `d` from argument list
                         (local.get 0)
-                        (i32.load (offset 8))
+                        (i32.load (offset 12))
                         (local.set ($ d))
+
+                        (local.get ($ stack))
+                        (local.get ($ d))
+                        (i32.store (offset 4))
+
                         (br 1))
 
                     ;; Load `d` from default values
-                    (local.get ($ stack))
-                    (i32.load (offset 4))
-                    (local.tee 1)      ; Refresh default values pointer
+                    (local.get 1)
                     (i32.load (offset 0)) ; Load default `d` value
                     (local.set ($ d))
+
+                    (local.get ($ stack))
+                    (local.get ($ d))
+                    (i32.store (offset 4))
+
                     (br 0))
 
                   ;; Call meta-node
                   (local.get ($ n))
-                  (local.get ($ d))
+
+                  (local.get ($ stack))
+                  (i32.load (offset 4))
+                  (local.tee ($ d))     ; Refresh `d` from stack
                   (call (meta-node ,1+))
 
                   ;; Set return value
@@ -1478,7 +1450,7 @@
                   ;; Restore stack pointer
                   (i32.const ($ global-stack))
                   (local.get ($ stack))
-                  (i32.const 8)
+                  (i32.const 4)
                   i32.add
                   i32.store))))))))
 
@@ -1526,7 +1498,7 @@
 
                 :code
 
-                 ;; Reserve stack space
+                ;; Reserve stack space
                 `((i32.const ($ global-stack))
                   (i32.const ($ global-stack))
                   i32.load
@@ -1538,16 +1510,16 @@
                   ;; Zero out stack elements
                   (local.get ($ stack))
                   (i64.const 0)
-                  (i64.store (offset 0))
+                  (i64.store (offset 4))
 
-                  ;; Save parameter argument list on stack
+                  ;; Save reference to argument list on stack
                   (local.get ($ stack))
                   (local.get 0)
-                  (i32.store (offset 0))
+                  (i32.store (offset 4))
 
                   ;; Load number of arguments
                   (local.get 0)
-                  i32.load
+                  (i32.load (offset 4))
                   (local.set ($ num-args))
 
                   ;; Check arity
@@ -1556,20 +1528,16 @@
                     (i32.const 1)
                     i32.ge_u
                     (br_if 0)
-                    (call (import "runtime" "arity_error"))
+                    (call (import "runtime" "make_fail_arity_error"))
                     return)
 
-                  ;; Refresh argument list from stack
-                  (local.get ($ stack))
-                  (i32.load (offset 0))
-                  (local.tee 0)
-
                   ;; Unpack parameter `x` from argument list
-                  (i32.load (offset 4))
+                  (local.get 0)
+                  (i32.load (offset 8))
                   (local.set ($ x))
                   (local.get ($ stack))
                   (local.get ($ x))
-                  (i32.store (offset 4)) ; Store on stack
+                  (i32.store (offset 8)) ; Store on stack
 
                   ;; Unpack rest arguments
                   (block
@@ -1587,7 +1555,7 @@
                         (i32.const 4)
                         i32.mul
                         (local.tee ($ rest-size))
-                        (i32.const 8)  ; Add 8 for type and size fields
+                        (i32.const 8) ; Add 8 for type and size fields
                         i32.add
                         (call (import "runtime" "alloc"))
                         (local.tee ($ rest-array))
@@ -1610,9 +1578,9 @@
                         ;; Get pointer to start of rest arguments in
                         ;; argument list
                         (local.get ($ stack))
-                        (i32.load (offset 0))
-                        (local.tee 0)   ; Refresh argument list pointer
-                        (i32.const 8)
+                        (i32.load (offset 4))
+                        (local.tee 0)  ; Refresh argument list pointer
+                        (i32.const 12)
                         i32.add
                         (local.get ($ rest-size))
                         (call (import "runtime" "memcopy")) ; Copy arguments
@@ -1623,8 +1591,8 @@
 
                   ;; Call meta-node
                   (local.get ($ stack))
-                  (i32.load (offset 4))
-                  (local.tee ($ x))      ; Refresh pointer to `x`
+                  (i32.load (offset 8))
+                  (local.tee ($ x))     ; Refresh pointer to `x`
                   (local.get ($ rest-array))
                   (call (meta-node ,list))
 
@@ -1660,7 +1628,7 @@
 
                 :code
 
-                 ;; Reserve stack space
+                ;; Reserve stack space
                 `((i32.const ($ global-stack))
                   (i32.const ($ global-stack))
                   i32.load
@@ -1672,19 +1640,19 @@
                   ;; Zero out stack elements
                   (local.get ($ stack))
                   (i32.const 0)
-                  (i32.store (offset 0))
+                  (i32.store (offset 4))
 
                   ;; Save parameter `a` on stack
                   (local.get ($ stack))
                   (local.get 0)
-                  (i32.store (offset 0))
+                  (i32.store (offset 4))
 
                   ;; Allocate function reference object
                   (i32.const 16)
                   (call (import "runtime" "alloc"))
                   (local.tee ($ funcref))
                   (i32.const ,+type-funcref-args+)
-                  i32.store              ; Set type = funcref
+                  i32.store             ; Set type = funcref
 
                   ;; Set meta-node
                   (local.get ($ funcref))
@@ -1704,8 +1672,8 @@
                   ;; Call meta-node `map`
                   (local.get ($ funcref))
                   (local.get ($ stack))
-                  (i32.load (offset 0))
-                  (local.tee 0)      ; Refresh pointer to parameter `a`
+                  (i32.load (offset 4))
+                  (local.tee 0)     ; Refresh pointer to parameter `a`
                   (call (meta-node ,map))
 
                   ;; Set result
@@ -1726,37 +1694,13 @@
                (make-wasm-function-spec
                 :params '(i32 i32)
                 :results '(i32)
-                :locals '(i32 i32 i32 i32 i32)
+                :locals '(i32 i32 i32 i32)
 
                 :code
 
-                 ;; Reserve stack space
-                `((i32.const ($ global-stack))
-                  (i32.const ($ global-stack))
-                  i32.load
-                  (i32.const 8)
-                  i32.sub
-                  (local.tee ($ stack))
-                  i32.store
-
-                  ;; Zero out stack elements
-                  (local.get ($ stack))
-                  (i64.const 0)
-                  (i64.store (offset 0))
-
-                  ;; Save argument list on stack
-                  (local.get ($ stack))
-                  (local.get 0)
-                  (i32.store (offset 0))
-
-                  ;; Save function reference object on stack
-                  (local.get ($ stack))
-                  (local.get 1)
-                  (i32.store (offset 4))
-
-                  ;; Load number of arguments
-                  (local.get 0)
-                  i32.load
+                ;; Load number of arguments
+                `((local.get 0)
+                  (i32.load (offset 4))
                   (local.set ($ num-args))
 
                   ;; Check arity
@@ -1765,24 +1709,16 @@
                     (i32.const 1)
                     i32.eq
                     (br_if 0)
-                    (call (import "runtime" "arity_error"))
+                    (call (import "runtime" "make_fail_arity_error"))
                     return)
 
-                  ;; Refresh argument list pointer
-                  (local.get ($ stack))
-                  (i32.load (offset 0))
-                  (local.tee 0)
-
                   ;; Load first argument `a`
-                  (i32.load (offset 4))
+                  (local.get 0)
+                  (i32.load (offset 8))
                   (local.set ($ a))
 
-                  ;; Refresh function reference pointer
-                  (local.get ($ stack))
-                  (i32.load (offset 4))
-                  (local.tee 1)
-
                   ;; Load outer node `x` value
+                  (local.get 1)
                   (i32.load (offset 0))
                   (local.set ($ x))
 
@@ -1793,14 +1729,7 @@
 
                   ;; Set return value
                   (local.set ($ result))
-                  (local.get ($ result))
-
-                  ;; Restore stack pointer
-                  (i32.const ($ global-stack))
-                  (local.get ($ stack))
-                  (i32.const 8)
-                  i32.add
-                  i32.store)))))))))
+                  (local.get ($ result)))))))))))
 
   (subtest "Higher Order Meta-Nodes"
     (subtest "Single Argument"
@@ -1819,7 +1748,7 @@
 
               :code
 
-               ;; Reserve Stack Space
+              ;; Reserve Stack Space
               `((i32.const ($ global-stack))
                 (i32.const ($ global-stack))
                 i32.load
@@ -1831,11 +1760,11 @@
                 ;; Zero out stack elements
                 (local.get ($ stack))
                 (i64.const 0)
-                (i64.store (offset 0))
+                (i64.store (offset 4))
 
-                (block                   ; To Epilogue
-                    (block               ; To Type Error
-                        (block           ; To failure
+                (block                  ; To Epilogue
+                    (block              ; To Type Error
+                        (block          ; To failure
                             ;; Resolve function `f`
                             (local.get 0)
                           (call (import "runtime" "resolve"))
@@ -1844,7 +1773,7 @@
                           ;; Save reference on stack
                           (local.get ($ stack))
                           (local.get 0)
-                          (i32.store (offset 0))
+                          (i32.store (offset 4))
 
                           (block         ; To Indirect Call
                               (block     ; To Immediate
@@ -1876,7 +1805,7 @@
                             ;; Decode function index
                             (local.get 0)
                             (i32.const 2)
-                            i32.shr_s
+                            i32.shr_u
                             (local.tee ($ f))
 
                             (i32.const 2)
@@ -1891,11 +1820,11 @@
                           (local.set ($ arg-list))
                           (local.get ($ stack))
                           (local.get ($ arg-list))
-                          (i32.store (offset 4))
+                          (i32.store (offset 8))
 
                           (local.get ($ arg-list))
                           (i32.const ,+type-array+)
-                          i32.store      ; Set type = array
+                          i32.store     ; Set type = array
 
                           (local.get ($ arg-list))
                           (i32.const 1)
@@ -1910,27 +1839,24 @@
                           (i32.const ,+type-funcref+)
                           i32.eq
                           (if (result i32)
-                              (then      ; Simple function reference
+                              (then     ; Simple function reference
                                (local.get ($ arg-list))
-                               (i32.const 4)
-                               i32.add
                                (local.get ($ f))
                                (call_indirect (type (func (param i32) (result i32)))))
 
                               (else ; Function reference with optional arguments
+                               ;; Refresh pointer to argument list from stack
                                (local.get ($ stack))
-                               (i32.load (offset 4))
+                               (i32.load (offset 8))
                                (local.tee ($ arg-list))
-                               (i32.const 4)
-                               i32.add
 
                                ;; Refresh function reference from stack
                                (local.get ($ stack))
-                               (i32.load (offset 0))
+                               (i32.load (offset 4))
+                               (local.tee 0)
 
                                ;; Get pointer to default value array
-                               (local.tee 0)
-                               (i32.const 8)
+                               (i32.const 12)
                                i32.add
 
                                (local.get 0)
@@ -1942,12 +1868,12 @@
 
                       ;; Set failure type
                       (local.get ($ stack))
-                      (i32.load (offset 0))
+                      (i32.load (offset 4))
                       (local.tee 0)
                       (local.set ($ result))
                       (br 1))
 
-                  (call (import "runtime" "fail_type_error"))
+                  (call (import "runtime" "make_fail_type_error"))
                   (local.set ($ result)))
 
                 ;; Set return value
@@ -2502,7 +2428,7 @@
            (local.get (ref 3)))
 
          '((local.get 0)
-           (local.set (ref 1))
+           (box 1 (type fail))
 
            (block $out
              (local.get 2)
@@ -2542,7 +2468,7 @@
              (box 3 (type fail))))
 
          `((local.get 0)
-           (local.set (ref 1))
+           (box 1 (type fail))
 
            (block $out
              (local.get 2)
@@ -2559,7 +2485,7 @@
                (br $out))
 
              (get-fail 1)
-             (local.set (ref 3)))))))
+             (box 3 (type fail)))))))
 
     (subtest "Used Boxed Values"
       ;; Tests that BOX instructions are not removed if the boxed
