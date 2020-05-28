@@ -39,8 +39,9 @@ sources:
   - core/failures.trd
   - core/lists.trd
   - core/introspection.trd
-  - core/patterns.trd
   - core/types.trd
+  - core/patterns.trd
   - core/macros.trd
   - core/strings.trd
   - core/js-backend.trd
+  - core/wasm32-backend.trd

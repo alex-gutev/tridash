@@ -26,61 +26,61 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test040.js');
-var in_x = Tridash.nodes.in_x;
-var in_y = Tridash.nodes.in_y;
-var in_z = Tridash.nodes.in_z;
+const mod = require('./test040.js');
 
-var output = Tridash.nodes.output;
+const in_x = mod.nodes.in_x;
+const in_y = mod.nodes.in_y;
+const in_z = mod.nodes.in_z;
+
+const output = mod.nodes.output;
 
 describe('Integration Test 40', function() {
     describe('Handling Failures with Explicit Contexts', function() {
         describe('Set `in_x` = "1", `in_y` = "2", `in_z` = "3"', function() {
-            Tridash.set_values([[in_x, "1"], [in_y, "2"], [in_z, "3"]]);
-            var value = util.node_value(output);
+            mod.set_values([[in_x, "1"], [in_y, "2"], [in_z, "3"]]);
+            const value = output.get_value();
 
-            it('`output` = 1', async function() {
-                assert.equal(await value, 1);
+            it('`output` = 1', function() {
+                assert.equal(value, 1);
             });
         });
 
         describe('Set `in_x` = "foo"', function() {
             in_x.set_value("foo");
-            var value = util.node_value(output);
+            const value = output.get_value();
 
-            it('`output` = `in_y` = 2', async function() {
-                assert.equal(await value, 2);
+            it('`output` = `in_y` = 2', function() {
+                assert.equal(value, 2);
             });
         });
 
         describe('Set `in_y` = "-1"', function() {
             in_y.set_value("-1");
-            var value = util.node_value(output);
+            const value = output.get_value();
 
-            it('`output` = `in_z` = 3', async function() {
-                assert.equal(await value, 3);
+            it('`output` = `in_z` = 3', function() {
+                assert.equal(value, 3);
             });
         });
 
         describe('Set `in_y` = "10"', function() {
             in_y.set_value("10");
-            var value = util.node_value(output);
+            const value = output.get_value();
 
-            it('`output` = `in_y` = 10', async function() {
-                assert.equal(await value, 10);
+            it('`output` = `in_y` = 10', function() {
+                assert.equal(value, 10);
             });
         });
 
         describe('Set `in_x` = "-5"', function() {
             in_x.set_value("-5");
-            var value = util.node_value(output);
+            const value = output.get_value();
 
-            it('`output` = `in_z` = 3', async function() {
-                assert.equal(await value, 3);
+            it('`output` = `in_z` = 3', function() {
+                assert.equal(value, 3);
             });
         });
     });

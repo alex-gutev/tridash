@@ -26,30 +26,33 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test003.js');
+const mod = require('./test003.js');
 
-var a = Tridash.nodes.a;
-var b = Tridash.nodes.b;
-var sum = Tridash.nodes.sum;
+const a = mod.nodes.a;
+const b = mod.nodes.b;
+const sum = mod.nodes.sum;
 
 describe('Integration Test 3', function() {
     describe('Functor Nodes', function() {
-        it('`sum` is set to result of `a` + `b`', async function() {
-            a.set_value(1);
-            b.set_value(2);
+        describe('Set `a` = 1, `b` = 2', function() {
+            it('`sum` = `a + b` = 3', function() {
+                a.set_value(1);
+                b.set_value(2);
 
-            assert.equal(await util.node_value(sum), 3);
+                assert.equal(sum.get_value(), 3);
+            });
         });
 
-        it('`a + b` is recomputed when `a` or `b` changes', async function() {
-            a.set_value(7);
-            b.set_value(4);
+        describe('Set `a` = 7, `b` = 4', function() {
+            it('`sum` = `a + b` = 11', function() {
+                a.set_value(7);
+                b.set_value(4);
 
-            assert.equal(await util.node_value(sum), 11);
+                assert.equal(sum.get_value(), 11);
+            });
         });
     });
 });

@@ -26,22 +26,23 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
+const util = require('./test_util.js');
 
-require('./test005.js');
+const mod = require('./test005.js');
 
-var i = Tridash.nodes['i'];
-var j = Tridash.nodes['j'];
-var output = Tridash.nodes['output'];
+const i = mod.nodes.i;
+const j = mod.nodes.j;
+const output = mod.nodes.output;
 
 describe('Integration Test 5', function() {
     describe('Simple Cyclic Bindings', function() {
-        it('Output resolves to a cyclic list', async function() {
-            Tridash.set_values([[i, 0], [j, 1]]);
-
-            assert.deepEqual(util.resolve_list(await output.next_value, 3), [0,1,0]);
+        describe('Set `i` = 0, `j` = 1', function() {
+            it('Output is cyclic list [0, 1, 0, 1 ...]', function() {
+                mod.set_values([[i, 0], [j, 1]]);
+                assert.deepEqual(util.resolve_list(output.get_value(), 3), [0,1,0]);
+            });
         });
     });
 });

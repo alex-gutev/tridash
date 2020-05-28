@@ -26,42 +26,41 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test023.js');
+const mod = require('./test023.js');
 
-var n = Tridash.nodes.n;
-var output = Tridash.nodes.output;
+const n = mod.nodes.n;
+const output = mod.nodes.output;
 
 describe('Integration Test 23', function() {
     describe('Mutually Recursive Meta-Nodes', function() {
         describe('Set `n` = 1', function() {
-            it('`output` = 1', async function() {
+            it('`output` = 1', function() {
                 n.set_value(1);
-                assert.equal(await util.node_value(output), 1);
+                assert.equal(output.get_value(), 1);
             });
         });
 
         describe('Set `n` = 2', function() {
-            it('`output` = 2', async function() {
+            it('`output` = 2', function() {
                 n.set_value(2);
-                assert.equal(await util.node_value(output), 2);
+                assert.equal(output.get_value(), 2);
             });
         });
 
         describe('Set `n` = 3', function() {
-            it('`output` = 3', async function() {
+            it('`output` = 3', function() {
                 n.set_value(3);
-                assert.equal(await util.node_value(output), 3);
+                assert.equal(output.get_value(), 3);
             });
         });
 
         describe('Set `n` = 5', function() {
-            it('`output` = 8', async function() {
+            it('`output` = 8', function() {
                 n.set_value(5);
-                assert.equal(await util.node_value(output), 8);
+                assert.equal(output.get_value(), 8);
             });
         });
     });

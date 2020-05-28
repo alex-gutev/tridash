@@ -68,7 +68,7 @@ list!(..(xs)) : {
 
 ## Failure type indicating an empty list.
 
-Empty <- &(Empty-List)
+Empty <- Empty-List()
 
 ## Failure value with the type indicating an empty list.
 

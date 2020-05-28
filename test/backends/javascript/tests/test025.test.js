@@ -26,30 +26,30 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test025.js');
-var n = Tridash.nodes.n;
-var delta = Tridash.nodes.delta;
-var output1 = Tridash.nodes.output1;
-var output2 = Tridash.nodes.output2;
+const mod = require('./test025.js');
+
+const n = mod.nodes.n;
+const delta = mod.nodes.delta;
+const output1 = mod.nodes.output1;
+const output2 = mod.nodes.output2;
 
 describe('Integration Test 25', function() {
     describe('Optional Arguments with Node Default Values', function() {
         describe('Set `n` = 1, `delta` = 1', function() {
-            Tridash.set_values([[n, 1], [delta, 1]]);
+            mod.set_values([[n, 1], [delta, 1]]);
 
-            var out1 = util.node_value(output1);
-            var out2 = util.node_value(output2);
+            const out1 = output1.get_value();
+            const out2 = output2.get_value();
 
-            it('`output1` = 2', async function() {
-                assert.equal(await out1, 2);
+            it('`output1` = 2', function() {
+                assert.equal(out1, 2);
             });
 
-            it('`output2` = 2', async function() {
-                assert.equal(await out2, 2);
+            it('`output2` = 2', function() {
+                assert.equal(out2, 2);
             });
 
         });
@@ -57,15 +57,15 @@ describe('Integration Test 25', function() {
         describe('Set `delta` = 2', function() {
             delta.set_value(2);
 
-            var out1 = util.node_value(output1);
-            var out2 = util.node_value(output2);
+            const out1 = output1.get_value();
+            const out2 = output2.get_value();
 
-            it('`output1` = 3', async function() {
-                assert.equal(await out1, 3);
+            it('`output1` = 3', function() {
+                assert.equal(out1, 3);
             });
 
-            it('`output2` = 2', async function() {
-                assert.equal(await out2, 2);
+            it('`output2` = 2', function() {
+                assert.equal(out2, 2);
             });
         });
     });

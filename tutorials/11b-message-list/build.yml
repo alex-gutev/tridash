@@ -6,3 +6,4 @@ output:
   path: app.html
   type: html
   main-ui: ui
+  module-name: mod

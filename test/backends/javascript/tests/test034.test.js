@@ -30,27 +30,27 @@ global.external_inc = function(n) {
     return Tridash.resolve(n) + 1;
 };
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test034.js');
-var x = Tridash.nodes.x;
-var output = Tridash.nodes.output;
+const mod = require('./test034.js');
+
+const x = mod.nodes.x;
+const output = mod.nodes.output;
 
 describe('Integration Test 34', function() {
     describe('External Meta-Nodes', function() {
         describe('Set `x` = 1', function () {
-            it('`output` = 2', async function() {
+            it('`output` = 2', function() {
                 x.set_value(1);
-                assert.equal(await util.node_value(output), 2);
+                assert.equal(output.get_value(), 2);
             });
         });
-        
+
         describe('Set `x` = 2', function () {
-            it('`output` = 3', async function() {
+            it('`output` = 3', function() {
                 x.set_value(2);
-                assert.equal(await util.node_value(output), 3);
+                assert.equal(output.get_value(), 3);
             });
         });
     });

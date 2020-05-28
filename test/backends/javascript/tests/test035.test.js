@@ -26,15 +26,16 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
+const util = require('./test_util.js');
 
-require('./test035.js');
-var input = Tridash.nodes.input;
-var f = Tridash.nodes.f;
-var output = Tridash.nodes.output;
-var output2 = Tridash.nodes.output2;
+const mod = require('./test035.js');
+
+const input = mod.nodes.input;
+const f = mod.nodes.f;
+const output = mod.nodes.output;
+const output2 = mod.nodes.output2;
 
 describe('Integration Test 35', function() {
     function test_fail_type(type) {
@@ -45,44 +46,45 @@ describe('Integration Test 35', function() {
 
     describe('Higher Order Meta-Nodes', function() {
         describe('Set `input` = [1,2,3]', function () {
-            it('`output` = [2,3,4]', async function() {
+            it('`output` = [2,3,4]', function() {
                 input.set_value([1, 2, 3]);
-                var value = util.resolve_list(await output.next_value);
+                const value = util.resolve_list(output.get_value());
+
                 assert.deepEqual(value, [2, 3, 4]);
             });
         });
 
         describe('Set `input` = [1,1,1]', function () {
-            it('`output` = [2,2,2]', async function() {
+            it('`output` = [2,2,2]', function() {
                 input.set_value([1, 1, 1]);
-                var value = util.resolve_list(await output.next_value);
+                const value = util.resolve_list(output.get_value());
+
                 assert.deepEqual(value, [2, 2, 2]);
             });
         });
 
-
         describe('Type Errors', function() {
             describe('Set `f` = 1', function() {
-                it('`output2` fails with type Tridash.TypeError', async function() {
+                it('`output2` fails with type Tridash.TypeError', function() {
                     f.set_value(1);
 
-                    await assert.rejects(util.node_value(output2), test_fail_type(Tridash.TypeError));
+                    assert.throws(() => output2.get_value(), test_fail_type(Tridash.TypeError()));
                 });
             });
 
             describe('Set `f` = "hello"', function() {
-                it('`output2` fails with type Tridash.TypeError', async function() {
+                it('`output2` fails with type Tridash.TypeError', function() {
                     f.set_value("hello");
 
-                    await assert.rejects(util.node_value(output2), test_fail_type(Tridash.TypeError));
+                    assert.throws(() => output2.get_value(), test_fail_type(Tridash.TypeError()));
                 });
             });
 
             describe('Set `f` = { x : 1, y : 2 }', function() {
-                it('`output2` fails with type Tridash.TypeError', async function() {
+                it('`output2` fails with type Tridash.TypeError', function() {
                     f.set_value({x : 1, y : 2});
 
-                    await assert.rejects(util.node_value(output2), test_fail_type(Tridash.TypeError));
+                    assert.throws(() => output2.get_value(), test_fail_type(Tridash.TypeError()));
                 });
             });
         });

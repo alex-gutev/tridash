@@ -1,0 +1,23 @@
+## Test Local Nodes
+
+/import(core, +, /, <-)
+
+average(x, y) : {
+    sum <- x + y
+    sum / 2.0
+}
+
+output <- average(x, y)
+
+
+## Input Attributes
+
+/attribute(x, input, 1)
+/attribute(y, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output, public-name, "output")
+/attribute(x, public-name, "x")
+/attribute(y, public-name, "y")

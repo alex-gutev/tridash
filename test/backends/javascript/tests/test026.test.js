@@ -26,57 +26,46 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
+const util = require('./test_util.js');
 
-require('./test026.js');
-var n = Tridash.nodes.n;
-var output1 = Tridash.nodes.output1;
-var output2 = Tridash.nodes.output2;
+const mod = require('./test026.js');
+
+const n = mod.nodes.n;
+const output1 = mod.nodes.output1;
+const output2 = mod.nodes.output2;
 
 describe('Integration Test 26', function() {
-    function test_fail_type(type) {
-        return (e) => {
-            return (e instanceof Tridash.Fail) && Tridash.resolve(e.type) === type;
-        };
-    }
-
     describe('Optional Arguments with No Default Values', function() {
         describe('Set `n` = 1', function() {
             n.set_value(1);
 
-            var out1 = util.node_value(output1);
-            var out2 = util.node_value(output2);
+            const out1 = output1.get_value(false);
+            const out2 = output2.get_value();
 
-            it('`output1` fails', async function() {
-                await assert.rejects(out1, test_fail_type(Tridash.NoValue));
+            it('`output1` fails', function() {
+                assert.throws(() => Tridash.resolve(out1), util.test_fail_type(Tridash.NoValue()));
             });
 
-            it('`output2` = 2', async function() {
-                assert.equal(await out2, 2);
+            it('`output2` = 2', function() {
+                assert.equal(out2, 2);
             });
-
-            // Suppress unhandled promise rejection warnings.
-            out1.catch(() => {});
         });
 
         describe('Set `n` = 2', function() {
             n.set_value(2);
 
-            var out1 = util.node_value(output1);
-            var out2 = util.node_value(output2);
+            const out1 = output1.get_value(false);
+            const out2 = output2.get_value();
 
-            it('`output1` fails', async function() {
-                await assert.rejects(out1, test_fail_type(Tridash.NoValue));
+            it('`output1` fails', function() {
+                assert.throws(() => Tridash.resolve(out1), util.test_fail_type(Tridash.NoValue()));
             });
 
-            it('`output2` = 3', async function() {
-                assert.equal(await out2, 3);
+            it('`output2` = 3', function() {
+                assert.equal(out2, 3);
             });
-
-            // Suppress unhandled promise rejection warnings.
-            out1.catch(() => {});
         });
     });
 });

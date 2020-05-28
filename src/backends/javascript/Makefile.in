@@ -17,8 +17,7 @@ module_dir = $(top_srcdir)/modules/
 
 ## Building Runtime Library
 
-runtime_sources = runtime/runtime.js \
-	runtime/queue.js \
+runtime_sources = runtime/module.js \
 	runtime/functions.js \
 	runtime/exports.js
 
@@ -71,6 +70,7 @@ test_inputs =  \
 	$(testdir)/tests/test038.js \
 	$(testdir)/tests/test039.js \
 	$(testdir)/tests/test040.js \
+	$(testdir)/tests/test041.js \
 	$(testdir)/tests/core.js
 
 check: $(testdir)/runtime/tridash.js $(test_inputs)
@@ -94,10 +94,11 @@ test_core_sources = $(testdir)/tests/core/tridash-unit.trd \
 	$(testdir)/tests/core/pattern-match-tests.trd \
 	$(testdir)/tests/core/core-tests.trd
 
-$(testdir)/tests/core.js: $(test_core_sources) $(tridashc)
+$(testdir)/tests/core.js: $(test_core_sources)
 	TRIDASH_MODULE_PATHS=$(module_dir) \
-	$(tridashc) $^ -o $@ -p JS_RUNTIME_PATH=runtime/tridash.min.js
+	$(tridashc) $^ -o $@
 
+$(testdir)/tests/core.js: $(tridashc)
 
 ## Installation
 
@@ -122,7 +123,7 @@ clean: $(test_inputs:.js=.clean)
 
 %.js: %.trd $(tridashc)
 	TRIDASH_MODULE_PATHS=$(module_dir) \
-	$(tridashc) $< -o $@ -p JS_RUNTIME_PATH=runtime/tridash.min.js
+	$(tridashc) $< -o $@
 
 %.clean:
 	rm -f $(@:.clean=.js)

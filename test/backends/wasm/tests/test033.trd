@@ -1,0 +1,26 @@
+## Test Outer Node References from Nested Meta-Nodes
+
+/import(core, +, <-)
+
+add(x, y, d) : {
+    inc(n) : n + d + delta
+
+    inc(x) + inc(y)
+}
+
+output <- add(x, y, 10)
+
+
+## Input Attributes
+
+/attribute(x, input, 1)
+/attribute(y, input, 1)
+/attribute(delta, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output, public-name, "output")
+/attribute(x, public-name, "x")
+/attribute(y, public-name, "y")
+/attribute(delta, public-name, "delta")

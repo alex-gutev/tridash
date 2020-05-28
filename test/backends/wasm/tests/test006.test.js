@@ -1,9 +1,9 @@
 /**
- * queue.js
+ * test006.test.js
  *
- * Tridash JavaScript runtime library.
+ * Tridash WebAssembly Backend Tests
  *
- * Copyright 2017-2019 Alexander Gutev
+ * Copyright 2020 Alexander Gutev
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -26,50 +26,28 @@
  * SOFTWARE.
  */
 
-/**
- * A simple implementation of an unbounded FIFO queue.
- */
-function Queue() {
-    this.head = null;
-    this.tail = null;
+const Tridash = require('./tridash.min.js');
+const assert = require('assert');
 
-    function QueueNode(elem) {
-        this.elem = elem;
-        this.next = null;
-        return this;
-    }
+const mod = require('./test006.js');
 
-    this.enqueue = function(elem) {
-        var new_node = new QueueNode(elem);
+describe('Integration Test 6', function() {
+    var module, i, j, output;
 
-        if (this.tail) {
-            this.tail.next = new_node;
-            this.tail = new_node;
-        }
-        else {
-            this.head = this.tail = new_node;
-        }
+    before(async () => {
+        module = await mod.module;
 
-        return elem;
-    };
-    this.dequeue = function() {
-        if (this.head) {
-            var elem = this.head.elem;
-            this.head = this.head.next;
+        i = module.nodes.i;
+        j = module.nodes.j;
+        output = module.nodes.output;
+    });
 
-            if (!this.head) this.tail = null;
-
-            return elem;
-        }
-
-        return null;
-    };
-
-    this.empty = function() {
-        return this.head == null;
-    };
-
-    this.clear = function() {
-        this.head = this.tail = null;
-    };
-};
+    describe('Cyclic Bindings of Multiple Non-Coalescable Nodes', function() {
+        describe('Set `i` = 0, `j` = 1', function() {
+            it('Output is cyclic list [0, 1, 0, 1 ...]', function() {
+                module.set_values([[i, 0], [j, 1]]);
+                assert.deepEqual(output.get_value(), [0,1,0]);
+            });
+        });
+    });
+});

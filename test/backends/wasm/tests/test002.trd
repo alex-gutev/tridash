@@ -1,0 +1,19 @@
+# Test Simple Two-Way Bindings
+
+x -> y
+y -> x
+
+y -> z
+z -> y
+
+y -> w
+
+# Attribute Declarations
+
+/attribute(x, input, 1)
+/attribute(x, public-name, "x")
+
+/attribute(z, input, 1)
+/attribute(z, public-name, "z")
+
+/attribute(w, public-name, "w")

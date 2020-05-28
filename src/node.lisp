@@ -93,6 +93,7 @@
 
    (fail-test
     :initarg :fail-test
+    :initform nil
     :accessor fail-test
     :documentation
     "Failure type test node.")
@@ -116,6 +117,14 @@
   (let* ((name (id-symbol id))
          (node (make-instance 'node :name name)))
     (add-constant-function value node)
+    node))
+
+(defun constant-type-node (id)
+  "Creates a constant type node with identifier ID."
+
+  (let* ((name (id-symbol id))
+         (node (make-instance 'node :name name)))
+    (add-constant-function (node-ref node) node)
     node))
 
 
@@ -267,7 +276,7 @@
          fail-test)))))
 
 
-(defun add-function (expression context &optional test)
+(defun add-function (expression context &optional (test :none))
   "Adds EXPRESSION to the value function of CONTEXT. If CONTEXT does
    not have a value function function, its VALUE-FUNCTION slot is set
    to EXPRESSION. If CONTEXT does have a value function, it is wrapped

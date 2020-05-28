@@ -26,52 +26,52 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test027.js');
-var x = Tridash.nodes.x;
-var y = Tridash.nodes.y;
-var output1 = Tridash.nodes.output1;
-var output2 = Tridash.nodes.output2;
-var output3 = Tridash.nodes.output3;
+const mod = require('./test027.js');
+
+const x = mod.nodes.x;
+const y = mod.nodes.y;
+const output1 = mod.nodes.output1;
+const output2 = mod.nodes.output2;
+const output3 = mod.nodes.output3;
 
 describe('Integration Test 27', function() {
     describe('Rest Arguments', function() {
         describe('Set `x` = 1, `y` = 2', async function () {
-            Tridash.set_values([[x, 1], [y, 2]]);
+            mod.set_values([[x, 1], [y, 2]]);
 
-            var out1 = util.node_value(output1);
-            var out2 = util.node_value(output2);
-            var out3 = util.node_value(output3);
+            const out1 = output1.get_value();
+            const out2 = output2.get_value();
+            const out3 = output3.get_value();
 
-            it('`output1` = 4', async function() {
-                assert.equal(await out1, 4);
+            it('`output1` = 4', function() {
+                assert.equal(out1, 4);
             });
-            it('`output2` = 3', async function() {
-                assert.equal(await out2, 3);
+            it('`output2` = 3', function() {
+                assert.equal(out2, 3);
             });
-            it('`output3` = 3', async function() {
-                assert.equal(await out3, 3);
+            it('`output3` = 3', function() {
+                assert.equal(out3, 3);
             });
         });
 
         describe('Set `x` = 3, `y` = 7', function () {
-            Tridash.set_values([[x, 3], [y, 7]]);
+            mod.set_values([[x, 3], [y, 7]]);
 
-            var out1 = util.node_value(output1);
-            var out2 = util.node_value(output2);
-            var out3 = util.node_value(output3);
+            const out1 = output1.get_value();
+            const out2 = output2.get_value();
+            const out3 = output3.get_value();
 
-            it('`output1` = 11', async function() {
-                assert.equal(await out1, 11);
+            it('`output1` = 11', function() {
+                assert.equal(out1, 11);
             });
-            it('`output2` = 10', async function() {
-                assert.equal(await out2, 10);
+            it('`output2` = 10', function() {
+                assert.equal(out2, 10);
             });
-            it('`output3` = 10', async function() {
-                assert.equal(await out3, 10);
+            it('`output3` = 10', function() {
+                assert.equal(out3, 10);
             });
         });
     });

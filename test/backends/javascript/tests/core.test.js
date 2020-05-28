@@ -26,11 +26,11 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
+const util = require('./test_util.js');
 
-require('./core.js');
+const mod = require('./core.js');
 
 function run_tridash_tests(tests) {
     util.list_to_array(tests).forEach(run_tridash_test);
@@ -66,10 +66,8 @@ function run_tridash_test(test) {
     }
 }
 
-it('Core Module Tests', () => {
-    return util.node_value(Tridash.nodes.core_tests).then(test => {
-        run_tridash_test(test);
-    }).catch(e => {
-        assert.fail("Exception when running Tridash tests");
+describe('Core Module Tests', function() {
+    it('Core Tests Pass', () => {
+        run_tridash_test(mod.nodes.core_tests.get_value());
     });
 });

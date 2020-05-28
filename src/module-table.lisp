@@ -88,7 +88,7 @@
 ;;;; Builtin Module Definition
 
 (defconstant +core-meta-nodes+
-  `((if (cond then (,+optional-argument+ else)) ((:strictness (or cond (and then else)))))
+  `((if (cond then (,+optional-argument+ else :none)) ((:strictness (or cond (and then else)))))
     (:member (object key) ((:strictness (or object key))))
 
     ;; Reference Old Values
@@ -98,8 +98,8 @@
     ((:symbol-equal "symbol-equal") (a b) ((:strictness (or a b))))
 
     ;; Failures
-    (:catch (try catch (,+optional-argument+ test)) ((:strictness try)))
-    (:fail ((,+optional-argument+ type)))
+    (:catch (try catch (,+optional-argument+ test :none)) ((:strictness try)))
+    (:fail ((,+optional-argument+ type :none)))
     (:fail-type (thing) ((:strictness thing)))
 
     ;; Failure Types
@@ -133,10 +133,10 @@
 
   "Map of meta-nodes which comprise the language primitives.")
 
-(defparameter *node-true* (constant-node "True" 1)
+(defparameter *node-true* (constant-type-node "True")
   "Node, of which the value represents boolean True.")
 
-(defparameter *node-false* (constant-node "False" 0)
+(defparameter *node-false* (constant-type-node "False")
   "Node, of which the value represents boolean False.")
 
 
@@ -165,8 +165,8 @@
 
   ;; True and False Nodes
 
-  (setf *node-true* (constant-node "True" 1))
-  (setf *node-false* (constant-node "False" 0))
+  (setf *node-true* (constant-type-node "True"))
+  (setf *node-false* (constant-type-node "False"))
 
   (add-node (name *node-true*) *node-true* builtin)
   (add-node (name *node-false*) *node-false* builtin)
@@ -234,7 +234,7 @@
 
 ;;;; Creating Core Expressions
 
-(defun if-expression (test then else)
+(defun if-expression (test then &optional (else :none))
   "Creates an if functor expression with test TEST, then expression
    THEN, and else expression ELSE."
 
@@ -245,9 +245,9 @@
   (functor-expression (get :member *core-meta-nodes*)
                       (list object key)))
 
-(defun fail-expression (&optional (type nil))
+(defun fail-expression (&optional (type :none))
   (functor-expression (get :fail *core-meta-nodes*) (list type)))
 
-(defun catch-expression (try catch &optional test)
+(defun catch-expression (try catch &optional (test :none))
   (functor-expression (get :catch *core-meta-nodes*)
                       (list try catch test)))

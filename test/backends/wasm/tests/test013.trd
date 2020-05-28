@@ -1,0 +1,17 @@
+# Test Failure Types
+
+/import(core, >, =, fail, fail-type)
+
+if (a > 3, a, fail("my-type")) -> b
+
+fail-type(b) = "my-type" -> fails?
+
+b -> output
+
+# Attribute Declarations
+
+/attribute(a, input, 1)
+
+/attribute(a, public-name, "a")
+/attribute(output, public-name, "output")
+/attribute(fails?, public-name, "fails")

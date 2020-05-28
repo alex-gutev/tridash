@@ -26,32 +26,37 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test013.js');
+const mod = require('./test013.js');
 
-var a = Tridash.nodes.a;
-var output = Tridash.nodes.output;
-var fails = Tridash.nodes.fails;
+const a = mod.nodes.a;
+const output = mod.nodes.output;
+const fails = mod.nodes.fails;
 
 describe('Integration Test 13', function() {
     describe('Failure Types', function() {
-        it('`output` is set to `a` when `a > 3`', async function() {
-            a.set_value(5);
-            assert.equal(await util.node_value(output), 5);
+        describe('Set `a` = 5', function() {
+            it('`output` = `a` = 5', function() {
+                a.set_value(5);
+                assert.equal(output.get_value(), 5);
+            });
         });
 
-        it('`fails?` is true when `a < 3`', async function() {
-            a.set_value(1);
-            assert(await util.node_value(fails));
+        describe('Set `a` = 1', function() {
+            it('`fails?` is true', function() {
+                a.set_value(1);
+                assert(fails.get_value());
+            });
         });
 
-        it('`fails?` is false when failure not caused by `a < 3`', async function() {
-            // Set a to a non-number value in order to trigger a failure
-           a.set_value("hello");
-           assert(!await util.node_value(fails));
-        });        
+        describe('Set `a` = "hello"', function() {
+            it('`fails?` is false', function() {
+                // Set a to a non-number value in order to trigger a failure
+                a.set_value("hello");
+                assert(!fails.get_value());
+            });
+        });
     });
 });

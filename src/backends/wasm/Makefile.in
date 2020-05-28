@@ -1,0 +1,295 @@
+# Tools
+
+UGLIFYJS = @UGLIFYJS@
+tridashc = $(top_builddir)/tridashc
+
+EMCC = @EMCC@
+WAT2WASM = @WAT2WASM@
+
+
+# Paths
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+top_builddir = @top_builddir@
+
+
+VPATH = $(srcdir)
+testdir = $(top_srcdir)/test/backends/wasm
+module_dir = $(top_srcdir)/modules/
+
+
+# Compiling Runtime
+
+## Header File Dependencies
+
+macros_h_deps = runtime/macros.h
+thunk_h_deps = runtime/thunk.h $(macros_h_deps)
+copying_h_deps = runtime/copying.h $(macros_h_deps)
+
+types_h_deps = runtime/types.h $(thunk_h_deps) \
+	$(strings_h_deps) \
+	$(arrays_h_deps) \
+	$(funcrefs_h_deps) \
+	$(objects_h_deps) \
+	$(lists_h_deps) \
+	$(nodes_h_deps)
+
+memory_h_deps = runtime/memory.h $(types_h_deps)
+strings_h_deps = runtime/strings.h $(macros_h_deps)
+failures_h_deps = runtime/failures.h $(macros_h_deps)
+arrays_h_deps = runtime/arrays.h $(macros_h_deps)
+funcrefs_h_deps = runtime/funcrefs.h
+hash_table_h_deps = runtime/hash-table.h $(strings_h_deps)
+objects_h_deps = runtime/objects.h $(hash_table_h_deps) $(macros_h_deps)
+lists_h_deps = runtime/lists.h $(macros_h_deps)
+nodes_h_deps = runtime/nodes.h
+meta_nodes_h_deps = runtime/meta-nodes.h
+equality_h_deps = runtime/equality.h $(macros_h_deps)
+conversions_h_deps = runtime/conversions.h $(macros_h_deps)
+math_h_deps = runtime/math.h $(macros_h_deps);
+
+## Wasm Runtime Library
+
+runtime: runtime/runtime.wasm loader/tridash.min.js
+
+runtime_objects = runtime/thunk.o \
+	runtime/memory.o \
+	runtime/copying.o \
+	runtime/strings.o \
+	runtime/failures.o \
+	runtime/arrays.o \
+	runtime/funcrefs.o \
+	runtime/objects.o \
+	runtime/hash-table.o \
+	runtime/lists.o \
+	runtime/meta-nodes.o \
+	runtime/equality.o \
+	runtime/conversions.o \
+	runtime/math.o
+
+runtime/runtime.wasm: $(runtime_objects)
+	$(EMCC) -O2 $^ -o $@ -s SIDE_MODULE
+
+runtime/thunk.o: runtime/thunk.c $(thunk_h_deps) \
+	$(copying_h_deps) \
+	$(memory_h_deps) \
+	$(lists_h_deps) \
+	$(meta_nodes_h_deps)
+	$(EMCC) -fPIC -O2 $< -o $@ -c
+
+runtime/memory.o: runtime/memory.c $(memory_h_deps) $(copying_h_deps)
+	$(EMCC) -fPIC -O2 $< -o $@ -c
+
+runtime/copying.o: runtime/copying.c $(copying_h_deps) \
+	$(types_h_deps) \
+	$(thunk_h_deps) \
+	$(strings_h_deps) \
+	$(memory_h_deps) \
+	$(failures_h_deps) \
+	$(arrays_h_deps) \
+	$(funcrefs_h_deps) \
+	$(objects_h_deps) \
+	$(lists_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/strings.o: runtime/strings.c \
+	$(strings_h_deps) \
+	$(types_h_deps) \
+	$(memory_h_deps) \
+	$(failures_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/failures.o: runtime/failures.c \
+	$(failures_h_deps) \
+	$(types_h_deps) \
+	$(thunk_h_deps) \
+	$(memory_h_deps) \
+	$(copying_h_deps) \
+	$(nodes_h_deps)
+	$(EMCC) -fPIC -O2 $< -o $@ -c
+
+runtime/arrays.o: runtime/arrays.c $(arrays_h_deps) $(types_h_deps) $(memory_h_deps) $(copying_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/funcrefs.o: runtime/funcrefs.c $(funcrefs_h_deps) $(memory_h_deps) $(copying_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/objects.o: runtime/objects.c $(objects_h_deps) \
+	$(macros_h_deps) \
+	$(types_h_deps) \
+	$(memory_h_deps) \
+	$(copying_h_deps) \
+	$(thunk_h_deps) \
+	$(failures_h_deps) \
+	$(memory_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/hash-table.o: runtime/hash-table.c $(hash_table_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/lists.o: runtime/lists.c $(lists_h_deps) \
+	$(types_h_deps) \
+	$(memory_h_deps) \
+	$(copying_h_deps) \
+	$(thunk_h_deps) \
+	$(failures_h_deps) \
+	$(arrays_h_deps)
+	$(EMCC) -fPIC -O2 $< -o $@ -c
+
+runtime/meta-nodes.o: runtime/meta-nodes.c $(meta_nodes_h_deps) \
+	$(macros_h_deps) \
+	$(types_h_deps) \
+	$(memory_h_deps) \
+	$(failures_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/equality.o: runtime/equality.c $(equality_h_deps) \
+	$(thunk_h_deps) \
+	$(strings_h_deps) \
+	$(types_h_deps) \
+	$(memory_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/conversions.o: runtime/conversions.c \
+	$(conversions_h_deps) \
+	$(types_h_deps) \
+	$(thunk_h_deps) \
+	$(failures_h_deps) \
+	$(strings_h_deps) \
+	$(memory_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+runtime/math.o: runtime/math.c $(math_h_deps)
+	$(EMCC) -O2 $< -o $@ -c
+
+
+## JavaScript Loader Library
+
+loader_sources = loader/marshaller.js \
+	loader/module.js \
+	loader/loader.js \
+	loader/exports.js
+
+loader/tridash.min.js: $(loader_sources)
+	$(UGLIFYJS) --wrap Tridash -m -o $@ $^
+
+
+# Testing
+
+wasm_test_inputs = $(testdir)/runtime/thunks.wasm
+
+test_files = test001.wasm \
+	test002.wasm \
+	test003.wasm \
+	test004.wasm \
+	test005.wasm \
+	test006.wasm \
+	test007.wasm \
+	test008.wasm \
+	test009.wasm \
+	test010.wasm \
+	test011.wasm \
+	test012.wasm \
+	test013.wasm \
+	test014.wasm \
+	test015.wasm \
+	test016.wasm \
+	test017.wasm \
+	test018.wasm \
+	test019.wasm \
+	test020.wasm \
+	test021.wasm \
+	test022.wasm \
+	test023.wasm \
+	test024.wasm \
+	test025.wasm \
+	test026.wasm \
+	test027.wasm \
+	test028.wasm \
+	test029.wasm \
+	test030.wasm \
+	test031.wasm \
+	test032.wasm \
+	test033.wasm \
+	test034.wasm \
+	test035.wasm \
+	test036.wasm \
+	test037.wasm \
+	test038.wasm \
+	test039.wasm \
+	test040.wasm \
+	test041.wasm \
+	core.wasm
+
+test_inputs = $(addprefix $(testdir)/tests/, $(test_files))
+
+check: $(tridashc) \
+	$(testdir)/runtime/runtime.wasm \
+	$(testdir)/tests/tridash.min.js \
+	$(wasm_test_inputs) $(test_inputs)
+	cd $(testdir); npm test
+
+$(testdir)/runtime/runtime.wasm: runtime/runtime.wasm
+	cp $< $@
+
+$(testdir)/tests/tridash.min.js: loader/tridash.min.js
+	cp $< $@
+	echo "module.exports=Tridash;" >> $@
+
+
+$(testdir)/runtime/thunks.wasm: $(testdir)/runtime/thunks.wat
+	$(WAT2WASM) $^ -o $@
+
+test_core_sources = tridash-unit.trd \
+	test-failures.trd \
+	arithmetic-tests.trd \
+	comparison-tests.trd \
+	logical-tests.trd \
+	selection-tests.trd \
+	type-tests.trd \
+	list-tests.trd \
+	string-tests.trd \
+	dictionary-tests.trd \
+	function-tests.trd \
+	pattern-match-tests.trd \
+	core-tests.trd
+
+test_core_deps = $(addprefix $(testdir)/tests/core/, $(test_core_sources))
+
+$(testdir)/tests/core.wasm: $(test_core_deps)
+	TRIDASH_MODULE_PATHS=$(module_dir) \
+	$(tridashc) $^ -o $@ -t wasm32 \
+	-p runtime-path="runtime/runtime.wasm" \
+	-p module-path="tests/" -p indented=1
+
+$(testdir)/tests/core.wasm: $(tridashc)
+
+
+## Test Program Rules
+
+%.wasm: %.trd $(tridashc)
+	TRIDASH_MODULE_PATHS=$(module_dir) \
+	$(tridashc) $< -o $@ -t wasm32 \
+	-p runtime-path="runtime/runtime.wasm" \
+	-p module-path="tests/" -p indented=1
+
+%.clean:
+	rm -f $(@:.clean=.wasm)
+	rm -f $(@:.clean=.js)
+
+
+# Cleaning
+
+clean: $(test_inputs:.wasm=.clean)
+	rm -f $(runtime_objects)
+	rm -f runtime/runtime.wasm
+	rm -f loader/tridash.min.js
+	rm -f $(testdir)/runtime/runtime.wasm
+	rm -f $(testdir)/runtime/thunks.wasm
+	rm -f $(testdir)/tests/tridash.min.js
+
+
+# Phony Targets
+
+.PHONY: runtime clean check

@@ -1,0 +1,43 @@
+# Test Subnodes
+
+/import(core)
+
+x -> dict.a
+dict.a -> x
+
+y -> dict.b
+dict.b -> y
+
+input -> dict
+
+
+# Object Creation Meta-Nodes
+
+make-object(a, b) : {
+    a -> self.a
+    b -> self.b
+}
+
+make-object2(b) : {
+    b -> self.b
+}
+
+
+# Attribute Declarations
+
+/attribute(x, input, 1)
+/attribute(y, input, 1)
+/attribute(input, input, 1)
+
+/attribute(x, public-name, "x")
+/attribute(y, public-name, "y")
+/attribute(input, public-name, "input")
+/attribute(dict, public-name, "dict")
+
+/attribute(make-object, public-name, "make_object")
+/attribute(make-object, removable, 0)
+
+/attribute(make-object2, public-name, "make_object2")
+/attribute(make-object2, removable, 0)
+
+/attribute(dict, coalescable, 0)

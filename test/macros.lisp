@@ -268,7 +268,7 @@
   (subtest "Fail Expressions"
     (test-compile-meta-node
      ()
-     (fail-expression nil)
+     (fail-expression)
 
      ()
      '(let nil
@@ -746,8 +746,10 @@
                "f(cond, x) : if(cond, x, 0)")
 
         (with-nodes ((f "f")) modules
-          (is (call-meta-node f '(1 10)) 10)
-          (is (call-meta-node f '(0 5)) 0))))
+          (is (call-meta-node f '(t 10)) 10)
+          (is (call-meta-node f '(nil 5)) 0)
+
+          (is-error (call-meta-node f '(1 5)) tridash-fail))))
 
     (subtest "And Expressions"
       (with-module-table modules
@@ -756,10 +758,10 @@
                "f(cond, x) : cond and x")
 
         (with-nodes ((f "f")) modules
-          (ok (bool-value (call-meta-node f '(1 10))))
-          (is (bool-value (call-meta-node f '(0 5))) nil)
-          (is (bool-value (call-meta-node f '(5 0))) nil)
-          (is (bool-value (call-meta-node f '(0 0))) nil))))
+          (ok (call-meta-node f '(t t)))
+          (is (call-meta-node f '(nil t)) nil)
+          (is (call-meta-node f '(t nil)) nil)
+          (is (call-meta-node f '(nil nil)) nil))))
 
     (subtest "Or Expressions"
       (with-module-table modules
@@ -768,10 +770,10 @@
                "f(cond, x) : cond or x")
 
         (with-nodes ((f "f")) modules
-          (ok (bool-value (call-meta-node f '(1 10))))
-          (ok (bool-value (call-meta-node f '(0 5))))
-          (ok (bool-value (call-meta-node f '(5 0))))
-          (is (bool-value (call-meta-node f '(0 0))) nil)))))
+          (ok (call-meta-node f '(t t)))
+          (ok (call-meta-node f '(nil t)))
+          (ok (call-meta-node f '(t nil)))
+          (is (call-meta-node f '(nil nil)) nil)))))
 
   (subtest "Multiple Nodes with CATCH-FAIL Expressions"
     (with-module-table modules
@@ -873,9 +875,9 @@
                "h(x) : check(x, 1, 2, 3)")
 
         (with-nodes ((f "f") (g "g") (h "h")) modules
-          (ok (bool-value (call-meta-node f '(1))))
-          (is (bool-value (call-meta-node g '(2))) nil)
-          (is (bool-value (call-meta-node h '(2))) nil)))))
+          (ok (call-meta-node f '(t)))
+          (is (call-meta-node g '(2)) nil)
+          (is (call-meta-node h '(2)) nil)))))
 
   (subtest "Higher Order Meta-Nodes"
     (subtest "No Outer-Node references"
@@ -889,8 +891,8 @@
                "g(a) : apply(..(1+), a)")
 
         (with-nodes ((f "f") (g "g")) modules
-          (is (call-meta-node f '(0)) 1)
-          (is (call-meta-node f '(1)) 0)
+          (is (call-meta-node f '(nil)) t)
+          (is (call-meta-node f '(t)) nil)
 
           (is (call-meta-node g '(1)) 2)
           (is (call-meta-node g '(3)) 4))))
@@ -1032,8 +1034,8 @@
     (subtest "In Operand"
       (with-module-table modules
         (build-core-module)
-        (build "/import(core, and)"
-               "fails(x) : { x and 0 -> /context(self, catch); 1 -> /context(self, catch) }")
+        (build "/import(core, !=)"
+               "fails(x) : { x != x -> /context(self, catch); True -> /context(self, catch) }")
 
         (with-nodes ((fails "fails")) modules
           (is (bool-value (call-meta-node fails '(1))) nil)
@@ -1041,24 +1043,23 @@
           (ok
            (->> (thunk (error 'tridash-fail))
                 list
-                (call-meta-node fails)
-                bool-value)))))
+                (call-meta-node fails))))))
 
     (subtest "In Operator"
       ;; Test that failures in the operator of a functor are caught.
       (with-module-table modules
         (build-core-module)
-        (build "/import(core, and, >, -)"
+        (build "/import(core, !=, >, -)"
                "neg(x) : -(x)"
 
                "getf(f, x) : { x > 0 -> (f -> self) }"
                "test(x) : fails((getf(neg, x))(x))"
 
-               "fails(x) : { x and 0 -> /context(self, catch); 1 -> /context(self, catch) }")
+               "fails(x) : { x != x -> /context(self, catch); True -> /context(self, catch) }")
 
         (with-nodes ((test "test")) modules
-          (is (bool-value (call-meta-node test '(1))) nil)
-          (ok (bool-value (call-meta-node test '(-1)))))))
+          (is (call-meta-node test '(1)) nil)
+          (ok (call-meta-node test '(-1))))))
 
     (subtest "Failure Types"
       (with-module-table modules
@@ -1104,20 +1105,20 @@
       (subtest "Arithmetic Functions"
         (with-module-table modules
           (build-core-module)
-          (build "/import(core, +, and)"
+          (build "/import(core, +, !=)"
                  "1+(x) : fails(x + 1)"
-                 "fails(x) : { x and 0 -> /context(self, catch); 1 -> /context(self, catch) }")
+                 "fails(x) : { x != x -> /context(self, catch); True -> /context(self, catch) }")
 
           (with-nodes ((1+ "1+")) modules
-            (is (bool-value (call-meta-node 1+ '(1))) nil)
-            (ok (bool-value (call-meta-node 1+ '("hello")))))))
+            (is (call-meta-node 1+ '(1)) nil)
+            (ok (call-meta-node 1+ '("hello"))))))
 
       (subtest "Objects"
         (with-module-table modules
           (build-core-module)
-          (build "/import(core, and)"
+          (build "/import(core, !=)"
                  "test(x) : fails(x.key)"
-                 "fails(x) : { x and 0 -> /context(self, catch); 1 -> /context(self, catch) }")
+                 "fails(x) : { x != x -> /context(self, catch); True -> /context(self, catch) }")
 
           (with-nodes ((test "test")) modules
             (subtest "Non-Object Type"
@@ -1242,7 +1243,7 @@
                    (if "if"))
           modules
 
-        (has-value-function (a b) a!-b `(,if ,a ,b nil))
+        (has-value-function (a b) a!-b `(,if ,a ,b :none))
         (test-simple-binding a!-b out))))
 
   (subtest "Arity Checks"

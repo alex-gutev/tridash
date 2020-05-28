@@ -1,0 +1,24 @@
+## Tests that node watch functions are called when the values of nodes
+## change.
+
+/import(core)
+
+x + y -> output1
+y - z -> output2
+
+
+## Input Attributes
+
+/attribute(x, input, 1)
+/attribute(y, input, 1)
+/attribute(z, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(x, public-name, "x")
+/attribute(y, public-name, "y")
+/attribute(z, public-name, "z")
+
+/attribute(output1, public-name, "output1")
+/attribute(output2, public-name, "output2")

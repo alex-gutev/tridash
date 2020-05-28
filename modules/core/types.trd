@@ -71,6 +71,43 @@ to-string(x) : string(x)
 /attribute(to-string, target-node, to-string)
 
 
+### Converting Values to Strings
+
+## Convert a value to a string representation of the value.
+##
+## Currently a string representation of integers, reals, characters,
+## strings and symbols is returned. For the remaining value types, a
+## generic string is returned.
+##
+## thing: The value.
+
+string(thing) : {
+    case (
+	int?(thing) : int->string(thing),
+	real?(thing) : real->string(thing),
+	char?(thing) : char->string(thing),
+	string?(thing) : thing,
+	symbol?(thing) : symbol-name(thing),
+	"[object]"
+    )
+}
+
+
+### Builtin Conversion Meta-Nodes
+
+/external(int->string, x)
+/attribute(int->string, strictness, x)
+
+/external(real->string, x)
+/attribute(real->string, strictness, x)
+
+/external(char->string, x)
+/attribute(char->string, strictness, x)
+
+/external(symbol-name, sym)
+/attribute(symbol-name, strictness, sym)
+
+
 ### Export Declarations
 
-/export(to-int, to-real, to-string)
+/export(to-int, to-real, to-string, string)

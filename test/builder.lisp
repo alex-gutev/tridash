@@ -51,6 +51,8 @@
                 :with-struct-slots)
 
   (:import-from :tridash.frontend
+                :*node-true*
+                :*node-false*
                 :outer-nodes
                 :change-module)
 
@@ -122,11 +124,12 @@
   (build-source-file #p"./modules/core/failures.trd" modules)
   (build-source-file #p"./modules/core/lists.trd" modules)
   (build-source-file #p"./modules/core/introspection.trd" modules)
-  (build-source-file #p"./modules/core/patterns.trd" modules)
   (build-source-file #p"./modules/core/types.trd" modules)
+  (build-source-file #p"./modules/core/patterns.trd" modules)
   (build-source-file #p"./modules/core/macros.trd" modules)
   (build-source-file #p"./modules/core/strings.trd" modules)
-  (build-source-file #p"./modules/core/js-backend.trd" modules))
+  (build-source-file #p"./modules/core/js-backend.trd" modules)
+  (build-source-file #p"./modules/core/wasm32-backend.trd" modules))
 
 
 ;;;; Getting a Node-Table
@@ -572,7 +575,7 @@
 	      ((b :context b) (b->cc :context b))
 	      cc
 
-	    `(if ,b->cc ,b (:fail nil)))))))
+	    `(if ,b->cc ,b (:fail :none)))))))
 
   (subtest "Functor Nodes"
     (subtest "Meta-Node Operators"
@@ -728,11 +731,11 @@
 
               `(:catch
                 (:catch
-                 (if ,cond1 ,a+b (:fail nil))
-                 (if ,cond2 ,a-b (:fail nil))
-                 nil)
+                 (if ,cond1 ,a+b (:fail :none))
+                 (if ,cond2 ,a-b (:fail :none))
+                 :none)
                 ,b
-                nil))))))
+                :none))))))
 
     (subtest "In Target of Literal Binding"
       (with-module-table modules
@@ -762,11 +765,11 @@
 
               `(:catch
                 (:catch
-                 (if ,cond1 ,a+b (:fail nil))
-                 (if ,cond2 ,a-b (:fail nil))
-                 nil)
+                 (if ,cond1 ,a+b (:fail :none))
+                 (if ,cond2 ,a-b (:fail :none))
+                 :none)
                 1
-                nil))))))
+                :none))))))
 
     (subtest "With Test Function"
       (subtest "Node Source"
@@ -800,11 +803,11 @@
 
                 `(:catch
                   (:catch
-                   (if ,cond1 ,a+b (:fail nil))
-                   (if ,cond2 ,a-b (:fail nil))
+                   (if ,cond1 ,a+b (:fail :none))
+                   (if ,cond2 ,a-b (:fail :none))
                    ,(meta-node-ref test-type))
                   ,b
-                  nil))))))
+                  :none))))))
 
       (subtest "Constant Source"
         (with-module-table modules
@@ -836,12 +839,12 @@
 
                 `(:catch
                   (:catch
-                   (if ,cond1 ,a+b (:fail nil))
+                   (if ,cond1 ,a+b (:fail :none))
                    1
                    ,(meta-node-ref test-type))
 
-                  (if ,cond2 ,a-b (:fail nil))
-                  nil)))))))
+                  (if ,cond2 ,a-b (:fail :none))
+                  :none)))))))
 
     (subtest "In Source of Binding"
       ;; Test that the /context operator has no effect in source
@@ -988,7 +991,7 @@
                 (decls '!\a
                        '(!\: !\b 1)
                        (list '!\: '!\c x)
-                       '(!\: !\d nil)
+                       '(!\: !\d :none)
                        '(!.. !|rest|))))))
 
       (subtest "Errors"
@@ -1065,7 +1068,7 @@
                 (decls '!\a
                        '(!\: !\b 1)
                        (list '!\: '!\c x)
-                       '(!\: !\d nil)
+                       '(!\: !\d :none)
                        '(!.. !|rest|))))))
 
       (subtest "Errors"
@@ -1570,7 +1573,7 @@
       (with-module-table modules
         (build "/external(not, x)"
                "not(on) -> /state(on, default, toggle)"
-               "0 -> on"
+               "False -> on"
 
                "the-state -> /state(on)")
 
@@ -1579,7 +1582,9 @@
                      (toggle-state-on ("/state" "on" "default" "toggle"))
                      (not-on ("not" "on"))
                      (the-state "the-state")
-                     (if "if"))
+                     (if "if")
+
+                     (false "False"))
             modules
 
           (let ((equal (get :symbol-equal tridash.frontend::*core-meta-nodes*))
@@ -1591,12 +1596,12 @@
               `(,if
                 (,if (,equal (,previous ,(node-ref state-on)) ,(id-symbol "default"))
                      (,equal ,state ,(id-symbol "toggle"))
-                     0)
+                     ,(node-ref *node-false*))
 
                 (,previous ,(node-ref toggle-state-on))
                 (,previous ,(node-ref on))))
 
-            (test-value-function on :init 0)
+            (test-simple-binding false on)
 
             (test-binding not-on toggle-state-on)
             (test-binding the-state state-on))))))
@@ -1713,7 +1718,7 @@
 	                ((b :context b) (b->cc :context b))
 	                cc
 
-	              `(if ,b->cc ,b (:fail nil))))))))))
+	              `(if ,b->cc ,b (:fail :none))))))))))
 
       (subtest "Errors"
         (subtest "Module Semantics"
@@ -1971,11 +1976,11 @@
 
             (has-value-function
                 (p p.fail) a
-              `(if (,not ,p.fail) (:member ,p ,(id-symbol "value")) (:fail nil)))
+              `(if (,not ,p.fail) (:member ,p ,(id-symbol "value")) (:fail :none)))
 
             (has-value-function
                 (in2 p.fail) b
-              `(if ,p.fail ,in2 (:fail nil)))
+              `(if ,p.fail ,in2 (:fail :none)))
 
             (has-value-function (in1) p `(,parse ,in1))
             (is (length (contexts p)) 1 "Node p has a single context.")))))
@@ -2241,7 +2246,7 @@
 
           (has-value-function
               (a d) out
-            `(,add (,add ,a ,(expression-block `(if (,even? (,add ,a ,1)) (,add ,a 1) (:fail nil)))) ,d))))))
+            `(,add (,add ,a ,(expression-block `(if (,even? (,add ,a ,1)) (,add ,a 1) (:fail :none)))) ,d))))))
 
   (subtest "Explicit Context"
     (subtest "Common Operands"
@@ -2267,12 +2272,12 @@
               `(:catch
                 (:catch
                  ,(expression-block
-                   `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
+                   `(if (,< ,a 3) (,+ ,a ,b) (:fail :none)))
                  ,(expression-block
-                   `(if (,> ,a 4) (,- ,a ,b) (:fail nil)))
-                 nil)
+                   `(if (,> ,a 4) (,- ,a ,b) (:fail :none)))
+                 :none)
                 ,b
-                nil))))))
+                :none))))))
 
     (subtest "Common Operands without Coalescing"
       (with-module-table modules
@@ -2298,9 +2303,9 @@
 
               `(:catch
                 ,(expression-block
-                  `(if (,< ,a 3) ,cc (:fail nil)))
+                  `(if (,< ,a 3) ,cc (:fail :none)))
                 ,b
-                nil))))))
+                :none))))))
 
     (subtest "Common Operand without Default"
       (with-module-table modules
@@ -2323,10 +2328,10 @@
 
               `(:catch
                 ,(expression-block
-                  `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
+                  `(if (,< ,a 3) (,+ ,a ,b) (:fail :none)))
                 ,(expression-block
-                  `(if (,< ,b 4) ,b (:fail nil)))
-                nil))))))
+                  `(if (,< ,b 4) ,b (:fail :none)))
+                :none))))))
 
     (subtest "Single Common Ancestor"
       (with-module-table modules
@@ -2350,9 +2355,9 @@
 
               `(:catch
                 ,(expression-block
-                  `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
+                  `(if (,< ,a 3) (,+ ,a ,b) (:fail :none)))
                 ,b
-                nil))))))
+                :none))))))
 
     (subtest "Single Common Ancestor without Default"
       (with-module-table modules
@@ -2376,10 +2381,10 @@
 
               `(:catch
                 ,(expression-block
-                  `(if (,< ,a 3) (,+ ,a ,b) (:fail nil)))
+                  `(if (,< ,a 3) (,+ ,a ,b) (:fail :none)))
                 ,(expression-block
-                  `(if (,< ,b 4) ,b (:fail nil)))
-                nil))))))
+                  `(if (,< ,b 4) ,b (:fail :none)))
+                :none))))))
 
     (subtest "Test Creation Order"
       (with-module-table modules
@@ -2402,9 +2407,9 @@
                 output
 
               `(:catch
-                (if (,< ,a 3) (,+ ,a ,b) (:fail nil))
+                (if (,< ,a 3) (,+ ,a ,b) (:fail :none))
                 ,b
-                nil)))))))
+                :none)))))))
 
   (subtest "Node States"
     (subtest "From any state transition"
@@ -2476,7 +2481,7 @@
               `(,if
                 (,if (,equal (,previous ,(node-ref state-on)) ,(id-symbol "default"))
                      (,equal ,state ,(id-symbol "toggle"))
-                     0)
+                     ,(node-ref *node-false*))
 
                 (,previous ,(node-ref toggle-state-on))
                 (,previous ,(node-ref on))))
@@ -2930,10 +2935,10 @@
                   ,(expression-block
                     `(if (,< ,x 3)
                          (,+ ,x 1)
-                         (:fail nil)))
+                         (:fail :none)))
                 ,(expression-block
                   `(,+ ,x 2))
-                nil)
+                :none)
              (test-meta-node fn ((x "x")))))))))
 
   (subtest "Outer-Node References"

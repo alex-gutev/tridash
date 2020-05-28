@@ -26,48 +26,52 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
+const util = require('./test_util.js');
 
-require('./test009.js');
+const mod = require('./test009.js');
 
-var a = Tridash.nodes.a;
-var b = Tridash.nodes.b;
-var d = Tridash.nodes.d;
-var output = Tridash.nodes.output;
+const a = mod.nodes.a;
+const b = mod.nodes.b;
+const d = mod.nodes.d;
+const output = mod.nodes.output;
 
 describe('Integration Test 9', function() {
-    function test_fail_type(type) {
-        return (e) => {
-            return (e instanceof Tridash.Fail) && Tridash.resolve(e.type) === type;
-        };
-    }
-
     describe('Explicit Contexts', function() {
-        it('`output` is set to value of `a` when it does not fail', async function() {
-            a.set_value("a-value");
-            assert.equal(await util.node_value(output), "a-value");
+        describe('Set `a` = "a-value"', function() {
+            it('`output` = `a` = "a-value"', function() {
+                a.set_value("a-value");
+                assert.equal(output.get_value(), "a-value");
+            });
         });
 
-        it('`output` is set to value of `b` when `a` fails', async function() {
-            Tridash.set_values([[a, Tridash.fail()], [b, "b-value"]]);
-            assert.equal(await util.node_value(output), "b-value");
+        describe('Set `a` = failure', function() {
+            it('`output` = `b` = "b-value"', function() {
+                mod.set_values([[a, Tridash.fail()], [b, "b-value"]]);
+                assert.equal(output.get_value(), "b-value");
+            });
         });
 
-        it('`output` is set to value of `d` when `a` and `b` fail', async function() {
-            Tridash.set_values([[b, Tridash.fail('x')], [d, "hello"]]);
-            assert.equal(await util.node_value(output), "hello");
+        describe('Set `b` = fail("x"), `d` = "hello"', function() {
+            it('`output` = `a` = "hello"', function() {
+                mod.set_values([[b, Tridash.fail('x')], [d, "hello"]]);
+                assert.equal(output.get_value(), "hello");
+            });
         });
 
-        it('`output` is set to value of `d` when `a` and `b` fail', async function() {
-            Tridash.set_values([[b, Tridash.fail('b')], [d, "hello"]]);
-            assert.equal(await util.node_value(output), "hello");
+        describe('Set `b` = fail("b"), `d` = "hello"', function() {
+            it('`output` = `d` = "hello"', function() {
+                mod.set_values([[b, Tridash.fail('b')], [d, "hello"]]);
+                assert.equal(output.get_value(), "hello");
+            });
         });
 
-        it('`output` is set to failure value of `d` when `a`,`b` and `d` fail', async function() {
-            d.set_value(Tridash.fail('d'));
-            await assert.rejects(util.node_value(output), test_fail_type('d'));
+        describe('Set `d` = fail("d")', function() {
+            it('`output` = `d` = fail("d")', function() {
+                d.set_value(Tridash.fail('d'));
+                assert.throws(() => output.get_value(), util.test_fail_type('d'));
+            });
         });
     });
 });

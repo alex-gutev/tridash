@@ -28,71 +28,80 @@
 
 var Tridash = require('../runtime/tridash.js');
 var assert = require('assert');
-var util = require('./test_util.js');
 
-require('./test019.js');
+var module = require('./test019.js');
 
-var counter = Tridash.nodes.counter;
-var start = Tridash.nodes.start;
+var counter = module.nodes.counter;
+var start = module.nodes.start;
 
-var clicked1 = Tridash.nodes.clicked1;
-var clicked2 = Tridash.nodes.clicked2;
+var clicked1 = module.nodes.clicked1;
+var clicked2 = module.nodes.clicked2;
 
 describe('Integration Test 19', function() {
     describe('State node containing stateful bindings', function() {
-        describe('Setting Initial Counter Value', function() {
-            it('Initial value of counter is 0', async function() {
+        describe('Set Initial Counter Value = 0', function() {
+            it('`counter` = 0', function() {
                 start.set_value(0);
-                assert.equal(await util.node_value(counter), 0);
+                assert.equal(counter.get_value(), 0);
             });
         });
 
-        describe('Incrementing Counter Value', function() {
-            it('`counter` value retained when changing from `state1` to `state1`', async function() {
-                clicked1.set_value(true);
-                assert.equal(await util.node_value(counter), 0);
+        describe('Incrementing Counter', function() {
+            describe('Set Counter State = `state1`', function() {
+                it('`counter` = 0', function() {
+                    module.set_values([[clicked1, true], [clicked2, false]]);
+                    assert.equal(counter.get_value(), 0);
 
-                clicked1.set_value(false);
-                assert.equal(await util.node_value(counter), 0);
+                    clicked1.set_value(false);
+                    assert.equal(counter.get_value(), 0);
+                });
             });
 
-            it('`counter` incremented when changing from `state1` to `state2`', async function() {
-                clicked2.set_value(true);
-                assert.equal(await util.node_value(counter), 1);
+            describe('Set Counter State = `state2`', function() {
+                it('`counter` = 1', function() {
+                    clicked2.set_value(true);
+                    assert.equal(counter.get_value(), 1);
 
-                clicked2.set_value(false);
-                assert.equal(await util.node_value(counter), 1);
+                    clicked2.set_value(false);
+                    assert.equal(counter.get_value(), 1);
+                });
             });
 
-            it('`counter` value retained when changing from `state2` to `state1`', async function() {
-                clicked1.set_value(true);
-                assert.equal(await util.node_value(counter), 1);
+            describe('Set Counter State = `state1`', function() {
+                it('`counter` = 1', function() {
+                    clicked1.set_value(true);
+                    assert.equal(counter.get_value(), 1);
 
-                clicked1.set_value(false);
-                assert.equal(await util.node_value(counter), 1);
+                    clicked1.set_value(false);
+                    assert.equal(counter.get_value(), 1);
+                });
             });
 
-            it('`counter` value retained when changing from `state2` to `state1`', async function() {
-                clicked1.set_value(true);
-                assert.equal(await util.node_value(counter), 1);
+            describe('Set Counter State = `state1`', function() {
+                it('`counter` = 1', function() {
+                    clicked1.set_value(true);
+                    assert.equal(counter.get_value(), 1);
 
-                clicked1.set_value(false);
-                assert.equal(await util.node_value(counter), 1);
+                    clicked1.set_value(false);
+                    assert.equal(counter.get_value(), 1);
+                });
             });
 
-            it('`counter` value incremented when changing from `state1` to `state2`', async function() {
-                clicked2.set_value(true);
-                assert.equal(await util.node_value(counter), 2);
+            describe('Set Counter State = `state2`', function() {
+                it('`counter` = 1', function() {
+                    clicked2.set_value(true);
+                    assert.equal(counter.get_value(), 2);
 
-                clicked2.set_value(false);
-                assert.equal(await util.node_value(counter), 2);
+                    clicked2.set_value(false);
+                    assert.equal(counter.get_value(), 2);
+                });
             });
         });
 
-        describe('Resetting Counter Value', function() {
-            it('`counter` value reset value when changing `start`', async function() {
+        describe('Resetting Counter Value (Set `start` = 5)', function() {
+            it('`counter` = 5', function() {
                 start.set_value(5);
-                assert.equal(await util.node_value(counter), 5);
+                assert.equal(counter.get_value(), 5);
             });
         });
     });

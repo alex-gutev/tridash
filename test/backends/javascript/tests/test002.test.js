@@ -26,30 +26,43 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test002.js');
+const mod = require('./test002.js');
 
-var x = Tridash.nodes.x;
-var z = Tridash.nodes.z;
-var w = Tridash.nodes.w;
+const x = mod.nodes.x;
+const z = mod.nodes.z;
+const w = mod.nodes.w;
 
 describe('Integration Test 2', function() {
     describe('Simple Two-Way Bindings', function() {
-        it('`z` and `w` are set to 1 when `x` is set to 1', async function() {
-            x.set_value(1);
+        describe('Set `x` = 1', function() {
+            before(() => {
+                x.set_value(1);
+            });
 
-            assert.equal(await util.node_value(z), 1);
-            assert.equal(await util.node_value(w), 1);
+            it('`z` = 1', function() {
+                assert.equal(z.get_value(), 1);
+            });
+
+            it('`w` = 1', function() {
+                assert.equal(w.get_value(), 1);
+            });
         });
 
-        it('`x` and `w` are set to 15 when `z` is set to 15', async function() {
-            z.set_value(15);
+        describe('Set `x` = 15', function() {
+            before(() => {
+                z.set_value(15);
+            });
 
-            assert.equal(await util.node_value(x), 15);
-            assert.equal(await util.node_value(w), 15);
+            it('`z` = 15', function() {
+                assert.equal(x.get_value(), 15);
+            });
+
+            it('`w` = 15', function() {
+                assert.equal(w.get_value(), 15);
+            });
         });
     });
 });

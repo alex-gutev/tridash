@@ -26,29 +26,29 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test028.js');
-var x = Tridash.nodes.x;
-var y = Tridash.nodes.y;
-var output = Tridash.nodes.output;
+const mod = require('./test028.js');
+
+const x = mod.nodes.x;
+const y = mod.nodes.y;
+const output = mod.nodes.output;
 
 describe('Integration Test 28', function() {
     describe('Local Nodes', function() {
         describe('Set `x` = 5, `y` = 9', function () {
-            it('`output` = 7', async function() {
-                Tridash.set_values([[x, 5], [y, 9]]);            
-                assert.equal(await util.node_value(output), 7);
+            it('`output` = 7', function() {
+                mod.set_values([[x, 5], [y, 9]]);
+                assert.equal(output.get_value(), 7);
             });
         });
 
         describe('Set `x` = 2, `y` = 3', function () {
-            it('`output` = 2.5', async function() {
-                Tridash.set_values([[x, 2], [y, 3]]);
-                assert.equal(await util.node_value(output), 2.5);
+            it('`output` = 2.5', function() {
+                mod.set_values([[x, 2], [y, 3]]);
+                assert.equal(output.get_value(), 2.5);
             });
-        });        
+        });
     });
 });

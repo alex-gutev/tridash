@@ -26,35 +26,34 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test022.js');
+const mod = require('./test022.js');
 
-var n = Tridash.nodes.n;
-var output = Tridash.nodes.output;
+const n = mod.nodes.n;
+const output = mod.nodes.output;
 
 describe('Integration Test 22', function() {
     describe('Recursive Meta-Nodes', function() {
         describe('Set `n` = 1', function() {
-            it('`output` = factorial(1) = 1', async function() {
+            it('`output` = factorial(1) = 1', function() {
                 n.set_value(1);
-                assert.equal(await util.node_value(output), 1);
+                assert.equal(output.get_value(), 1);
             });
         });
 
         describe('Set `n` = 2', function() {
-            it('`output` = factorial(2) = 2', async function() {
+            it('`output` = factorial(2) = 2', function() {
                 n.set_value(2);
-                assert.equal(await util.node_value(output), 2);
+                assert.equal(output.get_value(), 2);
             });
         });
 
         describe('Set `n` = 5', function() {
-            it('`output` = factorial(5) = 120', async function() {
+            it('`output` = factorial(5) = 120', function() {
                 n.set_value(5);
-                assert.equal(await util.node_value(output), 120);
+                assert.equal(output.get_value(), 120);
             });
         });
     });

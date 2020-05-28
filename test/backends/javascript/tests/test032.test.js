@@ -26,39 +26,39 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test032.js');
-var x = Tridash.nodes.x;
-var delta = Tridash.nodes.delta;
-var output = Tridash.nodes.output;
+const mod = require('./test032.js');
+
+const x = mod.nodes.x;
+const delta = mod.nodes.delta;
+const output = mod.nodes.output;
 
 describe('Integration Test 32', function() {
     describe('Outer Node References', function() {
         describe('Set `x` = 1, `delta` = 1', function () {
-            it('`output` = 2', async function() {
-                Tridash.set_values([[x, 1], [delta, 1]]);
+            it('`output` = 2', function() {
+                mod.set_values([[x, 1], [delta, 1]]);
 
-                assert.equal(await util.node_value(output), 2);
+                assert.equal(output.get_value(), 2);
             });
         });
-        
+
         describe('Set `delta` = 2', function () {
-            it('`output` = 3', async function() {
+            it('`output` = 3', function() {
                 delta.set_value(2);
 
-                assert.equal(await util.node_value(output), 3);
+                assert.equal(output.get_value(), 3);
             });
         });
 
         describe('Set `x` = 5', function () {
-            it('`output` = 7', async function() {
+            it('`output` = 7', function() {
                 x.set_value(5);
 
-                assert.equal(await util.node_value(output), 7);
+                assert.equal(output.get_value(), 7);
             });
-        });        
+        });
     });
 });

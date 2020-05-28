@@ -67,7 +67,11 @@
 
 /attribute(int, js-name, "Tridash.cast_int")
 /attribute(real, js-name, "Tridash.cast_real")
-/attribute(string, js-name, "Tridash.cast_string")
+
+/attribute(int->string, js-name, "Tridash.int_to_string")
+/attribute(real->string, js-name, "Tridash.real_to_string")
+/attribute(char->string, js-name, "Tridash.char_to_string")
+/attribute(symbol-name, js-name, "Tridash.symbol_name")
 
 
 ### Type Checks
@@ -75,6 +79,8 @@
 /attribute(int?, js-name, "Tridash.is_int")
 /attribute(real?, js-name, "Tridash.is_real")
 /attribute(string?, js-name, "Tridash.is_string")
+/attribute(char?, js-name, "Tridash.is_char")
+/attribute(symbol?, js-name, "Tridash.is_symbol")
 
 /attribute(inf?, js-name, "Tridash.is_inf")
 /attribute(NaN?, js-name, "Tridash.is_nan")

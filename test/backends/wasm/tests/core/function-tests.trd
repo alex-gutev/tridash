@@ -1,0 +1,83 @@
+## Unit tests for the Core Module functional utilities
+
+/module(function-tests)
+/import(tridash-unit)
+/import(core)
+
+
+## Definitions
+
+Fail-Type  <- &(Fail-Type)
+Fail-Type! <- fail(Fail-Type)
+
+1 -> object.x
+"b" -> object.y
+
+
+## Tests
+
+### Functional Utilities Test Group
+
+all-tests <-
+    Test-Group(
+        "Functional Utilities"
+
+        , apply-tests
+    )
+
+/export(all-tests)
+
+
+### Test `apply`
+
+add(x, y) : x + y
+
+inc(x, d : 1) : x + d
+
+sum(x, ..(xs)) : {
+    foldl'(x, +, xs)
+}
+
+id(x) : x
+
+f(..(xs)) : {
+    Fail-Type! -> self
+}
+
+Test-Group(
+    "Meta-Node: `apply`",
+
+    Test-Group(
+        "Valid Input",
+
+        Test-Equal(apply(add, list(1, 2)), 3, "apply(add, list(1, 2))"),
+        Test-Equal(apply(add, 2, list(7)), 9, "apply(add, 2, list(7))"),
+        Test-Equal(apply(sum, 1, list(2, 3)), 6, "apply(sum, 1, list(2, 3))"),
+
+	Test-Equal(apply(inc, list(8)), 9, "apply(inc, list(8))"),
+	Test-Equal(apply(inc, list(8, 10)), 18, "apply(inc, list(8, 10))"),
+	Test-Equal(apply(inc, 3, list(4)), 7, "apply(inc, 3, list(4))"),
+
+        Test-Fails(apply(add, list(1)), "apply(add, list(1))", Arity-Error),
+        Test-Fails(apply(add, 1, 2, list(3, 4)), "apply(add, 1, 2, list(3, 4))", Arity-Error),
+        Test-Fails(apply(sum, Empty), "apply(sum, Empty)", Arity-Error)
+    ),
+
+    Test-Group(
+        "Type-Errors",
+
+        Test-Fails(apply(1, list(1, 2, 3)), "apply(1, list(1, 2, 3))", Type-Error),
+        Test-Fails(apply("x", list(1, 2, 3)), "apply(\"x\", list(1, 2, 3))", Type-Error),
+
+        Test-Fails(apply(sum, 1, 2, 3), "apply(sum, 1, 2, 3)", Type-Error),
+        Test-Fails(apply(id, "hello"), "apply(id, \"hello\")", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(apply(Fail-Type!, list(1, 2, 3)), "apply(Fail-Type!, list(1, 2, 3))", Fail-Type),
+        Test-Fails(apply(sum, 1, Fail-Type!, list(2, 3)), "apply(sum, 1, Fail-Type!, list(2, 3))", Fail-Type),
+        Test-Fails(apply(f, 1, list(2, 3)), "apply(f, 1, list(2, 3))", Fail-Type)
+    )
+) -> apply-tests

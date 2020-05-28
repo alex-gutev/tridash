@@ -206,6 +206,9 @@
 (deftype tridash-value ()
   `(or string symbol number))
 
+(deftype tridash-bool ()
+  `(or null (eql t)))
+
 (defmacro check-tridash-types ((&rest vars) &body body)
   "Performs type checking and signals a `TRIDASH-FAIL' condition if
    type checking fails. Each element of VARS is a list where the first
@@ -232,7 +235,8 @@
 ;;; Conditionals
 
 (define-tridash-function |if| (cond then &optional (else (fail-thunk)))
-  (if (bool-value (resolve% cond)) then else))
+  (check-tridash-types ((cond tridash-bool))
+    (if cond then else)))
 
 (define-tridash-function |member| (object key)
   (check-tridash-types ((object hash-map))
@@ -253,24 +257,16 @@
    (if testp
        (lambda (fail)
          (thunk
-          (let ((type (fail-type fail)))
-            (if (bool-value (resolve (call-node test (list type))))
-                catch
-                (fail-thunk type)))))
+          (if-let (type (fail-type fail))
+            (let ((test (call-node test (list type))))
+              (check-tridash-types ((test tridash-bool))
+                (if test catch (fail-thunk type))))
+
+            (fail-thunk))))
 
        (lambda (fail)
          (declare (ignore fail))
          catch))))
-
-(defun test-fail-type (try catch test)
-  "Applies the function/meta-node TEST on the failure type of TRY. If
-   the result is true, returns CATCH otherwise returns a thunk which
-   fails with the same type as TRY."
-
-  (let ((type (get-fail-type try)))
-    (if (bool-value (call-node test (list type)))
-        catch
-        (fail-thunk type))))
 
 
 (define-tridash-function% |fail| (&optional type)
@@ -299,13 +295,14 @@
 ;;; Boolean Expressions
 
 (define-tridash-function |and| (a b)
-  (if (bool-value (resolve% a)) b 0))
+  (check-tridash-types ((a tridash-bool))
+    (and a (check-tridash-types ((b tridash-bool)) b))))
 
 (define-tridash-function |or| (a b)
-  (or (bool-value (resolve% a)) b))
+  (check-tridash-types ((a tridash-bool))
+    (or a (check-tridash-types ((b tridash-bool)) b))))
 
-(define-tridash-function |not| (a)
-  (if (bool-value (resolve% a)) 0 1))
+(define-tridash-function |not| ((a tridash-bool)) not)
 
 
 ;;; Arithmetic
@@ -343,8 +340,6 @@
 
 ;;; Type Conversions
 
-(define-tridash-function |string| (x) mkstr)
-
 (define-tridash-function |int| (x)
   (typecase (resolve% x)
     (integer x)
@@ -374,7 +369,8 @@
 (define-tridash-function |int?| (x) integerp)
 (define-tridash-function |real?| (x) realp)
 (define-tridash-function |string?| (x) stringp)
-
+(define-tridash-function |symbol?| (x) symbolp)
+(define-tridash-function |char?| (x) characterp)
 
 ;;; Lists
 
@@ -405,6 +401,9 @@
 
 (define-tridash-function |cons?| (thing)
   (consp (resolve% thing)))
+
+(define-tridash-function |Empty-List| ()
+  (progn +empty-list+))
 
 (defun empty-list ()
   "Returns a `THUNK' which signals a `TRIDASH-FAIL' condition with the
@@ -451,6 +450,10 @@
   (check-tridash-types ((str1 string) (str2 string))
     (concatenate-to 'string str1 str2)))
 
+(define-tridash-function |int->string| ((x integer)) mkstr)
+(define-tridash-function |real->string| ((x number)) mkstr)
+(define-tridash-function |char->string| ((x character)) mkstr)
+(define-tridash-function |symbol-name| ((x symbol)) symbol-name)
 
 ;;; Functions
 
@@ -473,3 +476,25 @@
                    tail))))
 
     (call-node f (resolve-list args))))
+
+
+;;; Builtin Failure Types
+
+(define-tridash-function |No-Value%| ()
+  (progn +fail-type-no-value+))
+
+(define-tridash-function |Type-Error%| ()
+  (progn +fail-type-type-error+))
+
+(define-tridash-function |Arity-Error%| ()
+  (progn +fail-type-arity-error+))
+
+
+(define-tridash-function |Invalid-Integer%| ()
+  (progn +fail-type-invalid-integer+))
+
+(define-tridash-function |Invalid-Real%| ()
+  (progn +fail-type-invalid-real+))
+
+(define-tridash-function |Index-Out-Bounds%| ()
+  (progn +fail-type-index-out-bounds+))

@@ -1,0 +1,21 @@
+## Tests bindings between different states of a node.
+
+/import(core)
+
+counter + 1 -> counter :: increment
+start -> counter
+
+if(clicked?, '(increment), '(default)) -> /state(counter)
+
+
+## Input Attributes
+
+/attribute(start, input, 1)
+/attribute(clicked?, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(start, public-name, "start")
+/attribute(counter, public-name, "counter")
+/attribute(clicked?, public-name, "clicked?")

@@ -77,7 +77,14 @@
                                        (:file "symbols")
                                        (:file "backend")
                                        (:file "functions")
-                                       (:file "html"))))))
+                                       (:file "html")))
+
+                 (:module "backends/wasm"
+                          :serial t
+                          :components ((:file "package")
+                                       (:file "expressions")
+                                       (:file "builtin")
+                                       (:file "backend"))))))
 
   :depends-on (:anaphora
                :iterate
@@ -95,8 +102,12 @@
                :cl-fad
                :unix-opts
                :trivial-gray-streams
+               :flexi-streams
+               :babel
 
                :generic-cl
+               :generic-cl.util
+               :wasm-encoder
 
                ;; Plump dependencies
                :array-utils)
@@ -136,6 +147,12 @@
 
                  (:module
                   "backends/javascript"
+
+                  :components
+                  ((:test-file "backend")))
+
+                 (:module
+                  "backends/wasm"
 
                   :components
                   ((:test-file "backend"))))))

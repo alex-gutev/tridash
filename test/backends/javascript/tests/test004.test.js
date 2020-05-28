@@ -26,28 +26,29 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test004.js');
+const mod = require('./test004.js');
 
-var a = Tridash.nodes.a;
-var b = Tridash.nodes.b;
-var output = Tridash.nodes.output;
+const a = mod.nodes.a;
+const b = mod.nodes.b;
+const output = mod.nodes.output;
 
 describe('Integration Test 4', function() {
     describe('Multiple Node Contexts', function() {
-        it('`output` is set to value of `a`, when `a` is changed', async function() {
-            a.set_value(1);
-
-            assert.equal(await util.node_value(output), 1);
+        describe('Set `a` = 1', function() {
+            it('`output` = 1', function() {
+                a.set_value(1);
+                assert.equal(output.get_value(), 1);
+            });
         });
 
-        it('`output` is set to value of `b`, when `b` is changed', async function() {
-            b.set_value(4);
-
-            assert.equal(await util.node_value(output), 4);
+        describe('Set `b` = 4', function() {
+            it('`output` = 4', function() {
+                b.set_value(4);
+                assert.equal(output.get_value(), 4);
+            });
         });
     });
 });

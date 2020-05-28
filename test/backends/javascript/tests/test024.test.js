@@ -26,22 +26,21 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test024.js');
-var n = Tridash.nodes.n;
-var output1 = Tridash.nodes.output1;
-var output2 = Tridash.nodes.output2;
+const mod = require('./test024.js');
+const n = mod.nodes.n;
+const output1 = mod.nodes.output1;
+const output2 = mod.nodes.output2;
 
 describe('Integration Test 24', function() {
     describe('Optional Arguments', function() {
         describe('Set `n` = 1', function() {
             n.set_value(1);
 
-            var out1 = util.node_value(output1);
-            var out2 = util.node_value(output2);
+            const out1 = output1.get_value();
+            const out2 = output2.get_value();
 
             it('`output1` = 2', async function() {
                 assert.equal(await out1, 2);
@@ -55,8 +54,8 @@ describe('Integration Test 24', function() {
         describe('Set `n` = 5', function() {
             n.set_value(5);
 
-            var out1 = util.node_value(output1);
-            var out2 = util.node_value(output2);
+            const out1 = output1.get_value();
+            const out2 = output2.get_value();
 
             it('`output1` = 6', async function() {
                 assert.equal(await out1, 6);

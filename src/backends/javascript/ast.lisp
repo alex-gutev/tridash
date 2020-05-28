@@ -147,6 +147,22 @@
   catch)
 
 
+;;; Switch Statements
+
+(defstruct (js-switch
+             (:constructor js-switch (value cases)))
+  "JavaScript switch statement.
+
+   VALUE is the expression of which the value is compared to the
+   cases.
+
+   CASES is the list of cases, where each element of is of the
+   form (VALUE STATEMENTS) with VALUE being the case value expression
+   and STATEMENTS being the case statements."
+
+  value
+  cases)
+
 ;;; Statements
 
 (defstruct (js-return
@@ -165,11 +181,16 @@
              (:constructor js-continue))
   "Loop continue statement.")
 
+(defstruct (js-break
+             (:constructor js-break))
+  "Loop/Switch Break Statement")
+
 (defstruct (js-throw
              (:constructor js-throw (expression)))
 
   "Throw statement."
   expression)
+
 
 ;;; Expression Types
 
@@ -280,3 +301,14 @@
   (:method (fn thing)
     (declare (ignore fn))
     thing))
+
+
+;;; Equality Methods
+
+;;;; The following equality methods allow AST objects to be stored in
+;;;; Common Lisp constants. Only methods for objects which are
+;;;; actually intended to be stored in constants are provided.
+
+(defmethod equalp ((a js-member) (b js-member))
+  (and (= (js-member-object a) (js-member-object b))
+       (= (js-member-field a) (js-member-field b))))

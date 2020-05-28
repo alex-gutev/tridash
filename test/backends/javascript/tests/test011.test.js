@@ -26,25 +26,28 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test011.js');
+const mod = require('./test011.js');
 
-var a = Tridash.nodes.a;
-var output = Tridash.nodes.output;
+const a = mod.nodes.a;
+const output = mod.nodes.output;
 
 describe('Integration Test 11', function() {
     describe('Conditional Bindings', function() {
-        it('`output` is set to `a` when `a > 3`', async function() {
-            a.set_value(5);
-            assert.equal(await util.node_value(output), 5);
+        describe('Set `a` = 5', function() {
+            it('`output` = 5', function() {
+                a.set_value(5);
+                assert.equal(output.get_value(), 5);
+            });
         });
 
-        it('`output` is set to a failure when `a < 3`', async function() {
-            a.set_value(1);
-            await assert.rejects(util.node_value(output), Tridash.Fail);
+        describe('Set `a` = 1', function() {
+            it('`output` = fail', function() {
+                a.set_value(1);
+                assert.throws(() => output.get_value(), Tridash.Fail);
+            });
         });
     });
 });

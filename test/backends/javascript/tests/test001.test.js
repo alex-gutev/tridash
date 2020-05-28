@@ -26,30 +26,43 @@
  * SOFTWARE.
  */
 
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test001.js');
+const mod = require('./test001.js');
 
-var a = Tridash.nodes.a;
-var out1 = Tridash.nodes.out1;
-var out2 = Tridash.nodes.out2;
+const a = mod.nodes.a;
+const out1 = mod.nodes.out1;
+const out2 = mod.nodes.out2;
 
 describe('Integration Test 1', function() {
     describe('Simple One-Way Binding', function() {
-        it('Values of `out1` and `out2` are set to value of `a`', async function() {
-            a.set_value(1);
+        describe('Set `a` = 1', function() {
+            before(() => {
+                a.set_value(1);
+            });
 
-            assert.equal(await util.node_value(out1), 1);
-            assert.equal(await util.node_value(out2), 1);
+            it('`out1` = 1', function() {
+                assert.equal(out1.get_value(), 1);
+            });
+
+            it('`out2` = 1', function() {
+                assert.equal(out2.get_value(), 1);
+            });
         });
 
-        it('Value of `out1` and `out2` are updated when `a` changes', async function() {
-            a.set_value(14);
+        describe('Set `a` = 14', function() {
+            before(() => {
+                a.set_value(14);
+            });
 
-            assert.equal(await util.node_value(out1), 14);
-            assert.equal(await util.node_value(out2), 14);
+            it('`out1` = 14', function() {
+                assert.equal(out1.get_value(), 14);
+            });
+
+            it('`out2` = 14', function() {
+                assert.equal(out2.get_value(), 14);
+            });
         });
     });
 });

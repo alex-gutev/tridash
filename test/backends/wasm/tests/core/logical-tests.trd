@@ -1,0 +1,132 @@
+## Unit Tests for Core Module Logical Operators
+
+/module(logical-tests)
+/import(tridash-unit)
+/import(core)
+
+
+## Definitions
+
+Fail-Type  <- &(Fail-Type)
+Fail-Type! <- fail(Fail-Type)
+
+t <- 1 = 1
+f <- 3 = 5
+
+## Tests
+
+### Logical Operator Test Group
+
+all-tests <-
+    Test-Group(
+        "Logical Operator Tests"
+        , and-tests
+        , or-tests
+        , not-tests
+    )
+
+/export(all-tests)
+
+
+### Test `and`
+
+Test-Group(
+    "Meta-Node: `and`",
+
+    Test-Group(
+        "Valid Input",
+
+        Test(True and True, "True and True"),
+        Test-Not(True and False, "True and False"),
+        Test-Not(False and True, "False and True"),
+        Test-Not(False and False, "False and False"),
+
+        Test(t and t, "1 = 1 and 1 = 1"),
+        Test-Not(t and f, "1 = 1 and 3 = 5"),
+        Test-Not(f and t, "3 = 5 and 1 = 1"),
+        Test-Not(f and f, "3 = 5 and 3 = 5")
+    ),
+
+    Test-Group(
+	"Invalid Types",
+
+	Test-Fails(1 and 1, "1 and 1", Type-Error),
+	Test-Fails(1 and True, "1 and True", Type-Error),
+	Test-Fails(True and "x", "True and \"x\"", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(Fail-Type! and True, "Fail-Type! and True", Fail-Type),
+        Test-Fails(True and Fail-Type!, "True and Fail-Type!", Fail-Type),
+
+        Test-Not(False and Fail-Type!, "False and Fail-Type!")
+    )
+) -> and-tests
+
+### Test `or`
+
+Test-Group(
+    "Meta-Node: `or`",
+
+    Test-Group(
+        "Valid Input",
+
+        Test(True or True, "True or True"),
+        Test(True or False, "True or False"),
+        Test(False or True, "False or True"),
+        Test-Not(False or False, "False or False"),
+
+        Test(t or t, "1 = 1 or 1 = 1"),
+        Test(t or f, "1 = 1 or 3 = 5"),
+        Test(f or t, "3 = 5 or 1 = 1"),
+        Test-Not(f or f, "3 = 5 or 3 = 5")
+    ),
+
+    Test-Group(
+	"Invalid Types",
+
+	Test-Fails(1 or 1, "1 or 1", Type-Error),
+	Test-Fails(1 or True, "1 or True", Type-Error),
+	Test-Fails(False or "x", "False or \"x\"", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(Fail-Type! or True, "Fail-Type! or True", Fail-Type),
+        Test-Fails(False or Fail-Type!, "False or Fail-Type!", Fail-Type),
+
+        Test(True or Fail-Type!, "True or Fail-Type!")
+    )
+) -> or-tests
+
+### Test `not`
+
+Test-Group(
+    "Meta-Node: `not`",
+
+    Test-Group(
+        "Valid Input",
+
+        Test(not(False), "not(False)"),
+        Test(not(not(True)), "Not not(True)"),
+
+        Test(not(f), "not(3 = 5)"),
+        Test(not(not(t)), "Not not(1 = 1)")
+    ),
+
+    Test-Group(
+	"Invalid Types",
+
+	Test-Fails(not(0), "not(0)", Type-Error),
+	Test-Fails(not("x"), "not(\"x\")", Type-Error),
+	Test-Fails(not('(z)), "not('(z))", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+        Test-Fails(not(Fail-Type!), "not(Fail-Type!)", Fail-Type)
+    )
+) -> not-tests

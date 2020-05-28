@@ -35,7 +35,7 @@
      ("<=" :real :real)
      (">=" :real :real)
 
-     ("!" . t)))
+     ("!" :bool)))
 
   "Map mapping JS function names to a list indicating the type checks
    which should be performed for the arguments passed to that
@@ -48,7 +48,8 @@
 (defconstant +type-check-functions+
   (alist-hash-map
    '((:real . "Tridash.check_number")
-     (:value . "Tridash.check_value")))
+     (:value . "Tridash.check_value")
+     (:bool . "Tridash.check_bool")))
 
   "Map mapping type keywords to JS type checking function names.")
 
@@ -82,9 +83,7 @@
               (meta-node-id meta-node)
               (map (compose #'value-block-expression #'cdr) op-vars)
 
-              body)
-
-             (store-in-public-nodes meta-node (meta-node-id meta-node)))))))))
+              body))))))))
 
 (defun make-operand-blocks (operands)
   "Creates a `value-block' object for each each operand. Returns an
@@ -97,79 +96,6 @@
      collect
        (cons operand
              (make-value-block :expression (mkstr "a" i)))))
-
-(defun store-in-public-nodes (node expr)
-  "If NODE has a :PUBLIC-NAME attribute returns an assignment
-   expression which stores EXPR in 'Tridash.nodes' under the key which
-   value of the :PUBLIC-NAME attribute"
-
-  (awhen (attribute :public-name node)
-    (-<> (js-member +tridash-namespace+ "nodes")
-         (js-element (js-string it))
-         (js-call "=" <> expr))))
-
-
-;;; Node Context Functions
-
-(defun create-compute-function (context)
-  "Generates the value computation function of CONTEXT. The anonymous
-   function expression is returned in the first value. The second
-   return value is a MAP mapping `node' objects, of which the context
-   references the previous value, to indices within the
-   'previous_values' array."
-
-  (symbol-macrolet ((values-var "values") (previous-var "previous"))
-    (let ((operands (make-hash-map))
-          (references-this?)
-          (previous-nodes (make-hash-map)))
-
-      (flet ((get-operand (operand)
-               (ematch operand
-                 ((type node-link)
-                  (ensure-get operand operands
-                    (make-link-expression context operand values-var)))
-
-                 ((list :previous-value (node-ref node))
-                  (setf references-this? t)
-
-                  (ensure-get node operands
-                    (make-value-block
-                     :expression
-                     (->> (ensure-get node previous-nodes
-                            (length previous-nodes))
-
-                          (js-element previous-var))))))))
-
-        (with-slots (value-function) context
-          (let* ((*protect* nil)
-                 (body (compile-function value-function #'get-operand)))
-
-            (when value-function
-              (values
-               (js-lambda
-                (list previous-var values-var)
-                (append
-                 (when references-this?
-                   (list
-                    (js-var "self" "this")))
-                 body))
-
-               previous-nodes))))))))
-
-(defun make-link-expression (context link &optional (values-var "values"))
-  "Creates an expression which references the node with `NODE-LINK'
-   LINK linked to the context CONTEXT."
-
-  (make-value-block
-   :expression
-
-   (js-element
-    values-var
-
-    (->> link
-         node-link-node
-         (dependency-index context)))))
-
 
 
 ;;; Compiling Functions
@@ -248,7 +174,7 @@
   "Compilation state for the function currently being compiled.")
 
 
-(defun compile-function (expression get-input &key (return-value t) ((:state *function-block-state*) (make-instance 'function-block-state)))
+(defun compile-function (expression get-input &key (return-value t) ((:state *function-block-state*) (make-instance 'function-block-state)) ((:protect *protect*) *protect*))
   "Generates the body of the value computation function
    FUNCTION. GET-INPUT is a function which should return an expression
    that references the value of the dependency corresponding to the
@@ -322,9 +248,10 @@
    the value of BLOCK. The last element of the list is BLOCK, itself.
 
    Compiled `expression-block's of which the count does not equal the
-   reference within BLOCK, are not included in the list. The second
-   return value contains a map of such `VALUE-BLOCK's and the number
-   of times they are referenced within BLOCK."
+   number of references within BLOCK, are not included in the
+   list. The second return value contains a map of all such
+   `VALUE-BLOCK's and the number of times they are referenced within
+   BLOCK."
 
   (let ((flat-block nil)
         (block-map (make-hash-map)))
@@ -520,10 +447,6 @@
   (with-slots (input) *function-block-state*
     (funcall input link)))
 
-(defmethod compile-expression ((self (eql :self)) &key)
-  (with-slots (input) *function-block-state*
-    (funcall input :self)))
-
 
 ;;; Expression Blocks
 
@@ -620,19 +543,20 @@
               (list :previous-value (first arguments))))
 
     (_
-     (call-next-method meta-node (remove-nil-arguments arguments)))))
+     (call-next-method meta-node (remove-none-arguments arguments)))))
 
-(defun remove-nil-arguments (arguments)
-  "Removes NIL's from the end of the list ARGUMENTS."
+(defun remove-none-arguments (arguments)
+  "Removes :NONE arguments from the end of the argument list."
 
-  (flet ((null-arg (arg)
-           (or (null arg)
-               (and (argument-list-p arg)
-                    (null (argument-list-arguments arg))))))
+  (flet ((none? (arg)
+           (match arg
+             ((or (eql :none)
+                  (argument-list- (arguments nil)))
+              t))))
 
-    (let ((first-nil (position nil arguments)))
-      (if (and first-nil (every #'null-arg (subseq arguments first-nil)))
-          (subseq arguments 0 first-nil)
+    (let ((first-none (position :none arguments)))
+      (if (and first-none (every #'none? (subseq arguments first-none)))
+          (subseq arguments 0 first-none)
           arguments))))
 
 
@@ -724,8 +648,7 @@
      :expression (js-array operands))))
 
 (defun empty-list ()
-  "Returns an expression which creates a failure that indicates an
-   empty list."
+  "Creates an expression which returns the empty list."
 
   (js-call "Tridash.Empty"))
 
@@ -827,7 +750,7 @@
      (destructuring-bind (cond then &optional else) operands
 
        (list
-        (js-if (resolve cond)
+        (js-if (js-call "Tridash.check_bool" (resolve cond))
                (js-call "=" result then)
                (when else
                  (js-call "=" result else)))))
@@ -959,7 +882,9 @@
                  (js-call "<" (js-member "arguments" "length") min)
                  (js-call ">" (js-member "arguments" "length") max))))
 
-     (js-return (js-call "Tridash.ArityError")))))
+     (js-return
+      (make-failure
+       (js-call "Tridash.ArityError"))))))
 
 (defun outer-node-operands (meta-node outer-nodes)
   "Generates the JS expressions which compute the values of the outer
@@ -989,40 +914,32 @@
 
 ;;; Raw Node References
 
-(defconstant +type-node-table+ "Tridash.type_nodes"
-  "Expression referencing JS object storing nodes which serve as
-   types.")
-
 (defmethod compile-expression ((ref node-ref) &key)
   "Compiles raw node references. Currently generates an expression
    which references the raw Node object or meta-node function."
 
   (with-struct-slots node-ref- (node) ref
-    (->>
-     (etypecase node
-       (meta-node
-        (meta-node-id node))
+    (if (or (= node *node-true*)
+            (= node *node-false*))
 
-       (node
-        (type-node-path node)))
+        (make-bool-literal-block (= node *node-true*))
 
-     (make-value-block :expression))))
+        (->>
+         (etypecase node
+           (meta-node
+            (meta-node-id node))
+
+           (node
+            (type-node-path node)))
+
+         (make-value-block :expression)))))
 
 (defun type-node-path (node)
   "Return an expression which references the type node NODE."
 
-  (with-slots (node-ids type-node-ids) *backend-state*
-    (if (memberp node node-ids)
-        (node-path node)
-        (js-element +type-node-table+ (ensure-get node type-node-ids (length type-node-ids))))))
-
-(defun create-type-nodes (state)
-  "Generate the node creation code for the type nodes, stored in
-   TYPE-NODE-IDS slot of the backend state STATE."
-
-  (with-slots (type-node-ids) state
-    (let ((*node-path* #'type-node-path))
-      (foreach #'create-node (map-keys type-node-ids)))))
+  (with-slots (type-node-ids) *backend-state*
+    (ensure-get node type-node-ids
+      (mkstr "ref" (length type-node-ids)))))
 
 
 ;;; Literal Values
@@ -1041,11 +958,27 @@
        (js-new "Tridash.Char")
        (make-value-block :expression)))
 
-(defmethod compile-expression ((null null) &key)
-  (make-value-block :expression (js-call "Tridash.fail" "Tridash.NoValue")))
-
 (defmethod compile-expression ((literal number) &key)
   (make-value-block :expression literal))
+
+(defmethod compile-expression ((null null) &key)
+  (make-bool-literal-block nil))
+
+(defmethod compile-expression ((true (eql t)) &key)
+  (make-bool-literal-block t))
+
+(defmethod compile-expression ((none (eql :none)) &key)
+  (make-value-block
+   :expression
+   (make-failure (js-call "Tridash.NoValue"))))
+
+
+(defun make-bool-literal-block (value)
+  (make-value-block
+   :expression (if value "true" "false")))
+
+(defun make-failure (type)
+  (js-call "Tridash.fail" type))
 
 
 ;;; Optimizations
@@ -1053,7 +986,7 @@
 (defun inline-blocks (block)
   "For each block, referenced by BLOCK (either indirectly or through
    one of its operands), of which the statements comprise just an
-   assignment to the blocks variable, the block expression is replaced
+   assignment to the block's variable, the block expression is replaced
    with the result of the assignment and the block's variable and
    statements are set to NIL."
 
@@ -1070,7 +1003,7 @@
     (foreach #'inline-operands operands)))
 
 (defun inline-block (block)
-  (with-struct-slots value-block- (variable expression statements common-p)
+  (with-struct-slots value-block- (variable expression statements common-p protect-p)
       block
 
     (match (strip-redundant statements :strip-block t)

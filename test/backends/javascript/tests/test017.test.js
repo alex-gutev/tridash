@@ -25,63 +25,70 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-var Tridash = require('../runtime/tridash.js');
-var assert = require('assert');
-var util = require('./test_util.js');
+const Tridash = require('../runtime/tridash.js');
+const assert = require('assert');
 
-require('./test017.js');
+const mod = require('./test017.js');
 
-var counter = Tridash.nodes['counter'];
-var start = Tridash.nodes['start'];
-var clicked = Tridash.nodes['clicked?'];
-var delta = Tridash.nodes['delta'];
+const counter = mod.nodes['counter'];
+const start = mod.nodes['start'];
+const clicked = mod.nodes['clicked?'];
+const delta = mod.nodes['delta'];
 
 describe('Integration Test 17', function() {
     describe('Explicit States Counter With Delta', function() {
-        describe('Setting Initial Counter Value', function() {
-            it('Initial value of counter is 0', async function() {
+        describe('Set Initial Counter Value = 0', function() {
+            it('`counter` = 0', function() {
                 start.set_value(0);
-                assert.equal(await util.node_value(counter), 0);
+                assert.equal(counter.get_value(), 0);
             });
         });
 
-        describe('Incrementing Counter Value', function() {
-            it('`counter` incremented after changing to increment state', async function() {
-                delta.set_value(1);
-                clicked.set_value(1);
+        describe('Incrementing Counter', function() {
+            describe('Set `clicked` = true', function() {
+                it('`counter` = 1', function() {
+                    delta.set_value(1);
+                    clicked.set_value(true);
 
-                assert.equal(await util.node_value(counter), 1);
+                    assert.equal(counter.get_value(), 1);
+                });
             });
 
-            it('`counter` value retained after changing back to default state', async function() {
-                clicked.set_value(false);
-                assert.equal(await util.node_value(counter), 1);
+            describe('Set `clicked` = false', function() {
+                it('`counter` = 1', function() {
+                    clicked.set_value(false);
+                    assert.equal(counter.get_value(), 1);
+                });
             });
 
-            it('`counter` incremented again after changing back to increment state', async function() {
-                clicked.set_value(true);
-                assert.equal(await util.node_value(counter), 2);
+            describe('Set `clicked` = true', function() {
+                it('`counter` = 2', function() {
+                    clicked.set_value(true);
+                    assert.equal(counter.get_value(), 2);
+                });
             });
         });
 
-        describe('Changing Delta', function() {
-            it('Changing `delta` does not change `counter` value', async function() {
+        describe('Changing Delta (Set `delta` = 10)', function() {
+            it('`counter` = 2', function() {
                 delta.set_value(10);
                 clicked.set_value(false);
 
-                assert.equal(await util.node_value(counter), 2);
+                assert.equal(counter.get_value(), 2);
             });
 
-            it('`counter` incremented with new delta when changing to increment state', async function() {
-                clicked.set_value(true);
-                assert.equal(await util.node_value(counter), 12);
+            describe('Set `clicked` = true', function() {
+                it('`counter` = 2 + 10 = 12', function() {
+                    clicked.set_value(true);
+                    assert.equal(counter.get_value(), 12);
+                });
             });
         });
 
-        describe('Resetting Counter Value', function() {
-            it('`counter` value reset when changing `start`', async function() {
+        describe('Resetting Counter Value (Set `start` = 5)', function() {
+            it('`counter` = 5', function() {
                 start.set_value(5);
-                assert.equal(await util.node_value(counter), 5);
+                assert.equal(counter.get_value(), 5);
             });
         });
     });

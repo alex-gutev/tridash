@@ -1,0 +1,134 @@
+### Tridash Core Module
+### Copyright (C) 2020  Alexander Gutev
+###
+### This program is free software: you can redistribute it and/or modify
+### it under the terms of the GNU General Public License as published by
+### the Free Software Foundation, either version 3 of the License, or
+### (at your option) any later version.
+###
+### This program is distributed in the hope that it will be useful,
+### but WITHOUT ANY WARRANTY; without even the implied warranty of
+### MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+### GNU General Public License for more details.
+###
+### You should have received a copy of the GNU General Public License
+### along with this program.  If not, see <http://www.gnu.org/licenses/>.
+###
+### Linking this library statically or dynamically with other modules is
+### making a combined work based on this library. Thus, the terms and
+### conditions of the GNU General Public License cover the whole
+### combination.
+###
+### As a special exception, the copyright holders of this library give
+### you permission to link this library with independent modules to
+### produce an executable, regardless of the license terms of these
+### independent modules, and to copy and distribute the resulting
+### executable under terms of your choice, provided that you also meet,
+### for each linked independent module, the terms and conditions of the
+### license of that module. An independent module is a module which is
+### not derived from or based on this library. If you modify this
+### library, you may extend this exception to your version of the
+### library, but you are not obliged to do so. If you do not wish to do
+### so, delete this exception statement from your version.
+
+### External Function Names for Wasm32 Backend
+
+/module(core)
+
+
+### Arithmetic Operators
+
+/attribute(+, wasm-name, "+")
+/attribute(-, wasm-name, "-")
+/attribute(*, wasm-name, "*")
+/attribute(/, wasm-name, "/")
+/attribute(%, wasm-name, "%")
+
+
+### Relational Operators
+
+/attribute(<, wasm-name, "<")
+/attribute(<=, wasm-name, "<=")
+/attribute(>, wasm-name, ">")
+/attribute(>=, wasm-name, ">=")
+
+
+### Equality Operators
+
+/attribute(=, wasm-name, runtime.object_eq)
+/attribute(!=, wasm-name, runtime.object_neq)
+
+/attribute(symbol-equal, wasm-name, runtime.symbol_eq)
+
+
+### Selection Operator
+
+/attribute(if, wasm-name, "if")
+
+
+### Boolean Operators
+
+/attribute(not, wasm-name, "not")
+/attribute(or, wasm-name, "or")
+/attribute(and, wasm-name, "and")
+
+
+### Lists
+
+/attribute(cons, wasm-name, runtime.make_list_node)
+/attribute(head, wasm-name, runtime.list_node_head)
+/attribute(tail, wasm-name, runtime.list_node_tail)
+/attribute(cons?, wasm-name, runtime.check_is_list)
+
+/attribute(Empty-List, wasm-name, runtime.empty_list)
+
+/attribute(apply%, wasm-name, runtime.meta_node_ref_apply)
+
+### Objects
+
+/attribute(member, wasm-name, runtime.object_member);
+
+
+### Type Conversions
+
+/attribute(int, wasm-name, runtime.object_to_int)
+/attribute(real, wasm-name, runtime.object_to_real)
+
+/attribute(int->string, wasm-name, runtime.int_to_string)
+/attribute(real->string, wasm-name, runtime.real_to_string)
+/attribute(char->string, wasm-name, runtime.char_to_string)
+/attribute(symbol-name, wasm-name, runtime.symbol_name)
+
+
+### Type Checks
+
+/attribute(int?, wasm-name, runtime.is_int)
+/attribute(real?, wasm-name, runtime.is_real)
+/attribute(int?, wasm-name, runtime.is_int)
+/attribute(char?, wasm-name, runtime.is_char)
+/attribute(string?, wasm-name, runtime.is_string)
+/attribute(symbol?, wasm-name, runtime.is_symbol)
+
+
+### Strings
+
+/attribute(string-concat, wasm-name, runtime.string_concat)
+/attribute(string-at, wasm-name, runtime.string_at)
+
+
+### Failures
+
+/attribute(fail, wasm-name, runtime.make_failure)
+/attribute(fail-type, wasm-name, runtime.failure_type)
+
+/attribute(catch, wasm-name, runtime.make_catch_thunk)
+
+
+### Builtin Failure Types
+
+/attribute(No-Value%, wasm-name, runtime.fail_no_value)
+/attribute(Type-Error%, wasm-name,  runtime.fail_type_error)
+/attribute(Index-Out-Bounds%, wasm-name, runtime.fail_index_out_bounds)
+/attribute(Invalid-Integer%, wasm-name, runtime.fail_invalid_integer)
+/attribute(Invalid-Real%, wasm-name, runtime.fail_invalid_real)
+/attribute(Arity-Error%, wasm-name, runtime.fail_arity_error)

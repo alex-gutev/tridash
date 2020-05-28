@@ -26,9 +26,104 @@
  * SOFTWARE.
  */
 
-/** Functions */
 
-/* Comparison */
+/* Fail Exception Type */
+
+/**
+ * Used as the fail exception type, which indicates that a value
+ * computation has failed.
+ *
+ * @param type Failure type.
+ *
+ * @param uncatch Number of failures handlers which should be
+ *   bypassed, before this failure is handled.
+ */
+function Fail(type = null, uncatch = 0) {
+    this.type = type;
+    this.uncatch = uncatch;
+};
+
+
+/* Thunk */
+
+/**
+ * Creates a thunk for lazily computing a value. When the thunk
+ * function is called for the first time @a compute is called and the
+ * value returned is stored. Subsequent invocations of the thunk
+ * function will simply return the stored value.
+ *
+ * @param compute Function of no arguments, which computes the value.
+ *
+ * @param fail_handler Function which is invoked when @a compute
+ *   returns a failure value. The function is passed the Fail
+ *   exception (the function is not called for other exceptions), and
+ *   the return value becomes the return value of the thunk.
+ *
+ * @return The thunk function.
+ */
+function Thunk(compute, fail_handler = null) {
+    this.computed = false;
+
+    this.compute = compute;
+    this.fail_handler = fail_handler;
+};
+
+
+/**
+ * Computes the value of the thunk if it has not already been
+ * computed.
+ *
+ * @return The value of the thunk
+ */
+Thunk.prototype.resolve = function() {
+    if (this.computed) {
+        return this.result;
+    }
+    else {
+        this.result = this.compute();
+        this.computed = true;
+
+        return this.result;
+    }
+};
+
+/**
+ * If @a thing is a Thunk, computes the thunk's value, otherwise
+ * returns @a thing.
+ *
+ * @param thing The thing to resolve.
+ *
+ * @return The resolved value.
+ */
+function resolve(thing) {
+    function Handler(current, next) {
+        this.handler = current;
+        this.next = next;
+    }
+
+    var handler = null;
+
+    while (thing instanceof Thunk) {
+        if (thing.fail_handler) {
+            handler = new Handler(thing.fail_handler, handler);
+        }
+
+        try {
+            thing = thing.resolve();
+        }
+        catch (e) {
+            if (e instanceof Fail && handler) {
+                thing = handler.handler(e);
+                handler = handler.next;
+            }
+            else {
+                throw e;
+            }
+        }
+    }
+
+    return thing;
+}
 
 
 /* Arithmetic */
@@ -43,13 +138,13 @@ function sub_neg(a, b) {
 
     try {
         a = check_number(resolve(a));
-        b = resolve(b);
 
-        if (b === undefined) {
+        if (arguments.length == 1)
             return -a;
-        }
 
-        return a - check_number(b);
+        b = check_number(resolve(b));
+
+        return a - b;
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -94,7 +189,8 @@ function neq(ta, tb) {
 
 function and(a, b) {
     try {
-        return resolve(a) ? b : false;
+        return check_bool(resolve(a)) &&
+            check_bool(resolve(b));
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -102,10 +198,8 @@ function and(a, b) {
 }
 function or(a, b) {
     try {
-        if ((a = resolve(a)))
-            return a;
-
-        return b;
+        return check_bool(resolve(a)) ||
+            check_bool(resolve(b));
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -114,7 +208,7 @@ function or(a, b) {
 
 function not(x) {
     try {
-        return !resolve(x);
+        return !check_bool(resolve(x));
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -134,7 +228,7 @@ function fail_type(value) {
     }
     catch (e) {
         if (e instanceof Fail)
-            return e.type ? e.type : NoValue();
+            return e.type ? e.type : fail(NoValue());
     }
 
     return fail(TridashTypeError);
@@ -213,15 +307,16 @@ function cast_int(x) {
         }
         else if (is_string(x)) {
             return /^[-+]?(\d+)$/.test(x) ? parseInt(x) :
-                InvalidInteger();
+                fail(InvalidInteger());
         }
 
-        return TridashTypeError();
+        return fail(TridashTypeError());
     }
     catch (e) {
         return new Thunk(() => { throw e; });
     }
 };
+
 function cast_real(x) {
     try {
         x = resolve(x);
@@ -232,25 +327,55 @@ function cast_real(x) {
         else if (is_string(x)) {
             var realx = Number(x);
 
-            return !isNaN(realx) ? realx : InvalidReal();
+            return !isNaN(realx) ? realx : fail(InvalidReal());
         }
 
-        return TridashTypeError();
+        return fail(TridashTypeError());
     }
     catch (e) {
         return new Thunk(() => { throw e; });
     }
 };
-function cast_string(x) {
+
+
+function int_to_string(x) {
+    try {
+        x = check_integer(resolve(x));
+
+        return String(x);
+
+    } catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
+
+function real_to_string(x) {
+    try {
+        x = check_number(resolve(x));
+
+        return String(x);
+
+    } catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
+
+function char_to_string(x) {
     try {
         x = resolve(x);
+        return x instanceof Char ? x.chr : fail(TridashTypeError());
 
-        if (x instanceof Char)
-            return x.chr;
-        else
-            return String(x);
+    } catch (e) {
+        return new Thunk(() => { throw e; });
     }
-    catch (e) {
+}
+
+function symbol_name(x) {
+    try {
+        x = resolve(x);
+        return x instanceof Symbol ? x.symbol : fail(TridashTypeError());
+
+    } catch (e) {
         return new Thunk(() => { throw e; });
     }
 };
@@ -310,6 +435,25 @@ function is_nan(value) {
 };
 
 
+function is_char(value) {
+    try {
+        return resolve(value) instanceof Char;
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
+
+function is_symbol(value) {
+    try {
+        return typeof resolve(value) instanceof Symbol;
+    }
+    catch (e) {
+        return new Thunk(() => { throw e; });
+    }
+}
+
+
 /* Lists */
 
 function cons(head, tail) {
@@ -338,16 +482,16 @@ function head(list) {
             if (l.length > 0)
                 return l[0];
 
-            return TridashTypeError();
+            return fail(TridashTypeError());
         }
         else if (l instanceof SubArray) {
             return l.array[l.start];
         }
-        else if (l === Empty) {
-            return fail(Empty);
+        else if (l === Empty()) {
+            return fail(Empty());
         }
         else {
-            return fail(TridashTypeError);
+            return fail(TridashTypeError());
         }
     }
     catch (e) {
@@ -361,28 +505,28 @@ function tail(list) {
 
         if (l instanceof ConsCell) {
             var tail = resolve(l.tail);
-            return is_list(tail) || tail === Empty ?
+            return is_list(tail) || tail === Empty() ?
                 l.tail :
-               TridashTypeError();
+                fail(TridashTypeError());
         }
         else if (Array.isArray(l)) {
             if (l.length > 1)
                 return new SubArray(l, 1);
             else if (l.length === 1)
-                return Empty;
+                return Empty();
 
-            return TridashTypeError();
+            return fail(TridashTypeError());
         }
         else if (l instanceof SubArray) {
             return l.array.length > (l.start + 1) ?
                 new SubArray(l.array, l.start + 1) :
-                Empty;
+                Empty();
         }
-        else if (l === Empty) {
-            return fail(Empty);
+        else if (l === Empty()) {
+            return fail(Empty());
         }
         else {
-            return TridashTypeError();
+            return fail(TridashTypeError());
         }
     }
     catch (e) {
@@ -408,8 +552,10 @@ function is_list(value) {
 }
 
 
+const node_empty = new NodeRef(-1);
+
 function Empty() {
-    return Empty;
+    return node_empty;
 }
 
 
@@ -428,7 +574,7 @@ function string_at(tstr, tindex) {
         var index = check_integer(resolve(tindex));
 
         return index >= 0 && index < str.length ?
-            new Char(str.charAt(index)) : fail(IndexOutBounds);
+            new Char(str.charAt(index)) : fail(IndexOutBounds());
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -459,11 +605,10 @@ function string_concat(tstr1, tstr2) {
  *   exception.
  */
 function check_number(value) {
-    if (typeof value === 'number') {
+    if (typeof value === 'number')
         return value;
-    }
 
-    throw new Fail(TridashTypeError);
+    throw new Fail(TridashTypeError());
 }
 
 /**
@@ -475,11 +620,10 @@ function check_number(value) {
  *   exception.
  */
 function check_integer(value) {
-    if (is_integer(value)) {
+    if (is_integer(value))
         return value;
-    }
 
-    throw new Fail(TridashTypeError);
+    throw new Fail(TridashTypeError());
 }
 
 /**
@@ -493,11 +637,10 @@ function check_integer(value) {
 function check_value(value) {
     if (typeof value === 'number' ||
         typeof value === 'string' ||
-        value instanceof Symbol) {
+        value instanceof Symbol)
         return value;
-    }
 
-    throw new Fail(TridashTypeError);
+    throw new Fail(TridashTypeError());
 }
 
 /**
@@ -509,11 +652,25 @@ function check_value(value) {
  *   exception.
  */
 function check_string(value) {
-    if (typeof value === 'string') {
+    if (typeof value === 'string')
         return value;
-    }
 
-    throw new Fail(TridashTypeError);
+    throw new Fail(TridashTypeError());
+}
+
+/**
+ * Check that a value is a boolean.
+ *
+ * @param value The value to check.
+ *
+ * @return The value if it is a boolean, otherwise a 'Fail' exception
+ *   is thrown.
+ */
+function check_bool(value) {
+    if (typeof value === 'boolean')
+        return value;
+
+    throw new Fail(TridashTypeError());
 }
 
 /**
@@ -529,7 +686,7 @@ function check_function(value) {
         return value;
     }
 
-    throw new Fail(TridashTypeError);
+    throw new Fail(TridashTypeError());
 }
 
 /* Symbols */
@@ -568,11 +725,11 @@ function member(dict, key) {
         dict = resolve(dict);
 
         if (typeof dict !== 'object')
-            return TridashTypeError();
+            return fail(TridashTypeError());
 
         key = resolve(key);
 
-        return key in dict ? dict[key] : fail();
+        return key in dict ? dict[key] : fail(NoValue());
     }
     catch (e) {
         return new Thunk(() => { throw e; });
@@ -584,10 +741,10 @@ function member(dict, key) {
 
 function mapply(f, args) {
     function resolve_list(list) {
-        res = [];
+        var res = [];
         list = resolve(list);
 
-        while (list !== Empty) {
+        while (list !== Empty()) {
             if (list instanceof ConsCell) {
                 res.push(list.head);
                 list = resolve(list.tail);
@@ -601,7 +758,7 @@ function mapply(f, args) {
                 break;
             }
             else {
-                throw new Fail(TridashTypeError);
+                throw new Fail(TridashTypeError());
             }
         }
 
@@ -612,7 +769,7 @@ function mapply(f, args) {
         f = resolve(f);
 
         if (typeof f !== "function") {
-            return TridashTypeError();
+            return fail(TridashTypeError());
         }
 
         return f.apply(null, resolve_list(args));
@@ -625,26 +782,33 @@ function mapply(f, args) {
 
 /* Builtin Failure Types */
 
+const node_no_value = new NodeRef(-2);
+const node_type_error = new NodeRef(-3);
+const node_index_out_bounds = new NodeRef(-4);
+const node_invalid_integer = new NodeRef(-5);
+const node_invalid_real = new NodeRef(-6);
+const node_arity_error = new NodeRef(-7);
+
 function NoValue() {
-    return fail(NoValue);
+    return node_no_value;
 }
 
 function TridashTypeError() {
-    return fail(TridashTypeError);
+    return node_type_error;
 }
 
 function IndexOutBounds() {
-    return fail(IndexOutBounds);
+    return node_index_out_bounds;
 }
 
 function InvalidInteger() {
-    return fail(InvalidInteger);
+    return node_invalid_integer;
 }
 
 function InvalidReal() {
-    return fail(InvalidReal);
+    return node_invalid_real;
 }
 
 function ArityError() {
-    return fail(ArityError);
+    return node_arity_error;
 }

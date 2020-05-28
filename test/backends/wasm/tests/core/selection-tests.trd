@@ -1,0 +1,105 @@
+## Unit Tests for Core Module Selection Operators
+
+/module(selection-tests)
+/import(tridash-unit)
+/import(core)
+
+
+## Definitions
+
+Fail-Type  <- &(Fail-Type)
+Fail-Type! <- fail(Fail-Type)
+
+t <- 1 = 1
+f <- 1 = 2
+
+## Tests
+
+### Logical Operator Test Group
+
+all-tests <-
+    Test-Group(
+        "Selection Operator Tests"
+        , if-tests
+        , case-tests
+    )
+
+/export(all-tests)
+
+
+### Test `if`
+
+Test-Group(
+    "Meta-Node: `if`",
+
+    Test-Group(
+        "Valid Input",
+
+        Test-Equal(if(True, '(x), '(y)), '(x), "if(True, '(x), '(y))"),
+        Test-Equal(if(t, '(x), '(y)), '(x), "if(1 = 1, '(x), '(y))"),
+        Test-Equal(if(False, "x", "y"), "y", "if(False, \"x\", \"y\")"),
+        Test-Equal(if(f, "x", "y"), "y", "if(1 = 2, \"x\", \"y\")"),
+
+        Test-Fails(if(False, "value"), "if(False, \"value\")", No-Value),
+        Test-Fails(if(f, "value"), "if(False, \"value\")", No-Value)
+    ),
+
+    Test-Group(
+	"Invalid Types",
+
+	Test-Fails(if(1, '(x), '(y)), "if(1, '(x), '(y))", Type-Error),
+	Test-Fails(if("True", '(x), '(y)), "if(\"True\", '(x), '(y))", Type-Error),
+	Test-Fails(if('(False), '(x), '(y)), "if('(False), '(x), '(y))", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(if(Fail-Type!, 1, 2), "if(Fail-Type!, 1, 2)", Fail-Type),
+        Test-Fails(if(True, Fail-Type!, 2), "if(True, Fail-Type!, 2)", Fail-Type),
+        Test-Fails(if(False, 2, Fail-Type!), "if(False, 2, Fail-Type!)", Fail-Type),
+
+        Test-Equal(if(False, Fail-Type!, 2), 2, "if(False, Fail-Type!, 2)"),
+        Test-Equal(if(True, 1, Fail-Type!), 1, "if(True, 1, Fail-Type!)")
+    )
+) -> if-tests
+
+### Test `case`
+
+Test-Group(
+    "Macro-Node: `case`",
+
+    Test-Group(
+        "Valid Input",
+
+        Test-Equal(case(t : '(x), 3 = 3 : '(y)), '(x), "case(1 = 1 : '(x), 3 = 3 : '(y))"),
+        Test-Equal(case(f : '(x), 3 = 3 : '(y)), '(y), "case(1 = 2 : '(x), 3 = 3 : '(y))"),
+        Test-Equal(case(False : '(x), 3 = 5 : '(y), '(z)), '(z), "case(False : '(x), 3 = 5 : '(y), '(z))"),
+
+        Test-Fails(case(False : '(x), 3 = 5 : '(y)), "case(False : '(x), 3 = 5 : '(y))", No-Value)
+    ),
+
+    Test-Group(
+	"Invalid Types",
+
+	Test-Fails(case(1 : '(x), '(y)), "case(1 : '(x), '(y))", Type-Error),
+	Test-Fails(case("True" : '(x), '(y)), "case(\"True\" : '(x), '(y))", Type-Error),
+	Test-Fails(case('(False) : '(x), '(y)), "case('(False) : '(x), '(y))", Type-Error)
+    ),
+
+    Test-Group(
+        "Failure Propagation",
+
+        Test-Fails(case(Fail-Type! : 1, 2), "case(Fail-Type! : 1, 2)", Fail-Type),
+        Test-Fails(case(f : 1, Fail-Type! : 2), "case(1 = 1 : 1, Fail-Type! : 2)", Fail-Type),
+
+        Test-Fails(case(True : Fail-Type!, 2), "case(True : Fail-Type!, 2)", Fail-Type),
+        Test-Fails(case(f : 1, t : Fail-Type!), "case(1 = 2 : 1, 1 = 1 : Fail-Type!)", Fail-Type),
+        Test-Fails(case(f : 1, f : 2, Fail-Type!), "case(1 = 2 : 1, 1 = 2 : 2, Fail-Type!)", Fail-Type),
+
+        Test-Equal(case(t : 1, Fail-Type! : 2), 1, "case(1 = 1 : 1, Fail-Type! : 2)"),
+        Test-Equal(case(False : Fail-Type!, 2), 2, "case(False : Fail-Type!, 2)"),
+        Test-Equal(case(t : 1, t : Fail-Type!), 1, "case(1 = 1 : 1, 1 = 1 : Fail-Type!)"),
+        Test-Equal(case(t : 1, f : 2, Fail-Type!), 1, "case(1 = 1 : 1, 1 = 2 : 2, Fail-Type!)")
+    )
+) -> case-tests

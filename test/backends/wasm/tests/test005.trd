@@ -1,0 +1,25 @@
+## Tests Cyclic Bindings
+
+/import(core)
+
+a <- cons(i, b)
+b <- cons(j, a)
+
+output <- list(
+    head(a),
+    head(tail(a)),
+    head(tail(tail(a)))
+)
+
+
+## Input Attributes
+
+/attribute(i, input, 1)
+/attribute(j, input, 2)
+
+
+## Public Name Attributes
+
+/attribute(i, public-name, "i")
+/attribute(j, public-name, "j")
+/attribute(output, public-name, "output")

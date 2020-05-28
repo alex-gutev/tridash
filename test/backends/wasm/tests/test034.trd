@@ -1,0 +1,27 @@
+## Test External Meta-Nodes
+
+/import(core, <-)
+
+/external(increment, x)
+/external(decrement, x)
+
+# Default Module
+/attribute(increment, wasm-name, "external_inc")
+
+# Explicit Module
+/attribute(decrement, wasm-name, Lib.decrement)
+
+output1 <- increment(x)
+output2 <- decrement(x)
+
+
+## Input Attributes
+
+/attribute(x, input, 1)
+
+
+## Public Name Attributes
+
+/attribute(output1, public-name, "output1")
+/attribute(output2, public-name, "output2")
+/attribute(x, public-name, "x")
