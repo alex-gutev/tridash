@@ -301,19 +301,19 @@
     (list
      (-<>
       (js-call
-       (js-member +tridash-namespace+ "load_sync")
+       (js-member +tridash-namespace+ "load_file")
+
+       (js-string
+        (cl-fad:merge-pathnames-as-file module-path (file-namestring out-file)))
+
+       (js-string runtime)
+
        (js-object
         (list
-         (list "runtime_path" (js-string runtime))
-         (list "module_path" (js-string
-                              (cl-fad:merge-pathnames-as-file module-path (file-namestring out-file))))
          (list "table_size" table-size)
          (list "memory_size" memory-size)
          (list "memory_base" runtime-base)
-
          (list "stack_size" stack-size)
-         (list "num_nodes" num-nodes)
-
          (list "imports" (make-import-functions imports)))))
 
       (js-member "then")

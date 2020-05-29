@@ -39,4 +39,5 @@ exports.Marshaller = Marshaller;
 
 /* Wasm Module Loading */
 
-exports.load_sync = load_module_sync;
+exports.load_file = load_module_file;
+exports.load_bytes = load_module_bytes;

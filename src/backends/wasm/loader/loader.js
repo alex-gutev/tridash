@@ -68,49 +68,37 @@ function decode_u32(bytes, offset) {
 
 
 /**
- * Synchronously load a Tridash WebAssembly module, along with the
- * runtime library module, from a file.
+ * Load a Tridash WebAssembly module from a file.
  *
- * This assumes that the 'require' function and 'fs' module are
- * present.
+ * This function requires that the 'require' function and 'fs' module
+ * are available.
  *
+ * @param module_path Path to the Tridash module.
  * @param runtime_path Path to the runtime library module.
  *
- * @param module_Path Path to the Tridash module.
+ * @param options Load options object:
  *
- * @param table_size Minimum size of the table object.
+ *    table_size:  Minimum size of the table object
  *
- * @param memory_size Minimum size of the memory object in pages.
+ *    memory_size: Minimum size of the memory object in pages
  *
- * @param memory_base Offset, within memory, at which the runtime
- *   module's internal data should be stored.
+ *    memory_base: Offset, within memory, at which the runtime
+ *                 module's internal data should be stored
  *
- * @param stack_size Size of the memory region (in bytes) to reserve
- *   for the stack.
+ *    stack_size:  Size of the memory region (in bytes) to reserve
+ *                 for the stack
  *
- * @param num_nodes Number of nodes in the module.
- *
- * @param imports Module imports object, excluding the runtime library
- *   imports.
+ *    imports:     Module imports object, containing additional functions
+ *                 to import
  *
  * @return An object with the following properties:
  *
- *   module:  Tridash Module Instance
- *   runtime: Runtime Module Instance
- *   memory:  Memory object
+ *   module:     Tridash Module Instance
+ *   runtime:    Runtime Module Instance
+ *   memory:     Memory object
+ *   marshaller: Marshaller object
  */
-async function load_module_sync({
-    runtime_path,
-    module_path,
-    table_size,
-    memory_size,
-    memory_base,
-
-    stack_size,
-    num_nodes,
-
-    imports,
-}) {
+async function load_module_file(module_path, runtime_path, options) {
     const fs = require('fs');
 
     function load_bytes(path) {
@@ -118,7 +106,46 @@ async function load_module_sync({
         return new Uint8Array(buf);
     };
 
+    return load_module_bytes(load_bytes(module_path), load_bytes(runtime_path), options);
+};
 
+/**
+ * Load a Tridash WebAssembly module directly from the raw bytes
+ * comprising the module.
+ *
+ * @param module_bytes Array of bytes comprising the Tridash module.
+ * @param runtime_path Array of bytes comprising the runtime library module.
+ *
+ * @param options Load options object:
+ *
+ *    table_size:  Minimum size of the table object
+ *
+ *    memory_size: Minimum size of the memory object in pages
+ *
+ *    memory_base: Offset, within memory, at which the runtime
+ *                 module's internal data should be stored
+ *
+ *    stack_size:  Size of the memory region (in bytes) to reserve
+ *                 for the stack
+ *
+ *    imports:     Module imports object, containing additional functions
+ *                 to import
+ *
+ * @return An object with the following properties:
+ *
+ *   module:     Tridash Module Instance
+ *   runtime:    Runtime Module Instance
+ *   memory:     Memory object
+ *   marshaller: Marshaller object
+ *
+ */
+async function load_module_bytes(module_bytes, runtime_bytes, {
+    table_size,
+    memory_size,
+    memory_base,
+    stack_size,
+    imports
+}) {
     // Create WebAssembly Table and Memory objects
 
     var table = new WebAssembly.Table({
@@ -133,11 +160,11 @@ async function load_module_sync({
 
     // Load Runtime Library Module
 
-    var runtime = await WebAssembly.compile(load_bytes(runtime_path));
+    var runtime = await WebAssembly.compile(runtime_bytes);
     var runtime_mem_size = dylink_mem_size(runtime);
 
     runtime = await WebAssembly.instantiate(
-        await runtime,
+        runtime,
         {
             env: {
                 table: table,
@@ -146,16 +173,6 @@ async function load_module_sync({
                 "g$stack_top": () => memory_base
             }
         }
-    );
-
-    runtime.exports.__post_instantiate();
-
-    // Initialize Garbage Collector
-
-    runtime.exports.initialize(
-        stack_size - 4,
-        memory_base + runtime_mem_size,
-        (memory_size * 64 * 1024) - (memory_base + runtime_mem_size)
     );
 
 
@@ -168,17 +185,53 @@ async function load_module_sync({
 
     Object.assign(imports.runtime, runtime.exports);
 
-    var module = await WebAssembly.instantiate(
-        load_bytes(module_path),
-        imports
+    const module = await WebAssembly.instantiate(module_bytes, imports);
+
+    return init_modules(runtime, module, {
+        memory: memory,
+        stack_size: stack_size,
+        memory_size: memory_size,
+        memory_base: memory_base,
+        runtime_mem_size: runtime_mem_size
+    });
+}
+
+/**
+ * Initialize the loaded runtime and Tridash WebAssembly modules.
+ *
+ * @param runtime Runtime library WebAssembly Module
+ * @param module Tridash WebAssembly Module
+ *
+ * @return An object with the following properties:
+ *
+ *   module:     Tridash Module Instance
+ *   runtime:    Runtime Module Instance
+ *   memory:     Memory object
+ *   marshaller: Marshaller object
+ */
+function init_modules(runtime, module, {
+    memory,
+    stack_size,
+    memory_size,
+    memory_base,
+    runtime_mem_size
+}) {
+    runtime.exports.__post_instantiate();
+
+    // Initialize Garbage Collector
+
+    runtime.exports.initialize(
+        stack_size - 4,
+        memory_base + runtime_mem_size,
+        (memory_size * 64 * 1024) - (memory_base + runtime_mem_size)
     );
 
-    var marshaller = new Marshaller(runtime, memory, memory_base, stack_size - 4);
+    const marshaller = new Marshaller(runtime, memory, memory_base, stack_size - 4);
 
     return {
         module: module.instance,
         marshaller: marshaller,
         runtime: runtime,
-        memory: memory
+        memory
     };
-};
+}
