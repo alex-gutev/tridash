@@ -48,7 +48,7 @@ VPATH = $(srcdir)
 
 ## Build Targets
 
-all: tridashc js-runtime man info
+all: tridashc js-runtime wasm-runtime man info
 
 plump_sources = plump/dom.lisp \
 	plump/entities.lisp \
@@ -112,7 +112,8 @@ core_module_sources = \
 	modules/core/types.trd \
 	modules/core/macros.trd \
 	modules/core/strings.trd \
-	modules/core/js-backend.trd
+	modules/core/js-backend.trd \
+	modules/core/wasm-backend.trd
 
 build.lisp: build.lisp.in
 	$(SED) -e 's|@datadir[@]|$(pkgdatadir)|g' $< > $@
@@ -146,6 +147,9 @@ clean-wasm-runtime:
 
 check-wasm-runtime: tridashc
 	$(MAKE) --directory=src/backends/wasm check
+
+install-wasm-runtime:
+	$(MAKE) --directory=src/backends/wasm install installdir=$(DESTDIR)$(pkgdatadir)
 
 
 ## Documentation
@@ -195,7 +199,7 @@ pdf: doc/tridash.pdf
 
 ## Clean Targets
 
-clean: clean-docbook-temp clean-js-runtime
+clean: clean-docbook-temp clean-js-runtime clean-wasm-runtime
 	rm -f build.lisp
 	rm -f tridashc
 
@@ -222,6 +226,7 @@ installdirs:
 	install -d $(DESTDIR)$(bindir)
 	install -d $(DESTDIR)$(pkgdatadir)/modules/core
 	install -d $(DESTDIR)$(pkgdatadir)/backends/javascript
+	install -d $(DESTDIR)$(pkgdatadir)/backends/wasm
 	install -d $(DESTDIR)$(mandir)/man1
 	install -d $(DESTDIR)$(infodir)
 
@@ -234,7 +239,7 @@ install-module-build-config: modules/core.yml
 install-modules: $(core_module_sources)
 	install -m 644 $^ $(DESTDIR)$(pkgdatadir)/modules/core
 
-install-data: install-module-build-config install-modules install-js-runtime
+install-data: install-module-build-config install-modules install-js-runtime install-wasm-runtime
 
 install-man: doc/tridashc.1
 	- install -m 644 $< $(DESTDIR)$(mandir)/man1
@@ -276,7 +281,7 @@ uninstall: uninstall-info uninstall-html uninstall-pdf
 
 ## Testing
 
-check: check-compiler check-js-runtime
+check: check-compiler check-js-runtime check-wasm-runtime
 
 check-compiler:
 	cd $(srcdir); \

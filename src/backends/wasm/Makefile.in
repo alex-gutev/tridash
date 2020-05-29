@@ -261,7 +261,7 @@ $(testdir)/tests/core.wasm: $(test_core_deps)
 	TRIDASH_MODULE_PATHS=$(module_dir) \
 	$(tridashc) $^ -o $@ -t wasm32 \
 	-p runtime-path="runtime/runtime.wasm" \
-	-p module-path="tests/" -p indented=1
+	-p module-path="tests/"
 
 $(testdir)/tests/core.wasm: $(tridashc)
 
@@ -272,7 +272,7 @@ $(testdir)/tests/core.wasm: $(tridashc)
 	TRIDASH_MODULE_PATHS=$(module_dir) \
 	$(tridashc) $< -o $@ -t wasm32 \
 	-p runtime-path="runtime/runtime.wasm" \
-	-p module-path="tests/" -p indented=1
+	-p module-path="tests/"
 
 %.clean:
 	rm -f $(@:.clean=.wasm)
@@ -290,6 +290,12 @@ clean: $(test_inputs:.wasm=.clean)
 	rm -f $(testdir)/tests/tridash.min.js
 
 
+# Installation
+
+install: runtime/runtime.wasm loader/tridash.min.js
+	install -m 644 $^ $(installdir)/backends/wasm
+
+
 # Phony Targets
 
-.PHONY: runtime clean check
+.PHONY: runtime clean check install
