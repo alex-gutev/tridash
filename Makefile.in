@@ -113,7 +113,7 @@ core_module_sources = \
 	modules/core/macros.trd \
 	modules/core/strings.trd \
 	modules/core/js-backend.trd \
-	modules/core/wasm-backend.trd
+	modules/core/wasm32-backend.trd
 
 build.lisp: build.lisp.in
 	$(SED) -e 's|@datadir[@]|$(pkgdatadir)|g' $< > $@
