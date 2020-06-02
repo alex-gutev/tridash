@@ -195,7 +195,16 @@ int is_managed(const void *ptr) {
 
 void memclear(char *ptr, size_t size) {
     while (size--) {
-        *ptr = 0;
+        // This is implemented in inline ASM to prevent the entire
+        // loop from being replaced with a call to an imported
+        // `memset` function.
+
+        asm("local.get %0;"
+            "i32.const 0;"
+            "i32.store 0;"
+            : : "r" (ptr));
+
+        ptr++;
     }
 }
 
