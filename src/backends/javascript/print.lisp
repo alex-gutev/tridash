@@ -131,7 +131,9 @@
 
     (awhen (first expressions)
       (print-ast it)
-      (foreach #'print-expression (rest expressions))))
+
+      (doseq (expression expressions :start 1)
+        (print-expression expression))))
 
   (when brackets
     (print-token ")" :lead-space nil)))
@@ -457,12 +459,12 @@
 (defmethod strip-redundant ((call js-call) &key)
   (make-js-call
    (strip-redundant (js-call-operator call))
-   (mapcar #'strip-redundant (js-call-operands call))))
+   (map #'strip-redundant (js-call-operands call))))
 
 (defmethod strip-redundant ((new js-new) &key)
   (js-new
    (strip-redundant (js-new-operator new))
-   (mapcar #'strip-redundant (js-new-operands new))))
+   (map #'strip-redundant (js-new-operands new))))
 
 (defmethod strip-redundant ((element js-element) &key)
   (js-element
@@ -478,13 +480,13 @@
 ;;; Object and Array Literals
 
 (defmethod strip-redundant ((array js-array) &key)
-  (js-array (mapcar #'strip-redundant (js-array-elements array))))
+  (js-array (map #'strip-redundant (js-array-elements array))))
 
 (defmethod strip-redundant ((object js-object) &key)
   (flet ((strip-redundant (field)
            (destructuring-bind (key value) field
              (list (strip-redundant key) (strip-redundant value)))))
-    (js-object (mapcar #'strip-redundant (js-object-fields object)))))
+    (js-object (map #'strip-redundant (js-object-fields object)))))
 
 
 ;;; Blocks
@@ -523,7 +525,7 @@
 (defmethod strip-redundant ((function js-function) &key)
   (js-function
    (js-function-name function)
-   (mapcar #'strip-redundant (js-function-arguments function))
+   (map #'strip-redundant (js-function-arguments function))
    (strip-redundant (js-function-statements function))))
 
 (defmethod strip-redundant ((catch js-catch) &key)
