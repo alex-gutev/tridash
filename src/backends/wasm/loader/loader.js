@@ -109,6 +109,62 @@ async function load_module_file(module_path, runtime_path, options) {
     return load_module_bytes(load_bytes(module_path), load_bytes(runtime_path), options);
 };
 
+async function load_module_url(module_url, runtime_url, {
+    table_size,
+    memory_size,
+    memory_base,
+    stack_size,
+    imports,
+}) {
+    // Create shared Table and Memory objects
+
+    const table = new WebAssembly.Table({
+        element: "anyfunc",
+        initial: table_size
+    });
+
+    const memory = new WebAssembly.Memory({
+        initial: memory_size
+    });
+
+
+    // Load Runtime Library Module
+
+    var runtime = await WebAssembly.compileStreaming(fetch(runtime_url));
+    const runtime_mem_size = dylink_mem_size(runtime);
+
+    runtime = await WebAssembly.instantiate(
+        runtime,
+        {
+            env: {
+                table: table,
+                memory: memory,
+                __memory_base: memory_base + 4,
+                "g$stack_top": () => memory_base
+            }
+        }
+    );
+
+    // Load Tridash WebAssembly Module
+
+    imports.runtime = {
+        table: table,
+        memory: memory
+    };
+
+    Object.assign(imports.runtime, runtime.exports);
+
+    const module = await WebAssembly.instantiateStreaming(fetch(module_url), imports);
+
+    return init_modules(runtime, module, {
+        memory: memory,
+        stack_size: stack_size,
+        memory_size: memory_size,
+        memory_base: memory_base,
+        runtime_mem_size: runtime_mem_size
+    });
+}
+
 /**
  * Load a Tridash WebAssembly module directly from the raw bytes
  * comprising the module.

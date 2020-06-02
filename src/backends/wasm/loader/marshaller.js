@@ -700,6 +700,17 @@ Marshaller.Fail = function(type) {
 };
 
 /**
+ * Check whether a JS value represents a Tridash failure value.
+ *
+ * @param thing The JS value.
+ *
+ * @return True if @a thing represents a Tridash failure.
+ */
+Marshaller.Fail.is_fail = function(thing) {
+    return thing instanceof Marshaller.Fail;
+};
+
+/**
  * Represents a reference to a raw node object.
  *
  * @param id Node index identifier

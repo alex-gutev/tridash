@@ -24,5 +24,13 @@
   (setf tridash.backend.js::*runtime-library-path*
         (cl-fad:merge-pathnames-as-file datadir "backends/javascript/tridash.min.js"))
 
+  ;; Set path to WebAssembly runtime library
+  (setf tridash.backend.wasm::*runtime-library-path*
+        (cl-fad:merge-pathnames-as-file datadir tridash.backend.wasm::*runtime-library-path*))
+
+  ;; Set path to WebAssembly module loader library
+  (setf tridash.backend.wasm::*module-loader-path*
+        (cl-fad:merge-pathnames-as-file datadir tridash.backend.wasm::*module-loader-path*))
+
   (asdf:make :tridash)
   (uiop:quit))

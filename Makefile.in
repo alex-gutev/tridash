@@ -97,6 +97,7 @@ sources = tridash.asd \
 	src/backends/wasm/backend.lisp \
 	src/backends/wasm/builtin.lisp \
 	src/backends/wasm/expressions.lisp \
+	src/backends/wasm/html.lisp \
 	$(plump_sources)
 
 core_module_sources = \

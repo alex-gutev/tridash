@@ -261,7 +261,7 @@ $(testdir)/tests/core.wasm: $(test_core_deps)
 	TRIDASH_MODULE_PATHS=$(module_dir) \
 	$(tridashc) $^ -o $@ -t wasm32 \
 	-p runtime-path="runtime/runtime.wasm" \
-	-p module-path="tests/"
+	-p module-path="tests/core.wasm"
 
 $(testdir)/tests/core.wasm: $(tridashc)
 
@@ -272,7 +272,7 @@ $(testdir)/tests/core.wasm: $(tridashc)
 	TRIDASH_MODULE_PATHS=$(module_dir) \
 	$(tridashc) $< -o $@ -t wasm32 \
 	-p runtime-path="runtime/runtime.wasm" \
-	-p module-path="tests/"
+	-p module-path="tests/$(notdir $@)"
 
 %.clean:
 	rm -f $(@:.clean=.wasm)

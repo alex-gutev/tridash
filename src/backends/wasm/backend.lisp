@@ -32,6 +32,8 @@
 
 ;;; Linker Options
 
+(defvar *runtime-library-path* "backends/wasm/runtime.wasm")
+
 (defvar *stack-size* (* 64 1024)
   "Amount of memory to allocate for the stack.")
 
@@ -237,27 +239,19 @@
       (multiple-value-bind (wasm-module table-size memory-size)
           (link-wasm-module compute init-state out-nodes out-meta-nodes)
 
-        (output-wasm-file out-file wasm-module)
+        (output-files
+         out-file
+         wasm-module
 
-        (output-js-file
-         (js-file-name (pathname out-file))
+         (map-extend-to 'list #'first out-nodes)
+         options
 
-         (make-loader-code
-          out-file
-
-          (concatenate
-           (map-extend-to 'list #'first out-nodes))
-
-          options
-
-          :table-size table-size
-          :memory-size (1+ (ceiling memory-size (* 64 1024)))
-          :runtime-base memory-size
-          :num-nodes (length out-nodes)
-          :stack-size *stack-size*
-          :imports (map-values (imports *linker-state*)))
-
-         options)))))
+         :table-size table-size
+         :memory-size (1+ (ceiling memory-size (* 64 1024)))
+         :runtime-base memory-size
+         :num-nodes (length out-nodes)
+         :stack-size *stack-size*
+         :imports (map-values (imports *linker-state*)))))))
 
 (defun output-wasm-file (out-file module)
   "Serialize the WebAssembly module MODULE to the file at OUT-FILE."
@@ -269,6 +263,60 @@
 
     (serialize-module module stream)))
 
+(defun output-files (out-file wasm-module js-code options &rest load-options &key &allow-other-keys)
+  "Write the generated code to the output files.
+
+   OUT-FILE is the name of the primary WASM output file.
+   WASM-MODULE is the generated WebAssembly Module.
+   JS-CODE is the generated JavaScript code.
+   OPTIONS is a map containing command-line output options.
+   LOAD-OPTIONS are the keyword arguments passed to MAKE-LOADER-CODE."
+
+  (with-hash-keys ((type "type")
+                   (module-name "module-name")
+                   (main-ui "main-ui")
+                   (linkage "linkage"))
+      options
+
+    (let ((linkage (parse-linkage linkage))
+          (code
+           (apply #'make-loader-code out-file js-code wasm-module options load-options)))
+
+      (unless (= linkage 'embed)
+        (output-wasm-file out-file wasm-module))
+
+      (match type
+        ((cl:equalp "html")
+
+         (with-open-file (*standard-output* out-file :direction :output :if-exists :supersede)
+           (let ((*print-indented* (parse-boolean (get "indented" options))))
+             (create-html-file
+              (if module-name
+                  (wrap-js-module code module-name)
+                  (lexical-block
+                   (js-var "exports" (js-object))
+                   code))
+
+              (get-root-node main-ui)))))
+
+        (_
+         (-> (pathname out-file)
+             js-file-name
+             (output-js-file code options)))))))
+
+(defun wrap-js-module (code module-name)
+  "If MODULE-NAME is non-NIL wrap CODE in an anonymous function with
+   the result assigned to the variable MODULE-NAME."
+
+  (if module-name
+
+      (list
+       (js-var module-name (js-object))
+       (js-call
+        (js-lambda '("exports") code)
+        (list module-name)))
+
+      code))
 
 
 ;;; JavaScript Loader Code
@@ -286,72 +334,71 @@
    OUT-FILE."
 
   (let ((*print-indented* (parse-boolean (get "indented" options))))
+    (with-open-file (*standard-output* out-file :direction :output :if-exists :supersede)
+      (output-code code))))
 
-   (with-open-file (*standard-output* out-file :direction :output :if-exists :supersede)
-     (output-code code))))
-
-(defun make-loader-code (out-file code options &key table-size memory-size runtime-base num-nodes stack-size imports)
+(defun make-loader-code (out-file code wasm-module options &key table-size memory-size runtime-base num-nodes stack-size imports)
   "Generate the code which loads the WebAssembly runtime and compiled
    modules. CODE is the JavaScript node initialization code which
    should be executed after the modules are loaded."
 
-  (let ((runtime (or (get "runtime-path" options) "runtime.wasm"))
-        (module-path (or (get "module-path" options) "")))
+  (let ((runtime (or (get "runtime-path" options) *runtime-library-path*))
+        (module-path (or (get "module-path" options) out-file)))
 
-    (list
-     (-<>
-      (js-call
-       (js-member +tridash-namespace+ "load_file")
+    (let ((linkage (parse-linkage (get "linkage" options))))
 
-       (js-string
-        (cl-fad:merge-pathnames-as-file module-path (file-namestring out-file)))
+      (list
+       (-<>
+        (js-call
+         (module-load-function linkage)
 
-       (js-string runtime)
+         (module-path linkage module-path wasm-module)
+         (module-runtime-path linkage runtime)
 
-       (js-object
-        (list
-         (list "table_size" table-size)
-         (list "memory_size" memory-size)
-         (list "memory_base" runtime-base)
-         (list "stack_size" stack-size)
-         (list "imports" (make-import-functions imports)))))
-
-      (js-member "then")
-      (js-call
-       (js-lambda
-        (list
          (js-object
           (list
-           (list "module" "mod")
-           (list "marshaller" "marshaller")
-           (list "runtime" "runtime")
-           (list "memory" "memory"))))
+           (list "table_size" table-size)
+           (list "memory_size" memory-size)
+           (list "memory_base" runtime-base)
+           (list "stack_size" stack-size)
+           (list "imports" (make-import-functions imports)))))
 
-        (concatenate
-         (list
-          (make-module
-           (js-members "mod" "exports" "compute")
-           (js-members "mod" "exports" "init")
-           "marshaller"
-           num-nodes)
-
-          (js-var "nodes" (make-exported-nodes (public-nodes *linker-state*))))
-
-         code
-         (list
-          (js-return
+        (js-member "then")
+        (js-call
+         (js-lambda
+          (list
            (js-object
             (list
-             (list "module" "module")
+             (list "module" "mod")
+             (list "marshaller" "marshaller")
              (list "runtime" "runtime")
-             (list "memory" "memory")
-             (list "nodes" "nodes")
-             (list "set_values"
-                   (js-call
-                    (js-members "module" "set_node_values" "bind")
-                    "module")))))))))
+             (list "memory" "memory"))))
 
-      (js-call "=" (js-member "exports" "module") <>)))))
+          (concatenate
+           (list
+            (make-module
+             (js-members "mod" "exports" "compute")
+             (js-members "mod" "exports" "init")
+             "marshaller"
+             num-nodes)
+
+            (js-var "nodes" (make-exported-nodes (public-nodes *linker-state*))))
+
+           code
+           (list
+            (js-return
+             (js-object
+              (list
+               (list "module" "module")
+               (list "runtime" "runtime")
+               (list "memory" "memory")
+               (list "nodes" "nodes")
+               (list "set_values"
+                     (js-call
+                      (js-members "module" "set_node_values" "bind")
+                      "module")))))))))
+
+        (js-call "=" (js-member "exports" "module") <>))))))
 
 (defun make-exported-nodes (public-nodes)
   "Generate code which creates the object storing the exported
@@ -439,6 +486,65 @@
          (map #'make-import-module <>)
          js-object)))
 
+
+(defun module-load-function (linkage)
+  "Returns the function, as a JS expression, for loading the
+   WebAssembly module given the linkage type LINKAGE."
+
+  (js-member
+   +tridash-namespace+
+
+   (ecase linkage
+     (local "load_file")
+     (remote "load_url")
+     (embed "load_bytes"))))
+
+(defun module-path (linkage module-path wasm-module)
+  "Returns an expression which returns the path to the WebAssembly
+   module given the linkage type."
+
+  (ecase linkage
+    ((local remote) (js-string module-path))
+    (embed (embed-wasm-module wasm-module))))
+
+(defun module-runtime-path (linkage runtime-path)
+  "Returns an expression which returns the path to the WebAssembly
+   runtime library given the linkage type."
+
+  (ecase linkage
+    ((local remote) (js-string runtime-path))
+    (embed (embed-file runtime-path))))
+
+(defun parse-linkage (linkage)
+  "Parse the WebAssembly module linkage type from the value of the
+   linkage output option."
+
+  (match linkage
+    ((or (cl:equalp "local") (eq nil))
+     'local)
+
+    ((cl:equalp "remote") 'remote)
+
+    ((cl:equalp "embed") 'embed)))
+
+(defun embed-file (path)
+  "Return a JS expression containing the bytes of the file at PATH."
+
+  (embed-bytes (read-file-into-byte-vector path)))
+
+(defun embed-wasm-module (module)
+  "Return a JS expression containing the bytes of a serialized
+   WebAssembly module."
+
+  (embed-bytes
+   (with-output-to-sequence (stream)
+     (serialize-module module stream))))
+
+(defun embed-bytes (bytes)
+  "Generate a JS expression which returns a byte array containing
+   BYTES."
+
+  (js-new "Uint8Array" (list (js-array bytes))))
 
 ;;; Tridash Module
 

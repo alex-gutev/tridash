@@ -84,7 +84,8 @@
                           :components ((:file "package")
                                        (:file "expressions")
                                        (:file "builtin")
-                                       (:file "backend"))))))
+                                       (:file "backend")
+                                       (:file "html"))))))
 
   :depends-on (:anaphora
                :iterate
