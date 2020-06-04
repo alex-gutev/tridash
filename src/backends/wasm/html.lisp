@@ -115,6 +115,10 @@
     (with-slots (value-function) context
       (lexical-block
        (js-var "element" (make-get-element (element-id node)))
+       (js-var "value" (js-call (js-member "module" "get_value") value-index))
+
+       (-> (compose (curry #'make-set-attribute node "element" "value") #'first)
+           (map (object-expression-entries value-function)))
 
        (js-call
         (js-member "module" "watch_node")
@@ -151,17 +155,21 @@
 
   (with-slots (html-attribute) node
     (unless (equal (string attribute) "style")
-      (js-if
-       (->> (js-call "||"
-                     (js-call (js-members "Tridash" "Marshaller" "Fail" "is_fail") object)
-                     (js-call (js-members "Tridash" "Marshaller" "Fail" "is_fail") (js-member object attribute)))
+      (js-catch
+       (list
+        (js-if
+         (->> (js-call "||"
+                       (js-call (js-members "Tridash" "Marshaller" "Fail" "is_fail") object)
+                       (js-call (js-members "Tridash" "Marshaller" "Fail" "is_fail") (js-member object attribute)))
 
-            (js-call "!"))
+              (js-call "!"))
 
-       (js-call
-        "="
-        (apply #'js-members element (append (ensure-list html-attribute) (list attribute)))
-        (js-member object attribute))))))
+         (js-call
+          "="
+          (apply #'js-members element (append (ensure-list html-attribute) (list attribute)))
+          (js-member object attribute))))
+       "e"
+       nil))))
 
 
 (defparameter *html-events*
