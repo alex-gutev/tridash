@@ -1792,7 +1792,7 @@
 
                   (reduce
                    (lambda (code byte)
-                     (+ (* code 31) byte))
+                     (mod (+ (* code 31) byte) (expt 2 +word-size+)))
 
                    octets
                    :initial-value 1)))))
