@@ -36,7 +36,7 @@
  color-empty <- Color(120, 90, 45)
  color-full  <- Color(0, 90, 45)
 
- scale <- clamp(quantity / maximum, 0, 1)
+ scale <- clamp(quantity * 1.0 / maximum, 0, 1)
 
  color <- lerp-color(color-empty, color-full, scale)
 

@@ -1,0 +1,11 @@
+sources:
+  - path: ui.html
+    node-name: ui
+
+output:
+  path: wapp.html
+  backend: wasm32
+  type: html
+  main-ui: ui
+  module-name: mod
+  linkage: embed

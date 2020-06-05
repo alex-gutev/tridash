@@ -39,16 +39,29 @@ SUBDIRS = 1a-hello-node \
 	12c-infix-add-operator
 
 ALLFILES = $(SUBDIRS:%=%.all)
+JSFILES = $(SUBDIRS:%=%.js)
+WASMFILES = $(SUBDIRS:%=%.wasm)
 CLEANFILES = $(SUBDIRS:%=%.clean)
 
 all: $(ALLFILES)
 
+js: $(JSFILES)
+
+wasm: $(WASMFILES)
+
 clean: $(CLEANFILES)
+
 
 %.all: %
 	$(MAKE) -C $< all
 
+%.js: %
+	$(MAKE) -C $< js
+
+%.wasm: %
+	$(MAKE) -C $< wasm
+
 %.clean: %
 	$(MAKE) -C $< clean
 
-.PHONY: all clean
+.PHONY: all js wasm clean

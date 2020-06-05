@@ -60,20 +60,24 @@
       <div><strong>Counter: <?@ counter ?></strong></div>
 
       <script>
-        var increment1 = document.getElementById('increment1');
-        var increment2 = document.getElementById('increment2');
+        document.addEventListener("DOMContentLoaded", async () => {
+            const module = await mod;
 
-        var clicked1 = mod.nodes.clicked1;
-        var clicked2 = mod.nodes.clicked2;
+            const increment1 = document.getElementById('increment1');
+            const increment2 = document.getElementById('increment2');
 
-        increment1.addEventListener('click', function() {
-            clicked1.set_value(true);
-            clicked1.set_value(false);
-        });
+            const clicked1 = module.nodes.clicked1;
+            const clicked2 = module.nodes.clicked2;
 
-        increment2.addEventListener('click', function() {
-            clicked2.set_value(true);
-            clicked2.set_value(false);
+            increment1.addEventListener('click', function() {
+                clicked1.set_value(true);
+                clicked1.set_value(false);
+            });
+
+            increment2.addEventListener('click', function() {
+                clicked2.set_value(true);
+                clicked2.set_value(false);
+            });
         });
       </script>
     </body>

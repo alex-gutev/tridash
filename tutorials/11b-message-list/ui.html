@@ -41,12 +41,16 @@
       <pre><?@ messages ?></pre>
 
       <script>
-        var add = document.getElementById('add');
-        var clicked = mod.nodes.clicked;
+        document.addEventListener("DOMContentLoaded", async () => {
+            const module = await mod;
 
-        add.addEventListener('click', function() {
-            clicked.set_value(true);
-            clicked.set_value(false);
+            const add = document.getElementById('add');
+            const clicked = module.nodes.clicked;
+
+            add.addEventListener('click', function() {
+                clicked.set_value(true);
+                clicked.set_value(false);
+            });
         });
       </script>
     </body>

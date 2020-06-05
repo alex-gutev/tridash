@@ -18,7 +18,7 @@
 
  # Application Logic
 
- scale <- clamp(quantity / maximum, 0, 1)
+ scale <- clamp(quantity * 1.0 / maximum, 0, 1)
 
  hue <- lerp(120, 0, scale)
 
