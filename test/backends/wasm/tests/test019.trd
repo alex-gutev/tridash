@@ -18,7 +18,7 @@ case(
 counter-state -> /state(counter)
 '(state1) -> /state(counter)
 
-'(clicked1) -> /state(counter-state)
+/attribute(/state(counter), public-name, "the_state")
 
 
 ## Input Attributes

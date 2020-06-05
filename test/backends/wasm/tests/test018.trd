@@ -13,6 +13,12 @@ start -> counter
         '(default)
     )
 
+
+# Set initial state
+
+'(default) -> /state(counter)
+
+
 ## Input Attributes
 
 /attribute(start, input, 1)
