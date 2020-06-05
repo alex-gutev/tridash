@@ -291,11 +291,9 @@
          (with-open-file (*standard-output* out-file :direction :output :if-exists :supersede)
            (let ((*print-indented* (parse-boolean (get "indented" options))))
              (create-html-file
-              (if module-name
-                  (wrap-js-module code module-name)
-                  (lexical-block
-                   (js-var "exports" (js-object))
-                   code))
+              (wrap-js-module
+               (list* (js-var "exports" (js-object)) code)
+               module-name)
 
               (get-root-node main-ui)))))
 
@@ -310,13 +308,15 @@
 
   (if module-name
 
-      (list
-       (js-var module-name (js-object))
-       (js-call
-        (js-lambda '("exports") code)
-        (list module-name)))
+      (->> (js-member "exports" "module")
+           js-return
+           (list code)
+           (js-lambda nil)
+           js-call
+           (js-var module-name)
+           list)
 
-      code))
+      (lexical-block code)))
 
 
 ;;; JavaScript Loader Code
