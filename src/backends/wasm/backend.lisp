@@ -838,47 +838,60 @@
            (with-struct-slots initial-value- (context-index) init
              `((local.get (ref $dirtied))
                (i32.const ,context-index)
-               (i32.store (offset ,(* (+ index 2) +word-byte-size+)))))))
+               (i32.store (offset ,(* (+ index 2) +word-byte-size+))))))
 
-    (multiple-value-bind (locals code)
-        (make-function-body
-         (concatenate
-          (make-tridash-array '$old-state num-nodes :clear t)
+         (store-no-value (index)
+           `((local.get (ref $old-state))
+             (local.get (ref $no-value))
+             (i32.store (offset ,(+ 8 (* 4 index)))))))
 
-          `((local.get $new-state)
-            (local.get (ref $state))
-            i32.store)
+    (let ((array-size (+ 8 (* 4 num-nodes))))
+      (multiple-value-bind (locals code)
+          (make-function-body
+           (concatenate
+            (make-tridash-array '$old-state num-nodes)
 
-          ;; Create initial dirty queue
-          (if (emptyp initial-values)
-              '((local.get (ref $old-state)))
+            ;; Initial values of all nodes to failure of type No-Value
+            `((call (import "runtime" "make_fail_no_value"))
+              (box $no-value (type fail))
+              ,@(map-extend-to 'list #'store-no-value (range 0 num-nodes)))
 
-              `(,@(make-tridash-array '$dirtied (length initial-values))
+            ;; Create initial dirty queue
+            (if (emptyp initial-values)
+                '((local.get (ref $old-state)))
 
-                  ,@(-<> (sort initial-values :key #'initial-value-context-index)
-                         (map-extend #'add-to-queue <> (range 0)))
+                `(,@(make-tridash-array '$dirtied (length initial-values))
 
-                  ,@(make-tridash-array '$new-state num-nodes :clear t)
+                    ,@(-<> (sort initial-values :key #'initial-value-context-index)
+                           (map-extend #'add-to-queue <> (range 0)))
 
-                  (local.get (ref $dirtied))
-                  (local.get (ref $old-state))
-                  (local.get (ref $new-state))
+                    ;; Copy Old State Array
+                    (i32.const ,array-size)
+                    (call (import "runtime" "alloc"))
+                    (local.tee (ref $new-state))
+                    (local.get (ref $old-state))
+                    (i32.const ,array-size)
+                    (call (import "runtime" "memcopy"))
 
-                  (call $compute)
-                  drop
+                    (local.get (ref $dirtied))
+                    (local.get (ref $old-state))
+                    (local.get (ref $new-state))
 
-                  (local.get (ref $new-state)))))
+                    (call $compute)
+                    drop
 
-         (make-hash-map)
-         nil)
+                    (local.get (ref $new-state)))))
 
-      (make-wasm-function-spec
-       :params nil
-       :results '(i32)
-       :locals locals
-       :code code
+           (make-hash-map)
+           nil)
 
-       :export-name "init"))))
+        (make-wasm-function-spec
+         :params nil
+         :results '(i32)
+         :locals locals
+         :code code
+
+         :export-name "init")))))
 
 
 ;;; Nodes
