@@ -220,7 +220,7 @@ triggered simultaneously or not.
 
 The value of a node is not strictly evaluated. This means that a
 node's value is only evaluated if it is actually used. In most cases
-the result of this is that node's are evaluated lazily, that is they
+the result of this is that nodes are evaluated lazily, that is they
 are evaluated on their first use. However if it can be statically
 determined that a node's value will always be used it may be evaluated
 before its first use.
@@ -430,8 +430,8 @@ function.
 Initial values are set on the launch of the application, and are
 treated as an ordinary value change to the initial value. The initial
 active context of the node is the `init` context. If a node is not
-given an initial value, its initial value is a failure value, _see
-<<_failures>>_.
+given an initial value, its initial value is a failure value of type
+<<node-no-value,`No-Value`>>, _see <<_failures>>_.
 
 .Examples
 --------------------------------------------------
@@ -535,10 +535,11 @@ c -> (a -> b)
 --------------------------------------------------
 
 The result of this declaration is that the binding `a -> b` is only
-active if the condition node `c` evaluates to a 'true' value, the
-value of the builtin `True` node,. If `c` evaluates to 'false', the
-value of the builtin `False` node, `b` is not set to the value of `a`
-but is set to a failure value.
+active if the condition node `c` evaluates to 'true', the value of the
+builtin <<node-true,`True`>> node,. If `c` evaluates to 'false', the
+value of the builtin <<node-false, `False`>> node, `b` is not set to
+the value of `a` but is set to a failure value of type
+<<node-no-value,`No-Value`>>.
 
 A binding declaration, with a binding node as the target, changes the
 function of the context of the binding to return a failure value if
@@ -615,7 +616,7 @@ fail("my-type") -> /context(b, ctx)
 
 The failure type of a 'failure value' can be retrieved with the
 <<meta-node-fail-type, `fail-type`>> meta-node. This meta-node takes a
-single argument, which if it fails to evaluate to a value, returns the
+single argument, which if it evaluates to a failure, returns the
 failure type associated with the failure. If the argument does not
 fail to evaluate to a value, or the failure has no type associated
 with it, `fail-type` returns a failure.
@@ -630,7 +631,7 @@ fail-type(c) = "my-type" -> c-fails?
 The failure type is useful to identify the cause of a failure, since
 failures are used to represent many classes of errors, such as type
 errors, out of range errors, no value errors, as well as representing
-special classes of values such as the empty list.
+special classes of values.
 
 [[conditional_binding_fail_type,Conditionally Active Bindings based on Failure Type]]
 ==== Conditionally Active Bindings based on Failure Type ====
@@ -682,8 +683,8 @@ the input nodes.
 (((/attribute, Special Operator, Attributes)))
 
 Attributes are arbitrary key value pairs associated with a node, which
-control various compilation options of the node. These are set using
-the special `/attribute` operator.
+control various compilation options. These are set using the special
+`/attribute` operator.
 
 The first argument is the node of which to set the attribute, the
 second argument is the attribute key (not interpreted as a node) and
@@ -726,7 +727,7 @@ list of some attributes and a summary of their effect:
     `target-node`:: Sets the name of a meta-node to use as the value
     function, in the contexts of the bindings of the meta-node
     instance (as the source node) to its arguments (as the target
-    nodes). _See <<_instances_as_targets>>_.
+    node). _See <<_instances_as_targets>>_.
     `target-transform`:: The name of a meta-node to invoke if the
     meta-node, of which the attribute is set, appears as the target of
     a binding. _See <<_instances_as_targets>>_.
@@ -1362,7 +1363,7 @@ used to invoke functions defined outside of Tridash code. The special
 
 .Syntax
 --------------------------------------------------
-/extern(id, args...)
+/external(id, args...)
 --------------------------------------------------
 
 [horizontal]
@@ -1379,8 +1380,10 @@ argument. The argument identifiers, however, do not name local nodes.
 An external definition for the meta-node has to be provided, and
 linked with the generated code. In the JavaScript backend, instances
 of the meta-node are compiled to a call to the JavaScript function
-with the name stored in the `js-name` attribute. If the `js-name`
-attribute is not set, an error is triggered.
+with the name given by the value of the `js-name` attribute. If the
+`js-name` attribute is not set, the result is a compilation error
+indicating that the JavaScript backend does not support the external
+meta-node.
 
 
 === Higher-Order Meta-Nodes ===

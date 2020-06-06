@@ -338,6 +338,8 @@ returned otherwise the value of `try` is returned.
 (((No-Value, Core Module, Failure Type)))
 (((No-Value!, Core Module, Node)))
 
+Failure type representing the absense of a value.
+
 Optional meta-nodes arguments, for which no value is provided, are
 bound to a failure of this type.
 
@@ -607,11 +609,12 @@ associativity.
 
 Logical AND.
 
-Returns the value of `y` if `x` evaluates to true.
+Returns <<node-true,`True`>> if `x` and `y` evaluate to
+`True`. Returns <<node-false, `False`>> otherwise.
 
 [horizontal]
-`x`:: A value.
-`y`:: A value.
+`x`:: A Boolean value
+`y`:: A Boolean value
 
 NOTE: Registered as an infix operator with precedence *25* and *left*
 associativity.
@@ -630,12 +633,13 @@ node. _See <<pattern_matching>>_.
 
 Logical OR.
 
-Returns the value of `x`, if it evaluates to true, otherwise returns
-the value of `y`.
+Returns <<node-true,`True`>> if either `x` or `y` evaluate to
+`True`. Returns <<node-false, `False`>> if both `x` and `y` evaluate
+to `False`.
 
 [horizontal]
-`x`:: A value.
-`y`:: A value.
+`x`:: A Boolean value
+`y`:: A Boolean value
 
 NOTE: Registered as an infix operator with precedence *20* and *left*
 associativity.
@@ -659,10 +663,10 @@ matched.
 
 Logical NOT.
 
-Returns true if `x` evaluates to false.
+Returns <<node-true,`True`>> if `x` evaluates to <<node-false,`False`>>.
 
 [horizontal]
-`x`:: A value.
+`x`:: A Boolean value
 
 [float]
 ===== Pattern Matching =====
@@ -676,7 +680,6 @@ treated as a constant pattern and may only appear nested inside other
 patterns.
 
 
-
 === Selection Operators ===
 
 (((Selection Operators, Core Module)))
@@ -686,16 +689,16 @@ patterns.
 
 (((if, Core Module, Meta-Node)))
 
-Returns `true-value` if `condition` is true otherwise returns
-`false-value`.
+Returns `true-value` if `condition` is <<node-true,`True`>> otherwise
+returns `false-value`.
 
 If `false-value` is not provided, a failure is returned if `condition`
-evaluates to false.
+evaluates to <<node-false,`False`>>.
 
 `condition`:: The condition.
 `true-value`:: Value to return if `condition` is true.
 `false-value` (_Optional_):: Value to return if `condition` is false. If
-not provided defaults to a failure.
+not provided defaults to a failure of type <<node-no-value,`No-Value`>>.
 
 
 [[macro-node-case]]
@@ -711,10 +714,11 @@ Expands to nested <<meta-node-if,`if`>> expressions.
 
 Each argument is a `clause` is of the form `condition : value`. The
 `case` expression evaluates to the `value` corresponding to the first
-clause of which the `condition` node evaluates to true. The final
-clause may also be of the form `value`, in which case it becomes the
-default value, to which the `case` expression evaluates if the
-conditions of all the other clauses evaluate to false.
+clause of which the `condition` node evaluates to
+<<node-true,`True`>>. The final clause may also be of the form
+`value`, in which case it becomes the default value, to which the
+`case` expression evaluates if the conditions of all the other clauses
+evaluate to <<node-false,`False`>>.
 
 [horizontal]
 `clauses`:: The clauses.
@@ -745,11 +749,18 @@ if(a < b, -1, if(b > a, 1, 0))
 --------------------------------------------------
 
 
+
+[[node-true]]
 ==== Node `True` ====
+
+(((True, Core Module, Node)))
 
 The value of this node represents Boolean 'True'.
 
+[[node-false]]
 ==== Node `False` ====
+
+(((False, Core Module, Node)))
 
 The value of this node represents Boolean 'False'.
 
@@ -903,7 +914,7 @@ Returns true if `x` is an *integer*.
 
 (((real?, Core Module, Meta-Node)))
 
-Returns true if `x` is a *real*.
+Returns true if `x` is a *real* valued number.
 
 [horizontal]
 `x`:: The value to test.
@@ -915,6 +926,26 @@ Returns true if `x` is a *real*.
 (((string?, Core Module, Meta-Node)))
 
 Returns true if `x` is a *string*.
+
+[horizontal]
+`x`:: The value to test.
+
+
+==== Meta-Node: `symbol?` ====
+
+(((symbol?, Core Module, Meta-Node)))
+
+Returns true if `x` is a *symbol*.
+
+[horizontal]
+`x`:: The value to test.
+
+
+==== Meta-Node: `char?` ====
+
+(((char?, Core Module, Meta-Node)))
+
+Returns true if `x` is a *character*.
 
 [horizontal]
 `x`:: The value to test.
@@ -936,7 +967,7 @@ Returns true if `x` is either positive or negative infinity.
 
 (((NaN?, Core Module, Meta-Node)))
 
-Returns true if `x` is a *NaN* value.
+Returns true if `x` is a *NaN* (Not a Number) value.
 
 [horizontal]
 `x`:: The value to test.
@@ -1350,6 +1381,9 @@ replaced with a `%`.
 
 Retrieves the value of an entry in a dictionary.
 
+If `dict` does not have an entry for `key` a failure, of type
+<<node-no-value,`No-Value`>> is returned.
+
 [horizontal]
 `dict`:: The dictionary.
 `key`:: The entry key.
@@ -1709,6 +1743,9 @@ conditions of multiple argument nodes.
 
 Returns a list where each binding in `bindings` is conditioned on
 `condition`. _See <<conditional_bindings>>_.
+
+If `condition` evaluates to a failure, a condition of `True` is
+assumed, thus the bindings are not conditioned.
 
 `condition`:: The condition on which to condition the bindings.
 `bindings`:: List of bindings to condition.
