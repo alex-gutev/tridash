@@ -52,7 +52,27 @@ class Marshaller {
 
         this.stack_top = stack_top;
         this.stack_base = stack_base;
+
+        this.init_node_refs();
     };
+
+    /**
+     * Store the pointers to the node references, of the builtin
+     * failure type nodes, in the 'node_refs' array.
+     */
+    init_node_refs() {
+        this.node_refs = [];
+
+        const types = Marshaller.FailTypes;
+
+        this.node_refs[types.NoValue] = this.module.exports.fail_no_value();
+        this.node_refs[types.TypeError] = this.module.exports.fail_type_error();
+        this.node_refs[types.InvalidInteger] = this.module.exports.fail_invalid_integer();
+        this.node_refs[types.InvalidReal] = this.module.exports.fail_invalid_real();
+        this.node_refs[types.ArityError] = this.module.exports.fail_arity_error();
+        this.node_refs[types.IndexOutBounds] = this.module.exports.fail_index_out_bounds();
+        this.node_refs[types.Empty] = this.module.exports.empty_list();
+    }
 
 
     /* Marshalling from JavaScript to Tridash */
@@ -95,6 +115,22 @@ class Marshaller {
         }
         else if (value === false) {
             return Marshaller.False;
+        }
+        else if (value instanceof Marshaller.Char) {
+            return this.to_tridash_char(value.code);
+        }
+        else if (value instanceof Marshaller.Symbol) {
+            return this.to_tridash_symbol(value.name);
+        }
+        else if (value instanceof Marshaller.ListNode) {
+            return this.to_tridash_list_node(value.head, value.tail);
+        }
+        else if (value instanceof Marshaller.Node) {
+            const ptr = this.node_refs[value.id];
+
+            if (ptr !== undefined) {
+                return ptr;
+            }
         }
 
         throw new Marshaller.EncodeError(value);
@@ -139,6 +175,23 @@ class Marshaller {
     }
 
     /**
+     * Create a Tridash character object on the WebAssembly heap.
+     *
+     * @param code Character code.
+     *
+     * @return Pointer to the object.
+     */
+    to_tridash_char(code) {
+        const ptr = this.alloc(8);
+        const buf = new Uint32Array(this.memory.buffer, ptr, 2);
+
+        buf[0] = Marshaller.type_char;
+        buf[1] = code;
+
+        return ptr;
+    }
+
+    /**
      * Convert a JavaScript string to a Tridash string.
      *
      * @param value The JavaScript string value
@@ -162,6 +215,30 @@ class Marshaller {
     }
 
     /**
+     * Create a Tridash symbol object.
+     *
+     * @param name Symbol name.
+     *
+     * @return Pointer to the object.
+     */
+    to_tridash_symbol(name) {
+        const encoder = new TextEncoder();
+        const utf8 = encoder.encode(name);
+
+        const ptr = this.alloc(8 + utf8.length);
+        const view = new DataView(this.memory.buffer, ptr);
+
+        view.setUint32(0, Marshaller.type_symbol, true);
+        view.setUint32(4, utf8.length, true);
+
+        var bytes = new Uint8Array(this.memory.buffer, ptr + 8, utf8.length);
+        bytes.set(utf8);
+
+        return ptr;
+    }
+
+
+    /**
      * Convert a JavaScript array to a Tridash object array. Each
      * object in the array is converted to a Tridash object, by
      * to_tridash.
@@ -178,6 +255,15 @@ class Marshaller {
         }
 
         return this.stack_pop();
+    }
+
+    to_tridash_list_node(head, tail) {
+        const phead = this.to_tridash(head);
+        this.stack_push(phead);
+
+        const ptail = this.to_tridash(tail);
+
+        return this.module.exports.make_list_node(this.stack_pop(), ptail);
     }
 
 
@@ -222,6 +308,8 @@ class Marshaller {
     make_array(size, type = Marshaller.type_array) {
         var ptr = this.alloc(8 + 4 * size);
         var words = new Uint32Array(this.memory.buffer, ptr, 2);
+
+        words.fill(0);
 
         words[0] = type;
         words[1] = size;
@@ -357,10 +445,12 @@ class Marshaller {
                 this.to_js(view.getUint32(4, true))
             );
 
-        case Marshaller.type_node:
-            return new Marshaller.Node(
-                view.getUint32(4, true)
-            );
+        case Marshaller.type_node: {
+            const id = view.getUint32(4, true);
+            this.node_refs[id] = ptr;
+
+            return new Marshaller.Node(id);
+        }
 
         case Marshaller.type_funcref_args:
             return new Marshaller.Funcref(ptr);
@@ -748,6 +838,10 @@ Marshaller.TridashValue = function(ptr) {
 Marshaller.FailTypes = {
     NoValue   : new Marshaller.Node(0),
     TypeError : new Marshaller.Node(1),
+    InvalidInteger : new Marshaller.Node(2),
+    InvalidReal : new Marshaller.Node(3),
+    ArityError : new Marshaller.Node(4),
+    IndexOutBounds : new Marshaller.Node(5),
     Empty     : new Marshaller.Node(6)
 };
 
