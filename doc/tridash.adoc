@@ -15,4 +15,6 @@ include::core.adoc[]
 
 include::optimization.adoc[]
 
+include::ffi.adoc[]
+
 == Index ==

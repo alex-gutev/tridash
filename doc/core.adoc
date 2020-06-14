@@ -1377,6 +1377,7 @@ replaced with a `%`.
 
 === Dictionaries ===
 
+[[meta-node-member]]
 ==== Meta-Node: `member(dict, key)` ====
 
 Retrieves the value of an entry in a dictionary.

@@ -1,0 +1,547 @@
+== Interfacing with Other Languages ==
+
+The languages that Tridash can interface to, and the foreign function
+interface itself, depend on the compilation target (the compiler
+backend).
+
+The current version of Tridash has two compilation targets
+'JavaScript', and 32-bit 'WebAssembly' (`wasm32`).
+
+=== Calling External Functions ===
+
+To be able to call an externally defined (defined outside Tridash
+code) function from Tridash, a meta-node without a definition has to
+be declared. This is achieved using the `/external` special operator.
+_See <<_external_meta_nodes>> for the operator's syntax_. Once an
+'external meta-node' is declared, it can be used, in Tridash code, as
+though it is a regular meta-node.
+
+The external meta-node has to be linked to an externally defined
+function, which implements the functionality of the meta-node, for
+each backend. This is achieved via backend specific attributes. For
+the 'JavaScript' and 'WebAssembly' backends the attributes are
+`js-name` and `wasm-name`, respectively.
+
+=== JavaScript Backend ===
+
+This section details the foreign function interface of the JavaScript
+backend.
+
+[[js-backend-types,Value Types]]
+==== Value Types ====
+
+Most Tridash primitive value types correspond directly to JavaScript
+primitives:
+
+- *Integers* are represented by JavaScript integers.
+
+- *Reals* are represented by JavaScript floating point numbers.
+
+- *Booleans* are represented by JavaScript Booleans.
+
+- *Strings* are represented by JavaScript strings.
+
+- *Subnode dictionaries* are represented by JavaScript objects with a
+  property for each subnode. The identifier of each property is the
+  corresponding subnode identifier.
+
+The remaining value types are represented by instances of classes in
+the runtime library, which is contained in the `Tridash` module object.
+
+- *Characters* are represented by instances of the `Tridash.Char` class,
+  which has one property:
++
+--
+[horizontal]
+`chr`:: A string containing just the character itself.
+--
+
+- *Lists* are either represented by JavaScript arrays or an internal
+   linked list node class.
++
+--
+The `Tridash.head` and `Tridash.tail` functions return the 'head' and
+'tail' of a list respectively. These functions will return a type
+error failure value if the argument is not a linked list node or
+array.
+--
+
+==== Failure Values ====
+
+Failure values are represented by an instance of the `Tridash.Fail`
+class, which has one property
+
+[horizontal]
+`type`:: The failure type. This property is `null` if the failure does
+not have a type.
+
+Instances of this class are thrown as JavaScript exceptions rather
+than being returned directly. Generally failure values are represented
+by 'thunks', see the next section on lazy evaluation, which, when evaluated, throw a
+`Tridash.Fail` exception.
+
+TIP: Use the `Tridash.fail` function, which takes one argument, the
+failure type (defaulting to `null`), to create failure values, which
+are wrapped in thunks.
+
+==== Builtin Failure Types ====
+
+The following functions return a JavaScript object, which serves to
+identify a builtin failure type.
+
+`Tridash.Empty()`:: Returns the object representing the empty list.
+
+`Tridash.NoValue()`:: Returns the object representing the <<node-no-value, `No
+Value`>> failure type.
+
+`Tridash.TypeError()`:: Returns the object representing the
+<<node-type-error, `Type-Error`>> failure type.
+
+`Tridash.IndexOutBounds()`:: Returns the object representing the
+<<node-index-out-bounds, `Index-Out-Bounds`>> failure type.
+
+`Tridash.InvalidInteger()`:: Returns the object representing the
+<<node-invalid-integer, `Invalid-Integer`>> failure type.
+
+`Tridash.InvalidReal()`:: Returns the object representing the
+<<node-invalid-real, `Invalid-Real`>> failure type.
+
+`Tridash.ArityError()`:: Returns the object representing the
+<<node-arity-error, `Arity-Error`>> failure type.
+
+
+==== Lazy Evaluation ====
+
+Tridash expressions may be evaluated lazily, that is they are only
+evaluated at the point where they are first used. Lazily evaluated
+expressions are wrapped in 'thunk' objects, which are instances of the
+`Tridash.Thunk` class.
+
+Thunks are created using the `Tridash.Thunk` constructor which takes
+one argument, the 'thunk computation' function. The thunk computation
+function should be a function of no arguments which computes, and
+returns, the thunk's result value.
+
+The `Tridash.resolve` function, of one argument, computes the value of
+a `Tridash.Thunk`, passed as the argument, if it has not been computed
+already, and returns the resulting value. If the argument is not a
+`Tridash.Thunk` object it is returned directly.
+
+IMPORTANT: `Tridash.resolve` repeatedly computes the value of a thunk,
+which is the result of computing the value of another thunk until the
+result is not a thunk. This means `Tridash.resolve` always returns an
+immediate value, not a thunk object.
+
+.Example: Resolving node value and handling failures
+[source, javascript]
+--------------------------------------------------
+try {
+    value = Tridash.resolve(value);
+    
+    // Use resolved value
+    ...
+}
+catch (e) {
+    if (e instanceof Tridash.Fail) {
+        // Handle failure
+        ...
+    }
+}
+--------------------------------------------------
+
+==== Linking Meta-Nodes to External Functions ====
+
+In the 'JavaScript' backend, the name of the JavaScript function,
+which provides the implementation of an 'external meta-node' is given
+by the value of the node's `js-name` attribute. This attribute must be
+a string which names a function that is globally accessible to the
+generated JavaScript code, at the time it is run.
+
+.Example: Linking external meta-node to JavaScript function
+--------------------------------------------------
+## Meta-Node of two arguments
+/external(fn, a, b)
+
+## Link to JavaScript 'my_func' function
+/attribute(fn, js-name, "my_func")
+--------------------------------------------------
+
+The function is called passing in the values of the argument nodes as
+arguments. If the value for an optional argument is not provided to
+the meta-node, in the Tridash source, the default value is passed to
+the function. If the optional argument and the arguments following it
+do not have default values, they are omitted in the generated function
+call.
+
+.Example: External meta-node with optional arguments with default value
+--------------------------------------------------
+## Meta-Node with 1 required and 1 optional argument
+/external(fn, a, b : 1)
+
+## Link to JavaScript 'my_func' function
+/attribute(fn, js-name, "my_func")
+
+## Instance with optional argument omitted
+fn(x)
+--------------------------------------------------
+
+This example compiles to the following call to `my_func`:
+
+--------------------------------------------------
+my_func(x, 1)
+--------------------------------------------------
+
+.Example: External meta-node with optional arguments without default value
+--------------------------------------------------
+## Meta-Node with 1 required and 1 optional argument
+/external(fn, a, :(b))
+
+## Link to JavaScript 'my_func' function
+/attribute(fn, js-name, "my_func")
+
+## Instance with optional argument omitted
+fn(x)
+--------------------------------------------------
+
+This example compiles to the following call to `my_func`:
+
+--------------------------------------------------
+my_func(x)
+--------------------------------------------------
+
+Notice that no value is provided for the `b` argument since it was
+omitted, in the meta-node instance `fn(x)` and it does not have a
+default value.
+
+Rest arguments are accumulated into a single JavaScript array which is
+passed as the last argument to the function. If the rest argument list
+is empty, the argument is omitted entirely in the generated function
+call.
+
+.Example: External meta-node with rest arguments
+--------------------------------------------------
+## Meta-Node with 1 required and 1 rest argument
+/external(fn, x, ..(xs))
+
+## Link to JavaScript 'my_func' function
+/attribute(fn, js-name, "my_func")
+
+## Instance 1: 3 rest arguments
+fn(a, b, c, d)
+
+## Instance 2: no rest arguments
+--------------------------------------------------
+
+Instance 1 is compiled to the following call to `my_func`:
+
+--------------------------------------------------
+my_func(a, [b, c, d])
+--------------------------------------------------
+
+Instance 2 is compiled to the following call to `my_func`:
+
+--------------------------------------------------
+my_func(a)
+--------------------------------------------------
+
+Notice no value is passed for the second argument which corresponds to
+the rest argument.
+
+Each argument, passed to an external function, may either be an
+immediate value or a `Tridash.Thunk` object, in the case of an
+argument which is lazily evaluated. The `Tridash.resolve` function
+should be called on each argument, of which the value is actually
+used, to ensure that the immediate value is obtained.
+
+The function should always return a value, which becomes the return
+value of the meta-node. This can either be an immediate Tridash value,
+of one of the types specified in <<js-backend-types>>, or a
+`Tridash.Thunk` object.
+
+Any failure value exception, thrown inside the function either by the
+function itself or while evaluating a 'thunk', should be
+caught and wrapped in a `Tridash.Thunk` object which is returned from
+the function.
+
+.Example: Handling failures in external meta-node functions
+[source, javascript]
+--------------------------------------------------
+function my_func(a) {
+    try {
+        // Resolve value of the `a` argument
+        // The result may be a failure value
+        a = Tridash.resolve(a);
+
+        // Do something with `a`
+        ...
+    }
+    catch (e) {
+        // Handle failure value exception
+        if (e instanceof Tridash.Fail) {
+            // Wrap failure in thunk object and return
+            return new Tridash.Thunk(() => { throw e });
+        }
+
+        // Rethrow other exceptions
+        throw e;
+    }
+}
+--------------------------------------------------
+
+
+=== WebAssembly Backend ===
+
+This section details calling JavaScript functions when targeting
+WebAssembly.
+
+==== Memory ====
+
+Tridash value types are represented by objects stored in the heap of
+the compiled WebAssembly module's memory object. The heap is managed
+by a tracing garbage collector, which is run whenever a memory
+allocation requests more space than is available.
+
+In order for a Tridash value to be passed to a JavaScript function,
+and vice versa, it is has to be converted ('marshalled') to an
+equivalent representation using JavaScript types. This functionality
+is provided by the `Tridash.Marshaller` class in the JavaScript
+component of the runtime library, which is encapsulated in the module
+object `Tridash`.
+
+[[wasm-value-types, Value Types]]
+==== Value Types ====
+
+Tridash value types, when converted to JavaScript value types, are
+represented by the following:
+
+- *Integers* are represented by JavaScript integers.
+
+- *Reals* are represented by JavaScript floating point numbers.
+
+- *Booleans* are represented by JavaScript Booleans.
+
+- *Strings* are represented by JavaScript strings.
+
+- *Arrays* are represented by JavaScript arrays.
+
+- *Subnode dictionaries* are represented by an instances of the
+  `Tridash.Marshaller.Object` class, with a property for each
+  subnode. The identifier of each property is the corresponding
+  subnode identifier.
+
+- *Characters* are represented by instances of the
+  `Tridash.Marshaller.Char` class, which has a single property:
++
+--
+[horizontal]
+`code`:: The character code.
+--
+
+- *Symbols* are represented by instances of the
+  `Tridash.Marshaller.Symbol`, which has a single property:
++
+--
+[horizontal]
+`name`:: The symbol name as a string.
+--
+
+- *Linked list nodes* are represented by instances of the
+  `Tridash.Marshaller.ListNode` class which the following properties:
++
+--
+[horizontal]
+`head`:: The element stored in the node
+`tail`:: The next node in the linked list
+--
+
+- *Failure values* are represented by instances of the
+  `Tridash.Marshaller.Fail` class, which has a single property:
++
+--
+[horizontal]
+`type`:: The failure type.
+--
+
+- *Raw node references* are represented by instances of the
+  `Tridash.Marshaller.Node` class, which has a single property:
++
+--
+[horizontal]
+`id`:: The node ID.
+--
+
+==== Builtin Failure Types ====
+
+The following properties of the `Marshaller.FailTypes` represent
+builtin failure types as JavaScript Values:
+
+`NoValue`:: Represents the <<node-no-value, `No Value`>> failure type.
+
+`TypeError`:: Represents the
+<<node-type-error, `Type-Error`>> failure type.
+
+`InvalidInteger`:: Represents the <<node-invalid-integer,
+`Invalid-Integer`>> failure type.
+
+`InvalidReal`:: Represents the <<node-invalid-real, `Invalid-Real`>>
+failure type.
+
+`ArityError`:: Represents the <<node-arity-error, `Arity-Error`>>
+failure type.
+
+`IndexOutBounds`:: Represents the <<node-index-out-bounds,
+`Index-Out-Bounds`>> failure type.
+
+`Empty`:: Represents the empty list.
+
+==== Marshaller ====
+
+The `Tridash.Marshaller` class is responsible for converting Tridash
+values stored in the WebAssembly heap to equivalent JavaScript values
+and vice versa. An instance of this class is automatically created
+when loading the WebAssembly module.
+
+[float]
+===== Methods =====
+
+`to_tridash(value)`:: Convert a JavaScript value (`value`), of a type
+listed in <<wasm-value-types>>, returning a pointer (integer offset)
+to the Tridash value with the WebAssembly memory heap.
+
+`to_js(pointer)`:: Convert a Tridash value, stored at location
+`pointer` within the WebAssembly heap, to a JavaScript value.
+
+`stack_push(pointer)`:: Push a pointer to a Tridash value onto the GC
+root set stack.
+
+`stack_pop()`:: Pop and return a pointer, to a Tridash value, from the
+GC root set stack.
+
+// The `to_tridash` method takes a JavaScript value, of a type listed in
+// <<wasm-value-types>> and returns a pointer (integer offset) to the
+// Tridash value stored in the WebAssembly memory heap.
+
+// --------------------------------------------------
+// to_tridash(value)
+// --------------------------------------------------
+
+// The `to_js` method takes a pointer (integer offset) to a Tridash
+// value, stored on the WebAssembly heap, and converts it to an
+// equivalent JavaScript value.
+
+// --------------------------------------------------
+// to_js(pointer)
+// --------------------------------------------------
+
+==== Lazy Evaluation and Garbage Collection ====
+
+A pointer may point to a thunk object, which represents a Tridash
+value which has not been computed yet. When converting a Tridash value
+to a JavaScript value, all thunk objects are computed. As a result of
+this each conversion from Tridash to JavaScript may trigger a garbage
+collection cycle. Likewise, converting a JavaScript value to a Tridash
+value may also trigger a garbage collection since a new object is
+created on the heap.
+
+CAUTION: Converting an infinite list or a cyclic object will result in
+an infinite loop, due to all lazily evaluated values being computed on
+conversion.
+
+When converting multiple values, of which the conversion of the first
+value, `a`, results in a garbage collection cycle being run, the
+memory held by the second value, `b`, may be reclaimed if it is not
+referenced by an object in the root set. Furthermore, the pointer to
+`b` is no longer valid due to the objects being copied to the new
+heap.
+
+To overcome this problem, before converting a Tridash value to
+JavaScript, all pointers to other Tridash values should be pushed onto
+the root set stack, using the `stack_push` method of
+`Tridash.Marshaller`. After the conversion the updated pointer values
+should be popped off the root set stack using the `stack_pop` method
+of `Tridash.Marshaller`.
+
+IMPORTANT: Every call to `stack_push` must be balanced by a call to
+`stack_pop`.
+
+.Example: Converting Multiple Tridash Values to JS Values
+[source, javascript]
+--------------------------------------------------
+/// Convert the Tridash values, pointer to by `a`, `b` and `c`.
+
+// Push pointer `c` to root set stack
+marshaller.stack_push(c);
+
+// Push pointer `b` to root set stack
+marshaller.stack_push(b);
+
+// Convert Tridash value `a` to JS value
+a = marshaller.to_js(a);
+
+
+// Pop updated pointer `b` from stack
+b = marshaller.stack_pop();
+
+// Convert Tridash value `b` to JS value
+b = marshaller.to_js(b);
+
+
+// Pop updated pointer `c` from stack
+c = marshaller.stack_pop();
+
+// Convert Tridash value `c` to JS value
+c = marshaller.to_js(c);
+--------------------------------------------------
+
+==== Linking Meta-Nodes to External Functions ====
+
+The name of the JavaScript function, which provides the implementation
+of an 'external meta-node' is given by the value of the node's
+`wasm-name` attribute. The value of this attribute may either be a
+symbol or string which names a global JavaScript function, or an expression of
+the form `module.name` where `module` is the name of a globally
+accessible object, and `name` is the name of the property which
+contains the function that implements the meta-node.
+
+.Example: Linking external meta-node to JavaScript function
+--------------------------------------------------
+## Meta-Node of two arguments
+/external(f, a, b)
+/external(g, a, b)
+
+## Link to JavaScript 'my-func' function
+/attribute(f, wasm-name, "my-func")
+
+## Link to JavaScript `func` function that is a property
+## of the global object `my_lib`
+/attribute(g, wasm-name, my_lib.func)
+--------------------------------------------------
+
+The function is called with the arguments being the pointers to the
+values of the argument nodes, within the module's memory object.
+
+If the value for an optional argument is not provided to the
+meta-node, in the Tridash source, and there is no default value, the
+'null' pointer (`0`) is passed to the function.
+
+NOTE: The `to_js` method of the `Tridash.Marshaller` class, returns
+the JavaScript `null` value when passed the 'null' pointer.
+
+.Example: External meta-node with optional arguments without default value
+--------------------------------------------------
+## Meta-Node with 1 required and 1 optional argument
+/external(fn, a, :(b))
+
+## Link to JavaScript 'my_func' function
+/attribute(fn, wasm-name, "my_func")
+
+## Instance with optional argument omitted
+fn(x)
+--------------------------------------------------
+
+In this example, `my_func` will be called with the pointer to the
+value of `x` as the first argument and the 'null' pointer (`0`) as the
+second argument.
+
+The function should return its result as a pointer to a Tridash value,
+within the WebAssembly memory object.
