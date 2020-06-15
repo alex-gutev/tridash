@@ -22,6 +22,71 @@ each backend. This is achieved via backend specific attributes. For
 the 'JavaScript' and 'WebAssembly' backends the attributes are
 `js-name` and `wasm-name`, respectively.
 
+
+=== Accessing and Setting Node Values ===
+
+In order to access the value of a node from outside Tridash code, the
+node must be given a public identifier. This is done by setting the
+node's `public-name` attribute to a string identifier.
+
+.Example: Setting Node Public Identifier
+--------------------------------------------------
+# Set public identifier of `x` to `node_x`
+
+/attribute(x, public-name, "node_x")
+--------------------------------------------------
+
+Node `x` is now accessible outside Tridash code by the `node_x`
+identifier.
+
+CAUTION: Currently, it is not checked whether multiple nodes are given
+the same public identifier.
+
+==== Runtime Module Objects ====
+
+A Tridash application is compiled to a single runtime module
+object. When targeting the 'JavaScript' or 'WebAssembly' backends,
+this is a JavaScript object with at least the following property:
+
+`nodes`:: An object containing references to the runtime node objects
+of all publicly accessible nodes.  This object contains a property for
+each publicly accessible node, with the property identifier being the
+node's public identifier.
+
+The module object also provides the following member function:
+
+`set_values(values)`:: Set the values of multiple nodes simultaneously.
++
+--
+`values` is an array with each element being an array of the form
+`[node, value]` where `node` is the node's runtime node object and
+`value` is the value to which the node should be set.
+--
+
+==== Runtime Node Objects ====
+
+The runtime node object provides three methods:
+
+`get_value()`:: Returns the value of a node.
+
+`set_value(value)`:: Set the value of the node to `value`.
+
+`watch(f)`:: Call the function `f` whenever the value of the node
+changes. The function is passed the new value of the node as its only
+argument.
+
+IMPORTANT: In order to be able to set the value of a node, it must be
+marked as an input node, by setting its `input` attribute to
+true. _See <<_input_nodes>>_.
+
+CAUTION: Unless a node is an 'input' node or an 'output' node, that is
+a node with no observers, there is no guarantee that a runtime node
+object is created for it, even if it is given a public identifier, due
+to node coalescing. To ensure that a runtime node object is created
+for a node, for which a public identifier is assigned, its
+`coalescable` and `removable` attributes should be set to 'false'. _See
+<<_coalescing>> for more information._
+
 === JavaScript Backend ===
 
 This section details the foreign function interface of the JavaScript
@@ -288,6 +353,40 @@ function my_func(a) {
 }
 --------------------------------------------------
 
+
+==== Runtime Module Object ====
+
+By default, when targeting the JavaScript backend, a standalone
+JavaScript file is produced, which assigns the `nodes` and
+`set_values` properties of the runtime module object to the `exports`
+object. This file can be loaded by a JavaScript runtime which supports the
+`require` function, such as 'Node.js'. The properties of the module
+object can then be accessed as properties of the object returned by
+`require`.
+
+.Example: JavaScript Module Object Usage
+[source, javascript]
+--------------------------------------------------
+# Load the compiled JavaScript module. Substitute `module.js` with the
+# path to the generated JavaScript file.
+
+const module = require('module.js');
+const node_x = module.nodes.node_x;
+
+// Retrieve value of node_x
+const value = node_x.get_value();
+
+...
+
+// Set value of node_x to integer 10
+node_x.set_value(10);
+--------------------------------------------------
+
+The `get_value` method of the runtime node object takes a single
+optional argument, which if 'true' (the default), the value of the
+node is fully evaluated if it is a 'thunk' object, representing a
+lazily evaluated value. If the argument is 'false', 'thunk' objects
+are not evaluated but are returned directly.
 
 === WebAssembly Backend ===
 
@@ -559,3 +658,66 @@ second argument.
 
 The function should return its result as a pointer to a Tridash value,
 within the WebAssembly memory object.
+
+==== Runtime Module Object ====
+
+By default, when targeting the WebAssembly backend, a JavaScript file
+is produced, along with the `.wasm` file containing the WebAssembly
+module, which contains a script that loads the module. A 'promise',
+which resolves to the runtime module object containing the `nodes`
+property and `set_values` member function, is assigned to the `module`
+property of the `exports` object. This file can be loaded by a
+JavaScript runtime which supports the `require` function, such as
+'Node.js'. The properties of the module object can then be accessed as
+properties of the object returned by `require`.
+
+NOTE: A promise to the module object is assigned, rather than the
+module object itself, since WebAssembly modules are loaded
+asynchronously.
+
+The runtime module object also contains the following additional
+fields:
+
+`module`:: `WebAssembly.Instance` object of the compiled Tridash
+module.
+
+`runtime`:: `WebAssembly.Instance` object of the runtime library
+module.
+
+`memory`:: The WebAssembly memory object.
+
+`marshaller`:: The `Tridash.Marshaller` object for marshalling values
+to and from the compiled module's heap memory.
+
+
+
+.Example: WebAssembly Module Object Usage
+[source, javascript]
+--------------------------------------------------
+# Load the compiled Wasm loader script. Substitute `module.js` with
+# the path to the generated JavaScript file.
+
+const module = require('module.js')
+
+module.then((mod) => {
+    const marshaller = mod.marshaller;
+    const node_x = mod.nodes.node_x;
+
+    // Retrieve value of node_x
+    const value = node_x.get_value();
+
+    ...
+
+    // Set value of node_x to integer 10
+    node_x.set_value(10);
+});
+--------------------------------------------------
+
+The `set_value`, and `get_value` methods, of the runtime node object,
+automatically marshal values to and from the WebAssembly module's
+heap.
+
+The `get_value` method, of the runtime node object, takes a single
+optional argument, which if 'false' returns a raw pointer to the
+Tridash value, of the node, rather than converting it to a JavaScript
+value. By default this argument is 'true'.
