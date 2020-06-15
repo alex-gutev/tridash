@@ -325,9 +325,9 @@ represented by the following:
 - *Arrays* are represented by JavaScript arrays.
 
 - *Subnode dictionaries* are represented by an instances of the
-  `Tridash.Marshaller.Object` class, with a property for each
-  subnode. The identifier of each property is the corresponding
-  subnode identifier.
+  `Tridash.Marshaller.Object` class. The `subnodes` property contains
+  an object with a property for each subnode. The identifier of each
+  property is the corresponding subnode identifier.
 
 - *Characters* are represented by instances of the
   `Tridash.Marshaller.Char` class, which has a single property:
@@ -363,7 +363,7 @@ represented by the following:
 --
 
 - *Raw node references* are represented by instances of the
-  `Tridash.Marshaller.Node` class, which has a single property:
+  `Tridash.Marshaller.Node` class, which has a single property.
 +
 --
 [horizontal]
@@ -407,6 +407,20 @@ when loading the WebAssembly module.
 `to_tridash(value)`:: Convert a JavaScript value (`value`), of a type
 listed in <<wasm-value-types>>, returning a pointer (integer offset)
 to the Tridash value with the WebAssembly memory heap.
++
+--
+
+`value` may also be an instance of the `Marshaller.TridashValue`
+class, which represents a value stored on the WebAssembly heap, at the
+location given by the `ptr` property. This is useful to create arrays
+or list objects which contain references to existing Tridash values.
+
+NOTE: Subnode dictionaries (`Tridash.Marshaller.Object` instances) and
+raw node references (`Tridash.Marshaller.Node` instances) can only be
+converted to Tridash values if they were obtained from a Tridash to
+JavaScript value conversion.
+
+--
 
 `to_js(pointer)`:: Convert a Tridash value, stored at location
 `pointer` within the WebAssembly heap, to a JavaScript value.

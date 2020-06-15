@@ -51,8 +51,8 @@ describe('Integration Test 15', function() {
 
                 const value = dict.get_value();
 
-                assert.equal(value.a, 1);
-                assert.equal(value.b, 2);
+                assert.equal(value.subnodes.a, 1);
+                assert.equal(value.subnodes.b, 2);
             });
         });
 

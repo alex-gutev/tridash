@@ -113,22 +113,29 @@
         (context (get :object (contexts node))))
 
     (with-slots (value-function) context
-      (lexical-block
-       (js-var "element" (make-get-element (element-id node)))
-       (js-var "value" (js-call (js-member "module" "get_value") value-index))
+      (let ((set-attrs
+             (js-if (js-call (js-members "Tridash" "Marshaller" "Object" "is_object")
+                             "value")
 
-       (-> (compose (curry #'make-set-attribute node "element" "value") #'first)
-           (map (object-expression-entries value-function)))
+                    (-<> (js-member "value" "subnodes")
+                         (curry #'make-set-attribute node "element" <>)
+                         (compose #'first)
+                         (map (object-expression-entries value-function))))))
 
-       (js-call
-        (js-member "module" "watch_node")
+        (lexical-block
+         (js-var "element" (make-get-element (element-id node)))
+         (js-var "value" (js-call (js-member "module" "get_value") value-index))
 
-        value-index
+         set-attrs
 
-        (js-lambda
-         (list "value")
-         (-> (compose (curry #'make-set-attribute node "element" "value") #'first)
-             (map (object-expression-entries value-function)))))))))
+         (js-call
+          (js-member "module" "watch_node")
+
+          value-index
+
+          (js-lambda
+           (list "value")
+           (list set-attrs))))))))
 
 (defun make-get-element (id)
   "Generates code which retrieves a reference to the HTML element with
@@ -158,9 +165,8 @@
       (js-catch
        (list
         (js-if
-         (->> (js-call "||"
-                       (js-call (js-members "Tridash" "Marshaller" "Fail" "is_fail") object)
-                       (js-call (js-members "Tridash" "Marshaller" "Fail" "is_fail") (js-member object attribute)))
+         (->> (js-call (js-members "Tridash" "Marshaller" "Fail" "is_fail")
+                       (js-member object attribute))
 
               (js-call "!"))
 

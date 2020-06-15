@@ -125,6 +125,9 @@ class Marshaller {
         else if (value instanceof Marshaller.ListNode) {
             return this.to_tridash_list_node(value.head, value.tail);
         }
+        else if (value instanceof Marshaller.Object) {
+            return this.to_tridash_object(value.descriptor, value.offsets, value.subnodes);
+        }
         else if (value instanceof Marshaller.Node) {
             const ptr = this.node_refs[value.id];
 
@@ -257,6 +260,15 @@ class Marshaller {
         return this.stack_pop();
     }
 
+    /**
+     * Convert a JavaScript linked list node to a Tridash linked list
+     * node.
+     *
+     * @param head Element contained in node.
+     * @param tail Next node pointer.
+     *
+     * @return Pointer to the linked list node object.
+     */
     to_tridash_list_node(head, tail) {
         const phead = this.to_tridash(head);
         this.stack_push(phead);
@@ -264,6 +276,39 @@ class Marshaller {
         const ptail = this.to_tridash(tail);
 
         return this.module.exports.make_list_node(this.stack_pop(), ptail);
+    }
+
+    /**
+     * Convert a JavaScript representation of a Tridash user-defined
+     * object to a Tridash user-defined object.
+     *
+     * @param descriptor Pointer to object descriptor.
+     *
+     * @param offsets Array storing index offsets at which the value
+     *   of each subnode is stored.
+     *
+     * @param subnodes Object containing the value of each subnode.
+     *
+     * @return Pointer to the object.
+     */
+    to_tridash_object(descriptor, offsets, subnodes) {
+        const num_subnodes = Object.keys(subnodes).length;
+        const loc = this.stack_push(this.alloc(8 + 4 * num_subnodes));
+
+        var words = new Uint32Array(this.memory.buffer, this.get_word(loc), 2);
+        words.fill(0);
+
+        words[0] = Marshaller.type_object;
+        words[1] = descriptor;
+
+        for (const subnode of Object.keys(subnodes)) {
+            const ptr = this.to_tridash(subnodes[subnode]);
+            words = new Uint32Array(this.memory.buffer, this.get_word(loc), 2);
+
+            words[offsets[subnode] + 2] = ptr;
+        }
+
+        return this.stack_pop();
     }
 
 
@@ -536,6 +581,8 @@ class Marshaller {
 
         var object = new Marshaller.Object();
 
+        const offsets = {};
+
         for (var i = 0; i < buckets; i++) {
             const mem = new DataView(this.memory.buffer, 0);
             desc_view = new DataView(this.memory.buffer, descriptor);
@@ -548,8 +595,10 @@ class Marshaller {
             if (key !== 0) {
                 this.stack_push(ptr);
 
-                object[this.decode_string(key - 4)] =
-                    this.to_js(mem.getUint32(ptr + 8 + index * 4, true));
+                const key_id = this.decode_string(key - 4);
+
+                offsets[key_id] = index;
+                object.subnodes[key_id] = this.to_js(mem.getUint32(ptr + 8 + index * 4, true));
 
                 ptr = this.stack_pop(ptr);
             }
@@ -772,10 +821,19 @@ Marshaller.ListNode = function(head, tail) {
 /**
  * Represents a Tridash object with user-defined subnodes.
  *
- * The value of each subnode is stored in an object member with the
- * key being the same as the subnode identifier.
+ * The value of each subnode is stored as a property of the `subnodes`
+ * property with the key being the same as the subnode identifier.
  */
-Marshaller.Object = function() {};
+Marshaller.Object = function(descriptor, offsets) {
+    this.descriptor = descriptor;
+    this.offsets = offsets;
+
+    this.subnodes = {};
+};
+
+Marshaller.Object.is_object = function(thing) {
+    return thing instanceof Marshaller.Object;
+};
 
 
 /**

@@ -50,7 +50,7 @@ function run_tridash_test(test) {
     }
 
     if (test instanceof Tridash.Marshaller.Object) {
-        var type = test.type;
+        var type = test.subnodes.type;
 
         if (!(type instanceof Tridash.Marshaller.Symbol)) {
             assert.fail("Test type not a symbol");
@@ -59,13 +59,13 @@ function run_tridash_test(test) {
         type = type.name;
 
         if (type === 'group') {
-            describe(test.description, function() {
-                run_tridash_tests(test.tests);
+            describe(test.subnodes.description, function() {
+                run_tridash_tests(test.subnodes.tests);
             });
         }
         else if (type == 'test') {
-            it(test.description, function() {
-                run_test(test.condition);
+            it(test.subnodes.description, function() {
+                run_test(test.subnodes.condition);
             });
         }
         else {

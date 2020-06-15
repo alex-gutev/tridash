@@ -49,8 +49,8 @@ describe('Integration Test 30', function() {
 
                 const value = output.get_value();
 
-                assert.equal(value.first, "John");
-                assert.equal(value.last, "Smith");
+                assert.equal(value.subnodes.first, "John");
+                assert.equal(value.subnodes.last, "Smith");
             });
         });
 
@@ -60,8 +60,8 @@ describe('Integration Test 30', function() {
 
                 const value = output.get_value();
 
-                assert.equal(value.first, "Bob");
-                assert.equal(value.last, "Smith");
+                assert.equal(value.subnodes.first, "Bob");
+                assert.equal(value.subnodes.last, "Smith");
             });
         });
     });
