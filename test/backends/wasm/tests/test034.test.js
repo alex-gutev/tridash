@@ -53,7 +53,7 @@ describe('Integration Test 34', function() {
     before(async () => {
         module = await mod.module;
 
-        marshaller = module.module.marshaller;
+        marshaller = module.marshaller;
 
         x = module.nodes.x;
         output1 = module.nodes.output1;

@@ -389,9 +389,10 @@
             (js-return
              (js-object
               (list
-               (list "module" "module")
+               (list "module" "mod")
                (list "runtime" "runtime")
                (list "memory" "memory")
+               (list "marshaller" "marshaller")
                (list "nodes" "nodes")
                (list "set_values"
                      (js-call

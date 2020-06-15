@@ -36,7 +36,7 @@ describe('Integration Test 15', function() {
 
     before(async () => {
         module = await mod.module;
-        marshaller = module.module.marshaller;
+        marshaller = module.marshaller;
 
         x = module.nodes.x;
         y = module.nodes.y;
