@@ -21,7 +21,7 @@ output <- list(
 ## Input Attributes
 
 /attribute(i, input, 1)
-/attribute(j, input, 2)
+/attribute(j, input, 1)
 
 
 ## Public Name Attributes
