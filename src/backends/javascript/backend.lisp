@@ -152,6 +152,12 @@
   "Converts THING to a boolean value."
 
   (match thing
+    ((cl:equalp "true")
+     (values t t))
+
+    ((cl:equalp "false")
+     (values nil t))
+
     ((ppcre "^[0-9]+$")
      (parse-boolean (parse-integer thing)))
 
