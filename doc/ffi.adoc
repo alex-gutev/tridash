@@ -1,5 +1,7 @@
 == Interfacing with Other Languages ==
 
+(((Foreign Function Interface)))
+
 The languages that Tridash can interface to, and the foreign function
 interface itself, depend on the compilation target (the compiler
 backend).
@@ -8,6 +10,8 @@ The current version of Tridash has two compilation targets
 'JavaScript', and 32-bit 'WebAssembly' (`wasm32`).
 
 === Calling External Functions ===
+
+(((External Functions, Foreign Function Interface)))
 
 To be able to call an externally defined (defined outside Tridash
 code) function from Tridash, a meta-node without a definition has to
@@ -24,6 +28,8 @@ the 'JavaScript' and 'WebAssembly' backends the attributes are
 
 
 === Accessing and Setting Node Values ===
+
+(((Accessing Node Values, Foreign Function Interface)))
 
 In order to access the value of a node from outside Tridash code, the
 node must be given a public identifier. This is done by setting the
@@ -43,6 +49,8 @@ CAUTION: Currently, it is not checked whether multiple nodes are given
 the same public identifier.
 
 ==== Runtime Module Objects ====
+
+(((Runtime Module Objects, Foreign Function Interface)))
 
 A Tridash application is compiled to a single runtime module
 object. When targeting the 'JavaScript' or 'WebAssembly' backends,
@@ -64,6 +72,8 @@ The module object also provides the following member function:
 --
 
 ==== Runtime Node Objects ====
+
+(((Runtime Node Objects, Foreign Function Interface)))
 
 The runtime node object provides three methods:
 
@@ -89,11 +99,15 @@ for a node, for which a public identifier is assigned, its
 
 === JavaScript Backend ===
 
+(((JavaScript Backend, Foreign Function Interface)))
+
 This section details the foreign function interface of the JavaScript
 backend.
 
 [[js-backend-types,Value Types]]
 ==== Value Types ====
+
+(((Value Types, JavaScript Backend, Foreign Function Interface)))
 
 Most Tridash primitive value types correspond directly to JavaScript
 primitives:
@@ -133,6 +147,8 @@ array.
 
 ==== Failure Values ====
 
+(((Failure Values, JavaScript Backend, Foreign Function Interface)))
+
 Failure values are represented by an instance of the `Tridash.Fail`
 class, which has one property
 
@@ -150,6 +166,9 @@ failure type (defaulting to `null`), to create failure values, which
 are wrapped in thunks.
 
 ==== Builtin Failure Types ====
+
+(((Builtin Failure Types, JavaScript Backend, Foreign Function Interface)))
+
 
 The following functions return a JavaScript object, which serves to
 identify a builtin failure type.
@@ -176,6 +195,9 @@ Value`>> failure type.
 
 
 ==== Lazy Evaluation ====
+
+(((Lazy Evaluation, JavaScript Backend, Foreign Function Interface)))
+
 
 Tridash expressions may be evaluated lazily, that is they are only
 evaluated at the point where they are first used. Lazily evaluated
@@ -215,6 +237,9 @@ catch (e) {
 --------------------------------------------------
 
 ==== Linking Meta-Nodes to External Functions ====
+
+(((External Functions, JavaScript Backend, Foreign Function Interface)))
+
 
 In the 'JavaScript' backend, the name of the JavaScript function,
 which provides the implementation of an 'external meta-node' is given
@@ -356,6 +381,9 @@ function my_func(a) {
 
 ==== Runtime Module Object ====
 
+(((Runtime Module Object, JavaScript Backend, Foreign Function Interface)))
+
+
 By default, when targeting the JavaScript backend, a standalone
 JavaScript file is produced, which assigns the `nodes` and
 `set_values` properties of the runtime module object to the `exports`
@@ -390,10 +418,16 @@ are not evaluated but are returned directly.
 
 === WebAssembly Backend ===
 
+(((WebAssembly Backend, Foreign Function Interface)))
+
+
 This section details calling JavaScript functions when targeting
 WebAssembly.
 
 ==== Memory ====
+
+(((Memory, WebAssembly Backend, Foreign Function Interface)))
+
 
 Tridash value types are represented by objects stored in the heap of
 the compiled WebAssembly module's memory object. The heap is managed
@@ -409,6 +443,9 @@ object `Tridash`.
 
 [[wasm-value-types, Value Types]]
 ==== Value Types ====
+
+(((Value Types, WebAssembly Backend, Foreign Function Interface)))
+
 
 Tridash value types, when converted to JavaScript value types, are
 represented by the following:
@@ -471,6 +508,9 @@ represented by the following:
 
 ==== Builtin Failure Types ====
 
+(((Builtin Failure Types, WebAssembly Backend, Foreign Function Interface)))
+
+
 The following properties of the `Marshaller.FailTypes` represent
 builtin failure types as JavaScript Values:
 
@@ -494,6 +534,10 @@ failure type.
 `Empty`:: Represents the empty list.
 
 ==== Marshaller ====
+
+(((Marshaller, WebAssembly Backend, Foreign Function Interface)))
+(((Value Conversions, WebAssembly Backend, Foreign Function Interface)))
+
 
 The `Tridash.Marshaller` class is responsible for converting Tridash
 values stored in the WebAssembly heap to equivalent JavaScript values
@@ -530,23 +574,11 @@ root set stack.
 `stack_pop()`:: Pop and return a pointer, to a Tridash value, from the
 GC root set stack.
 
-// The `to_tridash` method takes a JavaScript value, of a type listed in
-// <<wasm-value-types>> and returns a pointer (integer offset) to the
-// Tridash value stored in the WebAssembly memory heap.
-
-// --------------------------------------------------
-// to_tridash(value)
-// --------------------------------------------------
-
-// The `to_js` method takes a pointer (integer offset) to a Tridash
-// value, stored on the WebAssembly heap, and converts it to an
-// equivalent JavaScript value.
-
-// --------------------------------------------------
-// to_js(pointer)
-// --------------------------------------------------
-
 ==== Lazy Evaluation and Garbage Collection ====
+
+(((Lazy Evaluation, WebAssembly Backend, Foreign Function Interface)))
+(((Garbage Collection, WebAssembly Backend, Foreign Function Interface)))
+
 
 A pointer may point to a thunk object, which represents a Tridash
 value which has not been computed yet. When converting a Tridash value
@@ -608,6 +640,9 @@ c = marshaller.to_js(c);
 
 ==== Linking Meta-Nodes to External Functions ====
 
+(((External Functions, WebAssembly Backend, Foreign Function Interface)))
+
+
 The name of the JavaScript function, which provides the implementation
 of an 'external meta-node' is given by the value of the node's
 `wasm-name` attribute. The value of this attribute may either be a
@@ -660,6 +695,9 @@ The function should return its result as a pointer to a Tridash value,
 within the WebAssembly memory object.
 
 ==== Runtime Module Object ====
+
+(((Runtime Module Object, WebAssembly Backend, Foreign Function Interface)))
+
 
 By default, when targeting the WebAssembly backend, a JavaScript file
 is produced, along with the `.wasm` file containing the WebAssembly
