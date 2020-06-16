@@ -176,7 +176,16 @@
   "Converts value to a boolean. 0 and NIL are treated as boolean
    false, everything else is treated as boolean true."
 
-  (not (memberp value '(0 nil))))
+  (match value
+    ((eql 1) t)
+
+    ((eql 't) t)
+
+    ((cl:equalp "true")
+     t)
+
+    ((type symbol)
+     (likep (symbol-name value) "true"))))
 
 ;;;; Bindings
 

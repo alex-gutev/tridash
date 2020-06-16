@@ -668,7 +668,7 @@ about node attributes_.
 a -> b
 
 # Designate `a` as an input node
-/attribute(a, input, 1)
+/attribute(a, input, True)
 --------------------------------------------------
 
 CAUTION: A compilation error is triggered if a node has a dependency
@@ -734,7 +734,7 @@ list of some attributes and a summary of their effect:
 
 .Examples
 --------------------------------------------------
-/attribute(a, input, 1)
+/attribute(a, input, True)
 /attribute(a, public-name, "app-input")
 --------------------------------------------------
 
@@ -1467,7 +1467,7 @@ ordinary nodes. The `macro` attribute of a meta-node `f` is set to
 'true', with the following declaration:
 
 --------------------------------------------------
-/attribute(f, macro, 1)
+/attribute(f, macro, True)
 --------------------------------------------------
 ==================================================
 
@@ -1509,7 +1509,7 @@ operator names.
 '(thing) :
     list(/quote(/quote), thing)
 
-/attribute(', macro, 1)
+/attribute(', macro, True)
 --------------------------------------------------
 
 
@@ -1541,7 +1541,7 @@ macro-node's definition.
 <-(target, src) :
     list(&(->), src, target)
 
-/attribute(<-, macro, 1)
+/attribute(<-, macro, True)
 --------------------------------------------------
 
 The `<-` macro function, in the example above, returns a functor
