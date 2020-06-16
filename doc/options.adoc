@@ -1,0 +1,155 @@
+== Compiler Options ==
+
+The Tridash compiler (`tridashc`) accepts a number of options which
+affect the compilation of certain files and the output code that is
+generated.
+
+_View the man page for `tridashc` or run the command `tridashc -h` for
+details of how these options are specified._
+
+=== Output Options ===
+
+The output options control various aspects of the output code that is
+generated. The options accepted depends on the compilation target.
+
+==== JavaScript Backend ====
+
+The JavaScript backend accepts the following options:
+
+`indented`:: If set to 'true', formatted JavaScript code with line
+breaks and indentation is generated. If 'false' no line breaks or
+non-syntactic spaces are added.
+
+`runtime-path`:: Path to the runtime library. If not provided, the
+runtime library in the Tridash installation directory is used.
+
+`runtime-linkage`:: Controls how the runtime library is linked with
+the generated code. This only has an effect when the output is an HTML
+file, otherwise the runtime library is not linked to the output and
+has to be loaded manually.
++
+--
+It can be one of the following values:
+
+`static`:: Embed the runtime library directly inside the HTML file.
+
+`dynamic`:: Insert a reference to the runtime library, located at the
+URL given by `runtime-path`, inside the HTML file.
+
+`none`:: Do not link the runtime library. This should be used if the
+runtime library is linked manually by a script tag in the HTML source.
+--
+
+`type`:: Type of output that is generated. Can be one of the
+following:
++
+--
+`html`:: Generate an HTML file with the compiled Tridash code embedded
+in it. The HTML source, which is referenced by the node with
+identifier given by the `main-ui` option, is used as the template for
+the HTML output file.
+
+`js`:: Generate a JavaScript file containing just the compiled Tridash
+code. The runtime library is not loaded, thus has to be loaded
+manually, and stored in the global `Tridash` object, prior to loading
+the generated JavaScript file. This is the default.
+--
+
+`main-ui`:: The identifier of the node, which references the contents
+of an HTML file, to use as the template for the output, when the
+output type is an HTML file.
+
+`module-name`:: The identifier of the JavaScript variable, by which
+the runtime module object is referenced.
++
+--
+If empty (the default) and the output type is a JavaScript file, the
+properties of the runtime module object are assigned to the `exports`
+object. The file can then be loaded using the `require`
+function, in a JavaScript runtime where it is supported. When the
+output type is an HTML file, the runtime module object is not
+accessible.
+
+When given a value, the runtime module object is assigned to the
+global variable with the identifier given by the value. The JavaScript
+file can then be loaded using an HTML script tag.
+--
+
+
+==== WebAssembly Backend ====
+
+When targeting WebAssembly (`wasm32`), two output files are generated:
+
+- A WebAssembly `.wasm` containing the compiled Tridash code.
+
+- A JavaScript file which contains a script that loads the WebAssembly
+  module, as well as the runtime library module.
+
+To use the compiled module, only the loader script has to be loaded.
+
+The following output options are accepted.
+
+`indented`:: If set to 'true', formatted JavaScript code with line
+breaks and indentation is generated. If 'false' no line breaks or
+non-syntactic spaces are added.
+
+`type`:: Type of output that is generated.
++
+--
+By default a separate WebAssembly (`.wasm`) and JavaScript file are
+generated. The module loader library has to be loaded manually.
+
+If set to `html`, generate an HTML file with the compiled Tridash code
+embedded in it. The HTML source, which is referenced by the HTML node
+with identifier given by the `main-ui` option, is used as the template
+for the HTML output file.
+--
+
+`main-ui`:: The identifier of the node, which references the contents
+of an HTML file, to use as the template for the output, when the
+output type is an HTML file.
+
+`module-name`:: The identifier of the JavaScript variable, through which,
+the runtime module object is referenced.
++
+--
+If empty (the default) and the output type is not `html`, the
+properties of the runtime module object are assigned to the `exports`
+object. The loader script can then be loaded using the `require`
+function, in a JavaScript runtime where it is supported. When the
+output type is an HTML file, the runtime module object is not
+accessible.
+
+When given a value, the runtime module object is assigned to the
+global variable with the identifier given by the value. The loader script
+file can then be loaded using an HTML script tag.
+--
+
+`linkage`:: Control how the WebAssembly module is linked to the loader
+script
++
+--
+This can be one of the following:
+
+`local`:: The loader script loads the WebAssembly modules from the
+local file system. This requires a JavaScript runtime which provides
+the `require` function and the `fs` module. The paths to the compiled
+module and runtime library are given by the `module-path` and
+`runtime-path` options, respectively.
+
+`remote`:: The loader script loads the WebAssembly modules from a
+remote location. The URLs to the compiled module and runtime library
+are given by the `module-path` and `runtime-path` options,
+respectively.
+
+`embed`:: The compiled Tridash module and runtime library are embedded
+directly in the loader script. The paths to the compiled module and
+runtime library, which need to be accessible to the compiler, are
+given by the `module-path` and `runtime-path` options, respectively.
+--
+
+`runtime-path`:: Path to the runtime library. If omitted, the path to
+the runtime library in the Tridash installation is used.
+
+`module-path`:: Path to the compiled Tridash module. If omitted, the
+path to the output file is used.

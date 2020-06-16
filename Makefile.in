@@ -166,7 +166,8 @@ doc_files = doc/tridash.adoc \
 	doc/semantics.adoc \
 	doc/core.adoc \
 	doc/optimization.adoc \
-	doc/ffi.adoc
+	doc/ffi.adoc \
+	doc/options.adoc
 
 # Info Documentation
 
