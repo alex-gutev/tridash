@@ -153,3 +153,13 @@ the runtime library in the Tridash installation is used.
 
 `module-path`:: Path to the compiled Tridash module. If omitted, the
 path to the output file is used.
+
+`stack-size`:: The amount of space to reserve for the GC root set
+stack. The default stack size is 64 KB.
++
+--
+CAUTION: The root set stack does not expand after the space is
+reserved. If more elements are pushed onto it than there is space, a
+memory access out of bounds exception will be thrown by the
+WebAssembly runtime.
+--

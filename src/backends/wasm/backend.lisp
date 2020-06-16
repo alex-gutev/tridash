@@ -230,6 +230,7 @@
   (with-slots (nodes meta-nodes) table
     (let* ((*backend-state* (make-instance 'backend-state))
            (*linker-state* (make-instance 'linker-state))
+           (*stack-size* (or (parse-option-int (get "stack-size" options)) *stack-size*))
            (out-nodes (create-nodes nodes))
            (out-meta-nodes (create-meta-nodes meta-nodes))
            (compute (create-compute-function table))
@@ -252,6 +253,11 @@
          :num-nodes (length out-nodes)
          :stack-size *stack-size*
          :imports (map-values (imports *linker-state*)))))))
+
+(defun parse-option-int (option)
+  (match option
+    ((ppcre "^[0-9]+$")
+     (parse-integer option))))
 
 (defun output-wasm-file (out-file module)
   "Serialize the WebAssembly module MODULE to the file at OUT-FILE."
