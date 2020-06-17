@@ -160,7 +160,7 @@ runtime/conversions.o: runtime/conversions.c \
 	$(memory_h_deps)
 	$(EMCC) -O2 $< -o $@ -c
 
-runtime/math.o: runtime/math.c $(math_h_deps)
+runtime/math.o: runtime/math.c $(math_h_deps) $(types_h_deps)
 	$(EMCC) -O2 $< -o $@ -c
 
 

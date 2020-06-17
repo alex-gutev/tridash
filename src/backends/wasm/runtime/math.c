@@ -33,12 +33,53 @@
  * so, delete this exception statement from your version.
  */
 
-#include "math.h"
-
 #include <stdint.h>
+#include <math.h>
+
+#include "math.h"
+#include "types.h"
 
 float frem(float a, float b) {
     int32_t q = a/b;
 
     return a - (b * q);
+}
+
+
+export uintptr_t is_inf(uintptr_t x) {
+    if (IS_FAIL(x)) return x;
+    if (!IS_REF(x)) return TRIDASH_FALSE;
+
+    struct tridash_object *obj = (void *)x;
+
+    if (obj->type == TRIDASH_TYPE_FLOAT) {
+        return isinf(obj->real);
+    }
+
+    return TRIDASH_FALSE;
+}
+
+export uintptr_t is_nan(uintptr_t x) {
+    switch (PTR_TAG(x)) {
+    case TAG_TYPE_INT:
+        return TRIDASH_FALSE;
+
+    case TAG_TYPE_FUNCREF:
+        return TRIDASH_TRUE;
+
+    case TAG_TYPE_FAIL:
+        return x;
+    }
+
+    struct tridash_object *obj = (void *)x;
+
+    switch (obj->type) {
+    case TRIDASH_TYPE_INT:
+        return TRIDASH_FALSE;
+
+    case TRIDASH_TYPE_FLOAT:
+        return isnan(obj->real);
+    }
+
+    return TRIDASH_TRUE;
 }

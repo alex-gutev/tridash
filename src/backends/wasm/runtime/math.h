@@ -43,4 +43,22 @@
  */
 export float frem(float a, float b);
 
+/**
+ * Check whether a value is floating point infinity.
+ *
+ * @param x The value.
+ *
+ * @return True if @a x is infinity.
+ */
+export uintptr_t is_inf(uintptr_t x);
+
+/**
+ * Check whether a value is Not a Number.
+ *
+ * @param x The value.
+ *
+ * @return True if @a x is Not a Number.
+ */
+export uintptr_t is_nan(uintptr_t x);
+
 #endif /* TRIDASH_MATH_H */

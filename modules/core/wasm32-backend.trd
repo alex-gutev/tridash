@@ -109,6 +109,8 @@
 /attribute(string?, wasm-name, runtime.is_string)
 /attribute(symbol?, wasm-name, runtime.is_symbol)
 
+/attribute(inf?, wasm-name, runtime.is_inf)
+/attribute(nan? wasm-name, runtime.is_nan)
 
 ### Strings
 
