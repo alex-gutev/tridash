@@ -44,8 +44,8 @@ A node can be bound to another node in which case its value is
 automatically updated when the value of the node, to which it is
 bound, changes.
 
-The `->` operator establishes a binding between node on the left hand
-side, referred to as the 'source', and the node on the right hand
+The `->` operator establishes a binding between the node on the left
+hand side, referred to as the 'source', and the node on the right hand
 side, referred to as the 'target'.
 
 .Example
@@ -220,8 +220,8 @@ When the state (the value) of the text field changes:
 1. The state of the `name` node is updated to the text entered in the
 field.
 
-2. The content of `span` element is updated to match the state of the
-`name` node.
+2. The content of the `span` element is updated to match the state of
+the `name` node.
 
 === Inline Node Declarations ===
 
@@ -774,7 +774,7 @@ image::images/tutorial3/snap1.png["A: 10, B: 15, The maximum of 10 and 15 is 15"
 
 Notice that the maximum, 15 in this case, is displayed below the text
 fields. Also notice that the values entered in the text fields are
-also displayed as part of the message.
+displayed as part of the message.
 
 Now change the number, which is the maximum, to a different value
 which is still greater than the other number:
@@ -1274,7 +1274,7 @@ calls this meta-node with the initial value for the accumulator.
 
 === Local Nodes ===
 
-Nodes which appears as the 'target' (observer) of a binding, declared
+Nodes which appear as the 'target' (observer) of a binding, declared
 within the body of a meta-node, are local to the meta-node's body and
 may only be referenced within it. These may be used to store
 intermediate results or to break up complex expression into multiple
@@ -1320,7 +1320,7 @@ increment(n) : n + delta
 The `d` argument has been removed and replaced with `delta` in the
 body.
 
-Repeat the same experiment, changing the delta, you should observe the
+Repeat the same experiment, changing the delta. You should observe the
 same results.
 
 
@@ -1353,8 +1353,8 @@ Let's start off with the following HTML interface:
     </head>
     <body>
       <h1>Simple Meter</h1>
-      <div><label>Maximum: <input value="<?@ to-int(maximum) ?>"/></label></div>
-      <div><label>Quantity: <input value="<?@ to-int(quantity) ?>"/></label></div>
+      <div><label>Maximum: <input value="<?@ to-real(maximum) ?>"/></label></div>
+      <div><label>Quantity: <input value="<?@ to-real(quantity) ?>"/></label></div>
       <div class="meter-box">
         <div id="meter" class="meter-bar"></div>
       </div>
@@ -1364,6 +1364,9 @@ Let's start off with the following HTML interface:
 
 NOTE: The file contains a few CSS class definitions for styling the
 elements which display the meter, located at the bottom of the file.
+
+NOTE: The `to-real` meta-node is similar to `to-int` except that it
+converts its argument to a 'real' number rather than an integer.
 
 The interface consists of two input fields for entering the values for
 the 'Maximum' and 'Quantity', which are bound to the nodes `maximum`
@@ -1775,7 +1778,7 @@ be changed easily.
 . The color components are kept in a single place rather than being
 scattered throughout the code.
 
-. All components of the colors are interpolated.
+. All color components are interpolated.
 
 
 == Error Handling with Failure Values ==
@@ -1885,7 +1888,7 @@ The `case` expression returns the constant string ``Not a valid
 number!'', if `fails?(a)` is true, that is `a` evaluates to a failure,
 otherwise it returns the empty string. To display the error message
 next to the field for 'A', we can simply place the entire `case`
-expression in an inline node declaration, between `<?@ ... ?>` next to
+expression in an inline node declaration, between `<?@ ... ?>`, next to
 the field. We can do the same for 'B', substituting `a` with `b`, to
 get an error indication for 'B' as well.
 
@@ -2245,7 +2248,7 @@ bringing in third party libraries.
 A value, which is guaranteed to be unique, can be obtained by taking a
 reference to the 'raw node object' of `Negative-Number`.
 
-References to the raw node object, of a node, can be obtained using
+A reference to the raw node object, of a node, can be obtained using
 the `&` special operator, which takes the identifier of the node as an
 argument. Raw node references are mostly useful when writing macros,
 which you'll learn about in a later tutorial. For now all that you
@@ -2595,7 +2598,7 @@ TIP: The `;` character separates multiple declarations written on a
 single line.
 
 `a` has two contexts corresponding to dependency nodes `input1` and
-`a` (which is also an observer). `b` has two contexts corresponding to
+`b` (which is also an observer). `b` has two contexts corresponding to
 dependency nodes `input2` and `a`.
 
 When `input1` is changed, the contexts corresponding to the bindings
@@ -2953,7 +2956,7 @@ only takes effect when `b` *'switches'* to the state with identifier
 a change in the 'state' of `b` will trigger a change in its
 value. This may seem counter-intuitive at first, however if `b` was
 updated on every change in the value of `a`, and instead of `a` we
-have `b + 1` we'll end up with the same problem in the previous
+have `b + 1` we'll end up with the same problem, as in the previous
 section.
 
 IMPORTANT: Stateful bindings declared later in the source take
@@ -3003,17 +3006,17 @@ JavaScript, which are necessary for completing this tutorial. A full
 in-depth tutorial on interfacing with JavaScript, will follow.
 
 Tridash nodes are compiled to runtime node objects, which store the
-node's value and information about its dependencies, observers,
-contexts, etc. To be able to reference a runtime node object, from
+node's value. To be able to reference a runtime node object from
 JavaScript, the node has to be given an identifier with which it can
 be referenced. The `public-name` attribute, if given, determines the
 name of this identifier.
 
 Once an identifier is given, it can be accessed as a member of the
-`Tridash.nodes` object. `Tridash` is the object/module storing the
-Tridash runtime library functions. The `nodes` member of Tridash is an
-object storing references to all nodes which have been given a
-`public-name` identifier.
+`nodes` property of the runtime module object. To access the runtime
+module object of a compiled Tridash program, embedded in an HTML file,
+it needs to be given an identifier. The module is then accessible via
+a global variable with that identifier. This is achieved using the
+`module-name` output options.
 
 CAUTION: Currently Tridash does not check whether multiple nodes are
 given the same `public-name`.
@@ -3025,10 +3028,11 @@ given the same `public-name`.
 
 .Example: Referencing the runtime node object in JavaScript
 --------------------------------------------------
-var node = Tridash.nodes["aNode"];
+// Assuming runtime module is stored in variable mod
+var node = mod.nodes["aNode"];
 
 // or equivalently if the public-name is a valid JS variable name
-var node = Tridash.nodes.aNode;
+var node = mod.nodes.aNode;
 --------------------------------------------------
 
 Once a reference is obtained to the runtime node object, the node's
@@ -3045,13 +3049,8 @@ runtime node object, the node is marked as an 'input' node, by setting
 its `input` attribute to true.
 
 --------------------------------------------------
-/attribute(node, input, 1)
+/attribute(node, input, True)
 --------------------------------------------------
-
-NOTE: Currently an attribute is set to `true` when it is given the
-value `1` and set to `false` when it is given the value `0`. In the
-next release, you'll be able to use the symbols 'True' and 'False'
-instead.
 
 CAUTION: Not every Tridash node corresponds to an actual runtime node
 object, due to some intermediate nodes being optimized out by the
@@ -3059,6 +3058,7 @@ compiler. The only nodes, for which it is guaranteed that a runtime
 node object is created, are 'input' nodes and nodes with no observers,
 which are assumed to represent 'output' nodes.
 
+[[example-counter-app]]
 === Example: Counter Application ===
 
 In this section we'll build a very simple application consisting of a
@@ -3081,11 +3081,11 @@ counter + 1 -> counter :: increment
 The node `counter` stores the value of the counter which is
 incremented when `should-increment?` is true. We'll add the attributes
 which are necessary in order to be able to set the value of
-`should-increment?` from JavaScript, namely we need to set a
+`should-increment?` from JavaScript, namely we need to set the
 `public-name` identifier and mark it as an `input` node.
 
 --------------------------------------------------
-/attribute(should-increment?, input, 1)
+/attribute(should-increment?, input, True)
 /attribute(should-increment?, public-name, "should_increment")
 --------------------------------------------------
 
@@ -3122,23 +3122,44 @@ the element where the counter is displayed:
 
 --------------------------------------------------
 <script>
-  var increment = document.getElementById('increment');
-  var node_increment = Tridash.nodes.should_increment;
+  document.addEventListener("DOMContentLoaded", async () => {
+      const module = await mod;
 
-  increment.addEventListener('click', function() {
-      node_increment.set_value(true);
-      node_increment.set_value(false);
+      const increment = document.getElementById('increment');
+      const node_increment = module.nodes.should_increment;
+
+      increment.addEventListener('click', function() {
+          node_increment.set_value(true);
+          node_increment.set_value(false);
+      });
   });
 </script>
 --------------------------------------------------
 
-The first line obtains a reference to the HTML element with ID
-`increment`.
+A couple of things to note:
 
-The second line obtains a reference to the `should-increment?` node
-which was given a `public-name` of `should_increment`.
+- We've assumed the runtime module object is stored in the global
+  variable `mod`. The runtime module object identifier will be set
+  with the `module-name` output option.
 
-The remainder of the code attaches a listener, for the 'click' event,
+- The entire code is wrapped in an event handler for the
+  `DOMContentLoaded` event to ensure that it is run after the
+  JavaScript code which assigns the runtime module object to `mod`.
+
+- `await` is applied on the module object `mod`, inside an `async`
+  callback function, since the module itself may be created
+  asynchronously. This is the case when the compilation target is
+  WebAssembly (`wasm32`).
+
+The callback function, run after all HTML elements and scripts have
+been loaded, does the following:
+
+- Obtains a reference to the HTML element with ID `increment`.
+
+- Obtains a reference to the `should-increment?` node which was given
+a `public-name` of `should_increment`.
+
+The remainder of the function attaches a listener, for the 'click' event,
 on the 'Increment' button. In that listener we first set the value of
 the `should-increment?` node to true, then immediately afterwards we
 set it to false again.
@@ -3151,6 +3172,25 @@ NOTE: In a future release, when the HTML library is complete, a
 subnode `clicked?`, of the element node, will be available which will
 automatically be set to true when the button is clicked and to false
 when it is released. Thus the above JavaScript code wont be necessary.
+
+Change the build configuration file (`build.yml`) to the following:
+
+.`build.yml`
+--------------------------------------------------
+sources:
+  - path: ui.html
+    node-name: ui
+
+output:
+  path: app.html
+  type: html
+  main-ui: ui
+  module-name: mod
+--------------------------------------------------
+
+The addition of the line `module-name: mod` sets the `module-name`
+output option to `mod`, which is the identifier of the variable in
+which the runtime module object will be stored.
 
 Build and run the application, and press the increment button a few
 times:
@@ -3202,13 +3242,13 @@ counter + 1 -> counter :: increment
 
 states that the binding should only take effect when the state of
 `counter` switches to the `increment` state. Switching from the
-`increment` state to the `increment` is still considered as switching
-to the `increment` state, even though the new state is identical to
-the previous state. This is due to the fact that each time we're
-setting the value of the `should-increment?` node to `true`, we're
-triggering a change in the value of the node `/state(counter)` and
-thus the state of `counter`, even though the new value of
-`should-increment?` is identical to its previous value.
+`increment` state to the `increment` state is still considered as
+switching to the `increment` state, even though the new state is
+identical to the previous state. This is due to the fact that each
+time we're setting the value of the `should-increment?` node to
+`true`, we're triggering a change in the value of the node
+`/state(counter)` and thus the state of `counter`, even though the new
+value of `should-increment?` is identical to its previous value.
 
 The above declaration should thus be thought of as declaring a binding
 which takes effect whenever `counter` switches from any state,
@@ -3293,14 +3333,13 @@ listeners to both buttons, in JavaScript.
 We'll need two nodes `clicked1?` and `clicked2?` which change to true
 when the first and second buttons are clicked, respectively. The
 values of these nodes will have to be set via JavaScript, thus we'll
-have to mark them as input nodes and set their `public-name`
-attributes:
+mark them as input nodes and set their `public-name` attributes:
 
 --------------------------------------------------
-/attribute(clicked1?, input, 1)
+/attribute(clicked1?, input, True)
 /attribute(clicked1?, public-name, "clicked1");
 
-/attribute(clicked2?, input, 1)
+/attribute(clicked2?, input, True)
 /attribute(clicked2?, public-name, "clicked2");
 --------------------------------------------------
 
@@ -3310,20 +3349,24 @@ corresponding 'clicked?' node to true and them immediately to false,
 again.
 
 --------------------------------------------------
-var increment1 = document.getElementById('increment1');
-var increment2 = document.getElementById('increment2');
+document.addEventListener("DOMContentLoaded", async () => {
+    const module = await mod;
 
-var clicked1 = Tridash.nodes.clicked1;
-var clicked2 = Tridash.nodes.clicked2;
+    const increment1 = document.getElementById('increment1');
+    const increment2 = document.getElementById('increment2');
 
-increment1.addEventListener('click', function() {
-    clicked1.set_value(true);
-    clicked1.set_value(false);
-});
+    const clicked1 = module.nodes.clicked1;
+    const clicked2 = module.nodes.clicked2;
 
-increment2.addEventListener('click', function() {
-    clicked2.set_value(true);
-    clicked2.set_value(false);
+    increment1.addEventListener('click', function() {
+        clicked1.set_value(true);
+        clicked1.set_value(false);
+    });
+
+    increment2.addEventListener('click', function() {
+        clicked2.set_value(true);
+        clicked2.set_value(false);
+    });
 });
 --------------------------------------------------
 
@@ -3447,7 +3490,7 @@ Try out the following as an exercise:
 
 == List Processing ==
 
-This tutorial is an introduction on processing lists of data. Lists
+This tutorial is an introduction to processing lists of data. Lists
 are 'conceptually' represented as a linked list of nodes in which the
 'head' of the node stores the list element and the 'tail' stores the
 next node, i.e. the remainder, of the list. The meta-nodes `head` and
@@ -3507,7 +3550,7 @@ ordinary nodes, in which case the function of the meta-node is
 referenced.
 
 A node can appear as the operator in a functor node in which case the
-function, of which the reference is stored in the node's value is
+function, of which the reference is stored in the node's value, is
 applied on the arguments. If the node's value is not a reference to
 function or the function is applied on an incorrect number of
 arguments, the result is a failure value.
@@ -3586,7 +3629,7 @@ implicit binding `delta -> call(increment, n)` is created due to
 
 Higher-order meta-nodes are extremely useful for processing
 lists. There are many list processing utility meta-nodes, in the
-`core` module which take a reference to a meta-node as an argument,
+`core` module, which take a reference to a meta-node as an argument,
 and perform an operation on the list using the meta-node. Here are few
 examples:
 
@@ -3683,12 +3726,16 @@ Add the following code, which is similar to the code seen in
 <<_node_states>>, to a `script` tag below the `pre` tag:
 
 --------------------------------------------------
-var add = document.getElementById('add');
-var clicked = Tridash.nodes.clicked;
+document.addEventListener("DOMContentLoaded", async () => {
+    const module = await mod;
 
-add.addEventListener('click', function() {
-    clicked.set_value(true);
-    clicked.set_value(false);
+    const add = document.getElementById('add');
+    const clicked = module.nodes.clicked;
+
+    add.addEventListener('click', function() {
+        clicked.set_value(true);
+        clicked.set_value(false);
+    });
 });
 --------------------------------------------------
 
@@ -3698,7 +3745,7 @@ when the button is clicked. Add the following attribute declarations
 for the `add-clicked?` node:
 
 --------------------------------------------------
-/attribute(add-clicked?, input, 1)
+/attribute(add-clicked?, input, True)
 /attribute(add-clicked?, public-name, "clicked")
 --------------------------------------------------
 
@@ -3740,7 +3787,7 @@ case(
 --------------------------------------------------
 
 We have completed the functionality for adding a message to the end of
-the Messages list. All that remains is to format that list into a
+the messages list. All that remains is to format that list into a
 string which is displayed to the user.
 
 We need a single string containing each message followed by a
@@ -3782,8 +3829,8 @@ messages <- foldl(string-concat, formatted-messages)
 The resulting string is bound to `messages` which is displayed in the
 `pre` (preformatted) tag, below the 'Add Message' button.
 
-Build and run the application. Enter a message and press the 'Add
-Message' button.
+Build and run the application, using the build configuration file from
+<<example-counter-app>>. Enter a message and press the 'Add Message' button.
 
 image::images/tutorial11/snap3.png["Hello World!", align="center"]
 
@@ -3804,9 +3851,9 @@ scale for larger applications. Ideally we'd like to have 'separation
 of concerns' with our application divided into multiple source files,
 each containing the code implementing a separate component of the
 application. The `ui.html` should ideally contain a minimal amount of
-Tridash code, limited only to inline node references and, possibly,
-bindings directly related to the presentation logic. The core
-application logic should be in a separate source file.
+Tridash code, limited only to inline node references and bindings
+directly related to the presentation logic. The core application logic
+should be in a separate source file.
 
 In this tutorial we'll take the 'Adding Numbers' application, as it is
 at the end of <<contexts>>, and reorganize its source code.
@@ -3956,7 +4003,7 @@ tridashc validation.trd app.trd path : node-name=ui.html \
 Whilst separating the application into multiple source files, grouping
 related components in a single file, is a significant cleanup, it
 would be even better if the nodes could be grouped into different
-namespace based on their purpose, for example 'utility', 'application
+namespaces based on their purpose, for example 'utility', 'application
 logic' and 'ui'. This would allow us to use only the nodes from the
 'utility' namespace, without having the rest of the 'utility' nodes
 clash (i.e. have the same identifiers) with the 'application logic'
@@ -3984,7 +4031,7 @@ following syntax:
 --------------------------------------------------
 
 This indicates that all node references, in the declarations following
-the `:module` declaration, will occur in the module with identifier
+the `/module` declaration, will occur in the module with identifier
 `module-name`. Remember that nodes are created the first time they are
 referenced, thus if a node is referenced which is not in the module,
 it is created and added to the module.
@@ -4135,7 +4182,7 @@ declarations will result in the nodes listed in each declaration being
 exported.
 
 
-==== Directly Reference Node in Another Module ====
+==== Directly Reference Nodes in Another Module ====
 
 The `/in` operator references a node in another module, for which a
 symbol has not been created in the current module using `/use` or
@@ -4411,12 +4458,12 @@ of two numbers, register it as an infix operator and replace `a + b`
 with `a add b` in the 'Adding Numbers' Application.
 
 NOTE: There is no value in writing a new meta-node which is simply a
-wrapper over a builtin meta-node and registering it as an infix
+wrapper over a builtin meta-node, and registering it as an infix
 operator. The purpose of this tutorial is simply to demonstrate how
 you would register your own meta-node as an infix operator.
 
-We'll first define `add` and then register as an infix operator with
-precedence 100 and 'left' associativity which is the same as the
+We'll first define `add` and then register it as an infix operator
+with precedence 100 and 'left' associativity which is the same as the
 builtin `+` operator.
 
 Add the following somewhere near the top in `app.trd`:

@@ -18,7 +18,7 @@
 
  # Application Logic
 
- scale <- clamp(quantity * 1.0 / maximum, 0, 1)
+ scale <- clamp(quantity / maximum, 0, 1)
 
  hue <- lerp(120, 0, scale)
 
@@ -45,8 +45,8 @@
     </head>
     <body>
       <h1>Simple Meter</h1>
-      <div><label>Maximum: <br/><input value="<?@ to-int(maximum) ?>"/></label></div>
-      <div><label>Quantity: <br/><input value="<?@ to-int(quantity) ?>"/></label></div>
+      <div><label>Maximum: <br/><input value="<?@ to-real(maximum) ?>"/></label></div>
+      <div><label>Quantity: <br/><input value="<?@ to-real(quantity) ?>"/></label></div>
       <div class="meter-box">
         <div id="meter" class="meter-bar"></div>
       </div>
