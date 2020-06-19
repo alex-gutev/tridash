@@ -37,7 +37,7 @@
 
 #include "copying.h"
 
-#define PAGE_SIZE (64 * 1024);
+#define PAGE_SIZE (64 * 1024)
 
 /**
  * Pointer to the base of the stack i.e. the bottom element.
@@ -122,8 +122,11 @@ void * alloc(size_t size) {
     if ((uintptr_t)(alloc_ptr + size) >= (uintptr_t)(from_space + (heap_size/2 & ~TAG_MASK)))
         run_gc();
 
-    if ((uintptr_t)(alloc_ptr + size) >= (uintptr_t)(from_space + (heap_size/2 & ~TAG_MASK)))
-        grow_memory(heap_size);
+    if ((uintptr_t)(alloc_ptr + size) >= (uintptr_t)(from_space + (heap_size/2 & ~TAG_MASK))) {
+        size_t min = (uintptr_t)(alloc_ptr + size) - (uintptr_t)(from_space + (heap_size/2 & ~TAG_MASK));
+
+        grow_memory(min < PAGE_SIZE ? PAGE_SIZE : (min / PAGE_SIZE) * PAGE_SIZE);
+    }
 
     char *ptr = alloc_ptr;
     alloc_ptr += size;
