@@ -7,6 +7,21 @@ generated.
 _View the man page for `tridashc` or run the command `tridashc -h` for
 details of how these options are specified._
 
+=== Compilation Targets ===
+
+The compilation target (or compiler backend) determines the type of
+output file that is generated. The compilation target is specified
+using the `-t` command-line option or the `backend` output option of
+the build configuration file, _View the tridashc man-page for more
+information._
+
+The current version of Tridash has the following targets:
+
+[horizontal]
+- `javascript`
+- `wasm32` (32-bit WebAssembly)
+
+
 === Output Options ===
 
 The output options control various aspects of the output code that is

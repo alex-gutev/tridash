@@ -67,7 +67,12 @@ unless the *-b* option is provided.
 compiler backend). If this option is not provided it is determined
 from the name of the output file provided in the *-o* option.
 +
-Currently only a *javascript* target is available.
+--
+Targets:
+
++ *javascript*
++ *wasm32*
+--
 
 *-p, --output-option* _option_ = _value_:: Specify an option for the
 generation of the output file where _option_ is the option and _value_
