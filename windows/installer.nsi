@@ -5,7 +5,7 @@
 !define DESCRIPTION "Compiler for the Tridash Programming language"
 
 !define VERSIONMAJOR 0
-!define VERSIONMINOR 9
+!define VERSIONMINOR 10
 !define VERSIONBUILD 0
 
 !define HELPURL "https://alex-gutev.github.io/tridash/manual/"
@@ -56,11 +56,17 @@ Section "install"
   File "..\modules\core\macros.trd"
   File "..\modules\core\strings.trd"
   File "..\modules\core\js-backend.trd"
+  File "..\modules\core\wasm32-backend.trd"
 
-  # Copy Runtime Libraries
+  # Copy JS Runtime Libraries
   setOutPath $INSTDIR\backends\javascript
 
   File "..\src\backends\javascript\runtime\tridash.min.js"
+
+  # Copy Wasm Runtime Libraries
+  setOutPath $INSTDIR\backends\wasm
+  File "..\src\backends\wasm\runtime\runtime.wasm
+  File "..\src\backends\wasm\loader\tridash.min.js
 
   # Add Documentation
   setOutpath $INSTDIR
