@@ -110,7 +110,7 @@
 /attribute(symbol?, wasm-name, runtime.is_symbol)
 
 /attribute(inf?, wasm-name, runtime.is_inf)
-/attribute(nan? wasm-name, runtime.is_nan)
+/attribute(nan?, wasm-name, runtime.is_nan)
 
 ### Strings
 
