@@ -220,7 +220,6 @@ result is not a thunk. This means `Tridash.resolve` always returns an
 immediate value, not a thunk object.
 
 .Example: Resolving node value and handling failures
-[source, javascript]
 --------------------------------------------------
 try {
     value = Tridash.resolve(value);
@@ -354,7 +353,6 @@ caught and wrapped in a `Tridash.Thunk` object which is returned from
 the function.
 
 .Example: Handling failures in external meta-node functions
-[source, javascript]
 --------------------------------------------------
 function my_func(a) {
     try {
@@ -393,7 +391,6 @@ object can then be accessed as properties of the object returned by
 `require`.
 
 .Example: JavaScript Module Object Usage
-[source, javascript]
 --------------------------------------------------
 # Load the compiled JavaScript module. Substitute `module.js` with the
 # path to the generated JavaScript file.
@@ -610,7 +607,6 @@ IMPORTANT: Every call to `stack_push` must be balanced by a call to
 `stack_pop`.
 
 .Example: Converting Multiple Tridash Values to JS Values
-[source, javascript]
 --------------------------------------------------
 /// Convert the Tridash values, pointer to by `a`, `b` and `c`.
 
@@ -730,7 +726,6 @@ to and from the compiled module's heap memory.
 
 
 .Example: WebAssembly Module Object Usage
-[source, javascript]
 --------------------------------------------------
 # Load the compiled Wasm loader script. Substitute `module.js` with
 # the path to the generated JavaScript file.
