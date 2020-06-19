@@ -1,6 +1,6 @@
 dnl Initialization
 
-AC_INIT([Tridash], [0.9], [alex.gutev@gmail.com])
+AC_INIT([Tridash], [0.10], [alex.gutev@gmail.com])
 AC_CONFIG_SRCDIR([src/main.lisp])
 
 dnl Common Lisp Compiler
