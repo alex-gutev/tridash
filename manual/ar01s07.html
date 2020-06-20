@@ -1,0 +1,589 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>7. Interfacing with Other Languages</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.10 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.10 Reference Manual" /><link rel="prev" href="ar01s06.html" title="6. Optimizations" /><link rel="next" href="ar01s08.html" title="8. Compiler Options" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s06.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s08.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_interfacing_with_other_languages"></a>7. Interfacing with Other Languages</h2></div></div></div><p><a id="idm108813045984" class="indexterm"></a></p><p>The languages that Tridash can interface to, and the foreign function
+interface itself, depend on the compilation target (the compiler
+backend).</p><p>The current version of Tridash has two compilation targets
+<span class="emphasis"><em>JavaScript</em></span>, and 32-bit <span class="emphasis"><em>WebAssembly</em></span> (<code class="literal">wasm32</code>).</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_calling_external_functions"></a>7.1. Calling External Functions</h3></div></div></div><p><a id="idm108813041072" class="indexterm"></a>
+<a id="idm108813039792" class="indexterm"></a></p><p>To be able to call an externally defined (defined outside Tridash
+code) function from Tridash, a meta-node without a definition has to
+be declared. This is achieved using the <code class="literal">/external</code> special operator.
+<span class="emphasis"><em>See <a class="xref" href="ar01s03.html#_external_meta_nodes" title="3.4. External Meta-Nodes">Section 3.4, “External Meta-Nodes”</a> for the operator’s syntax</em></span>. Once an
+<span class="emphasis"><em>external meta-node</em></span> is declared, it can be used, in Tridash code, as
+though it is a regular meta-node.</p><p>The external meta-node has to be linked to an externally defined
+function, which implements the functionality of the meta-node, for
+each backend. This is achieved via backend specific attributes. For
+the <span class="emphasis"><em>JavaScript</em></span> and <span class="emphasis"><em>WebAssembly</em></span> backends the attributes are
+<code class="literal">js-name</code> and <code class="literal">wasm-name</code>, respectively.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_accessing_and_setting_node_values"></a>7.2. Accessing and Setting Node Values</h3></div></div></div><p><a id="idm108813031472" class="indexterm"></a>
+<a id="idm108813030160" class="indexterm"></a></p><p>In order to access the value of a node from outside Tridash code, the
+node must be given a public identifier. This is done by setting the
+node’s <code class="literal">public-name</code> attribute to a string identifier.</p><p><strong>Example: Setting Node Public Identifier. </strong>
+</p><pre class="screen"># Set public identifier of `x` to `node_x`
+
+/attribute(x, public-name, "node_x")</pre><p>
+</p><p>Node <code class="literal">x</code> is now accessible outside Tridash code by the <code class="literal">node_x</code>
+identifier.</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Currently, it is not checked whether multiple nodes are given
+the same public identifier.</p></td></tr></table></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_runtime_module_objects"></a>Runtime Module Objects</h4></div></div></div><p><a id="idm108813022448" class="indexterm"></a>
+<a id="idm108813021168" class="indexterm"></a></p><p>A Tridash application is compiled to a single runtime module
+object. When targeting the <span class="emphasis"><em>JavaScript</em></span> or <span class="emphasis"><em>WebAssembly</em></span> backends,
+this is a JavaScript object with at least the following property:</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+<code class="literal">nodes</code>
+</span></dt><dd>
+An object containing references to the runtime node objects
+of all publicly accessible nodes.  This object contains a property for
+each publicly accessible node, with the property identifier being the
+node’s public identifier.
+</dd></dl></div><p>The module object also provides the following member function:</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+<code class="literal">set_values(values)</code>
+</span></dt><dd><p class="simpara">
+Set the values of multiple nodes simultaneously.
+</p><p class="simpara"><code class="literal">values</code> is an array with each element being an array of the form
+<code class="literal">[node, value]</code> where <code class="literal">node</code> is the node’s runtime node object and
+<code class="literal">value</code> is the value to which the node should be set.</p></dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_runtime_node_objects"></a>Runtime Node Objects</h4></div></div></div><p><a id="idm108813008192" class="indexterm"></a>
+<a id="idm108813006864" class="indexterm"></a></p><p>The runtime node object provides three methods:</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+<code class="literal">get_value()</code>
+</span></dt><dd>
+Returns the value of a node.
+</dd><dt><span class="term">
+<code class="literal">set_value(value)</code>
+</span></dt><dd>
+Set the value of the node to <code class="literal">value</code>.
+</dd><dt><span class="term">
+<code class="literal">watch(f)</code>
+</span></dt><dd>
+Call the function <code class="literal">f</code> whenever the value of the node
+changes. The function is passed the new value of the node as its only
+argument.
+</dd></dl></div><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>In order to be able to set the value of a node, it must be
+marked as an input node, by setting its <code class="literal">input</code> attribute to
+true. <span class="emphasis"><em>See <a class="xref" href="ar01s02.html#_input_nodes" title="2.7. Input Nodes">Section 2.7, “Input Nodes”</a></em></span>.</p></td></tr></table></div><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Unless a node is an <span class="emphasis"><em>input</em></span> node or an <span class="emphasis"><em>output</em></span> node, that is
+a node with no observers, there is no guarantee that a runtime node
+object is created for it, even if it is given a public identifier, due
+to node coalescing. To ensure that a runtime node object is created
+for a node, for which a public identifier is assigned, its
+<code class="literal">coalescable</code> and <code class="literal">removable</code> attributes should be set to <span class="emphasis"><em>false</em></span>. <span class="emphasis"><em>See
+<a class="xref" href="ar01s06.html#_coalescing" title="6.1. Coalescing">Section 6.1, “Coalescing”</a> for more information.</em></span></p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_javascript_backend"></a>7.3. JavaScript Backend</h3></div></div></div><p><a id="idm108812988656" class="indexterm"></a>
+<a id="idm108812987344" class="indexterm"></a></p><p>This section details the foreign function interface of the JavaScript
+backend.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="js-backend-types"></a>Value Types</h4></div></div></div><p><a id="idm108812984288" class="indexterm"></a>
+<a id="idm108812982752" class="indexterm"></a>
+<a id="idm108812981440" class="indexterm"></a></p><p>Most Tridash primitive value types correspond directly to JavaScript
+primitives:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+<span class="strong"><strong>Integers</strong></span> are represented by JavaScript integers.
+</li><li class="listitem">
+<span class="strong"><strong>Reals</strong></span> are represented by JavaScript floating point numbers.
+</li><li class="listitem">
+<span class="strong"><strong>Booleans</strong></span> are represented by JavaScript Booleans.
+</li><li class="listitem">
+<span class="strong"><strong>Strings</strong></span> are represented by JavaScript strings.
+</li><li class="listitem">
+<span class="strong"><strong>Subnode dictionaries</strong></span> are represented by JavaScript objects with a
+  property for each subnode. The identifier of each property is the
+  corresponding subnode identifier.
+</li></ul></div><p>The remaining value types are represented by instances of classes in
+the runtime library, which is contained in the <code class="literal">Tridash</code> module object.</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p class="simpara">
+<span class="strong"><strong>Characters</strong></span> are represented by instances of the <code class="literal">Tridash.Char</code> class,
+  which has one property:
+</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+<p>
+<code class="literal">chr</code>
+</p>
+</td><td style="" valign="top">
+<p>
+A string containing just the character itself.
+</p>
+</td></tr></tbody></table></div></li><li class="listitem"><p class="simpara">
+<span class="strong"><strong>Lists</strong></span> are either represented by JavaScript arrays or an internal
+   linked list node class.
+</p><p class="simpara">The <code class="literal">Tridash.head</code> and <code class="literal">Tridash.tail</code> functions return the <span class="emphasis"><em>head</em></span> and
+<span class="emphasis"><em>tail</em></span> of a list respectively. These functions will return a type
+error failure value if the argument is not a linked list node or
+array.</p></li></ul></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_failure_values"></a>Failure Values</h4></div></div></div><p><a id="idm108812956768" class="indexterm"></a>
+<a id="idm108812955232" class="indexterm"></a>
+<a id="idm108812953904" class="indexterm"></a></p><p>Failure values are represented by an instance of the <code class="literal">Tridash.Fail</code>
+class, which has one property</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+<p>
+<code class="literal">type</code>
+</p>
+</td><td style="" valign="top">
+<p>
+The failure type. This property is <code class="literal">null</code> if the failure does
+not have a type.
+</p>
+</td></tr></tbody></table></div><p>Instances of this class are thrown as JavaScript exceptions rather
+than being returned directly. Generally failure values are represented
+by <span class="emphasis"><em>thunks</em></span>, see the next section on lazy evaluation, which, when evaluated, throw a
+<code class="literal">Tridash.Fail</code> exception.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Use the <code class="literal">Tridash.fail</code> function, which takes one argument, the
+failure type (defaulting to <code class="literal">null</code>), to create failure values, which
+are wrapped in thunks.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_builtin_failure_types_2"></a>Builtin Failure Types</h4></div></div></div><p><a id="idm108812940448" class="indexterm"></a>
+<a id="idm108812938848" class="indexterm"></a>
+<a id="idm108812937520" class="indexterm"></a></p><p>The following functions return a JavaScript object, which serves to
+identify a builtin failure type.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+<code class="literal">Tridash.Empty()</code>
+</span></dt><dd>
+Returns the object representing the empty list.
+</dd><dt><span class="term">
+<code class="literal">Tridash.NoValue()</code>
+</span></dt><dd>
+Returns the object representing the <a class="link" href="ar01s05.html#node-no-value" title="Failure Type Node: No-Value"><code class="literal">No
+Value</code></a> failure type.
+</dd><dt><span class="term">
+<code class="literal">Tridash.TypeError()</code>
+</span></dt><dd>
+Returns the object representing the
+<a class="link" href="ar01s05.html#node-type-error" title="Failure Type Node: Type-Error"><code class="literal">Type-Error</code></a> failure type.
+</dd><dt><span class="term">
+<code class="literal">Tridash.IndexOutBounds()</code>
+</span></dt><dd>
+Returns the object representing the
+<a class="link" href="ar01s05.html#node-index-out-bounds" title="Failure Type Node: Index-Out-Bounds"><code class="literal">Index-Out-Bounds</code></a> failure type.
+</dd><dt><span class="term">
+<code class="literal">Tridash.InvalidInteger()</code>
+</span></dt><dd>
+Returns the object representing the
+<a class="link" href="ar01s05.html#node-invalid-integer" title="Failure Type Node: Invalid-Integer"><code class="literal">Invalid-Integer</code></a> failure type.
+</dd><dt><span class="term">
+<code class="literal">Tridash.InvalidReal()</code>
+</span></dt><dd>
+Returns the object representing the
+<a class="link" href="ar01s05.html#node-invalid-real" title="Failure Type Node: Invalid-Real"><code class="literal">Invalid-Real</code></a> failure type.
+</dd><dt><span class="term">
+<code class="literal">Tridash.ArityError()</code>
+</span></dt><dd>
+Returns the object representing the
+<a class="link" href="ar01s05.html#node-arity-error" title="Failure Type Node: Arity-Error"><code class="literal">Arity-Error</code></a> failure type.
+</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_lazy_evaluation"></a>Lazy Evaluation</h4></div></div></div><p><a id="idm108812911312" class="indexterm"></a>
+<a id="idm108812909744" class="indexterm"></a>
+<a id="idm108812908416" class="indexterm"></a></p><p>Tridash expressions may be evaluated lazily, that is they are only
+evaluated at the point where they are first used. Lazily evaluated
+expressions are wrapped in <span class="emphasis"><em>thunk</em></span> objects, which are instances of the
+<code class="literal">Tridash.Thunk</code> class.</p><p>Thunks are created using the <code class="literal">Tridash.Thunk</code> constructor which takes
+one argument, the <span class="emphasis"><em>thunk computation</em></span> function. The thunk computation
+function should be a function of no arguments which computes, and
+returns, the thunk’s result value.</p><p>The <code class="literal">Tridash.resolve</code> function, of one argument, computes the value of
+a <code class="literal">Tridash.Thunk</code>, passed as the argument, if it has not been computed
+already, and returns the resulting value. If the argument is not a
+<code class="literal">Tridash.Thunk</code> object it is returned directly.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">Tridash.resolve</code> repeatedly computes the value of a thunk,
+which is the result of computing the value of another thunk until the
+result is not a thunk. This means <code class="literal">Tridash.resolve</code> always returns an
+immediate value, not a thunk object.</p></td></tr></table></div><p><strong>Example: Resolving node value and handling failures. </strong>
+</p><pre class="screen">try {
+    value = Tridash.resolve(value);
+
+    // Use resolved value
+    ...
+}
+catch (e) {
+    if (e instanceof Tridash.Fail) {
+        // Handle failure
+        ...
+    }
+}</pre><p>
+</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_linking_meta_nodes_to_external_functions"></a>Linking Meta-Nodes to External Functions</h4></div></div></div><p><a id="idm108812895744" class="indexterm"></a>
+<a id="idm108812894144" class="indexterm"></a>
+<a id="idm108812892832" class="indexterm"></a></p><p>In the <span class="emphasis"><em>JavaScript</em></span> backend, the name of the JavaScript function,
+which provides the implementation of an <span class="emphasis"><em>external meta-node</em></span> is given
+by the value of the node’s <code class="literal">js-name</code> attribute. This attribute must be
+a string which names a function that is globally accessible to the
+generated JavaScript code, at the time it is run.</p><p><strong>Example: Linking external meta-node to JavaScript function. </strong>
+</p><pre class="screen">## Meta-Node of two arguments
+/external(fn, a, b)
+
+## Link to JavaScript 'my_func' function
+/attribute(fn, js-name, "my_func")</pre><p>
+</p><p>The function is called passing in the values of the argument nodes as
+arguments. If the value for an optional argument is not provided to
+the meta-node, in the Tridash source, the default value is passed to
+the function. If the optional argument and the arguments following it
+do not have default values, they are omitted in the generated function
+call.</p><p><strong>Example: External meta-node with optional arguments with default value. </strong>
+</p><pre class="screen">## Meta-Node with 1 required and 1 optional argument
+/external(fn, a, b : 1)
+
+## Link to JavaScript 'my_func' function
+/attribute(fn, js-name, "my_func")
+
+## Instance with optional argument omitted
+fn(x)</pre><p>
+</p><p>This example compiles to the following call to <code class="literal">my_func</code>:</p><pre class="screen">my_func(x, 1)</pre><p><strong>Example: External meta-node with optional arguments without default value. </strong>
+</p><pre class="screen">## Meta-Node with 1 required and 1 optional argument
+/external(fn, a, :(b))
+
+## Link to JavaScript 'my_func' function
+/attribute(fn, js-name, "my_func")
+
+## Instance with optional argument omitted
+fn(x)</pre><p>
+</p><p>This example compiles to the following call to <code class="literal">my_func</code>:</p><pre class="screen">my_func(x)</pre><p>Notice that no value is provided for the <code class="literal">b</code> argument since it was
+omitted, in the meta-node instance <code class="literal">fn(x)</code> and it does not have a
+default value.</p><p>Rest arguments are accumulated into a single JavaScript array which is
+passed as the last argument to the function. If the rest argument list
+is empty, the argument is omitted entirely in the generated function
+call.</p><p><strong>Example: External meta-node with rest arguments. </strong>
+</p><pre class="screen">## Meta-Node with 1 required and 1 rest argument
+/external(fn, x, ..(xs))
+
+## Link to JavaScript 'my_func' function
+/attribute(fn, js-name, "my_func")
+
+## Instance 1: 3 rest arguments
+fn(a, b, c, d)
+
+## Instance 2: no rest arguments</pre><p>
+</p><p>Instance 1 is compiled to the following call to <code class="literal">my_func</code>:</p><pre class="screen">my_func(a, [b, c, d])</pre><p>Instance 2 is compiled to the following call to <code class="literal">my_func</code>:</p><pre class="screen">my_func(a)</pre><p>Notice no value is passed for the second argument which corresponds to
+the rest argument.</p><p>Each argument, passed to an external function, may either be an
+immediate value or a <code class="literal">Tridash.Thunk</code> object, in the case of an
+argument which is lazily evaluated. The <code class="literal">Tridash.resolve</code> function
+should be called on each argument, of which the value is actually
+used, to ensure that the immediate value is obtained.</p><p>The function should always return a value, which becomes the return
+value of the meta-node. This can either be an immediate Tridash value,
+of one of the types specified in <a class="xref" href="ar01s07.html#js-backend-types" title="Value Types">Value Types</a>, or a
+<code class="literal">Tridash.Thunk</code> object.</p><p>Any failure value exception, thrown inside the function either by the
+function itself or while evaluating a <span class="emphasis"><em>thunk</em></span>, should be
+caught and wrapped in a <code class="literal">Tridash.Thunk</code> object which is returned from
+the function.</p><p><strong>Example: Handling failures in external meta-node functions. </strong>
+</p><pre class="screen">function my_func(a) {
+    try {
+        // Resolve value of the `a` argument
+        // The result may be a failure value
+        a = Tridash.resolve(a);
+
+        // Do something with `a`
+        ...
+    }
+    catch (e) {
+        // Handle failure value exception
+        if (e instanceof Tridash.Fail) {
+            // Wrap failure in thunk object and return
+            return new Tridash.Thunk(() =&gt; { throw e });
+        }
+
+        // Rethrow other exceptions
+        throw e;
+    }
+}</pre><p>
+</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_runtime_module_object"></a>Runtime Module Object</h4></div></div></div><p><a id="idm108812860528" class="indexterm"></a>
+<a id="idm108812859008" class="indexterm"></a>
+<a id="idm108812857680" class="indexterm"></a></p><p>By default, when targeting the JavaScript backend, a standalone
+JavaScript file is produced, which assigns the <code class="literal">nodes</code> and
+<code class="literal">set_values</code> properties of the runtime module object to the <code class="literal">exports</code>
+object. This file can be loaded by a JavaScript runtime which supports the
+<code class="literal">require</code> function, such as <span class="emphasis"><em>Node.js</em></span>. The properties of the module
+object can then be accessed as properties of the object returned by
+<code class="literal">require</code>.</p><p><strong>Example: JavaScript Module Object Usage. </strong>
+</p><pre class="screen"># Load the compiled JavaScript module. Substitute `module.js` with the
+# path to the generated JavaScript file.
+
+const module = require('module.js');
+const node_x = module.nodes.node_x;
+
+// Retrieve value of node_x
+const value = node_x.get_value();
+
+...
+
+// Set value of node_x to integer 10
+node_x.set_value(10);</pre><p>
+</p><p>The <code class="literal">get_value</code> method of the runtime node object takes a single
+optional argument, which if <span class="emphasis"><em>true</em></span> (the default), the value of the
+node is fully evaluated if it is a <span class="emphasis"><em>thunk</em></span> object, representing a
+lazily evaluated value. If the argument is <span class="emphasis"><em>false</em></span>, <span class="emphasis"><em>thunk</em></span> objects
+are not evaluated but are returned directly.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_webassembly_backend"></a>7.4. WebAssembly Backend</h3></div></div></div><p><a id="idm108812844944" class="indexterm"></a>
+<a id="idm108812843632" class="indexterm"></a></p><p>This section details calling JavaScript functions when targeting
+WebAssembly.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_memory"></a>Memory</h4></div></div></div><p><a id="idm108812840896" class="indexterm"></a>
+<a id="idm108812839360" class="indexterm"></a>
+<a id="idm108812838048" class="indexterm"></a></p><p>Tridash value types are represented by objects stored in the heap of
+the compiled WebAssembly module’s memory object. The heap is managed
+by a tracing garbage collector, which is run whenever a memory
+allocation requests more space than is available.</p><p>In order for a Tridash value to be passed to a JavaScript function,
+and vice versa, it is has to be converted (<span class="emphasis"><em>marshalled</em></span>) to an
+equivalent representation using JavaScript types. This functionality
+is provided by the <code class="literal">Tridash.Marshaller</code> class in the JavaScript
+component of the runtime library, which is encapsulated in the module
+object <code class="literal">Tridash</code>.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="wasm-value-types"></a>Value Types</h4></div></div></div><p><a id="idm108812831904" class="indexterm"></a>
+<a id="idm108812830336" class="indexterm"></a>
+<a id="idm108812829008" class="indexterm"></a></p><p>Tridash value types, when converted to JavaScript value types, are
+represented by the following:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+<span class="strong"><strong>Integers</strong></span> are represented by JavaScript integers.
+</li><li class="listitem">
+<span class="strong"><strong>Reals</strong></span> are represented by JavaScript floating point numbers.
+</li><li class="listitem">
+<span class="strong"><strong>Booleans</strong></span> are represented by JavaScript Booleans.
+</li><li class="listitem">
+<span class="strong"><strong>Strings</strong></span> are represented by JavaScript strings.
+</li><li class="listitem">
+<span class="strong"><strong>Arrays</strong></span> are represented by JavaScript arrays.
+</li><li class="listitem">
+<span class="strong"><strong>Subnode dictionaries</strong></span> are represented by an instances of the
+  <code class="literal">Tridash.Marshaller.Object</code> class. The <code class="literal">subnodes</code> property contains
+  an object with a property for each subnode. The identifier of each
+  property is the corresponding subnode identifier.
+</li><li class="listitem"><p class="simpara">
+<span class="strong"><strong>Characters</strong></span> are represented by instances of the
+  <code class="literal">Tridash.Marshaller.Char</code> class, which has a single property:
+</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+<p>
+<code class="literal">code</code>
+</p>
+</td><td style="" valign="top">
+<p>
+The character code.
+</p>
+</td></tr></tbody></table></div></li><li class="listitem"><p class="simpara">
+<span class="strong"><strong>Symbols</strong></span> are represented by instances of the
+  <code class="literal">Tridash.Marshaller.Symbol</code>, which has a single property:
+</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+<p>
+<code class="literal">name</code>
+</p>
+</td><td style="" valign="top">
+<p>
+The symbol name as a string.
+</p>
+</td></tr></tbody></table></div></li><li class="listitem"><p class="simpara">
+<span class="strong"><strong>Linked list nodes</strong></span> are represented by instances of the
+  <code class="literal">Tridash.Marshaller.ListNode</code> class which the following properties:
+</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+<p>
+<code class="literal">head</code>
+</p>
+</td><td style="" valign="top">
+<p>
+The element stored in the node
+</p>
+</td></tr><tr><td style="" valign="top">
+<p>
+<code class="literal">tail</code>
+</p>
+</td><td style="" valign="top">
+<p>
+The next node in the linked list
+</p>
+</td></tr></tbody></table></div></li><li class="listitem"><p class="simpara">
+<span class="strong"><strong>Failure values</strong></span> are represented by instances of the
+  <code class="literal">Tridash.Marshaller.Fail</code> class, which has a single property:
+</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+<p>
+<code class="literal">type</code>
+</p>
+</td><td style="" valign="top">
+<p>
+The failure type.
+</p>
+</td></tr></tbody></table></div></li><li class="listitem"><p class="simpara">
+<span class="strong"><strong>Raw node references</strong></span> are represented by instances of the
+  <code class="literal">Tridash.Marshaller.Node</code> class, which has a single property.
+</p><div class="horizontal"><table class="horizontal" cellpadding="4px" style="border: none;"><colgroup><col /><col /></colgroup><tbody valign="top"><tr><td style="" valign="top">
+<p>
+<code class="literal">id</code>
+</p>
+</td><td style="" valign="top">
+<p>
+The node ID.
+</p>
+</td></tr></tbody></table></div></li></ul></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_builtin_failure_types_3"></a>Builtin Failure Types</h4></div></div></div><p><a id="idm108812774704" class="indexterm"></a>
+<a id="idm108812773104" class="indexterm"></a>
+<a id="idm108812771792" class="indexterm"></a></p><p>The following properties of the <code class="literal">Marshaller.FailTypes</code> represent
+builtin failure types as JavaScript Values:</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+<code class="literal">NoValue</code>
+</span></dt><dd>
+Represents the <a class="link" href="ar01s05.html#node-no-value" title="Failure Type Node: No-Value"><code class="literal">No Value</code></a> failure type.
+</dd><dt><span class="term">
+<code class="literal">TypeError</code>
+</span></dt><dd>
+Represents the
+<a class="link" href="ar01s05.html#node-type-error" title="Failure Type Node: Type-Error"><code class="literal">Type-Error</code></a> failure type.
+</dd><dt><span class="term">
+<code class="literal">InvalidInteger</code>
+</span></dt><dd>
+Represents the <a class="link" href="ar01s05.html#node-invalid-integer" title="Failure Type Node: Invalid-Integer"><code class="literal">Invalid-Integer</code></a> failure type.
+</dd><dt><span class="term">
+<code class="literal">InvalidReal</code>
+</span></dt><dd>
+Represents the <a class="link" href="ar01s05.html#node-invalid-real" title="Failure Type Node: Invalid-Real"><code class="literal">Invalid-Real</code></a>
+failure type.
+</dd><dt><span class="term">
+<code class="literal">ArityError</code>
+</span></dt><dd>
+Represents the <a class="link" href="ar01s05.html#node-arity-error" title="Failure Type Node: Arity-Error"><code class="literal">Arity-Error</code></a>
+failure type.
+</dd><dt><span class="term">
+<code class="literal">IndexOutBounds</code>
+</span></dt><dd>
+Represents the <a class="link" href="ar01s05.html#node-index-out-bounds" title="Failure Type Node: Index-Out-Bounds"><code class="literal">Index-Out-Bounds</code></a> failure type.
+</dd><dt><span class="term">
+<code class="literal">Empty</code>
+</span></dt><dd>
+Represents the empty list.
+</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_marshaller"></a>Marshaller</h4></div></div></div><p><a id="idm108812745456" class="indexterm"></a>
+<a id="idm108812743856" class="indexterm"></a>
+<a id="idm108812742528" class="indexterm"></a>
+<a id="idm108812741488" class="indexterm"></a>
+<a id="idm108812739872" class="indexterm"></a>
+<a id="idm108812738544" class="indexterm"></a></p><p>The <code class="literal">Tridash.Marshaller</code> class is responsible for converting Tridash
+values stored in the WebAssembly heap to equivalent JavaScript values
+and vice versa. An instance of this class is automatically created
+when loading the WebAssembly module.</p><h5><a id="_methods"></a>Methods</h5><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+<code class="literal">to_tridash(value)</code>
+</span></dt><dd><p class="simpara">
+Convert a JavaScript value (<code class="literal">value</code>), of a type
+listed in <a class="xref" href="ar01s07.html#wasm-value-types" title="Value Types"> Value Types</a>, returning a pointer (integer offset)
+to the Tridash value with the WebAssembly memory heap.
+</p><p class="simpara"><code class="literal">value</code> may also be an instance of the <code class="literal">Marshaller.TridashValue</code>
+class, which represents a value stored on the WebAssembly heap, at the
+location given by the <code class="literal">ptr</code> property. This is useful to create arrays
+or list objects which contain references to existing Tridash values.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Subnode dictionaries (<code class="literal">Tridash.Marshaller.Object</code> instances) and
+raw node references (<code class="literal">Tridash.Marshaller.Node</code> instances) can only be
+converted to Tridash values if they were obtained from a Tridash to
+JavaScript value conversion.</p></td></tr></table></div></dd><dt><span class="term">
+<code class="literal">to_js(pointer)</code>
+</span></dt><dd>
+Convert a Tridash value, stored at location
+<code class="literal">pointer</code> within the WebAssembly heap, to a JavaScript value.
+</dd><dt><span class="term">
+<code class="literal">stack_push(pointer)</code>
+</span></dt><dd>
+Push a pointer to a Tridash value onto the GC
+root set stack.
+</dd><dt><span class="term">
+<code class="literal">stack_pop()</code>
+</span></dt><dd>
+Pop and return a pointer, to a Tridash value, from the
+GC root set stack.
+</dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_lazy_evaluation_and_garbage_collection"></a>Lazy Evaluation and Garbage Collection</h4></div></div></div><p><a id="idm108812717120" class="indexterm"></a>
+<a id="idm108812715584" class="indexterm"></a>
+<a id="idm108812714256" class="indexterm"></a>
+<a id="idm108812713216" class="indexterm"></a>
+<a id="idm108812711600" class="indexterm"></a>
+<a id="idm108812710272" class="indexterm"></a></p><p>A pointer may point to a thunk object, which represents a Tridash
+value which has not been computed yet. When converting a Tridash value
+to a JavaScript value, all thunk objects are computed. As a result of
+this each conversion from Tridash to JavaScript may trigger a garbage
+collection cycle. Likewise, converting a JavaScript value to a Tridash
+value may also trigger a garbage collection since a new object is
+created on the heap.</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Converting an infinite list or a cyclic object will result in
+an infinite loop, due to all lazily evaluated values being computed on
+conversion.</p></td></tr></table></div><p>When converting multiple values, of which the conversion of the first
+value, <code class="literal">a</code>, results in a garbage collection cycle being run, the
+memory held by the second value, <code class="literal">b</code>, may be reclaimed if it is not
+referenced by an object in the root set. Furthermore, the pointer to
+<code class="literal">b</code> is no longer valid due to the objects being copied to the new
+heap.</p><p>To overcome this problem, before converting a Tridash value to
+JavaScript, all pointers to other Tridash values should be pushed onto
+the root set stack, using the <code class="literal">stack_push</code> method of
+<code class="literal">Tridash.Marshaller</code>. After the conversion the updated pointer values
+should be popped off the root set stack using the <code class="literal">stack_pop</code> method
+of <code class="literal">Tridash.Marshaller</code>.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Every call to <code class="literal">stack_push</code> must be balanced by a call to
+<code class="literal">stack_pop</code>.</p></td></tr></table></div><p><strong>Example: Converting Multiple Tridash Values to JS Values. </strong>
+</p><pre class="screen">/// Convert the Tridash values, pointer to by `a`, `b` and `c`.
+
+// Push pointer `c` to root set stack
+marshaller.stack_push(c);
+
+// Push pointer `b` to root set stack
+marshaller.stack_push(b);
+
+// Convert Tridash value `a` to JS value
+a = marshaller.to_js(a);
+
+
+// Pop updated pointer `b` from stack
+b = marshaller.stack_pop();
+
+// Convert Tridash value `b` to JS value
+b = marshaller.to_js(b);
+
+
+// Pop updated pointer `c` from stack
+c = marshaller.stack_pop();
+
+// Convert Tridash value `c` to JS value
+c = marshaller.to_js(c);</pre><p>
+</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_linking_meta_nodes_to_external_functions_2"></a>Linking Meta-Nodes to External Functions</h4></div></div></div><p><a id="idm108812695376" class="indexterm"></a>
+<a id="idm108812693840" class="indexterm"></a>
+<a id="idm108812692528" class="indexterm"></a></p><p>The name of the JavaScript function, which provides the implementation
+of an <span class="emphasis"><em>external meta-node</em></span> is given by the value of the node’s
+<code class="literal">wasm-name</code> attribute. The value of this attribute may either be a
+symbol or string which names a global JavaScript function, or an expression of
+the form <code class="literal">module.name</code> where <code class="literal">module</code> is the name of a globally
+accessible object, and <code class="literal">name</code> is the name of the property which
+contains the function that implements the meta-node.</p><p><strong>Example: Linking external meta-node to JavaScript function. </strong>
+</p><pre class="screen">## Meta-Node of two arguments
+/external(f, a, b)
+/external(g, a, b)
+
+## Link to JavaScript 'my-func' function
+/attribute(f, wasm-name, "my-func")
+
+## Link to JavaScript `func` function that is a property
+## of the global object `my_lib`
+/attribute(g, wasm-name, my_lib.func)</pre><p>
+</p><p>The function is called with the arguments being the pointers to the
+values of the argument nodes, within the module’s memory object.</p><p>If the value for an optional argument is not provided to the
+meta-node, in the Tridash source, and there is no default value, the
+<span class="emphasis"><em>null</em></span> pointer (<code class="literal">0</code>) is passed to the function.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">to_js</code> method of the <code class="literal">Tridash.Marshaller</code> class, returns
+the JavaScript <code class="literal">null</code> value when passed the <span class="emphasis"><em>null</em></span> pointer.</p></td></tr></table></div><p><strong>Example: External meta-node with optional arguments without default value. </strong>
+</p><pre class="screen">## Meta-Node with 1 required and 1 optional argument
+/external(fn, a, :(b))
+
+## Link to JavaScript 'my_func' function
+/attribute(fn, wasm-name, "my_func")
+
+## Instance with optional argument omitted
+fn(x)</pre><p>
+</p><p>In this example, <code class="literal">my_func</code> will be called with the pointer to the
+value of <code class="literal">x</code> as the first argument and the <span class="emphasis"><em>null</em></span> pointer (<code class="literal">0</code>) as the
+second argument.</p><p>The function should return its result as a pointer to a Tridash value,
+within the WebAssembly memory object.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_runtime_module_object_2"></a>Runtime Module Object</h4></div></div></div><p><a id="idm108812672848" class="indexterm"></a>
+<a id="idm108812671312" class="indexterm"></a>
+<a id="idm108812670000" class="indexterm"></a></p><p>By default, when targeting the WebAssembly backend, a JavaScript file
+is produced, along with the <code class="literal">.wasm</code> file containing the WebAssembly
+module, which contains a script that loads the module. A <span class="emphasis"><em>promise</em></span>,
+which resolves to the runtime module object containing the <code class="literal">nodes</code>
+property and <code class="literal">set_values</code> member function, is assigned to the <code class="literal">module</code>
+property of the <code class="literal">exports</code> object. This file can be loaded by a
+JavaScript runtime which supports the <code class="literal">require</code> function, such as
+<span class="emphasis"><em>Node.js</em></span>. The properties of the module object can then be accessed as
+properties of the object returned by <code class="literal">require</code>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>A promise to the module object is assigned, rather than the
+module object itself, since WebAssembly modules are loaded
+asynchronously.</p></td></tr></table></div><p>The runtime module object also contains the following additional
+fields:</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+<code class="literal">module</code>
+</span></dt><dd>
+<code class="literal">WebAssembly.Instance</code> object of the compiled Tridash
+module.
+</dd><dt><span class="term">
+<code class="literal">runtime</code>
+</span></dt><dd>
+<code class="literal">WebAssembly.Instance</code> object of the runtime library
+module.
+</dd><dt><span class="term">
+<code class="literal">memory</code>
+</span></dt><dd>
+The WebAssembly memory object.
+</dd><dt><span class="term">
+<code class="literal">marshaller</code>
+</span></dt><dd>
+The <code class="literal">Tridash.Marshaller</code> object for marshalling values
+to and from the compiled module’s heap memory.
+</dd></dl></div><p><strong>Example: WebAssembly Module Object Usage. </strong>
+</p><pre class="screen"># Load the compiled Wasm loader script. Substitute `module.js` with
+# the path to the generated JavaScript file.
+
+const module = require('module.js')
+
+module.then((mod) =&gt; {
+    const marshaller = mod.marshaller;
+    const node_x = mod.nodes.node_x;
+
+    // Retrieve value of node_x
+    const value = node_x.get_value();
+
+    ...
+
+    // Set value of node_x to integer 10
+    node_x.set_value(10);
+});</pre><p>
+</p><p>The <code class="literal">set_value</code>, and <code class="literal">get_value</code> methods, of the runtime node object,
+automatically marshal values to and from the WebAssembly module’s
+heap.</p><p>The <code class="literal">get_value</code> method, of the runtime node object, takes a single
+optional argument, which if <span class="emphasis"><em>false</em></span> returns a raw pointer to the
+Tridash value, of the node, rather than converting it to a JavaScript
+value. By default this argument is <span class="emphasis"><em>true</em></span>.</p></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s06.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s08.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

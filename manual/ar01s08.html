@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>8. Compiler Options</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.10 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.10 Reference Manual" /><link rel="prev" href="ar01s07.html" title="7. Interfacing with Other Languages" /><link rel="next" href="ix01.html" title="Index" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s07.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ix01.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_compiler_options"></a>8. Compiler Options</h2></div></div></div><p>The Tridash compiler (<code class="literal">tridashc</code>) accepts a number of options which
+affect the compilation of certain files and the output code that is
+generated.</p><p><span class="emphasis"><em>View the man page for <code class="literal">tridashc</code> or run the command <code class="literal">tridashc -h</code> for
+details of how these options are specified.</em></span></p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_compilation_targets"></a>8.1. Compilation Targets</h3></div></div></div><p>The compilation target (or compiler backend) determines the type of
+output file that is generated. The compilation target is specified
+using the <code class="literal">-t</code> command-line option or the <code class="literal">backend</code> output option of
+the build configuration file, <span class="emphasis"><em>View the tridashc man-page for more
+information.</em></span></p><p>The current version of Tridash has the following targets:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+<code class="literal">javascript</code>
+</li><li class="listitem">
+<code class="literal">wasm32</code> (32-bit WebAssembly)
+</li></ul></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_output_options"></a>8.2. Output Options</h3></div></div></div><p>The output options control various aspects of the output code that is
+generated. The options accepted depends on the compilation target.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_javascript_backend_2"></a>JavaScript Backend</h4></div></div></div><p>The JavaScript backend accepts the following options:</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+<code class="literal">indented</code>
+</span></dt><dd>
+If set to <span class="emphasis"><em>true</em></span>, formatted JavaScript code with line
+breaks and indentation is generated. If <span class="emphasis"><em>false</em></span> no line breaks or
+non-syntactic spaces are added.
+</dd><dt><span class="term">
+<code class="literal">runtime-path</code>
+</span></dt><dd>
+Path to the runtime library. If not provided, the
+runtime library in the Tridash installation directory is used.
+</dd><dt><span class="term">
+<code class="literal">runtime-linkage</code>
+</span></dt><dd><p class="simpara">
+Controls how the runtime library is linked with
+the generated code. This only has an effect when the output is an HTML
+file, otherwise the runtime library is not linked to the output and
+has to be loaded manually.
+</p><p class="simpara">It can be one of the following values:</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+<code class="literal">static</code>
+</span></dt><dd>
+Embed the runtime library directly inside the HTML file.
+</dd><dt><span class="term">
+<code class="literal">dynamic</code>
+</span></dt><dd>
+Insert a reference to the runtime library, located at the
+URL given by <code class="literal">runtime-path</code>, inside the HTML file.
+</dd><dt><span class="term">
+<code class="literal">none</code>
+</span></dt><dd>
+Do not link the runtime library. This should be used if the
+runtime library is linked manually by a script tag in the HTML source.
+</dd></dl></div></dd><dt><span class="term">
+<code class="literal">type</code>
+</span></dt><dd><p class="simpara">
+Type of output that is generated. Can be one of the
+following:
+</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+<code class="literal">html</code>
+</span></dt><dd>
+Generate an HTML file with the compiled Tridash code embedded
+in it. The HTML source, which is referenced by the node with
+identifier given by the <code class="literal">main-ui</code> option, is used as the template for
+the HTML output file.
+</dd><dt><span class="term">
+<code class="literal">js</code>
+</span></dt><dd>
+Generate a JavaScript file containing just the compiled Tridash
+code. The runtime library is not loaded, thus has to be loaded
+manually, and stored in the global <code class="literal">Tridash</code> object, prior to loading
+the generated JavaScript file. This is the default.
+</dd></dl></div></dd><dt><span class="term">
+<code class="literal">main-ui</code>
+</span></dt><dd>
+The identifier of the node, which references the contents
+of an HTML file, to use as the template for the output, when the
+output type is an HTML file.
+</dd><dt><span class="term">
+<code class="literal">module-name</code>
+</span></dt><dd><p class="simpara">
+The identifier of the JavaScript variable, by which
+the runtime module object is referenced.
+</p><p class="simpara">If empty (the default) and the output type is a JavaScript file, the
+properties of the runtime module object are assigned to the <code class="literal">exports</code>
+object. The file can then be loaded using the <code class="literal">require</code>
+function, in a JavaScript runtime where it is supported. When the
+output type is an HTML file, the runtime module object is not
+accessible.</p><p class="simpara">When given a value, the runtime module object is assigned to the
+global variable with the identifier given by the value. The JavaScript
+file can then be loaded using an HTML script tag.</p></dd></dl></div></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_webassembly_backend_2"></a>WebAssembly Backend</h4></div></div></div><p>When targeting WebAssembly (<code class="literal">wasm32</code>), two output files are generated:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+A WebAssembly <code class="literal">.wasm</code> containing the compiled Tridash code.
+</li><li class="listitem">
+A JavaScript file which contains a script that loads the WebAssembly
+  module, as well as the runtime library module.
+</li></ul></div><p>To use the compiled module, only the loader script has to be loaded.</p><p>The following output options are accepted.</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+<code class="literal">indented</code>
+</span></dt><dd>
+If set to <span class="emphasis"><em>true</em></span>, formatted JavaScript code with line
+breaks and indentation is generated. If <span class="emphasis"><em>false</em></span> no line breaks or
+non-syntactic spaces are added.
+</dd><dt><span class="term">
+<code class="literal">type</code>
+</span></dt><dd><p class="simpara">
+Type of output that is generated.
+</p><p class="simpara">By default a separate WebAssembly (<code class="literal">.wasm</code>) and JavaScript file are
+generated. The module loader library has to be loaded manually.</p><p class="simpara">If set to <code class="literal">html</code>, generate an HTML file with the compiled Tridash code
+embedded in it. The HTML source, which is referenced by the HTML node
+with identifier given by the <code class="literal">main-ui</code> option, is used as the template
+for the HTML output file.</p></dd><dt><span class="term">
+<code class="literal">main-ui</code>
+</span></dt><dd>
+The identifier of the node, which references the contents
+of an HTML file, to use as the template for the output, when the
+output type is an HTML file.
+</dd><dt><span class="term">
+<code class="literal">module-name</code>
+</span></dt><dd><p class="simpara">
+The identifier of the JavaScript variable, through which,
+the runtime module object is referenced.
+</p><p class="simpara">If empty (the default) and the output type is not <code class="literal">html</code>, the
+properties of the runtime module object are assigned to the <code class="literal">exports</code>
+object. The loader script can then be loaded using the <code class="literal">require</code>
+function, in a JavaScript runtime where it is supported. When the
+output type is an HTML file, the runtime module object is not
+accessible.</p><p class="simpara">When given a value, the runtime module object is assigned to the
+global variable with the identifier given by the value. The loader script
+file can then be loaded using an HTML script tag.</p></dd><dt><span class="term">
+<code class="literal">linkage</code>
+</span></dt><dd><p class="simpara">
+Control how the WebAssembly module is linked to the loader
+script
+</p><p class="simpara">This can be one of the following:</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
+<code class="literal">local</code>
+</span></dt><dd>
+The loader script loads the WebAssembly modules from the
+local file system. This requires a JavaScript runtime which provides
+the <code class="literal">require</code> function and the <code class="literal">fs</code> module. The paths to the compiled
+module and runtime library are given by the <code class="literal">module-path</code> and
+<code class="literal">runtime-path</code> options, respectively.
+</dd><dt><span class="term">
+<code class="literal">remote</code>
+</span></dt><dd>
+The loader script loads the WebAssembly modules from a
+remote location. The URLs to the compiled module and runtime library
+are given by the <code class="literal">module-path</code> and <code class="literal">runtime-path</code> options,
+respectively.
+</dd><dt><span class="term">
+<code class="literal">embed</code>
+</span></dt><dd>
+The compiled Tridash module and runtime library are embedded
+directly in the loader script. The paths to the compiled module and
+runtime library, which need to be accessible to the compiler, are
+given by the <code class="literal">module-path</code> and <code class="literal">runtime-path</code> options, respectively.
+</dd></dl></div></dd><dt><span class="term">
+<code class="literal">runtime-path</code>
+</span></dt><dd>
+Path to the runtime library. If omitted, the path to
+the runtime library in the Tridash installation is used.
+</dd><dt><span class="term">
+<code class="literal">module-path</code>
+</span></dt><dd>
+Path to the compiled Tridash module. If omitted, the
+path to the output file is used.
+</dd><dt><span class="term">
+<code class="literal">stack-size</code>
+</span></dt><dd><p class="simpara">
+The amount of space to reserve for the GC root set
+stack. The default stack size is 64 KB.
+</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The root set stack does not expand after the space is
+reserved. If more elements are pushed onto it than there is space, a
+memory access out of bounds exception will be thrown by the
+WebAssembly runtime.</p></td></tr></table></div></dd></dl></div></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s07.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ix01.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

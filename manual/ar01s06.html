@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>6. Optimizations</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.9 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.9 Reference Manual" /><link rel="prev" href="ar01s05.html" title="5. Core Module" /><link rel="next" href="ix01.html" title="Index" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s05.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ix01.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_optimizations"></a>6. Optimizations</h2></div></div></div><p><a id="idm196015970976" class="indexterm"></a></p><p>This section details functionality for controlling and fine tuning the
-optimizations performed by the Tridash compiler.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_coalescing"></a>6.1. Coalescing</h3></div></div></div><p><a id="idm196015968112" class="indexterm"></a>
-<a id="idm196015966864" class="indexterm"></a>
-<a id="idm196015949536" class="indexterm"></a>
-<a id="idm196015948032" class="indexterm"></a>
-<a id="idm196015946752" class="indexterm"></a></p><p>A node is compiled to a runtime node object definition, which stores
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>6. Optimizations</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash 0.10 Reference Manual" /><link rel="up" href="index.html" title="Tridash 0.10 Reference Manual" /><link rel="prev" href="ar01s05.html" title="5. Core Module" /><link rel="next" href="ar01s07.html" title="7. Interfacing with Other Languages" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s05.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s07.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_optimizations"></a>6. Optimizations</h2></div></div></div><p><a id="idm108813105184" class="indexterm"></a></p><p>This section details functionality for controlling and fine tuning the
+optimizations performed by the Tridash compiler.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_coalescing"></a>6.1. Coalescing</h3></div></div></div><p><a id="idm108813102320" class="indexterm"></a>
+<a id="idm108813101072" class="indexterm"></a>
+<a id="idm108813100080" class="indexterm"></a>
+<a id="idm108813098512" class="indexterm"></a>
+<a id="idm108813097216" class="indexterm"></a></p><p>A node is compiled to a runtime node object definition, which stores
 the details of the node’s observers, dependencies, contexts and
 various other attributes. However, for efficiency, both in terms of
 speed and code size, not every single node is actually compiled to a
@@ -51,14 +51,14 @@ nodes guaranteed to never be coalesced into other nodes are input
 nodes, which are explicitly marked as such, and output nodes, that is
 nodes with no observers.</p><p>To allow the value of a node, which is neither an input nor an output
 node, to be observed, the value of the node’s <code class="literal">coalescable</code> attribute
-can be set to false (<code class="literal">0</code>). This guarantees that the node will never be
+can be set to false. This guarantees that the node will never be
 coalesced into another node, and hence a runtime node object will be
 created for it.</p><p><strong>Example. </strong>
 </p><pre class="screen">a + b -&gt; x
 x -&gt; y
 y + z -&gt; output
 
-/attribute(x, coalescable, 0) <a id="CO6-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></pre><p>
+/attribute(x, coalescable, False) <a id="CO6-1"></a><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></pre><p>
 </p><div class="calloutlist"><table border="0" summary="Callout list"><tr><td width="5%" valign="top" align="left"><p><a href="#CO6-1"><span><img src="images/icons/callouts/1.png" alt="1" border="0" /></span></a> </p></td><td valign="top" align="left"><p>
 Set value of <code class="literal">x</code>'s <code class="literal">coalescable</code> attribute to false
 </p></td></tr></table></div><p>In this example, <code class="literal">x</code> is guaranteed to never be coalesced into another
@@ -69,5 +69,5 @@ performance of the program.</p></td></tr></table></div><div class="caution" styl
 still be removed if it is not reachable from any input node, and thus
 its value can never change from its initial value. To prevent the node
 from being removed, the <code class="literal">removable</code> attribute should also be set to
-false (<code class="literal">0</code>).</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">coalescable</code> and <code class="literal">removable</code> attributes have no effect
-within meta-nodes.</p></td></tr></table></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s05.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ix01.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
+false.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">coalescable</code> and <code class="literal">removable</code> attributes have no effect
+within meta-nodes.</p></td></tr></table></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s05.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s07.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
