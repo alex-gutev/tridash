@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Tridash Tutorials</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /></head><body><div xml:lang="en" class="article" lang="en"><div class="titlepage"><div><div><h2 class="title"><a id="idm370540503072"></a>Tridash Tutorials</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Alexander</span> <span class="surname">Gutev</span></h3><code class="email">&lt;<a class="email" href="mailto:alex.gutev@gmail.com">alex.gutev@gmail.com</a>&gt;</code></div></div></div><hr /></div><div class="toc"><p><strong>Table of Contents</strong></p><dl class="toc"><dt><span class="section"><a href="#tutorial1">1. Hello Node</a></span></dt><dd><dl><dt><span class="section"><a href="#_nodes">1.1. Nodes</a></span></dt><dt><span class="section"><a href="#_first_application">1.2. First Application</a></span></dt><dt><span class="section"><a href="#_inline_node_declarations">1.3. Inline Node Declarations</a></span></dt><dt><span class="section"><a href="#_two_way_bindings">1.4. Two-Way Bindings</a></span></dt></dl></dd><dt><span class="section"><a href="#_functional_bindings">2. Functional Bindings</a></span></dt><dd><dl><dt><span class="section"><a href="#_example_application_adding_numbers">2.1. Example Application: Adding Numbers</a></span></dt><dt><span class="section"><a href="#_binding_to_functor_nodes">2.2. Binding to Functor Nodes</a></span></dt></dl></dd><dt><span class="section"><a href="#_conditional_bindings">3. Conditional Bindings</a></span></dt><dd><dl><dt><span class="section"><a href="#_case_operator">3.1. Case Operator</a></span></dt><dt><span class="section"><a href="#_example_1_maximum_of_two_numbers">3.2. Example 1: Maximum of Two Numbers</a></span></dt><dt><span class="section"><a href="#_example_2_sum_limit">3.3. Example 2: Sum Limit</a></span></dt><dt><span class="section"><a href="#_improvements">3.4. Improvements</a></span></dt></dl></dd><dt><span class="section"><a href="#functions">4. Writing your own Functions</a></span></dt><dd><dl><dt><span class="section"><a href="#_definition_operator">4.1. Definition Operator</a></span></dt><dt><span class="section"><a href="#_node_literal_self_literal">4.2. Node <code class="literal">self</code></a></span></dt><dt><span class="section"><a href="#_optional_arguments">4.3. Optional Arguments</a></span></dt><dt><span class="section"><a href="#_recursive_meta_nodes">4.4. Recursive Meta-Nodes</a></span></dt><dt><span class="section"><a href="#_nested_meta_nodes">4.5. Nested Meta-Nodes</a></span></dt><dt><span class="section"><a href="#_local_nodes">4.6. Local Nodes</a></span></dt><dt><span class="section"><a href="#_referencing_outer_nodes">4.7. Referencing Outer Nodes</a></span></dt><dt><span class="section"><a href="#_fun_example_simple_meter">4.8. Fun Example: Simple Meter</a></span></dt></dl></dd><dt><span class="section"><a href="#_subnodes">5. Subnodes</a></span></dt><dd><dl><dt><span class="section"><a href="#_example_color_object">5.1. Example: Color Object</a></span></dt></dl></dd><dt><span class="section"><a href="#_error_handling_with_failure_values">6. Error Handling with Failure Values</a></span></dt><dd><dl><dt><span class="section"><a href="#_invalid_input">6.1. Invalid Input</a></span></dt><dt><span class="section"><a href="#_failure_values">6.2. Failure Values</a></span></dt><dt><span class="section"><a href="#_handling_failures">6.3. Handling Failures</a></span></dt><dt><span class="section"><a href="#_initial_values">6.4. Initial Values</a></span></dt><dt><span class="section"><a href="#_exercise">6.5. Exercise</a></span></dt></dl></dd><dt><span class="section"><a href="#_failure_types">7. Failure Types</a></span></dt><dd><dl><dt><span class="section"><a href="#_identifying_the_cause_of_failures">7.1. Identifying the cause of Failures</a></span></dt><dt><span class="section"><a href="#_example_checking_failure_type_in_emphasis_adding_numbers_emphasis_application">7.2. Example: Checking Failure type in <span class="emphasis"><em>Adding Numbers</em></span> Application</a></span></dt><dt><span class="section"><a href="#_creating_failure_values">7.3. Creating Failure Values</a></span></dt><dt><span class="section"><a href="#_proper_failure_types">7.4. Proper Failure Types</a></span></dt></dl></dd><dt><span class="section"><a href="#_target_node_transforms">8. Target Node Transforms</a></span></dt><dd><dl><dt><span class="section"><a href="#_node_attributes">8.1. Node Attributes</a></span></dt><dt><span class="section"><a href="#_attribute_literal_target_node_literal">8.2. Attribute <code class="literal">target-node</code></a></span></dt><dt><span class="section"><a href="#target-node-own-meta-nodes">8.3. Target-Node for own Meta-Nodes</a></span></dt></dl></dd><dt><span class="section"><a href="#contexts">9. Contexts</a></span></dt><dd><dl><dt><span class="section"><a href="#_explicit_contexts">9.1. Explicit Contexts</a></span></dt><dt><span class="section"><a href="#_handling_failures_with_explicit_contexts">9.2. Handling Failures with Explicit Contexts</a></span></dt><dt><span class="section"><a href="#adding-numbers-improved-error-handling">9.3. Improved Error Handling in <span class="emphasis"><em>Adding Numbers</em></span></a></span></dt><dt><span class="section"><a href="#_concise_syntax">9.4. Concise Syntax</a></span></dt></dl></dd><dt><span class="section"><a href="#_node_states">10. Node States</a></span></dt><dd><dl><dt><span class="section"><a href="#_stateful_bindings">10.1. Stateful Bindings</a></span></dt><dt><span class="section"><a href="#_interfacing_with_javascript">10.2. Interfacing with JavaScript</a></span></dt><dt><span class="section"><a href="#_example_counter_application">10.3. Example: Counter Application</a></span></dt><dt><span class="section"><a href="#_state_transitions">10.4. State Transitions</a></span></dt><dt><span class="section"><a href="#_example_alternating_increment_button">10.5. Example: Alternating Increment Button</a></span></dt><dt><span class="section"><a href="#_exercises">10.6. Exercises</a></span></dt></dl></dd><dt><span class="section"><a href="#_list_processing">11. List Processing</a></span></dt><dd><dl><dt><span class="section"><a href="#_creating_lists">11.1. Creating Lists</a></span></dt><dt><span class="section"><a href="#_higher_order_meta_nodes">11.2. Higher-Order Meta-Nodes</a></span></dt><dt><span class="section"><a href="#_example_message_list">11.3. Example: Message List</a></span></dt></dl></dd><dt><span class="section"><a href="#_modules_and_organization">12. Modules And Organization</a></span></dt><dd><dl><dt><span class="section"><a href="#_multiple_source_files">12.1. Multiple Source Files</a></span></dt><dt><span class="section"><a href="#_modules_in_depth">12.2. Modules In Depth</a></span></dt><dt><span class="section"><a href="#_adding_modularity_to_emphasis_adding_numbers_emphasis">12.3. Adding Modularity to <span class="emphasis"><em>Adding Numbers</em></span></a></span></dt><dt><span class="section"><a href="#_infix_operators">12.4. Infix Operators</a></span></dt></dl></dd><dt><span class="section"><a href="#_what_8217_s_next">13. What’s Next?</a></span></dt></dl></div><p>This set of tutorials covers the basics of the Tridash programming
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Tridash Tutorials</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /></head><body><div xml:lang="en" class="article" lang="en"><div class="titlepage"><div><div><h2 class="title"><a id="idm315191660880"></a>Tridash Tutorials</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Alexander</span> <span class="surname">Gutev</span></h3><code class="email">&lt;<a class="email" href="mailto:alex.gutev@gmail.com">alex.gutev@gmail.com</a>&gt;</code></div></div></div><hr /></div><div class="toc"><p><strong>Table of Contents</strong></p><dl class="toc"><dt><span class="section"><a href="#tutorial1">1. Hello Node</a></span></dt><dd><dl><dt><span class="section"><a href="#_nodes">1.1. Nodes</a></span></dt><dt><span class="section"><a href="#_first_application">1.2. First Application</a></span></dt><dt><span class="section"><a href="#_inline_node_declarations">1.3. Inline Node Declarations</a></span></dt><dt><span class="section"><a href="#_two_way_bindings">1.4. Two-Way Bindings</a></span></dt></dl></dd><dt><span class="section"><a href="#_functional_bindings">2. Functional Bindings</a></span></dt><dd><dl><dt><span class="section"><a href="#_example_application_adding_numbers">2.1. Example Application: Adding Numbers</a></span></dt><dt><span class="section"><a href="#_binding_to_functor_nodes">2.2. Binding to Functor Nodes</a></span></dt></dl></dd><dt><span class="section"><a href="#_conditional_bindings">3. Conditional Bindings</a></span></dt><dd><dl><dt><span class="section"><a href="#_case_operator">3.1. Case Operator</a></span></dt><dt><span class="section"><a href="#_example_1_maximum_of_two_numbers">3.2. Example 1: Maximum of Two Numbers</a></span></dt><dt><span class="section"><a href="#_example_2_sum_limit">3.3. Example 2: Sum Limit</a></span></dt><dt><span class="section"><a href="#_improvements">3.4. Improvements</a></span></dt></dl></dd><dt><span class="section"><a href="#functions">4. Writing your own Functions</a></span></dt><dd><dl><dt><span class="section"><a href="#_definition_operator">4.1. Definition Operator</a></span></dt><dt><span class="section"><a href="#_node_literal_self_literal">4.2. Node <code class="literal">self</code></a></span></dt><dt><span class="section"><a href="#_optional_arguments">4.3. Optional Arguments</a></span></dt><dt><span class="section"><a href="#_recursive_meta_nodes">4.4. Recursive Meta-Nodes</a></span></dt><dt><span class="section"><a href="#_nested_meta_nodes">4.5. Nested Meta-Nodes</a></span></dt><dt><span class="section"><a href="#_local_nodes">4.6. Local Nodes</a></span></dt><dt><span class="section"><a href="#_referencing_outer_nodes">4.7. Referencing Outer Nodes</a></span></dt><dt><span class="section"><a href="#_fun_example_simple_meter">4.8. Fun Example: Simple Meter</a></span></dt></dl></dd><dt><span class="section"><a href="#_subnodes">5. Subnodes</a></span></dt><dd><dl><dt><span class="section"><a href="#_example_color_object">5.1. Example: Color Object</a></span></dt></dl></dd><dt><span class="section"><a href="#_error_handling_with_failure_values">6. Error Handling with Failure Values</a></span></dt><dd><dl><dt><span class="section"><a href="#_invalid_input">6.1. Invalid Input</a></span></dt><dt><span class="section"><a href="#_failure_values">6.2. Failure Values</a></span></dt><dt><span class="section"><a href="#_handling_failures">6.3. Handling Failures</a></span></dt><dt><span class="section"><a href="#_initial_values">6.4. Initial Values</a></span></dt><dt><span class="section"><a href="#_exercise">6.5. Exercise</a></span></dt></dl></dd><dt><span class="section"><a href="#_failure_types">7. Failure Types</a></span></dt><dd><dl><dt><span class="section"><a href="#_identifying_the_cause_of_failures">7.1. Identifying the cause of Failures</a></span></dt><dt><span class="section"><a href="#_example_checking_failure_type_in_emphasis_adding_numbers_emphasis_application">7.2. Example: Checking Failure type in <span class="emphasis"><em>Adding Numbers</em></span> Application</a></span></dt><dt><span class="section"><a href="#_creating_failure_values">7.3. Creating Failure Values</a></span></dt><dt><span class="section"><a href="#_proper_failure_types">7.4. Proper Failure Types</a></span></dt></dl></dd><dt><span class="section"><a href="#_target_node_transforms">8. Target Node Transforms</a></span></dt><dd><dl><dt><span class="section"><a href="#_node_attributes">8.1. Node Attributes</a></span></dt><dt><span class="section"><a href="#_attribute_literal_target_node_literal">8.2. Attribute <code class="literal">target-node</code></a></span></dt><dt><span class="section"><a href="#target-node-own-meta-nodes">8.3. Target-Node for own Meta-Nodes</a></span></dt></dl></dd><dt><span class="section"><a href="#contexts">9. Contexts</a></span></dt><dd><dl><dt><span class="section"><a href="#_explicit_contexts">9.1. Explicit Contexts</a></span></dt><dt><span class="section"><a href="#_handling_failures_with_explicit_contexts">9.2. Handling Failures with Explicit Contexts</a></span></dt><dt><span class="section"><a href="#adding-numbers-improved-error-handling">9.3. Improved Error Handling in <span class="emphasis"><em>Adding Numbers</em></span></a></span></dt><dt><span class="section"><a href="#_concise_syntax">9.4. Concise Syntax</a></span></dt></dl></dd><dt><span class="section"><a href="#_node_states">10. Node States</a></span></dt><dd><dl><dt><span class="section"><a href="#_stateful_bindings">10.1. Stateful Bindings</a></span></dt><dt><span class="section"><a href="#_interfacing_with_javascript">10.2. Interfacing with JavaScript</a></span></dt><dt><span class="section"><a href="#example-counter-app">10.3. Example: Counter Application</a></span></dt><dt><span class="section"><a href="#_state_transitions">10.4. State Transitions</a></span></dt><dt><span class="section"><a href="#_example_alternating_increment_button">10.5. Example: Alternating Increment Button</a></span></dt><dt><span class="section"><a href="#_exercises">10.6. Exercises</a></span></dt></dl></dd><dt><span class="section"><a href="#_list_processing">11. List Processing</a></span></dt><dd><dl><dt><span class="section"><a href="#_creating_lists">11.1. Creating Lists</a></span></dt><dt><span class="section"><a href="#_higher_order_meta_nodes">11.2. Higher-Order Meta-Nodes</a></span></dt><dt><span class="section"><a href="#_example_message_list">11.3. Example: Message List</a></span></dt></dl></dd><dt><span class="section"><a href="#_modules_and_organization">12. Modules And Organization</a></span></dt><dd><dl><dt><span class="section"><a href="#_multiple_source_files">12.1. Multiple Source Files</a></span></dt><dt><span class="section"><a href="#_modules_in_depth">12.2. Modules In Depth</a></span></dt><dt><span class="section"><a href="#_adding_modularity_to_emphasis_adding_numbers_emphasis">12.3. Adding Modularity to <span class="emphasis"><em>Adding Numbers</em></span></a></span></dt><dt><span class="section"><a href="#_infix_operators">12.4. Infix Operators</a></span></dt></dl></dd><dt><span class="section"><a href="#_what_8217_s_next">13. What’s Next?</a></span></dt></dl></div><p>This set of tutorials covers the basics of the Tridash programming
 language.</p><p>Prior programming experience is not strictly necessary however is
 helpful.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The full source code for these tutorials is available in the
 tutorials directory of the Tridash source:
@@ -23,8 +23,8 @@ non-digit character otherwise it is interpreted as a number.</p><p>The following
 identifiers, meaning node identifiers may even contain symbols such as
 <code class="literal">-</code>, <code class="literal">+</code>, <code class="literal">=</code>, <code class="literal">&gt;</code>, <code class="literal">?</code>, etc.</p></td></tr></table></div><p>A node can be bound to another node in which case its value is
 automatically updated when the value of the node, to which it is
-bound, changes.</p><p>The <code class="literal">-&gt;</code> operator establishes a binding between node on the left hand
-side, referred to as the <span class="emphasis"><em>source</em></span>, and the node on the right hand
+bound, changes.</p><p>The <code class="literal">-&gt;</code> operator establishes a binding between the node on the left
+hand side, referred to as the <span class="emphasis"><em>source</em></span>, and the node on the right hand
 side, referred to as the <span class="emphasis"><em>target</em></span>.</p><p><strong>Example. </strong>
 </p><pre class="screen">a -&gt; b</pre><p>
 </p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The spaces between the node identifiers and the bind <code class="literal">-&gt;</code>
@@ -109,17 +109,17 @@ to <code class="literal">ui</code>, which is the name of the node referencing th
 <code class="literal">hello-ui.html</code> file. It is the contents of this file that are used to
 generate the output HTML file.</p><p>If all went well a <code class="literal">hello.html</code> file should have been created in the
 same directory, after running the command.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_running_the_application"></a>Running The Application</h4></div></div></div><p>Open the <code class="literal">hello.html</code> file in a web-browser with JavaScript
-enabled. You should see something similar to the following:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial1/snap1.png" align="middle" alt="Enter your name: __, Hello" /></div></div><p>Try entering some text in the text field, and press enter afterwards:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial1/snap2.png" align="middle" alt="Enter your name: John, Hello John" /></div></div><p>Notice that the text entered appears next to the “Hello” message
+enabled. You should see something similar to the following:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial1/snap1.png" align="middle" alt="Enter your name: __, Hello" /></div></div><p>Try entering some text in the text field, and press enter afterwards:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial1/snap2.png" align="middle" alt="Enter your name: John, Hello John" /></div></div><p>Notice that the text entered appears next to the “Hello” message
 underneath the text field. This is due to the binding of the text
 field to the <code class="literal">name</code> node and the binding of the <code class="literal">name</code> node to the
-contents of the <code class="literal">span</code> element placed adjacent to the “Hello” text.</p><p>Now try changing the text entered in the text field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial1/snap3.png" align="middle" alt="Enter your name: John Doe, Hello John Doe" /></div></div><p>The text changes to match the contents of the text field. This
+contents of the <code class="literal">span</code> element placed adjacent to the “Hello” text.</p><p>Now try changing the text entered in the text field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial1/snap3.png" align="middle" alt="Enter your name: John Doe, Hello John Doe" /></div></div><p>The text changes to match the contents of the text field. This
 demonstrates the automatic updating of a node’s state when the state
 of its dependency nodes changes.</p><p>When the state (the value) of the text field changes:</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
 The state of the <code class="literal">name</code> node is updated to the text entered in the
 field.
 </li><li class="listitem">
-The content of <code class="literal">span</code> element is updated to match the state of the
-<code class="literal">name</code> node.
+The content of the <code class="literal">span</code> element is updated to match the state of
+the <code class="literal">name</code> node.
 </li></ol></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_inline_node_declarations"></a>1.3. Inline Node Declarations</h3></div></div></div><p>The previous application can be implemented much more succinctly using
 implicit bindings and inline node declarations.</p><p><strong>hello-ui.html. </strong>
 </p><pre class="programlisting">&lt;!doctype html&gt;
@@ -177,8 +177,8 @@ established since a binding is declared in both directions:</p><div class="itemi
 </li></ul></div><p>Build the application using the following command, which is identical
 to the previous build command with only the source and output file
 names changed.</p><pre class="screen">tridashc ui.html : node-name=ui -o app.html -p type=html -p main-ui=ui</pre><p>Open the resulting <code class="literal">app.html</code> file in a web-browser, and enter a value
-in the first text field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial1/snap4.png" align="middle" alt="A: 1, B: 1" /></div></div><p>Notice that the content of the second text field is automatically
-updated to match the content of the first field.</p><p>Now change the value in the second field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial1/snap5.png" align="middle" alt="A: 3, B: 3" /></div></div><p>The value of the first field is updated to the value entered in the
+in the first text field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial1/snap4.png" align="middle" alt="A: 1, B: 1" /></div></div><p>Notice that the content of the second text field is automatically
+updated to match the content of the first field.</p><p>Now change the value in the second field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial1/snap5.png" align="middle" alt="A: 3, B: 3" /></div></div><p>The value of the first field is updated to the value entered in the
 second field.</p></div></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_functional_bindings"></a>2. Functional Bindings</h2></div></div></div><p>The bindings in the previous tutorial were pretty boring and
 limited. Whatever was entered in the text field was simply displayed
 below it, verbatim. In-fact, this functionality is already offered by
@@ -279,9 +279,9 @@ options in the remaining entries, in this case <code class="literal">type = html
 tutorials.</p><p>To build from a build configuration file run the following command:</p><pre class="screen">tridashc -b build.yml</pre><p>The <code class="literal">-b</code> option specifies the path to the build configuration file
 containing the build options. All other command line options are
 ignored when this option is specified.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_running_the_application_2"></a>Running the Application</h4></div></div></div><p>Open the <code class="literal">app.html</code> file in a web browser, and enter some
-numbers in the text fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial2/snap1.png" align="middle" alt="A: 2:, B: 3, A + B = 5" /></div></div><p>Notice that the sum of the numbers is automatically computed and
+numbers in the text fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial2/snap1.png" align="middle" alt="A: 2:, B: 3, A + B = 5" /></div></div><p>Notice that the sum of the numbers is automatically computed and
 displayed below the fields.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The sum will only be displayed once you have entered a valid
-number in each field.</p></td></tr></table></div><p>Now try changing the numbers (<span class="emphasis"><em>remember to press enter afterwards</em></span>):</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial2/snap2.png" align="middle" alt="A: 2, B: 8, A + B = 10" /></div></div><p>Notice that the sum is automatically recomputed and the new sum is
+number in each field.</p></td></tr></table></div><p>Now try changing the numbers (<span class="emphasis"><em>remember to press enter afterwards</em></span>):</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial2/snap2.png" align="middle" alt="A: 2, B: 8, A + B = 10" /></div></div><p>Notice that the sum is automatically recomputed and the new sum is
 displayed.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_binding_to_functor_nodes"></a>2.2. Binding to Functor Nodes</h3></div></div></div><p>The <code class="literal">to-int</code> operator is special in that a two-way binding is
 established between its argument and the functor node. Thus the
 declaration <code class="literal">to-int(a)</code> also establishes the binding <code class="literal">to-int(a) -&gt; a</code>.
@@ -403,14 +403,14 @@ its value is displayed in an unnamed HTML element below the input
 fields.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The values of <code class="literal">a</code> and <code class="literal">b</code> are also displayed below the input
 fields. This is to demonstrate that there is no limit to how many
 nodes can be bound to a particular node.</p></td></tr></table></div><p>Build and run the application, using the same build configuration file
-and command from the previous tutorials.</p><p>Enter some numbers in the text fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial3/snap1.png" align="middle" alt="A: 10, B: 15, The maximum of 10 and 15 is 15" /></div></div><p>Notice that the maximum, 15 in this case, is displayed below the text
+and command from the previous tutorials.</p><p>Enter some numbers in the text fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial3/snap1.png" align="middle" alt="A: 10, B: 15, The maximum of 10 and 15 is 15" /></div></div><p>Notice that the maximum, 15 in this case, is displayed below the text
 fields. Also notice that the values entered in the text fields are
-also displayed as part of the message.</p><p>Now change the number, which is the maximum, to a different value
-which is still greater than the other number:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial3/snap2.png" align="middle" alt="A: 10, B: 17, The maximum of 10 and 17 is 17" /></div></div><p>The new maximum is displayed. This demonstrates that if the values of
+displayed as part of the message.</p><p>Now change the number, which is the maximum, to a different value
+which is still greater than the other number:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial3/snap2.png" align="middle" alt="A: 10, B: 17, The maximum of 10 and 17 is 17" /></div></div><p>The new maximum is displayed. This demonstrates that if the values of
 the value nodes, of the <code class="literal">case</code> expression change, the value of the
 <code class="literal">case</code> expression is updated.</p><p>Change the maximum number such that it is smaller than the other
-number:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial3/snap3.png" align="middle" alt="A: 10, B: 6, The maximum of 10 and 6 is 10" /></div></div><p>This shows that the value of the <code class="literal">case</code> expression is also updated if
-the values of the condition nodes change.</p><p>Now finally change the numbers such that they are both equal:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial3/snap4.png" align="middle" alt="A: 10, B: 10, The maximum of 10 and 10 is neither" /></div></div><p>The displayed maximum is “neither” which is the default value of the
+number:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial3/snap3.png" align="middle" alt="A: 10, B: 6, The maximum of 10 and 6 is 10" /></div></div><p>This shows that the value of the <code class="literal">case</code> expression is also updated if
+the values of the condition nodes change.</p><p>Now finally change the numbers such that they are both equal:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial3/snap4.png" align="middle" alt="A: 10, B: 10, The maximum of 10 and 10 is neither" /></div></div><p>The displayed maximum is “neither” which is the default value of the
 case expression.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_example_2_sum_limit"></a>3.3. Example 2: Sum Limit</h3></div></div></div><p>Let’s extend the application developed during the previous tutorial by
 adding the functionality for specifying a limit to the sum of the two
 numbers. The application should inform the user of whether the limit
@@ -451,8 +451,8 @@ node or <code class="literal">a + b</code> directly. The value of a node is only
 whenever one of its arguments changes, even if it is referenced in
 more than one location. Moreover the value of a node is not computed
 if it is not used anywhere.</p></td></tr></table></div><p>Build and run the application, and enter some initial values for the
-limit, <code class="literal">a</code> and <code class="literal">b</code>.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial3/snap5.png" align="middle" alt="Limit: 10, A: 8, B: 3, A + B = 11, Limit Exceeded!" /></div></div><p>“Limit Exceeded!” is displayed since the sum of 11 did indeed exceed
-the limit of 10, with the numbers in the snapshot above.</p><p>Now try increasing the limit:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial3/snap6.png" align="middle" alt="Limit: 20, A: 8, B: 3, A + B = 11, Within Limit." /></div></div><p>The message changes to “Within Limit.”.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_improvements"></a>3.4. Improvements</h3></div></div></div><p>Whilst the application we’ve implemented so far demonstrates the power
+limit, <code class="literal">a</code> and <code class="literal">b</code>.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial3/snap5.png" align="middle" alt="Limit: 10, A: 8, B: 3, A + B = 11, Limit Exceeded!" /></div></div><p>“Limit Exceeded!” is displayed since the sum of 11 did indeed exceed
+the limit of 10, with the numbers in the snapshot above.</p><p>Now try increasing the limit:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial3/snap6.png" align="middle" alt="Limit: 20, A: 8, B: 3, A + B = 11, Within Limit." /></div></div><p>The message changes to “Within Limit.”.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_improvements"></a>3.4. Improvements</h3></div></div></div><p>Whilst the application we’ve implemented so far demonstrates the power
 of functional bindings, it is rather lacking in that whether the limit
 has been exceeded or not is only indicated by text. The text has to be
 read in full to determine whether the limit was exceeded, and changes
@@ -526,8 +526,8 @@ color -&gt; self.status.style.color</pre><p>Full <code class="literal">ui.html</
     &lt;/body&gt;
 &lt;/html&gt;</pre><p>
 </p><p>Build and run the application. Enter some values for <code class="literal">a</code>, <code class="literal">b</code> and the
-limit such that the sum exceeds the limit.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial3/snap7.png" align="middle" alt="Limit: 10, A: 2, B: 9, A + B = 11 (red), Limit Exceeded! (red)" /></div></div><p>The status message and sum are now shown in red which provides an
-immediate visual indication that the limit has been exceeded.</p><p>Now increase the limit, or decrease the values of <code class="literal">a</code> and <code class="literal">b</code>:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial3/snap8.png" align="middle" alt="Limit: 20, A: 2, B: 9, A + B = 11 (green), Within Limit. (green)" /></div></div><p>The color of the status message and sum is immediately changed to
+limit such that the sum exceeds the limit.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial3/snap7.png" align="middle" alt="Limit: 10, A: 2, B: 9, A + B = 11 (red), Limit Exceeded! (red)" /></div></div><p>The status message and sum are now shown in red which provides an
+immediate visual indication that the limit has been exceeded.</p><p>Now increase the limit, or decrease the values of <code class="literal">a</code> and <code class="literal">b</code>:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial3/snap8.png" align="middle" alt="Limit: 20, A: 2, B: 9, A + B = 11 (green), Within Limit. (green)" /></div></div><p>The color of the status message and sum is immediately changed to
 green, which provides a noticeable indication that the limit has no
 longer been exceeded.</p></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="functions"></a>4. Writing your own Functions</h2></div></div></div><p>In this tutorial you’ll learn how to create your own functions, which
 can be used in functional bindings. Another feature which distinguishes
@@ -616,8 +616,8 @@ application:</p><p><strong><code class="literal">ui.html</code>. </strong>
       &lt;div&gt;&lt;strong&gt;Increment(N): &lt;?@ increment(n) ?&gt;&lt;/strong&gt;&lt;/div&gt;
     &lt;/body&gt;
 &lt;/html&gt;</pre><p>
-</p><p>Enter an initial value for <span class="emphasis"><em>N</em></span> and <span class="emphasis"><em>Delta</em></span>:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial4/snap1.png" align="middle" alt="N: 5, Delta: 1, Increment(N): 6" /></div></div><p>The value given to the delta (<code class="literal">d</code>) argument of <code class="literal">increment</code> is the
-initial value given for <span class="emphasis"><em>Delta</em></span>, which is <code class="literal">1</code>.</p><p>Now try changing <span class="emphasis"><em>Delta</em></span>:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial4/snap2.png" align="middle" alt="N: 5, Delta: 2, Increment(N): 7" /></div></div><p>The value of the <code class="literal">increment(n)</code> node is updated, with the new value of
+</p><p>Enter an initial value for <span class="emphasis"><em>N</em></span> and <span class="emphasis"><em>Delta</em></span>:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial4/snap1.png" align="middle" alt="N: 5, Delta: 1, Increment(N): 6" /></div></div><p>The value given to the delta (<code class="literal">d</code>) argument of <code class="literal">increment</code> is the
+initial value given for <span class="emphasis"><em>Delta</em></span>, which is <code class="literal">1</code>.</p><p>Now try changing <span class="emphasis"><em>Delta</em></span>:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial4/snap2.png" align="middle" alt="N: 5, Delta: 2, Increment(N): 7" /></div></div><p>The value of the <code class="literal">increment(n)</code> node is updated, with the new value of
 <span class="emphasis"><em>Delta</em></span> given as the delta argument. This shows that a binding is
 established rather than simply taking the value of the <code class="literal">delta</code> node.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_recursive_meta_nodes"></a>4.4. Recursive Meta-Nodes</h3></div></div></div><p>A recursive meta-node contains an instance of itself in its
 definition.</p><p>The following are the classic examples of recursion:</p><p><strong>Example: Factorial. </strong>
@@ -673,7 +673,7 @@ argument <code class="literal">acc</code>, which is an implementation detail.</p
 }</pre><p>
 </p><p>The computation of the factorial is implemented in the nested
 tail-recursive meta-node <code class="literal">iter</code>. The <code class="literal">factorial</code> meta-node simply
-calls this meta-node with the initial value for the accumulator.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_local_nodes"></a>4.6. Local Nodes</h3></div></div></div><p>Nodes which appears as the <span class="emphasis"><em>target</em></span> (observer) of a binding, declared
+calls this meta-node with the initial value for the accumulator.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_local_nodes"></a>4.6. Local Nodes</h3></div></div></div><p>Nodes which appear as the <span class="emphasis"><em>target</em></span> (observer) of a binding, declared
 within the body of a meta-node, are local to the meta-node’s body and
 may only be referenced within it. These may be used to store
 intermediate results or to break up complex expression into multiple
@@ -698,7 +698,7 @@ of <code class="literal">increment</code>, in the <span class="emphasis"><em>Inc
 this tutorial, to the following:</p><p><strong>Increment with reference to <code class="literal">delta</code>. </strong>
 </p><pre class="screen">increment(n) : n + delta</pre><p>
 </p><p>The <code class="literal">d</code> argument has been removed and replaced with <code class="literal">delta</code> in the
-body.</p><p>Repeat the same experiment, changing the delta, you should observe the
+body.</p><p>Repeat the same experiment, changing the delta. You should observe the
 same results.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_fun_example_simple_meter"></a>4.8. Fun Example: Simple Meter</h3></div></div></div><p>In this example we’ll be developing an application which displays a
 simple meter, representing a quantity, which changes color as the
 quantity approaches the maximum.</p><p>Let’s start off with the following HTML interface:</p><p><strong>ui.html. </strong>
@@ -720,15 +720,16 @@ quantity approaches the maximum.</p><p>Let’s start off with the following HTML
     &lt;/head&gt;
     &lt;body&gt;
       &lt;h1&gt;Simple Meter&lt;/h1&gt;
-      &lt;div&gt;&lt;label&gt;Maximum: &lt;input value="&lt;?@ to-int(maximum) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
-      &lt;div&gt;&lt;label&gt;Quantity: &lt;input value="&lt;?@ to-int(quantity) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;Maximum: &lt;input value="&lt;?@ to-real(maximum) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;Quantity: &lt;input value="&lt;?@ to-real(quantity) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
       &lt;div class="meter-box"&gt;
         &lt;div id="meter" class="meter-bar"&gt;&lt;/div&gt;
       &lt;/div&gt;
     &lt;/body&gt;
 &lt;/html&gt;</pre><p>
 </p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The file contains a few CSS class definitions for styling the
-elements which display the meter, located at the bottom of the file.</p></td></tr></table></div><p>The interface consists of two input fields for entering the values for
+elements which display the meter, located at the bottom of the file.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">to-real</code> meta-node is similar to <code class="literal">to-int</code> except that it
+converts its argument to a <span class="emphasis"><em>real</em></span> number rather than an integer.</p></td></tr></table></div><p>The interface consists of two input fields for entering the values for
 the <span class="emphasis"><em>Maximum</em></span> and <span class="emphasis"><em>Quantity</em></span>, which are bound to the nodes <code class="literal">maximum</code>
 and <code class="literal">quantity</code>, respectively.</p><p>We’d like the meter to be displayed in a color which is in between
 <span class="green">green</span> (empty) and <span class="red">red</span> (full) depending on where the
@@ -804,7 +805,7 @@ top of the <code class="literal">ui.html</code> file.</p><pre class="screen">&lt
 
  format("%s%%", scale * 100) -&gt; self.meter.style.width
 ?&gt;</pre><p>Build and run the application, and enter some values for the quantity
-and maximum, such that the quantity is less than half the maximum.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial4/snap3.png" align="middle" alt="Maximum: 100, Quantity: 20, [Almost empty bright green meter]" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial4/snap4.png" align="middle" alt="Maximum: 100, Quantity: 40, [Almost empty dull green meter]" /></div></div><p>The meter is mostly empty and displayed in a green color.</p><p>Now increase the quantity such that it is greater than half the maximum.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial4/snap5.png" align="middle" alt="Maximum: 100, Quantity: 60, [Half full yellow meter]" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial4/snap6.png" align="middle" alt="Maximum: 100, Quantity: 90, [Almost full red meter]" /></div></div><p>The meter is more than half full and its color approaches red as the
+and maximum, such that the quantity is less than half the maximum.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial4/snap3.png" align="middle" alt="Maximum: 100, Quantity: 20, [Almost empty bright green meter]" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial4/snap4.png" align="middle" alt="Maximum: 100, Quantity: 40, [Almost empty dull green meter]" /></div></div><p>The meter is mostly empty and displayed in a green color.</p><p>Now increase the quantity such that it is greater than half the maximum.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial4/snap5.png" align="middle" alt="Maximum: 100, Quantity: 60, [Half full yellow meter]" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial4/snap6.png" align="middle" alt="Maximum: 100, Quantity: 90, [Almost full red meter]" /></div></div><p>The meter is more than half full and its color approaches red as the
 quantity approaches the maximum.</p></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_subnodes"></a>5. Subnodes</h2></div></div></div><p>You’ve already made use of subnodes in the previous tutorials, when
 binding to attributes of HTML elements. Now we’ll explores subnodes in
 depth.</p><p>A subnode is a node which references a value out of a dictionary of
@@ -946,15 +947,15 @@ be changed easily.
 The color components are kept in a single place rather than being
 scattered throughout the code.
 </li><li class="listitem">
-All components of the colors are interpolated.
+All color components are interpolated.
 </li></ol></div></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_error_handling_with_failure_values"></a>6. Error Handling with Failure Values</h2></div></div></div><p>Up till this point we have completely ignored the issue of what
 happens if the user provides invalid input. In this tutorial, failure
 values and their use in handling errors will be introduced.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_invalid_input"></a>6.1. Invalid Input</h3></div></div></div><p>First let’s investigate more closely what happens when an invalid
 value is entered by the user. Let’s try it out with the sum
 application we wrote in <a class="xref" href="#_functional_bindings" title="2. Functional Bindings">Section 2, “Functional Bindings”</a>.</p><p>You may have noticed that nothing happens if a number is only entered
-in one of the fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial6/snap1.png" align="middle" alt="A: 1, B: &lt;blank&gt;, A + B = &lt;blank&gt;" /></div></div><p>Let’s enter an invalid value for <span class="emphasis"><em>B</em></span>, and see what happens:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial6/snap2.png" align="middle" alt="A: 1, B: foo, A + B = &lt;blank&gt;" /></div></div><p>Again nothing. Is there something wrong with application?</p><p>Let’s change <span class="emphasis"><em>B</em></span> to a valid number:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial6/snap3.png" align="middle" alt="A: 1, B: 2, A + B = 3" /></div></div><p>Now we get the result of the addition, <code class="literal">3</code>. The application resumed
+in one of the fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial6/snap1.png" align="middle" alt="A: 1, B: &lt;blank&gt;, A + B = &lt;blank&gt;" /></div></div><p>Let’s enter an invalid value for <span class="emphasis"><em>B</em></span>, and see what happens:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial6/snap2.png" align="middle" alt="A: 1, B: foo, A + B = &lt;blank&gt;" /></div></div><p>Again nothing. Is there something wrong with application?</p><p>Let’s change <span class="emphasis"><em>B</em></span> to a valid number:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial6/snap3.png" align="middle" alt="A: 1, B: 2, A + B = 3" /></div></div><p>Now we get the result of the addition, <code class="literal">3</code>. The application resumed
 its normal operation when valid input is entered.</p><p>What will happen if we change one of the fields to an invalid value,
-let’s try changing <span class="emphasis"><em>A</em></span> this time:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial6/snap4.png" align="middle" alt="A: bar, B: 2, A + B = 3" /></div></div><p>No change in the result of <code class="literal">3</code>. It appears the application does not
+let’s try changing <span class="emphasis"><em>A</em></span> this time:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial6/snap4.png" align="middle" alt="A: bar, B: 2, A + B = 3" /></div></div><p>No change in the result of <code class="literal">3</code>. It appears the application does not
 change the result if invalid input was entered. This demands an
 explanation.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_failure_values"></a>6.2. Failure Values</h3></div></div></div><p>What’s really going on under the hood is that when a value, which is
 not a valid number, is entered in one of the input fields, the node
@@ -994,14 +995,14 @@ expression for <code class="literal">a</code>:</p><pre class="screen">case(
 number!”, if <code class="literal">fails?(a)</code> is true, that is <code class="literal">a</code> evaluates to a failure,
 otherwise it returns the empty string. To display the error message
 next to the field for <span class="emphasis"><em>A</em></span>, we can simply place the entire <code class="literal">case</code>
-expression in an inline node declaration, between <code class="literal">&lt;?@ ... ?&gt;</code> next to
+expression in an inline node declaration, between <code class="literal">&lt;?@ ... ?&gt;</code>, next to
 the field. We can do the same for <span class="emphasis"><em>B</em></span>, substituting <code class="literal">a</code> with <code class="literal">b</code>, to
 get an error indication for <span class="emphasis"><em>B</em></span> as well.</p><p>That’s it we have added error handling to an existing application
 without having to make fundamental changes to our application
 logic. In-fact the addition of error handling was as simple as adding
 new UI elements.</p><p>Let’s try it out. Build and run the application and enter an invalid
-value in one of the input fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial6/snap5.png" align="middle" alt="A: 1, B: foo, Not a valid number!; A + B =" /></div></div><p>The message “Not a valid number!” is displayed next to the field
-containing the invalid value, <span class="emphasis"><em>B</em></span> in this case.</p><p>Now correct the invalid value, to a valid number:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial6/snap6.png" align="middle" alt="A: 1, B: 6; A + B = 7" /></div></div><p>The message disappears and the sum is computed.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_cleaning_up"></a>Cleaning Up</h4></div></div></div><p>The error handling logic, added in the previous section, can do with
+value in one of the input fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial6/snap5.png" align="middle" alt="A: 1, B: foo, Not a valid number!; A + B =" /></div></div><p>The message “Not a valid number!” is displayed next to the field
+containing the invalid value, <span class="emphasis"><em>B</em></span> in this case.</p><p>Now correct the invalid value, to a valid number:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial6/snap6.png" align="middle" alt="A: 1, B: 6; A + B = 7" /></div></div><p>The message disappears and the sum is computed.</p><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_cleaning_up"></a>Cleaning Up</h4></div></div></div><p>The error handling logic, added in the previous section, can do with
 some cleaning up.</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
 The error message is duplicated next to both fields. If we’d like to
 change the message we’d have to make sure we’ve changed it in both
@@ -1048,7 +1049,7 @@ result, the values of the node’s observers are updated. In this case
 the nodes: <code class="literal">a + b</code>, <code class="literal">error-message(a)</code> and <code class="literal">error-message(b)</code> will be
 updated.</p><p>In our application, let’s give both <code class="literal">a</code> and <code class="literal">b</code> an initial value of
 <code class="literal">0</code>. Add the following to the Tridash code tag at the top of the file:</p><pre class="screen">0 -&gt; a
-0 -&gt; b</pre><p>Build and run the application:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial6/snap7.png" align="middle" alt="A: 0, B: 0, A + B: 0" /></div></div><p>Both fields are initialized to <code class="literal">0</code> and the sum of <code class="literal">0</code> is
+0 -&gt; b</pre><p>Build and run the application:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial6/snap7.png" align="middle" alt="A: 0, B: 0, A + B: 0" /></div></div><p>Both fields are initialized to <code class="literal">0</code> and the sum of <code class="literal">0</code> is
 displayed.</p><p>Experiment with changing the node’s initial values and even try
 setting them to invalid integers.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>You may be wondering how it is that giving an initial value to
 the nodes <code class="literal">a</code> and <code class="literal">b</code> affects the values of the text input
@@ -1056,7 +1057,7 @@ fields. This is due to the fact that there is a two-way binding
 between <code class="literal">a</code> and the value of the input element for <span class="emphasis"><em>A</em></span>, and between
 <code class="literal">b</code> and the value of the input element for <span class="emphasis"><em>B</em></span>.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_exercise"></a>6.5. Exercise</h3></div></div></div><p>As an exercise make the color of the border, or alternatively the
 background color, of the input element change to red when an invalid
-value is entered in it.</p><p>Try to achieve something similar to the following:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial6/snap8.png" align="middle" alt="A: foo, Not a number, B: 0, A + B = 0" /></div></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Some CSS styling rules have also been added to change the text
+value is entered in it.</p><p>Try to achieve something similar to the following:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial6/snap8.png" align="middle" alt="A: foo, Not a number, B: 0, A + B = 0" /></div></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Some CSS styling rules have also been added to change the text
 color of the error messages to red, this is not part of the exercise.</p></td></tr></table></div><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>To change the border color of an element bind to the
 <code class="literal">style.borderColor</code> attribute of the element node.</p></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_failure_types"></a>7. Failure Types</h2></div></div></div><p>The error handling tools we’ve seen so far have one serious
 shortcoming, there is no means for identifying the cause of the
@@ -1155,19 +1156,19 @@ is of type <code class="literal">Negative-Number</code>.</p><p><strong>Updated <
         ""
     )</pre><p>
 </p><p>Build and run the application and enter a positive number in one field
-and a negative number in the other:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial7/snap1.png" align="middle" alt="A: 1, B: -1, Number must be greater than or equal to 0!, A + B = 1" /></div></div><p>The error message, explaining that a positive number (or zero) must be
+and a negative number in the other:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial7/snap1.png" align="middle" alt="A: 1, B: -1, Number must be greater than or equal to 0!, A + B = 1" /></div></div><p>The error message, explaining that a positive number (or zero) must be
 entered, is displayed next to the field where the negative number was
 entered, <span class="emphasis"><em>B</em></span> in this case. The result of the addition with the new
 numbers entered is not displayed, instead the previous result is
-retained, as expected.</p><p>Change the negative number to an invalid number:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial7/snap2.png" align="middle" alt="A: 1, B: foo, Not a valid number!, A + B = 1" /></div></div><p>The error message changes to “Not a valid number!” and the displayed
-sum is unchanged, as in the previous versions.</p><p>Now change the value to a valid positive number:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial7/snap3.png" align="middle" alt="A: 1, B: 2, A + B = 3" /></div></div><p>The error message disappears and the new sum is displayed.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_proper_failure_types"></a>7.4. Proper Failure Types</h3></div></div></div><p>There is one issue with the application we’ve just developed. There is
+retained, as expected.</p><p>Change the negative number to an invalid number:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial7/snap2.png" align="middle" alt="A: 1, B: foo, Not a valid number!, A + B = 1" /></div></div><p>The error message changes to “Not a valid number!” and the displayed
+sum is unchanged, as in the previous versions.</p><p>Now change the value to a valid positive number:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial7/snap3.png" align="middle" alt="A: 1, B: 2, A + B = 3" /></div></div><p>The error message disappears and the new sum is displayed.</p></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_proper_failure_types"></a>7.4. Proper Failure Types</h3></div></div></div><p>There is one issue with the application we’ve just developed. There is
 no guarantee that the arbitrary constant <code class="literal">-1</code> uniquely represents a
 failure of type <code class="literal">Negative-Number</code>. If all failure types used arbitrary
 integer constants, there is no guarantee that <code class="literal">-1</code> doesn’t already
 represent a builtin failure type, such as <code class="literal">Invalid-Integer</code>. Whilst it
 so happened to work, it is certainly not robust, especially when
 bringing in third party libraries.</p><p>A value, which is guaranteed to be unique, can be obtained by taking a
-reference to the <span class="emphasis"><em>raw node object</em></span> of <code class="literal">Negative-Number</code>.</p><p>References to the raw node object, of a node, can be obtained using
+reference to the <span class="emphasis"><em>raw node object</em></span> of <code class="literal">Negative-Number</code>.</p><p>A reference to the raw node object, of a node, can be obtained using
 the <code class="literal">&amp;</code> special operator, which takes the identifier of the node as an
 argument. Raw node references are mostly useful when writing macros,
 which you’ll learn about in a later tutorial. For now all that you
@@ -1345,9 +1346,9 @@ activated, when the values of their operand nodes change.</p><p><strong><code cl
 bound to nodes <code class="literal">x</code>, <code class="literal">y</code> and <code class="literal">z</code>. Nodes <code class="literal">x</code>, <code class="literal">y</code> and <code class="literal">z</code> are each
 explicitly bound to <code class="literal">node</code>, the value of which is displayed below the
 fields.</p><p>Let’s enter a value in each field and see what happens. Observe the
-value displayed below the fields after each change:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial9/snap1.png" align="middle" alt="X: 1, Y: _, Z: _, Last value entered: 1" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial9/snap2.png" align="middle" alt="X: 1, Y: 2, Z: _, Last value entered: 2" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial9/snap3.png" align="middle" alt="X: 1, Y: 2, Z: 3, Last value entered: 3" /></div></div><p>Notice that after each change, the value that was just entered is
+value displayed below the fields after each change:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial9/snap1.png" align="middle" alt="X: 1, Y: _, Z: _, Last value entered: 1" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial9/snap2.png" align="middle" alt="X: 1, Y: 2, Z: _, Last value entered: 2" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial9/snap3.png" align="middle" alt="X: 1, Y: 2, Z: 3, Last value entered: 3" /></div></div><p>Notice that after each change, the value that was just entered is
 displayed.</p><p>Now let’s try changing the values of the fields which were edited
-previously:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial9/snap4.png" align="middle" alt="X: 1, Y: 10, Z: 3, Last value entered: 10" /></div></div><p>In this case the value of the second field, <span class="emphasis"><em>Y</em></span>, was changed to 10 and
+previously:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial9/snap4.png" align="middle" alt="X: 1, Y: 10, Z: 3, Last value entered: 10" /></div></div><p>In this case the value of the second field, <span class="emphasis"><em>Y</em></span>, was changed to 10 and
 that value was immediately displayed below the fields.</p><p>The value of the field that was changed last is displayed. To
 understand why this is so, let’s examine the sequence of steps taken
 when a value is entered in the <span class="emphasis"><em>X</em></span> field.</p><div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
@@ -1367,7 +1368,7 @@ a -&gt; b; a -&gt; b
 input2 -&gt; b</pre><p>
 </p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">;</code> character separates multiple declarations written on a
 single line.</p></td></tr></table></div><p><code class="literal">a</code> has two contexts corresponding to dependency nodes <code class="literal">input1</code> and
-<code class="literal">a</code> (which is also an observer). <code class="literal">b</code> has two contexts corresponding to
+<code class="literal">b</code> (which is also an observer). <code class="literal">b</code> has two contexts corresponding to
 dependency nodes <code class="literal">input2</code> and <code class="literal">a</code>.</p><p>When <code class="literal">input1</code> is changed, the contexts corresponding to the bindings
 in the following direction are activated:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
 <code class="literal">input1 -&gt; a</code>
@@ -1412,18 +1413,18 @@ explicit context with identifier <code class="literal">context</code>. Additiona
 fields are bound to <code class="literal">to-int</code> instances, of <code class="literal">x</code>, <code class="literal">y</code> and <code class="literal">z</code> which
 results in <code class="literal">x</code>, <code class="literal">y</code> and <code class="literal">z</code> being bound to the values entered in the
 fields converted to integers. If a non-integer value is entered in a
-field, the corresponding node is bound to a failure value.</p><p>Let’s try it out. Enter some integer values in each of the fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial9/snap5.png" align="middle" alt="X: 1, Y: 2, Z: 3, Value: 1" /></div></div><p>The value entered in the first field, <span class="emphasis"><em>X</em></span>, was displayed. Since a
+field, the corresponding node is bound to a failure value.</p><p>Let’s try it out. Enter some integer values in each of the fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial9/snap5.png" align="middle" alt="X: 1, Y: 2, Z: 3, Value: 1" /></div></div><p>The value entered in the first field, <span class="emphasis"><em>X</em></span>, was displayed. Since a
 valid integer was entered, node <code class="literal">x</code> evaluates to the integer value
 1. The binding <code class="literal">x -&gt; node</code> was established first, as the declaration
 occurs first in the source file, and since <code class="literal">x</code> does not evaluate to a
 failure, <code class="literal">node</code> takes on the value of <code class="literal">x</code>. The values of <code class="literal">y</code> and <code class="literal">z</code>
-are ignored.</p><p>Now let’s change <code class="literal">x</code> to a non-integer value:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial9/snap6.png" align="middle" alt="X: foo, Y: 2, Z: 3, Value: 2" /></div></div><p>The value entered in the second field, 2, is displayed. Since a
+are ignored.</p><p>Now let’s change <code class="literal">x</code> to a non-integer value:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial9/snap6.png" align="middle" alt="X: foo, Y: 2, Z: 3, Value: 2" /></div></div><p>The value entered in the second field, 2, is displayed. Since a
 non-integer value was entered in the first field, <code class="literal">x</code> evaluates to a
 failure. <code class="literal">node</code> thus takes on the value of the next dependency, bound
 to the explicit context, which does not evaluate to a failure. The
 dependency is <code class="literal">y</code> which evaluates to the integer entered in the second
 field, 2.</p><p>Let’s see what happens if we enter a non-integer value in the third
-field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial9/snap7.png" align="middle" alt="X: foo, Y: 2, Z: bar, Value: 2" /></div></div><p>The displayed value is unchanged since the second dependency, node
+field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial9/snap7.png" align="middle" alt="X: foo, Y: 2, Z: bar, Value: 2" /></div></div><p>The displayed value is unchanged since the second dependency, node
 <code class="literal">y</code>, already evaluates to a value which is not a failure value. The
 value of the third dependency <code class="literal">z</code>, corresponding to the value entered
 in the third field, is ignored, regardless of whether it evaluates to
@@ -1451,9 +1452,9 @@ above. Also copy over the definition of the meta-nodes <code class="literal">val
 <a class="xref" href="#target-node-own-meta-nodes" title="8.3. Target-Node for own Meta-Nodes">Section 8.3, “Target-Node for own Meta-Nodes”</a>, into the Tridash code tag. Replace
 <code class="literal">to-int</code> with <code class="literal">valid-int</code> in the inline node declarations within the
 input field values.</p><p>Enter a non-integer value in the first field, and an integer value in
-the second and third fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial9/snap8.png" align="middle" alt="X: foo, Y: 1, Z: 2, Value: 1" /></div></div><p>The value of the second field is displayed, since <code class="literal">node</code> is bound to
+the second and third fields:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial9/snap8.png" align="middle" alt="X: foo, Y: 1, Z: 2, Value: 1" /></div></div><p>The value of the second field is displayed, since <code class="literal">node</code> is bound to
 it when the value in the first field is not an integer.</p><p>Now change the value of the second field to a negative integer, or
-alternatively enter a negative integer value in the first field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial9/snap9.png" align="middle" alt="X: foo, Y: -1, Z: 2, Value: 2" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial9/snap10.png" align="middle" alt="X: -1, Y: 1, Z: 2, Value: 2" /></div></div><p>The value of the third field is displayed in both cases, even when the
+alternatively enter a negative integer value in the first field:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial9/snap9.png" align="middle" alt="X: foo, Y: -1, Z: 2, Value: 2" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial9/snap10.png" align="middle" alt="X: -1, Y: 1, Z: 2, Value: 2" /></div></div><p>The value of the third field is displayed in both cases, even when the
 value of the second field is a valid positive integer. This is due to
 <code class="literal">node</code> being bound to the value of the third field when either the
 value of the first field or second field is a negative number.</p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p><code class="literal">when</code> is registered as an infix operator thus the following:</p><pre class="screen">a -&gt; b @ when(context, type)</pre><p>can be rewritten as:</p><pre class="screen">a -&gt; b @ context when type</pre></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="adding-numbers-improved-error-handling"></a>9.3. Improved Error Handling in <span class="emphasis"><em>Adding Numbers</em></span></h3></div></div></div><p>Whilst the error handling logic in the <span class="emphasis"><em>Adding Numbers</em></span> application,
@@ -1564,7 +1565,7 @@ only takes effect when <code class="literal">b</code> <span class="strong"><stro
 a change in the <span class="emphasis"><em>state</em></span> of <code class="literal">b</code> will trigger a change in its
 value. This may seem counter-intuitive at first, however if <code class="literal">b</code> was
 updated on every change in the value of <code class="literal">a</code>, and instead of <code class="literal">a</code> we
-have <code class="literal">b + 1</code> we’ll end up with the same problem in the previous
+have <code class="literal">b + 1</code> we’ll end up with the same problem, as in the previous
 section.</p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Stateful bindings declared later in the source take
 priority over those declared earlier.</p></td></tr></table></div><p>A node’s state is determined by the value of the special node
 <code class="literal">/state(node)</code>. Binding to it allows us to control a node’s state.</p><p><strong>Example: Counter. </strong>
@@ -1578,7 +1579,7 @@ priority over those declared earlier.</p></td></tr></table></div><p>A node’s s
 </p><div class="tip" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Tip"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Tip]" src="images/icons/tip.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">'</code> operator returns its argument as a literal symbol.
 <code class="literal">'(id)</code> returns the literal symbol <code class="literal">id</code>, whereas <code class="literal">id</code> on its own is a
 reference to the value of the node with identifier
-<code class="literal">id</code>. <a href="#ftn.idm370536188464" class="footnote" id="idm370536188464"><sup class="footnote">[1]</sup></a></p></td></tr></table></div><p>In this example, a binding <code class="literal">counter + 1 -&gt; counter</code> is established
+<code class="literal">id</code>. <a href="#ftn.idm315188384416" class="footnote" id="idm315188384416"><sup class="footnote">[1]</sup></a></p></td></tr></table></div><p>In this example, a binding <code class="literal">counter + 1 -&gt; counter</code> is established
 which only takes effect when <code class="literal">counter</code> switches to the <code class="literal">increment</code>
 state.</p><p>The second declaration binds a <code class="literal">case</code> expression to the
 <code class="literal">/state(counter)</code> node, thus controlling the state of <code class="literal">counter</code>. When
@@ -1590,36 +1591,34 @@ order to hook into its event system. In the next major release of
 Tridash, this wont be necessary.</p><p>This section will go over only the basics of interfacing with
 JavaScript, which are necessary for completing this tutorial. A full
 in-depth tutorial on interfacing with JavaScript, will follow.</p><p>Tridash nodes are compiled to runtime node objects, which store the
-node’s value and information about its dependencies, observers,
-contexts, etc. To be able to reference a runtime node object, from
+node’s value. To be able to reference a runtime node object from
 JavaScript, the node has to be given an identifier with which it can
 be referenced. The <code class="literal">public-name</code> attribute, if given, determines the
 name of this identifier.</p><p>Once an identifier is given, it can be accessed as a member of the
-<code class="literal">Tridash.nodes</code> object. <code class="literal">Tridash</code> is the object/module storing the
-Tridash runtime library functions. The <code class="literal">nodes</code> member of Tridash is an
-object storing references to all nodes which have been given a
-<code class="literal">public-name</code> identifier.</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Currently Tridash does not check whether multiple nodes are
+<code class="literal">nodes</code> property of the runtime module object. To access the runtime
+module object of a compiled Tridash program, embedded in an HTML file,
+it needs to be given an identifier. The module is then accessible via
+a global variable with that identifier. This is achieved using the
+<code class="literal">module-name</code> output options.</p><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Currently Tridash does not check whether multiple nodes are
 given the same <code class="literal">public-name</code>.</p></td></tr></table></div><p><strong>Example: Setting <code class="literal">public-name</code> identifier. </strong>
 </p><pre class="screen">/attribute(node, public-name, "aNode")</pre><p>
 </p><p><strong>Example: Referencing the runtime node object in JavaScript. </strong>
-</p><pre class="screen">var node = Tridash.nodes["aNode"];
+</p><pre class="screen">// Assuming runtime module is stored in variable mod
+var node = mod.nodes["aNode"];
 
 // or equivalently if the public-name is a valid JS variable name
-var node = Tridash.nodes.aNode;</pre><p>
+var node = mod.nodes.aNode;</pre><p>
 </p><p>Once a reference is obtained to the runtime node object, the node’s
 value can be set using the <code class="literal">set_value</code> method, which takes the value
 as an argument.</p><p><strong>Example: Setting Node Value from JavaScript. </strong>
 </p><pre class="screen">node.set_value(1);</pre><p>
 </p><p>It is important, however, that if <code class="literal">set_value</code> will be called on a
 runtime node object, the node is marked as an <span class="emphasis"><em>input</em></span> node, by setting
-its <code class="literal">input</code> attribute to true.</p><pre class="screen">/attribute(node, input, 1)</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Currently an attribute is set to <code class="literal">true</code> when it is given the
-value <code class="literal">1</code> and set to <code class="literal">false</code> when it is given the value <code class="literal">0</code>. In the
-next release, you’ll be able to use the symbols <span class="emphasis"><em>True</em></span> and <span class="emphasis"><em>False</em></span>
-instead.</p></td></tr></table></div><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Not every Tridash node corresponds to an actual runtime node
+its <code class="literal">input</code> attribute to true.</p><pre class="screen">/attribute(node, input, True)</pre><div class="caution" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Caution"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="images/icons/caution.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>Not every Tridash node corresponds to an actual runtime node
 object, due to some intermediate nodes being optimized out by the
 compiler. The only nodes, for which it is guaranteed that a runtime
 node object is created, are <span class="emphasis"><em>input</em></span> nodes and nodes with no observers,
-which are assumed to represent <span class="emphasis"><em>output</em></span> nodes.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_example_counter_application"></a>10.3. Example: Counter Application</h3></div></div></div><p>In this section we’ll build a very simple application consisting of a
+which are assumed to represent <span class="emphasis"><em>output</em></span> nodes.</p></td></tr></table></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="example-counter-app"></a>10.3. Example: Counter Application</h3></div></div></div><p>In this section we’ll build a very simple application consisting of a
 counter which is incremented when a button is pressed.</p><p>Let’s start off with the Tridash binding declarations. We’ve in-fact
 already written the bulk of the code in the previous example, which we
 can simply copy into our new application.</p><pre class="screen">counter + 1 -&gt; counter :: increment
@@ -1631,8 +1630,8 @@ can simply copy into our new application.</p><pre class="screen">counter + 1 -&g
     )</pre><p>The node <code class="literal">counter</code> stores the value of the counter which is
 incremented when <code class="literal">should-increment?</code> is true. We’ll add the attributes
 which are necessary in order to be able to set the value of
-<code class="literal">should-increment?</code> from JavaScript, namely we need to set a
-<code class="literal">public-name</code> identifier and mark it as an <code class="literal">input</code> node.</p><pre class="screen">/attribute(should-increment?, input, 1)
+<code class="literal">should-increment?</code> from JavaScript, namely we need to set the
+<code class="literal">public-name</code> identifier and mark it as an <code class="literal">input</code> node.</p><pre class="screen">/attribute(should-increment?, input, True)
 /attribute(should-increment?, public-name, "should_increment")</pre><p>We’ll allow the user to set/reset the value of the counter by binding
 a <code class="literal">start</code> node to an input field. We’ll bind <code class="literal">start</code> directly to
 <code class="literal">counter</code> and give it an initial value of <code class="literal">0</code>.</p><pre class="screen">start -&gt; counter
@@ -1650,16 +1649,37 @@ displayed below the counter.</p><p><strong><code class="literal">ui.html</code>.
 attach an event listener to its <span class="emphasis"><em>click</em></span> event. We’ll do so using the
 following JavaScript code, in a script tag which should be added below
 the element where the counter is displayed:</p><pre class="screen">&lt;script&gt;
-  var increment = document.getElementById('increment');
-  var node_increment = Tridash.nodes.should_increment;
+  document.addEventListener("DOMContentLoaded", async () =&gt; {
+      const module = await mod;
 
-  increment.addEventListener('click', function() {
-      node_increment.set_value(true);
-      node_increment.set_value(false);
+      const increment = document.getElementById('increment');
+      const node_increment = module.nodes.should_increment;
+
+      increment.addEventListener('click', function() {
+          node_increment.set_value(true);
+          node_increment.set_value(false);
+      });
   });
-&lt;/script&gt;</pre><p>The first line obtains a reference to the HTML element with ID
-<code class="literal">increment</code>.</p><p>The second line obtains a reference to the <code class="literal">should-increment?</code> node
-which was given a <code class="literal">public-name</code> of <code class="literal">should_increment</code>.</p><p>The remainder of the code attaches a listener, for the <span class="emphasis"><em>click</em></span> event,
+&lt;/script&gt;</pre><p>A couple of things to note:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+We’ve assumed the runtime module object is stored in the global
+  variable <code class="literal">mod</code>. The runtime module object identifier will be set
+  with the <code class="literal">module-name</code> output option.
+</li><li class="listitem">
+The entire code is wrapped in an event handler for the
+  <code class="literal">DOMContentLoaded</code> event to ensure that it is run after the
+  JavaScript code which assigns the runtime module object to <code class="literal">mod</code>.
+</li><li class="listitem">
+<code class="literal">await</code> is applied on the module object <code class="literal">mod</code>, inside an <code class="literal">async</code>
+  callback function, since the module itself may be created
+  asynchronously. This is the case when the compilation target is
+  WebAssembly (<code class="literal">wasm32</code>).
+</li></ul></div><p>The callback function, run after all HTML elements and scripts have
+been loaded, does the following:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+Obtains a reference to the HTML element with ID <code class="literal">increment</code>.
+</li><li class="listitem">
+Obtains a reference to the <code class="literal">should-increment?</code> node which was given
+a <code class="literal">public-name</code> of <code class="literal">should_increment</code>.
+</li></ul></div><p>The remainder of the function attaches a listener, for the <span class="emphasis"><em>click</em></span> event,
 on the <span class="emphasis"><em>Increment</em></span> button. In that listener we first set the value of
 the <code class="literal">should-increment?</code> node to true, then immediately afterwards we
 set it to false again.</p><p>Setting the value of <code class="literal">should-increment?</code> to true, causes the state of
@@ -1667,9 +1687,21 @@ set it to false again.</p><p>Setting the value of <code class="literal">should-i
 causes the state to change to <code class="literal">default</code>.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>In a future release, when the HTML library is complete, a
 subnode <code class="literal">clicked?</code>, of the element node, will be available which will
 automatically be set to true when the button is clicked and to false
-when it is released. Thus the above JavaScript code wont be necessary.</p></td></tr></table></div><p>Build and run the application, and press the increment button a few
-times:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial10/snap1.png" align="middle" alt="Start: 0, Counter: 1" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial10/snap2.png" align="middle" alt="Start: 0, Counter: 2" /></div></div><p>The displayed value, for the counter, is incremented after each press.</p><p>Now enter a value in the <span class="emphasis"><em>Start</em></span> field to reset the counter, and then
-press the increment button again:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial10/snap3.png" align="middle" alt="Start: 5, Counter: 5" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial10/snap4.png" align="middle" alt="Start: 5, Counter: 6" /></div></div><p>The counter is reset to the value entered in the <span class="emphasis"><em>Start</em></span>
+when it is released. Thus the above JavaScript code wont be necessary.</p></td></tr></table></div><p>Change the build configuration file (<code class="literal">build.yml</code>) to the following:</p><p><strong><code class="literal">build.yml</code>. </strong>
+</p><pre class="screen">sources:
+  - path: ui.html
+    node-name: ui
+
+output:
+  path: app.html
+  type: html
+  main-ui: ui
+  module-name: mod</pre><p>
+</p><p>The addition of the line <code class="literal">module-name: mod</code> sets the <code class="literal">module-name</code>
+output option to <code class="literal">mod</code>, which is the identifier of the variable in
+which the runtime module object will be stored.</p><p>Build and run the application, and press the increment button a few
+times:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial10/snap1.png" align="middle" alt="Start: 0, Counter: 1" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial10/snap2.png" align="middle" alt="Start: 0, Counter: 2" /></div></div><p>The displayed value, for the counter, is incremented after each press.</p><p>Now enter a value in the <span class="emphasis"><em>Start</em></span> field to reset the counter, and then
+press the increment button again:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial10/snap3.png" align="middle" alt="Start: 5, Counter: 5" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial10/snap4.png" align="middle" alt="Start: 5, Counter: 6" /></div></div><p>The counter is reset to the value entered in the <span class="emphasis"><em>Start</em></span>
 field. Pressing increment afterwards increments the new counter value.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_state_transitions"></a>10.4. State Transitions</h3></div></div></div><p>Let’s do a little experiment, comment out the line, in the <span class="emphasis"><em>click</em></span>
 event handler, which sets the value of the <span class="emphasis"><em>should-increment?</em></span> node to
 <span class="emphasis"><em>false</em></span>, i.e. comment out the following:</p><pre class="screen">node_increment.set_value(false);</pre><p>What do you expect to happen? Initially, we might think that since the
@@ -1678,16 +1710,16 @@ event handler, which sets the value of the <span class="emphasis"><em>should-inc
 thus switch to <code class="literal">increment</code> once, after which, there are no further
 state changes. The result is that the counter will only be incremented
 the first time the increment button is pressed.</p><p>Let’s try it. Build and run the application and press the increment
-button twice.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial10/snap5.png" align="middle" alt="Start: 0, Counter: 2" /></div></div><p>What happened? The counter carries on incrementing after the first
+button twice.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial10/snap5.png" align="middle" alt="Start: 0, Counter: 2" /></div></div><p>What happened? The counter carries on incrementing after the first
 button press. Why?</p><p>The declaration:</p><pre class="screen">counter + 1 -&gt; counter :: increment</pre><p>states that the binding should only take effect when the state of
 <code class="literal">counter</code> switches to the <code class="literal">increment</code> state. Switching from the
-<code class="literal">increment</code> state to the <code class="literal">increment</code> is still considered as switching
-to the <code class="literal">increment</code> state, even though the new state is identical to
-the previous state. This is due to the fact that each time we’re
-setting the value of the <code class="literal">should-increment?</code> node to <code class="literal">true</code>, we’re
-triggering a change in the value of the node <code class="literal">/state(counter)</code> and
-thus the state of <code class="literal">counter</code>, even though the new value of
-<code class="literal">should-increment?</code> is identical to its previous value.</p><p>The above declaration should thus be thought of as declaring a binding
+<code class="literal">increment</code> state to the <code class="literal">increment</code> state is still considered as
+switching to the <code class="literal">increment</code> state, even though the new state is
+identical to the previous state. This is due to the fact that each
+time we’re setting the value of the <code class="literal">should-increment?</code> node to
+<code class="literal">true</code>, we’re triggering a change in the value of the node
+<code class="literal">/state(counter)</code> and thus the state of <code class="literal">counter</code>, even though the new
+value of <code class="literal">should-increment?</code> is identical to its previous value.</p><p>The above declaration should thus be thought of as declaring a binding
 which takes effect whenever <code class="literal">counter</code> switches from any state,
 including <code class="literal">increment</code>, to the <code class="literal">increment</code> state.</p><p>To fix this issue we can specify an explicit <span class="emphasis"><em>from</em></span> state. When
 specified, the binding only takes effect when the state of the node
@@ -1732,28 +1764,31 @@ application, however with two increment buttons.</p><p><strong><code class="lite
 listeners to both buttons, in JavaScript.</p><p>We’ll need two nodes <code class="literal">clicked1?</code> and <code class="literal">clicked2?</code> which change to true
 when the first and second buttons are clicked, respectively. The
 values of these nodes will have to be set via JavaScript, thus we’ll
-have to mark them as input nodes and set their <code class="literal">public-name</code>
-attributes:</p><pre class="screen">/attribute(clicked1?, input, 1)
+mark them as input nodes and set their <code class="literal">public-name</code> attributes:</p><pre class="screen">/attribute(clicked1?, input, True)
 /attribute(clicked1?, public-name, "clicked1");
 
-/attribute(clicked2?, input, 1)
+/attribute(clicked2?, input, True)
 /attribute(clicked2?, public-name, "clicked2");</pre><p>The following JavaScript code attaches event listeners for the
 <span class="emphasis"><em>clicked</em></span> events, of both buttons, which simply set the value of the
 corresponding <span class="emphasis"><em>clicked?</em></span> node to true and them immediately to false,
-again.</p><pre class="screen">var increment1 = document.getElementById('increment1');
-var increment2 = document.getElementById('increment2');
+again.</p><pre class="screen">document.addEventListener("DOMContentLoaded", async () =&gt; {
+    const module = await mod;
 
-var clicked1 = Tridash.nodes.clicked1;
-var clicked2 = Tridash.nodes.clicked2;
+    const increment1 = document.getElementById('increment1');
+    const increment2 = document.getElementById('increment2');
 
-increment1.addEventListener('click', function() {
-    clicked1.set_value(true);
-    clicked1.set_value(false);
-});
+    const clicked1 = module.nodes.clicked1;
+    const clicked2 = module.nodes.clicked2;
 
-increment2.addEventListener('click', function() {
-    clicked2.set_value(true);
-    clicked2.set_value(false);
+    increment1.addEventListener('click', function() {
+        clicked1.set_value(true);
+        clicked1.set_value(false);
+    });
+
+    increment2.addEventListener('click', function() {
+        clicked2.set_value(true);
+        clicked2.set_value(false);
+    });
 });</pre><p>We’ll need two states for the <code class="literal">counter</code> node:</p><div class="variablelist"><dl class="variablelist"><dt><span class="term">
 <code class="literal">increment1</code>
 </span></dt><dd>
@@ -1800,12 +1835,12 @@ case (increment1 : "green", "gray") -&gt;
     self.increment2.style.backgroundColor</pre><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>We’re comparing the state of counter directly to determine which
 button was pressed last.</p></td></tr></table></div><p>Finally, let’s make the initial state of <code class="literal">counter</code>, <code class="literal">increment2</code> so
 that pushing on the first button, increments the counter.</p><p>Build and run the application. Initially you should see something
-similar to the following:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial10/snap6.png" align="middle" alt="Start: 0, Increment 1 (green), Increment 2, Counter: 0" /></div></div><p>Click on the green <span class="emphasis"><em>Increment 1</em></span> button:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial10/snap7.png" align="middle" alt="Start: 0, Increment 1, Increment 2 (green), Counter: 1" /></div></div><p>The counter is incremented by one, and the button changes to grey with
+similar to the following:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial10/snap6.png" align="middle" alt="Start: 0, Increment 1 (green), Increment 2, Counter: 0" /></div></div><p>Click on the green <span class="emphasis"><em>Increment 1</em></span> button:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial10/snap7.png" align="middle" alt="Start: 0, Increment 1, Increment 2 (green), Counter: 1" /></div></div><p>The counter is incremented by one, and the button changes to grey with
 the other button changing to green. Clicking on the same, now grey,
-button will not affect the value of the counter.</p><p>Click on the green <span class="emphasis"><em>Increment 2</em></span> button:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial10/snap8.png" align="middle" alt="Start: 0, Increment 1 (green), Increment 2, Counter: 2" /></div></div><p>The counter is incremented once again, and button <span class="emphasis"><em>Increment 1</em></span>
+button will not affect the value of the counter.</p><p>Click on the green <span class="emphasis"><em>Increment 2</em></span> button:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial10/snap8.png" align="middle" alt="Start: 0, Increment 1 (green), Increment 2, Counter: 2" /></div></div><p>The counter is incremented once again, and button <span class="emphasis"><em>Increment 1</em></span>
 changes back to green with button <span class="emphasis"><em>Increment 2</em></span> changing back to
 <span class="emphasis"><em>grey</em></span>.</p><p>Just to make sure everything works properly let’s reset the counter
-and push the green button to increment it.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial10/snap9.png" align="middle" alt="Start: 10, Increment 1 (green), Increment 2, Counter: 10" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial10/snap10.png" align="middle" alt="Start: 10, Increment 1, Increment 2 (green), Counter: 11" /></div></div><p>Everything works as expected. The state of <code class="literal">counter</code> does not affect
+and push the green button to increment it.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial10/snap9.png" align="middle" alt="Start: 10, Increment 1 (green), Increment 2, Counter: 10" /></div></div><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial10/snap10.png" align="middle" alt="Start: 10, Increment 1, Increment 2 (green), Counter: 11" /></div></div><p>Everything works as expected. The state of <code class="literal">counter</code> does not affect
 the binding <code class="literal">start -&gt; counter</code> as it is a <span class="emphasis"><em>stateless</em></span>, without an
 explicit state specified, binding.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_exercises"></a>10.6. Exercises</h3></div></div></div><p>Try out the following as an exercise:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
 Change the previous application such that clicking on the grey
@@ -1814,7 +1849,7 @@ Change the previous application such that clicking on the grey
 </li><li class="listitem">
 Implement a toggle button of which the background color, and text,
   changes when pressed.
-</li></ul></div></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_list_processing"></a>11. List Processing</h2></div></div></div><p>This tutorial is an introduction on processing lists of data. Lists
+</li></ul></div></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_list_processing"></a>11. List Processing</h2></div></div></div><p>This tutorial is an introduction to processing lists of data. Lists
 are <span class="emphasis"><em>conceptually</em></span> represented as a linked list of nodes in which the
 <span class="emphasis"><em>head</em></span> of the node stores the list element and the <span class="emphasis"><em>tail</em></span> stores the
 next node, i.e. the remainder, of the list. The meta-nodes <code class="literal">head</code> and
@@ -1842,7 +1877,7 @@ prepended to the front of it.</p><pre class="screen"># Create list with 1 and 2 
 l2 &lt;- list*(1, 2, l1)</pre></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_higher_order_meta_nodes"></a>11.2. Higher-Order Meta-Nodes</h3></div></div></div><p>Meta-Nodes can be passed to other meta-nodes as arguments, or bound to
 ordinary nodes, in which case the function of the meta-node is
 referenced.</p><p>A node can appear as the operator in a functor node in which case the
-function, of which the reference is stored in the node’s value is
+function, of which the reference is stored in the node’s value, is
 applied on the arguments. If the node’s value is not a reference to
 function or the function is applied on an incorrect number of
 arguments, the result is a failure value.</p><p><strong>Example. </strong>
@@ -1878,14 +1913,14 @@ interface in the HTML body.</p><pre class="screen">&lt;div&gt;&lt;label&gt;N:&lt
 &lt;div&gt;&lt;label&gt;Delta:&lt;br/&gt;&lt;input value="&lt;?@ to-int(delta) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
 &lt;hr/&gt;
 &lt;div&gt;Result: &lt;?@ result ?&gt;&lt;/div&gt;</pre><p>Build and run the application and enter a value for <span class="emphasis"><em>N</em></span> and
-<span class="emphasis"><em>Delta</em></span>.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial11/snap1.png" align="middle" alt="N: 5, Delta: 1, Result: 6" /></div></div><p>The result of the value entered for <span class="emphasis"><em>N</em></span> plus <span class="emphasis"><em>Delta</em></span> is
-displayed, nothing new here.</p><p>Now change the value for <span class="emphasis"><em>Delta</em></span>:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial11/snap2.png" align="middle" alt="N: 5, Delta: 3, Result: 8" /></div></div><p>The result is updated even though there is no direct instance of
+<span class="emphasis"><em>Delta</em></span>.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial11/snap1.png" align="middle" alt="N: 5, Delta: 1, Result: 6" /></div></div><p>The result of the value entered for <span class="emphasis"><em>N</em></span> plus <span class="emphasis"><em>Delta</em></span> is
+displayed, nothing new here.</p><p>Now change the value for <span class="emphasis"><em>Delta</em></span>:</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial11/snap2.png" align="middle" alt="N: 5, Delta: 3, Result: 8" /></div></div><p>The result is updated even though there is no direct instance of
 <code class="literal">increment</code> but rather a reference to the function of <code class="literal">increment</code>,
 which is passed to the <code class="literal">call</code> meta-node. This demonstrates that an
 implicit binding <code class="literal">delta -&gt; call(increment, n)</code> is created due to
 <code class="literal">increment</code> referencing the value of <code class="literal">delta</code> in its definition.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_higher_order_meta_nodes_in_list_processing"></a>Higher-Order Meta-Nodes in List Processing</h4></div></div></div><p>Higher-order meta-nodes are extremely useful for processing
 lists. There are many list processing utility meta-nodes, in the
-<code class="literal">core</code> module which take a reference to a meta-node as an argument,
+<code class="literal">core</code> module, which take a reference to a meta-node as an argument,
 and perform an operation on the list using the meta-node. Here are few
 examples:</p><p><strong><code class="literal">map(f, list)</code>. </strong>The <code class="literal">map</code> meta-node takes a function <code class="literal">f</code> and a list as arguments and
 returns a new list with the result of the applying the function on
@@ -1950,16 +1985,20 @@ messages, which are displayed below the button.</p><p>Start off with the followi
 contents of a <code class="literal">pre</code> tag. This node will store the list of messages in
 a single formatted string.</p><p>The button is given the id <code class="literal">add</code> so that we can attach an event
 listener for its click event, in JavaScript:</p><p>Add the following code, which is similar to the code seen in
-<a class="xref" href="#_node_states" title="10. Node States">Section 10, “Node States”</a>, to a <code class="literal">script</code> tag below the <code class="literal">pre</code> tag:</p><pre class="screen">var add = document.getElementById('add');
-var clicked = Tridash.nodes.clicked;
+<a class="xref" href="#_node_states" title="10. Node States">Section 10, “Node States”</a>, to a <code class="literal">script</code> tag below the <code class="literal">pre</code> tag:</p><pre class="screen">document.addEventListener("DOMContentLoaded", async () =&gt; {
+    const module = await mod;
 
-add.addEventListener('click', function() {
-    clicked.set_value(true);
-    clicked.set_value(false);
+    const add = document.getElementById('add');
+    const clicked = module.nodes.clicked;
+
+    add.addEventListener('click', function() {
+        clicked.set_value(true);
+        clicked.set_value(false);
+    });
 });</pre><p>The value of the node with the public identifier <code class="literal">clicked</code>, which is
 the <code class="literal">add-clicked?</code> node, is set to true and the immediately to false
 when the button is clicked. Add the following attribute declarations
-for the <code class="literal">add-clicked?</code> node:</p><pre class="screen">/attribute(add-clicked?, input, 1)
+for the <code class="literal">add-clicked?</code> node:</p><pre class="screen">/attribute(add-clicked?, input, True)
 /attribute(add-clicked?, public-name, "clicked")</pre><p>We’ll need a node to store the list of messages. Let’s call it
 <code class="literal">message-list</code> and set its initial value to the empty list.</p><pre class="screen">message-list &lt;- Empty</pre><p>The new message entered, bound to <code class="literal">new-message</code>, has to be added to
 the end of <code class="literal">message-list</code>. The <code class="literal">append</code> meta-node takes two lists and
@@ -1974,7 +2013,7 @@ button is being pressed and false otherwise, thus the state of
     add-clicked? : '(add-new),
     '(default)
 ) -&gt; /state(message-list)</pre><p>We have completed the functionality for adding a message to the end of
-the Messages list. All that remains is to format that list into a
+the messages list. All that remains is to format that list into a
 string which is displayed to the user.</p><p>We need a single string containing each message followed by a
 newline. We’ll write a <code class="literal">format-message</code> meta-node which appends a line
 break to a message.</p><p><strong>Meta-Node <code class="literal">format-message</code>. </strong>
@@ -1991,17 +2030,17 @@ arguments and returns the concatenation of both strings. We’ll need to
 apply <code class="literal">string-conat</code> on each element in <code class="literal">formatted-messages</code> in turn,
 accumulating the result in a single string. We can do that using the
 <code class="literal">foldl</code> node, passing in <code class="literal">string-concat</code> as the reduction function:</p><pre class="screen">messages &lt;- foldl(string-concat, formatted-messages)</pre><p>The resulting string is bound to <code class="literal">messages</code> which is displayed in the
-<code class="literal">pre</code> (preformatted) tag, below the <span class="emphasis"><em>Add Message</em></span> button.</p><p>Build and run the application. Enter a message and press the <span class="emphasis"><em>Add
-Message</em></span> button.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial11/snap3.png" align="middle" alt="Hello World!" /></div></div><p>The message is displayed.</p><p>Now enter a new message and click the <span class="emphasis"><em>Add Message</em></span> button.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials//images/tutorial11/snap4.png" align="middle" alt="Hello World!, Hi there, how you doing?" /></div></div><p>The message is displayed below the old message.</p></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_modules_and_organization"></a>12. Modules And Organization</h2></div></div></div><p>Up till this point we haven’t given much thought as to how our source
+<code class="literal">pre</code> (preformatted) tag, below the <span class="emphasis"><em>Add Message</em></span> button.</p><p>Build and run the application, using the build configuration file from
+<a class="xref" href="#example-counter-app" title="10.3. Example: Counter Application">Section 10.3, “Example: Counter Application”</a>. Enter a message and press the <span class="emphasis"><em>Add Message</em></span> button.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial11/snap3.png" align="middle" alt="Hello World!" /></div></div><p>The message is displayed.</p><p>Now enter a new message and click the <span class="emphasis"><em>Add Message</em></span> button.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="tutorials/images/tutorial11/snap4.png" align="middle" alt="Hello World!, Hi there, how you doing?" /></div></div><p>The message is displayed below the old message.</p></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_modules_and_organization"></a>12. Modules And Organization</h2></div></div></div><p>Up till this point we haven’t given much thought as to how our source
 code is organized. Instead we’ve crammed all our code in a Tridash
 code tag inside a single <code class="literal">ui.html</code> file. This strategy obviously wont
 scale for larger applications. Ideally we’d like to have <span class="emphasis"><em>separation
 of concerns</em></span> with our application divided into multiple source files,
 each containing the code implementing a separate component of the
 application. The <code class="literal">ui.html</code> should ideally contain a minimal amount of
-Tridash code, limited only to inline node references and, possibly,
-bindings directly related to the presentation logic. The core
-application logic should be in a separate source file.</p><p>In this tutorial we’ll take the <span class="emphasis"><em>Adding Numbers</em></span> application, as it is
+Tridash code, limited only to inline node references and bindings
+directly related to the presentation logic. The core application logic
+should be in a separate source file.</p><p>In this tutorial we’ll take the <span class="emphasis"><em>Adding Numbers</em></span> application, as it is
 at the end of <a class="xref" href="#contexts" title="9. Contexts">Section 9, “Contexts”</a>, and reorganize its source code.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_multiple_source_files"></a>12.1. Multiple Source Files</h3></div></div></div><p>The simplest form of code organization is splitting up the application
 into multiple source files. Source files containing only Tridash code
 are given the extension <code class="literal">trd</code>.</p><p>Let’s extract the validation logic in a separate <code class="literal">validation.trd</code>
@@ -2094,7 +2133,7 @@ order they are to be processed, after <code class="literal">tridashc</code>.</p>
     -o path.html -p type=html -p main-ui=ui</pre></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_modules_in_depth"></a>12.2. Modules In Depth</h3></div></div></div><p>Whilst separating the application into multiple source files, grouping
 related components in a single file, is a significant cleanup, it
 would be even better if the nodes could be grouped into different
-namespace based on their purpose, for example <span class="emphasis"><em>utility</em></span>, <span class="emphasis"><em>application
+namespaces based on their purpose, for example <span class="emphasis"><em>utility</em></span>, <span class="emphasis"><em>application
 logic</em></span> and <span class="emphasis"><em>ui</em></span>. This would allow us to use only the nodes from the
 <span class="emphasis"><em>utility</em></span> namespace, without having the rest of the <span class="emphasis"><em>utility</em></span> nodes
 clash (i.e. have the same identifiers) with the <span class="emphasis"><em>application logic</em></span>
@@ -2109,7 +2148,7 @@ tutorials.</p></td></tr></table></div><div class="section"><div class="titlepage
 following syntax:</p><p><strong><code class="literal">/module</code> Operator Syntax. </strong>
 </p><pre class="screen">/module(module-name)</pre><p>
 </p><p>This indicates that all node references, in the declarations following
-the <code class="literal">:module</code> declaration, will occur in the module with identifier
+the <code class="literal">/module</code> declaration, will occur in the module with identifier
 <code class="literal">module-name</code>. Remember that nodes are created the first time they are
 referenced, thus if a node is referenced which is not in the module,
 it is created and added to the module.</p><p><strong>Example. </strong>
@@ -2190,7 +2229,7 @@ current module using the <code class="literal">/export</code> operator.</p><pre 
 /export(x, y, z)</pre><p>Importing <code class="literal">mod1</code> by the short form, <code class="literal">/import(mod1)</code>, will import nodes
 <code class="literal">x</code>, <code class="literal">y</code> and <code class="literal">z</code> into the module.</p><p><code class="literal">/export</code> can take any number of arguments and multiple <code class="literal">/export</code>
 declarations will result in the nodes listed in each declaration being
-exported.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_directly_reference_node_in_another_module"></a>Directly Reference Node in Another Module</h4></div></div></div><p>The <code class="literal">/in</code> operator references a node in another module, for which a
+exported.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_directly_reference_nodes_in_another_module"></a>Directly Reference Nodes in Another Module</h4></div></div></div><p>The <code class="literal">/in</code> operator references a node in another module, for which a
 symbol has not been created in the current module using <code class="literal">/use</code> or
 <code class="literal">/use-as</code>.</p><p><strong><code class="literal">/in</code> Operator Syntax. </strong>
 </p><pre class="screen">/in(module, node)</pre><p>
@@ -2315,10 +2354,10 @@ current module is changed even if the operator is an imported node.</p></div><di
 infix operator, we’ll write an <code class="literal">add</code> meta-node which computes the sum
 of two numbers, register it as an infix operator and replace <code class="literal">a + b</code>
 with <code class="literal">a add b</code> in the <span class="emphasis"><em>Adding Numbers</em></span> Application.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>There is no value in writing a new meta-node which is simply a
-wrapper over a builtin meta-node and registering it as an infix
+wrapper over a builtin meta-node, and registering it as an infix
 operator. The purpose of this tutorial is simply to demonstrate how
-you would register your own meta-node as an infix operator.</p></td></tr></table></div><p>We’ll first define <code class="literal">add</code> and then register as an infix operator with
-precedence 100 and <span class="emphasis"><em>left</em></span> associativity which is the same as the
+you would register your own meta-node as an infix operator.</p></td></tr></table></div><p>We’ll first define <code class="literal">add</code> and then register it as an infix operator
+with precedence 100 and <span class="emphasis"><em>left</em></span> associativity which is the same as the
 builtin <code class="literal">+</code> operator.</p><p>Add the following somewhere near the top in <code class="literal">app.trd</code>:</p><pre class="screen">add(a, b) : a + b
 
 /operator(add, 100, left)</pre><p>Now change the binding declaration to <code class="literal">sum</code> with the following:</p><pre class="screen">sum &lt;- a add b</pre><p>That’s it you’ve now added your own infix operator to the language.</p></div></div></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_what_8217_s_next"></a>13. What’s Next?</h2></div></div></div><p>You’ve completed the introductory tutorials which introduce the
@@ -2343,5 +2382,5 @@ A complete HTML library allowing for directly hooking into events,
 </li><li class="listitem">
 Standard library with more math functions, string manipulation
   functions and other data structures besides lists.
-</li></ul></div></div><div class="footnotes"><br /><hr style="width:100; text-align:left;margin-left: 0" /><div id="ftn.idm370536188464" class="footnote"><p><a href="#idm370536188464" class="simpara"><sup class="simpara">[1] </sup></a>This performs a similar function to Lisp’s <code class="literal">quote</code> or
+</li></ul></div></div><div class="footnotes"><br /><hr style="width:100; text-align:left;margin-left: 0" /><div id="ftn.idm315188384416" class="footnote"><p><a href="#idm315188384416" class="simpara"><sup class="simpara">[1] </sup></a>This performs a similar function to Lisp’s <code class="literal">quote</code> or
 <code class="literal">'</code> operator</p></div></div></div></body></html>

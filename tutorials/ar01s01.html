@@ -19,8 +19,8 @@ non-digit character otherwise it is interpreted as a number.</p><p>The following
 identifiers, meaning node identifiers may even contain symbols such as
 <code class="literal">-</code>, <code class="literal">+</code>, <code class="literal">=</code>, <code class="literal">&gt;</code>, <code class="literal">?</code>, etc.</p></td></tr></table></div><p>A node can be bound to another node in which case its value is
 automatically updated when the value of the node, to which it is
-bound, changes.</p><p>The <code class="literal">-&gt;</code> operator establishes a binding between node on the left hand
-side, referred to as the <span class="emphasis"><em>source</em></span>, and the node on the right hand
+bound, changes.</p><p>The <code class="literal">-&gt;</code> operator establishes a binding between the node on the left
+hand side, referred to as the <span class="emphasis"><em>source</em></span>, and the node on the right hand
 side, referred to as the <span class="emphasis"><em>target</em></span>.</p><p><strong>Example. </strong>
 </p><pre class="screen">a -&gt; b</pre><p>
 </p><div class="important" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Important"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Important]" src="images/icons/important.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The spaces between the node identifiers and the bind <code class="literal">-&gt;</code>
@@ -114,8 +114,8 @@ of its dependency nodes changes.</p><p>When the state (the value) of the text fi
 The state of the <code class="literal">name</code> node is updated to the text entered in the
 field.
 </li><li class="listitem">
-The content of <code class="literal">span</code> element is updated to match the state of the
-<code class="literal">name</code> node.
+The content of the <code class="literal">span</code> element is updated to match the state of
+the <code class="literal">name</code> node.
 </li></ol></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_inline_node_declarations"></a>1.3. Inline Node Declarations</h3></div></div></div><p>The previous application can be implemented much more succinctly using
 implicit bindings and inline node declarations.</p><p><strong>hello-ui.html. </strong>
 </p><pre class="programlisting">&lt;!doctype html&gt;

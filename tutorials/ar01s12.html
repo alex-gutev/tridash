@@ -6,9 +6,9 @@ scale for larger applications. Ideally we’d like to have <span class="emphasis
 of concerns</em></span> with our application divided into multiple source files,
 each containing the code implementing a separate component of the
 application. The <code class="literal">ui.html</code> should ideally contain a minimal amount of
-Tridash code, limited only to inline node references and, possibly,
-bindings directly related to the presentation logic. The core
-application logic should be in a separate source file.</p><p>In this tutorial we’ll take the <span class="emphasis"><em>Adding Numbers</em></span> application, as it is
+Tridash code, limited only to inline node references and bindings
+directly related to the presentation logic. The core application logic
+should be in a separate source file.</p><p>In this tutorial we’ll take the <span class="emphasis"><em>Adding Numbers</em></span> application, as it is
 at the end of <a class="xref" href="ar01s09.html" title="9. Contexts">Section 9, “Contexts”</a>, and reorganize its source code.</p><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_multiple_source_files"></a>12.1. Multiple Source Files</h3></div></div></div><p>The simplest form of code organization is splitting up the application
 into multiple source files. Source files containing only Tridash code
 are given the extension <code class="literal">trd</code>.</p><p>Let’s extract the validation logic in a separate <code class="literal">validation.trd</code>
@@ -101,7 +101,7 @@ order they are to be processed, after <code class="literal">tridashc</code>.</p>
     -o path.html -p type=html -p main-ui=ui</pre></td></tr></table></div></div></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_modules_in_depth"></a>12.2. Modules In Depth</h3></div></div></div><p>Whilst separating the application into multiple source files, grouping
 related components in a single file, is a significant cleanup, it
 would be even better if the nodes could be grouped into different
-namespace based on their purpose, for example <span class="emphasis"><em>utility</em></span>, <span class="emphasis"><em>application
+namespaces based on their purpose, for example <span class="emphasis"><em>utility</em></span>, <span class="emphasis"><em>application
 logic</em></span> and <span class="emphasis"><em>ui</em></span>. This would allow us to use only the nodes from the
 <span class="emphasis"><em>utility</em></span> namespace, without having the rest of the <span class="emphasis"><em>utility</em></span> nodes
 clash (i.e. have the same identifiers) with the <span class="emphasis"><em>application logic</em></span>
@@ -116,7 +116,7 @@ tutorials.</p></td></tr></table></div><div class="section"><div class="titlepage
 following syntax:</p><p><strong><code class="literal">/module</code> Operator Syntax. </strong>
 </p><pre class="screen">/module(module-name)</pre><p>
 </p><p>This indicates that all node references, in the declarations following
-the <code class="literal">:module</code> declaration, will occur in the module with identifier
+the <code class="literal">/module</code> declaration, will occur in the module with identifier
 <code class="literal">module-name</code>. Remember that nodes are created the first time they are
 referenced, thus if a node is referenced which is not in the module,
 it is created and added to the module.</p><p><strong>Example. </strong>
@@ -197,7 +197,7 @@ current module using the <code class="literal">/export</code> operator.</p><pre 
 /export(x, y, z)</pre><p>Importing <code class="literal">mod1</code> by the short form, <code class="literal">/import(mod1)</code>, will import nodes
 <code class="literal">x</code>, <code class="literal">y</code> and <code class="literal">z</code> into the module.</p><p><code class="literal">/export</code> can take any number of arguments and multiple <code class="literal">/export</code>
 declarations will result in the nodes listed in each declaration being
-exported.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_directly_reference_node_in_another_module"></a>Directly Reference Node in Another Module</h4></div></div></div><p>The <code class="literal">/in</code> operator references a node in another module, for which a
+exported.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_directly_reference_nodes_in_another_module"></a>Directly Reference Nodes in Another Module</h4></div></div></div><p>The <code class="literal">/in</code> operator references a node in another module, for which a
 symbol has not been created in the current module using <code class="literal">/use</code> or
 <code class="literal">/use-as</code>.</p><p><strong><code class="literal">/in</code> Operator Syntax. </strong>
 </p><pre class="screen">/in(module, node)</pre><p>
@@ -322,10 +322,10 @@ current module is changed even if the operator is an imported node.</p></div><di
 infix operator, we’ll write an <code class="literal">add</code> meta-node which computes the sum
 of two numbers, register it as an infix operator and replace <code class="literal">a + b</code>
 with <code class="literal">a add b</code> in the <span class="emphasis"><em>Adding Numbers</em></span> Application.</p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>There is no value in writing a new meta-node which is simply a
-wrapper over a builtin meta-node and registering it as an infix
+wrapper over a builtin meta-node, and registering it as an infix
 operator. The purpose of this tutorial is simply to demonstrate how
-you would register your own meta-node as an infix operator.</p></td></tr></table></div><p>We’ll first define <code class="literal">add</code> and then register as an infix operator with
-precedence 100 and <span class="emphasis"><em>left</em></span> associativity which is the same as the
+you would register your own meta-node as an infix operator.</p></td></tr></table></div><p>We’ll first define <code class="literal">add</code> and then register it as an infix operator
+with precedence 100 and <span class="emphasis"><em>left</em></span> associativity which is the same as the
 builtin <code class="literal">+</code> operator.</p><p>Add the following somewhere near the top in <code class="literal">app.trd</code>:</p><pre class="screen">add(a, b) : a + b
 
 /operator(add, 100, left)</pre><p>Now change the binding declaration to <code class="literal">sum</code> with the following:</p><pre class="screen">sum &lt;- a add b</pre><p>That’s it you’ve now added your own infix operator to the language.</p></div></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s11.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s13.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

@@ -46,7 +46,7 @@ expression for <code class="literal">a</code>:</p><pre class="screen">case(
 number!”, if <code class="literal">fails?(a)</code> is true, that is <code class="literal">a</code> evaluates to a failure,
 otherwise it returns the empty string. To display the error message
 next to the field for <span class="emphasis"><em>A</em></span>, we can simply place the entire <code class="literal">case</code>
-expression in an inline node declaration, between <code class="literal">&lt;?@ ... ?&gt;</code> next to
+expression in an inline node declaration, between <code class="literal">&lt;?@ ... ?&gt;</code>, next to
 the field. We can do the same for <span class="emphasis"><em>B</em></span>, substituting <code class="literal">a</code> with <code class="literal">b</code>, to
 get an error indication for <span class="emphasis"><em>B</em></span> as well.</p><p>That’s it we have added error handling to an existing application
 without having to make fundamental changes to our application

@@ -108,7 +108,7 @@ integer constants, there is no guarantee that <code class="literal">-1</code> do
 represent a builtin failure type, such as <code class="literal">Invalid-Integer</code>. Whilst it
 so happened to work, it is certainly not robust, especially when
 bringing in third party libraries.</p><p>A value, which is guaranteed to be unique, can be obtained by taking a
-reference to the <span class="emphasis"><em>raw node object</em></span> of <code class="literal">Negative-Number</code>.</p><p>References to the raw node object, of a node, can be obtained using
+reference to the <span class="emphasis"><em>raw node object</em></span> of <code class="literal">Negative-Number</code>.</p><p>A reference to the raw node object, of a node, can be obtained using
 the <code class="literal">&amp;</code> special operator, which takes the identifier of the node as an
 argument. Raw node references are mostly useful when writing macros,
 which you’ll learn about in a later tutorial. For now all that you

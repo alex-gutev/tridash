@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>11. List Processing</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s10.html" title="10. Node States" /><link rel="next" href="ar01s12.html" title="12. Modules And Organization" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s10.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s12.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_list_processing"></a>11. List Processing</h2></div></div></div><p>This tutorial is an introduction on processing lists of data. Lists
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>11. List Processing</title><link rel="stylesheet" type="text/css" href="docbook-xsl.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="home" href="index.html" title="Tridash Tutorials" /><link rel="up" href="index.html" title="Tridash Tutorials" /><link rel="prev" href="ar01s10.html" title="10. Node States" /><link rel="next" href="ar01s12.html" title="12. Modules And Organization" /></head><body><div class="navheader"><table width="100%" summary="Navigation header"><tr><td width="20%" align="left"><a accesskey="p" href="ar01s10.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="ar01s12.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr></table><hr /></div><div class="section"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="_list_processing"></a>11. List Processing</h2></div></div></div><p>This tutorial is an introduction to processing lists of data. Lists
 are <span class="emphasis"><em>conceptually</em></span> represented as a linked list of nodes in which the
 <span class="emphasis"><em>head</em></span> of the node stores the list element and the <span class="emphasis"><em>tail</em></span> stores the
 next node, i.e. the remainder, of the list. The meta-nodes <code class="literal">head</code> and
@@ -27,7 +27,7 @@ prepended to the front of it.</p><pre class="screen"># Create list with 1 and 2 
 l2 &lt;- list*(1, 2, l1)</pre></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_higher_order_meta_nodes"></a>11.2. Higher-Order Meta-Nodes</h3></div></div></div><p>Meta-Nodes can be passed to other meta-nodes as arguments, or bound to
 ordinary nodes, in which case the function of the meta-node is
 referenced.</p><p>A node can appear as the operator in a functor node in which case the
-function, of which the reference is stored in the node’s value is
+function, of which the reference is stored in the node’s value, is
 applied on the arguments. If the node’s value is not a reference to
 function or the function is applied on an incorrect number of
 arguments, the result is a failure value.</p><p><strong>Example. </strong>
@@ -70,7 +70,7 @@ which is passed to the <code class="literal">call</code> meta-node. This demonst
 implicit binding <code class="literal">delta -&gt; call(increment, n)</code> is created due to
 <code class="literal">increment</code> referencing the value of <code class="literal">delta</code> in its definition.</p></div><div class="section"><div class="titlepage"><div><div><h4 class="title"><a id="_higher_order_meta_nodes_in_list_processing"></a>Higher-Order Meta-Nodes in List Processing</h4></div></div></div><p>Higher-order meta-nodes are extremely useful for processing
 lists. There are many list processing utility meta-nodes, in the
-<code class="literal">core</code> module which take a reference to a meta-node as an argument,
+<code class="literal">core</code> module, which take a reference to a meta-node as an argument,
 and perform an operation on the list using the meta-node. Here are few
 examples:</p><p><strong><code class="literal">map(f, list)</code>. </strong>The <code class="literal">map</code> meta-node takes a function <code class="literal">f</code> and a list as arguments and
 returns a new list with the result of the applying the function on
@@ -135,16 +135,20 @@ messages, which are displayed below the button.</p><p>Start off with the followi
 contents of a <code class="literal">pre</code> tag. This node will store the list of messages in
 a single formatted string.</p><p>The button is given the id <code class="literal">add</code> so that we can attach an event
 listener for its click event, in JavaScript:</p><p>Add the following code, which is similar to the code seen in
-<a class="xref" href="ar01s10.html" title="10. Node States">Section 10, “Node States”</a>, to a <code class="literal">script</code> tag below the <code class="literal">pre</code> tag:</p><pre class="screen">var add = document.getElementById('add');
-var clicked = Tridash.nodes.clicked;
+<a class="xref" href="ar01s10.html" title="10. Node States">Section 10, “Node States”</a>, to a <code class="literal">script</code> tag below the <code class="literal">pre</code> tag:</p><pre class="screen">document.addEventListener("DOMContentLoaded", async () =&gt; {
+    const module = await mod;
 
-add.addEventListener('click', function() {
-    clicked.set_value(true);
-    clicked.set_value(false);
+    const add = document.getElementById('add');
+    const clicked = module.nodes.clicked;
+
+    add.addEventListener('click', function() {
+        clicked.set_value(true);
+        clicked.set_value(false);
+    });
 });</pre><p>The value of the node with the public identifier <code class="literal">clicked</code>, which is
 the <code class="literal">add-clicked?</code> node, is set to true and the immediately to false
 when the button is clicked. Add the following attribute declarations
-for the <code class="literal">add-clicked?</code> node:</p><pre class="screen">/attribute(add-clicked?, input, 1)
+for the <code class="literal">add-clicked?</code> node:</p><pre class="screen">/attribute(add-clicked?, input, True)
 /attribute(add-clicked?, public-name, "clicked")</pre><p>We’ll need a node to store the list of messages. Let’s call it
 <code class="literal">message-list</code> and set its initial value to the empty list.</p><pre class="screen">message-list &lt;- Empty</pre><p>The new message entered, bound to <code class="literal">new-message</code>, has to be added to
 the end of <code class="literal">message-list</code>. The <code class="literal">append</code> meta-node takes two lists and
@@ -159,7 +163,7 @@ button is being pressed and false otherwise, thus the state of
     add-clicked? : '(add-new),
     '(default)
 ) -&gt; /state(message-list)</pre><p>We have completed the functionality for adding a message to the end of
-the Messages list. All that remains is to format that list into a
+the messages list. All that remains is to format that list into a
 string which is displayed to the user.</p><p>We need a single string containing each message followed by a
 newline. We’ll write a <code class="literal">format-message</code> meta-node which appends a line
 break to a message.</p><p><strong>Meta-Node <code class="literal">format-message</code>. </strong>
@@ -176,5 +180,5 @@ arguments and returns the concatenation of both strings. We’ll need to
 apply <code class="literal">string-conat</code> on each element in <code class="literal">formatted-messages</code> in turn,
 accumulating the result in a single string. We can do that using the
 <code class="literal">foldl</code> node, passing in <code class="literal">string-concat</code> as the reduction function:</p><pre class="screen">messages &lt;- foldl(string-concat, formatted-messages)</pre><p>The resulting string is bound to <code class="literal">messages</code> which is displayed in the
-<code class="literal">pre</code> (preformatted) tag, below the <span class="emphasis"><em>Add Message</em></span> button.</p><p>Build and run the application. Enter a message and press the <span class="emphasis"><em>Add
-Message</em></span> button.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial11/snap3.png" align="middle" alt="Hello World!" /></div></div><p>The message is displayed.</p><p>Now enter a new message and click the <span class="emphasis"><em>Add Message</em></span> button.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial11/snap4.png" align="middle" alt="Hello World!, Hi there, how you doing?" /></div></div><p>The message is displayed below the old message.</p></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s10.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s12.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>
+<code class="literal">pre</code> (preformatted) tag, below the <span class="emphasis"><em>Add Message</em></span> button.</p><p>Build and run the application, using the build configuration file from
+<a class="xref" href="ar01s10.html#example-counter-app" title="10.3. Example: Counter Application">Section 10.3, “Example: Counter Application”</a>. Enter a message and press the <span class="emphasis"><em>Add Message</em></span> button.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial11/snap3.png" align="middle" alt="Hello World!" /></div></div><p>The message is displayed.</p><p>Now enter a new message and click the <span class="emphasis"><em>Add Message</em></span> button.</p><div class="informalfigure"><div class="mediaobject" align="center"><img src="images/tutorial11/snap4.png" align="middle" alt="Hello World!, Hi there, how you doing?" /></div></div><p>The message is displayed below the old message.</p></div></div><div class="navfooter"><hr /><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ar01s10.html"><img src="images/icons/prev.png" alt="Prev" /></a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="ar01s12.html"><img src="images/icons/next.png" alt="Next" /></a></td></tr><tr><td width="40%" align="left" valign="top"> </td><td width="20%" align="center"><a accesskey="h" href="index.html"><img src="images/icons/home.png" alt="Home" /></a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

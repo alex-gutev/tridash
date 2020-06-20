@@ -143,7 +143,7 @@ argument <code class="literal">acc</code>, which is an implementation detail.</p
 }</pre><p>
 </p><p>The computation of the factorial is implemented in the nested
 tail-recursive meta-node <code class="literal">iter</code>. The <code class="literal">factorial</code> meta-node simply
-calls this meta-node with the initial value for the accumulator.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_local_nodes"></a>4.6. Local Nodes</h3></div></div></div><p>Nodes which appears as the <span class="emphasis"><em>target</em></span> (observer) of a binding, declared
+calls this meta-node with the initial value for the accumulator.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_local_nodes"></a>4.6. Local Nodes</h3></div></div></div><p>Nodes which appear as the <span class="emphasis"><em>target</em></span> (observer) of a binding, declared
 within the body of a meta-node, are local to the meta-node’s body and
 may only be referenced within it. These may be used to store
 intermediate results or to break up complex expression into multiple
@@ -168,7 +168,7 @@ of <code class="literal">increment</code>, in the <span class="emphasis"><em>Inc
 this tutorial, to the following:</p><p><strong>Increment with reference to <code class="literal">delta</code>. </strong>
 </p><pre class="screen">increment(n) : n + delta</pre><p>
 </p><p>The <code class="literal">d</code> argument has been removed and replaced with <code class="literal">delta</code> in the
-body.</p><p>Repeat the same experiment, changing the delta, you should observe the
+body.</p><p>Repeat the same experiment, changing the delta. You should observe the
 same results.</p></div><div class="section"><div class="titlepage"><div><div><h3 class="title"><a id="_fun_example_simple_meter"></a>4.8. Fun Example: Simple Meter</h3></div></div></div><p>In this example we’ll be developing an application which displays a
 simple meter, representing a quantity, which changes color as the
 quantity approaches the maximum.</p><p>Let’s start off with the following HTML interface:</p><p><strong>ui.html. </strong>
@@ -190,15 +190,16 @@ quantity approaches the maximum.</p><p>Let’s start off with the following HTML
     &lt;/head&gt;
     &lt;body&gt;
       &lt;h1&gt;Simple Meter&lt;/h1&gt;
-      &lt;div&gt;&lt;label&gt;Maximum: &lt;input value="&lt;?@ to-int(maximum) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
-      &lt;div&gt;&lt;label&gt;Quantity: &lt;input value="&lt;?@ to-int(quantity) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;Maximum: &lt;input value="&lt;?@ to-real(maximum) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
+      &lt;div&gt;&lt;label&gt;Quantity: &lt;input value="&lt;?@ to-real(quantity) ?&gt;"/&gt;&lt;/label&gt;&lt;/div&gt;
       &lt;div class="meter-box"&gt;
         &lt;div id="meter" class="meter-bar"&gt;&lt;/div&gt;
       &lt;/div&gt;
     &lt;/body&gt;
 &lt;/html&gt;</pre><p>
 </p><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The file contains a few CSS class definitions for styling the
-elements which display the meter, located at the bottom of the file.</p></td></tr></table></div><p>The interface consists of two input fields for entering the values for
+elements which display the meter, located at the bottom of the file.</p></td></tr></table></div><div class="note" style="margin-left: 0; margin-right: 10%;"><table border="0" summary="Note"><tr><td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="images/icons/note.png" /></td><th align="left"></th></tr><tr><td align="left" valign="top"><p>The <code class="literal">to-real</code> meta-node is similar to <code class="literal">to-int</code> except that it
+converts its argument to a <span class="emphasis"><em>real</em></span> number rather than an integer.</p></td></tr></table></div><p>The interface consists of two input fields for entering the values for
 the <span class="emphasis"><em>Maximum</em></span> and <span class="emphasis"><em>Quantity</em></span>, which are bound to the nodes <code class="literal">maximum</code>
 and <code class="literal">quantity</code>, respectively.</p><p>We’d like the meter to be displayed in a color which is in between
 <span class="green">green</span> (empty) and <span class="red">red</span> (full) depending on where the
