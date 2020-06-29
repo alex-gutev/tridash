@@ -434,6 +434,50 @@ match-not(place, expression) : {
 /attribute(not, matcher, match-not)
 
 
+## Satisfies
+
+satisfies(f, x) : f(x)
+
+target-satisfies(source, expression) :
+    make-pattern-declarations(match-satisfies(source, expression))
+
+match-satisfies(place, expression) : {
+    expression -> list(_, f, x)
+    expression -> list(_, f)
+
+    x-pattern <-
+        if (?(x),
+            make-pattern(place, x),
+            make-pattern(place, '(_)))
+
+    condition <-
+        combine-conditions(
+            list(f, place),
+            x-pattern.condition
+        )
+
+    Pattern(condition, x-pattern.bindings)
+}
+
+/attribute(satisfies, matcher, match-satisfies)
+/attribute(satisfies, target-transform, target-satisfies)
+
+
+## Equals
+
+target-=(source, expression) :
+    make-pattern-declarations(match-=(source, expression))
+
+match-=(place, expression) : {
+    expression -> list(_, value)
+
+    Pattern(list(&(=), place, value))
+}
+
+/attribute(=, matcher, match-=)
+/attribute(=, target-transform, target-=)
+
+
 ### Exports
 
 /export(
