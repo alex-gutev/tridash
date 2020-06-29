@@ -18,8 +18,7 @@
 
 (in-package :tridash.parser)
 
-
-(defconstant +list-operator+ 'list
+(defconstant +list-operator+ (id-symbol "/prog")
   "List PSEUDO operator. Used to return a list of node declarations
    aggregated together.")
 
@@ -339,11 +338,6 @@
 
     (nil
      (values :init (gensym prefix)))))
-
-(defun id-symbol (name)
-  "Interns a symbol with name NAME into the :TRIDASH.SYMBOLS package."
-
-  (intern (string name) :tridash.symbols))
 
 
 (defun operand-list? (lex precedence)

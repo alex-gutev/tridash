@@ -343,6 +343,11 @@
     (if peek (setf (lexer-token lex) nil))
     t))
 
+(defun id-symbol (name)
+  "Interns a symbol with name NAME into the :TRIDASH.SYMBOLS package."
+
+  (intern (string name) :tridash.symbols))
+
 
 ;;; Reading Input Stream
 
