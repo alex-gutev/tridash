@@ -421,7 +421,7 @@
   (let ((module (or (resolve% module) *current-module*)))
 
     (unless (typep module 'module)
-      (error 'tridash-fail +fail-type-type-error+))
+      (error 'tridash-fail :fail-type +fail-type-type-error+))
 
     (handler-case
         (let ((*create-nodes* nil)
