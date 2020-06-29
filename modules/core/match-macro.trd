@@ -1,0 +1,136 @@
+### Tridash Core Module
+### Copyright (C) 2019  Alexander Gutev
+###
+### This program is free software: you can redistribute it and/or modify
+### it under the terms of the GNU General Public License as published by
+### the Free Software Foundation, either version 3 of the License, or
+### (at your option) any later version.
+###
+### This program is distributed in the hope that it will be useful,
+### but WITHOUT ANY WARRANTY; without even the implied warranty of
+### MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+### GNU General Public License for more details.
+###
+### You should have received a copy of the GNU General Public License
+### along with this program.  If not, see <http://www.gnu.org/licenses/>.
+###
+### Linking this library statically or dynamically with other modules is
+### making a combined work based on this library. Thus, the terms and
+### conditions of the GNU General Public License cover the whole
+### combination.
+###
+### As a special exception, the copyright holders of this library give
+### you permission to link this library with independent modules to
+### produce an executable, regardless of the license terms of these
+### independent modules, and to copy and distribute the resulting
+### executable under terms of your choice, provided that you also meet,
+### for each linked independent module, the terms and conditions of the
+### license of that module. An independent module is a module which is
+### not derived from or based on this library. If you modify this
+### library, you may extend this exception to your version of the
+### library, but you are not obliged to do so. If you do not wish to do
+### so, delete this exception statement from your version.
+
+### Pattern Matching Macros
+
+/module(core/patterns)
+
+## Generates declarations which match the place `place` to the
+## patterns in, and establishes additional bindings.
+##
+## The argument to the macro `arg` is expected to be a declaration
+## list of which each element is a functor expression of the `:`
+## operator (registered as an infix operator) of the following form
+## `pattern : binding`. The pattern `pattern` is matched to `place`,
+## as if by the binding expression `place -> pattern` and if it
+## matches the binding `binding` is established. Otherwise the target
+## of the binding is bound to a failure of type `Match-Fail`.
+##
+## Each pattern is matched individually, that is if a pattern, which
+## occurs earlier on in the declaration list, is matched it does not
+## preclude other patterns, occurring later on in the declaration
+## list, from being matched.
+##
+## place : Place to match.
+##
+## arg   : Declaration list
+
+match*(place, arg) : {
+    arg -> list*('(/prog), patterns)
+
+    parse-pattern(expression) : {
+        expression -> list('(:), pattern, binding)
+
+        pat <- make-pattern(place, pattern)
+
+        make-pattern-declarations(
+            Pattern(
+                pat.condition,
+                append(pat.bindings, list(binding))
+            )
+        )
+    }
+
+    list*('(/prog), map(parse-pattern, patterns))
+}
+
+/attribute(match*, macro, True)
+/operator(match*, 5)
+
+
+## Evaluates to the value of a node corresponding to the first pattern
+## which matches the `place` place.
+##
+## The argument to the macro `arg` is expected to be a declaration
+## list of which each element is a functor expression of the `:`
+## operator (registered as an infix operator) of the following form
+## `pattern : value`. The pattern `pattern` is matched and if it
+## matches, the `match` expression evaluates to the value of the
+## `value` node. The patterns are matched in order of occurrence, that
+## is the value of the `value` node corresponding to the first pattern
+## which matches is the result of the `match` expression.
+##
+## The last declaration, in the declaration list, may simply be of the
+## form `value` in which case it is interpreted the default value
+## node, to which the `match` expression evaluates if no pattern
+## matches. If there is no default value node the `match` expression
+## evaluates to a failure of type `Match-Fail`.
+##
+## place : Place to match
+## arg   : Declaration list
+
+match(place, arg) : {
+    arg -> list*('(/prog), expressions)
+
+    parse-pattern(expression) : {
+        expression -> list('(:), pattern, value)
+        expression -> value @ match when Match-Fail
+
+        pattern !- make-pattern(place, pattern) -> self.pattern
+        value -> self.value
+    }
+
+    make-condition(case, else) : {
+        condition <- case.pattern.condition
+
+        list!('(if), condition, case.value, else) -> self @ _
+        case.value -> self @ _
+    }
+
+    pattern-binding(case) : {
+        pattern <- case.pattern
+
+        pattern !- make-pattern-declarations(case.pattern) -> self @ _
+        Empty -> self @ _
+    }
+
+    patterns <- map(parse-pattern, expressions)
+    condition <- foldr(make-condition, patterns, list(&(fail), &(Match-Fail)))
+
+    bindings <- foldl(append, map(pattern-binding, patterns))
+
+    list*('(/prog), append(bindings, list(condition)))
+}
+
+/attribute(match, macro, True)
+/operator(match, 5)
