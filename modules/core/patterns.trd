@@ -77,8 +77,18 @@ Pattern(condition, :(binding)) : {
 ##
 ## pattern : The pattern for which to create the declarations.
 
-make-pattern-declarations(pattern) :
-    list*(&(prog), conditionalize-bindings(pattern.condition, pattern.bindings))
+make-pattern-declarations(pattern) : {
+    contextualize-binding(binding) : {
+        context <-
+            list('(when), '(match), list(&(&), Match-Fail))
+
+        list(&(@), binding, context)
+    }
+
+    bindings <- map(contextualize-binding, pattern.bindings)
+
+    list*(&(prog), conditionalize-bindings(pattern.condition, bindings))
+}
 
 ## Creates the `Pattern` object for the pattern declaration `pattern`
 ## which is to be matched against `place`.
