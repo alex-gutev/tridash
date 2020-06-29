@@ -158,7 +158,7 @@
          (decls
           '(!\:
             (!|fn| !\a !\b)
-            (list !\a !\b !\c !\d)))
+            (!|/prog| !\a !\b !\c !\d)))
          (alist-hash-map
           `((,(s ":") 10 :right)
             (:open-paren 200)))))
