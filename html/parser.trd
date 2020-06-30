@@ -1,0 +1,518 @@
+/module(html)
+/import(core)
+
+/use-as(core/patterns, pat)
+/import(core/patterns, match*, match, satisfies)
+
+
+### Tokenization
+
+## Tokenization
+
+##
+## Tokenize a character sequence according to the rules for tokens
+## occurring within an HTML tag, < ... >.
+##
+## chars : The character sequence
+##
+## Returns a list of Token objects.
+##
+tokenize-tag(chars) : {
+    ## Helper Meta-Nodes
+
+    ## Return the next token in the character sequence.
+    ##
+    ## chars : Character Sequence
+    ##
+    next-token(chars) : {
+        chars -> list*(first, rest)
+
+        first match {
+            satisfies(space?) : next-token(rest)
+
+            c(<) : Token('(Open-Bracket), rest)
+            c(>) : Token('(Close-Bracket), rest)
+            c(/) : Token('(Slash), rest)
+            c("\"") : consume-string(rest)
+            c(=) : Token('(Equal), rest)
+
+            consume-name(chars)
+        }
+    }
+
+    ## Consume all characters, which are valid in attribute/tag names,
+    ## and return a Name token.
+    ##
+    ## chars : Character sequence
+    ##
+    ## Returns a Token of type '(Name).
+    ##
+    consume-name(chars, lexeme : "") : {
+        chars -> list*(first, rest)
+
+        next-lexeme <-
+            string-concat(lexeme, string(first))
+
+        if (name-char?(first),
+            consume-name(rest, next-lexeme),
+            Token('(Name), chars, lexeme))
+    }
+
+    ## Consume all characters, forming part of a literal string, till
+    ## the next quote character, and return a String token.
+    ##
+    ## chars : Character sequence
+    ##
+    ## Returns a Token of type '(String)
+    ##
+    consume-string(chars, lexeme : "") : {
+        chars -> list*(c("\""), rest) and end?
+        chars -> list*(first, rest)
+
+        next-lexeme <-
+            string-concat(lexeme, string(first))
+
+        end? !- Token('(String), rest, lexeme) -> self @ _
+        consume-string(rest, next-lexeme) -> self @ _
+    }
+
+
+    ## Body
+
+    token <- next-token(chars)
+
+    if (chars != Empty,
+        cons(token, tokenize-tag(token.rest)),
+        Empty)
+}
+
+##
+## Tokenize a character sequence according to the rules for text
+## tokens occurring outside HTML tags.
+##
+## chars : The character sequence
+##
+## Returns a list of Token objects
+##
+tokenize-text(chars) : {
+    ## Helper Meta-Nodes
+
+    ##
+    ## Return the next token in the character sequence.
+    ##
+    ## chars : Character Sequence
+    ##
+    next-token(chars) : {
+        chars -> list*(first, rest)
+
+        first match {
+            c(<) : Token('(Open-Bracket), rest)
+            consume-text(chars)
+        }
+    }
+
+    ##
+    ## Consume all text characters until the next HTML markup
+    ## character, and return a Text token.
+    ##
+    ## chars : Character Sequence
+    ##
+    ## Returns a Token of type '(Text)
+    ##
+    consume-text(chars, lexeme : "") : {
+        first
+
+        next-lexeme <-
+            string-concat(lexeme, string(first))
+
+        chars match {
+            list*(c(<), _) :
+                Token('(Text), chars, lexeme)
+
+            list*(first, rest) :
+                consume-text(rest, next-lexeme)
+        }
+    }
+
+
+    ## Body
+
+    token <- next-token(chars)
+
+    if (chars != Empty,
+        cons(token, tokenize-text(token.rest)),
+        Empty)
+}
+
+
+#### Token Object
+
+##
+## Create a Token object.
+##
+## A Token object has the following subnodes:
+##
+##  type   : Symbol identifying token type
+##
+##  rest   : Character sequence following the last character of the
+##           token.
+##
+##  lexeme : The string corresponding to the token itself.
+##
+Token(type, rest, lexeme : "") : {
+    type -> self.type
+    lexeme -> self.lexeme
+
+    rest -> self.rest
+}
+
+
+#### Pattern Matching Token Objects
+
+## A an expression of the Token meta-node may appear as the target of
+## a binding, in which case the Token pattern is matched to the source
+## of the binding.
+##
+## The token pattern accepts the following parameters:
+##
+##  type   : Pattern matching token type
+##
+##  lexeme : Pattern matching actual token string. (Optional)
+##
+##  rest   : Pattern matching sequence of characters following
+##           token. (Optional)
+
+target-Token(source, expression) :
+    pat.make-pattern-declarations(match-Token(source, expression))
+
+match-Token(place, pattern) : {
+    pattern -> list*(_, type, _)
+    pattern -> list*(_, _, lexeme, _)
+    pattern -> list(_, _, _, rest)
+
+    place-type <- list(&(.), place, '(type))
+    place-lexeme <- list(&(.), place, '(lexeme))
+    place-rest <- list(&(.), place, '(rest))
+
+    pattern-type <- pat.make-pattern(place-type, type)
+    pattern-lexeme <- pat.make-pattern(place-lexeme, lexeme)
+    pattern-rest <- pat.make-pattern(place-rest, rest)
+
+    condition <-
+        pat.combine-conditions(
+            pattern-type.condition,
+
+            pat.combine-conditions(
+                pattern-lexeme.condition,
+                pattern-rest.condition
+            )
+        )
+
+    lexeme !- append(pattern-type.bindings, pattern-lexeme.bindings) -> @(bindings)
+    pattern-type.bindings -> @(bindings)
+
+    rest !- pattern-rest.bindings -> rest-bindings @ _
+    Empty -> rest-bindings @ _ when pat.Match-Fail
+
+    pat.Pattern(condition, append(bindings, rest-bindings))
+}
+
+/attribute(Token, matcher, match-Token)
+/attribute(Token, target-transform, target-Token)
+
+
+### Character Predicates
+
+##
+## Check whether a character is a white-space character.
+##
+## char : The character
+##
+space?(char) :
+    char = c(" ") or
+    char = c("\t") or
+    char = c("\n") or
+    char = c("\r")
+
+## Check whether a character may form part of tag/attribute names.
+##
+## char : The character
+##
+name-char?(char) :
+    char != c(<) and
+    char != c(>) and
+    char != c("\\") and
+    char != c(=) and
+    char != c("\"") and
+    not(space?(char))
+
+
+### Parsing
+
+## Failure type representing a parse error.
+
+Parse-Error <- &(Parse-Error)
+Parse-Error! <- fail(Parse-Error)
+
+##
+## Create a parsing result (Parse-Result) object.
+##
+## A Parse-Result object has the following subnodes:
+##
+##  result : The parsed object
+##
+##  rest   : Remaining sequence of characters following the parsed
+##           object
+##
+Parse-Result(result, rest) : {
+    result -> self.result
+    rest -> self.rest
+}
+
+
+##
+## Parse a character sequence into an HTML node tree.
+##
+## chars : Character Sequence
+##
+## Returns a list of html node objects, where each object can either
+## be an Html-Element or Html-Text-Node object.
+##
+parse-html(chars) : {
+    node <- parse-html-node(chars)
+    next <- parse-html(node.rest)
+
+    if (chars = Empty,
+        Empty,
+        cons(node.result, next))
+}
+
+##
+## Parse an HTML node from a character sequence
+##
+## chars : Character sequence
+##
+## Returns a Parse-Result object, with the `result` subnode bound to
+## either an HTML-Element or Html-Text-Node object.
+##
+parse-html-node(chars) : {
+    tokens <- tokenize-text(chars)
+
+    tokens match {
+        list*(Token('(Open-Bracket)), _) :
+            parse-html-element(chars)
+
+        list*(Token('(Text), text, rest), _) :
+            Parse-Result(Html-Text-Node(text), rest)
+    }
+}
+
+
+#### HTML Element Nodes
+
+##
+## Parse an HTML element node from a character sequence.
+##
+## chars : Character Sequence
+##
+## Returns a Parse-Result object, with the `result` subnode bound to
+## an HTML-Element object.
+##
+parse-html-element(chars) : {
+    parse-children(name, chars) : {
+        tokens <- tokenize-text(chars)
+
+        rest <- parse-close-tag(name, chars)
+        rest !- Parse-Result(Empty, rest) -> self @ _
+
+        node <- parse-html-node(chars)
+        next-nodes <- parse-children(name, node.rest)
+
+        node !- Parse-Result(
+            cons(node.result, next-nodes.result),
+            next-nodes.rest
+        ) -> self @ _ when Parse-Error
+    }
+
+    open-tag <- parse-open-tag(chars)
+    tag <- open-tag.result
+
+    children <- parse-children(tag.tag-name, open-tag.rest)
+
+    Parse-Result(
+        Html-Element(tag.tag-name, tag.attributes, children.result),
+        children.rest
+    )
+}
+
+##
+## Parse the opening tag of an HTML element.
+##
+## chars : Character Sequence
+##
+## Returns a Parse-Result object with the `result` subnode bound to an
+## Html-Tag object and the `rest` subnode bound to the remaining
+## tokens.
+##
+parse-open-tag(chars) : {
+    ## Helper Meta-Nodes
+
+    parse-open(tokens) : {
+        tokens match {
+            list*(Token('(Open-Bracket)),
+                  Token('(Name), name),
+                  rest) :
+                Parse-Result(name, rest)
+
+            Parse-Error!
+        }
+    }
+
+    parse-close(tokens) : {
+        tokens match {
+            list*(Token('(Close-Bracket), _, rest), _) : rest
+            Parse-Error!
+        }
+    }
+
+    parse-self-close(tokens) : {
+        tokens match {
+            list*(Token('(Slash)), rest) :
+                Parse-Result(True, rest)
+
+            Parse-Result(False, tokens)
+        }
+    }
+
+    parse-attributes(tokens, attributes : Empty) : {
+        attribute <- parse-attribute(tokens)
+
+        next-attributes <-
+            cons(attribute.result, attributes)
+
+        attribute !- parse-attributes(attribute.rest, next-attributes) -> self @ _
+        Parse-Result(attributes, tokens) -> self @ _ when Parse-Error
+    }
+
+    parse-attribute(tokens) : {
+        tokens match {
+            list*(Token('(Name), name),
+                  Token('(Equal)),
+                  Token('(String), value),
+                  rest) :
+                Parse-Result(
+                    Html-Attribute(name, value),
+                    rest
+                )
+
+            Parse-Error!
+        }
+    }
+
+    tokens <- tokenize-tag(chars)
+
+    name <- parse-open(tokens)
+    attributes <- parse-attributes(name.rest)
+
+    self-close? <- parse-self-close(attributes.rest)
+    rest-close <- parse-close(self-close?.rest)
+
+    tag <- Html-Tag(name.result, attributes.result, self-close?.result)
+    rest-close !- Parse-Result(tag, rest-close) -> self
+}
+
+##
+## Parse the closing tag of an HTML element, with a given tag name.
+##
+## name  : Tag Name
+## chars : Character Sequence
+##
+## Returns the remaining character sequence following the last
+## character of the closing tag.
+##
+parse-close-tag(name, chars) : {
+    tokens <- tokenize-tag(chars)
+
+    tokens match {
+        list*(Token('(Open-Bracket)),
+              Token('(Slash)),
+              Token('(Name), =(name)),
+              Token('(Close-Bracket), _, rest),
+              _) :
+            rest
+
+        Parse-Error!
+    }
+}
+
+
+### HTML Node Objects
+
+##
+## Html Element Node Object
+##
+## Subnodes:
+##
+##  tag-name : Tag name string
+##
+##  attributes : List of Html-Attribute objects corresponding to the
+##               element's attributes
+##
+##  children : List of child nodes of the element.
+##
+Html-Element(tag-name, attributes, children) : {
+    tag-name -> self.tag-name
+    attributes -> self.attributes
+    children -> self.children
+}
+
+##
+## Html Attribute Object
+##
+## Subnodes:
+##
+##  name  : Attribute name string
+##  value : Attribute value string
+##
+Html-Attribute(name, value) : {
+    name -> self.name
+    value -> self.value
+}
+
+
+##
+## Html Text Node Object
+##
+## Represents a contiguous sequence of text within the HTML source.
+##
+## Subnodes:
+##
+##  content: Text string
+##
+Html-Text-Node(content) : {
+    content -> self.content
+}
+
+
+### Internal Object Types
+
+##
+## Html Tag Object
+##
+## Subnodes:
+##
+##  tag-name : Tag name string
+##
+##  attributes : List of key-value pairs corresponding to each
+##               attribute. Each pair is a list in which the first
+##               element is the attribute name and the second element
+##               is the attribute value string.
+##
+##  self-close? : True if the tag is self closing
+##
+Html-Tag(tag-name, attributes, self-close? : False) : {
+    tag-name -> self.tag-name
+    attributes -> self.attributes
+
+    self-close? -> self.self-close?
+}
