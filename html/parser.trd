@@ -320,8 +320,6 @@ parse-html-node(chars) : {
 ##
 parse-html-element(chars) : {
     parse-children(name, chars) : {
-        tokens <- tokenize-text(chars)
-
         rest <- parse-close-tag(name, chars)
         rest !- Parse-Result(Empty, rest) -> self @ _
 
@@ -334,10 +332,19 @@ parse-html-element(chars) : {
         ) -> self @ _ when Parse-Error
     }
 
+    parse-body(tag) : {
+        tag-name <- tag.result.tag-name
+        children <- parse-children(tag-name, tag.rest)
+
+        if (tag.result.self-close?,
+            Parse-Result(Empty, tag.rest),
+            children)
+    }
+
     open-tag <- parse-open-tag(chars)
     tag <- open-tag.result
 
-    children <- parse-children(tag.tag-name, open-tag.rest)
+    children <- parse-body(open-tag)
 
     Parse-Result(
         Html-Element(tag.tag-name, tag.attributes, children.result),
