@@ -241,7 +241,7 @@ space?(char) :
 name-char?(char) :
     char != c(<) and
     char != c(>) and
-    char != c("\\") and
+    char != c(/) and
     char != c(=) and
     char != c("\"") and
     not(space?(char))
