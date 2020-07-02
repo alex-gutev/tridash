@@ -5,6 +5,26 @@
 /import(core/patterns, match*, match, satisfies)
 
 
+void-elements <-
+    list("area",
+         "base",
+         "br",
+         "col",
+         "embed",
+         "hr",
+         "img",
+         "input",
+         "link",
+         "meta",
+         "param",
+         "source",
+         "track",
+         "wbr",
+         "command",
+         "keygen",
+         "menuitem")
+
+
 ### Tokenization
 
 ## Tokenization
@@ -336,10 +356,15 @@ parse-html-element(chars) : {
         tag-name <- tag.result.tag-name
         children <- parse-children(tag-name, tag.rest)
 
-        if (tag.result.self-close?,
+        if (self-closing?(tag.result),
             Parse-Result(Empty, tag.rest),
             children)
     }
+
+    self-closing?(tag) :
+        tag.self-close? or
+        contains?(void-elements, tag.tag-name)
+
 
     open-tag <- parse-open-tag(chars)
     tag <- open-tag.result
