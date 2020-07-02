@@ -296,6 +296,15 @@ apply(f, ..(xs)) :
     apply%(f, foldr(cons, xs))
 
 
+### Querying for elements
+
+contains?(list, item) : {
+    test(x) : x = item
+
+    some?(test, list)
+}
+
+
 ### Export Declarations
 
 /export(
@@ -306,5 +315,7 @@ apply(f, ..(xs)) :
     foldl', foldl, foldr,
     map, filter,
     every?, some?, not-any?, not-every?,
-    apply
+    apply,
+
+    contains?
 )
