@@ -28,6 +28,13 @@ void-elements <-
          "menuitem")
 
 
+## List of elements of which the content is parsed as a single text
+## node containing the raw text content of the element.
+
+full-text-elements <-
+    list("script", "style")
+
+
 ### Tokenization
 
 ## Tokenization
@@ -359,14 +366,23 @@ parse-html-element(chars) : {
         tag-name <- tag.result.tag-name
         children <- parse-children(tag-name, tag.rest)
 
-        if (self-closing?(tag.result),
-            Parse-Result(Empty, tag.rest),
-            children)
+        case (
+            self-closing?(tag.result) :
+                Parse-Result(Empty, tag.rest),
+
+            full-text-element?(tag.result) :
+                parse-full-text-body(tag-name, tag.rest),
+
+            children
+        )
     }
 
     self-closing?(tag) :
         tag.self-close? or
         contains?(void-elements, tag.tag-name)
+
+    full-text-element?(tag) :
+        contains?(full-text-elements, tag.tag-name)
 
 
     open-tag <- parse-open-tag(chars)
@@ -378,6 +394,49 @@ parse-html-element(chars) : {
         Html-Element(tag.tag-name, tag.attributes, children.result),
         children.rest
     )
+}
+
+##
+## Parse the body, including the closing tag, of a full-text (raw
+## data) element.
+##
+## tag   : Element tag name
+##
+## chars : Character sequence starting from the first character after
+##         the opening tag.
+##
+## Returns a Parse-Result object, with the `result` subnode bound to a
+## list containing the `Html-Text-Node object representing the raw
+## text content of the element.
+##
+parse-full-text-body(tag, chars) : {
+    consume-text(chars, lexeme : "") : {
+        chars -> list*(c(<), c(/), end-tag)
+        after-tag <- consume-close-tag(end-tag)
+
+        after-tag !- Parse-Result(lexeme, after-tag) -> self @ _
+
+        chars -> list*(first, rest)
+        consume-text(rest, string-concat(lexeme, string(first))) -> self @ _
+
+        Parse-Error! -> self @ _
+    }
+
+    consume-close-tag(chars) : {
+        tokens <- tokenize-tag(chars)
+
+        tokens ->
+            list*(Token('(Name), =(tag)),
+                  Token('(Close-Bracket), _, rest),
+                  _)
+
+        rest
+    }
+
+    text <- consume-text(chars)
+    text-node <- Html-Text-Node(text.result)
+
+    Parse-Result(list(text-node), text.rest)
 }
 
 ##
