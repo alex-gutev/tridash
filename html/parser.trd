@@ -5,6 +5,9 @@
 /import(core/patterns, match*, match, satisfies)
 
 
+## List of void elements, which should not contain any child
+## nodes. These are either explicitly or implicitly self-closed.
+
 void-elements <-
     list("area",
          "base",
