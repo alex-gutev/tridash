@@ -132,7 +132,7 @@
         :optima.ppcre
         :iterate
         :cl-ppcre
-        :cl-arrows
+        :arrows
 
         :tridash.util
         :tridash.parser

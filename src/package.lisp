@@ -52,7 +52,7 @@
   (:use :generic-cl
         :alexandria
         :anaphora
-        :cl-arrows
+        :arrows
         :iterate
         :parse-number
         :optima
@@ -114,7 +114,7 @@
 	:iterate
 	:named-readtables
 	:optima
-        :cl-arrows
+        :arrows
 
         :tridash.util
 	:tridash.parser
@@ -336,7 +336,7 @@
   (:use :generic-cl
         :alexandria
         :anaphora
-        :cl-arrows
+        :arrows
         :optima
         :optima.ppcre
         :iterate

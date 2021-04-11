@@ -90,7 +90,7 @@
   :depends-on (:anaphora
                :iterate
                :alexandria
-               :cl-arrows
+               :arrows
                :split-sequence
                :named-readtables
                :let-over-lambda

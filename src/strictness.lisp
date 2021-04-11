@@ -25,7 +25,7 @@
         :alexandria
         :anaphora
         :optima
-        :cl-arrows
+        :arrows
 
         :tridash.util
 	:tridash.parser

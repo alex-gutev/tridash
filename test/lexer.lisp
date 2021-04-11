@@ -22,7 +22,7 @@
   (:use :generic-cl
         :alexandria
         :anaphora
-        :cl-arrows
+        :arrows
         :iterate
         :optima
         :prove

@@ -25,7 +25,7 @@
         :optima.ppcre
         :iterate
         :cl-ppcre
-        :cl-arrows
+        :arrows
 
         :babel
         :babel-encodings

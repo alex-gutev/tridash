@@ -21,7 +21,7 @@
 (defpackage :tridash.test.strictness
   (:use :generic-cl
         :alexandria
-        :cl-arrows
+        :arrows
         :optima
         :prove
         :named-readtables
