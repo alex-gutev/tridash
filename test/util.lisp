@@ -279,7 +279,7 @@
   "Tests that there is no node with identifier ID in MODULES."
 
   (let ((node (get-node id table)))
-    (is-false  "Unexpected node for ~a. Got: ~a." id node)))
+    (is-false node "Unexpected node for ~a. Got: ~a." id node)))
 
 (defun test-not-nodes (node-table &rest ids)
   "Tests that there are no nodes with identifiers IDS in MODULES."
