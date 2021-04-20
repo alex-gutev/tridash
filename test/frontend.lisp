@@ -1307,6 +1307,13 @@
        (declare (ignorable my-mod.a my-mod.b +))
        ,@body)))
 
+(test modules-test
+  :description "Test the creation of modules and the separation of nodes."
+
+  (with-modules-test
+    (with-module-nodes
+      (test-nodes init "x" "y"))))
+
 (test modules-operator-/use
   :description "Test `/use` operator."
 
@@ -1432,3 +1439,134 @@
 	          cc
 
 	        `(if ,b->cc ,b (:fail :none))))))))))
+
+(test module-error-semantics
+  :description "Test semantic error conditions when using modules."
+
+  (with-module-table modules
+    (build "x;y"
+           "/module(my-mod); a; b"
+           "/module(my-mod); /import(builtin); +(x,y) : add(x,y); /operator(+, 50, left)"
+           "/module(my-mod); /export(a,+)")
+
+    (build "/module(mod2)"
+                   "/import(builtin)"
+                   "/use(my-mod)"
+
+                   "my-mod.a -> a"
+                   "my-mod.+(n,m)")
+
+    (build "/module(mod3)"
+                   "/import(builtin)"
+                   "/use-as(my-mod, m)"
+
+                   "m.a -> a"
+                   "m.+(j,k)")
+
+    (build "/module(mod4); /import(my-mod, +); a + b")
+    (build "/module(mod5); /import(my-mod); a + b")
+    (build "/module(mod6); /in(my-mod,+)(/in(my-mod, a), b)")
+
+    (build "/module(mod7)"
+                   "/import(builtin)"
+                   "/import(my-mod, a, b)"
+
+                   "a -> (b -> cc)")
+
+    (signals non-existent-node-error (build "/module(mod2); +(j,k)"))
+    (signals declaration-parse-error (build "/module(mod2); j + k"))
+    (signals non-existent-node-error (build "/module(mod2); my-mod.z"))
+
+    (signals non-existent-node-error (build "/module(mod3); +(j,k)"))
+    (signals declaration-parse-error (build "/module(mod3); j + k"))
+    (signals non-existent-node-error (build "/module(mod3); m.z"))
+
+    (signals non-existent-node-error
+      (build "/module(mod4); /import(builtin); my-mod.+(a,b)"))
+    (signals non-existent-node-error (build "/module(mod4); /in(my-mod, z)"))))
+
+(test non-existent-module-errors
+  :description "Test that using non-existent modules signals an error."
+
+  (test-error non-existent-module-error "/use(no-such-module)")
+  (test-error non-existent-module-error "/use-as(no-such-module, m)")
+  (test-error non-existent-module-error "/import(no-such-module)")
+  (test-error non-existent-module-error "/import(no-such-module, node)")
+  (test-error non-existent-module-error "/in(no-such-module, x)")
+  (test-error non-existent-node-error "/export(no-such-node)")
+  (test-error non-existent-node-error "x; /export(x, no-such-node)"))
+
+(test module-error-syntax-/module
+  :description "Test syntax errors with `/module` operator."
+
+  (test-error invalid-arguments-error "/module()")
+  (test-error invalid-arguments-error "/module(a, b, c)")
+  (test-error invalid-arguments-error "/module(1, 2, 3)")
+  (test-error invalid-arguments-error "/module(1)")
+
+  (test-top-level-only "/module(m)"))
+
+(test module-error-syntax-/use
+  :description "Test syntax errors with `/use` operator."
+
+  (test-error invalid-arguments-error "/use(1,2,3)")
+  (test-top-level-only "/use(m1)" "/module(m1)" "/module(m2); /import(builtin)"))
+
+(test module-error-syntax-/use-as
+  :description "Test syntax errors with `/user-as` operator."
+
+  (test-error invalid-arguments-error "/use-as()")
+  (test-error invalid-arguments-error "/use-as(m)")
+  (test-error invalid-arguments-error "/use-as(1)")
+  (test-error invalid-arguments-error "/use-as(1,2)")
+  (test-error invalid-arguments-error
+              "/module(m1); /module(m2); /use-as(m1, m, x, y)")
+
+  (test-top-level-only "/use-as(mod, m)" "/module(mod)" "/module(m1); /import(builtin)"))
+
+(test module-error-syntax-/import
+  :description "Test syntax errors with `/import` operator."
+
+  (test-error invalid-arguments-error "/import()")
+  (test-error invalid-arguments-error "/import(1)")
+
+  (test-top-level-only "/import(mod)" "/module(mod)" "/module(m1); /import(builtin)")
+  (test-top-level-only "/import(mod, x)" "/module(mod); x" "/module(m1); /import(builtin)"))
+
+(test module-error-syntax-/export
+  :description "Test syntax errors with `/export` operator."
+
+  (test-error semantic-error "/export(1, 2, 3)")
+  (test-top-level-only "/export(x)" "x"))
+
+(test module-error-syntax-/in
+  :description "Test syntax errors with `/in` operator."
+
+  (test-error invalid-arguments-error "/in()")
+  (test-error invalid-arguments-error "/in(x)")
+  (test-error invalid-arguments-error
+              "/module(m1); x; /module(m2); /in(m1, x, y)")
+  (test-error invalid-arguments-error "/in(1, x)"))
+
+(test module-error-pseudo-node-reference
+  :description "Test that referencing module pseudo nodes results in an error."
+
+  (test-error module-node-reference-error
+              "/module(m1)"
+              "/module(m2)"
+              "/use(m1)"
+              "/external(add, x, y)"
+              "add(m1, x)")
+
+  (test-error module-node-reference-error
+              "/module(m1)"
+              "/module(m2)"
+              "/import(builtin)"
+              "/use(m1)"
+              "m1 -> x")
+  (test-error target-node-error
+              "/module(m1)"
+              "/module(m2)"
+              "/import(builtin)"
+              "/use(m1)"
+              "x -> m1"))
