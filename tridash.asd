@@ -124,40 +124,23 @@
   :author "Alexander Gutev"
   :license "GPL v3"
   :depends-on (:tridash
-               :prove
-               :prove-asdf
-
+               :fiveam
                :cl-interpol)
-  :defsystem-depends-on (:prove-asdf)
+
   :components ((:module
                 "test"
 
                 :components
-                ((:file "util")
-                 (:test-file "lexer")
-                 (:test-file "parser")
-                 (:test-file "builder")
-                 (:test-file "strictness")
-                 (:test-file "macros")
+                ((:file "test")
+                 (:file "util")
+                 (:file "frontend")
 
-                 (:module
-                  "builders/html"
 
-                  :components
-                  ((:test-file "builder")))
 
-                 (:module
-                  "backends/javascript"
 
-                  :components
-                  ((:test-file "backend")))
 
-                 (:module
-                  "backends/wasm"
 
-                  :components
-                  ((:test-file "backend"))))))
+                 )))
 
   :perform (asdf:test-op :after (op c)
-                         (let ((*print-circle* t))
-                           (funcall (intern #.(string :run) :prove) c :reporter :fiveam))))
+                         (uiop:symbol-call :tridash/test :test-tridash)))
