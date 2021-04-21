@@ -135,6 +135,7 @@
                  (:file "util")
                  (:file "frontend")
                  (:file "coalescer")
+                 (:file "constant-folding")
 
 
 
