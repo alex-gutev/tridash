@@ -81,6 +81,7 @@
 
    :test-value-function
    :test-node-function
+   :test-meta-node
    :init-context
 
    :test-error
@@ -621,8 +622,8 @@
    dependency between the operand node and meta-node."
 
   (flet ((make-input-test (operand)
-           `(ok (input-node? ,(first operand))
-                (format nil "Argument ~a is an input node" ',(second operand))))
+           `(is (input-node? ,(first operand))
+                "Argument ~a is not an input node." ',(second operand)))
 
          (get-operand-node (operand)
            (ematch operand
@@ -632,12 +633,14 @@
              ((list var name)
               `(,var ',(node-id name))))))
 
-    `(subtest (format nil "Test Meta-Node: ~a" ,g!meta-node)
-       (is-type ,g!meta-node 'meta-node
-                (format nil "~a is a meta-node" ,g!meta-node))
+    `(progn
+       (is (typep ,g!meta-node 'meta-node)
+           "~a is not a meta-node." ,g!meta-node)
 
        (with-slots ((,g!def definition)) ,g!meta-node
-         (is-type ,g!def 'flat-node-table "Meta-Node Body Built")
+         (is (typep ,g!def 'flat-node-table)
+             "Expected definition of meta-node ~a to be a `FLAT-NODE-TABLE'.~%Got:~%~a"
+             ,g!meta-node ,g!def)
 
          (with-nodes% ,(map #'get-operand-node operands) ,g!def
            ,@(map #'make-input-test operands)
