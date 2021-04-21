@@ -83,6 +83,7 @@
    :test-node-function
    :test-meta-node
    :init-context
+   :outer
 
    :test-error
    :test-top-level-only
