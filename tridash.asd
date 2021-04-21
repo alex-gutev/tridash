@@ -136,6 +136,7 @@
                  (:file "frontend")
                  (:file "coalescer")
                  (:file "constant-folding")
+                 (:file "structure-checks")
 
 
 
