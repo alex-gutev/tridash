@@ -134,6 +134,7 @@
                 ((:file "test")
                  (:file "util")
                  (:file "frontend")
+                 (:file "coalescer")
 
 
 
