@@ -134,6 +134,7 @@
                 ((:file "test")
                  (:file "util")
                  (:file "lexer")
+                 (:file "parser")
                  (:file "frontend")
                  (:file "coalescer")
                  (:file "constant-folding")

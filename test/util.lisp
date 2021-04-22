@@ -53,6 +53,7 @@
            :previous
 
            :decls
+           :declaration-symbols
            :node-id
            :decl=
            :s
@@ -143,6 +144,26 @@
 
 
 ;;; Symbol Table
+
+(defun declaration-symbols (decls)
+  "Replace symbols in SYMS which begin with a !, with the equivalent
+   symbol in the TRIDASH.SYMBOLS package."
+
+  (labels ((!-sym-p (sym)
+             (when (= #\! (char (symbol-name sym) 0))
+               (id-symbol (subseq (symbol-name sym) 1))))
+
+           (replace-!-syms (decl)
+             (typecase decl
+               (symbol
+                (or (!-sym-p decl) decl))
+
+               (cons
+                (map #'replace-!-syms decl))
+
+               (otherwise decl))))
+
+    (replace-!-syms decls)))
 
 (defmacro decls (&rest decls)
   "Utility macro for creating node declaration lists. Each form in

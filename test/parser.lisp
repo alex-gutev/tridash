@@ -1,7 +1,7 @@
 ;;;; parser.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018  Alexander Gutev
+;;;; Copyright (C) 2018-2021  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -18,26 +18,28 @@
 
 ;;;; Unit tests for parser
 
-(defpackage :tridash.test.parser
+(defpackage :tridash/test.parser
   (:use :generic-cl
         :alexandria
         :anaphora
         :arrows
         :iterate
         :optima
-        :prove
 
+        :fiveam
         :tridash.parser
         :tridash.frontend
-
-        :tridash.test.util)
+        :tridash/test
+        :tridash/test.util)
 
   (:shadowing-import-from :generic-cl
                           :emptyp
                           :multiply
                           :accumulate)
 
-  (:shadowing-import-from :prove :fail)
+  (:shadowing-import-from :fiveam :fail)
+
+  (:import-from :lol :defmacro!)
 
   (:import-from :tridash.parser
                 :declaration-parse-error)
@@ -46,194 +48,274 @@
                 :+infix-operators+))
 
 
-(in-package :tridash.test.parser)
+(in-package :tridash/test.parser)
 
-(cl-interpol:enable-interpol-syntax)
+(named-readtables:in-readtable :interpol-syntax)
 
-(plan nil)
+
+;;; Test Suite Definition
 
+(def-suite parser
+    :description "Test parser."
+    :in tridash)
 
-(defun test-parser (string decls &optional (operators +infix-operators+))
+(in-suite parser)
+
+
+;;; Test Utilities
+
+(defmacro! test-parser ((o!string &optional (o!operators '+infix-operators+)) &body declarations)
   "Checks that the node declarations parsed from STRING are equal to
    DECLS. OPERATORS is the operator table to pass to the parser."
 
-  (with-input-from-string (in string)
-    (let ((parser (make-parser in)))
-      (diag (format nil "Test String: ~s" string))
-      (loop
-         for got = (funcall parser operators)
-         for expected in decls
-         while got
-         do (is got expected :test #'decl=)
-         finally (ok (null got))))))
+  `(with-input-from-string (,g!in ,g!string)
+     (let ((,g!parser (make-parser ,g!in)))
+       ,@(loop
+            for expected in (declaration-symbols declarations)
+            collect `(is (decl= ',expected (funcall ,g!parser ,g!operators))))
 
-(defun parse-error-p (string &optional (operators +infix-operators+))
+       (let ((,g!last (funcall ,g!parser ,g!operators)))
+         (is-false ,g!last "Expected EOF. Got: ~a" ,g!last)))))
+
+(defun test-parse-error (string &optional (operators +infix-operators+))
   "Tests that parsing a single declaration from STRING results in a
    parse error. OPERATORS is the operator table to pass to the
    parser."
 
   (with-input-from-string (in string)
     (let ((parser (make-parser in)))
-      (diag (format nil "Test String: ~s" string))
-      (is-error (funcall parser operators) 'declaration-parse-error))))
+      (signals declaration-parse-error (funcall parser operators)
+               "Expected a parse error when parsing: ~a"
+               string))))
 
-(subtest "Node Expressions"
-  (flet ((s (string)
-           (id-symbol string)))
+
+;;; Node Expression Tests
 
-    (let ((*package* (find-package :tridash.symbols)))
-      (test-parser
-       #?"node1; node2\nnode3"
-       (decls '!|node1| '!|node2| '!|node3|))
+;; let ((*package* (find-package :tridash.symbols)))
 
-      (test-parser
-       #?"fn(arg1, arg2)\narg"
-       (decls
-        '(!|fn| !|arg1| !|arg2|)
-        '!|arg|))
 
-      (test-parser
-       #?"fn(arg1)\narg"
-       (decls
-        '(!|fn| !|arg1|)
-        '!|arg|))
+(test atom-nodes
+  "Test expressions consisting of just atom nodes."
 
-      (test-parser
-       #?"fn()\narg"
-       (decls
-        '(!|fn|)
-        '!|arg|))
+  (test-parser
+      (#?"node1; node2\nnode3")
 
-      (let ((ops (alist-hash-map
-                  `((,(s "->") 10 :right)
-                    (,(s "+") 20 :left)
-                    (,(s "-") 20 :left)
-                    (,(s "*") 50 :right)
-                    (,(s "/") 50 :left)
-                    (:open-paren 200)
-                    (,(s ".") 500 :left)))))
-        (test-parser
-         #?"mod.fn(arg1, arg2) + fn2(arg) -\n node1 * node2"
-         (decls
-          '(!-
-            (!+
-             ((!\. !|mod| !|fn|) !|arg1| !|arg2|)
-             (!|fn2| !|arg|))
-            (!* !|node1| !|node2|)))
-         ops)
+    !|node1| !|node2| !|node3|))
 
-        (test-parser
-         #?"a + b * \nc - e / d"
-         (decls
-          '(!-
-            (!+ !\a (!* !\b !\c))
-            (!/ !\e !\d)))
-         ops)
+(test functor-nodes-multiple-arguments
+  "Test expressions consisting of functor nodes of multiple arguments."
 
-        (test-parser
-         #?"(a + b\n) * (c - e / d)"
-         (decls
-          '(!*
-            (!+ !\a !\b)
-            (!- !\c (!/ !\e !\d))))
-         ops)
+  (test-parser
+      (#?"fn(arg1, arg2)\narg")
 
-        (test-parser
-         #?"a - b - \nc - d"
-         (decls
-          '(!-
-            (!- (!- !\a !\b) !\c)
-            !\d))
-         ops)
+    (!|fn| !|arg1| !|arg2|)
+    !|arg|))
 
-        (test-parser
-         #?"a -> b -> \n c -> d\n"
-         (decls
-          '(!-> !\a (!-> !\b (!-> !\c !\d))))
-         ops))
+(test functor-nodes-single-argument
+  "Test expressions consisting of functor nodes of a single argument."
 
-      (subtest "Node Lists"
-        (test-parser
-         #?"fn(a, b) : {a;b\nc\n\nd}"
-         (decls
-          '(!\:
-            (!|fn| !\a !\b)
-            (!|/prog| !\a !\b !\c !\d)))
+  (test-parser
+      (#?"fn(arg1)\narg")
+
+    (!|fn| !|arg1|)
+    !|arg|))
+
+(test functor-nodes-no-arguments
+  "Test expressions consisting of functor nodes of no arguments."
+
+  (test-parser
+      (#?"fn()\narg")
+
+      (!|fn|)
+      !|arg|))
+
+
+;;; Infix Operator Tests
+
+(defconstant +arithmetic-operators+
+  (alist-hash-map
+   `((,(s "->") 10 :right)
+     (,(s "+") 20 :left)
+     (,(s "-") 20 :left)
+     (,(s "*") 50 :right)
+     (,(s "/") 50 :left)
+     (:open-paren 200)
+     (,(s ".") 500 :left))))
+
+(test infix-operator-precedence
+  "Test infix operator expressions with multiple operators of varying precedence."
+
+  (test-parser
+      (#?"a + b * \nc - e / d" +arithmetic-operators+)
+
+    (!-
+     (!+ !\a (!* !\b !\c))
+     (!/ !\e !\d))))
+
+(test infix-operator-parenthesis
+  "Test grouping using parenthesis in infix operator expressions."
+
+  (test-parser
+      (#?"(a + b\n) * (c - e / d)" +arithmetic-operators+)
+
+    (!*
+     (!+ !\a !\b)
+     (!- !\c (!/ !\e !\d)))))
+
+(test infix-operator-left-associativity
+  "Test infix operator left associativity."
+
+  (test-parser
+      (#?"a - b - \nc - d" +arithmetic-operators+)
+
+    (!-
+     (!- (!- !\a !\b) !\c)
+     !\d)))
+
+(test infix-operator-right-associativity
+  "Test infix operator right associativity."
+
+  (test-parser
+      (#?"a -> b -> \n c -> d\n" +arithmetic-operators+)
+
+    (!-> !\a (!-> !\b (!-> !\c !\d)))))
+
+(test infix-operator-and-functors
+  "Test multi-line infix operator expressions with functor nodes."
+
+  (test-parser
+      (#?"mod.fn(arg1, arg2) + fn2(arg) -\n node1 * node2" +arithmetic-operators+)
+
+    (!-
+     (!+
+      ((!\. !|mod| !|fn|) !|arg1| !|arg2|)
+      (!|fn2| !|arg|))
+     (!* !|node1| !|node2|))))
+
+
+;;; Node List Test
+
+(test node-lists
+  "Test node lists."
+
+  (test-parser
+      (#?"fn(a, b) : {a;b\nc\n\nd}"
+
          (alist-hash-map
           `((,(s ":") 10 :right)
-            (:open-paren 200)))))
+            (:open-paren 200))))
 
-      (subtest "Literals"
-        (subtest "Mixed Literals (Integers, Reals and Strings)"
-          (let ((ops (alist-hash-map
-                      `((,(s "+") 20 :left)
-                        (,(s "-") 20 :left)
-                        (,(s "*") 50 :right)
-                        (,(s "/") 50 :left)
-                        (:open-paren 200)))))
+    (!\:
+     (!|fn| !\a !\b)
+     (!|/prog| !\a !\b !\c !\d))))
 
-            (test-parser
-             #?"a + 1 + 2.3 -\"hello\" "
-             (decls
-              '(!- (!+ (!+ !\a 1) 2.3) "hello"))
-             ops)))
+
+;;; Test Literals
 
-        (subtest "String Literals"
-          (subtest "Test Line Feed, Carriage Return and Tab Escapes"
-            (test-parser
-             " \"Hello\\n\\tWorld\" "
-             (list #?"Hello\n\tWorld"))
+(test mixed-literals
+  "Test expressions with of mixed literal types."
 
-            (test-parser
-             " \"Hello\\r\\nWorld\" "
-             (list #?"Hello\r\nWorld")))
+  (let ((ops (alist-hash-map
+              `((,(s "+") 20 :left)
+                (,(s "-") 20 :left)
+                (,(s "*") 50 :right)
+                (,(s "/") 50 :left)
+                (:open-paren 200)))))
 
-          (subtest "Test Escaped Quotes and backslashes"
-            (test-parser
-             " \"He\\\\she said \\\"Hello World\\\"\" "
-             (list #?"He\\she said \"Hello World\"")))
+    (test-parser
+        (#?"a + 1 + 2.3 -\"hello\" " ops)
 
-          (subtest "Unicode Escape Sequences"
-            (test-parser
-             " \"x\\u{2265}5\" "
-             (list #?"x\x{2265}5"))
+      (!- (!+ (!+ !\a 1) 2.3) "hello"))))
 
-            (test-parser
-             " \"x \\u{2265 5\" "
-             (list #?"x \x{2265} 5"))
+(test string-line-feed-tab-escape
+  "Test strings with line feed and tab character escape sequences."
 
-            (test-parser
-             " \"x \\ux1\" "
-             (list #?"x ux1"))
+  (test-parser
+      (" \"Hello\\n\\tWorld\" ")
 
-            (test-parser
-             " \"x \\u10\" "
-             (list #?"x u10"))))))))
+    #?"Hello\n\tWorld"))
 
-(subtest "Parse Errors"
-  (parse-error-p "a + b")
-  (parse-error-p "a +")
-  (parse-error-p "a ->")
-  (parse-error-p #?"a.\n")
-  (parse-error-p #?"a.;")
+(test string-carriage-return-line-feed-escape
+  "Test strings with carriage return and line feed escape sequences."
 
-  (parse-error-p "fn(a,b")
-  (parse-error-p "fn(a,b,)")
-  (parse-error-p "fn(a,b))")
+  (test-parser
+      (" \"Hello\\r\\nWorld\" ")
 
-  (parse-error-p "(a -> b")
-  (parse-error-p "a -> b)")
-  (parse-error-p "(a -> b))")
-  (parse-error-p "((a -> b)")
-  (parse-error-p "(a , b)")
-  (parse-error-p "{a b}")
+    #?"Hello\r\nWorld"))
 
-  (parse-error-p #?"{a -> b; c\nd")
-  (parse-error-p #?"a -> b}")
-  (parse-error-p #?"{a -> b; c\nd}}")
-  (parse-error-p #?"{{a -> b;c\nd}"))
+(test string-escape-quotes-backslashes
+  "Test strings with escaped quotes and backslashes."
 
+ (test-parser
+     (" \"He\\\\she said \\\"Hello World\\\"\" ")
 
-(finalize)
+   "He\\she said \"Hello World\""))
 
-(cl-interpol:disable-interpol-syntax)
+(test string-unicode-escape
+  "Test strings with unicode escape sequences"
+
+  (test-parser
+      (" \"x\\u{2265}5\" ")
+
+    #?"x\x{2265}5"))
+
+(test string-unicode-escape-unclosed
+  "Test strings with unclosed unicode escape sequences"
+
+  (test-parser
+      (" \"x \\u{2265 5\" ")
+
+    #?"x \x{2265} 5"))
+
+(test string-escape-u-1
+  "Test strings with escaped `u` character with unicode character code."
+
+  (test-parser
+      (" \"x \\ux1\" ")
+
+    "x ux1"))
+
+(test string-escape-u-2
+  "Test strings with escaped `u` character with unicode character code."
+
+  (test-parser
+      (" \"x \\u10\" ")
+
+    "x u10"))
+
+
+;;; Parse Error Tests
+
+(test infix-operator-errors
+  "Test parse errors involving malformed infix operator expressions."
+
+  (test-parse-error "a + b")
+  (test-parse-error "a +")
+  (test-parse-error "a ->")
+  (test-parse-error #?"a.\n")
+  (test-parse-error #?"a.;"))
+
+(test functor-errors
+  "Test parse errors involving malformed functor expressions."
+
+  (test-parse-error "fn(a,b")
+  (test-parse-error "fn(a,b,)")
+  (test-parse-error "fn(a,b))"))
+
+(test parenthesis-errors
+  "Test parse errors involving malformed parenthesis expressions."
+
+  (test-parse-error "(a -> b")
+  (test-parse-error "a -> b)")
+  (test-parse-error "(a -> b))")
+  (test-parse-error "((a -> b)")
+  (test-parse-error "(a , b)")
+  (test-parse-error "{a b}"))
+
+(test node-list-errors
+  "Test parse errors involving node lists."
+
+  (test-parse-error #?"{a -> b; c\nd")
+  (test-parse-error #?"a -> b}")
+  (test-parse-error #?"{a -> b; c\nd}}")
+  (test-parse-error #?"{{a -> b;c\nd}"))
