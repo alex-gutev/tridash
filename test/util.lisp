@@ -181,7 +181,7 @@
 
 ;;; Node declaration Comparison
 
-(defun decl= (got expected)
+(defun decl= (expected got)
   "Returns true if the node declaration GOT is equivalent to
    EXPECTED."
 
@@ -198,9 +198,9 @@
 
       (list* exp-op exp-args))
 
-     (and (decl= got-op exp-op)
+     (and (decl= exp-op got-op)
           (length= got-args exp-args)
-          (every #'decl= got-args exp-args)))
+          (every #'decl= exp-args got-args)))
 
     (((or (literal-node- (value got)) got)
       expected)

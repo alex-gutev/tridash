@@ -231,8 +231,8 @@
 
       (test-node-function f-a f f a)
 
-      (is (length (contexts f-a)) 1)
-      (is (length (contexts b)) 0))))
+      (is (= 1 (length (contexts f-a))))
+      (is (= 0 (length (contexts b)))))))
 
 
 ;;; Explicit Contexts
@@ -509,9 +509,9 @@
     (build "/attribute(node2, input, 1)")
 
     (with-nodes ((add "add") (node1 "node1") (node2 "node2")) modules
-      (is (= (attribute :coalescable node1) 0))
-      (is (= (attribute :public-name add) "sum"))
-      (is (= (attribute :input node2) 1))
+      (is (= 0 (attribute :coalescable node1)))
+      (is (= "sum" (attribute :public-name add)))
+      (is (= 1 (attribute :input node2)))
 
       (is (input-node? node2))
       (is (memberp node2 (input-nodes (current-module modules)))))))
@@ -538,8 +538,8 @@
 
     (with-nodes ((add "add") (a "a") (b "b") (add-ab ("add" "a" "b"))) modules
       (is (typep add 'meta-node))
-      (is (= (operands add) (decls '!\x '!\y)))
-      (is (decl= (definition add) (decls '(!+ !\x !\y))))
+      (is (= (decls '!\x '!\y) (operands add)))
+      (is (decl= (decls '(!+ !\x !\y)) (definition add)))
 
       (test-node-function add-ab add add a b))))
 
@@ -553,12 +553,13 @@
 
     (with-nodes ((f "f") (x "x")) modules
       (is (typep f 'meta-node))
-      (is (= (operands f)
-             (decls '!\a
+      (is (= (decls '!\a
                     '(!\: !\b 1)
                     (list '!\: '!\c x)
                     '(!\: !\d :none)
-                    '(!.. !|rest|)))))))
+                    '(!.. !|rest|))
+
+             (operands f))))))
 
 (test meta-node-definition-error-syntax
   "Test syntax errors in meta-node definition."
@@ -627,8 +628,8 @@
       (is (typep add 'external-meta-node))
       (is (typep sub 'external-meta-node))
 
-      (is (= (operands add) (decls '!\x '!\y)))
-      (is (= (operands sub) (decls '!\x '!\y)))
+      (is (= (decls '!\x '!\y) (operands add)))
+      (is (= (decls '!\x '!\y) (operands sub)))
 
       (test-node-function add-ab add add a b)
       (test-node-function sub-ab sub sub a b))))
@@ -643,12 +644,13 @@
 
     (with-nodes ((f "f") (x "x")) modules
       (is (typep f 'external-meta-node))
-      (is (= (operands f)
-             (decls '!\a
+      (is (= (decls '!\a
                     '(!\: !\b 1)
                     (list '!\: '!\c x)
                     '(!\: !\d :none)
-                    '(!.. !|rest|)))))))
+                    '(!.. !|rest|))
+
+             (operands f))))))
 
 (test external-meta-node-definition-error-syntax
   "Test syntax error in external meta-node definition."
