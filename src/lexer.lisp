@@ -294,33 +294,34 @@
 (defmethod next-token ((lex lexer) &key peek (line-term *line-term*))
   "NEXT-TOKEN method for the LEXER class."
 
-  (labels ((next-token ()
-             "Returns the next token and updates the value of the
+  (let ((*lexer* lex))
+    (labels ((next-token ()
+               "Returns the next token and updates the value of the
               TOKEN slot of the lexer."
 
-             (aprog1 (get-next-token)
-               (if peek
-                   (setf (lexer-token lex) it)
-                   (setf (lexer-token lex) nil))
+               (aprog1 (get-next-token)
+                 (if peek
+                     (setf (lexer-token lex) it)
+                     (setf (lexer-token lex) nil))
 
-               (case (car it)
-                 (:invalid
-                  (error 'invalid-token :lexeme (cdr it)))
+                 (case (car it)
+                   (:invalid
+                    (error 'invalid-token :lexeme (cdr it)))
 
-                 (:unclosed-string
-                  (error 'unclosed-string-error)))))
+                   (:unclosed-string
+                    (error 'unclosed-string-error)))))
 
-           (get-next-token ()
-             "Returns either the value of the TOKEN slot or reads a
+             (get-next-token ()
+               "Returns either the value of the TOKEN slot or reads a
               new token from the input stream."
 
-             (or (lexer-token lex) (tokenize lex))))
+               (or (lexer-token lex) (tokenize lex))))
 
-    (loop
-       for (type . lxm) = (next-token)
-       for tok-type = (convert-token type line-term)
-       while (skip? tok-type lex peek)
-       finally (return (values tok-type lxm)))))
+      (loop
+         for (type . lxm) = (next-token)
+         for tok-type = (convert-token type line-term)
+         while (skip? tok-type lex peek)
+         finally (return (values tok-type lxm))))))
 
 (defun convert-token (type line-term)
   "Converts :NEWLINE tokens to either :TERMINATE, if LINE-TERM is
