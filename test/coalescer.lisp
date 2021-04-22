@@ -54,7 +54,7 @@
 ;;; Atom Nodes
 
 (test atom-node-coalesce-one-way-binding
-  :description "Test node coalescing in one-way bindings between atom nodes."
+  "Test node coalescing in one-way bindings between atom nodes."
 
   (with-module-table modules
     (build "a -> b; b -> cc; cc -> d"
@@ -67,7 +67,6 @@
 	(test-simple-binding a d)))))
 
 (test atom-node-coalesce-one-way-binding-coalescable-attribute
-  :description
   "Test node coalescing of atom nodes, in one-way bindings, with coalescable attribute."
 
   (with-module-table modules
@@ -83,7 +82,7 @@
 	(test-simple-binding b d)))))
 
 (test atom-node-coalesce-two-way-binding
-  :description "Test node coalescing in two-way bindings between atom nodes."
+  "Test node coalescing in two-way bindings between atom nodes."
 
   (with-module-table modules
     (build "a -> b; b -> cc; cc -> d"
@@ -97,7 +96,6 @@
 	(test-simple-binding a d)))))
 
 (test atom-node-coalesce-one-way-binding-coalescable-attribute
-  :description
   "Test node coalescing of atom nodes, in two-way bindings, with coalescable attribute."
 
   (with-module-table modules
@@ -115,7 +113,7 @@
 	(test-simple-binding b d)))))
 
 (test atom-node-coalesce-multiple-observers
-  :description "Test node coalescing of atom nodes with multiple observer nodes."
+  "Test node coalescing of atom nodes with multiple observer nodes."
 
   (with-module-table modules
     (build "a -> b; b -> cc; b -> d; cc -> e; d -> f"
@@ -133,7 +131,7 @@
 ;;; Functor Nodes
 
 (test functor-node-coalesce-simple
-  :description "Test coalescing of basic functor nodes."
+  "Test coalescing of basic functor nodes."
 
   (with-module-table modules
     (build "/external(+, x, y); /operator(+, 50, left)"
@@ -153,7 +151,6 @@
         (has-value-function (a b cc d) output `(,+ (,+ (,+ ,a ,b) ,cc) ,d))))))
 
 (test functor-node-coalesce-coalescable-attribute
-  :description
   "Test coalescing of functor nodes with coalescable attributes."
 
   (with-module-table modules
@@ -179,7 +176,6 @@
         (has-value-function (a+b cc d) output `(,+ (,+ ,a+b ,cc) ,d))))))
 
 (test functor-node-coalesce-multiple-observers
-  :description
   "Test coalescing of functor nodes with multiple observers."
 
   (with-module-table modules
@@ -207,7 +203,7 @@
         (has-value-function (a b) a+b `(,+ ,a ,b))))))
 
 (test functor-node-coalesce-non-input
-  :description "Test coalescing of functor nodes of non input nodes."
+  "Test coalescing of functor nodes of non input nodes."
 
   (with-module-table modules
     (build "/external(add, x, y)"
@@ -224,7 +220,7 @@
 ;;; Subnodes
 
 (test subnode-coalesce
-  :description "Test coalescing of subnodes."
+  "Test coalescing of subnodes."
 
   (with-module-table modules
     (build "/external(parse, x); /external(not, x)"
@@ -266,7 +262,7 @@
 ;;; Cycles
 
 (test cycle-coalesce-non-coalescable
-  :description "Test coalescing of cycle of non-coalescable nodes."
+  "Test coalescing of cycle of non-coalescable nodes."
 
   (with-module-table modules
     (build "/external(cons, a, b)"
@@ -301,7 +297,7 @@
         (test-binding x output)))))
 
 (test cycle-coalesce-coalescable
-  :description "Test coalescing of cycle of coalescable nodes."
+  "Test coalescing of cycle of coalescable nodes."
 
   (with-module-table modules
     (build "/external(cons, a, b)"
@@ -337,7 +333,7 @@
 ;;; Removing Unreachable Nodes
 
 (test remove-unreachable
-  :description "Test removal of unreachable nodes."
+  "Test removal of unreachable nodes."
 
   (with-module-table modules
     (build "a -> b; b -> cc;"
@@ -351,7 +347,7 @@
         (test-simple-binding a cc)))))
 
 (test remove-unreachable-non-removable
-  :description "Test removable attribute, when removing unreachable nodes."
+  "Test removable attribute, when removing unreachable nodes."
 
   (with-module-table modules
     (build "some-special-node"
@@ -361,7 +357,6 @@
       (test-nodes table "some-special-node"))))
 
 (test unreachable-dependency-errors
-  :description
   "Test that unreachable dependency error is signalled."
 
   (with-module-table modules
@@ -376,7 +371,7 @@
 ;;; Removing Unused Meta-Nodes
 
 (test unused-meta-node-remove-all
-  :description "Test removing of all unreachable meta-nodes in a module."
+  "Test removing of all unreachable meta-nodes in a module."
 
   (with-module-table modules
     (build-core-module)
@@ -389,7 +384,7 @@
       (is (length (meta-nodes table)) 0))))
 
 (test unused-meta-node-keep-used
-  :description "Test that used meta-nodes are kept, with remainder removed."
+  "Test that used meta-nodes are kept, with remainder removed."
 
   (with-module-table modules
     (build-core-module)
@@ -405,7 +400,7 @@
         (is (length (meta-nodes table)) 2)))))
 
 (test unsued-meta-node-keep-referenced
-  :description "Test that meta-nodes, referenced as values, are kept."
+  "Test that meta-nodes, referenced as values, are kept."
 
   ;; Additionally this also tests that nodes used by used
   ;; meta-nodes are not removed.
@@ -435,7 +430,7 @@
 ;;; Cross-Module Bindings
 
 (test cross-module-bindings
-  :description "Test coalescing of cross-module bindings."
+  "Test coalescing of cross-module bindings."
 
   (with-module-table modules
     (build "/module(m1)"
@@ -464,7 +459,7 @@
             (test-simple-binding m2.b m2.d)))))))
 
 (test cross-module-bindings-functor-node
-  :description "Test coalescing of cross-module bindings of functor nodes."
+  "Test coalescing of cross-module bindings of functor nodes."
 
   (with-module-table modules
     (build "/module(m1)"
@@ -498,7 +493,6 @@
 ;;; Common Sub-Expressions
 
 (test common-sub-expressions
-  :description
   "Test that common sub-expressions are extracted in a single EXPRESSION-BLOCK."
 
   (with-module-table modules
@@ -534,7 +528,6 @@
               ,(expression-block `(,parse ,in) :count 2))))))))
 
 (test common-sub-expressions-conditional-bindings
-  :description
   "Test extraction of common sub-expressions in conditional bindings."
 
   (with-module-table modules
@@ -570,7 +563,6 @@
 ;;; Explicit Contexts
 
 (test explicit-context-common-operands
-  :description
   "Test coalescing of nodes with multiple explicit contexts with common operands."
 
   (with-module-table modules
@@ -603,7 +595,6 @@
             :none))))))
 
 (test explicit-context-common-operands-non-coalescable
-  :description
   "Test coalescing of nodes with multiple explicit contexts with non-coalescable operands."
 
   (with-module-table modules
@@ -634,7 +625,6 @@
             :none))))))
 
 (test explicit-context-common-operands-no-default
-  :description
   "Test coalescing of nodes without default context, with common operands among other contexts."
 
   (with-module-table modules
@@ -663,7 +653,6 @@
             :none))))))
 
 (test explicit-context-single-common-ancestor
-  :description
   "Test coalescing of a node with explicit context activated by single common ancestor."
 
   (with-module-table modules
@@ -692,7 +681,6 @@
             :none))))))
 
 (test explicit-context-single-common-ancestor-no-default
-  :description
   "Test coalescing of a node with explicit context activated by single
   common ancestor, without default context."
 
@@ -723,7 +711,7 @@
             :none))))))
 
 (test explicit-context-creation-order
-  :description "Test explicit context creation order."
+  "Test explicit context creation order."
 
   (with-module-table modules
     (build-core-module)
@@ -753,7 +741,6 @@
 ;;; Node States
 
 (test node-state-from-any-state
-  :description
   "Test coalescing of nodes with states, with from any state transition."
 
   (with-module-table modules
@@ -794,7 +781,7 @@
           `(,not ,on))))))
 
 (test node-state-specific-state
-  :description "Test coalescing of nodes with specific state transition."
+  "Test coalescing of nodes with specific state transition."
 
   (with-module-table modules
     (build-core-module)

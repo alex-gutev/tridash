@@ -55,7 +55,7 @@
 ;;; Atom Nodes and Bindings
 
 (test atom-nodes
-  :description "Test building of atom nodes."
+  "Test building of atom nodes."
 
   (with-module-table modules
     (build "a;b;cc")
@@ -63,7 +63,7 @@
     (test-nodes modules "a" "b" "cc")))
 
 (test bindings
-  :description "Test building of bindings between nodes."
+  "Test building of bindings between nodes."
 
   (with-module-table modules
     (build "a -> b; cc -> b")
@@ -73,7 +73,7 @@
       (test-simple-binding cc b :context cc))))
 
 (test binding-bindings
-  :description "Test building binding to a binding (conditional bindings)"
+  "Test building binding to a binding (conditional bindings)"
 
   (with-module-table modules
     (build "a -> (b -> cc)")
@@ -95,7 +95,7 @@
 ;;; Functor Nodes
 
 (test functor-nodes-meta-node-operator
-  :description "Test building functor nodes with meta-node operator."
+  "Test building functor nodes with meta-node operator."
 
   (with-module-table modules
     (build-core-module)
@@ -114,7 +114,7 @@
       (test-node-function int-x int int x))))
 
 (test functor-nodes-node-operator
-  :description "Test building functor nodes with node operator."
+  "Test building functor nodes with node operator."
 
   (with-module-table modules
     (build "in1 -> fn"
@@ -135,7 +135,6 @@
         `(,fn ,in2)))))
 
 (test functor-nodes-non-node-operator
-  :description
   "Test that error is signalled when building functor nodes with non-node operators."
 
   (test-error non-node-operator-error "1(x, y)")
@@ -146,12 +145,12 @@
 ;;; Functor Nodes as Binding Target
 
 (test target-functor-no-target-node
-  :description "Test building binding target functor node with no target node."
+  "Test building binding target functor node with no target node."
 
   (test-error target-node-error "/external(add, x, y); a -> add(b, cc)"))
 
 (test target-functor-with-target-node
-  :description "Test building binding target functor node with target node."
+  "Test building binding target functor node with target node."
 
   (with-module-table modules
     (build "/external(add, x, y)"
@@ -173,7 +172,6 @@
       (test-simple-binding input add-a-b))))
 
 (test target-functor-cross-module-target-node
-  :description
   "Test building binding target functor node with target node in different module."
 
   (with-module-table modules
@@ -202,7 +200,6 @@
       (test-simple-binding input add-a-b))))
 
 (test target-functor-with-functor-arguments
-  :description
   "Test building binding target functor node with functor nodes as arguments."
 
   (test-error target-node-error
@@ -214,7 +211,6 @@
               "input -> add(f(a), b)"))
 
 (test with-target-node-functor-arguments
-  :description
   "Test building a functor with a `target-node` attribute and a functor argument."
 
   (with-module-table modules
@@ -242,7 +238,7 @@
 ;;; Explicit Contexts
 
 (test explicit-context-in-target
-  :description "Test explicit contexts in binding target."
+  "Test explicit contexts in binding target."
 
   (with-module-table modules
     (build-core-module)
@@ -279,7 +275,7 @@
             :none))))))
 
 (test explicit-context-literal-binding-target
-  :description "Test explicit context in literal binding target."
+  "Test explicit context in literal binding target."
 
   (with-module-table modules
     (build-core-module)
@@ -315,7 +311,7 @@
             :none))))))
 
 (test explicit-context-with-test
-  :description "Test explicit context with test function."
+  "Test explicit context with test function."
 
   (with-module-table modules
     (build-core-module)
@@ -354,7 +350,7 @@
             :none))))))
 
 (test explicit-context-literal-binding-with-test
-  :description "Test explicit context with test function in literal binding."
+  "Test explicit context with test function in literal binding."
 
   (with-module-table modules
     (build-core-module)
@@ -393,7 +389,7 @@
             :none))))))
 
 (test explicit-context-in-source
-  :description "Test that explicit context has no effect in binding source."
+  "Test that explicit context has no effect in binding source."
 
   (with-module-table modules
     (build-core-module)
@@ -412,7 +408,6 @@
       (test-node-function b+cc + + b cc))))
 
 (test explicit-context-in-source-subnode
-  :description
   "Test that explicit context has no effect in subnode in binding source."
 
   ;; The /context operator has no effect when a subnode is
@@ -437,7 +432,6 @@
         `(:object (,(id-symbol "field") ,a.field))))))
 
 (test explicit-context-in-target-subnode
-  :description
   "Test that explicit context has no effect in subnode in binding target."
 
   ;; The /context operator has no effect when a subnode is
@@ -465,7 +459,7 @@
 ;;; Special Operators
 
 (test special-operator-/operator
-  :description "Test registering infix operators."
+  "Test registering infix operators."
 
   (flet ((test-op (id operators prec assoc)
            (let ((op (get (id-symbol id) operators)))
@@ -492,7 +486,7 @@
         (test-op "*" operator-nodes 100 :right)))))
 
 (test special-operator-errors-/operator
-  :description "Test invalid us of `/operator` operator."
+  "Test invalid us of `/operator` operator."
 
   (test-error invalid-arguments-error "/operator()")
   (test-error invalid-arguments-error "/operator(*)")
@@ -503,7 +497,7 @@
   (test-top-level-only "/operator(*, 10, left)"))
 
 (test special-operator-/attribute
-  :description "Test setting of node attributes."
+  "Test setting of node attributes."
 
   (with-module-table modules
     ;; Build Nodes
@@ -523,7 +517,7 @@
       (is (memberp node2 (input-nodes (current-module modules)))))))
 
 (test special-operator-errors-/attribute
-  :description "Test invalid use of `/attribute` operator."
+  "Test invalid use of `/attribute` operator."
 
   (test-error invalid-arguments-error "/attribute()")
   (test-error invalid-arguments-error "node; /attribute(node, attribute)")
@@ -536,7 +530,7 @@
 ;;; Meta-Node Definitions
 
 (test meta-node-simple-definition
-  :description "Test basic meta-node definitions."
+  "Test basic meta-node definitions."
 
   (with-module-table modules
     (build-core-module)
@@ -550,7 +544,7 @@
       (test-node-function add-ab add add a b))))
 
 (test meta-node-optional-and-rest-arguments
-  :description "Test meta-node definition with optional and rest arguments."
+  "Test meta-node definition with optional and rest arguments."
 
   (with-module-table modules
     (build-core-module)
@@ -567,7 +561,7 @@
                     '(!.. !|rest|)))))))
 
 (test meta-node-definition-error-syntax
-  :description "Test syntax errors in meta-node definition."
+  "Test syntax errors in meta-node definition."
 
   (test-error invalid-arguments-error "x : y")
   (test-error semantic-error "{x; y} : z")
@@ -579,7 +573,6 @@
   (test-top-level-only "(g(x,y) : f(x,y))"))
 
 (test meta-node-definition-error-invalid-operand-list
-  :description
   "Test error raised when meta-node operand list, in definition, is invalid."
 
   (test-error invalid-operand-list-error "f(x, g(h)) : x")
@@ -594,7 +587,6 @@
   (test-error invalid-operand-list-error "f(x, ..(g(y))) : x"))
 
 (test meta-node-definition-error-redefine-special-operator
-  :description
   "Test error raised on attempts to redefine a special operator."
 
   (test-error redefine-special-operator-error "/context(x) : x")
@@ -608,7 +600,6 @@
   (test-error redefine-special-operator-error "/in(x, y) : add(x, y)"))
 
 (test meta-node-definition-error-node-exists
-  :description
   "Test error raised on attempt to redefine node as meta-node."
 
   (with-module-table modules
@@ -623,7 +614,7 @@
 ;;; External Meta-Node Definitions
 
 (test external-meta-node-simple-definition
-  :description "Test basic definition of external meta-node."
+  "Test basic definition of external meta-node."
 
   (with-module-table modules
     (build "/external(add, x, y); /external(sub, x, y); add(a,b); sub(a,b)")
@@ -643,7 +634,6 @@
       (test-node-function sub-ab sub sub a b))))
 
 (test external-meta-node-optional-and-rest-arguments
-  :description
   "Test external meta-node definition with optional and rest arguments."
 
   (with-module-table modules
@@ -661,7 +651,6 @@
                     '(!.. !|rest|)))))))
 
 (test external-meta-node-definition-error-syntax
-  :description
   "Test syntax error in external meta-node definition."
 
   (test-top-level-only "/external(y)")
@@ -672,7 +661,6 @@
   (test-error invalid-arguments-error "/external()"))
 
 (test external-meta-node-definition-error-invalid-operand-list
-  :description
   "Test error raised when meta-node operand list, in definition, is invalid."
 
   (test-error invalid-operand-list-error "/external(f, x, g(h))")
@@ -687,7 +675,6 @@
   (test-error invalid-operand-list-error "/external(f, x, ..(g(y)))"))
 
 (test external-meta-node-definition-error-redefine-special-operator
-  :description
   "Test error raised on attempts to redefine a special operator with external meta-node."
 
   (test-error redefine-special-operator-error "/external(/context)")
@@ -701,7 +688,6 @@
   (test-error redefine-special-operator-error "/external(/in)"))
 
 (test external-meta-node-error-node-exists
-  :description
   "Test error raised on attempt to redefine node as external meta-node."
 
   (with-module-table modules
@@ -716,7 +702,7 @@
 ;;; Meta-Node Arity Checking
 
 (test meta-node-arity-check-required-arguments
-  :description "Test arity checks in meta-node required arguments."
+  "Test arity checks in meta-node required arguments."
 
   (test-error arity-error
               "/import(core)"
@@ -729,7 +715,7 @@
               "1+(a,b) -> cc"))
 
 (test meta-node-arity-check-optional-arguments
-  :description "Test arity checks in meta-node optional arguments."
+  "Test arity checks in meta-node optional arguments."
 
   (test-error arity-error
               "/import(core)"
@@ -742,7 +728,6 @@
               "1+(a,b,cc) -> d"))
 
 (test meta-node-arity-check-optional-arguments-required-only
-  :description
   "Test arity checks in meta-node with optional arguments, but only required given."
 
   (with-module-table modules
@@ -761,7 +746,6 @@
       (test-simple-binding 1+a b))))
 
 (test meta-node-arity-check-optional-arguments-required-and-optional
-  :description
   "Test arity checks in meta-node with both required and optional arguments given."
 
   (with-module-table modules
@@ -780,7 +764,6 @@
       (test-simple-binding 1+a b))))
 
 (test meta-node-arity-check-optional-arguments-node-default-value
-  :description
   "Test arity checks in meta-node with node default values."
 
   (with-module-table modules
@@ -799,7 +782,6 @@
       (test-simple-binding 1+a b))))
 
 (test meta-node-arity-check-optional-arguments-functor-node-default-value
-  :description
   "Test arity checks in meta-node with functor node default values."
 
   (with-module-table modules
@@ -822,14 +804,12 @@
       (test-simple-binding 1+a b))))
 
 (test meta-node-arity-check-rest-arguments
-  :description
   "Test arity checks in meta-node with rest arguments."
 
   (test-error arity-error
               "/import(core); add(x, y, ..(xs)) : x + y + xs; add(a) -> b"))
 
 (test meta-node-arity-check-rest-arguments-minimum
-  :description
   "Test arity checks when minimum number of arguments given to meta-node."
 
   (with-module-table modules
@@ -847,7 +827,6 @@
       (test-simple-binding add-a b))))
 
 (test meta-node-arity-check-rest-arguments-more-than-operands
-  :description
   "Test arity checks on meta-node with rest arguments, and more arguments than operands."
 
   (with-module-table modules
@@ -869,7 +848,6 @@
       (test-simple-binding add-abc x))))
 
 (test meta-node-arity-check-rest-arguments-zero
-  :description
   "Test arity checks on meta-node with rest arguments and zero arguments given."
 
   (with-module-table modules
@@ -886,7 +864,7 @@
 ;;; External Meta-Node Arity Checking
 
 (test external-meta-node-arity-check-required-arguments
-  :description "Test arity checks in external meta-node required arguments."
+  "Test arity checks in external meta-node required arguments."
 
   (test-error arity-error
               "/external(add, x, y)"
@@ -897,7 +875,7 @@
               "1+(a,b) -> cc"))
 
 (test external-meta-node-arity-check-optional-arguments
-  :description "Test arity checks in external meta-node optional arguments."
+  "Test arity checks in external meta-node optional arguments."
 
   (test-error arity-error
               "/external(add, x, y, z : 1)"
@@ -908,7 +886,6 @@
               "1+(a,b,cc) -> d"))
 
 (test external-meta-node-arity-check-optional-arguments-required-only
-  :description
   "Test arity checks in external meta-node with optional arguments, but only required given."
 
   (with-module-table modules
@@ -927,7 +904,6 @@
       (test-simple-binding 1+a b))))
 
 (test external-meta-node-arity-check-optional-arguments-required-and-optional
-  :description
   "Test arity checks in external meta-node with both required and optional arguments given."
 
   (with-module-table modules
@@ -946,7 +922,6 @@
       (test-simple-binding 1+a b))))
 
 (test external-meta-node-arity-check-optional-arguments-node-default-value
-  :description
   "Test arity checks in external meta-node with node default values."
 
   (with-module-table modules
@@ -965,7 +940,6 @@
       (test-simple-binding 1+a b))))
 
 (test external-meta-node-arity-check-optional-arguments-functor-node-default-value
-  :description
   "Test arity checks in external meta-node with functor node default values."
 
   (with-module-table modules
@@ -988,7 +962,6 @@
       (test-simple-binding 1+a b))))
 
 (test external-meta-node-arity-check-rest-arguments
-  :description
   "Test arity checks in external meta-node with rest arguments."
 
   (test-error arity-error
@@ -997,7 +970,6 @@
               "add(a) -> b"))
 
 (test external-meta-node-arity-check-rest-arguments-minimum
-  :description
   "Test arity checks when minimum number of arguments given to external meta-node."
 
   (with-module-table modules
@@ -1015,7 +987,6 @@
       (test-simple-binding add-a b))))
 
 (test external-meta-node-arity-check-rest-arguments-more-than-operands
-  :description
   "Test arity checks on external meta-node with rest arguments, and more arguments than operands."
 
   (with-module-table modules
@@ -1037,7 +1008,6 @@
       (test-simple-binding add-abc x))))
 
 (test external-meta-node-arity-check-rest-arguments-zero
-  :description
   "Test arity checks on external meta-node with rest arguments and zero arguments given."
 
   (with-module-table modules
@@ -1054,7 +1024,7 @@
 ;;; Meta-Node References
 
 (test meta-node-reference-in-operand
-  :description "Test referencing meta-node as value in operand."
+  "Test referencing meta-node as value in operand."
 
   (with-module-table modules
     (build "/external(map, f, list)"
@@ -1075,7 +1045,7 @@
       (test-simple-binding map-input output))))
 
 (test meta-node-reference-default-arguments
-  :description "Test referencing meta-node with default argument."
+  "Test referencing meta-node with default argument."
 
   (with-module-table modules
     (build "/external(map, f, list)"
@@ -1097,7 +1067,7 @@
       (test-simple-binding map-input output))))
 
 (test meta-node-reference-binding-source
-  :description "Test meta-node reference in binding source."
+  "Test meta-node reference in binding source."
 
   (with-module-table modules
     (build "/external(map, f, list)"
@@ -1121,7 +1091,7 @@
       (test-simple-binding map-input output))))
 
 (test meta-node-reference-binding-target
-  :description "Test meta-node reference in binding target."
+  "Test meta-node reference in binding target."
 
   (test-error target-node-error "/external(add); x -> add"))
 
@@ -1146,7 +1116,7 @@
      ,@body))
 
 (test subnode-of-node
-  :description "Test binding to subnode of node."
+  "Test binding to subnode of node."
 
   (with-subnode-test
     (with-module-table modules
@@ -1165,7 +1135,7 @@
         (test-simple-binding a.last y :context a.last)))))
 
 (test subnode-of-meta-node
-  :description "Test binding to subnode of meta-node `self` node."
+  "Test binding to subnode of meta-node `self` node."
 
   (with-subnode-test
     (with-module-table modules
@@ -1184,7 +1154,7 @@
         (test-simple-binding person.first name :context person.first)))))
 
 (test subnode-cross-module
-  :description "Test binding to subnode of node in another module."
+  "Test binding to subnode of node in another module."
 
   (with-subnode-test
     (with-module-table modules
@@ -1216,7 +1186,7 @@
 ;;; Node States
 
 (test node-state-any-state
-  :description "Test node state bindings from any state."
+  "Test node state bindings from any state."
 
   (with-module-table modules
     (build "/external(not, x)"
@@ -1249,7 +1219,7 @@
         (test-binding the-state state-on)))))
 
 (test node-state-specific-state
-  :description "Test node state bindings with specific state transition."
+  "Test node state bindings with specific state transition."
 
   (with-module-table modules
     (build "/external(not, x)"
@@ -1308,23 +1278,23 @@
        ,@body)))
 
 (test modules-test
-  :description "Test the creation of modules and the separation of nodes."
+  "Test the creation of modules and the separation of nodes."
 
   (with-modules-test
     (with-module-nodes
       (test-nodes init "x" "y"))))
 
 (test modules-operator-/use
-  :description "Test `/use` operator."
+  "Test `/use` operator."
 
   (with-modules-test
     (with-module-nodes
       (build "/module(mod2)"
-            "/import(builtin)"
-            "/use(my-mod)"
+             "/import(builtin)"
+             "/use(my-mod)"
 
-            "my-mod.a -> a"
-            "my-mod.+(n,m)")
+             "my-mod.a -> a"
+             "my-mod.+(n,m)")
 
       (with-modules ((mod2 "mod2")) modules
         (with-nodes ((a "a") (n "n") (m "m"))
@@ -1336,7 +1306,7 @@
             (test-node-function n+m + + n m)))))))
 
 (test modules-operator-/use-as
-  :description "Test `/use-as` operator."
+  "Test `/use-as` operator."
 
   (with-modules-test
     (with-module-nodes
@@ -1358,7 +1328,7 @@
             (test-node-function j+k + + j k)))))))
 
 (test modules-operator-/import-long-form
-  :description "Test long form of `/import` operator."
+  "Test long form of `/import` operator."
 
   (with-modules-test
     (with-module-nodes
@@ -1377,7 +1347,7 @@
             (is (not (eq b my-mod.b)))))))))
 
 (test modules-operator-/import-short-form
-  :description "Test short form of `/import` operator."
+  "Test short form of `/import` operator."
 
   (with-modules-test
     (with-module-nodes
@@ -1396,7 +1366,7 @@
             (is (not (eq b my-mod.b)))))))))
 
 (test modules-operator-/in
-  :description "Test `/in` operator."
+  "Test `/in` operator."
 
   (with-modules-test
     (with-module-nodes
@@ -1414,7 +1384,7 @@
             (is (not (eq b my-mod.b)))))))))
 
 (test cross-module-conditional-bindings
-  :description "Test cross-module conditional bindings."
+  "Test cross-module conditional bindings."
 
   (with-modules-test
     (with-module-nodes
@@ -1441,7 +1411,7 @@
 	        `(if ,b->cc ,b (:fail :none))))))))))
 
 (test module-error-semantics
-  :description "Test semantic error conditions when using modules."
+  "Test semantic error conditions when using modules."
 
   (with-module-table modules
     (build "x;y"
@@ -1450,28 +1420,28 @@
            "/module(my-mod); /export(a,+)")
 
     (build "/module(mod2)"
-                   "/import(builtin)"
-                   "/use(my-mod)"
+           "/import(builtin)"
+           "/use(my-mod)"
 
-                   "my-mod.a -> a"
-                   "my-mod.+(n,m)")
+           "my-mod.a -> a"
+           "my-mod.+(n,m)")
 
     (build "/module(mod3)"
-                   "/import(builtin)"
-                   "/use-as(my-mod, m)"
+           "/import(builtin)"
+           "/use-as(my-mod, m)"
 
-                   "m.a -> a"
-                   "m.+(j,k)")
+           "m.a -> a"
+           "m.+(j,k)")
 
     (build "/module(mod4); /import(my-mod, +); a + b")
     (build "/module(mod5); /import(my-mod); a + b")
     (build "/module(mod6); /in(my-mod,+)(/in(my-mod, a), b)")
 
     (build "/module(mod7)"
-                   "/import(builtin)"
-                   "/import(my-mod, a, b)"
+           "/import(builtin)"
+           "/import(my-mod, a, b)"
 
-                   "a -> (b -> cc)")
+           "a -> (b -> cc)")
 
     (signals non-existent-node-error (build "/module(mod2); +(j,k)"))
     (signals declaration-parse-error (build "/module(mod2); j + k"))
@@ -1486,7 +1456,7 @@
     (signals non-existent-node-error (build "/module(mod4); /in(my-mod, z)"))))
 
 (test non-existent-module-errors
-  :description "Test that using non-existent modules signals an error."
+  "Test that using non-existent modules signals an error."
 
   (test-error non-existent-module-error "/use(no-such-module)")
   (test-error non-existent-module-error "/use-as(no-such-module, m)")
@@ -1497,7 +1467,7 @@
   (test-error non-existent-node-error "x; /export(x, no-such-node)"))
 
 (test module-error-syntax-/module
-  :description "Test syntax errors with `/module` operator."
+  "Test syntax errors with `/module` operator."
 
   (test-error invalid-arguments-error "/module()")
   (test-error invalid-arguments-error "/module(a, b, c)")
@@ -1507,13 +1477,13 @@
   (test-top-level-only "/module(m)"))
 
 (test module-error-syntax-/use
-  :description "Test syntax errors with `/use` operator."
+  "Test syntax errors with `/use` operator."
 
   (test-error invalid-arguments-error "/use(1,2,3)")
   (test-top-level-only "/use(m1)" "/module(m1)" "/module(m2); /import(builtin)"))
 
 (test module-error-syntax-/use-as
-  :description "Test syntax errors with `/user-as` operator."
+  "Test syntax errors with `/user-as` operator."
 
   (test-error invalid-arguments-error "/use-as()")
   (test-error invalid-arguments-error "/use-as(m)")
@@ -1525,7 +1495,7 @@
   (test-top-level-only "/use-as(mod, m)" "/module(mod)" "/module(m1); /import(builtin)"))
 
 (test module-error-syntax-/import
-  :description "Test syntax errors with `/import` operator."
+  "Test syntax errors with `/import` operator."
 
   (test-error invalid-arguments-error "/import()")
   (test-error invalid-arguments-error "/import(1)")
@@ -1534,13 +1504,13 @@
   (test-top-level-only "/import(mod, x)" "/module(mod); x" "/module(m1); /import(builtin)"))
 
 (test module-error-syntax-/export
-  :description "Test syntax errors with `/export` operator."
+  "Test syntax errors with `/export` operator."
 
   (test-error semantic-error "/export(1, 2, 3)")
   (test-top-level-only "/export(x)" "x"))
 
 (test module-error-syntax-/in
-  :description "Test syntax errors with `/in` operator."
+  "Test syntax errors with `/in` operator."
 
   (test-error invalid-arguments-error "/in()")
   (test-error invalid-arguments-error "/in(x)")
@@ -1549,7 +1519,7 @@
   (test-error invalid-arguments-error "/in(1, x)"))
 
 (test module-error-pseudo-node-reference
-  :description "Test that referencing module pseudo nodes results in an error."
+  "Test that referencing module pseudo nodes results in an error."
 
   (test-error module-node-reference-error
               "/module(m1)"

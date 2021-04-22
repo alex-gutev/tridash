@@ -54,7 +54,7 @@
 ;;; Literal Constants
 
 (test fold-literal
-  :description "Test folding of literal constant"
+  "Test folding of literal constant"
 
   (with-module-table modules
     (build "/external(add, x, y)"
@@ -69,7 +69,6 @@
         (has-value-function (a) cc `(,add ,a 1))))))
 
 (test fold-literal-multi-node
-  :description
   "Test folding of literal constant across multiple node levels of bindings."
 
   (with-module-table modules
@@ -90,7 +89,7 @@
 ;;; Initial Values
 
 (test input-node-initial-value
-  :description "Test binding initial value of input node to literal."
+  "Test binding initial value of input node to literal."
 
   (with-module-table modules
     (build "a -> b; b -> cc"
@@ -106,7 +105,7 @@
         (test-value-function a (init-context a) "hello")))))
 
 (test non-input-node-inital-value
-  :description "Test binding initial value of non-input node."
+  "Test binding initial value of non-input node."
 
   (with-module-table modules
     (build "a -> b; b -> cc"
@@ -129,7 +128,7 @@
 ;;; Functor Node Constants
 
 (test fold-functor-node-constant
-  :description "Test folding of constant functor nodes."
+  "Test folding of constant functor nodes."
 
   (with-module-table modules
     (build "/external(add, x, y)"
@@ -147,7 +146,6 @@
         (has-value-function (a) cc `(,add ,a (,add 1 2)))))))
 
 (test fold-functor-node-constant-multi-node
-  :description
   "Test folding of constant functor nodes with constant functor node dependencies."
 
   (with-module-table modules
@@ -172,7 +170,7 @@
 ;;; Cross Module Constant Folding
 
 (test cross-module-folding
-  :description "Test constant folding across modules."
+  "Test constant folding across modules."
 
   (with-module-table modules
     (build "/module(m1)"
@@ -202,7 +200,7 @@
 ;;; Two-Way Bindings
 
 (test two-way-bindings
-  :description "Test constant folding across two-way bindings."
+  "Test constant folding across two-way bindings."
 
   (with-module-table modules
     (build "/external(add, a, b)"

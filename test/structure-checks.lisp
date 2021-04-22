@@ -54,7 +54,7 @@
 ;;; Ambiguous Context Checks
 
 (test ambiguous-context-atom-nodes
-  :description "Test checking for ambiguous contexts in atom nodes."
+  "Test checking for ambiguous contexts in atom nodes."
 
   (with-module-table modules
     (build "a -> d"
@@ -66,7 +66,7 @@
     (signals ambiguous-context-error (finish-build))))
 
 (test ambiguous-context-atom-nodes-cross-module
-  :description "Test checking for ambiguous contexts in atom nodes across modules."
+  "Test checking for ambiguous contexts in atom nodes across modules."
 
   (with-module-table modules
     (build "/module(m1)"
@@ -84,7 +84,7 @@
     (signals ambiguous-context-error (finish-build))))
 
 (test ambiguous-context-functor-nodes
-  :description "Test checking for ambiguous contexts in functor nodes."
+  "Test checking for ambiguous contexts in functor nodes."
 
   (with-module-table modules
     (build "/external(add, x, y)"
@@ -96,7 +96,6 @@
     (signals ambiguous-context-error (finish-build))))
 
 (test ambiguous-context-functor-nodes-cross-module
-  :description
   "Test checking for ambiguous contexts in functor nodes across modules."
 
   (with-module-table modules

@@ -55,7 +55,7 @@
 ;;; Simple Functions
 
 (test simple-signle-module
-  :description "Test building simple meta-node in single module."
+  "Test building simple meta-node in single module."
 
   (with-module-table modules
     (build "/external(add, x, y)"
@@ -68,7 +68,7 @@
         (test-not-nodes (definition fn) '("add" "n" 1))))))
 
 (test simple-multiple-modules
-  :description "Test building simple meta-nodes in multiple modules"
+  "Test building simple meta-nodes in multiple modules"
 
   (with-module-table modules
     (build "/module(m1)"
@@ -93,7 +93,7 @@
 ;; folding work within meta-node definitions.
 
 (test recursive-simple
-  :description "Test simple recursive meta-nodes."
+  "Test simple recursive meta-nodes."
 
   (with-module-table modules
     (build-core-module)
@@ -131,7 +131,7 @@
                         '(("/in" "core" "if") #1# 1 #3#))))))
 
 (test recursive-tail
-  :description "Test tail-recursive meta-nodes."
+  "Test tail-recursive meta-nodes."
 
   (with-module-table modules
     (build-core-module)
@@ -182,7 +182,7 @@
                           '(("/in" "core" "if") #1# "acc" #3#)))))))
 
 (test recursive-mutual
-  :description "Test mutually recursive meta-nodes."
+  "Test mutually recursive meta-nodes."
 
   (with-module-table modules
     (build-core-module)
@@ -229,7 +229,7 @@
         (has-value-function (in) out `(,fib ,in))))))
 
 (test recursive-mutual-cross-module
-  :description "Test mutually recursive meta-nodes across modules."
+  "Test mutually recursive meta-nodes across modules."
 
   (with-module-table modules
     (build-core-module)
@@ -286,7 +286,7 @@
 ;;; Self Node References
 
 (test self-node-single-context
-  :description "Test self node references in a single context."
+  "Test self node references in a single context."
 
   (with-module-table modules
     (build "Person(name, surname) : {
@@ -303,7 +303,7 @@
                     (,(id-symbol "last") ,surname)))))))
 
 (test self-node-multi-context
-  :description "Test self node references in multiple contexts."
+  "Test self node references in multiple contexts."
 
   (with-module-table modules
     (build-core-module)
@@ -328,7 +328,7 @@
 ;;; Outer Node References
 
 (test outer-node-reference-explicit
-  :description "Test explicit outer node references."
+  "Test explicit outer node references."
 
   (with-module-table modules
     (build-core-module)
@@ -368,7 +368,7 @@
           `(,addx ,in1 :outer (,x . ,dx) (,y . ,dy)))))))
 
 (test outer-node-reference-implicit
-  :description "Test implicit outer node references."
+  "Test implicit outer node references."
 
   (with-module-table modules
     (build-core-module)
@@ -408,7 +408,7 @@
           `(,addx ,in1 :outer (,x . ,dx) (,y . ,dy)))))))
 
 (test outer-node-reference-cross-module
-  :description "Test outer node references across modules."
+  "Test outer node references across modules."
 
   (with-module-table modules
     (build-core-module)
@@ -457,7 +457,7 @@
           `(,addx ,in1 :outer (,x . ,dx) (,y . ,dy)))))))
 
 (test outer-node-reference-subnodes
-  :description "Test references of subnodes of outer-nodes."
+  "Test references of subnodes of outer-nodes."
 
   (with-module-table modules
     (build-core-module)
@@ -502,7 +502,6 @@
         (test-simple-binding in1 dict.x)))))
 
 (test outer-node-reference-mutual-recursion-explicit
-  :description
   "Test explicit outer node references from mutually recursive meta-nodes."
 
   (with-module-table modules
@@ -543,7 +542,6 @@
           `(,addy ,in2 :outer (,x . ,dx) (,y . ,dy)))))))
 
 (test outer-node-reference-mutual-recursion-implicit
-  :description
   "Test implicit outer node references from mutually recursive meta-nodes."
 
   (with-module-table modules
@@ -584,7 +582,6 @@
           `(,addy ,in2 :outer (,x . ,dx) (,y . ,dy)))))))
 
 (test outer-node-reference-mutual-recursion-cross-module
-  :description
   "Test outer-node references in mutually recursive meta-nodes, across modules."
 
   (with-module-table modules
@@ -635,7 +632,6 @@
           `(,addy ,in2 :outer (,x . ,dx) (,y . ,dy)))))))
 
 (test outer-node-reference-nested-explicit
-  :description
   "Test explicit outer-node references from nested meta-nodes."
 
   (with-module-table modules
@@ -683,7 +679,6 @@
           `(,count ,in :outer (,start . ,in-start)))))))
 
 (test outer-node-reference-nested-implicit
-  :description
   "Test implicit outer-node references from nested meta-nodes."
 
   (with-module-table modules
@@ -731,7 +726,6 @@
           `(,count ,in :outer (,start . ,in-start)))))))
 
 (test outer-node-references-nested-cross-module
-  :description
   "Test outer-node references from nested meta-nodes across modules."
 
   (with-module-table modules
@@ -782,7 +776,6 @@
           `(,count ,in :outer (,start . ,in-start)))))))
 
 (test outer-node-reference-optional-argument-default-value
-  :description
   "Test outer-node reference from default value of meta-node optional argument."
 
   (with-module-table modules
@@ -815,7 +808,6 @@
           `(,fact ,in :outer (,delta . ,in-delta)))))))
 
 (test outer-node-reference-optional-argument
-  :description
   "Test outer-node reference from default value of meta-node optional
    argument, when given value."
 
@@ -846,7 +838,6 @@
         (has-value-function (in) out `(,fact ,in))))))
 
 (test outer-node-reference-constant
-  :description
   "Test constant folding of reference outer-nodes."
 
   (with-module-table modules
@@ -874,7 +865,6 @@
         (has-value-function (x) y `(,inc ,x))))))
 
 (test outer-node-reference-constant-functor
-  :description
   "Test constant folding of constant functor outer nodes."
 
   (with-module-table modules
@@ -902,7 +892,6 @@
         (has-value-function (x) y `(,inc ,x))))))
 
 (test outer-node-reference-functor-of-constant
-  :description
   "Test constant folding of outer node which is a functor of constant nodes."
 
   (with-module-table modules
@@ -934,7 +923,6 @@
         (has-value-function (x) y `(,inc ,x))))))
 
 (test outer-node-reference-constant-in-functor
-  :description
   "Test constant folding of functor outer node which is, within meta-node instance."
 
   (with-module-table modules
@@ -967,7 +955,6 @@
         (has-value-function (x z) y `(,add (,inc ,x) ,z))))))
 
 (test outer-node-reference-constant-nested
-  :description
   "Test constant folding of outer node in nested meta-nodes."
 
   (with-module-table modules
@@ -988,7 +975,6 @@
           `(,f ,x ,y))))))
 
 (test outer-node-reference-constant-in-nested
-  :description
   "Test constant outer node reference from nested meta-node."
 
   (with-module-table modules
@@ -1011,7 +997,6 @@
           `(,f ,x ,y))))))
 
 (test outer-node-reference-constant-multi-meta-nodes
-  :description
   "Test constant outer-node reference by meta-node used by multiple other meta-nodes."
 
   (with-module-table modules
@@ -1052,7 +1037,6 @@
         `(,g ,x ,y)))))
 
 (test outer-node-reference-constant-compiled-meta-node
-  :description
   "Test constant outer-node reference by compiled meta-node."
 
   (with-module-table modules
@@ -1079,7 +1063,6 @@
         `(,+ (,inc ,x) 3)))))
 
 (test outer-node-reference-constant-meta-node-reference
-  :description
   "Test constant outer-node reference in meta-node reference."
 
   (with-module-table modules
@@ -1112,7 +1095,7 @@
 ;;; Meta-Node References
 
 (test meta-node-reference
-  :description "Test meta-node reference."
+  "Test meta-node reference."
 
   (with-module-table modules
     (build "/external(map, f, list); /external(add, x, y)"
@@ -1136,7 +1119,7 @@
         (has-value-function (in) out `(,1+-all ,in))))))
 
 (test meta-node-reference-outer-node
-  :description "Test reference of meta-node with outer-nodes."
+  "Test reference of meta-node with outer-nodes."
 
   (with-module-table modules
     (build "/external(map, f, list); /external(add, x, y)"
@@ -1163,7 +1146,6 @@
           `(,x+-all ,in :outer (,x . ,in-x)))))))
 
 (test meta-node-reference-outer-node-nested-1
-  :description
   "Test reference of meta-node with outer-nodes from nested meta-node."
 
   (with-module-table modules
@@ -1197,7 +1179,6 @@
           `(,x+-all ,in :outer (,x . ,in-x)))))))
 
 (test meta-node-reference-outer-node-nested-2
-  :description
   "Test reference of meta-node with outer-nodes from nested meta-node."
 
   (with-module-table modules
@@ -1231,7 +1212,7 @@
           `(,x+-all ,in :outer (,x . ,in-x)))))))
 
 (test meta-node-reference-cycle
-  :description "Test cyclic meta-node references."
+  "Test cyclic meta-node references."
 
   (with-module-table modules
     (build "/external(map, f, ..(lists)); /external(add, x, y)"
@@ -1264,7 +1245,6 @@
             `(,add-x ,in :outer (,x-out . ,x) (,y-out . ,y))))))))
 
 (test meta-node-reference-source
-  :description
   "Test meta-node reference in binding source node."
 
   (with-module-table modules
@@ -1286,7 +1266,6 @@
         (has-value-function (in) out `(,map ,(meta-node-ref add-x) ,in))))))
 
 (test meta-node-reference-source-outer-nodes
-  :description
   "Test meta-node reference (with outer-nodes) in binding source node."
 
   (with-module-table modules
@@ -1310,7 +1289,6 @@
           `(,map ,(meta-node-ref add-x :outer-nodes `((,x . ,x-in))) ,in))))))
 
 (test meta-node-reference-optional-argument-default-constant-value
-  :description
   "Test meta-node reference with constant optional argument default value"
 
   (with-module-table modules
@@ -1344,7 +1322,6 @@
         `(,inc-all ,input)))))
 
 (test meta-node-reference-optional-argument-default-node-value
-  :description
   "Test meta-node reference with node optional argument default value"
 
   (with-module-table modules
@@ -1376,7 +1353,6 @@
 ;;; Node Auto Creation
 
 (test node-auto-create-target-operand
-  :description
   "Test auto-creation of nodes as operands in functor in binding target."
 
   (with-module-table modules
@@ -1392,7 +1368,6 @@
         (test-meta-node f ((x "x")) `(,int ,x))))))
 
 (test node-auto-create-atom-declaration
-  :description
   "Test auto-creation of nodes in atom node declarations."
 
   (with-module-table modules
@@ -1405,7 +1380,6 @@
         `(,add ,x 1)))))
 
 (test node-auto-create-error-operands
-  :description
   "Test error raised when unknown node referenced in functor operands in binding source."
 
   (with-module-table modules
@@ -1416,7 +1390,6 @@
     (signals non-existent-node-error (finish-build))))
 
 (test node-auto-create-error-binding-source
-  :description
   "Test error raised when unknown node referenced in binding source."
 
   (with-module-table modules
@@ -1426,7 +1399,6 @@
     (signals non-existent-node-error (finish-build))))
 
 (test node-auto-create-error-object-nodes
-  :description
   "Test error raised when subnode of unknown node referenced."
 
   (with-module-table modules
@@ -1439,7 +1411,6 @@
 ;;; Cyclic References
 
 (test cyclic-references
-  :description
   "Test cyclic references in meta-nodes."
 
   (with-module-table modules
@@ -1455,7 +1426,7 @@
 ;;; Structure Checking
 
 (test ambiguous-context-check-simple
-  :description "Test checking for ambiguous contexts in simple operands."
+  "Test checking for ambiguous contexts in simple operands."
 
   (with-module-table modules
     (build "f(a) : {
@@ -1471,7 +1442,7 @@
     (signals ambiguous-context-error (finish-build))))
 
 (test ambiguous-context-check-self-node
-  :description "Test checking for ambiguous contexts in self nodes."
+  "Test checking for ambiguous contexts in self nodes."
 
   (with-module-table modules
     (build "f(a, b) : {
@@ -1483,7 +1454,7 @@
     (signals ambiguous-context-error (finish-build))))
 
 (test ambiguous-context-check-functor
-  :description "Test checking for ambiguous contexts in functor nodes."
+  "Test checking for ambiguous contexts in functor nodes."
 
   (with-module-table modules
     (build "/external(add, x, y)"
@@ -1513,7 +1484,6 @@
     (signals ambiguous-context-error (finish-build))))
 
 (test mutliple-contexts-multiple-operands
-  :description
   "Test checking for multiple contexts activated by multiple operands."
 
   (with-module-table modules
@@ -1522,7 +1492,6 @@
     (signals ambiguous-context-error (finish-build))))
 
 (test node-states-in-meta-node
-  :description
   "Test that using node states within a meta-node results in an error."
 
   (with-module-table modules
@@ -1534,7 +1503,7 @@
 ;;; Constant Functions
 
 (test constant-meta-node-ignore-arguments
-  :description "Test constant meta-nodes with ignored arguments."
+  "Test constant meta-nodes with ignored arguments."
 
   (with-module-table modules
     (build "f(x) : 1"
@@ -1548,7 +1517,6 @@
 ;;; Errors
 
 (test error-meta-node-without-function
-  :description
   "Test that a meta-node without a function results in an error."
 
   (with-module-table modules
