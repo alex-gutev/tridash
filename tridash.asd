@@ -133,6 +133,7 @@
                 :components
                 ((:file "test")
                  (:file "util")
+                 (:file "lexer")
                  (:file "frontend")
                  (:file "coalescer")
                  (:file "constant-folding")
