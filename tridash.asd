@@ -141,6 +141,8 @@
                  (:file "structure-checks")
                  (:file "meta-nodes")
                  (:file "strictness")
+                 (:file "macros")
+                 (:file "macros-core-module")
 
 
 
