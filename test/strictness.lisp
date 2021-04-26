@@ -1,7 +1,7 @@
 ;;;; strictness.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2019  Alexander Gutev
+;;;; Copyright (C) 2019-2021  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -18,36 +18,42 @@
 
 ;;;; Strictness Analysis Tests
 
-(defpackage :tridash.test.strictness
+(defpackage :tridash/test.strictness
   (:use :generic-cl
         :alexandria
         :arrows
         :optima
-        :prove
         :named-readtables
 
         :tridash.parser
         :tridash.frontend
         :tridash.frontend.strictness
 
-        :tridash.test.util
-        :tridash.test.builder)
+        :fiveam
+        :tridash/test
+        :tridash/test.util)
 
   (:shadowing-import-from :generic-cl
                           :emptyp
                           :multiply
                           :accumulate)
 
-  (:shadowing-import-from :prove :fail)
+  (:shadowing-import-from :fiveam :fail)
 
   (:import-from :lol
                 :defmacro!
                 :lol-syntax))
 
-(in-package :tridash.test.strictness)
+(in-package :tridash/test.strictness)
 
 (in-readtable lol-syntax)
 
+
+(def-suite strictness-analysis
+    :description "Test node value strictness analysis."
+    :in tridash)
+
+(in-suite strictness-analysis)
 
 (defmacro! test-strictness ((&rest source) &body tests)
   (flet ((make-attr-string (x)
@@ -62,73 +68,102 @@
          (with-nodes ,(map #'list syms (map #'first tests))
              (finish-build)
 
-           ,@(map #2`(is (strict-arguments ,a1) ',(second a2)) syms tests))))))
+           ,@(map #2`(is (= ',(second a2) (strict-arguments ,a1))) syms tests))))))
 
-(plan 1)
+
+;;; Tests
 
-(subtest "Strictness Analysis of Meta-Node Definitions"
-  (subtest "Simple Functors"
-    (test-strictness ("1+(n) : n + 1")
-      ("1+" (t))))
+(test simple-functors
+  "Test strictness analysis of simple functor expressions."
 
-  (subtest "If Meta-Node"
-    (test-strictness ("my-and(a, b) : if(a, b, 0)")
-      ("my-and" (t nil))))
+  (test-strictness ("1+(n) : n + 1")
+    ("1+" (t))))
 
-  (subtest "And/Or Meta-Nodes"
-    (test-strictness ("my-if(test, then, else) : or(and(test, then), else)")
-      ("my-if" (t nil nil))))
+(test if-meta-node
+  "Test strictness analysis of expressions of the builtin if meta-node."
 
-  (subtest "If and Catch Expressions"
-    (test-strictness
-        ("f(a, b, c) : { a -> (b -> /context(self, c)); c -> /context(self, c) }")
+  (test-strictness ("my-and(a, b) : if(a, b, 0)")
+    ("my-and" (t nil))))
 
-      ("f" (t nil nil))))
+(test and-or-meta-nodes
+  "Test strictness analysis of expressions of the builtin `and` and `or` meta-nodes."
 
-  (subtest "Member Expressions"
-    (test-strictness ("f(x) : x.field")
-      ("f" (t))))
+  (test-strictness ("my-if(test, then, else) : or(and(test, then), else)")
+    ("my-if" (t nil nil))))
 
-  (subtest "Higher-Order Meta-Nodes"
-    (test-strictness ("my-apply(f, x, y) : f(x, y)")
-      ("my-apply" (t nil nil))))
+(test if-and-catch-expressions
+  "Test strictness analysis of `if` And `catch` internal expression types."
 
-  (subtest "Recursive Meta-Nodes"
-    (subtest "Factorial"
-      (test-strictness ("fact(n) : case(n < 2 : 1, n * fact(n - 1))")
-        ("fact" (t))))
+  (test-strictness
+      ("f(a, b, c) : { a -> (b -> /context(self, c)); c -> /context(self, c) }")
 
-    (subtest "Tail-Recursive Factorial"
-      (test-strictness ("fact(n, acc) : case(n < 2 : acc, fact(n - 1, n * acc))")
-        ("fact" (t t))))
+    ("f" (t nil nil))))
 
-    (subtest "Tail-Recursive Factorial with Helper Meta-Nodes"
-      (test-strictness
-          ("1-(n) : n - 1"
-           "mul(x,y) : x * y"
+(test member-expressions
+  "Test strictness analysis of internal member expression types."
 
-           "fact(n, acc) : case(n < 2 : acc, fact(1-(n), mul(n, acc)))")
-        ("fact" (t t))))
+  (test-strictness ("f(x) : x.field")
+    ("f" (t))))
 
-    (subtest "Tail-Recursive Factorial with Nested Meta-Node"
-      (test-strictness
-          ("fact(n) : { iter(n, acc) : case(n < 2 : acc, iter(n - 1, n * acc)); iter(n,1) }")
-        ("fact" (t)))))
+(test higher-order-meta-nodes
+  "Test strictness analysis of expressions with higher-order meta-nodes."
 
-  (subtest "Optional and Rest Arguments"
-    (subtest "Optional Arguments"
-      (test-strictness ("inc(n, d : 1) : n + d")
-        ("inc" (t t)))
+  (test-strictness ("my-apply(f, x, y) : f(x, y)")
+    ("my-apply" (t nil nil))))
 
-      (test-strictness ("f(x, y : 1) : { x -> self.x; y -> self.y }")
-        ("f" (nil nil))))
+
+;;; Recursive Meta-Node Tests
 
-    (subtest "Rest Arguments"
-      (test-strictness ("add(x, ..(xs)) : if(xs, add(x + head(xs), tail(xs)), x)")
-        ("add" (t t))))
+(test recursive-meta-node-simple
+  "Test strictness analysis of simple non-tail recursive meta-node (factorial)."
 
-    (subtest "Rest Arguments"
-      (test-strictness ("f(x, ..(xs)) : { x -> self.x; xs -> self.xs }")
-        ("f" (nil nil))))))
+  (test-strictness ("fact(n) : case(n < 2 : 1, n * fact(n - 1))")
+    ("fact" (t))))
 
-(finalize)
+(test recursive-meta-node-tail
+  "Test strictness analysis of tail recursive meta-node (factorial)."
+
+  (test-strictness ("fact(n, acc) : case(n < 2 : acc, fact(n - 1, n * acc))")
+    ("fact" (t t))))
+
+(test recursive-meta-node-tail-helper
+  "Test strictness analysis of tail recursive meta-node with helper meta-nodes."
+
+  (test-strictness
+      ("1-(n) : n - 1"
+       "mul(x,y) : x * y"
+
+       "fact(n, acc) : case(n < 2 : acc, fact(1-(n), mul(n, acc)))")
+
+    ("fact" (t t))))
+
+(test recursive-meta-node-tail-nested
+  "Test strictness analysis of nested tail-recursive meta-node."
+
+  (test-strictness
+      ("fact(n) : { iter(n, acc) : case(n < 2 : acc, iter(n - 1, n * acc)); iter(n,1) }")
+    ("fact" (t))))
+
+
+;;; Test Meta-Nodes with Optional and Rest Arguments
+
+(test meta-node-optional-arguments
+  "Test strictness analysis of meta-node optional arguments."
+
+  (test-strictness ("inc(n, d : 1) : n + d")
+    ("inc" (t t)))
+
+  (test-strictness ("f(x, y : 1) : { x -> self.x; y -> self.y }")
+    ("f" (nil nil))))
+
+(test meta-node-rest-argument
+  "Test strictness analysis of meta-node rest arguments."
+
+  (test-strictness ("f(x, ..(xs)) : { x -> self.x; xs -> self.xs }")
+    ("f" (nil nil))))
+
+(test meta-node-rest-arguments
+  "Test strictness analysis of recursive meta-node with rest arguments."
+
+  (test-strictness ("add(x, ..(xs)) : if(xs, add(x + head(xs), tail(xs)), x)")
+    ("add" (t t))))

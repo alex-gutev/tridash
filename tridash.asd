@@ -140,6 +140,7 @@
                  (:file "constant-folding")
                  (:file "structure-checks")
                  (:file "meta-nodes")
+                 (:file "strictness")
 
 
 
