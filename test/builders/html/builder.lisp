@@ -1,7 +1,7 @@
 ;;;; builder.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2019  Alexander Gutev
+;;;; Copyright (C) 2019-2021  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 ;;;; HTML File Builder Test
 
-(defpackage :tridash.test.builder.html
+(defpackage :tridash/test.builder.html
   (:use :generic-cl
         :alexandria
         :anaphora
@@ -26,7 +26,6 @@
         :iterate
         :optima
         :optima.ppcre
-        :prove
         :named-readtables
 
         :tridash.interface
@@ -34,15 +33,16 @@
         :tridash.frontend
         :tridash.builder.html
 
-        :tridash.test.util
-        :tridash.test.builder)
+        :fiveam
+        :tridash/test
+        :tridash/test.util)
 
   (:shadowing-import-from :generic-cl
                           :emptyp
                           :multiply
                           :accumulate)
 
-  (:shadowing-import-from :prove :fail)
+  (:shadowing-import-from :fiveam :fail)
 
   (:import-from :lol
                 :defmacro!
@@ -52,10 +52,21 @@
                 :build-html-file))
 
 
-(in-package :tridash.test.builder.html)
+(in-package :tridash/test.builder.html)
 
 (in-readtable lol-syntax)
 
+
+;;; Test Suite Definition
+
+(def-suite html-file-processor
+    :description "Test processing of HTML files"
+    :in file-processor)
+
+(in-suite html-file-processor)
+
+
+;;; Test Utility Functions
 
 (defvar *html-node-aliases* nil
   "Hash map storing aliases to html nodes, used by HTML-NODE=.")
@@ -64,22 +75,31 @@
   "Tests that NODE is an HTML-NODE with the ELEMENT-ID equal to ID,
    the tag equal to TAG and the attribute ATTRIBUTE."
 
-  (subtest (format nil "Test HTML-NODE ~a" node)
-    (with-slots (element-id tag-name html-attribute) node
-      (is-type! node 'html-node "Is HTML-NODE")
-      (isf element-id id "Element ID is ~a" id)
-      (isf tag-name tag "Tag is ~a" tag)
-      (isf html-attribute attribute "HTML attribute is ~a" attribute)
+  (with-slots (element-id tag-name html-attribute) node
+    (is (typep node 'html-node)
+        "~a is an HTML-NODE" node)
 
-      (isf (attribute :coalescable node t) nil "Has COALESCABLE attribute"))))
+    (is (= id element-id)
+        "Got element id:~%~%~a~%~%~2TExpected:~%~%~a"
+        element-id id)
 
+    (is (= tag tag-name)
+        "Got tag name:~%~%~a~%~%~2TExpected:~%~%~a"
+        tag-name tag)
+
+    (is (= attribute html-attribute)
+        "Got HTML attribute:~%~%~a~%~%~2TExpected:~%~%~a"
+        html-attribute attribute)
+
+    (is-false (attribute :coalescable node t)
+              "Coalescable attribute not set to NIL.")))
 
 (defgeneric html-node= (got expected)
   (:documentation
    "Returns true if the HTML node GOT is equivalent to the HTML node
     EXPECTED."))
 
-(defun html= (got expected)
+(defun html= (expected got)
   "Returns true if the HTML output with root-node GOT is equivalent to
    the expected output EXPECTED."
 
@@ -275,32 +295,33 @@
       ((or (list module name)
            name)
 
-       `(progn
-          (diag ,(format nil "Test file: ~a" file))
+       `(with-module-table ,module-table
+          ,(when core '(build-core-module))
 
-          (with-module-table ,module-table
-            ,(when core '(build-core-module))
+          (-<>> ,(if module (format nil "~a.~a" module name) name)
+                (cons "node-name")
+                list
+                alist-hash-map
+                (list ,file)
+                (build-source-file <> ,module-table))
 
-            (-<>> ,(if module (format nil "~a.~a" module name) name)
-                  (cons "node-name")
-                  list
-                  alist-hash-map
-                  (list ,file)
-                  (build-source-file <> ,module-table))
+          (symbol-macrolet ((html-component-node-id ,name))
+            (let ((,g!comp-node (test/get-node ',name ,module-table)))
+              (is (typep ,g!comp-node 'html-component-node)
+                  "Node ~a is not an HTML-COMPONENT-NODE"
+                  ,g!comp-node)
 
-            (symbol-macrolet ((html-component-node-id ,name))
-              (let ((,g!comp-node (test/get-node ',name ,module-table)))
-                (is-type! ,g!comp-node 'html-component-node)
+              ,@body
+              (is (strip-empty-text-nodes (element-node ,g!comp-node))
+                  (parse-html-file ,(out-file file))
+                  :test #'html=))))))))
 
-                ,@body
-                (is (strip-empty-text-nodes (element-node ,g!comp-node))
-                    (parse-html-file ,(out-file file))
-                    :test #'html=)))))))))
+
+;;; Tests
 
+(test simple-html-node-bindins
+  "Test simple HTML node bindings"
 
-(plan nil)
-
-(subtest "Simple HTML node bindings"
   (html-file-test (modules "main" #p"test/builders/html/input/test1.html")
     (with-nodes ((name "name"))
         modules
@@ -314,7 +335,9 @@
         (test-html-node-function input-name ("value" input-name.value))
         (test-html-attribute-function input-name.value input-name "value")))))
 
-(subtest "Automatic Creation of SPAN HTML nodes"
+(test span-node-auto-creation
+  "Test automatic creation of span HTML nodes"
+
   (html-file-test (modules "main" #p"test/builders/html/input/test2.html")
     (with-nodes ((first "first") (last "last")) modules
       (with-html-nodes ((input-first "input-first" "input")
@@ -332,7 +355,9 @@
         (test-html-attribute-function input-first.value input-first "value")
         (test-html-attribute-function input-last.value input-last "value")))))
 
-(subtest "Bindings in Tridash code tags"
+(test tridash-code-tag-bindings
+  "Test bindings in Tridash code tags"
+
   (html-file-test (modules "main" #p"test/builders/html/input/test3.html")
     (with-nodes ((name "name")) modules
       (with-html-nodes ((input-name "input-name" "input")
@@ -351,7 +376,9 @@
         (test-html-attribute-function input-name.value input-name "value")
         (test-html-attribute-function heading.content heading "textContent")))))
 
-(subtest "Inline Functors"
+(test tridash-code-tag-inline-functors
+  "Test inline functors in Tridash code tags"
+
   (html-file-test (modules "main" #p"test/builders/html/input/test4.html" :core t)
     (with-nodes ((a (("/in" "core" "to-int") "a"))
                  (b (("/in" "core" "to-int") "b"))
@@ -371,72 +398,78 @@
 
         (test-binding a+b sum.value)))))
 
-(subtest "Multiple Inline Declarations"
-  (subtest "In Attributes"
-    (html-file-test (modules "main" #p"test/builders/html/input/test5.html" :core t)
-      (with-nodes ((a (("/in" "core" "to-int") "a"))
-                   (b (("/in" "core" "to-int") "b"))
-                   (a+b (("/in" "core" "+") "a" "b"))
-                   (sum "sum"))
+(test multi-inline-declarations-in-attributes
+  "Test multiple inline node declarations in HTML attributes"
+
+  (html-file-test (modules "main" #p"test/builders/html/input/test5.html" :core t)
+    (with-nodes ((a (("/in" "core" "to-int") "a"))
+                 (b (("/in" "core" "to-int") "b"))
+                 (a+b (("/in" "core" "+") "a" "b"))
+                 (sum "sum"))
+        modules
+
+      (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
+                        (input-b.value (:subnode "input-b" "value") "input")
+                        (sum.value (:subnode "sum" "value") "input"))
           modules
 
-        (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
-                          (input-b.value (:subnode "input-b" "value") "input")
-                          (sum.value (:subnode "sum" "value") "input"))
-            modules
+        (test-binding input-a.value a)
+        (test-binding a input-a.value)
 
-          (test-binding input-a.value a)
-          (test-binding a input-a.value)
+        (test-binding input-b.value b)
+        (test-binding b input-b.value)
 
-          (test-binding input-b.value b)
-          (test-binding b input-b.value)
+        (test-binding a+b sum)
 
-          (test-binding a+b sum)
+        (test-binding sum sum.value)))))
 
-          (test-binding sum sum.value)))))
+(test multi-inline-declarations-between-text
+  "Test multiple inline node declarations in HTML attributes between text"
 
-  (subtest "In Attributes between text"
-    (html-file-test (modules "main" #p"test/builders/html/input/test9.html" :core t)
-      (with-nodes ((format "format") (+ "+") (to-int "to-int")) modules
-        (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
-                          (input-b.value (:subnode "input-b" "value") "input")
-                          (sum.value (:subnode "sum" "value") "input"))
-            (finish-build)
+  (html-file-test (modules "main" #p"test/builders/html/input/test9.html" :core t)
+    (with-nodes ((format "format") (+ "+") (to-int "to-int")) modules
+      (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
+                        (input-b.value (:subnode "input-b" "value") "input")
+                        (sum.value (:subnode "sum" "value") "input"))
+          (finish-build)
 
-          (has-value-function
-           (input-a.value input-b.value)
-           sum.value
+        (has-value-function
+            (input-a.value input-b.value)
+            sum.value
 
-           `(,format "Sum is %s." ,(argument-list `((,+ (,to-int ,input-a.value) (,to-int ,input-b.value))))))))))
+          `(,format "Sum is %s." ,(argument-list `((,+ (,to-int ,input-a.value) (,to-int ,input-b.value))))))))))
 
-  (subtest "In SPAN elements"
-    (html-file-test (modules "main" #p"test/builders/html/input/test6.html" :core t)
-      (with-nodes ((a (("/in" "core" "to-int") "a"))
-                   (b (("/in" "core" "to-int") "b"))
-                   (a+b (("/in" "core" "+") "a" "b"))
-                   (sum "sum"))
+(test multi-inline-declarations-in-span-elements
+  "Test multiple inline node declarations in SPAN elements"
+
+  (html-file-test (modules "main" #p"test/builders/html/input/test6.html" :core t)
+    (with-nodes ((a (("/in" "core" "to-int") "a"))
+                 (b (("/in" "core" "to-int") "b"))
+                 (a+b (("/in" "core" "+") "a" "b"))
+                 (sum "sum"))
+        modules
+
+      (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
+                        (input-b.value (:subnode "input-b" "value") "input"))
           modules
 
-        (with-html-nodes ((input-a.value (:subnode "input-a" "value") "input")
-                          (input-b.value (:subnode "input-b" "value") "input"))
-            modules
+        (test-binding input-a.value a)
+        (test-binding a input-a.value)
 
-          (test-binding input-a.value a)
-          (test-binding a input-a.value)
+        (test-binding input-b.value b)
+        (test-binding b input-b.value)
 
-          (test-binding input-b.value b)
-          (test-binding b input-b.value)
+        (test-binding a+b sum)
 
-          (test-binding a+b sum)
+        (let ((obs (first (map-keys (observers sum)))))
+          (with-slots (tag-name html-attribute) obs
+            (is (typep obs 'html-node))
+            (is (= "span" tag-name))
+            (is (= "textContent" html-attribute))))))))
 
-          (subtest "Test Sum <SPAN> node"
-            (let ((obs (first (map-keys (observers sum)))))
-              (with-slots (tag-name html-attribute) obs
-                (is-type! obs 'html-node "Is HTML-NODE")
-                (is tag-name "span" "Tag is SPAN")
-                (is html-attribute "textContent" "Bound to attribute textContent")))))))))
+(test meta-node-self-node-reference
+  "Test self-node reference from Meta-Nodes"
 
-(subtest "Self-Node Reference from Meta-Nodes"
   (html-file-test (modules "main" #p"test/builders/html/input/test7.html" :core t)
     (let ((modules (finish-build-graph modules)))
       (with-nodes ((result "result")) modules
@@ -445,7 +478,10 @@
             modules
 
           (test-binding input-a.value result)
-          (test-binding input-b.value result)))))
+          (test-binding input-b.value result))))))
+
+(test module-self-node-references
+  "Test reference to module self node (i.e.) HTML component node."
 
   (html-file-test (modules ("mod" "main") #p"test/builders/html/input/test8.html" :core t)
     (let ((modules (finish-build-graph modules)))
@@ -456,5 +492,3 @@
 
           (test-binding input-a.value result)
           (test-binding input-b.value result))))))
-
-(finalize)

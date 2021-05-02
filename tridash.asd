@@ -144,7 +144,11 @@
                  (:file "macros")
                  (:file "macros-core-module")
 
+                 (:module
+                  "builders/html"
 
+                  :components
+                  ((:file "builder")))
 
 
 

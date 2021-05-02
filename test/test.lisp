@@ -21,12 +21,17 @@
         :fiveam)
 
   (:export :tridash
+           :file-processor
            :test-tridash))
 
 (in-package :tridash/test)
 
 (def-suite tridash
     :description "Master suite of all Tridash tests")
+
+(def-suite file-processor
+    :description "Test suite for special file processors"
+    :in tridash)
 
 (defun test-tridash ()
   (run! 'tridash))
