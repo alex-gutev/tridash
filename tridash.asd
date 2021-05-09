@@ -156,8 +156,11 @@
                   :components
                   ((:file "backend")))
 
+                 (:module
+                  "backends/wasm"
 
-                 )))
+                  :components
+                  ((:file "backend"))))))
 
   :perform (asdf:test-op :after (op c)
                          (uiop:symbol-call :tridash/test :test-tridash)))
