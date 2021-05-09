@@ -51,7 +51,7 @@
           :module "runtime"
           :name "table"
           :type :table
-          :desc (make-wasm-limit :min 2)))
+          :desc (make-wasm-table :min 2)))
 
      ("resolve"
       . ,(make-wasm-import
@@ -1460,12 +1460,14 @@
    in which the keys are lists of the form (ELEMENT-INDEX
    . FUNC-INDEX). OFFSET is added to each function index."
 
-  (make-wasm-table
+  (make-wasm-element
    :index 0
    :offset '((i32.const 2))
-   :functions
-   (map (compose (curry #'+ offset) #'second)
-        (sort (map-values table) :key #'first))))
+   :init
+   (make-wasm-element-init-index
+    :functions
+    (map (compose (curry #'+ offset) #'second)
+         (sort (map-values table) :key #'first)))))
 
 
 ;;;; Data Section
