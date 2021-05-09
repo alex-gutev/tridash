@@ -22,6 +22,7 @@
 
   (:export :tridash
            :file-processor
+           :backend
            :test-tridash))
 
 (in-package :tridash/test)
@@ -31,6 +32,10 @@
 
 (def-suite file-processor
     :description "Test suite for special file processors"
+    :in tridash)
+
+(def-suite backend
+    :description "Test suite for backends"
     :in tridash)
 
 (defun test-tridash ()

@@ -129,7 +129,7 @@
 
   :components ((:module
                 "test"
-
+                :serial t
                 :components
                 ((:file "test")
                  (:file "util")
@@ -150,7 +150,11 @@
                   :components
                   ((:file "builder")))
 
+                 (:module
+                  "backends/javascript"
 
+                  :components
+                  ((:file "backend")))
 
 
                  )))
