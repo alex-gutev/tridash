@@ -1,7 +1,7 @@
-;;;; builder.lisp
+;;;; backend.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2019  Alexander Gutev
+;;;; Copyright (C) 2019-2021  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
