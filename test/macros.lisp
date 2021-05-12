@@ -76,7 +76,7 @@
 
 (def-suite macros
     :description "Test user-defined Tridash macros."
-    :in tridash)
+    :in frontend)
 
 (in-suite macros)
 

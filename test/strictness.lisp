@@ -51,7 +51,7 @@
 
 (def-suite strictness-analysis
     :description "Test node value strictness analysis."
-    :in tridash)
+    :in frontend)
 
 (in-suite strictness-analysis)
 

@@ -46,7 +46,7 @@
 
 (def-suite coalescer
     :description "Test coalescing of nodes"
-    :in tridash)
+    :in frontend)
 
 (in-suite coalescer)
 

@@ -46,7 +46,7 @@
 
 (def-suite constant-folding
     :description "Test constant node folding."
-    :in tridash)
+    :in frontend)
 
 (in-suite constant-folding)
 

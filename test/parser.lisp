@@ -57,7 +57,7 @@
 
 (def-suite parser
     :description "Test parser."
-    :in tridash)
+    :in frontend)
 
 (in-suite parser)
 

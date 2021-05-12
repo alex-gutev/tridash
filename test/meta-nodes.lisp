@@ -47,7 +47,7 @@
 
 (def-suite meta-nodes
     :description "Test checking of node graph structure."
-    :in tridash)
+    :in frontend)
 
 (in-suite meta-nodes)
 

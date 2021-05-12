@@ -45,11 +45,11 @@
 (in-package :tridash/test.frontend)
 
 
-(def-suite frontend-test
+(def-suite builder
     :description "Test building of frontend node definitions."
-    :in tridash)
+    :in frontend)
 
-(in-suite frontend-test)
+(in-suite builder)
 
 
 ;;; Atom Nodes and Bindings

@@ -46,7 +46,7 @@
 
 (def-suite structure-checks
     :description "Test checking of node graph structure."
-    :in tridash)
+    :in frontend)
 
 (in-suite structure-checks)
 
