@@ -563,7 +563,7 @@
         ((atom op) (integer precedence) (optional ((or (atom "left") (atom "right")) associativity)))
         args
 
-      (add-operator op precedence (operator-associativity associativity) (operator-nodes module)))))
+      (add-operator :infix op precedence (operator-associativity associativity) (operator-nodes module)))))
 
 (defun operator-associativity (assoc)
   "Returns the operator precedence (LEFT or RIGHT) for the precedence

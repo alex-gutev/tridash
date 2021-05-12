@@ -197,13 +197,22 @@
         (when op-info
           (add-core-operator name op-info builtin))))))
 
-(defun add-core-operator (name op-info builtin)
-  "Adds the identifier NAME to the operator table of module
-   BUILTIN. OP-INFO is a list of the operator precedence and
-   associativity."
+(defun add-core-operator (name op-info builtin &key (position :infix))
+  "Adds the identifier NAME to the operator table of module BUILTIN.
+
+   NAME is the symbol naming the operator
+
+   BUILTIN is the module to which to add the operator.
+
+   OP-INFO is a list of the operator precedence and
+   associativity.
+
+   :POSITION is a symbol identifying the position in which the
+   operator may occur. :INFIX indicates an infix operator and :PREFIX
+   indicates a prefix operator."
 
   (destructuring-bind (precedence &optional (assoc :left)) op-info
-    (add-operator name precedence assoc (operator-nodes builtin))))
+    (add-operator position name precedence assoc (operator-nodes builtin))))
 
 (defun chr-macro (operator operands module)
   "Character macro-node function. Converts its argument to a literal

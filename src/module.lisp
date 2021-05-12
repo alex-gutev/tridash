@@ -249,8 +249,12 @@
 
       (setf (get name nodes) node)
 
-      (awhen (get name (operator-nodes src))
-        (add-operator name (first it) (second it) (operator-nodes dest))))))
+      (acond
+        ((get (list :infix name) (operator-nodes src))
+         (add-operator :infix name (first it) (second it) (operator-nodes dest)))
+
+        ((get (list :prefix name) (operator-nodes src))
+         (add-operator :prefix name (first it) (second it) (operator-nodes dest)))))))
 
 (defun export-node (name module)
   "Adds the node with name NAME to the PUBLIC-NODES of MODULE."

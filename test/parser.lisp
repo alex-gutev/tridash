@@ -134,13 +134,13 @@
 
 (defconstant +arithmetic-operators+
   (alist-hash-map
-   `((,(s "->") 10 :right)
-     (,(s "+") 20 :left)
-     (,(s "-") 20 :left)
-     (,(s "*") 50 :right)
-     (,(s "/") 50 :left)
+   `(((:infix ,(s "->")) 10 :right)
+     ((:infix ,(s "+")) 20 :left)
+     ((:infix ,(s "-")) 20 :left)
+     ((:infix ,(s "*")) 50 :right)
+     ((:infix ,(s "/")) 50 :left)
      (:open-paren 200)
-     (,(s ".") 500 :left))))
+     ((:infix ,(s ".")) 500 :left))))
 
 (test infix-operator-precedence
   "Test infix operator expressions with multiple operators of varying precedence."
@@ -202,7 +202,7 @@
       (#?"fn(a, b) : {a;b\nc\n\nd}"
 
          (alist-hash-map
-          `((,(s ":") 10 :right)
+          `(((:infix ,(s ":")) 10 :right)
             (:open-paren 200))))
 
     (!\:
@@ -216,10 +216,10 @@
   "Test expressions with of mixed literal types."
 
   (let ((ops (alist-hash-map
-              `((,(s "+") 20 :left)
-                (,(s "-") 20 :left)
-                (,(s "*") 50 :right)
-                (,(s "/") 50 :left)
+              `(((:infix ,(s "+")) 20 :left)
+                ((:infix ,(s "-")) 20 :left)
+                ((:infix ,(s "*")) 50 :right)
+                ((:infix ,(s "/")) 50 :left)
                 (:open-paren 200)))))
 
     (test-parser

@@ -461,13 +461,13 @@
 (test special-operator-/operator
   "Test registering infix operators."
 
-  (flet ((test-op (id operators prec assoc)
-           (let ((op (get (id-symbol id) operators)))
-             (is-true op "Infix operator ~a not registered." id)
+  (flet ((test-op (position id operators prec assoc)
+           (let ((op (get (list position (id-symbol id)) operators)))
+             (is-true op "~a operator ~a not registered." position id)
 
              (is (= (length op) 2)
-                 "Expected list of length 2 for infix operator ~a.~%Got:~%~a"
-                 id op)
+                 "Expected list of length 2 for ~a operator ~a.~%Got:~%~a"
+                 position id op)
 
              (is (= (first op) prec)
                  "Precedence for operator ~a not ~a. Got: ~a."
@@ -481,9 +481,9 @@
       (build "/operator(+, 50, left); /operator(-, 70); /operator(*, 100, right)")
 
       (with-slots (operator-nodes) (current-module modules)
-        (test-op "+" operator-nodes 50 :left)
-        (test-op "-" operator-nodes 70 :right)
-        (test-op "*" operator-nodes 100 :right)))))
+        (test-op :infix "+" operator-nodes 50 :left)
+        (test-op :infix "-" operator-nodes 70 :right)
+        (test-op :infix "*" operator-nodes 100 :right)))))
 
 (test special-operator-errors-/operator
   "Test invalid us of `/operator` operator."
