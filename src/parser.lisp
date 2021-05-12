@@ -145,67 +145,84 @@
    terminators. If no value is provided it defaults to the value of
    *LINE-TERM*."
 
-  (labels ((next-precedence (prec assoc)
+  (labels ((parse-expression (min-prec)
+             "Parse expression starting from a LHS operand.
+
+              MIN-PREC is the minimum operator precedence below which
+              operators will not be returned."
+
+             (parse-infix-expression (parse-operand line-term min-prec) min-prec))
+
+           (parse-operand (line-term min-prec)
+             "Parse an operand of an infix expression.
+
+              Parse infix operators and but does not parse the
+              argument list of a functor.
+
+              If LINE-TERM is true a line terminator is treated as a
+              TERMINATE token otherwise it is treated as whitespace
+              and ignored.
+
+              MIN-PREC is the minimum operator precedence below which
+              operators are not parsed into the expression."
+
+             (multiple-value-bind (op prec)
+                 (parse-operator :prefix lex min-prec :required nil)
+
+               (if op
+                   (parse-prefix-expression op (max min-prec prec))
+                   (parse-node-operand lex :line-term line-term))))
+
+           (parse-prefix-expression (operator min-prec)
+             "Parse a prefix expression starting from the operand.
+
+              OPERATOR is the prefix operator
+
+              MIN-PREC is the minimum operator precedence below which
+              operators are not parsed into the expression."
+
+             (if-let (operand (parse-expression min-prec))
+               (functor-node operator (list operand)
+                             :location (node-declaration-location operand))
+               operator))
+
+           (parse-infix-expression (lhs min-prec)
+             "Parse an infix expression starting from the operator.
+
+              LHS is the left hand side operand.
+
+              MIN-PREC is the minimum operator precedence below which
+              operators are not parsed into the expression."
+
+             (multiple-value-bind (op prec assoc)
+                 (parse-operator :infix lex min-prec)
+
+               (cond
+                 (op
+                  (-<>
+                   (parse-operand nil prec)
+                   (parse-infix-expression (next-precedence prec assoc))
+                   (list lhs <>)
+                   (functor-node op <> :location (node-declaration-location lhs))
+                   (parse-infix-expression min-prec)))
+
+                 ((operand-list? lex min-prec)
+                  (parse-infix-expression
+                   (functor-node lhs (parse-prefix-operands lex)
+                                 :location (node-declaration-location lhs))
+                   min-prec))
+
+                 (t lhs))))
+
+           (next-precedence (prec assoc)
              "Returns the minimum operator precedence to use when
-              parsing the right operand. If the associativity (ASSOC)
+              parsing the RHS operand. If the associativity (ASSOC)
               of the current operator is :LEFT, the precedence (PREC)
               is incremented by 1 otherwise PREC is returned as is."
 
              (case assoc
                (:left (1+ prec))
-               (otherwise prec)))
-
-           (parse-expression (min-prec)
-             "Parse a node expression starting from the LHS operand.
-
-              MIN-PREC is the minimum operator precedence. Stops
-              parsing as soon as an operator with lower precedence
-              than MIN-PREC is reached."
-
-             (parse-infix-expression (parse-operand line-term) min-prec))
-
-           (parse-infix-expression (lhs min-prec)
-             "Attempts to parse a functor expression where LHS is
-              either the first operand of a binary expression or a
-              functor and MIN-PREC is the minimum operator precedence.
-
-              If the next token is a binary infix operator (OP), the
-              right-hand-side operand (RHS) is parsed and the
-              expression (OP LHS RHS) is returned.
-
-              If the next token is an open parenthesis :OPEN-PAREN,
-              the operands list (OPERANDS) is parsed and the
-              expression (LHS . OPERANDS) is returned.
-
-              If the next token is neither a binary operator nor an
-              open parenthesis, LHS is returned."
-
-             (acond
-               ((parse-operator :infix lex min-prec)
-                (destructuring-bind (op prec assoc) it
-                  (-<>
-                   (parse-node-operand lex :line-term nil)
-                   (parse-infix-expression (next-precedence prec assoc))
-                   (list lhs <>)
-                   (functor-node op <> :location (node-declaration-location lhs))
-                   (parse-infix-expression min-prec))))
-
-               ((operand-list? lex min-prec)
-                (parse-infix-expression
-                 (functor-node lhs (parse-prefix-operands lex)
-                               :location (node-declaration-location lhs))
-                 min-prec))
-
-               (t lhs)))
-
-           (parse-operand (line-term)
-             "Parses an operand node which can either be an atom or a
-              functor expression."
-
-             (->
-              (parse-node-operand lex :line-term line-term)
-              (parse-infix-expression
-               (car (get :open-paren *operator-nodes*))))))
+               (otherwise prec))))
 
     (parse-expression 0)))
 
@@ -446,8 +463,7 @@
 
    If the token is an :ID token, is found in the *OPERATOR-NODES*
    table for the given POSITION, and has precedence greater than or
-   equal to MIN-PREC a list containing the operator's symbol,
-   precedence and associativity is returned.
+   equal to MIN-PREC it is returned.
 
    If the token is an :ID token but is not found in *OPERATOR-NODES*,
    an error condition is signaled, unless REQUIRED is NIL.
@@ -464,8 +480,13 @@
    if the next token is an :ID token but is not registered as an
    operator of the given type.
 
-   Returns a list of the operator symbol, precedence and associativity
-   if an operator was found. Returns NIL otherwise."
+   If an operator was parsed returns three values:
+
+    1. The operator symbol
+    2. Operator precedence
+    3. Operator associativity
+
+   Otherwise returns NIL."
 
   (multiple-value-bind (type lexeme) (next-token lex :peek t)
     (when (= type :id)
@@ -476,9 +497,10 @@
           (info
            (when (>= (first info) min-prec)
              (next-token lex)
-             (cons
+             (values
               (atom-node op :location (prior-position lex lexeme))
-              info)))
+              (first info)
+              (second info))))
 
           (required
            (error 'declaration-parse-error
