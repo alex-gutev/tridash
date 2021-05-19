@@ -478,12 +478,14 @@
                  id assoc (second op)))))
 
     (with-module-table modules
-      (build "/operator(+, 50, left); /operator(-, 70); /operator(*, 100, right)")
+      (build "/operator(+, 50, left); /operator(-, 70); /operator(*, 100, right)"
+             "/operator(prefix, -, 200)")
 
       (with-slots (operator-nodes) (current-module modules)
         (test-op :infix "+" operator-nodes 50 :left)
         (test-op :infix "-" operator-nodes 70 :right)
-        (test-op :infix "*" operator-nodes 100 :right)))))
+        (test-op :infix "*" operator-nodes 100 :right)
+        (test-op :prefix "-" operator-nodes 200 nil)))))
 
 (test special-operator-errors-/operator
   "Test invalid us of `/operator` operator."

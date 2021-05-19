@@ -132,3 +132,124 @@
    `((:open-paren 900)))
 
   "Initial infix operator table.")
+
+
+;;; Utilities for Processing Special Operators
+
+(defun make-syntax-patterns (patterns)
+  (labels ((make-pattern (pattern place)
+             (let ((place (or place '_)))
+               (match pattern
+                 ('atom
+                  `(or (atom-node- (identifier ,place))
+                       (and (type symbol) ,place)))
+
+                 ('node
+                  `(and (or (type atom-node)
+                            (type functor-node)
+                            (type symbol)
+                            (type list)
+                            (type node)
+                            (type module))
+                        ,place))
+
+                 ((list 'atom value)
+                  (let ((sym (id-symbol value)))
+                    `(or (atom-node- (identifier (and ',sym ,place)))
+                         (and ',sym ,place))))
+
+                 ((and (or 'integer 'string) type)
+                  `(or (literal-node- (value (and (type ,type) ,place)))
+                       (and (type ,type) ,place)))
+
+                 ((list* 'functor (list op-pattern op-place) args)
+                  `(and
+                    (or (functor-node-
+                         (operator ,(make-pattern op-pattern op-place))
+                         (operands ,(make-patterns args)))
+
+                        (cons ,(make-pattern op-pattern op-place)
+                              ,(make-patterns args)))
+                    ,place))
+
+                 ((cons (and (or 'or 'and) op) patterns)
+                  (cons op (map (rcurry #'make-pattern place) patterns)))
+
+                 ('any place))))
+
+           (make-patterns (patterns)
+             (match patterns
+               ((list (list 'rest (list* pattern (or (list place) nil))))
+                (with-gensyms (x)
+                  `(guard
+                    ,place
+                    (and (listp ,place)
+                         (every
+                          (lambda (,x)
+                            (declare (ignorable ,x))
+                            (match ,x
+                              (,(make-pattern pattern '_) t)))
+                          ,place)))))
+
+               ((cons (list 'optional pattern) rest)
+                `(or ,(make-patterns (cons pattern rest)) nil))
+
+               ((cons (list* pattern (or (list place) nil)) rest)
+                (list
+                 'cons
+                 (make-pattern pattern place)
+                 (make-patterns rest))))))
+
+    (make-patterns patterns)))
+
+(defmacro match-syntax (operator (&rest patterns) args &body body)
+  (labels ((extract-pattern (pattern)
+             (match pattern
+               ((or
+                 (list (or 'rest 'optional) (list* pattern _))
+                 (list* pattern _)
+                 pattern)
+                pattern))))
+
+    `(match ,args
+       (,(make-syntax-patterns patterns)
+         ,@body)
+
+       (_
+        (error 'invalid-arguments-error
+               :operator ,operator
+               :arguments ,args
+               :expected ',(map #'extract-pattern patterns))))))
+
+(defmacro match-syntax* (operator args &body patterns)
+  (labels ((extract-patterns (patterns)
+             (map #'extract-pattern patterns))
+
+           (extract-pattern (pattern)
+             (match pattern
+               ((or
+                 (list (or 'rest 'optional) (list* pattern _))
+                 (list* pattern _)
+                 pattern)
+                pattern))))
+
+    `(match ,args
+       ,@(loop for (pat . body) in patterns
+            collect (list* (make-syntax-patterns pat) body))
+
+       (_
+        (error 'invalid-arguments-error
+               :operator ,operator
+               :arguments ,args
+               :expected '(or ,@(map #'car patterns)))))))
+
+(defmacro ensure-top-level (operator &body body)
+  "Signals an error condition of type
+   `SPECIAL-OPERATOR-REFERENCE-ERROR' if the declaration currently
+   being processed is not at top-level."
+
+  `(progn
+     (unless (top-level?)
+       (error 'special-operator-reference-error :operator ,operator))
+
+     ,@body))
