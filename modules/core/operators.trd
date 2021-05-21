@@ -54,6 +54,9 @@
 /operator(::, 700, left)
 /operator(=>, 750, left)
 
+/operator(prefix, ', 650)
+/operator(prefix, &, 650)
+/operator(prefix, @, 650)
 
 ## Arithmetic Operators
 
@@ -64,6 +67,7 @@
 /operator(/, 200, left)
 /operator(%, 200, left)
 
+/operator(prefix, -, 650)
 
 ## Comparison Operators
 
@@ -79,3 +83,5 @@
 
 /operator(and, 25)
 /operator(or, 20)
+
+/operator(prefix, not, 650)

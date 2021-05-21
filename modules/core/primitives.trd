@@ -84,11 +84,11 @@
 # `node`    : The node identifier.
 # `context` : A symbol serving as the explicit context identifier.
 
-@(node, context : /quote(default)) : {
+(@)(node, context : /quote(default)) : {
     # Flag for whether context is a when context with an explicit
     # failure type
 
-    when? <- cons?(context) and head(context) = '(when)
+    when? <- cons?(context) and head(context) = ' when
 
     # Failure Type
 

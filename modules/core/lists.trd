@@ -113,7 +113,7 @@ append(list1, list2) : {
 
     result <- cons(current, append(rest, list2))
 
-    current !- result -> @(self)
+    current !- result -> @ self
     list2 -> self @ when(Empty)
 }
 

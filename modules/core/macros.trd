@@ -59,10 +59,10 @@
 
 case(..(cases)) : {
     make-case(case, else) : {
-        case -> list('(:), condition, value)
+        case -> list(' :, condition, value)
 
-        list!(&(if), condition, value, else) -> @(self)
-        case -> @(self)
+        list!(& if, condition, value, else) -> @ self
+        case -> @ self
     }
 
     foldr(make-case, cases, list(&(No-Value!)))
@@ -113,10 +113,10 @@ case(..(cases)) : {
 ## `state` : The state
 
 ::(node, state) : {
-    state -> list('(=>), from, to)
+    state -> list(' =>, from, to)
 
-    list!('(/state), node, from, to) -> @(self)
-    list('(/state), node, state) -> @(self)
+    list!(' /state, node, from, to) -> @ self
+    list(' /state, node, state) -> @ self
 }
 
 =>(..(args)) :
