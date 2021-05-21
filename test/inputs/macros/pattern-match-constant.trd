@@ -10,5 +10,5 @@ calc2(exp) : {
 
     add-x + add-y -> self @ calc
     sub-x - sub-y -> self @ calc
-    -(neg-x) -> self @ calc
+    - neg-x -> self @ calc
 }

@@ -1310,7 +1310,7 @@
     (build-core-module)
     (build "/import(core)"
 
-           "square(x) : list(&(*), x, x)"
+           "square(x) : list(& *, x, x)"
            "/attribute(square, macro, 1)"
 
            "square(a) -> b")

@@ -551,7 +551,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)"
-           "f(a, b : 1, c : x, :(d), ..(rest)) : a + b + c + d + rest")
+           "f(a, b : 1, c : x, : d, .. rest) : a + b + c + d + rest")
 
     (with-nodes ((f "f") (x "x")) modules
       (is (typep f 'meta-node))
@@ -642,7 +642,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)"
-           "/external(f, a, b : 1, c : x, :(d), ..(rest))")
+           "/external(f, a, b : 1, c : x, : d, .. rest)")
 
     (with-nodes ((f "f") (x "x")) modules
       (is (typep f 'external-meta-node))
@@ -811,7 +811,7 @@
   "Test arity checks in meta-node with rest arguments."
 
   (test-error arity-error
-              "/import(core); add(x, y, ..(xs)) : x + y + xs; add(a) -> b"))
+              "/import(core); add(x, y, .. xs) : x + y + xs; add(a) -> b"))
 
 (test meta-node-arity-check-rest-arguments-minimum
   "Test arity checks when minimum number of arguments given to meta-node."
@@ -819,7 +819,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)"
-           "add(x, ..(xs)) : x + xs"
+           "add(x, .. xs) : x + xs"
            "add(a) -> b")
 
     (with-nodes ((add "add")
@@ -836,7 +836,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)"
-           "add(x, ..(xs)) : x + xs"
+           "add(x, .. xs) : x + xs"
            "add(a,b,cc) -> x")
 
     (with-nodes ((add "add")
@@ -970,7 +970,7 @@
 
   (test-error arity-error
               "/import(core)"
-              "/external(add, x, y, ..(xs))"
+              "/external(add, x, y, .. xs)"
               "add(a) -> b"))
 
 (test external-meta-node-arity-check-rest-arguments-minimum
@@ -979,7 +979,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)"
-           "/external(add, x, ..(xs))"
+           "/external(add, x, .. xs)"
            "add(a) -> b")
 
     (with-nodes ((add "add")
@@ -996,7 +996,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)"
-           "/external(add, x, ..(xs))"
+           "/external(add, x, .. xs)"
            "add(a,b,cc) -> x")
 
     (with-nodes ((add "add")

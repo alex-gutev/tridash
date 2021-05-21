@@ -1577,7 +1577,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)")
-    (build "f(x, ..(xs)) : x + xs")
+    (build "f(x, .. xs) : x + xs")
     (build "g(x, y, z) : f(x, y, z)")
     (build "h(x) : f(x)"
 
@@ -1704,7 +1704,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)")
-    (build "neg(x) : -(x)")
+    (build "neg(x) : - x")
     (finish-build)
 
     (with-nodes ((neg "neg")) modules
@@ -2000,7 +2000,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)")
-    (build "my-not(x) : not(x)")
+    (build "my-not(x) : not x")
     (finish-build)
 
     (with-nodes ((my-and "my-not")) modules
