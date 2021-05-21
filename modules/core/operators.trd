@@ -57,6 +57,8 @@
 /operator(prefix, ', 650)
 /operator(prefix, &, 650)
 /operator(prefix, @, 650)
+/operator(prefix, :, 650)
+/operator(prefix, .., 1100)
 
 ## Arithmetic Operators
 

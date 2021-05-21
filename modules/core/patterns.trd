@@ -46,7 +46,7 @@
 ## node : The node.
 
 get-matcher(node) :
-    get-attribute(node, '(matcher))
+    get-attribute(node, ' matcher)
 
 
 ## Creates a Pattern object.
@@ -66,7 +66,7 @@ get-matcher(node) :
 ## condition : The pattern condition.
 ## bindings  : List of bindings established by the pattern.
 
-Pattern(condition, :(binding)) : {
+Pattern(condition, : binding) : {
     condition -> self.condition
 
     binding -> @ self.bindings
@@ -204,7 +204,7 @@ make-match-bind(src, target) : {
 }
 
 ## If `condition` evaluates to false or to a failure, returns a
-## failure with type `&(Match-Fail)` otherwise returns true.
+## failure with type `& Match-Fail` otherwise returns true.
 ##
 ## condition : The pattern condition
 

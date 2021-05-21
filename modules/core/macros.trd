@@ -57,7 +57,7 @@
 ## cases : List of cases of the form `condition : value`. The last
 ##         case may be of the form `value`.
 
-case(..(cases)) : {
+case(.. cases) : {
     make-case(case, else) : {
         case -> list(' :, condition, value)
 
@@ -65,7 +65,7 @@ case(..(cases)) : {
         case -> @ self
     }
 
-    foldr(make-case, cases, list(&(No-Value!)))
+    foldr(make-case, cases, list(& No-Value!))
 }
 /attribute(case, macro, 1)
 
@@ -80,15 +80,15 @@ case(..(cases)) : {
 
 !(functor) : {
     make-fail-test(arg) :
-        list(&(?), arg)
+        list(& ?, arg)
 
     make-check(arg, test) :
-        list(&(and), arg, test)
+        list(& and, arg, test)
 
     functor -> cons(operator, args)
     test <- foldr(make-check, map(make-fail-test, args))
 
-    list(&(if), test, cons(operator, args))
+    list(& if, test, cons(operator, args))
 }
 /attribute(!, macro, 1)
 
@@ -119,7 +119,7 @@ case(..(cases)) : {
     list(' /state, node, state) -> @ self
 }
 
-=>(..(args)) :
+=>(.. args) :
     fail("`=>` may only appear on the right hand side of the `::` operator.")
 
 /attribute(::, macro, 1)

@@ -42,7 +42,7 @@
 ##
 ## xs : The list elements.
 
-list(..(xs)) : xs
+list(.. xs) : xs
 
 ## Creates a list, containing all the elements of `xs`, excluding the
 ## last. The last element of `xs` is interpreted as a list containing
@@ -51,7 +51,7 @@ list(..(xs)) : xs
 ## xs : The elements of the list, with the last element being a list
 ##      containing the remaining elements.
 
-list*(..(xs)) : foldr(cons, xs)
+list*(.. xs) : foldr(cons, xs)
 
 
 ## Creates a list with elements `xs`, if each element evaluates to a
@@ -62,7 +62,7 @@ list*(..(xs)) : foldr(cons, xs)
 ##
 ## xs : The list elements.
 
-list!(..(xs)) : {
+list!(.. xs) : {
     every?(!!, xs) -> xs -> self
 }
 
@@ -169,7 +169,7 @@ foldl(f, list) : {
 ## l : The list to fold.
 ## x : If provided, the initial second argument to `f`.
 
-foldr(f, l, :(x)) : {
+foldr(f, l, : x) : {
     fold(list) : {
         current <- head(list)
         rest <- tail(list)
@@ -292,7 +292,7 @@ not-every?(f, xs) : {
 
 ### Function Application
 
-apply(f, ..(xs)) :
+apply(f, .. xs) :
     apply%(f, foldr(cons, xs))
 
 
