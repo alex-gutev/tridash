@@ -109,6 +109,7 @@ core_module_sources = \
 	modules/core/introspection.trd \
 	modules/core/introspection.yml \
 	modules/core/patterns.trd \
+	modules/core/match-macro.trd \
 	modules/core/patterns.yml \
 	modules/core/types.trd \
 	modules/core/macros.trd \

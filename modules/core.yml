@@ -41,6 +41,7 @@ sources:
   - core/introspection.trd
   - core/types.trd
   - core/patterns.trd
+  - core/match-macro.trd
   - core/macros.trd
   - core/strings.trd
   - core/js-backend.trd
