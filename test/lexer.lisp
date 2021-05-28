@@ -55,7 +55,7 @@
 
 (def-suite lexer
     :description "Test lexical analysis"
-    :in tridash)
+    :in frontend)
 
 (in-suite lexer)
 

@@ -69,11 +69,22 @@
 
 ;;;; Adding operators
 
-(defun add-operator (symbol prec assoc operators)
-  "Adds the symbol SYMBOL as an operator with precedence PREC and
-   associativity ASSOC."
+(defun add-operator (position symbol prec assoc operators)
+  "Add a symbol to a given operator table.
 
-  (setf (get symbol operators) (list prec assoc)))
+   POSITION identifies the position in which the operator may be
+   placed: :INFIX - infix position, :PREFIX - prefix position.
+
+   SYMBOL is the symbol naming the operator.
+
+   PREC is the operator precedence.
+
+   ASSOC is the operator's associativity (:LEFT or :RIGHT).
+
+   OPERATORS is the operator table hash map to which the operator
+   should be added."
+
+  (setf (get (list position symbol) operators) (list prec assoc)))
 
 
 ;;;; Parsing Functions
@@ -126,7 +137,6 @@
     (prog1 (parse-node-expression lex)
       (parse-terminator lex))))
 
-
 (defun parse-node-expression (lex &key (line-term *line-term*))
   "Parses a node expression, which can either be an atom node or a
    functor. The value of the :LINE-TERM argument determines whether
@@ -134,95 +144,130 @@
    terminators. If no value is provided it defaults to the value of
    *LINE-TERM*."
 
-  (labels ((next-precedence (prec assoc)
+  (labels ((parse-expression (min-prec &optional (required t))
+             "Parse expression starting from a LHS operand.
+
+              MIN-PREC is the minimum operator precedence below which
+              operators will not be returned."
+
+             (when-let (operand (parse-operand line-term min-prec required))
+               (parse-infix-expression operand min-prec)))
+
+           (parse-operand (line-term min-prec &optional (required t))
+             "Parse an operand of an infix expression.
+
+              Parse infix operators and but does not parse the
+              argument list of a functor.
+
+              If LINE-TERM is true a line terminator is treated as a
+              TERMINATE token otherwise it is treated as whitespace
+              and ignored.
+
+              MIN-PREC is the minimum operator precedence below which
+              operators are not parsed into the expression."
+
+             (multiple-value-bind (op prec)
+                 (parse-operator :prefix lex 0 :line-term line-term :required nil)
+
+               (if op
+                   (parse-prefix-expression op (max min-prec prec))
+                   (parse-node-operand lex :line-term line-term :required required))))
+
+           (parse-prefix-expression (operator min-prec)
+             "Parse a prefix expression starting from the operand.
+
+              OPERATOR is the prefix operator
+
+              MIN-PREC is the minimum operator precedence below which
+              operators are not parsed into the expression."
+
+             (if-let (operand (parse-expression min-prec nil))
+               (functor-node operator (list operand)
+                             :location (node-declaration-location operand))
+               operator))
+
+           (parse-infix-expression (lhs min-prec)
+             "Parse an infix expression starting from the operator.
+
+              LHS is the left hand side operand.
+
+              MIN-PREC is the minimum operator precedence below which
+              operators are not parsed into the expression."
+
+             (multiple-value-bind (op prec assoc)
+                 (parse-operator :infix lex min-prec)
+
+               (cond
+                 (op
+                  (-<>
+                   (parse-operand nil prec)
+                   (parse-infix-expression (next-precedence prec assoc))
+                   (list lhs <>)
+                   (functor-node op <> :location (node-declaration-location lhs))
+                   (parse-infix-expression min-prec)))
+
+                 ((operand-list? lex min-prec)
+                  (parse-infix-expression
+                   (functor-node lhs (parse-prefix-operands lex)
+                                 :location (node-declaration-location lhs))
+                   min-prec))
+
+                 (t lhs))))
+
+           (next-precedence (prec assoc)
              "Returns the minimum operator precedence to use when
-              parsing the right operand. If the associativity (ASSOC)
+              parsing the RHS operand. If the associativity (ASSOC)
               of the current operator is :LEFT, the precedence (PREC)
               is incremented by 1 otherwise PREC is returned as is."
 
              (case assoc
                (:left (1+ prec))
-               (otherwise prec)))
+               (otherwise prec))))
 
-           (parse-expression (lhs min-prec)
-             "Attempts to parse a functor expression where LHS is
-              either the first operand of a binary expression or a
-              functor and MIN-PREC is the minimum operator precedence.
+    (parse-expression 0)))
 
-              If the next token is a binary infix operator (OP), the
-              right-hand-side operand (RHS) is parsed and the
-              expression (OP LHS RHS) is returned.
-
-              If the next token is an open parenthesis :OPEN-PAREN,
-              the operands list (OPERANDS) is parsed and the
-              expression (LHS . OPERANDS) is returned.
-
-              If the next token is neither a binary operator nor an
-              open parenthesis, LHS is returned."
-
-             (acond
-               ((parse-operator lex min-prec)
-                (destructuring-bind (op prec assoc) it
-                  (-<>
-                   (parse-node-operand lex :line-term nil)
-                   (parse-expression (next-precedence prec assoc))
-                   (list lhs <>)
-                   (functor-node op <> :location (node-declaration-location lhs))
-                   (parse-expression min-prec))))
-
-               ((operand-list? lex min-prec)
-                (parse-expression
-                 (functor-node lhs (parse-prefix-operands lex)
-                               :location (node-declaration-location lhs))
-                 min-prec))
-
-               (t lhs)))
-
-           (parse-operand (line-term)
-             "Parses an operand node which can either be an atom or a
-              functor expression."
-
-             (->
-              (parse-node-operand lex :line-term line-term)
-              (parse-expression
-               (car (get :open-paren *operator-nodes*))))))
-
-    (parse-expression (parse-operand line-term) 0)))
-
-(defun parse-node-operand (lex &key (line-term *line-term*))
+(defun parse-node-operand (lex &key (line-term *line-term*) (required t))
   "Parses an operand of an infix node expression. The value of
    the :LINE-TERM argument determines whether newlines occurring
    before the node are treated as declaration terminators, if no value
    is provided it defaults to the value of *LINE-TERM*."
 
   (multiple-value-call #'parse-node
-    (next-token lex :line-term line-term)
-    lex))
+    (next-token lex :line-term line-term :peek t)
+    lex
+    :line-term line-term
+    :required required))
 
 
-(defgeneric parse-node (type lexeme lex)
+(defgeneric parse-node (type lexeme lex &key &allow-other-keys)
   (:documentation
    "Parses a node beginning with a token of type TYPE,
     and lexeme LEXEME."))
 
-(defmethod parse-node ((type (eql :integer)) lexeme (lex t))
+(defmethod parse-node ((type (eql :integer)) lexeme (lex t) &key line-term)
   "Parses an integer: converts the lexeme string to a CL integer
    value."
+
+  (next-token lex :line-term line-term)
 
   (literal-node
    (parse-integer lexeme)
    :location (prior-position lex lexeme)))
 
-(defmethod parse-node ((type (eql :real)) lexeme (lex t))
+(defmethod parse-node ((type (eql :real)) lexeme (lex t) &key line-term)
   "Parses a floating point real-number: converts the lexeme string to
    a CL floating-point number."
+
+  (next-token lex :line-term line-term)
 
   (literal-node
    (parse-real-number lexeme)
    :location (prior-position lex lexeme)))
 
-(defmethod parse-node ((type (eql :string)) lexeme (lex t))
+(defmethod parse-node ((type (eql :string)) lexeme (lex t) &key line-term)
   "Parses a string literal."
+
+  (next-token lex :line-term line-term)
 
   (literal-node
    (parse-string lexeme)
@@ -277,9 +322,11 @@
                (otherwise
                 (write-char c))))))))
 
-(defmethod parse-node ((type (eql :id)) lexeme (lex t))
+(defmethod parse-node ((type (eql :id)) lexeme (lex t) &key line-term)
   "Parses either an atom node or a functor node, if the token
    following the identifier is an :OPEN-PAREN, '(', token."
+
+  (next-token lex :line-term line-term)
 
   (atom-node
    (id-symbol lexeme)
@@ -294,29 +341,34 @@
     (cons line (- column (length lexeme)))))
 
 
-(defmethod parse-node ((type (eql :open-paren)) (lexeme t) lex)
+(defmethod parse-node ((type (eql :open-paren)) (lexeme t) lex &key line-term)
   "Parses a node expression, enclosed within parenthesis."
+
+  (next-token lex :line-term line-term)
 
   (let ((*line-term* nil))
     (prog1 (parse-node-expression lex)
       (parse-close-paren lex))))
 
-(defmethod parse-node ((type (eql :open-brace)) (lexeme t) lex)
+(defmethod parse-node ((type (eql :open-brace)) (lexeme t) lex &key line-term)
   "Parses and accumulates nodes into a list until a :CLOSE-BRACE, '}',
    token is read. The first element of the list returned is
    +LIST-OPERATOR+ followed by the parsed nodes. This function is
    expected to be called after consuming an :OPEN-BRACE, '{', token."
 
+  (next-token lex :line-term line-term)
+
   (parse-node-list :close-brace lex))
 
-(defmethod parse-node (type lexeme (lex t))
+(defmethod parse-node (type lexeme (lex t) &key (required t))
   "Method for invalid tokens, signals an error."
 
-  (error 'declaration-parse-error
-         :expected '(or :id :integer :real :string :open-paren :open-brace)
-         :token type
-         :rule 'node-operand
-         :lexeme lexeme))
+  (when required
+    (error 'declaration-parse-error
+           :expected '(or :id :integer :real :string :open-paren :open-brace)
+           :token type
+           :rule 'node-operand
+           :lexeme lexeme)))
 
 
 (defun node-path->name (path &optional (prefix "NODE"))
@@ -421,31 +473,59 @@
              :rule 'bracketed-node
              :lexeme lxm))))
 
-(defun parse-operator (lex min-prec)
-  "Checks whether the next token is a binary infix operator. If the
-   token is an :ID token, is found in the *OPERATOR-NODES* table, and
-   has precedence greater than or equal to MIN-PREC a list containing
-   the operator's symbol, precedence and associativity is returned. If
-   the token is an :ID token but is not found in *OPERATOR-NODES*, an
-   error condition is signaled otherwise NIL is returned."
+(defun parse-operator (position lex min-prec &key (line-term *line-term*) (required t))
+  "Parse an infix/prefix operator token.
 
-  (multiple-value-bind (type lexeme) (next-token lex :peek t)
+   If the token is an :ID token, is found in the *OPERATOR-NODES*
+   table for the given POSITION, and has precedence greater than or
+   equal to MIN-PREC it is returned.
+
+   If the token is an :ID token but is not found in *OPERATOR-NODES*,
+   an error condition is signaled, unless REQUIRED is NIL.
+
+   POSITION is the position of the operator to parse: :INFIX - infix
+   operator, :PREFIX - prefix operator.
+
+   LEX is the lexer object.
+
+   MIN-PREC is the minimum precedence. If an operator with a
+   precedence lower than this is encountered, it is not returned.
+
+   LINE-TERM is a flag for whether line feed should be treated as
+   terminate tokens.
+
+   :REQUIRED is a flag, which if true, an error condition is signalled
+   if the next token is an :ID token but is not registered as an
+   operator of the given type.
+
+   If an operator was parsed returns three values:
+
+    1. The operator symbol
+    2. Operator precedence
+    3. Operator associativity
+
+   Otherwise returns NIL."
+
+  (multiple-value-bind (type lexeme) (next-token lex :line-term line-term :peek t)
     (when (= type :id)
       (let* ((op (id-symbol lexeme))
-             (info (get op *operator-nodes*)))
+             (info (get (list position op) *operator-nodes*)))
 
-        (unless info
-          (error 'declaration-parse-error
-                 :rule 'operator
-                 :token type
-                 :expected '(or :infix-operator :terminate)
-                 :lexeme lexeme))
+        (cond
+          (info
+           (when (>= (first info) min-prec)
+             (next-token lex)
+             (values
+              (atom-node op :location (prior-position lex lexeme))
+              (first info)
+              (second info))))
 
-        (when (>= (first info) min-prec)
-          (next-token lex)
-          (cons
-           (atom-node op :location (prior-position lex lexeme))
-           info))))))
+          (required
+           (error 'declaration-parse-error
+                  :rule 'operator
+                  :token type
+                  :expected `(or ,(symbolicate position '-operator) :terminate)
+                  :lexeme lexeme)))))))
 
 (defun parse-terminator (lex)
   "Consumes the declaration terminator. If the end of file is reached,

@@ -51,7 +51,7 @@ string->list(string) : {
         head <- string-at(string, pos)
         tail <- convert(string, pos + 1)
 
-        head !- cons(head, tail) -> @(self)
+        head !- cons(head, tail) -> @ self
         Empty -> self @ when(Index-Out-Bounds)
     }
 
@@ -102,7 +102,7 @@ list->string(list) : {
 ##
 ## Returns the string with the placeholders replaced.
 
-format(string, ..(args)) : {
+format(string, .. args) : {
     format-chars(chars, args) : {
         chars -> list*(c(%), c(%) and char, rest-chars)
         chars -> list*(c(%), c(s), rest-chars) and substitute
@@ -110,8 +110,8 @@ format(string, ..(args)) : {
 
         args -> cons(arg, rest-args)
 
-        substitute !- cons(arg, format-chars(rest-chars, rest-args)) -> @(self)
-        char !- cons(char, format-chars(rest-chars, args)) -> @(self)
+        substitute !- cons(arg, format-chars(rest-chars, rest-args)) -> @ self
+        char !- cons(char, format-chars(rest-chars, args)) -> @ self
 
         Empty -> self @ when(patterns.Match-Fail)
     }

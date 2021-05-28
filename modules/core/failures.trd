@@ -48,8 +48,8 @@ fails?(x) : {
     # If `x` evaluates to a failure value then so does the expression
     # x != x, otherwise the expression evaluates to False.
 
-    x != x -> @(self)
-    True -> @(self)
+    x != x -> @ self
+    True -> @ self
 }
 
 ## Checks whether `x` fails with failure type `type`
@@ -61,8 +61,8 @@ fails?(x) : {
 ## otherwise.
 
 fail-type?(x, type) : {
-    fail-type(x) = type -> @(self)
-    False -> @(self)
+    fail-type(x) = type -> @ self
+    False -> @ self
 }
 
 ## Checks whether `x` evaluates to a value.
@@ -72,7 +72,7 @@ fail-type?(x, type) : {
 ## Evaluates to true if `x` evaluates to a value, false if `x`
 ## fails.
 
-?(x) : not(fails?(x))
+?(x) : not fails?(x)
 
 
 ## Checks whether `x` evaluates to a value.

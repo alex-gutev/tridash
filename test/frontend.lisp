@@ -45,11 +45,11 @@
 (in-package :tridash/test.frontend)
 
 
-(def-suite frontend-test
+(def-suite builder
     :description "Test building of frontend node definitions."
-    :in tridash)
+    :in frontend)
 
-(in-suite frontend-test)
+(in-suite builder)
 
 
 ;;; Atom Nodes and Bindings
@@ -461,13 +461,13 @@
 (test special-operator-/operator
   "Test registering infix operators."
 
-  (flet ((test-op (id operators prec assoc)
-           (let ((op (get (id-symbol id) operators)))
-             (is-true op "Infix operator ~a not registered." id)
+  (flet ((test-op (position id operators prec assoc)
+           (let ((op (get (list position (id-symbol id)) operators)))
+             (is-true op "~a operator ~a not registered." position id)
 
              (is (= (length op) 2)
-                 "Expected list of length 2 for infix operator ~a.~%Got:~%~a"
-                 id op)
+                 "Expected list of length 2 for ~a operator ~a.~%Got:~%~a"
+                 position id op)
 
              (is (= (first op) prec)
                  "Precedence for operator ~a not ~a. Got: ~a."
@@ -478,12 +478,14 @@
                  id assoc (second op)))))
 
     (with-module-table modules
-      (build "/operator(+, 50, left); /operator(-, 70); /operator(*, 100, right)")
+      (build "/operator(+, 50, left); /operator(-, 70); /operator(*, 100, right)"
+             "/operator(prefix, -, 200)")
 
       (with-slots (operator-nodes) (current-module modules)
-        (test-op "+" operator-nodes 50 :left)
-        (test-op "-" operator-nodes 70 :right)
-        (test-op "*" operator-nodes 100 :right)))))
+        (test-op :infix "+" operator-nodes 50 :left)
+        (test-op :infix "-" operator-nodes 70 :right)
+        (test-op :infix "*" operator-nodes 100 :right)
+        (test-op :prefix "-" operator-nodes 200 nil)))))
 
 (test special-operator-errors-/operator
   "Test invalid us of `/operator` operator."
@@ -549,7 +551,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)"
-           "f(a, b : 1, c : x, :(d), ..(rest)) : a + b + c + d + rest")
+           "f(a, b : 1, c : x, : d, .. rest) : a + b + c + d + rest")
 
     (with-nodes ((f "f") (x "x")) modules
       (is (typep f 'meta-node))
@@ -640,7 +642,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)"
-           "/external(f, a, b : 1, c : x, :(d), ..(rest))")
+           "/external(f, a, b : 1, c : x, : d, .. rest)")
 
     (with-nodes ((f "f") (x "x")) modules
       (is (typep f 'external-meta-node))
@@ -809,7 +811,7 @@
   "Test arity checks in meta-node with rest arguments."
 
   (test-error arity-error
-              "/import(core); add(x, y, ..(xs)) : x + y + xs; add(a) -> b"))
+              "/import(core); add(x, y, .. xs) : x + y + xs; add(a) -> b"))
 
 (test meta-node-arity-check-rest-arguments-minimum
   "Test arity checks when minimum number of arguments given to meta-node."
@@ -817,7 +819,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)"
-           "add(x, ..(xs)) : x + xs"
+           "add(x, .. xs) : x + xs"
            "add(a) -> b")
 
     (with-nodes ((add "add")
@@ -834,7 +836,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)"
-           "add(x, ..(xs)) : x + xs"
+           "add(x, .. xs) : x + xs"
            "add(a,b,cc) -> x")
 
     (with-nodes ((add "add")
@@ -968,7 +970,7 @@
 
   (test-error arity-error
               "/import(core)"
-              "/external(add, x, y, ..(xs))"
+              "/external(add, x, y, .. xs)"
               "add(a) -> b"))
 
 (test external-meta-node-arity-check-rest-arguments-minimum
@@ -977,7 +979,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)"
-           "/external(add, x, ..(xs))"
+           "/external(add, x, .. xs)"
            "add(a) -> b")
 
     (with-nodes ((add "add")
@@ -994,7 +996,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)"
-           "/external(add, x, ..(xs))"
+           "/external(add, x, .. xs)"
            "add(a,b,cc) -> x")
 
     (with-nodes ((add "add")

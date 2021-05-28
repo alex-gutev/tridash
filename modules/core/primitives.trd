@@ -58,7 +58,7 @@
 # `target` : The target node of the binding.
 # `src`    : The source node of the binding.
 
-<-(target, src) : list(&(->), src, target)
+<-(target, src) : list(& ->, src, target)
 /attribute(<-, macro, 1)
 
 /export(->, <-)
@@ -84,11 +84,11 @@
 # `node`    : The node identifier.
 # `context` : A symbol serving as the explicit context identifier.
 
-@(node, context : /quote(default)) : {
+(@)(node, context : /quote(default)) : {
     # Flag for whether context is a when context with an explicit
     # failure type
 
-    when? <- cons?(context) and head(context) = '(when)
+    when? <- cons?(context) and head(context) = ' when
 
     # Failure Type
 
@@ -97,7 +97,7 @@
 
     # Failure test function if failure type given.
 
-    test-fn <- list(&(test-equal-function), fail-type)
+    test-fn <- list(& test-equal-function, fail-type)
 
 
     # Context identifier when context is a `when` context
@@ -115,11 +115,11 @@
 
     # Context expression with test function
 
-    expr-with-test <- list('(/context), node, context-id, test-fn)
+    expr-with-test <- list(' /context, node, context-id, test-fn)
 
     # Context expression without test function
 
-    expr <- list('(/context), node, context-id)
+    expr <- list(' /context, node, context-id)
 
 
     # Return expression with test function, if context is a `when`
@@ -140,7 +140,7 @@ test-equal-function(x) : {
 
 /attribute(@, macro, 1)
 
-when(..(args)) :
+when(.. args) :
     fail("`when` may only appear within the context operand to the `@` operator.")
 
 /attribute(when, macro, 1)

@@ -21,6 +21,7 @@
         :fiveam)
 
   (:export :tridash
+           :frontend
            :file-processor
            :backend
            :test-tridash))
@@ -29,6 +30,10 @@
 
 (def-suite tridash
     :description "Master suite of all Tridash tests")
+
+(def-suite frontend
+    :description "Test suite for compiler frontend"
+    :in tridash)
 
 (def-suite file-processor
     :description "Test suite for special file processors"

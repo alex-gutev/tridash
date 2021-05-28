@@ -57,7 +57,7 @@
 
 (def-suite parser
     :description "Test parser."
-    :in tridash)
+    :in frontend)
 
 (in-suite parser)
 
@@ -134,13 +134,16 @@
 
 (defconstant +arithmetic-operators+
   (alist-hash-map
-   `((,(s "->") 10 :right)
-     (,(s "+") 20 :left)
-     (,(s "-") 20 :left)
-     (,(s "*") 50 :right)
-     (,(s "/") 50 :left)
+   `(((:infix ,(s "->")) 10 :right)
+     ((:infix ,(s "+")) 20 :left)
+     ((:infix ,(s "-")) 20 :left)
+     ((:infix ,(s "*")) 50 :right)
+     ((:infix ,(s "/")) 50 :left)
+     ((:prefix ,(s "-")) 70)
+     ((:prefix ,(s "^")) 15)
      (:open-paren 200)
-     (,(s ".") 500 :left))))
+     ((:infix ,(s ".")) 500 :left)
+     ((:prefix ,(s "$")) 800))))
 
 (test infix-operator-precedence
   "Test infix operator expressions with multiple operators of varying precedence."
@@ -192,6 +195,94 @@
       (!|fn2| !|arg|))
      (!* !|node1| !|node2|))))
 
+(test prefix-operator-high-precedence
+  "Test expressions prefix operator with higher precedence than infix operator"
+
+  (test-parser
+      (#?"- a * b + - c" +arithmetic-operators+)
+
+    (!+
+     (!* (!- !\a) !\b)
+     (!- !\c))))
+
+(test prefix-operator-low-precedence
+  "Test expressions prefix operator with lower precedence than infix operator"
+
+  (test-parser
+      (#?"- a.b * - c.d" +arithmetic-operators+)
+
+    (!*
+     (!- (!. !\a !\b))
+     (!- (!. !\c !\d)))))
+
+(test prefix-operator-high-infix-precedence
+  "Test prefix operator expression within infix expression with high precedence"
+
+  (test-parser
+      (#?"^ a + b * ^ c + d" +arithmetic-operators+)
+
+    (!^
+     (!+
+      (!+ !\a
+          (!* !\b (!^ !\c)))
+      !\d))))
+
+(test prefix-operator-line-term
+  "Test prefix operator before line terminator"
+
+  (test-parser
+      (#?"a + ^\nb" +arithmetic-operators+)
+
+    (!+ !\a !^)
+    !\b))
+
+(test prefix-operator-no-line-term
+  "Test prefix operator before newline (not declaration terminator)"
+
+  (test-parser
+      (#?"(a + ^\nb) * c" +arithmetic-operators+)
+
+    (!*
+     (!+ !\a (!^ !\b))
+     !\c)))
+
+(test prefix-operator-parenthesis
+  "Test prefix operator in parenthesis expressions"
+
+  (test-parser
+      ("-(a + b) * c" +arithmetic-operators+)
+
+    (!*
+     (!- (!+ !\a !\b))
+     !\c)))
+
+(test prefix-operator-atom
+  "Test prefix operator treated as atom node"
+
+  (test-parser
+      ("a + (^) - b" +arithmetic-operators+)
+
+    (!- (!+ !\a !^) !\b)))
+
+(test prefix-operator-infix-left-associativity
+  "Test prefix operator in infix expression with left associativity"
+
+  (test-parser
+      ("a - ^ b - c" +arithmetic-operators+)
+
+    (!- !\a (!^ (!- !\b !\c)))))
+
+(test prefix-operator-and-functors
+  "Test prefix operator in expression with functors"
+
+  (test-parser
+      (#?"- mod.fn(arg1, arg2) + - fn2(arg) - \n $ fn3(a1, a2, a3)" +arithmetic-operators+)
+
+    (!-
+     (!+ (!- ((!. !|mod| !|fn|) !|arg1| !|arg2|))
+         (!- (!|fn2| !|arg|)))
+     ((!$ !|fn3|) !\a1 !\a2 !\a3))))
+
 
 ;;; Node List Test
 
@@ -202,7 +293,7 @@
       (#?"fn(a, b) : {a;b\nc\n\nd}"
 
          (alist-hash-map
-          `((,(s ":") 10 :right)
+          `(((:infix ,(s ":")) 10 :right)
             (:open-paren 200))))
 
     (!\:
@@ -216,10 +307,10 @@
   "Test expressions with of mixed literal types."
 
   (let ((ops (alist-hash-map
-              `((,(s "+") 20 :left)
-                (,(s "-") 20 :left)
-                (,(s "*") 50 :right)
-                (,(s "/") 50 :left)
+              `(((:infix ,(s "+")) 20 :left)
+                ((:infix ,(s "-")) 20 :left)
+                ((:infix ,(s "*")) 50 :right)
+                ((:infix ,(s "/")) 50 :left)
                 (:open-paren 200)))))
 
     (test-parser

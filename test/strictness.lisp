@@ -51,7 +51,7 @@
 
 (def-suite strictness-analysis
     :description "Test node value strictness analysis."
-    :in tridash)
+    :in frontend)
 
 (in-suite strictness-analysis)
 
@@ -159,11 +159,11 @@
 (test meta-node-rest-argument
   "Test strictness analysis of meta-node rest arguments."
 
-  (test-strictness ("f(x, ..(xs)) : { x -> self.x; xs -> self.xs }")
+  (test-strictness ("f(x, .. xs) : { x -> self.x; xs -> self.xs }")
     ("f" (nil nil))))
 
 (test meta-node-rest-arguments
   "Test strictness analysis of recursive meta-node with rest arguments."
 
-  (test-strictness ("add(x, ..(xs)) : if(xs, add(x + head(xs), tail(xs)), x)")
+  (test-strictness ("add(x, .. xs) : if(xs, add(x + head(xs), tail(xs)), x)")
     ("add" (t t))))

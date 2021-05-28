@@ -47,7 +47,7 @@
 
 (def-suite meta-nodes
     :description "Test checking of node graph structure."
-    :in tridash)
+    :in frontend)
 
 (in-suite meta-nodes)
 
@@ -335,8 +335,8 @@
 
     (build "/import(core)"
 
-           "addx(a) : addy(..(x) + a)"
-           "addy(a) : a + ..(y)"
+           "addx(a) : addy(.. x + a)"
+           "addy(a) : a + .. y"
 
            "x; y"
 
@@ -509,8 +509,8 @@
 
     (build "/import(core)"
 
-           "addx(a) : addy(..(x) + a)"
-           "addy(a) : addx(a + ..(y))"
+           "addx(a) : addy(.. x + a)"
+           "addy(a) : addx(a + .. y)"
 
            "x; y"
 
@@ -642,8 +642,8 @@
            "count(end) : {
                       iter(n, acc) : {
                         case (
-                          n < ..(end) : iter(n + 1, acc + n),
-                          ..(start) + acc
+                          n < .. end : iter(n + 1, acc + n),
+                          .. start + acc
                         )
                       }
                       iter(0, 0)
@@ -742,8 +742,8 @@
            "count(end) : {
                       iter(n, acc) : {
                         case (
-                          n < ..(end) : iter(n + 1, acc + n),
-                          ..(start) + acc
+                          n < .. end : iter(n + 1, acc + n),
+                          .. start + acc
                         )
                       }
                       iter(0, 0)

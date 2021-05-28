@@ -46,7 +46,7 @@
 ## node : The node.
 
 get-matcher(node) :
-    get-attribute(node, '(matcher))
+    get-attribute(node, ' matcher)
 
 
 ## Creates a Pattern object.
@@ -66,11 +66,11 @@ get-matcher(node) :
 ## condition : The pattern condition.
 ## bindings  : List of bindings established by the pattern.
 
-Pattern(condition, :(binding)) : {
+Pattern(condition, : binding) : {
     condition -> self.condition
 
-    binding -> @(self.bindings)
-    Empty -> @(self.bindings)
+    binding -> @ self.bindings
+    Empty -> @ self.bindings
 }
 
 ## Creates the node declarations implementing the Pattern `pattern`.
@@ -80,14 +80,14 @@ Pattern(condition, :(binding)) : {
 make-pattern-declarations(pattern) : {
     contextualize-binding(binding) : {
         context <-
-            list('(when), '(match), list(&(&), Match-Fail))
+            list(' when, ' match, list(& &, Match-Fail))
 
-        list(&(@), binding, context)
+        list(& @, binding, context)
     }
 
     bindings <- map(contextualize-binding, pattern.bindings)
 
-    list*(&(prog), conditionalize-bindings(pattern.condition, bindings))
+    list*(& prog, conditionalize-bindings(pattern.condition, bindings))
 }
 
 ## Creates the `Pattern` object for the pattern declaration `pattern`
@@ -116,24 +116,24 @@ make-pattern(place, pattern) : {
 
     make-constant-pattern(place, pattern) : {
         constant?(pattern) ->
-            Pattern(list(&(=), place, pattern)) -> self
+            Pattern(list(& =, place, pattern)) -> self
     }
 
     # Creates a pattern which consists of a binding of `place` to
     # `pattern`, and no condition.
 
     make-binding-pattern(place, pattern) : {
-        pattern != '(_) ->
-            list(make-match-bind(place, pattern)) -> @(self.bindings)
+        pattern != ' _ ->
+            list(make-match-bind(place, pattern)) -> @ self.bindings
 
-        Empty -> @(self.bindings)
+        Empty -> @ self.bindings
     }
 
     # Body
 
-    make-functor-pattern(place, pattern) -> @(self)
-    make-constant-pattern(place, pattern) -> @(self)
-    make-binding-pattern(place, pattern) -> @(self)
+    make-functor-pattern(place, pattern) -> @ self
+    make-constant-pattern(place, pattern) -> @ self
+    make-binding-pattern(place, pattern) -> @ self
 }
 
 
@@ -147,11 +147,11 @@ make-pattern(place, pattern) : {
 ## bindings  : The list of binding declarations to conditionalize.
 
 conditionalize-bindings(condition, bindings) : {
-    condition -> @(test)
-    True -> @(test)
+    condition -> @ test
+    True -> @ test
 
     conditionalize(binding) :
-        list(&(->), list(&(fail-match), test), binding)
+        list(& ->, list(& fail-match, test), binding)
 
     map(conditionalize, bindings)
 }
@@ -166,9 +166,9 @@ conditionalize-bindings(condition, bindings) : {
 ## c2 : The second condition which is to be tested.
 
 combine-conditions(c1, c2) : {
-    ?(c1) and ?(c2) -> list(&(and), c1, c2) -> @(self)
-    c1 -> @(self)
-    c2 -> @(self)
+    ?(c1) and ?(c2) -> list(& and, c1, c2) -> @ self
+    c1 -> @ self
+    c2 -> @ self
 }
 
 
@@ -183,7 +183,7 @@ constant?(x) : {
 
 ## Failure type indicating that a pattern failed to match.
 
-Match-Fail <- &(Match-Fail)
+Match-Fail <- & Match-Fail
 
 ## Failure value with the type indicating that a pattern failed to
 ## match.
@@ -191,20 +191,20 @@ Match-Fail <- &(Match-Fail)
 Match-Fail! <- fail(Match-Fail)
 
 ## Generates a binding `src -> target`, with `target` in the `match`
-## context which is activated on failures with type `&(Match-Fail)`.
+## context which is activated on failures with type `& Match-Fail`.
 ##
 ## src : The source of the binding.
 ## target : The target of the binding.
 
 make-match-bind(src, target) : {
-    context <- list('(when), '(match), list(&(&), Match-Fail))
-    ctarget <- list(&(@), target, context)
+    context <- list(' when, ' match, list(& &, Match-Fail))
+    ctarget <- list(& @, target, context)
 
-    list(&(->), src, ctarget)
+    list(& ->, src, ctarget)
 }
 
 ## If `condition` evaluates to false or to a failure, returns a
-## failure with type `&(Match-Fail)` otherwise returns true.
+## failure with type `& Match-Fail` otherwise returns true.
 ##
 ## condition : The pattern condition
 
@@ -224,7 +224,7 @@ match-int(place, expression) : {
     x <- nth(expression, 1)
     pattern <- make-pattern(place, x)
 
-    test <- list(&(int?), place)
+    test <- list(& int?, place)
     condition <- combine-conditions(test, pattern.condition)
 
     Pattern(condition, pattern.bindings)
@@ -243,7 +243,7 @@ match-real(place, expression) : {
     x <- nth(expression, 1)
     pattern <- make-pattern(place, x)
 
-    test <- list(&(real?), place)
+    test <- list(& real?, place)
     condition <- combine-conditions(test, pattern.condition)
 
     Pattern(condition, pattern.bindings)
@@ -262,7 +262,7 @@ match-string(place, expression) : {
     x <- nth(expression, 1)
     pattern <- make-pattern(place, x)
 
-    test <- list(&(string?), place)
+    test <- list(& string?, place)
     condition <- combine-conditions(test, pattern.condition)
 
     Pattern(condition, pattern.bindings)
@@ -281,14 +281,14 @@ match-cons(place, pattern) : {
     phead <- nth(pattern, 1)
     ptail <- nth(pattern, 2)
 
-    place-head <- list(&(head), place)
-    place-tail <- list(&(tail), place)
+    place-head <- list(& head, place)
+    place-tail <- list(& tail, place)
 
     pattern-head <- make-pattern(place-head, phead)
     pattern-tail <- make-pattern(place-tail, ptail)
 
     condition <- combine-conditions(pattern-head.condition, pattern-tail.condition)
-    cons-condition <- list(&(cons?), place)
+    cons-condition <- list(& cons?, place)
 
     Pattern(
         combine-conditions(cons-condition, condition),
@@ -309,11 +309,11 @@ target-list(source, expression) :
 
 match-list(place, expression) : {
     args <- tail(expression)
-    empty-pattern <- list(list(&(Empty-List)))
+    empty-pattern <- list(list(& Empty-List))
 
     pattern <-
         cons(
-            &(list*),
+            & list*,
             append(args, empty-pattern)
         )
 
@@ -325,7 +325,7 @@ match-list(place, expression) : {
 
 
 match-Empty-List(place, expression) :
-    Pattern(list(&(=), place, &(Empty)))
+    Pattern(list(& =, place, & Empty))
 
 /attribute(Empty-List, matcher, match-Empty-List)
 
@@ -337,7 +337,7 @@ target-list*(source, expression) :
 
 match-list*(place, pattern) : {
     make-cons(head, tail) :
-        list(&(cons), head, tail)
+        list(& cons, head, tail)
 
     cons-pattern <- foldr(make-cons, tail(pattern))
     make-pattern(place, cons-pattern)
@@ -353,8 +353,8 @@ match-fails?(place, pattern) : {
     type <- head(tail(pattern))
 
     if(?(type),
-       Pattern(list(&(fail-type?), place, type)),
-       Pattern(list(&(fails?), place)))
+       Pattern(list(& fail-type?, place, type)),
+       Pattern(list(& fails?, place)))
 }
 
 /attribute(fails?, matcher, match-fails?)
@@ -363,7 +363,7 @@ match-fails?(place, pattern) : {
 ## Quote
 
 match-quote(place, pattern) : {
-    Pattern(list(&(=), place, list(&('), nth(pattern, 1))))
+    Pattern(list(& =, place, list(& ', nth(pattern, 1))))
 }
 
 /attribute(', matcher, match-quote)
@@ -372,7 +372,7 @@ match-quote(place, pattern) : {
 ## Characters
 
 match-c(place, pattern) :
-    Pattern(list(&(=), place, pattern))
+    Pattern(list(& =, place, pattern))
 
 /attribute(c, matcher, match-c)
 
@@ -409,12 +409,12 @@ match-or(place, expression) : {
     }
 
     contextualize(x) :
-        list('(/context), x, '(match))
+        list(' /context, x, ' match)
 
     left <- make-pattern(place, nth(expression, 1))
     right <- make-pattern(place, nth(expression, 2))
 
-    condition <- list!(&(or), left.condition, right.condition)
+    condition <- list!(& or, left.condition, right.condition)
 
     bindings <- append(
         conditionalize(left.condition, left.bindings),
@@ -437,7 +437,7 @@ target-not(source, expression) :
 match-not(place, expression) : {
     pattern <- make-pattern(place, nth(expression, 1))
 
-    Pattern(list!(&(not), pattern.condition))
+    Pattern(list!(& not, pattern.condition))
 }
 
 /attribute(not, target-transform, target-not)
@@ -458,7 +458,7 @@ match-satisfies(place, expression) : {
     x-pattern <-
         if (?(x),
             make-pattern(place, x),
-            make-pattern(place, '(_)))
+            make-pattern(place, ' _))
 
     condition <-
         combine-conditions(
@@ -481,7 +481,7 @@ target-=(source, expression) :
 match-=(place, expression) : {
     expression -> list(_, value)
 
-    Pattern(list(&(=), place, value))
+    Pattern(list(& =, place, value))
 }
 
 /attribute(=, matcher, match-=)

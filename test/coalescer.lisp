@@ -46,7 +46,7 @@
 
 (def-suite coalescer
     :description "Test coalescing of nodes"
-    :in tridash)
+    :in frontend)
 
 (in-suite coalescer)
 
@@ -746,7 +746,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core, not)"
-           "not(on) -> /state(on, toggle)"
+           "not on -> /state(on, toggle)"
            "start -> on"
 
            "the-state -> /state(on)"
@@ -786,7 +786,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core, not)"
-           "not(on) -> /state(on, default, toggle)"
+           "not on -> /state(on, default, toggle)"
            "start -> on"
 
            "the-state -> /state(on)"
