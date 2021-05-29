@@ -1107,30 +1107,110 @@
 
   (cond
     ((meta-node? meta-node)
-     (check-arity meta-node arguments)
+     (with-slots (operands) meta-node
+       (let ((map (make-argument-map meta-node arguments)))
+         (labels ((get-arguments (operands)
+                    (match operands
+                      ((list (list (eql +rest-argument+) operand))
+                       (list (argument-list (get-operand operand))))
 
-     (labels ((match-arguments (operands arguments)
-                (multiple-value-match (values operands arguments)
-                  (((list* (list (eql +rest-argument+) _) _)
-                    _)
-                   (list (argument-list arguments)))
+                      ((list*
+                        (list (eql +optional-argument+) operand default)
+                        operands)
 
-                  (((list*
-                     (list (eql +optional-argument+) _ default)
-                     operands)
-                    nil)
+                       (multiple-value-bind (value supplied-p)
+                           (get-operand operand)
 
-                   (cons (post-process-node default module) (match-arguments operands nil)))
+                         (cons
+                          (if supplied-p
+                              value
+                              (post-process-node default module))
 
-                  (((list* _ operands)
-                    (list* argument arguments))
+                          (get-arguments operands))))
 
-                   (cons argument (match-arguments operands arguments))))))
+                      ((list* operand operands)
+                       (multiple-value-bind (value supplied-p)
+                           (get-operand operand)
 
-       (match-arguments (operands meta-node) arguments)))
+                         (if supplied-p
+                             (cons value (get-arguments operands))
+                             (error 'missing-argument-error
+                                    :meta-node meta-node
+                                    :operand (operand-name operand)))))))
+
+                  (get-operand (operand)
+                    (get (operand-name operand) map))
+
+                  (operand-name (operand)
+                    (etypecase operand
+                      (node (name operand))
+                      (symbol operand))))
+
+           (get-arguments operands)))))
 
     (t arguments)))
 
+(defun make-argument-map (meta-node values)
+  "Create a map mapping meta-node operand names to their supplied values.
+
+   META-NODE is a meta-node.
+
+   VALUES is the list of values supplied to the meta-node instance.
+
+   Returns a HASH-MAP."
+
+  (with-slots (operands) meta-node
+    (let ((map (make-hash-map))
+          (num-operands (length operands))
+          (num-values (length values)))
+
+      (labels ((add-positional (operands values)
+                 (multiple-value-match (values operands values)
+                   ((_
+                     (list* (list (eql +optional-argument+) _ _) _))
+
+                    (add-keyword values))
+
+                   (((list (list (eql +rest-argument+) operand))
+                     _)
+
+                    (add-arg operand values))
+
+                   (((or (list* (list (eql +optional-argument+) operand _) _)
+                         (list* operand operands))
+                     (list* value values))
+
+                    (add-arg operand value)
+                    (add-positional operands values))
+
+                   ((nil (list* _ _))
+                    (error 'too-many-arguments-error
+                           :meta-node meta-node
+                           :max-arguments (cdr (meta-node-arity meta-node))
+                           :num-arguments num-values))))
+
+               (add-keyword (values)
+                 (match values
+                   ((list* (list (eql +optional-argument+) name value) values)
+                    (add-arg name value)
+                    (add-keyword values))
+
+                   (nil)
+
+                   (_
+                    ;;TODO: Turn into proper condition
+                    (error "Positional argument given after keyword argument"))))
+
+               (add-arg (operand value)
+                 (setf (get (operand-name operand) map) value))
+
+               (operand-name (operand)
+                 (etypecase operand
+                   (node (name operand))
+                   (symbol operand))))
+
+        (add-positional operands values)
+        map))))
 
 (defmethod process-attribute ((node t) (attribute (eql (id-symbol "TARGET-NODE"))) value module)
   (process-operator-node value module))
@@ -1153,7 +1233,7 @@
    value and the module in the second."
 
   (flet ((process-operand (operand)
-           (match operand
+           (match (unwrap-declaration operand)
              ((list (eql +optional-argument+) name value)
               (list +optional-argument+
                     name

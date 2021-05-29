@@ -293,38 +293,47 @@
   ((meta-node :initarg :meta-node
               :reader meta-node
               :documentation
-              "The meta-node of the functor.")
-
-   (arity :initarg :arity
-          :reader arity
-          :documentation
-          "The meta-node's arity.")
-
-   (arguments :initarg :arguments
-              :reader arguments
-              :documentation
-              "The number of arguments given."))
+              "The meta-node of the functor."))
 
   (:documentation
-   "Error condition: A meta-node is given an incorrect number of
-    arguments."))
+   "Error condition representing a meta-node given an incorrect number
+    of arguments."))
 
-(defmethod print-object ((e arity-error) stream)
-  (with-slots (meta-node arity arguments) e
-    (format stream "Incorrect number of arguments to ~a. "
-            (display-node meta-node))
+(define-condition missing-argument-error (arity-error)
+  ((operand :initarg :operand
+            :reader operand
+            :documentation
+            "The name of the operand"))
 
-    (match arity
-      ((list min)
-       (format stream "Expected at least ~a argument~:P," min))
+  (:report
+   (lambda (e stream)
+     (format stream "Missing value for required argument ~a of ~a."
+             (display-node (meta-node e))
+             (operand e))))
 
-      ((cons min max)
-       (if (= min max)
-           (format stream "Expected ~a argument~:P," min)
-           (format stream "Expected at least ~a and at most ~a argument~:P,"
-                   min max))))
+  (:documentation
+   "Error condition representing a meta-node instance with a missing
+    value for a required argument."))
 
-    (format stream " ~a argument~:P provided." arguments)))
+(define-condition too-many-arguments-error (arity-error)
+  ((max-arguments :initarg :max-arguments
+                  :reader max-arguments
+                  :documentation
+                  "Maximum number of positional arguments")
+   (num-arguments :initarg :num-arguments
+                  :reader num-arguments
+                  :documentation
+                  "The number of positional arguments given"))
+
+  (:report
+   (lambda (e stream)
+     (format stream "Too many arguments given to ~a.~%Given ~a argument(s).~%Maximum of ~a argument(s) accepted."
+             (display-node (meta-node e))
+             (num-arguments e)
+             (max-arguments e))))
+
+  (:documentation
+   "Error condition representing a meta-node being passed more arguments than it accepts."))
 
 
 (define-condition invalid-operand-list-error (semantic-error)
