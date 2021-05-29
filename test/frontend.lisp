@@ -141,6 +141,21 @@
   (test-error non-node-operator-error " \"hello\"(1, x, 2) ")
   (test-error non-existent-node-error "z(x, y)"))
 
+(test (functor-node-keyword-arguments :depends-on meta-node-simple-definition)
+  "Test passing meta-node arguments by keyword"
+
+  (with-module-table modules
+    (build "Person(first, last) : { first -> self.first; last -> self.last }"
+           "Person(last : a, first : b) -> node")
+
+    (with-nodes ((person "Person")
+                 (node ("Person" (":" "last" "a") (":" "first" "b")))
+                 (a "a") (b "b"))
+        modules
+
+      (has-value-function (a b) node
+        `(,person ,b ,a)))))
+
 
 ;;; Functor Nodes as Binding Target
 
