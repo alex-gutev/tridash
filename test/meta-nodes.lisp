@@ -54,7 +54,7 @@
 
 ;;; Simple Functions
 
-(test simple-signle-module
+(test simple-single-module
   "Test building simple meta-node in single module."
 
   (with-module-table modules
