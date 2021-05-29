@@ -1152,9 +1152,19 @@
    already in MODULE. Returns the list of `node' objects in the first
    value and the module in the second."
 
-  (values
-   (map (rcurry #'process-declaration module) operands)
-   module))
+  (flet ((process-operand (operand)
+           (match operand
+             ((list (eql +optional-argument+) name value)
+              (list +optional-argument+
+                    name
+                    (process-declaration value module)))
+
+             (_
+              (process-declaration operand module)))))
+
+    (values
+     (map #'process-operand operands)
+     module)))
 
 (defun bind-operands (node operands &key context)
   "Establishes bindings between the operands (OPERANDS) and the
@@ -1182,7 +1192,16 @@
    functor (OPERATOR OPERANDS) can be referenced, from
    *FUNCTOR-MODULE*."
 
-  (map #'canonicalize-node (cons operator operands)))
+  (flet ((canonicalize-operand (operand)
+           (match operand
+             ((list (eql +optional-argument+) name value)
+              (list +optional-argument+
+                    name
+                    (canonicalize-node value)))
+
+             (_ (canonicalize-node operand)))))
+
+   (map #'canonicalize-operand (cons operator operands))))
 
 (defun canonicalize-node (node)
   "Returns a canonicalized declaration with which NODE can be
