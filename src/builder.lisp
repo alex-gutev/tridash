@@ -1167,7 +1167,7 @@
       (labels ((add-positional (operands values)
                  (multiple-value-match (values operands values)
                    ((_
-                     (list* (list (eql +optional-argument+) _ _) _))
+                     (list* (list (eql +optional-argument+) (type symbol) _) _))
 
                     (add-keyword values))
 
@@ -1191,7 +1191,8 @@
 
                (add-keyword (values)
                  (match values
-                   ((list* (list (eql +optional-argument+) name value) values)
+                   ((list* (list (eql +optional-argument+) (and name (type symbol)) value)
+                           values)
                     (add-arg name value)
                     (add-keyword values))
 
@@ -1234,7 +1235,7 @@
 
   (flet ((process-operand (operand)
            (match (unwrap-declaration operand)
-             ((list (eql +optional-argument+) name value)
+             ((list (eql +optional-argument+) (and (type symbol) name) value)
               (list +optional-argument+
                     name
                     (process-declaration value module)))
