@@ -588,7 +588,7 @@
   (test-error invalid-arguments-error ":()")
   (test-error invalid-arguments-error ":(x,y,z)")
 
-  (test-top-level-only "(g(x,y) : f(x,y))"))
+  (test-top-level-only "{ g(x,y) : f(x) }"))
 
 (test meta-node-definition-error-invalid-operand-list
   "Test error raised when meta-node operand list, in definition, is invalid."
