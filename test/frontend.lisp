@@ -879,6 +879,19 @@
       (test-value-function ff f (list f (argument-list nil)))
       (test-simple-binding ff a))))
 
+(test meta-node-arity-check-keyword-arguments
+  "Test arity checking with keyword arguments"
+
+  (test-error arity-error
+              "/import(core)"
+              "add(a, b, c : 1) : a + b + c"
+              "add(c : 3, a : 1) -> a")
+
+  (test-error arity-error
+              "/import(core)"
+              "add(a, b) : a + b"
+              "add(a : 1, b : 2, c : 3) -> a"))
+
 
 ;;; External Meta-Node Arity Checking
 
