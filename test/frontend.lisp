@@ -156,6 +156,23 @@
       (has-value-function (a b) node
         `(,person ,b ,a)))))
 
+(test (functor-node-keyword-arguments-rest :depends-on meta-node-optional-and-rest-arguments)
+  "Test passing rest argument values by keyword."
+
+  (with-module-table modules
+    (build-core-module)
+    (build "/import(core)"
+           "add(x, .. xs) : x + xs"
+           "add(a, xs : b) -> x")
+
+    (with-nodes ((add "add")
+                 (node ("add" "a" (":" "xs" "b")))
+                 (a "a") (b "b"))
+        modules
+
+      (has-value-function (a b) node
+        `(,add ,a ,(argument-list (list b)))))))
+
 
 ;;; Functor Nodes as Binding Target
 
