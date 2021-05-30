@@ -335,6 +335,20 @@
   (:documentation
    "Error condition representing a meta-node being passed more arguments than it accepts."))
 
+(define-condition unknown-arguments-error (arity-error)
+  ((arguments :initarg :arguments
+              :reader arguments
+              :documentation "Names of the unknown keyword arguments"))
+
+  (:report
+   (lambda (e stream)
+     (format stream "Unknown keyword arguments for ~a: ~{~a~^, ~}"
+             (display-node (meta-node e)) (arguments e))))
+
+  (:documentation
+   "Error condition representing a meta-node given a keyword argument
+    for an unknown argument."))
+
 
 (define-condition invalid-operand-list-error (semantic-error)
   ((operands :initarg :operands

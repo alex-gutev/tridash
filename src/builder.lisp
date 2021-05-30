@@ -1107,48 +1107,68 @@
 
   (cond
     ((meta-node? meta-node)
-     (with-slots (operands) meta-node
-       (let ((map (make-argument-map meta-node arguments)))
-         (labels ((get-arguments (operands)
-                    (match operands
-                      ((list (list (eql +rest-argument+) operand))
-                       (list (argument-list (get-operand operand))))
-
-                      ((list*
-                        (list (eql +optional-argument+) operand default)
-                        operands)
-
-                       (multiple-value-bind (value supplied-p)
-                           (get-operand operand)
-
-                         (cons
-                          (if supplied-p
-                              value
-                              (post-process-node default module))
-
-                          (get-arguments operands))))
-
-                      ((list* operand operands)
-                       (multiple-value-bind (value supplied-p)
-                           (get-operand operand)
-
-                         (if supplied-p
-                             (cons value (get-arguments operands))
-                             (error 'missing-argument-error
-                                    :meta-node meta-node
-                                    :operand (operand-name operand)))))))
-
-                  (get-operand (operand)
-                    (get (operand-name operand) map))
-
-                  (operand-name (operand)
-                    (etypecase operand
-                      (node (name operand))
-                      (symbol operand))))
-
-           (get-arguments operands)))))
+     (let ((map (make-argument-map meta-node arguments)))
+       (order-arguments meta-node map module)))
 
     (t arguments)))
+
+(defun order-arguments (meta-node map module)
+  "Order meta-node instance argument values.
+
+   META-NODE is the meta-node.
+
+   MAP is a map mapping the meta-node operand names to the
+   corresponding argument value nodes.
+
+   MODULE is the module in which the default meta-node value nodes
+   should be added."
+
+  (with-slots (operands) meta-node
+    (labels ((get-arguments (operands)
+               (match operands
+                 ((list (list (eql +rest-argument+) operand))
+                  (list (argument-list (get-operand operand))))
+
+                 ((list*
+                   (list (eql +optional-argument+) operand default)
+                   operands)
+
+                  (multiple-value-bind (value supplied-p)
+                      (get-operand operand)
+
+                    (cons
+                     (if supplied-p
+                         value
+                         (post-process-node default module))
+
+                     (get-arguments operands))))
+
+                 ((list* operand operands)
+                  (multiple-value-bind (value supplied-p)
+                      (get-operand operand)
+
+                    (if supplied-p
+                        (cons value (get-arguments operands))
+                        (error 'missing-argument-error
+                               :meta-node meta-node
+                               :operand (operand-name operand)))))))
+
+             (get-operand (operand)
+               (multiple-value-prog1
+                   (get (operand-name operand) map)
+
+                 (erase map (operand-name operand))))
+
+             (operand-name (operand)
+               (etypecase operand
+                 (node (name operand))
+                 (symbol operand))))
+
+      (prog1 (get-arguments operands)
+        (unless (emptyp map)
+          (error 'unknown-arguments-error
+                 :meta-node meta-node
+                 :arguments (map-keys map)))))))
 
 (defun make-argument-map (meta-node values)
   "Create a map mapping meta-node operand names to their supplied values.
