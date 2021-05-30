@@ -955,6 +955,19 @@
       (is (= 4 (call-meta-node f (list 3))))
       (is (= 7 (call-meta-node g (list 5)))))))
 
+(test call-meta-node-keyword-arguments
+  "Test calling a meta-node with keyword arguments"
+
+  (with-module-table modules
+    (build-core-module)
+    (build "/import(core, +)"
+           "add(a, b, c : 3, d : 4) : a + b + c + d"
+           "f(x, y) : add(x, d : 10, b : y)")
+
+    (with-nodes ((f "f")) modules
+      (is (= 16 (call-meta-node f '(1 2))))
+      (is (= 45 (call-meta-node f '(15 17)))))))
+
 (test call-meta-node-rest-argument
   "Test calling a meta-node with rest argument."
 
