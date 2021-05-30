@@ -1389,6 +1389,32 @@
       (has-value-function (a b) a!-b `(,if ,a ,b :none))
       (test-simple-binding a!-b out))))
 
+(test macro-keyword-arguments
+  "Test passing macro arguments by keyword"
+
+  (with-module-table modules
+    (build-core-module)
+    (build "/import(core, list)"
+
+           "f(x) : x"
+
+           "call(operator, operand) : list(operator, operand)"
+           "/attribute(call, macro, True)"
+
+           "call(operand : in1, operator : f) -> out1")
+
+    (test-not-nodes modules '("call" (":" "operand" "in1") (":" "operator" "f")))
+
+    (with-nodes ((in1 "in1") (out1 "out1")
+                 (f "f")
+                 (f-in1 ("f" "in1")))
+        modules
+
+      (has-value-function (in1) f-in1
+        `(,f ,in1))
+
+      (test-simple-binding f-in1 out1))))
+
 (test macro-arity-check-required-only
   "Test macro arity checks with required arguments only."
 
@@ -1450,6 +1476,30 @@
           output
 
         `(,list ,(argument-list (list x y z)))))))
+
+(test macro-arity-check-keyword-missing-required
+  "Test macro keyword argument arity check with missing required argument"
+
+  (with-module-table modules
+    (build-core-module)
+    (build "/import(core, +, list)"
+
+           "1+(n, d : 1) : list(/quote(+), x, d)"
+           "/attribute(1+, macro, 1)")
+
+    (signals arity-error (build "1+(d : 2)"))))
+
+(test macro-arity-check-keyword-unknown
+  "Test macro keyword argument arity check with unknown keyword"
+
+  (with-module-table modules
+    (build-core-module)
+    (build "/import(core, +, list)"
+
+           "1+(n, d : 1) : list(/quote(+), x, d)"
+           "/attribute(1+, macro, 1)")
+
+    (signals arity-error (build "1+(d : 2, n : 1, delta : 100)"))))
 
 (test macro-rest-argument-outer-nodes
   "Test macros with rest arguments and outer nodes."
