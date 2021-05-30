@@ -105,13 +105,13 @@
     (declare (ignore operator))
 
     (let ((*tridash-call-reason* :macro)
-          (operands (map #'unwrap-declaration operands)))
-      (check-arity meta-node operands)
+          (arguments (->> (map #'unwrap-declaration operands)
+                          (make-arguments meta-node (home-module meta-node))
+                          remove-argument-list)))
 
-      (-<> (make-rest-args meta-node operands)
-           (call-tridash-meta-node meta-node <>)
-           resolve
-           (process-macro-expansion module)))))
+      (-> (call-tridash-meta-node meta-node arguments)
+          resolve
+          (process-macro-expansion module)))))
 
 
 (defgeneric call-meta-node (meta-node args &key &allow-other-keys)
@@ -682,6 +682,20 @@
   (if (null (cdr (meta-node-arity meta-node)))
       `(make-rest-args ',meta-node ,args)
       args))
+
+(defun remove-argument-list (args)
+  "Replace ARGUMENT-LIST's and with the actual list of arguments"
+
+  (map
+   (lambda (arg)
+     (typecase arg
+       (argument-list
+        (argument-list-arguments arg))
+
+       (otherwise
+        arg)))
+
+   args))
 
 (defun make-rest-args (meta-node args)
   "Group the arguments in ARGS, which correspond to the rest
