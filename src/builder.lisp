@@ -1127,7 +1127,7 @@
     (labels ((get-arguments (operands)
                (match operands
                  ((list (list (eql +rest-argument+) operand))
-                  (list (argument-list (get-operand operand))))
+                  (list (argument-list (ensure-list (get-operand operand)))))
 
                  ((list*
                    (list (eql +optional-argument+) operand default)
