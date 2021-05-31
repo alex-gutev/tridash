@@ -1146,7 +1146,7 @@
      :module "runtime"
      :name "table"
      :type :table
-     :desc (make-wasm-limit :min table-size))
+     :desc (make-wasm-table :min table-size))
 
     (make-wasm-import
      :module "runtime"
