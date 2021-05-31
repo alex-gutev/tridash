@@ -349,6 +349,17 @@
    "Error condition representing a meta-node given a keyword argument
     for an unknown argument."))
 
+(define-condition malformed-keyword-arguments-error (semantic-error)
+  ()
+
+  (:report
+   (lambda (e stream)
+     (declare (ignore e))
+     (format stream "Positional argument given after keyword argument.")))
+
+  (:documentation
+   "Error condition representing a positional argument being specified
+    after a keyword argument."))
 
 (define-condition invalid-operand-list-error (semantic-error)
   ((operands :initarg :operands

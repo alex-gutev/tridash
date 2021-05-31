@@ -306,6 +306,10 @@
    :meta-node-no-function-error
    :macro-outer-node-error
    :arity-error
+   :missing-argument-error
+   :too-many-arguments-error
+   :unknown-arguments-error
+   :malformed-keyword-arguments-error
    :invalid-operand-list-error
    :compile-meta-node-loop-error
 

@@ -1219,8 +1219,7 @@
                    (nil)
 
                    (_
-                    ;;TODO: Turn into proper condition
-                    (error "Positional argument given after keyword argument"))))
+                    (error 'malformed-keyword-arguments-error))))
 
                (add-arg (operand value)
                  (setf (get (operand-name operand) map) value))
