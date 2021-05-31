@@ -907,7 +907,12 @@
   (test-error arity-error
               "/import(core)"
               "add(a, b) : a + b"
-              "add(a : 1, b : 2, c : 3) -> a"))
+              "add(a : 1, b : 2, c : 3) -> a")
+
+  (test-error malformed-keyword-arguments-error
+              "/import(core)"
+              "add(a, b) : a + b"
+              "add(a : 1, 2) -> x"))
 
 
 ;;; External Meta-Node Arity Checking
