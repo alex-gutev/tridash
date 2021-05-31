@@ -13,4 +13,4 @@
 
 (ql:quickload :tridash/test)
 (uiop:quit
- (if (prove:run :tridash/test :reporter :fiveam) 0 -1))
+ (if (tridash/test:test-tridash) 0 -1))

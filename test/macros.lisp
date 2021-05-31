@@ -39,7 +39,7 @@
                           :multiply
                           :accumulate)
 
-  (:shadowing-import-from :prove :fail)
+  (:shadowing-import-from :fiveam :fail)
 
   (:import-from :lol
                 :defmacro!
