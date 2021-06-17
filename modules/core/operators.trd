@@ -60,7 +60,7 @@
 /operator(prefix, :, 650)
 /operator(prefix, .., 1100)
 
-/operator(prefix, case, 5)
+/operator(prefix, case, 600)
 
 ## Arithmetic Operators
 
