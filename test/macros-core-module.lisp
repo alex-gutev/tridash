@@ -636,7 +636,7 @@
     (build-core-module)
 
     (build "/import(core, case, =, ')"
-           "test-case(x) : case(x = 1 : ' a, x = 2 : ' b, '(other))")
+           "test-case(x) : case{x = 1 : ' a; x = 2 : ' b; '(other)}")
 
     (with-nodes ((test-case "test-case")) modules
       (is (= (id-symbol "a") (call-meta-node test-case '(1))))
@@ -650,7 +650,7 @@
     (build-core-module)
 
     (build "/import(core, case, =, ')"
-           "test-case2(x) : case(x = 1 : ' a, x = 2 : '(b))")
+           "test-case2(x) : case{x = 1 : ' a; x = 2 : '(b)}")
 
     (with-nodes ((test-case2 "test-case2")) modules
       (is (= (id-symbol "a") (call-meta-node test-case2 '(1))))

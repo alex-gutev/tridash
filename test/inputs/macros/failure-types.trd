@@ -13,9 +13,11 @@ check-range(x, l, h) : {
     Above-Max <- &(Type-Above-Max)
 
     check(x) :
-        case(x < l : fail(Below-Min),
-             x > h : fail(Above-Max),
-             x)
+        case {
+	    x < l : fail(Below-Min)
+            x > h : fail(Above-Max)
+            x
+	}
 
     value <- check(x)
 

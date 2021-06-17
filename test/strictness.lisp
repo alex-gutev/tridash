@@ -117,13 +117,13 @@
 (test recursive-meta-node-simple
   "Test strictness analysis of simple non-tail recursive meta-node (factorial)."
 
-  (test-strictness ("fact(n) : case(n < 2 : 1, n * fact(n - 1))")
+  (test-strictness ("fact(n) : case{n < 2 : 1; n * fact(n - 1)}")
     ("fact" (t))))
 
 (test recursive-meta-node-tail
   "Test strictness analysis of tail recursive meta-node (factorial)."
 
-  (test-strictness ("fact(n, acc) : case(n < 2 : acc, fact(n - 1, n * acc))")
+  (test-strictness ("fact(n, acc) : case{n < 2 : acc; fact(n - 1, n * acc)}")
     ("fact" (t t))))
 
 (test recursive-meta-node-tail-helper
@@ -133,7 +133,7 @@
       ("1-(n) : n - 1"
        "mul(x,y) : x * y"
 
-       "fact(n, acc) : case(n < 2 : acc, fact(1-(n), mul(n, acc)))")
+       "fact(n, acc) : case{n < 2 : acc; fact(1-(n), mul(n, acc))}")
 
     ("fact" (t t))))
 
@@ -141,7 +141,7 @@
   "Test strictness analysis of nested tail-recursive meta-node."
 
   (test-strictness
-      ("fact(n) : { iter(n, acc) : case(n < 2 : acc, iter(n - 1, n * acc)); iter(n,1) }")
+      ("fact(n) : { iter(n, acc) : case{n < 2 : acc; iter(n - 1, n * acc)}; iter(n,1) }")
     ("fact" (t))))
 
 

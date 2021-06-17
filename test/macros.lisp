@@ -804,7 +804,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)"
-           "min(x,y) : case(x < y : x, y)")
+           "min(x,y) : case{x < y : x; y}")
 
     (with-nodes ((min "min")) modules
       (is (= 2 (call-meta-node min '(2 10))))
@@ -874,7 +874,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)"
-           "fact(n) : { case(n < 2 : 1, n * fact(n - 1)) }")
+           "fact(n) : { case{n < 2 : 1; n * fact(n - 1)} }")
 
     (with-nodes ((fact "fact")) modules
       (is (= 6 (call-meta-node fact '(3))))
@@ -887,7 +887,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)"
-           "fact(n) : { iter(n,acc) : case(n < 2 : acc, iter(n - 1, n * acc)); iter(n, 1) }")
+           "fact(n) : { iter(n,acc) : case{n < 2 : acc; iter(n - 1, n * acc)}; iter(n, 1) }")
 
     (with-nodes ((fact "fact")) modules
       (is (= 6 (call-meta-node fact '(3))))

@@ -111,10 +111,10 @@
                     2 -> two
                     two -> limit;
 
-                    case(
-                      k < limit : 1,
+                    case {
+                      k < limit : 1
                       k * fact(next)
-                    )
+                    }
                   }"
 
            "/attribute(fact, removable, 0)")
@@ -152,10 +152,10 @@
                       2 -> two
                       two -> limit
 
-                      case(
-                        k < limit : acc,
+                      case {
+                        k < limit : acc
                         iter(next, k * acc)
-                      )
+                      }
                     }
 
                     iter(m, 1)
@@ -189,10 +189,10 @@
 
     (build "/import(core)"
            "fib(n) :
-                      case(
-                        n > 1 : fib1(n) + fib2(n),
+                      case {
+                        n > 1 : fib1(n) + fib2(n)
                         1
-                      )"
+                      }"
            "fib1(n) : fib(n - 1)"
            "fib2(n) : fib(n - 2)"
            "fib(in) -> out"
@@ -245,10 +245,10 @@
            "/use(m1)"
 
            "fib(n) :
-                      case(
-                        n > 1 : fib1(n) + m1.fib2(n),
+                      case{
+                        n > 1 : fib1(n) + m1.fib2(n)
                         1
-                      )"
+                      }"
 
            "fib(in) -> out"
            "/attribute(in, input, 1)")
@@ -641,10 +641,10 @@
 
            "count(end) : {
                       iter(n, acc) : {
-                        case (
-                          n < .. end : iter(n + 1, acc + n),
+                        case {
+                          n < .. end : iter(n + 1, acc + n)
                           .. start + acc
-                        )
+                        }
                       }
                       iter(0, 0)
                     }"
@@ -688,10 +688,10 @@
 
            "count(end) : {
                       iter(n, acc) : {
-                        case (
-                          n < end : iter(n + 1, acc + n),
+                        case {
+                          n < end : iter(n + 1, acc + n)
                           start + acc
-                        )
+                        }
                       }
                       iter(0, 0)
                     }"
@@ -741,10 +741,10 @@
 
            "count(end) : {
                       iter(n, acc) : {
-                        case (
-                          n < .. end : iter(n + 1, acc + n),
+                        case {
+                          n < .. end : iter(n + 1, acc + n)
                           .. start + acc
-                        )
+                        }
                       }
                       iter(0, 0)
                     }"
@@ -784,7 +784,7 @@
     (build "/import(core)"
            "dec(x, d : delta) : x - d"
 
-           "fact(n) : case(n < 1 : 1, n * fact(dec(n)))"
+           "fact(n) : case{n < 1 : 1; n * fact(dec(n))}"
 
            "fact(in) -> out"
 
@@ -817,7 +817,7 @@
     (build "/import(core)"
            "dec(x, d : delta) : x - d"
 
-           "fact(n) : case(n < 1 : 1, n * fact(dec(n, 1)))"
+           "fact(n) : case{n < 1 : 1; n * fact(dec(n, 1))}"
 
            "fact(in) -> out"
 

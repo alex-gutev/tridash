@@ -1237,7 +1237,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)")
-    (build "fact(n) : case(n < 1 : 1, n * fact(n - 1))")
+    (build "fact(n) : case{n < 1 : 1; n * fact(n - 1)}")
     (finish-build)
 
     (with-nodes ((fact "fact")) modules
@@ -1291,7 +1291,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)")
-    (build "fact(n) : { iter(n, acc) : case(n < 1 : acc, iter(n - 1, n * acc)); iter(n, 1) }")
+    (build "fact(n) : { iter(n, acc) : case{n < 1 : acc; iter(n - 1, n * acc)}; iter(n, 1) }")
     (finish-build)
 
     (with-nodes ((fact "fact")) modules
@@ -1368,7 +1368,7 @@
   (with-module-table modules
     (build-core-module)
     (build "/import(core)")
-    (build "fib(n) : case(n > 1 : fib1(n) + fib2(n), 1)")
+    (build "fib(n) : case{n > 1 : fib1(n) + fib2(n); 1}")
     (build "fib1(n) : fib(n - 1)")
     (build "fib2(n) : fib(n - 2)")
     (finish-build)
