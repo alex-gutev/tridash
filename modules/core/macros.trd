@@ -54,15 +54,18 @@
 ## false. If there is no default value, the `case` functor fails to
 ## evaluate a value.
 ##
-## cases : List of cases of the form `condition : value`. The last
-##         case may be of the form `value`.
+## args : Declaration list of cases. Each case is of the form
+##        `condition : value`. The last case may be of the form
+##        `value`.
 
-case(.. cases) : {
+(case)(args) : {
+    args -> list*(' /prog, cases)
+
     make-case(case, else) : {
-        case -> list(' :, condition, value)
+        (case) -> list(' :, condition, value)
 
         list!(& if, condition, value, else) -> @ self
-        case -> @ self
+        (case) -> @ self
     }
 
     foldr(make-case, cases, list(& No-Value!))

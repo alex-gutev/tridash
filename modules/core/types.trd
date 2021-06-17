@@ -82,14 +82,14 @@ to-string(x) : string(x)
 ## thing: The value.
 
 string(thing) : {
-    case (
-	int?(thing) : int->string(thing),
-	real?(thing) : real->string(thing),
-	char?(thing) : char->string(thing),
-	string?(thing) : thing,
-	symbol?(thing) : symbol-name(thing),
+    case {
+	int?(thing) : int->string(thing)
+	real?(thing) : real->string(thing)
+	char?(thing) : char->string(thing)
+	string?(thing) : thing
+	symbol?(thing) : symbol-name(thing)
 	"[object]"
-    )
+    }
 }
 
 
