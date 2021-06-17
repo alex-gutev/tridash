@@ -9,11 +9,11 @@ start -> counter
 '(state1) -> counter-state :: clicked1
 '(state2) -> counter-state :: clicked2
 
-case(
-    clicked1? : '(clicked1),
-    clicked2? : '(clicked2),
+case {
+    clicked1? : '(clicked1)
+    clicked2? : '(clicked2)
     '(default)
-) -> /state(counter-state)
+} -> /state(counter-state)
 
 counter-state -> /state(counter)
 '(state1) -> /state(counter)

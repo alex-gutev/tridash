@@ -64,26 +64,26 @@ Test-Group(
     Test-Group(
         "Valid Input",
 
-        Test-Equal(case(t : '(x), 3 = 3 : '(y)), '(x), "case(1 = 1 : '(x), 3 = 3 : '(y))"),
-        Test-Equal(case(f : '(x), 3 = 3 : '(y)), '(y), "case(1 = 2 : '(x), 3 = 3 : '(y))"),
-        Test-Equal(case(False : '(x), 3 = 5 : '(y), '(z)), '(z), "case(False : '(x), 3 = 5 : '(y), '(z))"),
+        Test-Equal(case{ t : ' x; 3 = 3 : ' y }, ' x, "case(1 = 1 : '(x), 3 = 3 : '(y))"),
+        Test-Equal(case{ f : ' x; 3 = 3 : ' y }, ' y, "case(1 = 2 : '(x), 3 = 3 : '(y))"),
+        Test-Equal(case{ False : ' x; 3 = 5 : ' y; ' z}, ' z, "case(False : '(x), 3 = 5 : '(y), '(z))"),
 
-        Test-Fails(case(False : '(x), 3 = 5 : '(y)), "case(False : '(x), 3 = 5 : '(y))", No-Value)
+        Test-Fails(case{ False : ' x; 3 = 5 : ' y }, "case(False : '(x), 3 = 5 : '(y))", No-Value)
     ),
 
     Test-Group(
         "Failure Propagation",
 
-        Test-Fails(case(Fail-Type! : 1, 2), "case(Fail-Type! : 1, 2)", Fail-Type),
-        Test-Fails(case(f : 1, Fail-Type! : 2), "case(1 = 1 : 1, Fail-Type! : 2)", Fail-Type),
+        Test-Fails(case{ Fail-Type! : 1; 2 }, "case(Fail-Type! : 1, 2)", Fail-Type),
+        Test-Fails(case{ f : 1; Fail-Type! : 2 }, "case(1 = 1 : 1, Fail-Type! : 2)", Fail-Type),
 
-        Test-Fails(case(True : Fail-Type!, 2), "case(True : Fail-Type!, 2)", Fail-Type),
-        Test-Fails(case(f : 1, t : Fail-Type!), "case(1 = 2 : 1, 1 = 1 : Fail-Type!)", Fail-Type),
-        Test-Fails(case(f : 1, f : 2, Fail-Type!), "case(1 = 2 : 1, 1 = 2 : 2, Fail-Type!)", Fail-Type),
+        Test-Fails(case{ True : Fail-Type!; 2 }, "case(True : Fail-Type!, 2)", Fail-Type),
+        Test-Fails(case{ f : 1; t : Fail-Type! }, "case(1 = 2 : 1, 1 = 1 : Fail-Type!)", Fail-Type),
+        Test-Fails(case{ f : 1; f : 2; Fail-Type! }, "case(1 = 2 : 1, 1 = 2 : 2, Fail-Type!)", Fail-Type),
 
-        Test-Equal(case(t : 1, Fail-Type! : 2), 1, "case(1 = 1 : 1, Fail-Type! : 2)"),
-        Test-Equal(case(False : Fail-Type!, 2), 2, "case(False : Fail-Type!, 2)"),
-        Test-Equal(case(t : 1, t : Fail-Type!), 1, "case(1 = 1 : 1, 1 = 1 : Fail-Type!)"),
-        Test-Equal(case(t : 1, f : 2, Fail-Type!), 1, "case(1 = 1 : 1, 1 = 2 : 2, Fail-Type!)")
+        Test-Equal(case{ t : 1; Fail-Type! : 2 }, 1, "case(1 = 1 : 1, Fail-Type! : 2)"),
+        Test-Equal(case{ False : Fail-Type!; 2 }, 2, "case(False : Fail-Type!, 2)"),
+        Test-Equal(case{ t : 1; t : Fail-Type! }, 1, "case(1 = 1 : 1, 1 = 1 : Fail-Type!)"),
+        Test-Equal(case{ t : 1; f : 2; Fail-Type! }, 1, "case(1 = 1 : 1, 1 = 2 : 2, Fail-Type!)")
     )
 ) -> case-tests

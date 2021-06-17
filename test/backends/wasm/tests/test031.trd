@@ -4,10 +4,10 @@
 
 factorial(n) : {
     iter(n, acc) : {
-        case(
-            n > 1 : iter(n - 1, n * acc),
+        case {
+            n > 1 : iter(n - 1, n * acc)
             acc
-        )
+        }
     }
 
     iter(n, 1)

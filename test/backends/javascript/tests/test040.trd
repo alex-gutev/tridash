@@ -7,18 +7,18 @@ Negative-Number  <- &(Negative-Number)
 Negative-Number! <- fail(Negative-Number)
 
 validate(x) :
-    case(
-        x >= 0 : x,
+    case {
+        x >= 0 : x
         Negative-Number!
-    )
+    }
 
 valid-int(value) : {
     x <- int(value)
 
-    case(
-        x >= 0 : x,
+    case {
+        x >= 0 : x
         Negative-Number!
-    )
+    }
 }
 
 /attribute(valid-int, target-node, valid-int)
