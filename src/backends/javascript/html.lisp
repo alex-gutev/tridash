@@ -157,7 +157,7 @@
          (js-lambda
           (list "value")
           (-> (compose (curry #'make-set-attribute node "element" "value") #'first)
-              (map (object-expression-entries value-function))))))))))
+              (map (ir:entries value-function))))))))))
 
 (defun make-get-element (id)
   "Generates code which retrieves a reference to the HTML element with

@@ -48,6 +48,8 @@
                 :outer-nodes
                 :change-module)
 
+  (:local-nicknames (:ir :tridash.ir))
+
   (:export :match*
            :shadow-function
            :previous
@@ -60,42 +62,41 @@
 
            :with-test-suite
 
+           :*flat-node-table*
+           :build-node
+           :build-core-module
+           :ensure-node-table
 
-   :*flat-node-table*
-   :build-node
-   :build-core-module
-   :ensure-node-table
+           :get-node
+           :test/get-node
+           :test-nodes
 
-   :get-node
-   :test/get-node
-   :test-nodes
+           :test-not-node
+           :test-not-nodes
 
-   :test-not-node
-   :test-not-nodes
+           :test-binding
+           :test-simple-binding
 
-   :test-binding
-   :test-simple-binding
+           :*strict-test*
+           :value-fn-equal
+           :object-fn-equal
 
-   :*strict-test*
-   :value-fn-equal
-   :object-fn-equal
+           :test-value-function
+           :test-node-function
+           :test-meta-node
+           :init-context
+           :outer
 
-   :test-value-function
-   :test-node-function
-   :test-meta-node
-   :init-context
-   :outer
+           :test-error
+           :test-top-level-only
 
-   :test-error
-   :test-top-level-only
-
-   :with-module-table
-   :build
-   :finish-build
-   :with-nodes
-   :with-modules
-   :with-dependencies
-   :has-value-function)
+           :with-module-table
+           :build
+           :finish-build
+           :with-nodes
+           :with-modules
+           :with-dependencies
+           :has-value-function)
 
   (:documentation
    "Contains utility functions and macros which are used in all test
@@ -315,31 +316,31 @@
 (defun test-binding (src target &key (context nil context-sp))
   "Tests that a binding between node SRC and TARGET has been
    established in the context CONTEXT. If CONTEXT is not supplied the
-   context of the `NODE-LINK' between SRC and TARGET is
-   checked. Returns the `NODE-LINK' object."
+   context of the `IR:LINK' between SRC and TARGET is
+   checked. Returns the `IR:LINK' object."
 
   (let ((link (get target (observers src)))
         (name-src (name src))
         (name-target (name target)))
 
-    (is (typep link 'node-link)
-        "Binding object for ~a -> ~a is not a NODE-LINK. Got: ~a."
+    (is (typep link 'ir:link)
+        "Binding object for ~a -> ~a is not a LINK Got: ~a."
         name-src name-target link)
 
     (is (= link (get src (dependencies target)))
         "Node link (~a -> ~a) not added to dependency set of ~a."
         name-src name-target name-target)
 
-    (is (= (node-link-node link) src)
+    (is (= (ir:node link) src)
         "Node link (~a -> ~a) does not point to ~a. Got: ~a."
-        name-src name-target name-src (node-link-node link))
+        name-src name-target name-src (ir:node link))
 
     (when context-sp
-      (is (= (node-link-context link) context)
+      (is (= (ir:context link) context)
           "Node link (~a -> ~a) context is not ~a. Got: ~a."
-          name-src name-target context (node-link-context link)))
+          name-src name-target context (ir:context link)))
 
-    (let* ((id (if context-sp context (node-link-context link)))
+    (let* ((id (if context-sp context (ir:context link)))
 	   (context (get id (contexts target))))
 
       (is (typep context 'node-context)
@@ -356,11 +357,11 @@
 (defun test-simple-binding (src target &rest args)
   "Tests that a binding between node SRC and TARGET has been
    established and that the value function of TARGET (in the context
-   of the `NODE-LINK' or the context provided as the :CONTEXT
-   parameter) is the `NODE-LINK' itself."
+   of the `IR:LINK' or the context provided as the :CONTEXT
+   parameter) is the `IR:LINK' itself."
 
   (let ((link (apply #'test-binding src target args)))
-    (test-value-function target (node-link-context link) link)))
+    (test-value-function target (ir:context link) link)))
 
 
 ;;;; Compare Node Value Functions
@@ -371,29 +372,29 @@
    with the exception that the actual expression may have
    `EXPRESSION-BLOCK's not specified in the expected expression. If
    set to NIL certain rules will be relaxed, such as expressions may
-   be contained inside `NODE-LINK' objects.")
+   be contained inside `IR:LINK' objects.")
 
 (defgeneric value-fn-equal (a b))
 
-(defmethod value-fn-equal ((a node-link) (b node-link))
+(defmethod value-fn-equal ((a ir:link) (b ir:link))
   (eq a b))
 
-(defmethod value-fn-equal ((a node-link) b)
+(defmethod value-fn-equal ((a ir:link) b)
   (unless *strict-test*
-    (value-fn-equal (node-link-node a) b)))
+    (value-fn-equal (ir:node a) b)))
 
-(defmethod value-fn-equal ((a node-ref) (b node-ref))
-  (eq (node-ref-node a)
-      (node-ref-node b)))
+(defmethod value-fn-equal ((a ir:node-ref) (b ir:node-ref))
+  (eq (ir:node a)
+      (ir:node b)))
 
-(defmethod value-fn-equal ((got functor-expression) (exp list))
+(defmethod value-fn-equal ((got ir:functor) (exp list))
   (flet ((split-args (args)
            (aif (position :outer args)
                 (values (subseq args 0 it) (subseq args (1+ it)))
                 (values args nil))))
 
     (match* (got exp)
-      (((functor-expression- (meta-node got-op) (arguments got-args) (outer-nodes got-outer-nodes))
+      (((ir:functor (ir:operator got-op) (ir:operands got-args) (ir:outer-nodes got-outer-nodes))
         (list* exp-op exp-args))
 
        (multiple-value-bind (exp-args exp-outer-nodes) (split-args exp-args)
@@ -409,13 +410,13 @@
                                  (cdr outer-node)))
                exp-outer-nodes)))))))
 
-(defmethod value-fn-equal ((a object-expression) (b list))
+(defmethod value-fn-equal ((a ir:object) (b list))
   (flet ((field= (a b)
            (and (= (first a) (first b))
                 (value-fn-equal (second a) (second b)))))
 
     (match* (a b)
-      (((object-expression- (entries entries-a))
+      (((ir:object (ir:entries entries-a))
         (list* :object entries-b))
 
        (and (= (length entries-a) (length entries-b))
@@ -425,34 +426,32 @@
 
 (defvar *parent-expression-blocks* nil)
 
-(defmethod value-fn-equal ((a expression-block) (b expression-block))
+(defmethod value-fn-equal ((a ir:expression-block) (b ir:expression-block))
   (let ((*parent-expression-blocks* (acons a b *parent-expression-blocks*)))
     (match* (a b)
-      (((expression-block- (expression expr-a) (count count-a))
-        (expression-block- (expression expr-b) (count count-b)))
+      (((ir:expression-block (ir:expression expr-a) (ir:use-count count-a))
+        (ir:expression-block (ir:expression expr-b) (ir:use-count count-b)))
 
        (and (value-fn-equal expr-a expr-b)
             (= count-a count-b))))))
 
-(defmethod value-fn-equal ((a expression-block) b)
-  (value-fn-equal (expression-block-expression a) b))
+(defmethod value-fn-equal ((a ir:expression-block) b)
+  (value-fn-equal (ir:expression a) b))
 
-(defmethod value-fn-equal ((got cyclic-reference) (exp cyclic-reference))
+(defmethod value-fn-equal ((got ir:cyclic-reference) (exp ir:cyclic-reference))
   (=
-   (cdr (assoc (cyclic-reference-expression got) *parent-expression-blocks*))
-   (cyclic-reference-expression exp)))
+   (cdr (assoc (ir:expression got) *parent-expression-blocks*))
+   (ir:expression exp)))
 
-(defmethod value-fn-equal ((got meta-node-ref) (exp meta-node-ref))
-  (with-struct-slots meta-node-ref-
-      ((got-node node)
-       (got-optional optional)
-       (got-outer-nodes outer-nodes))
+(defmethod value-fn-equal ((got ir:meta-node-ref) (exp ir:meta-node-ref))
+  (with-accessors ((got-node ir:meta-node)
+                   (got-optional ir:optional-arguments)
+                   (got-outer-nodes ir:outer-nodes))
       got
 
-    (with-struct-slots meta-node-ref-
-        ((exp-node node)
-         (exp-optional optional)
-         (exp-outer-nodes outer-nodes))
+    (with-accessors ((exp-node ir:meta-node)
+                     (exp-optional ir:optional-arguments)
+                     (exp-outer-nodes ir:outer-nodes))
         exp
 
       (and (= got-node exp-node)
@@ -467,10 +466,10 @@
                               (cdr outer-node)))
             exp-outer-nodes)))))
 
-(defmethod value-fn-equal ((a argument-list) (b argument-list))
-  (with-struct-slots argument-list- ((args-a arguments))
+(defmethod value-fn-equal ((a ir:argument-list) (b ir:argument-list))
+  (with-accessors ((args-a ir:arguments))
       a
-    (with-struct-slots argument-list- ((args-b arguments))
+    (with-accessors ((args-b ir:arguments))
         b
 
       (and (= (length args-a) (length args-b))
@@ -590,11 +589,11 @@
 
 (defmacro! with-dependencies ((&rest deps) o!node &body body)
   "Tests that NODE has the dependencies in DEPS and binds the
-   corresponding `NODE-LINK' objects to variables. Each element of
+   corresponding `IR:LINK' objects to variables. Each element of
    DEPS is either a symbol naming a variable which evaluates to the
    dependency NODE or is of the form (VAR NODE) where NODE is a form
    that evaluates to the dependency node and VAR is the variable to
-   which the `NODE-LINK' object is bound."
+   which the `IR:LINK' object is bound."
 
   (flet ((make-binding (dep)
            (ematch dep
@@ -620,14 +619,14 @@
    WITH-DEPENDENCIES.
 
    FUNCTION is evaluated as if in the body of the WITH-DEPENDENCIES
-   form with DEPS bound to the dependency `NODE-LINK' objects.
+   form with DEPS bound to the dependency `IR:LINK' objects.
 
-   The value function of the context of the `NODE-LINK', corresponding
+   The value function of the context of the `IR:LINK', corresponding
    to the first dependency in DEPS, is tested that it is equal to
    FUNCTION."
 
   `(with-dependencies ,deps ,g!node
-     (let ((,g!context (node-link-context ,(ensure-car (first deps)))))
+     (let ((,g!context (ir:context ,(ensure-car (first deps)))))
        (test-value-function ,g!node ,g!context ,function ,@test-args))))
 
 (defmacro! test-meta-node (o!meta-node (&rest operands) &body (function &rest test-args))
@@ -640,7 +639,7 @@
 
    FUNCTION is the expected value function of the meta-node. Any
    symbol in the value function, that is bound to an operand (appears
-   in OPERANDS), is replaced with the `NODE-LINK' corresponding to the
+   in OPERANDS), is replaced with the `IR:LINK' corresponding to the
    dependency between the operand node and meta-node."
 
   (flet ((make-input-test (operand)

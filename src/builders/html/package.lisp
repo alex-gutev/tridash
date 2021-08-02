@@ -56,6 +56,8 @@
 
                 :build-meta-nodes)
 
+  (:local-nicknames (:ir :tridash.ir))
+
   (:export
    ;; HTML-NODE
    :html-node

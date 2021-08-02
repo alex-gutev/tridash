@@ -159,4 +159,6 @@
                 :*node-true*
                 :*node-false*)
 
+  (:local-nicknames (:ir :tridash.ir))
+
   (:documentation "JavaScript Backend."))

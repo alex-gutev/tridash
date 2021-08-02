@@ -280,7 +280,7 @@
 
   (with-slots (argument-locals) *function-block-state*
     (ematch operand
-      ((node-link- (node))
+      ((ir:link (ir:node node))
        (get node argument-locals)))))
 
 (defun compile-function (expression operands &key (get-operand #'get-operand-local) (epilogue (constantly nil)) thunk)
@@ -640,15 +640,15 @@
 
 ;;; Expression Blocks
 
-(defmethod compile-expression ((block expression-block) &rest args &key)
-  (with-struct-slots expression-block- (count expression) block
+(defmethod compile-expression ((block ir:expression-block) &rest args &key)
+  (with-accessors ((count ir:use-count) (expression ir:expression)) block
     (if (> count 1)
         (compile-expression-block block)
         (apply #'compile-expression expression args))))
 
 (defun compile-expression-block (block)
   (with-slots (expression-blocks strict-blocks cyclic-references) *function-block-state*
-    (with-struct-slots expression-block- (count expression) block
+    (with-accessors ((count ir:use-count) (expression ir:expression)) block
       (or (get block expression-blocks)
 
           (let* ((result (next-local))
@@ -721,12 +721,12 @@
 
                  vblock))))))))
 
-(defmethod compile-expression ((cycle cyclic-reference) &key)
+(defmethod compile-expression ((cycle ir:cyclic-reference) &key)
   "Handles cyclic references. Returns the `value-block' of the
    referenced expression."
 
-  (with-struct-slots cyclic-reference- (expression) cycle
-    (check-type expression expression-block)
+  (with-accessors ((expression ir:expression)) cycle
+    (check-type expression ir:expression-block)
 
     (let ((block (get expression (expression-blocks *function-block-state*))))
       (assert block)
@@ -770,11 +770,13 @@
      ("or" . or))))
 
 
-(defmethod compile-expression ((expression functor-expression) &key)
-  (with-struct-slots functor-expression- (meta-node arguments outer-nodes)
+(defmethod compile-expression ((expression ir:functor) &key)
+  (with-accessors ((operator ir:operator)
+                   (arguments ir:operands)
+                   (outer-nodes ir:outer-nodes))
       expression
 
-    (compile-functor-expression meta-node arguments outer-nodes)))
+    (compile-functor-expression operator arguments outer-nodes)))
 
 (defgeneric compile-functor-expression (operator arguments outer-nodes)
   (:documentation
@@ -871,8 +873,8 @@
 
   (flet ((none? (arg)
            (or (= arg :none)
-               (and (argument-list-p arg)
-                    (null (argument-list-arguments arg))))))
+               (and (typep arg 'ir:argument-list)
+                    (null (ir:arguments arg))))))
 
     (let ((first-none (position :none arguments)))
       (if (and first-none (every #'none? (subseq arguments first-none)))
@@ -1289,14 +1291,14 @@
 
     (map #'compile-operand operands strict-operands)))
 
-(defmethod compile-expression ((link node-link) &key)
+(defmethod compile-expression ((link ir:link) &key)
   (funcall (get-operand *function-block-state*) link))
 
-(defmethod compile-expression ((list argument-list) &key)
+(defmethod compile-expression ((list ir:argument-list) &key)
   "Compile rest argument lists to an expression which creates an array
    object containing the arguments."
 
-  (with-struct-slots argument-list- (arguments) list
+  (with-accessors ((arguments ir:arguments)) list
     (let* ((result (next-local))
            (num-args (length arguments))
            (operands (compile-operands arguments (repeat nil))))
@@ -1343,14 +1345,18 @@
 
 ;;; Meta-Node References
 
-(defmethod compile-expression ((ref meta-node-ref) &key)
+(defmethod compile-expression ((ref ir:meta-node-ref) &key)
   "Creates a block which creates a function reference object to the
    meta-node's function. Generates the meta-node reference function
    and adds it to the map META-NODE-REF-FUNCTIONS (of
    *BACKEND-STATE*) if it has not been added already."
 
   (with-slots (meta-node-ref-functions) *backend-state*
-    (with-struct-slots meta-node-ref- (node optional outer-nodes) ref
+    (with-accessors ((node ir:meta-node)
+                     (optional ir:optional-arguments)
+                     (outer-nodes ir:outer-nodes))
+        ref
+
       (let* ((result (next-local))
 
              (arguments
@@ -1685,11 +1691,11 @@
 
 ;;; Object Expressions
 
-(defmethod compile-expression ((object object-expression) &key)
+(defmethod compile-expression ((object ir:object) &key)
   "Generates an expression which returns an object containing each
    field-value pair in OPERANDS."
 
-  (with-accessors ((entries object-expression-entries)) object
+  (with-accessors ((entries ir:entries)) object
     (let ((keys (map #'first entries))
           (values (map #'second entries)))
 
@@ -1805,12 +1811,12 @@
 
 (defconstant +builtin-node-index-offset+ 6)
 
-(defmethod compile-expression ((ref node-ref) &key)
+(defmethod compile-expression ((ref ir:node-ref) &key)
   "Add a Tridash Node object to the constant data section and generate
    code which references the object."
 
   (with-slots (node-refs) *backend-state*
-    (with-struct-slots node-ref- (node) ref
+    (with-accessors ((node ir:node)) ref
       (if (or (= node *node-true*)
               (= node *node-false*))
 

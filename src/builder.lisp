@@ -816,7 +816,7 @@
       ((node node))
       operands
 
-    (node-ref
+    (ir:node-ref
      (process-declaration (unwrap-declaration node) module
                           :add-outer nil :level *level*))))
 
@@ -852,7 +852,7 @@
    assumed that the node represents the value of NODE when
    transitioning to the state FROM-STATE.
 
-   STATE-LINK is the `node-link' object corresponding to the
+   STATE-LINK is the `ir:link' object corresponding to the
    dependency node which stores the state of NODE."
 
   (let ((state-node
@@ -863,7 +863,7 @@
     (ensure-binding (state-node node :context :state :add-function nil)
         (link)
 
-      (setf (node-link-weak-p link) t)
+      (setf (ir:weak-p link) t)
 
       (let ((context (context node :state)))
         (with-slots (value-function) context
@@ -880,22 +880,22 @@
 
 (defun make-state-check (state-link from-state to-state)
   "Generate a Tridash expression which checks whether the state, given
-   by the `node-link' object STATE-LINK, corresponds to the transition
+   by the `ir:link' object STATE-LINK, corresponds to the transition
    FROM-STATE to TO-STATE or whether the current state is FROM-STATE,
    if TO-STATE is NIL."
 
   (flet ((state-check (expression state)
-           (functor-expression
+           (ir:functor
             (get :symbol-equal *core-meta-nodes*)
             (list expression state))))
 
     (if to-state
 
-        (with-struct-slots node-link- ((state-node node)) state-link
+        (with-accessors ((state-node ir:node)) state-link
           (if-expression
            (state-check (previous-value state-node) from-state)
            (state-check state-link to-state)
-           (node-ref *node-false*)))
+           (ir:node-ref *node-false*)))
 
         (state-check state-link from-state))))
 
@@ -916,9 +916,9 @@
   (setf (attribute :removable node) nil)
 
   (->> node
-       node-ref
+       ir:node-ref
        list
-       (functor-expression (get :previous-value *core-meta-nodes*))))
+       (ir:functor (get :previous-value *core-meta-nodes*))))
 
 
 ;;; Subnodes
@@ -980,14 +980,14 @@
   (with-source-node subnode
     (let ((object-node (process-declaration node module)))
       (create-context (object-node :object)
-        (setf value-function (object-expression)))
+        (setf value-function (ir:object)))
 
       (ensure-binding (subnode object-node :context :object :add-function nil)
           (link)
 
         (->> (context object-node :object)
              value-function
-             object-expression-entries
+             ir:entries
              (push (list key link)))))))
 
 (defmethod process-subnode ((module module) node)
@@ -1096,7 +1096,7 @@
   (create-context (instance context)
     (-<>> (make-arguments meta-node (home-module instance) operands)
           (bind-operands instance <> :context context)
-          (functor-expression
+          (ir:functor
            (if (meta-node? meta-node)
                meta-node
                (add-binding meta-node instance :context context :add-function nil)))
@@ -1127,7 +1127,7 @@
     (labels ((get-arguments (operands)
                (match operands
                  ((list (list (eql +rest-argument+) operand))
-                  (list (argument-list (ensure-list (get-operand operand)))))
+                  (list (ir:argument-list (ensure-list (get-operand operand)))))
 
                  ((list*
                    (list (eql +optional-argument+) operand default)
@@ -1275,11 +1275,11 @@
                (node
                 (add-binding operand node :context context :add-function nil))
 
-               (argument-list
+               (ir:argument-list
                 (->> operand
-                     argument-list-arguments
+                     ir:arguments
                      (map #'bind-operand)
-                     argument-list))
+                     ir:argument-list))
 
                (otherwise it))))
     (map #'bind-operand operands)))

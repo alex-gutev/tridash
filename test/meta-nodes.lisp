@@ -35,6 +35,8 @@
                           :multiply
                           :accumulate)
 
+  (:local-nicknames (:ir :tridash.ir))
+
   (:import-from :tridash.parser
                 :declaration-parse-error)
 
@@ -315,11 +317,11 @@
       (with-nodes ((fn "fn") (< "<") (+ "+")) table
         (->>
          `(:catch
-           ,(expression-block
+           ,(ir:expression-block
              `(if (,< ,x 3)
                   (,+ ,x 1)
                   (:fail :none)))
-           ,(expression-block
+           ,(ir:expression-block
              `(,+ ,x 2))
            :none)
          (test-meta-node fn ((x "x"))))))))
@@ -1086,7 +1088,7 @@
         `(,add ,n 1))
 
       (test-meta-node inc-all ((l "l"))
-        `(,map ,(meta-node-ref inc) ,l))
+        `(,map ,(ir:meta-node-ref inc) ,l))
 
       (has-value-function (x) y
         `(,inc-all ,x)))))
@@ -1114,7 +1116,7 @@
             1+-all
             ((list "list"))
 
-          `(,map ,(meta-node-ref 1+) ,list))
+          `(,map ,(ir:meta-node-ref 1+) ,list))
 
         (has-value-function (in) out `(,1+-all ,in))))))
 
@@ -1140,7 +1142,7 @@
           `(,add ,n ,x))
 
         (test-meta-node x+-all ((list "list") (in-x (outer x)))
-          `(,map ,(meta-node-ref x+ :outer-nodes `((,x . ,in-x))) ,list))
+          `(,map ,(ir:meta-node-ref x+ :outer-nodes `((,x . ,in-x))) ,list))
 
         (has-value-function (in (in-x x)) out
           `(,x+-all ,in :outer (,x . ,in-x)))))))
@@ -1173,7 +1175,7 @@
             `(,x+ ,n :outer (,x . ,in-x)))
 
           (test-meta-node x+-all ((list "list") (in-x (outer x)))
-            `(,map ,(meta-node-ref add-x :outer-nodes `((,x . ,in-x))) ,list)))
+            `(,map ,(ir:meta-node-ref add-x :outer-nodes `((,x . ,in-x))) ,list)))
 
         (has-value-function (in (in-x x)) out
           `(,x+-all ,in :outer (,x . ,in-x)))))))
@@ -1203,7 +1205,7 @@
             (definition x+-all)
 
           (test-meta-node add-x ((n "n") (in-x (outer x)))
-            `(,map ,(meta-node-ref x+ :outer-nodes `((,x . ,in-x))) ,n))
+            `(,map ,(ir:meta-node-ref x+ :outer-nodes `((,x . ,in-x))) ,n))
 
           (test-meta-node x+-all ((list "list") (in-x (outer x)))
             `(,add-x ,list :outer (,x . ,in-x))))
@@ -1232,13 +1234,13 @@
 
         (test-meta-node add-x ((xs "xs") (xin (outer x)) (yin (outer y)))
           `(,map
-            ,(meta-node-ref add-y :outer-nodes `((,x . ,xin) (,y . ,yin)))
-            ,(argument-list (list xs xin))))
+            ,(ir:meta-node-ref add-y :outer-nodes `((,x . ,xin) (,y . ,yin)))
+            ,(ir:argument-list (list xs xin))))
 
         (test-meta-node add-y ((xs "xs") (xin (outer x)) (yin (outer y)))
           `(,map
-            ,(meta-node-ref add-x :outer-nodes `((,x . ,xin) (,y . ,yin)))
-            ,(argument-list (list xs yin))))
+            ,(ir:meta-node-ref add-x :outer-nodes `((,x . ,xin) (,y . ,yin)))
+            ,(ir:argument-list (list xs yin))))
 
 	(let ((x-out x) (y-out y))
 	  (has-value-function (in x y) output
@@ -1263,7 +1265,7 @@
                    (in "in") (out "out"))
           table
 
-        (has-value-function (in) out `(,map ,(meta-node-ref add-x) ,in))))))
+        (has-value-function (in) out `(,map ,(ir:meta-node-ref add-x) ,in))))))
 
 (test meta-node-reference-source-outer-nodes
   "Test meta-node reference (with outer-nodes) in binding source node."
@@ -1286,7 +1288,7 @@
           table
 
         (has-value-function (in (x-in x)) out
-          `(,map ,(meta-node-ref add-x :outer-nodes `((,x . ,x-in))) ,in))))))
+          `(,map ,(ir:meta-node-ref add-x :outer-nodes `((,x . ,x-in))) ,in))))))
 
 (test meta-node-reference-optional-argument-default-constant-value
   "Test meta-node reference with constant optional argument default value"
@@ -1313,7 +1315,7 @@
           inc-all
           ((xs "xs"))
 
-        `(,map ,(meta-node-ref inc :optional '(1)) ,xs))
+        `(,map ,(ir:meta-node-ref inc :optional '(1)) ,xs))
 
       (has-value-function
           (input)
@@ -1344,7 +1346,7 @@
         (finish-build)
 
       (test-meta-node inc-all ((xs "xs") (delta (outer delta)))
-        `(,map ,(meta-node-ref inc :optional (list delta)) ,xs))
+        `(,map ,(ir:meta-node-ref inc :optional (list delta)) ,xs))
 
       (has-value-function (input (in-delta delta)) output
         `(,inc-all ,input :outer (,delta . ,in-delta))))))
@@ -1418,9 +1420,9 @@
 
     (with-nodes ((f "f") (cons "cons")) (finish-build)
       (test-meta-node f ((a "a") (b "b"))
-        (aprog1 (expression-block nil :count 2)
-          (setf (expression-block-expression it)
-                `(,cons ,a (,cons ,b ,(cyclic-reference it)))))))))
+        (aprog1 (ir:expression-block nil :count 2)
+          (setf (ir:expression it)
+                `(,cons ,a (,cons ,b ,(ir:cyclic-reference it)))))))))
 
 
 ;;; Structure Checking

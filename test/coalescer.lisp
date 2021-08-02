@@ -39,7 +39,9 @@
 
   (:import-from :tridash.frontend
                 :*node-true*
-                :*node-false*))
+                :*node-false*)
+
+  (:local-nicknames (:ir :tridash.ir)))
 
 (in-package :tridash/test.coalescer)
 
@@ -321,11 +323,11 @@
                    (output "output"))
           table
 
-        (let ((block (expression-block nil :count 2)))
+        (let ((block (ir:expression-block nil :count 2)))
           (has-value-function (a b) output
             (progn
-              (setf (expression-block-expression block)
-                    `(,cons ,a (,cons ,b ,(cyclic-reference block))))
+              (setf (ir:expression block)
+                    `(,cons ,a (,cons ,b ,(ir:cyclic-reference block))))
 
               block)))))))
 
@@ -422,7 +424,7 @@
         (has-value-function
             (a)
             b
-          `(,map ,(meta-node-ref f) ,a))
+          `(,map ,(ir:meta-node-ref f) ,a))
 
         (test-meta-node f ((z "z")) `(,1+ ,z))))))
 
@@ -522,10 +524,10 @@
             (in) out
           `(:object
             (,(id-symbol "fail")
-              (,nan? ,(expression-block `(,parse ,in) :count 2)))
+              (,nan? ,(ir:expression-block `(,parse ,in) :count 2)))
 
             (,(id-symbol "value")
-              ,(expression-block `(,parse ,in) :count 2))))))))
+              ,(ir:expression-block `(,parse ,in) :count 2))))))))
 
 (test common-sub-expressions-conditional-bindings
   "Test extraction of common sub-expressions in conditional bindings."
@@ -557,7 +559,7 @@
 
         (has-value-function
             (a d) out
-          `(,add (,add ,a ,(expression-block `(if (,even? (,add ,a ,1)) (,add ,a 1) (:fail :none)))) ,d))))))
+          `(,add (,add ,a ,(ir:expression-block `(if (,even? (,add ,a ,1)) (,add ,a 1) (:fail :none)))) ,d))))))
 
 
 ;;; Explicit Contexts
@@ -586,9 +588,9 @@
 
           `(:catch
             (:catch
-             ,(expression-block
+             ,(ir:expression-block
                `(if (,< ,a 3) (,+ ,a ,b) (:fail :none)))
-             ,(expression-block
+             ,(ir:expression-block
                `(if (,> ,a 4) (,- ,a ,b) (:fail :none)))
              :none)
             ,b
@@ -619,7 +621,7 @@
             output
 
           `(:catch
-            ,(expression-block
+            ,(ir:expression-block
               `(if (,< ,a 3) ,cc (:fail :none)))
             ,b
             :none))))))
@@ -646,9 +648,9 @@
             output
 
           `(:catch
-            ,(expression-block
+            ,(ir:expression-block
               `(if (,< ,a 3) (,+ ,a ,b) (:fail :none)))
-            ,(expression-block
+            ,(ir:expression-block
               `(if (,< ,b 4) ,b (:fail :none)))
             :none))))))
 
@@ -675,7 +677,7 @@
             output
 
           `(:catch
-            ,(expression-block
+            ,(ir:expression-block
               `(if (,< ,a 3) (,+ ,a ,b) (:fail :none)))
             ,b
             :none))))))
@@ -704,9 +706,9 @@
             output
 
           `(:catch
-            ,(expression-block
+            ,(ir:expression-block
               `(if (,< ,a 3) (,+ ,a ,b) (:fail :none)))
-            ,(expression-block
+            ,(ir:expression-block
               `(if (,< ,b 4) ,b (:fail :none)))
             :none))))))
 
@@ -770,8 +772,8 @@
             on
 
           `(,if (,equal ,the-state ,(id-symbol "toggle"))
-                (,previous ,(node-ref toggle-state-on))
-                (,previous ,(node-ref on))))
+                (,previous ,(ir:node-ref toggle-state-on))
+                (,previous ,(ir:node-ref on))))
 
         (test-binding start on)
 
@@ -811,12 +813,12 @@
             on
 
           `(,if
-            (,if (,equal (,previous ,(node-ref state-on)) ,(id-symbol "default"))
+            (,if (,equal (,previous ,(ir:node-ref state-on)) ,(id-symbol "default"))
                  (,equal ,state ,(id-symbol "toggle"))
-                 ,(node-ref *node-false*))
+                 ,(ir:node-ref *node-false*))
 
-            (,previous ,(node-ref toggle-state-on))
-            (,previous ,(node-ref on))))
+            (,previous ,(ir:node-ref toggle-state-on))
+            (,previous ,(ir:node-ref on))))
 
         (test-binding start on)
 

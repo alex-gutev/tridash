@@ -49,7 +49,9 @@
                 :lol-syntax)
 
   (:import-from :tridash.builder.html
-                :build-html-file))
+                :build-html-file)
+
+  (:local-nicknames (:ir :tridash.ir)))
 
 
 (in-package :tridash/test.builder.html)
@@ -437,7 +439,7 @@
             (input-a.value input-b.value)
             sum.value
 
-          `(,format "Sum is %s." ,(argument-list `((,+ (,to-int ,input-a.value) (,to-int ,input-b.value))))))))))
+          `(,format "Sum is %s." ,(ir:argument-list `((,+ (,to-int ,input-a.value) (,to-int ,input-b.value))))))))))
 
 (test multi-inline-declarations-in-span-elements
   "Test multiple inline node declarations in SPAN elements"

@@ -34,7 +34,7 @@
     :documentation
     "Map of the node's dependency nodes, i.e. the nodes on which this
      node's value depends. Each key is a `NODE' object and the
-     corresponding value is the `NODE-LINK' object.")
+     corresponding value is the `IR:LINK' object.")
 
    (observers
     :initform (make-hash-map)
@@ -43,7 +43,7 @@
     :documentation
     "Map of the node's observer nodes, i.e. the nodes whose values are
      dependent on the value of this node. Each key is a `NODE' object
-     and the corresponding value is the `node-link' object of this
+     and the corresponding value is the `IR:LINK' object of this
      node in the observer node's DEPENDENCIES map.")
 
    (contexts
@@ -72,7 +72,7 @@
     :documentation
     "Map containing the dependency nodes which are operands to this
      context's value function. Each key is the dependency `NODE'
-     object and the corresponding value is the `NODE-LINK' object.")
+     object and the corresponding value is the `IR:LINK' object.")
 
    (value-function
     :initarg :value-function
@@ -124,7 +124,7 @@
 
   (let* ((name (id-symbol id))
          (node (make-instance 'node :name name)))
-    (add-constant-function (node-ref node) node)
+    (add-constant-function (ir:node-ref node) node)
     node))
 
 
@@ -207,7 +207,7 @@
    node. CONTEXT is the context identifier, of which SOURCE is an
    operand, defaults to SOURCE itself. If ADD-FUNCTION is true, the
    value function of the context is set to the SOURCE node
-   link. Returns the `node-link' object of the established binding, as
+   link. Returns the `IR:LINK' object of the established binding, as
    the first value, and true, as the second value, if the binding had
    previously been established."
 
@@ -225,7 +225,7 @@
          (unless in-hash?
            (add-observer target source link))))
 
-      (meta-node-ref
+      (ir:meta-node-ref
        (prog1 source
          (when add-function
            (add-function source (context target context)))))
@@ -243,7 +243,7 @@
    "Adds DEPENDENCY as a dependency node of NODE. CONTEXT is the
     context identifier, of which, DEPENDENCY is an operand. If
     ADD-FUNCTION is true, the value function of the context is set to
-    the node link of DEPENDENCY. Returns the `node-link' object of the
+    the node link of DEPENDENCY. Returns the `IR:LINK' object of the
     dependency, as the first return value, and true, as the second
     value, if DEPENDENCY was already in the dependency set of NODE."))
 
@@ -251,13 +251,13 @@
   (with-slots (dependencies observers) node
     (flet ((observer? (observer)
              (aand (get observer observers)
-                   (setf (node-link-two-way-p it) t))))
+                   (setf (ir:two-way-p it) t))))
 
       (multiple-value-return (link in-hash?)
           (ensure-get dependency dependencies
-            (node-link dependency
-                       :context context
-                       :two-way-p (observer? dependency)))
+            (ir:link dependency
+                     :context context
+                     :two-way-p (observer? dependency)))
 
         (when (not in-hash?)
           (let ((context (context node context)))
@@ -320,7 +320,7 @@
 
 (defgeneric add-observer (observer node link)
   (:documentation
-   "Adds OBSERVER as an observer node of NODE. LINK is the `node-link'
+   "Adds OBSERVER as an observer node of NODE. LINK is the `ir:link'
     object corresponding to the dependency NODE within the
     DEPENDENCIES hash-table of OBSERVER."))
 
@@ -334,23 +334,23 @@
   (add-observer (node observer) node link))
 
 
-;;; Replacing `NODE-LINK's with Expressions
+;;; Replacing `IR:LINK's with Expressions
 
 (defgeneric replace-dependency-link (node link fn)
   (:documentation
-   "Replaces the `NODE-LINK' object LINK, in the value function of
+   "Replaces the `IR:LINK' object LINK, in the value function of
     NODE, with the expression returned by applying the function FN on
-    the new `NODE-LINK' object created for the dependency node.
+    the new `IR:LINK' object created for the dependency node.
 
     The entries in the dependency set of NODE and the observer set of
-    the dependency are updated to the new `NODE-LINK' objects."))
+    the dependency are updated to the new `IR:LINK' objects."))
 
 (defmethod replace-dependency-link (node link fn)
-  (with-accessors ((link-node node-link-node)
-                   (context node-link-context))
+  (with-accessors ((link-node ir:node)
+                   (context ir:context))
       link
 
-    (let ((new-link (node-link link-node :context context)))
+    (let ((new-link (ir:link link-node :context context)))
       (-<>> (dependencies node)
             (get link-node)
             (setf <> new-link))
@@ -444,7 +444,10 @@
   "Removes the node OPERAND from the operands of CONTEXT. Returns true
    if the operand was removed, nil if the operand cannot be removed."
 
-  (with-accessors ((link-node node-link-node) (context-id node-link-context)) operand
+  (with-accessors ((link-node ir:node)
+                   (context-id ir:context))
+      operand
+
     (let ((context (context node context-id)))
       (with-slots (operands value-function) context
         (cond
@@ -469,9 +472,9 @@
   (:method ((node t) (context t) (fn t) (operand t))
     nil))
 
-(defmethod remove-operand-from-fn (node context (fn object-expression) operand)
-  (with-accessors ((operand-node node-link-node)) operand
-    (with-accessors ((entries object-expression-entries)) fn
+(defmethod remove-operand-from-fn (node context (fn ir:object) operand)
+  (with-accessors ((operand-node ir:node)) operand
+    (with-accessors ((entries ir:entries)) fn
       (when (get operand-node (observers node))
         (awhen (first (find operand entries :key #'second))
 
@@ -495,3 +498,118 @@
 
 (defmethod print-object ((node node) stream)
   (format stream "<Node: ~a>" (name node)))
+
+
+;;; Walking Expressions
+
+(defgeneric walk-expression (fn expression)
+  (:documentation
+   "Calls FN on each expression in the tree rooted at EXPRESSION. If
+    FN returns NIL, FN is not called on the expressions contained in
+    the expression passed as an argument.")
+
+  (:method :around (fn expr)
+    (when (funcall fn expr)
+      (call-next-method)))
+
+  (:method (fn (call ir:functor))
+    (with-accessors ((operator ir:operator)
+                     (operands ir:operands)
+                     (outer-nodes ir:outer-nodes))
+        call
+
+      (walk-expression fn operator)
+      (foreach (curry #'walk-expression fn) operands)
+      (foreach (curry #'walk-expression fn) (map-values outer-nodes))))
+
+  (:method (fn (object ir:object))
+    (foreach (compose (curry #'walk-expression fn) #'second)
+             (ir:entries object)))
+
+  (:method (fn (block ir:expression-block))
+    (walk-expression fn (ir:expression block)))
+
+  (:method (fn (ref ir:meta-node-ref))
+    (with-accessors ((optional-arguments ir:optional-arguments)
+                     (outer-nodes ir:outer-nodes))
+        ref
+
+      (foreach (curry #'walk-expression fn) optional-arguments)
+      (foreach (curry #'walk-expression fn) (map-values outer-nodes))))
+
+  (:method (fn (list ir:argument-list))
+    (foreach (curry #'walk-expression fn) (ir:arguments list)))
+
+  (:method (fn (link ir:link))
+    (with-accessors ((node ir:node)) link
+      (unless (node? node)
+        (walk-expression fn node))))
+
+  (:method ((fn t) (expr t))
+    nil))
+
+(defgeneric map-expression! (fn expression)
+  (:documentation
+   "Applies a transformation on an expression. Each sub-expression,
+    contained in EXPRESSION, is replaced with the result of applying
+    FN on it.
+
+    CAUTION: Whilst the new expression tree is returned, this function
+    is destructive when EXPRESSION is an `EXPRESSION-BLOCK', since the
+    identity of an expression block needs to be preserved." )
+
+  (:method (fn (call ir:functor))
+    (with-accessors ((operator ir:operator)
+                     (operands ir:operands)
+                     (outer-nodes ir:outer-nodes))
+        call
+
+      (ir:functor
+       (funcall fn operator)
+       (map fn operands)
+
+       :outer-nodes
+       (map
+        (lambda (ref)
+          (cons (car ref) (funcall fn (cdr ref))))
+        outer-nodes))))
+
+  (:method (fn (object ir:object))
+    (flet ((map-entry (entry)
+             (list (first entry)
+                   (funcall fn (second entry)))))
+
+      (ir:object
+       (map #'map-entry (ir:entries object)))))
+
+  (:method (fn (block ir:expression-block))
+    (with-accessors ((expression ir:expression)) block
+      (setf expression (funcall fn expression))
+      block))
+
+  (:method (fn (ref ir:meta-node-ref))
+    (with-accessors ((meta-node ir:meta-node)
+                     (optional-arguments ir:optional-arguments)
+                     (outer-nodes ir:outer-nodes))
+        ref
+
+      (ir:meta-node-ref
+       meta-node
+
+       :optional
+       (map fn optional-arguments)
+
+       :outer-nodes
+       (map
+        (lambda (ref)
+          (cons (car ref) (funcall fn (cdr ref))))
+        outer-nodes))))
+
+  (:method (fn (list ir:argument-list))
+    (->> list
+         ir:arguments
+         (map fn)
+         ir:argument-list))
+
+  (:method ((fn t) expr)
+    expr))

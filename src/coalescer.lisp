@@ -30,7 +30,7 @@
 (defun coalesce-all (table &key in-meta-node)
   "Perform all coalescing steps on the `FLAT-NODE-TABLE' TABLE:
    coalesce nodes, check structure, remove unreachable nodes and
-   coalesce `NODE-LINK' objects.
+   coalesce `IR:LINK' objects.
 
    The :IN-META-NODE is a flag for whether TABLE is the node table of
    a meta-node."
@@ -92,7 +92,7 @@
            (when (= (length (contexts node)) 1)
              (doseq ((dependency . link) (dependencies node))
                (when (remove-observer node dependency)
-                 (setf (node-link-two-way-p link) nil)))))
+                 (setf (ir:two-way-p link) nil)))))
 
 
          (eliminate-node (node)
@@ -100,7 +100,7 @@
             dependencies are merged into the dependency set of its
             observer node, it's replaced with its observer node in the
             observer sets of its dependencies, and the node referenced
-            within the `node-link' objects of its observer nodes, is
+            within the `ir:link' objects of its observer nodes, is
             replaced with the value-function of NODE."
 
            (when (coalesce? node)
@@ -141,9 +141,9 @@
            (walk-expression
             (lambda (expression)
               (match expression
-                ((functor-expression-
-                  (meta-node (eq (get :previous-value *core-meta-nodes*)))
-                  (arguments (list (eq node))))
+                ((ir:functor
+                  (ir:operator (eq (get :previous-value *core-meta-nodes*)))
+                  (ir:operands (list (eq node))))
 
                  (return-from self-references nil))
 
@@ -163,8 +163,8 @@
                       cdr)))
 
              (not
-              (or (node-link-weak-p link)
-                  (node-link-two-way-p link)))))
+              (or (ir:weak-p link)
+                  (ir:two-way-p link)))))
 
          (merge-dependencies (node observer)
            "Merges the dependencies of NODE into the dependency set of
@@ -177,11 +177,11 @@
            (with-slots (dependencies) observer
              (let* ((context (first (map-values (contexts node))))
                     (node-link (get node dependencies))
-                    (context-id (node-link-context node-link)))
+                    (context-id (ir:context node-link)))
 
                (with-slots (operands value-function) (context observer context-id)
                  ;; Update link NODE -> OBSERVER to store VALUE-FUNCTION of NODE
-                 (setf (node-link-node node-link) (value-function context))
+                 (setf (ir:node node-link) (value-function context))
 
                  ;; Remove NODE from DEPENDENCIES of OBSERVER
                  (erase dependencies node)
@@ -195,7 +195,7 @@
                      (unless (get dependency operands)
                        (error 'ambiguous-context-error :node observer))
 
-                     (setf (node-link-node old-link) link))
+                     (setf (ir:node old-link) link))
 
                    (cond
                      ((= dependency observer)
@@ -203,11 +203,11 @@
                       ;; The link (DEPENDENCY -> OBSERVER) has to be
                       ;; replaced with the value function of OBSERVER.
 
-                      (setf (node-link-node link)
-                            (->> (node-link-context node-link)
+                      (setf (ir:node link)
+                            (->> (ir:context node-link)
                                  (context observer)
                                  value-function
-                                 cyclic-reference))
+                                 ir:cyclic-reference))
 
                       (erase (observers dependency) node))
 
@@ -216,7 +216,7 @@
                       ;; Add DEPENDENCY to dependencies of OBSERVER
                       (setf (get dependency dependencies) link)
                       (setf (get dependency operands) link)
-                      (setf (node-link-context link) context-id)
+                      (setf (ir:context link) context-id)
 
                       (with-slots (observers) dependency
                         ;; Remove NODE from observers of DEPENDENCY
@@ -244,7 +244,7 @@
 ;;; Coalescing Node Links
 
 (defun coalesce-node-links (nodes)
-  "Replaces the `node-link' objects, within the value functions of
+  "Replaces the `ir:link' objects, within the value functions of
    NODE, which do not directly reference another node, with their
    contents. NODES is the set of all nodes."
 
@@ -263,39 +263,39 @@
   (:documentation
    "Coalesces node links in the expression EXPRESSION."))
 
-(defmethod coalesce-links-in-expression ((link node-link))
+(defmethod coalesce-links-in-expression ((link ir:link))
   "If LINK points to an expression, instead of a NODE, returns an
    `EXPRESSION-BLOCK' containing the referenced expression."
 
-  (with-accessors ((node node-link-node)) link
+  (with-accessors ((node ir:node)) link
     (match node
-      ((type node-link)
+      ((type ir:link)
        (coalesce-links-in-expression node))
 
-      ((type expression-block)
-       (incf (expression-block-count node))
+      ((type ir:expression-block)
+       (incf (ir:use-count node))
        node)
 
       ((not (type node))
        (let ((expression node)
-             (block (setf node (expression-block nil))))
-         (setf (expression-block-expression block)
+             (block (setf node (ir:expression-block nil))))
+         (setf (ir:expression block)
                (coalesce-links-in-expression expression))
          block))
 
       (_ link))))
 
-(defmethod coalesce-links-in-expression ((cycle cyclic-reference))
-  "Coalesces `NODE-LINK' objects in the EXPRESSION of the cyclic
+(defmethod coalesce-links-in-expression ((cycle ir:cyclic-reference))
+  "Coalesces `IR:LINK' objects in the EXPRESSION of the cyclic
    reference CYCLE. Since the EXPRESSION part of the cyclic reference
    has already been visited (as CYCLE is contained in it), the
-   `NODE-LINK' in it will already point to an `EXPRESSION-BLOCK'
+   `IR:LINK' in it will already point to an `IR:EXPRESSION-BLOCK'
    object with which it will be replaced"
 
   (-> cycle
-      cyclic-reference-expression
+      ir:expression
       coalesce-links-in-expression
-      cyclic-reference))
+      ir:cyclic-reference))
 
 (defmethod coalesce-links-in-expression ((expression t))
   (map-expression! #'coalesce-links-in-expression expression))
@@ -333,7 +333,7 @@
 (defun remove-unused-meta-nodes (nodes meta-nodes)
   "Returns the set of `META-NODE's which are actually used. A
    meta-node is considered used if it appears as the operator of a
-   `FUNCTOR-EXPRESSION' or is referenced by a `META-NODE-REF' in the
+   `IR:FUNCTOR' or is referenced by a `META-NODE-REF' in the
    value computation function of at least one node in NODES or in the
    function of a used `META-NODE' in META-NODES."
 
@@ -371,14 +371,14 @@
                (walk-expression #'mark-meta-nodes expression))
 
              (mark-meta-nodes (expression)
-               "If EXPRESSION is a `FUNCTOR-EXPRESSION' or a
+               "If EXPRESSION is a `IR:FUNCTOR' or a
                 `META-NODE-REF', marks the meta-node as used."
 
                (match expression
-                 ((functor-expression- (meta-node (and (type meta-node) meta-node)))
+                 ((ir:functor (ir:operator (and (type meta-node) meta-node)))
                   (add-used-meta-node meta-node))
 
-                 ((meta-node-ref- (node))
+                 ((ir:meta-node-ref (ir:meta-node node))
                   (add-used-meta-node node)))
                t)
 
@@ -448,7 +448,7 @@
              (value-function (first contexts)))))))
 
 (defun fold-value (node)
-  "If NODE is a constant node, replace the `NODE-LINK's, in its
+  "If NODE is a constant node, replace the `IR:LINK's, in its
    observer nodes, with its constant value. The contexts and observers
    of NODE are cleared in order for it to be removed during the
    removal of unreachable nodes."
@@ -458,10 +458,10 @@
              (erase (dependencies obs) node)
              (erase (observers obs) node)
 
-             (setf (node-link-node link)
+             (setf (ir:node link)
                    (copy-value-expression value))
 
-             (let ((context (context obs (node-link-context link))))
+             (let ((context (context obs (ir:context link))))
                (fold-constant-outer-node-operands context)
                (erase (operands context) node)))))
 
@@ -484,13 +484,13 @@
 
   (labels ((fold-in-expression (expression)
              (match expression
-               ((functor-expression- (meta-node (and (type meta-node) meta-node))
-                                     (arguments (place arguments))
-                                     (outer-nodes (place outer-nodes)))
+               ((ir:functor (ir:operator (and (type meta-node) meta-node))
+                            (ir:operands (place arguments))
+                            (ir:outer-nodes (place outer-nodes)))
 
                 (setf outer-nodes (mark-constants meta-node outer-nodes)))
 
-               ((meta-node-ref- node outer-nodes)
+               ((ir:meta-node-ref (ir:meta-node node) (ir:outer-nodes outer-nodes))
                 (setf outer-nodes (mark-constants node outer-nodes))))
              t)
 
@@ -508,7 +508,7 @@
              (walk-expression
               (lambda (expression)
                 (match expression
-                  ((node-link- (node (type node)))
+                  ((ir:link (ir:node (type node)))
                    (return-from constant-expression? nil)))
                 t)
               expression)
@@ -516,7 +516,7 @@
 
            (decrease-block-count (expression)
              (match expression
-               ((expression-block (count (place count)))
+               ((ir:expression-block (ir:use-count (place count)))
                 (decf count)))))
 
     (walk-expression #'fold-in-expression (value-function context))))
@@ -574,7 +574,7 @@
       (setf it (remove-if-not #'input-node? it :key #'cdr)))))
 
 (defun copy-value-expression (expression)
-  "Copy a node value expression. `NODE-LINK' objects, which point to
+  "Copy a node value expression. `IR:LINK' objects, which point to
    expressions rather than nodes are replaced directly with a copy of
    the pointed to expressions, without creating an `EXPRESSION-BLOCK'
    object."
@@ -582,23 +582,25 @@
   (let ((blocks (make-hash-map)))
     (labels ((copy-expression (expression)
                (match expression
-                 ((node-link- (node (and (not (type node)) expression)))
+                 ((ir:link (ir:node (and (not (type node)) expression)))
                   (copy-expression expression))
 
-                 ((and (expression-block expression count) block)
+                 ((and (ir:expression-block (ir:expression expression)
+                                            (ir:use-count count))
+                       block)
                   (ensure-get block blocks
-                    (expression-block
+                    (ir:expression-block
                      (copy-expression expression)
                      :count count)))
 
-                 ((cyclic-reference- expression)
-                  (cyclic-reference (copy-expression expression)))
+                 ((ir:cyclic-reference (ir:expression expression))
+                  (ir:cyclic-reference (copy-expression expression)))
 
                  (_ (map-expression! #'copy-expression expression))))
 
              (strip-blocks (expression)
                (match expression
-                 ((expression-block- expression)
+                 ((ir:expression-block (ir:expression expression))
                   (strip-blocks expression))
 
                  (_ expression))))
@@ -653,7 +655,7 @@
 
              (visit-observer (observer)
                (destructuring-bind (observer . link) observer
-                 (unless (node-link-weak-p link)
-                   (visit observer (context observer (node-link-context link)))))))
+                 (unless (ir:weak-p link)
+                   (visit observer (context observer (ir:context link)))))))
 
       (foreach #'begin-walk input-nodes))))

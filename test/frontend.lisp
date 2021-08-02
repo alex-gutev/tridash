@@ -40,7 +40,9 @@
 
   (:import-from :tridash.frontend
                 :*node-true*
-                :*node-false*))
+                :*node-false*)
+
+  (:local-nicknames (:ir :tridash.ir)))
 
 (in-package :tridash/test.frontend)
 
@@ -171,7 +173,7 @@
         modules
 
       (has-value-function (a b) node
-        `(,add ,a ,(argument-list (list b)))))))
+        `(,add ,a ,(ir:argument-list (list b)))))))
 
 
 ;;; Functor Nodes as Binding Target
@@ -377,7 +379,7 @@
             (:catch
              (if ,cond1 ,a+b (:fail :none))
              (if ,cond2 ,a-b (:fail :none))
-             ,(meta-node-ref test-type))
+             ,(ir:meta-node-ref test-type))
             ,b
             :none))))))
 
@@ -415,7 +417,7 @@
             (:catch
              (if ,cond1 ,a+b (:fail :none))
              1
-             ,(meta-node-ref test-type))
+             ,(ir:meta-node-ref test-type))
 
             (if ,cond2 ,a-b (:fail :none))
             :none))))))
@@ -859,7 +861,7 @@
                  (add-a ("add" "a")))
         modules
 
-      (has-value-function (a) add-a `(,add ,a ,(argument-list nil)))
+      (has-value-function (a) add-a `(,add ,a ,(ir:argument-list nil)))
       (test-simple-binding add-a b))))
 
 (test meta-node-arity-check-rest-arguments-more-than-operands
@@ -880,7 +882,7 @@
           (a b cc)
           add-abc
 
-        `(,add ,a ,(argument-list (list b cc))))
+        `(,add ,a ,(ir:argument-list (list b cc))))
       (test-simple-binding add-abc x))))
 
 (test meta-node-arity-check-rest-arguments-zero
@@ -893,7 +895,7 @@
     (with-nodes ((f "f") (ff ("f")) (a "a"))
         modules
 
-      (test-value-function ff f (list f (argument-list nil)))
+      (test-value-function ff f (list f (ir:argument-list nil)))
       (test-simple-binding ff a))))
 
 (test meta-node-arity-check-keyword-arguments
@@ -1037,7 +1039,7 @@
                  (add-a ("add" "a")))
         modules
 
-      (has-value-function (a) add-a `(,add ,a ,(argument-list nil)))
+      (has-value-function (a) add-a `(,add ,a ,(ir:argument-list nil)))
       (test-simple-binding add-a b))))
 
 (test external-meta-node-arity-check-rest-arguments-more-than-operands
@@ -1058,7 +1060,7 @@
           (a b cc)
           add-abc
 
-        `(,add ,a ,(argument-list (list b cc))))
+        `(,add ,a ,(ir:argument-list (list b cc))))
       (test-simple-binding add-abc x))))
 
 (test external-meta-node-arity-check-rest-arguments-zero
@@ -1071,7 +1073,7 @@
     (with-nodes ((f "f") (ff ("f")) (a "a"))
         modules
 
-      (test-value-function ff f (list f (argument-list nil)))
+      (test-value-function ff f (list f (ir:argument-list nil)))
       (test-simple-binding ff a))))
 
 
@@ -1094,7 +1096,7 @@
           (input)
           map-input
 
-        `(,map ,(meta-node-ref add) ,input))
+        `(,map ,(ir:meta-node-ref add) ,input))
 
       (test-simple-binding map-input output))))
 
@@ -1116,7 +1118,7 @@
           (input delta)
           map-input
 
-        `(,map ,(meta-node-ref inc :optional (list delta)) ,input))
+        `(,map ,(ir:meta-node-ref inc :optional (list delta)) ,input))
 
       (test-simple-binding map-input output))))
 
@@ -1134,7 +1136,7 @@
                  (map-input ("map" "fn" "input")))
         modules
 
-      (test-value-function fn (init-context fn) (meta-node-ref add))
+      (test-value-function fn (init-context fn) (ir:meta-node-ref add))
 
       (has-value-function
           (input fn)
@@ -1264,8 +1266,8 @@
             on
 
           `(,if (,equal ,state-on ,(id-symbol "toggle"))
-                (,previous ,(node-ref toggle-state-on))
-                (,previous ,(node-ref on))))
+                (,previous ,(ir:node-ref toggle-state-on))
+                (,previous ,(ir:node-ref on))))
 
         (test-value-function on :init 0)
 
@@ -1299,12 +1301,12 @@
             on
 
           `(,if
-            (,if (,equal (,previous ,(node-ref state-on)) ,(id-symbol "default"))
+            (,if (,equal (,previous ,(ir:node-ref state-on)) ,(id-symbol "default"))
                  (,equal ,state ,(id-symbol "toggle"))
-                 ,(node-ref *node-false*))
+                 ,(ir:node-ref *node-false*))
 
-            (,previous ,(node-ref toggle-state-on))
-            (,previous ,(node-ref on))))
+            (,previous ,(ir:node-ref toggle-state-on))
+            (,previous ,(ir:node-ref on))))
 
         (test-simple-binding false on)
 

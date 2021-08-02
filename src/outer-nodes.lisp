@@ -129,10 +129,10 @@
 
          (add-used-meta-nodes (expression)
            (match expression
-             ((functor-expression- (meta-node (and (type meta-node) meta-node)))
+             ((ir:functor (ir:operator (and (type meta-node) meta-node)))
               (add-meta-node meta-node))
 
-             ((meta-node-ref- node)
+             ((ir:meta-node-ref (ir:meta-node node))
               (add-meta-node node))
 
              (_ t)))
@@ -145,7 +145,7 @@
 
 
 (defun update-meta-node-instances (node meta-node)
-  "Updates each `FUNCTOR-EXPRESSION' and `META-NODE-REF' in each
+  "Updates each `IR:FUNCTOR' and `META-NODE-REF' in each
    context of NODE, to pass outer nodes as arguments.
 
    META-NODE is the meta-node in which NODE is contained."
@@ -164,30 +164,30 @@
 
          (update-expression (expression)
            (match expression
-             ((functor-expression- (meta-node (and (type meta-node) meta-node)) arguments)
+             ((ir:functor (ir:operator (and (type meta-node) meta-node)) (ir:operands arguments))
               (map-expression!
                #'update-expression
 
-               (functor-expression
+               (ir:functor
                 meta-node
                 arguments
                 :outer-nodes
                 (outer-node-links meta-node))))
 
-             ((meta-node-ref node optional)
+             ((ir:meta-node-ref (ir:meta-node node) (ir:optional-arguments optional))
               (map-expression!
                #'update-expression
 
-               (meta-node-ref node
-                              :optional optional
-                              :outer-nodes (outer-node-links node))))
+               (ir:meta-node-ref node
+                                 :optional optional
+                                 :outer-nodes (outer-node-links node))))
 
              (_
               (map-expression! #'update-expression expression))))
 
          (outer-node-links (meta-node)
            "Bind each outer node, referenced by META-NODE, to NODE and
-            return the list of the binding `NODE-LINK' objects."
+            return the list of the binding `IR:LINK' objects."
 
            ;; Determine outer node references
            (outer-node-references meta-node)

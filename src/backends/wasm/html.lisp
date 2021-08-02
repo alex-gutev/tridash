@@ -120,7 +120,7 @@
                     (-<> (js-member "value" "subnodes")
                          (curry #'make-set-attribute node "element" <>)
                          (compose #'first)
-                         (map (object-expression-entries value-function))))))
+                         (map (ir:entries value-function))))))
 
         (lexical-block
          (js-var "element" (make-get-element (element-id node)))

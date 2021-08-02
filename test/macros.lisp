@@ -65,7 +65,9 @@
                 :fail-arity-error
 
                 :+optional-argument+
-                :+rest-argument+))
+                :+rest-argument+)
+
+  (:local-nicknames (:ir :tridash.ir)))
 
 (in-package :tridash/test.macros)
 
@@ -87,7 +89,7 @@
   "Creates a `FUNCTOR-EXPRESSION' with operator OPERATOR and arguments
    ARGUMENTS."
 
-  (functor-expression operator arguments))
+  (ir:functor operator arguments))
 
 (defun expression= (expected got)
   "Checks that the CL expression GOT is equal to EXPECTED. Symbols in
@@ -136,7 +138,7 @@
    function consisting of EXPRESSION. OPERANDS is a list of symbols
    naming the dependency nodes. EXPRESSION is evaluated in an
    environment where each symbol in OPERANDS is bound to the
-   `NODE-LINK' object corresponding to the operand, and the symbol
+   `IR:LINK' object corresponding to the operand, and the symbol
    SELF is bound to the `META-NODE' object."
 
   (flet ((make-operand (operand)
@@ -163,7 +165,7 @@
     `(let ((self (make-instance 'final-meta-node
                                 :name 'test-meta-node
                                 :operands ',(map #'make-operand operands)))
-           ,@(map #`(,a1 (node-link (make-instance 'node :name ',a1)))
+           ,@(map #`(,a1 (ir:link (make-instance 'node :name ',a1)))
                   (map #'operand-node operands)))
 
        ;; Create an empty `FLAT-NODE-TABLE' to mark meta-node as
@@ -247,7 +249,7 @@
     (test-compile-meta-node
 
      (x y)
-     (object-expression
+     (ir:object
       `((sum ,(functor + x y))
         (diff ,(functor - x y))))
 
@@ -305,7 +307,7 @@
     (test-compile-meta-node
 
      (a)
-     (expression-block
+     (ir:expression-block
       (functor + a 1))
 
      ($a)
@@ -319,7 +321,7 @@
     (test-compile-meta-node
 
      (a)
-     (let ((block (expression-block (functor + a 1) :count 2)))
+     (let ((block (ir:expression-block (functor + a 1) :count 2)))
        (functor + block block))
 
      ($a)
@@ -350,7 +352,7 @@
       (test-compile-meta-node
 
        (x)
-       (functor apply (meta-node-ref not) x)
+       (functor apply (ir:meta-node-ref not) x)
 
        ($x)
        `(let nil
@@ -372,7 +374,7 @@
       (test-compile-meta-node
 
        (x y z)
-       (functor apply (meta-node-ref if) x y z)
+       (functor apply (ir:meta-node-ref if) x y z)
 
        ($x $y $z)
        `(let nil
@@ -394,7 +396,7 @@
       (test-compile-meta-node
 
        (x y)
-       (functor apply (meta-node-ref and) x y)
+       (functor apply (ir:meta-node-ref and) x y)
 
        ($x $y)
        `(let nil
@@ -416,7 +418,7 @@
       (test-compile-meta-node
 
        (x y)
-       (functor apply (meta-node-ref or) x y)
+       (functor apply (ir:meta-node-ref or) x y)
 
        ($x $y)
        `(let nil
@@ -439,7 +441,7 @@
     (test-compile-meta-node
 
      (x)
-     (functor apply (meta-node-ref f) x)
+     (functor apply (ir:meta-node-ref f) x)
 
      ($x)
      `(let nil
@@ -461,7 +463,7 @@
 
     (test-compile-meta-node
      (x)
-     (functor apply (meta-node-ref f :optional (list 1 2)) x)
+     (functor apply (ir:meta-node-ref f :optional (list 1 2)) x)
 
      ($x)
      `(let nil
@@ -483,7 +485,7 @@
 
     (test-compile-meta-node
      (x)
-     (functor apply (meta-node-ref f) x)
+     (functor apply (ir:meta-node-ref f) x)
 
      ($x)
      `(let nil
@@ -663,7 +665,7 @@
      (functor if
               (functor < n 2)
               acc
-              (expression-block
+              (ir:expression-block
                (functor self (functor - n 1) (functor * n acc))))
 
      ($n $acc)
@@ -773,9 +775,9 @@
   (with-core-nodes ("cons")
     (test-compile-meta-node
      (a b)
-     (aprog1 (expression-block nil :count 2)
-       (setf (expression-block-expression it)
-             (functor cons a (functor cons b (cyclic-reference it)))))
+     (aprog1 (ir:expression-block nil :count 2)
+       (setf (ir:expression it)
+             (functor cons a (functor cons b (ir:cyclic-reference it)))))
 
      ($a $b)
      '(let ($block)
@@ -1475,7 +1477,7 @@
           (x y z)
           output
 
-        `(,list ,(argument-list (list x y z)))))))
+        `(,list ,(ir:argument-list (list x y z)))))))
 
 (test macro-arity-check-keyword-missing-required
   "Test macro keyword argument arity check with missing required argument"

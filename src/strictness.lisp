@@ -39,6 +39,8 @@
   (:import-from :tridash.frontend
                 :process-attribute)
 
+  (:local-nicknames (:ir :tridash.ir))
+
   (:export :*analyze-nodes*
            :*return-blocks*
 
@@ -147,7 +149,7 @@
 ;;;; Strictness Analysis of Expressions
 
 (defvar *analyze-nodes* t
-  "If true linked nodes, by `NODE-LINK' objects, are analyzed for
+  "If true linked nodes, by `IR:LINK' objects, are analyzed for
    strictness.")
 
 (defvar *return-blocks* nil
@@ -159,16 +161,16 @@
   (:documentation
    "Analyze the expression for strictness. The expression tree is
     traversed and a strictness expression consisting of OR and AND
-    expressions is returned. Linked operand nodes, by `NODE-LINK'
+    expressions is returned. Linked operand nodes, by `IR:LINK'
     objects, are traversed by ANALYZE."))
 
-;;; Literals and `NODE-LINK's
+;;; Literals and `IR:LINK's
 
-(defmethod analyze-expression ((link node-link))
+(defmethod analyze-expression ((link ir:link))
   "Analyzes a linked node for strictness by traversing the node by
    ANALYZE."
 
-  (with-struct-slots node-link- (node) link
+  (with-accessors ((node ir:node)) link
     (if *analyze-nodes*
         (analyze node)
         node)))
@@ -179,9 +181,9 @@
 
   nil)
 
-(defmethod analyze-expression ((block expression-block))
+(defmethod analyze-expression ((block ir:expression-block))
   (let ((block-strictness
-         (analyze-expression (expression-block-expression block))))
+         (analyze-expression (ir:expression block))))
 
     (if *return-blocks*
         `(or ,block ,block-strictness)
@@ -190,8 +192,8 @@
 
 ;;; Object and Member Expressions
 
-(defmethod analyze-expression ((object object-expression))
-  "Returns NIL since the fields of an `OBJECT-EXPRESSION' are never
+(defmethod analyze-expression ((object ir:object))
+  "Returns NIL since the fields of an `IR:OBJECT' are never
    strictly evaluated."
 
   nil)
@@ -199,17 +201,21 @@
 
 ;;; Functor Expressions
 
-(defmethod analyze-expression ((functor functor-expression))
-  "Analyzes `FUNCTOR-EXPRESSION's for strictness. If the operator is a
+(defmethod analyze-expression ((functor ir:functor))
+  "Analyzes `IR:FUNCTOR's for strictness. If the operator is a
    `META-NODE' obtains its strictness for the operand nodes. If the
    operator is not a `META-NODE', the arguments are assumed to be
    non-strict and NIL is returned."
 
-  (with-struct-slots functor-expression- (meta-node arguments outer-nodes) functor
-    (typecase meta-node
+  (with-accessors ((operator ir:operator)
+                   (arguments ir:operands)
+                   (outer-nodes ir:outer-nodes))
+      functor
+
+    (typecase operator
       (meta-node
        (analyze-functor
-        meta-node
+        operator
         (map #'analyze-expression arguments)
 
         (map
@@ -221,7 +227,7 @@
          outer-nodes)))
 
       (otherwise
-       (analyze-expression meta-node)))))
+       (analyze-expression operator)))))
 
 (defun analyze-functor (meta-node arguments outer-nodes)
   "Analyze the strictness of a `META-NODE' functor expression with
@@ -250,9 +256,9 @@
 
       (walk (meta-node-strictness meta-node)))))
 
-(defmethod analyze-expression ((list argument-list))
+(defmethod analyze-expression ((list ir:argument-list))
   (->> list
-       argument-list-arguments
+       ir:arguments
        (map #'analyze-expression)
        (list* 'or)))
 

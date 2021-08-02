@@ -680,10 +680,10 @@
                        (lambda (observer)
                          (destructuring-bind (node . link) observer
                            (or
-                            (and (node-link-two-way-p link)
+                            (and (ir:two-way-p link)
                                  (memberp node (operands context)))
 
-                            (node-link-weak-p link)))))
+                            (ir:weak-p link)))))
 
                       (map-to 'list #'observer-index)))
 
@@ -693,7 +693,7 @@
 
                  (destructuring-bind (node . link) observer
                    (->> link
-                        node-link-context
+                        ir:context
                         (context node)
                         (context-index node))))
 
@@ -982,11 +982,11 @@
   (let ((operands (make-hash-map)))
     (labels ((get-operand (operand)
                (ematch operand
-                 ((node-link- node)
+                 ((ir:link (ir:node node))
                   (ensure-get operand operands
                     (make-get-operand node 'state)))
 
-                 ((list :previous-value (node-ref node))
+                 ((list :previous-value (ir:node-ref (ir:node node)))
                   (ensure-get (list 'old node) operands
                     (make-get-operand node 'old-state)))))
 

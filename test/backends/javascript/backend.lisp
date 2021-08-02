@@ -70,7 +70,9 @@
                 :create-meta-node
                 :make-meta-node-call
 
-                :strip-redundant))
+                :strip-redundant)
+
+  (:local-nicknames (:ir :tridash.ir)))
 
 
 (in-package :tridash/test.backend.js)
@@ -296,9 +298,9 @@
    OPERANDS and value VALUE-FUNCTION.
 
    VALUE-FUNCTION is evaluated in an environment in which each symbol
-   in OPERANDS is bound to the `NODE-LINK' object of the
+   in OPERANDS is bound to the `IR:LINK' object of the
    dependency. If an element of OPERANDS is a CONS with the CAR being
-   the symbol ASYNC an asynchronous `NODE-LINK' is created and bound
+   the symbol ASYNC an asynchronous `IR:LINK' is created and bound
    to the symbol in the CDR."
 
   (flet ((make-binding (operand)
@@ -307,7 +309,7 @@
                   dep)
 
               `(,dep (setf (get ',dep (operands ,g!context))
-                               (node-link ',operand)))))))
+                               (ir:link ',operand)))))))
 
     `(let ((,g!context (make-instance 'node-context)))
        (let ,(map #'make-binding operands)
@@ -354,7 +356,7 @@
 
     (flet ((get-input (link)
              (ematch link
-               ((node-link- node)
+               ((ir:link (ir:node node))
                 (ensure-get node operands
                   (aprog1
                       (make-value-block :expression (mkstr "dep" counter))
@@ -375,12 +377,12 @@
 (defun functor (meta-node &rest arguments)
   "Create a `FUNCTOR-EXPRESSION' with META-NODE applied to ARGUMENTS."
 
-  (functor-expression meta-node arguments))
+  (ir:functor meta-node arguments))
 
 (defmacro object (&rest entries)
-  "Create an `OBJECT-EXPRESSION' with entries ENTRIES."
+  "Create an `IR:OBJECT' with entries ENTRIES."
 
-  `(object-expression (list ,@(map #`(list ',(id-symbol (first a1)) ,(second a1)) entries))))
+  `(ir:object (list ,@(map #`(list ',(id-symbol (first a1)) ,(second a1)) entries))))
 
 (defun resolve (expression)
   "Creates an expression which resolves the value of EXPRESSION."
@@ -481,7 +483,7 @@
   (mock-backend-state
     (mock-meta-nodes ((f (a (rest b)) nil))
       (mock-contexts
-          ((context (a b c) (functor f a (argument-list (list b c)))))
+          ((context (a b c) (functor f a (ir:argument-list (list b c)))))
 
         (test-context-function
          context
@@ -495,7 +497,7 @@
   (mock-backend-state
     (mock-meta-nodes ((f (a (rest b)) nil))
       (mock-contexts
-          ((context (a) (functor f a (argument-list nil))))
+          ((context (a) (functor f a (ir:argument-list nil))))
 
         (test-context-function
          context
@@ -512,7 +514,7 @@
       (mock-contexts
           ((context (a b)
                     (->> (alist-hash-map `((b . ,b)))
-                         (functor-expression f (list a) :outer-nodes))))
+                         (ir:functor f (list a) :outer-nodes))))
 
         (test-context-function
          context
@@ -530,7 +532,7 @@
       (mock-contexts
           ((context (a b c)
                     (->> (alist-hash-map `((b . ,(functor + b c))))
-                         (functor-expression f (list a) :outer-nodes))))
+                         (ir:functor f (list a) :outer-nodes))))
 
         (test-context-function
          context
@@ -548,7 +550,7 @@
       (mock-contexts
           ((context (a b c)
                     (->> (alist-hash-map `((b . ,(functor + b c))))
-                         (functor-expression f (list a) :outer-nodes))))
+                         (ir:functor f (list a) :outer-nodes))))
 
         (test-context-function
          context
@@ -835,7 +837,7 @@
   (mock-backend-state
     (mock-meta-nodes ((< (a b) (a b)))
       (mock-contexts
-          ((context (a) (expression-block
+          ((context (a) (ir:expression-block
                          (if-expression (functor < a 0) a (fail-expression)))))
 
         (test-context-function
@@ -856,12 +858,12 @@
                       (- (a b) (a b)))
       (mock-contexts
           ((context (a b) (catch-expression
-                           (expression-block
+                           (ir:expression-block
                             (if-expression (functor < a b)
                                            (functor + a b)
                                            (fail-expression)))
 
-                           (expression-block (functor - a b)))))
+                           (ir:expression-block (functor - a b)))))
 
         (test-context-function
          context
@@ -900,7 +902,7 @@
                       (f (x) (x)))
       (mock-contexts
           ((context (a)
-                    (functor map (meta-node-ref f) a)))
+                    (functor map (ir:meta-node-ref f) a)))
 
         (test-context-function
          context
@@ -929,7 +931,7 @@
                       (1+ (n (optional d)) (n d)))
       (mock-contexts
           ((context (a b)
-                    (functor map (meta-node-ref 1+ :optional (list b)) a)))
+                    (functor map (ir:meta-node-ref 1+ :optional (list b)) a)))
 
         (test-context-function
          context
@@ -960,7 +962,7 @@
     (mock-meta-nodes ((map (f l) nil)
                       (list (x (rest xs)) (x)))
       (mock-contexts
-          ((context (a) (functor map (meta-node-ref list) a)))
+          ((context (a) (functor map (ir:meta-node-ref list) a)))
 
         (test-context-function
          context
@@ -991,7 +993,7 @@
                       (f (a :outer x) (a x)))
       (mock-contexts
           ((context (a b)
-                    (functor map (meta-node-ref f :outer-nodes (alist-hash-map `((x . ,b)))) a)))
+                    (functor map (ir:meta-node-ref f :outer-nodes (alist-hash-map `((x . ,b)))) a)))
 
         (test-context-function
          context
@@ -1019,9 +1021,9 @@
       (mock-contexts
           ((context (a b)
                     (functor map
-                             (meta-node-ref f
-                                            :optional (list 1)
-                                            :outer-nodes (alist-hash-map `((d . ,b))))
+                             (ir:meta-node-ref f
+                                               :optional (list 1)
+                                               :outer-nodes (alist-hash-map `((d . ,b))))
                              a)))
 
         (test-context-function
@@ -1054,7 +1056,7 @@
   (mock-backend-state
     (mock-meta-nodes (f)
       (mock-contexts
-          ((context () (node-ref f)))
+          ((context () (ir:node-ref f)))
 
         (test-context-function
          context

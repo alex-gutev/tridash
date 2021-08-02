@@ -162,7 +162,7 @@
      (-<>> (optional-operand-values operand)
            (map (rcurry #'post-process-node (home-module node)))
            (bind-operands node <> :context context)
-           (meta-node-ref operand :optional)))
+           (ir:meta-node-ref operand :optional)))
 
     (module
      (error 'module-node-reference-error :node operand))

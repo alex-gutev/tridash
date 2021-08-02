@@ -74,7 +74,7 @@
 
       (with-slots (value-function) context
         (labels ((get-input (link)
-                   (cdr (assoc (name (node-link-node link)) op-vars :test #'equal))))
+                   (cdr (assoc (name (ir:node link)) op-vars :test #'equal))))
 
           (let ((body (compile-function value-function #'get-input)))
 
@@ -106,7 +106,7 @@
     :accessor input
     :documentation
     "Function which should return an expression that references the
-     value of the dependency corresponding to the `NODE-LINK' object
+     value of the dependency corresponding to the `IR:LINK' object
      passed as an argument.")
 
    (var-counter
@@ -178,7 +178,7 @@
   "Generates the body of the value computation function
    FUNCTION. GET-INPUT is a function which should return an expression
    that references the value of the dependency corresponding to the
-   `node-link' object passed as an argument.
+   `ir:link' object passed as an argument.
 
    If :RETURN-VALUE is T the last statement in the body is a return
    statement that returns the value of EXPRESSION. If :RETURN-VALUE is
@@ -443,22 +443,22 @@
 
 ;;; Operand References
 
-(defmethod compile-expression ((link node-link) &key)
+(defmethod compile-expression ((link ir:link) &key)
   (with-slots (input) *function-block-state*
     (funcall input link)))
 
 
 ;;; Expression Blocks
 
-(defmethod compile-expression ((block expression-block) &rest args &key)
-  (with-struct-slots expression-block- (count expression) block
+(defmethod compile-expression ((block ir:expression-block) &rest args &key)
+  (with-accessors ((count ir:use-count) (expression ir:expression)) block
     (if (> count 1)
         (compile-expression-block block)
         (apply #'compile-expression expression args))))
 
 (defun compile-expression-block (block)
   (with-slots (blocks strict-blocks) *function-block-state*
-    (with-struct-slots expression-block- (count expression) block
+    (with-accessors ((count ir:use-count) (expression ir:expression)) block
       (or (get block blocks)
 
           (let* ((result (next-var))
@@ -487,12 +487,12 @@
 
               vblock))))))
 
-(defmethod compile-expression ((cycle cyclic-reference) &key)
+(defmethod compile-expression ((cycle ir:cyclic-reference) &key)
   "Handles cyclic references. Returns the `value-block' of the
    referenced expression."
 
-  (with-struct-slots cyclic-reference- (expression) cycle
-    (check-type expression expression-block)
+  (with-accessors ((expression ir:expression)) cycle
+    (check-type expression ir:expression-block)
 
     (let ((block (get expression (blocks *function-block-state*))))
       (assert block)
@@ -509,11 +509,13 @@
 
 ;;; Functor Expressions
 
-(defmethod compile-expression ((expression functor-expression) &key)
-  (with-struct-slots functor-expression- (meta-node arguments outer-nodes)
+(defmethod compile-expression ((expression ir:functor) &key)
+  (with-accessors ((operator ir:operator)
+                   (arguments ir:operands)
+                   (outer-nodes ir:outer-nodes))
       expression
 
-    (compile-functor-expression meta-node arguments outer-nodes)))
+    (compile-functor-expression operator arguments outer-nodes)))
 
 (defgeneric compile-functor-expression (operator arguments outer-nodes)
   (:documentation
@@ -551,7 +553,7 @@
   (flet ((none? (arg)
            (match arg
              ((or (eql :none)
-                  (argument-list- (arguments nil)))
+                  (ir:argument-list (ir:arguments nil)))
               t))))
 
     (let ((first-none (position :none arguments)))
@@ -633,8 +635,8 @@
 
 ;;;; Rest Argument Lists
 
-(defmethod compile-expression ((arg-list argument-list) &key)
-  (with-struct-slots argument-list- (arguments) arg-list
+(defmethod compile-expression ((arg-list ir:argument-list) &key)
+  (with-accessors ((arguments ir:arguments)) arg-list
     (if arguments
         (compile-argument-list arguments)
         (make-value-block :expression (empty-list)))))
@@ -760,11 +762,11 @@
 
 ;;; Object Expressions
 
-(defmethod compile-expression ((object object-expression) &key)
+(defmethod compile-expression ((object ir:object) &key)
   "Generates an expression which returns an object containing each
    field-value pair in OPERANDS."
 
-  (with-accessors ((entries object-expression-entries)) object
+  (with-accessors ((entries ir:entries)) object
     (let ((keys (map #'first entries))
           (values (map #'second entries)))
 
@@ -781,11 +783,13 @@
 
 ;;; Meta-Node References
 
-(defmethod compile-expression ((ref meta-node-ref) &key)
+(defmethod compile-expression ((ref ir:meta-node-ref) &key)
   "Generates an expression which returns a function that invokes the
    meta-node referenced by REF."
 
-  (with-struct-slots meta-node-ref- (node optional outer-nodes)
+  (with-accessors ((node ir:meta-node)
+                   (optional ir:optional-arguments)
+                   (outer-nodes ir:outer-nodes))
       ref
 
     (let ((js-name (meta-node-id node)))
@@ -797,7 +801,9 @@
   "Creates a JavaScript anonymous function which executes the
    meta-node referenced by the `META-NODE-REF' REF."
 
-  (with-struct-slots meta-node-ref- (node optional outer-nodes)
+  (with-accessors ((node ir:meta-node)
+                   (optional ir:optional-arguments)
+                   (outer-nodes ir:outer-nodes))
       ref
 
     (let* ((operands
@@ -914,11 +920,11 @@
 
 ;;; Raw Node References
 
-(defmethod compile-expression ((ref node-ref) &key)
+(defmethod compile-expression ((ref ir:node-ref) &key)
   "Compiles raw node references. Currently generates an expression
    which references the raw Node object or meta-node function."
 
-  (with-struct-slots node-ref- (node) ref
+  (with-accessors ((node ir:node)) ref
     (if (or (= node *node-true*)
             (= node *node-false*))
 

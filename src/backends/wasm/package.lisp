@@ -74,4 +74,6 @@
   (:import-from :flexi-streams
                 :with-output-to-sequence)
 
+  (:local-nicknames (:ir :tridash.ir))
+
   (:documentation "WebAssembly Backend."))

@@ -107,6 +107,41 @@
   (:documentation
    "Package containing the parser and lexer."))
 
+(defpackage :tridash.ir
+  (:use :generic-cl)
+
+  (:export
+   :node
+
+   :link
+   :context
+   :two-way-p
+   :weak-p
+
+   :node-ref
+
+   :functor
+   :operator
+   :operands
+   :outer-nodes
+
+   :object
+   :entries
+
+   :expression-block
+   :expression
+   :use-count
+
+   :cyclic-reference
+   :expression
+
+   :meta-node-ref
+   :meta-node
+   :optional-arguments
+
+   :argument-list
+   :arguments))
+
 (defpackage :tridash.frontend
   (:use :generic-cl
 	:alexandria
@@ -135,6 +170,8 @@
   (:import-from :agutil
                 :match-state)
 
+  (:local-nicknames (:ir :tridash.ir))
+
   (:export
    ;; Operators
    :+subnode-operator+
@@ -160,51 +197,10 @@
    :input-node?
    :bool-value
 
-   ;; Intermediate Expressions
-   :node-link
-   :node-link-node
-   :node-link-context
-   :node-link-two-way-p
-   :node-link-weak-p
-   :node-link-p
-
-   :node-ref
-   :node-ref-p
-   :node-ref-node
-
-   :functor-expression
-   :functor-expression-p
-   :functor-expression-meta-node
-   :functor-expression-arguments
-   :functor-expression-outer-nodes
-
    :if-expression
    :member-expression
    :catch-expression
    :fail-expression
-
-   :object-expression
-   :object-expression-p
-   :object-expression-entries
-
-   :expression-block
-   :expression-block-p
-   :expression-block-expression
-   :expression-block-count
-
-   :cyclic-reference
-   :cyclic-reference-expression
-   :cyclic-reference-p
-
-   :meta-node-ref
-   :meta-node-ref-p
-   :meta-node-ref-node
-   :meta-node-ref-optional
-   :meta-node-ref-outer-nodes
-
-   :argument-list
-   :argument-list-p
-   :argument-list-arguments
 
    :walk-expression
    :map-expression!

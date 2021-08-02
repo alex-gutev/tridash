@@ -1,7 +1,7 @@
 ;;;; expressions.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2019  Alexander Gutev
+;;;; Copyright (C) 2019-2021  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -16,188 +16,180 @@
 ;;;; You should have received a copy of the GNU General Public License
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;;;; Intermediate Representation for Value Function Expressions
+;;;; Intermediate Representation
 
-(in-package :tridash.frontend)
+(in-package :tridash.ir)
 
-(in-readtable cut-syntax)
+(defclass node ()
+  ()
 
-
-(defstruct (node-link (:constructor node-link (node &key context two-way-p)))
-  "Represents a reference to the value of NODE.
-
-   CONTEXT is the identifier of the context in which this expression
-   appears.
-
-   TWO-WAY-P is a flag which is true if the link represents a two-way
-   binding, that is there is also a link in the opposite direction.
-
-   WEAK-P is a flag which is true if the link does not cause the
-   observer node's context to be activated."
-
-  node
-  context
-
-  two-way-p
-  weak-p)
-
-(defstruct (node-ref (:constructor node-ref (node)))
-  "Represents a direct reference to NODE. A direct reference is a
-   reference which does not involve a binding between nodes."
-
-  node)
-
-(defstruct (functor-expression (:constructor functor-expression (meta-node arguments &key (outer-nodes (make-hash-map)))))
-  "Represents a functor expression with a META-NODE applied to
-   ARGUMENTS.
-
-   OUTER-NODES is the map mapping the outer `NODE' objects, referenced
-   by META-NODE, to the corresponding expressions which compute their
-   values."
-
-  meta-node
-  arguments
-  outer-nodes)
-
-(defstruct (object-expression (:constructor object-expression (&optional entries)))
-  "Represents a create dictionary object expression with entries
-   ENTRIES."
-
-  entries)
-
-
-(defstruct
-    (expression-block (:constructor expression-block (expression &key count)))
-
-  "Represents expressions which occur in multiple locations within a
-   value function.
-
-   EXPRESSION is the actual expression and COUNT is the number of
-   locations in which the expression occurs."
-
-  expression
-  (count 1))
-
-(defstruct (cyclic-reference (:constructor cyclic-reference (expression)))
-  "Represents a reference to an expression in which this expression is
-   contained."
-
-  expression)
-
-
-(defstruct (meta-node-ref (:constructor meta-node-ref (node &key optional (outer-nodes (make-hash-map)))))
-  "Represents a meta-node reference. NODE is the `META-NODE' object.
-
-   OPTIONAL is the list of default values for the optional arguments.
-
-   OUTER-NODES is the map mapping the outer `NODE' objects, referenced
-   by META-NODE, to the corresponding expressions which compute their
-   values."
-
-  node
-  optional
-  outer-nodes)
-
-(defstruct (argument-list (:constructor argument-list (arguments)))
-  "Expression type representing a list used to pass the rest
-   arguments."
-
-  arguments)
-
-
-(defgeneric walk-expression (fn expression)
   (:documentation
-   "Calls FN on each expression in the tree rooted at EXPRESSION. If
-    FN returns NIL, FN is not called on the expressions contained in
-    the expression passed as an argument.")
+   "Base class representing a computation node in the intermediate
+    representation."))
 
-  (:method :around (fn expr)
-    (when (funcall fn expr)
-      (call-next-method)))
+(defclass link (node)
+  ((node
+    :initarg :node
+    :accessor node
+    :documentation
+    "Linked node.")
 
-  (:method (fn (call functor-expression))
-    (with-struct-slots functor-expression- (meta-node arguments outer-nodes) call
-      (walk-expression fn meta-node)
-      (foreach (curry #'walk-expression fn) arguments)
-      (foreach (curry #'walk-expression fn) (map-values outer-nodes))))
+   (context
+    :initarg :context
+    :accessor context
+    :documentation
+    "Identifier of the context of the binding.")
 
-  (:method (fn (object object-expression))
-    (foreach (compose (curry #'walk-expression fn) #'second)
-             (object-expression-entries object)))
+   (two-way-p
+    :initarg :two-way-p
+    :initform nil
+    :accessor two-way-p
+    :documentation
+    "Flag for whether the binding is two way.")
 
-  (:method (fn (block expression-block))
-    (walk-expression fn (expression-block-expression block)))
+   (weak-p
+    :initarg :weak-p
+    :initform nil
+    :accessor weak-p
+    :documentation
+    "Deprecated flag for whether changes in the source node's state
+     trigger updates in the target node's state."))
 
-  (:method (fn (ref meta-node-ref))
-    (with-struct-slots meta-node-ref- (optional outer-nodes) ref
-      (foreach (curry #'walk-expression fn) optional)
-      (foreach (curry #'walk-expression fn) (map-values outer-nodes))))
-
-  (:method (fn (list argument-list))
-    (foreach (curry #'walk-expression fn) (argument-list-arguments list)))
-
-  (:method (fn (link node-link))
-    (with-struct-slots node-link- (node) link
-      (unless (node? node)
-        (walk-expression fn node))))
-
-  (:method ((fn t) (expr t))
-    nil))
-
-(defgeneric map-expression! (fn expression)
   (:documentation
-   "Applies a transformation on an expression. Each sub-expression,
-    contained in EXPRESSION, is replaced with the result of applying
-    FN on it.
+   "Represents a reference to the value of another node."))
 
-    CAUTION: Whilst the new expression tree is returned, this function
-    is destructive when EXPRESSION is an `EXPRESSION-BLOCK', since the
-    identity of an expression block needs to be preserved." )
+(defun link (node &key context two-way-p)
+  (make-instance 'link
+                 :node node
+                 :context context
+                 :two-way-p two-way-p))
 
-  (:method (fn (call functor-expression))
-    (with-struct-slots functor-expression- (meta-node arguments outer-nodes) call
-      (functor-expression
-       (funcall fn meta-node)
-       (map fn arguments)
+(defclass node-ref (node)
+  ((node
+    :initarg :node
+    :accessor node
+    :documentation
+    "The reference node."))
 
-       :outer-nodes
-       (map
-        (lambda (ref)
-          (cons (car ref) (funcall fn (cdr ref))))
-        outer-nodes))))
+  (:documentation
+   "Represents a reference to a raw node object."))
 
-  (:method (fn (object object-expression))
-    (flet ((map-entry (entry)
-             (list (first entry)
-                   (funcall fn (second entry)))))
+(defun node-ref (node)
+  (make-instance 'node-ref :node node))
 
-      (object-expression
-       (map #'map-entry (object-expression-entries object)))))
 
-  (:method (fn (block expression-block))
-    (with-accessors ((expression expression-block-expression)) block
-      (setf expression (funcall fn expression))
-      block))
+(defclass functor (node)
+  ((operator
+    :initarg :operator
+    :accessor operator
+    :documentation
+    "Functor operator.")
 
-  (:method (fn (ref meta-node-ref))
-    (with-struct-slots meta-node-ref- (node optional outer-nodes) ref
-      (meta-node-ref
-       node
+   (operands
+    :initarg :operands
+    :accessor operands
+    :documentation
+    "Functor operands")
 
-       :optional
-       (map fn optional)
+   (outer-nodes
+    :initarg :outer-nodes
+    :accessor outer-nodes
+    :documentation
+    "Outer node references."))
 
-       :outer-nodes
-       (map
-        (lambda (ref)
-          (cons (car ref) (funcall fn (cdr ref))))
-        outer-nodes))))
+  (:documentation
+   "Represents an application of an operator on a number of
+    arguments."))
 
-  (:method (fn (list argument-list))
-    (->> list
-         argument-list-arguments
-         (map fn)
-         argument-list))
+(defun functor (operator operands &key (outer-nodes (make-hash-map)))
+  (make-instance 'functor
+                 :operator operator
+                 :operands operands
+                 :outer-nodes outer-nodes))
 
-  (:method ((fn t) expr)
-    expr))
+(defclass object (node)
+  ((entries
+    :initarg :entries
+    :accessor entries
+    :documentation
+    "Object entries list. Each element is a LIST of the form (KEY
+     VALUE) where KEY is a symbol naming the key and VALUE is a `NODE'
+     representing the value."))
+
+  (:documentation
+   "Represents an object node with one or more subnodes."))
+
+(defun object (&optional entries)
+  (make-instance 'object :entries entries))
+
+
+(defclass expression-block (node)
+  ((expression :initarg :expression
+               :accessor expression)
+
+   (use-count :initarg :count
+          :initform 1
+          :accessor use-count)))
+
+(defun expression-block (expression &key (count 1))
+  (make-instance 'expression-block
+                 :expression expression
+                 :count count))
+
+(defclass cyclic-reference (node)
+  ((expression
+    :initarg :expression
+    :accessor expression
+    :documentation
+    "The reference expression."))
+
+  (:documentation
+   "Represents a cyclic reference."))
+
+(defun cyclic-reference (expression)
+  (make-instance 'cyclic-reference :expression expression))
+
+
+(defclass meta-node-ref (node)
+  ((meta-node
+    :initarg :meta-node
+    :accessor meta-node
+    :documentation
+    "The reference meta-node.")
+
+   (optional-arguments
+    :initarg :optional-arguments
+    :initform nil
+    :accessor optional-arguments
+    :documentation
+    "List of nodes computing the values of the meta-node's default
+     arguments.")
+
+   (outer-nodes
+    :initarg :outer-nodes
+    :initform (make-hash-map)
+    :accessor outer-nodes
+    :documentation
+    "Map containing the meta-node's outer-node references."))
+
+  (:documentation
+   "Represents a reference to a meta-node."))
+
+(defun meta-node-ref (meta-node &key optional (outer-nodes (make-hash-map)))
+  (make-instance 'meta-node-ref
+                 :meta-node meta-node
+                 :optional-arguments optional
+                 :outer-nodes outer-nodes))
+
+(defclass argument-list (node)
+  ((arguments
+    :initarg :arguments
+    :accessor arguments
+    :documentation
+    "List of arguments"))
+
+  (:documentation
+   "Represents a rest argument list."))
+
+(defun argument-list (arguments)
+  (make-instance 'argument-list :arguments arguments))

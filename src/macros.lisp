@@ -389,8 +389,8 @@
 
            (replace-dependencies (expression operands)
              (typecase expression
-               (node-link
-                (get (node-link-node expression) operands))
+               (ir:link
+                (get (ir:node expression) operands))
 
                (otherwise
                 (map-expression! (rcurry #'replace-dependencies operands) expression)))))
@@ -455,15 +455,15 @@
 
 ;;; Argument and Node Referneces
 
-(defmethod tridash->cl ((link node-link) &key)
+(defmethod tridash->cl ((link ir:link) &key)
   "Returns the variable corresponding to the linked node by looking up
    the node's identifier in *OPERAND-VARS*"
 
-  (with-slots (name) (node-link-node link)
+  (with-slots (name) (ir:node link)
     (ensure-get name *operand-vars* (gensym (mkstr name)))))
 
-(defmethod tridash->cl ((ref node-ref) &key)
-  (with-struct-slots node-ref- (node) ref
+(defmethod tridash->cl ((ref ir:node-ref) &key)
+  (with-accessors ((node ir:node)) ref
     (if (or (= node *node-true*)
             (= node *node-false*))
 
@@ -473,7 +473,7 @@
 
 ;;; Object Expressions
 
-(defmethod tridash->cl ((object object-expression) &key)
+(defmethod tridash->cl ((object ir:object) &key)
   "Generates a CL expression that creates a `HASH-MAP'."
 
   (flet ((make-entry (pair)
@@ -481,12 +481,12 @@
              (destructuring-bind (key value) pair
                `(cons ',key ,(tridash->cl value :thunk t))))))
 
-    `(alist-hash-map (list ,@(map #'make-entry (object-expression-entries object))))))
+    `(alist-hash-map (list ,@(map #'make-entry (ir:entries object))))))
 
 ;;; Expression Blocks
 
-(defmethod tridash->cl ((block expression-block) &key)
-  (with-struct-slots expression-block- (expression count) block
+(defmethod tridash->cl ((block ir:expression-block) &key)
+  (with-accessors ((expression ir:expression) (count ir:use-count)) block
     (acond
       ((= count 1)
        (tridash->cl expression :thunk nil))
@@ -507,9 +507,9 @@
 
          var)))))
 
-(defmethod tridash->cl ((cycle cyclic-reference) &key)
-  (with-struct-slots cyclic-reference- (expression) cycle
-    (check-type expression expression-block)
+(defmethod tridash->cl ((cycle ir:cyclic-reference) &key)
+  (with-accessors ((expression ir:expression)) cycle
+    (check-type expression ir:expression-block)
 
     (let ((var (first (get expression *expression-blocks*))))
       (assert var)
@@ -518,7 +518,7 @@
 
 ;;; Functor Expressions and Meta-Node References
 
-(defmethod tridash->cl ((functor functor-expression) &key)
+(defmethod tridash->cl ((functor ir:functor) &key)
   "If the operator of the functor is an `EXTERNAL-META-NODE',
    generates a CL expression which calls the corresponding CL
    function, found by looking up the name of the meta-node in
@@ -528,27 +528,29 @@
    If the operator is a `META-NODE', generates a
    CALL-TRIDASH-META-NODE expression."
 
-  (with-struct-slots functor-expression- (meta-node arguments outer-nodes)
+  (with-accessors ((operator ir:operator)
+                   (arguments ir:operands)
+                   (outer-nodes ir:outer-nodes))
       functor
 
-    (match meta-node
+    (match operator
       ((external-meta-node name)
-       (->> (make-meta-node-arguments meta-node arguments :keep-none nil)
+       (->> (make-meta-node-arguments operator arguments :keep-none nil)
             (list* (external-meta-node-cl-function name))))
 
       ((type meta-node)
-       (-<>> (make-meta-node-arguments meta-node arguments :keep-none t)
-             (append <> (make-outer-operands meta-node outer-nodes))
+       (-<>> (make-meta-node-arguments operator arguments :keep-none t)
+             (append <> (make-outer-operands operator outer-nodes))
              (list* 'list)
-             (list 'call-tridash-meta-node meta-node)))
+             (list 'call-tridash-meta-node operator)))
 
       (_
-       `(call-node ,(tridash->cl meta-node :thunk nil)
+       `(call-node ,(tridash->cl operator :thunk nil)
                    (list ,@(map #'tridash->cl arguments)))))))
 
 (defun make-meta-node-arguments (meta-node arguments &key (keep-none t))
   "Returns expressions, wrapped in `THUNK's if necessary, for the
-   arguments ARGUMENTS of the `FUNCTOR-EXPRESSION' with operator
+   arguments ARGUMENTS of the `IR:FUNCTOR' with operator
    META-NODE."
 
   (loop
@@ -584,8 +586,10 @@
       (error 'unsupported-meta-node-error :node-name name)))
 
 
-(defmethod tridash->cl ((ref meta-node-ref) &key)
-  (with-struct-slots meta-node-ref- (node optional outer-nodes)
+(defmethod tridash->cl ((ref ir:meta-node-ref) &key)
+  (with-accessors ((node ir:meta-node)
+                   (optional ir:optional-arguments)
+                   (outer-nodes ir:outer-nodes))
       ref
 
     (with-gensyms (args)
@@ -669,7 +673,7 @@
 
   (walk-expression
    (lambda (x)
-     (if (typep x 'node-link)
+     (if (typep x 'ir:link)
          (return-from has-nodes? t)
          t))
    expression))
@@ -689,8 +693,8 @@
   (map
    (lambda (arg)
      (typecase arg
-       (argument-list
-        (argument-list-arguments arg))
+       (ir:argument-list
+        (ir:arguments arg))
 
        (otherwise
         arg)))
@@ -729,10 +733,10 @@
 
 ;;; Argument List
 
-(defmethod tridash->cl ((list argument-list) &key)
-  (with-struct-slots argument-list- (arguments) list
+(defmethod tridash->cl ((list ir:argument-list) &key)
+  (with-accessors ((arguments ir:arguments)) list
     (if arguments
-        (list* 'list (map #'tridash->cl (argument-list-arguments list)))
+        (list* 'list (map #'tridash->cl (ir:arguments list)))
         '+empty-list+)))
 
 

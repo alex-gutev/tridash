@@ -247,16 +247,16 @@
   "Creates an if functor expression with test TEST, then expression
    THEN, and else expression ELSE."
 
-  (functor-expression (get 'if *core-meta-nodes*)
-                      (list test then else)))
+  (ir:functor (get 'if *core-meta-nodes*)
+              (list test then else)))
 
 (defun member-expression (object key)
-  (functor-expression (get :member *core-meta-nodes*)
-                      (list object key)))
+  (ir:functor (get :member *core-meta-nodes*)
+              (list object key)))
 
 (defun fail-expression (&optional (type :none))
-  (functor-expression (get :fail *core-meta-nodes*) (list type)))
+  (ir:functor (get :fail *core-meta-nodes*) (list type)))
 
 (defun catch-expression (try catch &optional (test :none))
-  (functor-expression (get :catch *core-meta-nodes*)
-                      (list try catch test)))
+  (ir:functor (get :catch *core-meta-nodes*)
+              (list try catch test)))
