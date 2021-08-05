@@ -94,29 +94,39 @@
 (defmethod hash ((node node))
   (hash (name node)))
 
+
 ;;; Utility Functions
 
 (defun attribute (attribute node &optional default)
-  "Retrieves a node attribute. ATTRIBUTE is converted to a string if
-   it is a symbol. If NODE does not have such an attribute, DEFAULT is
-   returned."
+  "Retrieve a node attribute.
+
+   ATTRIBUTE is converted to a string if it is a symbol. If NODE does
+   not have such an attribute, DEFAULT is returned."
 
   (get (string attribute) (attributes node) default))
 
 (defun (setf attribute) (value attribute node)
-  "Sets the value of a node attribute. ATTRIBUTE is converted to a
-   string if it is a symbol."
+  "Set the value of a node attribute.
+
+   ATTRIBUTE is converted to a string if it is a symbol."
 
   (setf (get (string attribute) (attributes node)) value))
 
 (defun home-module (node)
-  "Returns the module in which NODE was originally declared."
+  "Return the module in which NODE was originally declared."
 
   (get :module (attributes node)))
 
+(defun input-node? (node)
+  "Return true if NODE is an input node."
+
+  (attribute :input node))
+
 (defun bool-value (value)
-  "Converts value to a boolean. 0 and NIL are treated as boolean
-   false, everything else is treated as boolean true."
+  "Convert a value to a boolean.
+
+   0 and NIL are treated as boolean false, everything else is treated
+   as boolean true."
 
   (match value
     ((eql 1) t)
@@ -128,3 +138,23 @@
 
     ((type symbol)
      (likep (symbol-name value) "true"))))
+
+
+;;; Contexts
+
+(defgeneric context (node context-id)
+  (:documentation
+   "Return the context of NODE with identifier CONTEXT-ID.
+
+   If node does have such a context, a new context is created."))
+
+(defmethod context ((node node) context-id)
+  (ensure-get context-id (contexts node) (make-instance 'node-context)))
+
+
+(defgeneric (setf context) (value node context-id)
+  (:documentation
+   "Set the context, of NODE, with identifier CONTEXT-ID to VALUE."))
+
+(defmethod (setf context) (value (node node) context-id)
+  (setf (get context-id (contexts node)) value))

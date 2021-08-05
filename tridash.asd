@@ -46,7 +46,8 @@
                    (:file "ir")
                    (:file "operators")
                    (:file "node")
-                   (:file "meta-node")))
+                   (:file "meta-node")
+                   (:file "module")))
                  )))
 
   :depends-on (:anaphora
