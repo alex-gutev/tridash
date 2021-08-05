@@ -69,6 +69,8 @@
     :documentation
     "The lexeme which triggered the parse error"))
 
+  (:report print-parse-error)
+
   (:documentation
    "Base condition class representing parse errors."))
 
@@ -400,9 +402,14 @@
   (and c (digit-char-p c)))
 
 
-;;; Print Object Methods
+;;; Printing Conditions
 
-(defmethod print-object :around ((e tridash-parse-error) stream)
+(defgeneric print-parse-error (e stream)
+  (:documentation
+   "Print a readable description of a Tridash parse error
+    condition."))
+
+(defmethod print-parse-error :around ((e tridash-parse-error) stream)
   (with-slots (source-path location lexeme) e
     (destructuring-bind (line . column) location
       (format stream "Parse error in ~a at ~a:~a: "
@@ -411,9 +418,9 @@
               (- column (length lexeme)))
       (call-next-method))))
 
-(defmethod print-object ((e invalid-token) stream)
+(defmethod print-parse-error ((e invalid-token) stream)
   (with-slots (lexeme) e
     (format stream "Invalid Token: `~a`." lexeme)))
 
-(defmethod print-object ((e unclosed-string-error) stream)
+(defmethod print-parse-error ((e unclosed-string-error) stream)
   (format stream "Unclosed string literal (missing closing `\"`)."))
