@@ -45,6 +45,7 @@
                   ((:file "package")
                    (:file "ir")
                    (:file "operators")
+                   (:file "conditions")
                    (:file "node")
                    (:file "meta-node")
                    (:file "module")))
