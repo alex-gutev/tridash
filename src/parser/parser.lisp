@@ -1,7 +1,7 @@
 ;;;; parser.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018-2019  Alexander Gutev
+;;;; Copyright (C) 2018-2021  Alexander Gutev <alex.gutev@mail.bg>
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by

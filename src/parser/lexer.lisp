@@ -1,7 +1,7 @@
 ;;;; lexer.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018-2019  Alexander Gutev
+;;;; Copyright (C) 2018-2021  Alexander Gutev <alex.gutev@mail.bg>
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -27,6 +27,9 @@
 
 (defvar *current-source-file* nil
   "Path to the current source file.")
+
+(defvar *symbol-package*
+  (make-package "TRIDASH.SYMBOLS" :use nil))
 
 
 (defstruct
@@ -347,7 +350,7 @@
 (defun id-symbol (name)
   "Interns a symbol with name NAME into the :TRIDASH.SYMBOLS package."
 
-  (intern (string name) :tridash.symbols))
+  (intern (string name) *symbol-package*))
 
 
 ;;; Reading Input Stream

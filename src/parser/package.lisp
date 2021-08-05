@@ -1,7 +1,7 @@
 ;;;; package.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018  Alexander Gutev
+;;;; Copyright (C) 2021  Alexander Gutev <alex.gutev@mail.bg>
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -16,55 +16,59 @@
 ;;;; You should have received a copy of the GNU General Public License
 ;;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-(defpackage :tridash.builder.html
+(defpackage :tridash.parser
   (:use :generic-cl
         :alexandria
         :anaphora
         :arrows
         :iterate
+        :parse-number
         :optima
-        :cl-ppcre
-        :named-readtables
-        :trivial-gray-streams
-
-        :tridash.util
-        :tridash.parser
-        :tridash.interface
-        :tridash.frontend)
+        :optima.ppcre)
 
   (:shadowing-import-from :generic-cl
                           :emptyp
                           :accumulate
                           :multiply)
 
-  (:import-from :let-over-lambda
-                :mkstr
-                :symb
-                :lol-syntax)
-
-  (:import-from :tridash.parser
-                :lexer
-                :make-lexer
-                :next-token)
-
-  (:import-from :tridash.frontend
-
-                :+self-node+
-                :ensure-node
-                :remove-node
-                :process-subnode
-
-                :build-meta-nodes)
-
-  (:local-nicknames (:ir :tridash.ir))
+  (:import-from :lol
+                :defmacro!)
 
   (:export
-   ;; HTML-NODE
-   :html-node
-   :tag-name
-   :html-attribute
-   :element-id
+   :+list-operator+
+   :*current-source-file*
 
-   ;; HTML-COMPONENT-NODE
-   :html-component-node
-   :element-node))
+   ;; Declaration Types
+
+   :node-declaration
+   :node-declaration-location
+   :node-declaration-p
+
+   :atom-node
+   :atom-node-identifier
+   :atom-node-p
+
+   :literal-node
+   :literal-node-value
+   :literal-node-p
+
+   :functor-node
+   :functor-node-operator
+   :functor-node-operands
+   :functor-node-p
+
+   ;; Parser
+
+   :make-parser
+   :add-operator
+
+   ;; Identifiers
+
+   :node-path->name
+   :id-symbol
+
+   :symbol-mapping
+   :symbol-mappings)
+
+  (:documentation
+   "Package containing the parser and lexer."))

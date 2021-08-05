@@ -21,19 +21,6 @@
   :author "Alexander Gutev"
   :license "GPL v3"
   :components ((:module
-                "plump"
-
-                :components
-                ((:file "package")
-                 (:file "entities")
-                 (:file "lexer")
-                 (:file "tag-dispatcher")
-                 (:file "dom")
-                 (:file "parser")
-                 (:file "processing")
-                 (:file "special-tags")))
-
-               (:module
                 "src"
 
                 :components
@@ -42,50 +29,16 @@
                           :components ((:file "package")
                                        (:file "cut")
                                        (:file "macros")))
-                 (:file "package")
-                 (:file "interface")
-                 (:file "lexer")
-                 (:file "parser")
-                 (:file "operators")
-                 (:file "expressions")
-                 (:file "builder-interface")
-                 (:file "node")
-                 (:file "meta-node")
-                 (:file "module")
-                 (:file "module-table")
-                 (:file "conditions")
-                 (:file "outer-nodes")
-                 (:file "strictness")
-                 (:file "builder")
-                 (:file "macros")
-                 (:file "macro-runtime")
-                 (:file "coalescer")
-                 (:file "prog-builder")
-                 (:file "main")
 
-                 (:module "builders/html"
-                          :serial t
-                          :components ((:file "package")
-                                       (:file "builder")
-                                       (:file "script-parser")))
+                 (:module
+                  "parser"
+                  :serial t
+                  :components
+                  ((:file "package")
+                   (:file "lexer")
+                   (:file "parser")))
 
-                 (:module "backends/javascript"
-                          :serial t
-                          :components ((:file "package")
-                                       (:file "ast")
-                                       (:file "print")
-                                       (:file "symbols")
-                                       (:file "backend")
-                                       (:file "functions")
-                                       (:file "html")))
-
-                 (:module "backends/wasm"
-                          :serial t
-                          :components ((:file "package")
-                                       (:file "expressions")
-                                       (:file "builtin")
-                                       (:file "backend")
-                                       (:file "html"))))))
+                 )))
 
   :depends-on (:anaphora
                :iterate
@@ -108,10 +61,7 @@
 
                :generic-cl
                :generic-cl.util
-               :wasm-encoder
-
-               ;; Plump dependencies
-               :array-utils)
+               :wasm-encoder)
 
   :in-order-to ((asdf:test-op (asdf:test-op :tridash/test)))
 
