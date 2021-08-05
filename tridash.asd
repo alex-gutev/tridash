@@ -44,7 +44,8 @@
                   :components
                   ((:file "package")
                    (:file "ir")
-                   (:file "node")))
+                   (:file "node")
+                   (:file "meta-node")))
                  )))
 
   :depends-on (:anaphora
