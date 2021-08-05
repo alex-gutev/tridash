@@ -44,6 +44,7 @@
                   :components
                   ((:file "package")
                    (:file "ir")
+                   (:file "operators")
                    (:file "node")
                    (:file "meta-node")))
                  )))
