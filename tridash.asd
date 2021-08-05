@@ -38,6 +38,12 @@
                    (:file "lexer")
                    (:file "parser")))
 
+                 (:module
+                  "frontend"
+                  :serial t
+                  :components
+                  ((:file "package")
+                   (:file "ir")))
                  )))
 
   :depends-on (:anaphora
