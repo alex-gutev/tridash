@@ -19,6 +19,33 @@
 (defpackage :tridash.ir
   (:use :generic-cl)
 
+  (:export
+   :node
+   :ref-count
+
+   :constant-value
+   :value
+   :none
+
+   :link
+   :node-ref
+
+   :functor
+   :operator
+   :operands
+   :outer-nodes
+
+   :meta-node-ref
+   :meta-node
+   :optional-arguments
+   :outer-nodes
+
+   :object
+   :properties
+
+   :argument-list
+   :arguments)
+
   (:documentation
    "Contains the symbols defining the intermediate representation."))
 
