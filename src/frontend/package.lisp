@@ -21,3 +21,16 @@
 
   (:documentation
    "Contains the symbols defining the intermediate representation."))
+
+(defpackage :tridash.frontend
+  (:use :generic-cl
+        :anaphora
+        :arrows
+        :optima
+
+        :tridash.util
+        :tridash.parser)
+
+  (:local-nicknames
+   (:ax :alexandria)
+   (:ir :tridash.ir)))

@@ -43,7 +43,8 @@
                   :serial t
                   :components
                   ((:file "package")
-                   (:file "ir")))
+                   (:file "ir")
+                   (:file "node")))
                  )))
 
   :depends-on (:anaphora
