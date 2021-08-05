@@ -48,7 +48,8 @@
                    (:file "conditions")
                    (:file "node")
                    (:file "meta-node")
-                   (:file "module")))
+                   (:file "module")
+                   (:file "module-table")))
                  )))
 
   :depends-on (:anaphora
