@@ -28,6 +28,8 @@
 (defvar *current-source-file* nil
   "Path to the current source file.")
 
+(defvar *symbol-package* (make-package :tridash.symbols :use nil)
+  "Package into which Tridash symbols are interned")
 
 (defstruct
     (lexer
@@ -65,6 +67,8 @@
     :reader lexeme
     :documentation
     "The lexeme which triggered the parse error"))
+
+  (:report print-parse-error)
 
   (:documentation
    "Base condition class representing parse errors."))
@@ -347,7 +351,7 @@
 (defun id-symbol (name)
   "Interns a symbol with name NAME into the :TRIDASH.SYMBOLS package."
 
-  (intern (string name) :tridash.symbols))
+  (intern (string name) *symbol-package*))
 
 
 ;;; Reading Input Stream
@@ -399,7 +403,7 @@
 
 ;;; Print Object Methods
 
-(defmethod print-object :around ((e tridash-parse-error) stream)
+(defmethod print-parse-error :around ((e tridash-parse-error) stream)
   (with-slots (source-path location lexeme) e
     (destructuring-bind (line . column) location
       (format stream "Parse error in ~a at ~a:~a: "
@@ -408,9 +412,9 @@
               (- column (length lexeme)))
       (call-next-method))))
 
-(defmethod print-object ((e invalid-token) stream)
+(defmethod print-parse-error ((e invalid-token) stream)
   (with-slots (lexeme) e
     (format stream "Invalid Token: `~a`." lexeme)))
 
-(defmethod print-object ((e unclosed-string-error) stream)
+(defmethod print-parse-error ((e unclosed-string-error) stream)
   (format stream "Unclosed string literal (missing closing `\"`)."))

@@ -37,15 +37,24 @@
                 "src"
 
                 :components
-                ((:module "util"
-                          :serial t
-                          :components ((:file "package")
-                                       (:file "cut")
-                                       (:file "macros")))
+                ((:module
+                  "util"
+                  :serial t
+                  :components
+                  ((:file "package")
+                   (:file "cut")
+                   (:file "macros")))
+
+                 (:module
+                  "parser"
+                  :serial t
+                  :components
+                  ((:file "package")
+                   (:file "lexer")
+                   (:file "parser")))
+
                  (:file "package")
                  (:file "interface")
-                 (:file "lexer")
-                 (:file "parser")
                  (:file "operators")
                  (:file "expressions")
                  (:file "builder-interface")

@@ -610,7 +610,7 @@
   (:documentation
    "Parse error condition."))
 
-(defmethod print-object ((e declaration-parse-error) stream)
+(defmethod print-parse-error ((e declaration-parse-error) stream)
   (labels ((expected-string (expected)
              (match expected
                ((list* 'or tokens)

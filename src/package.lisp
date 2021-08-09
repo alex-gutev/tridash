@@ -48,65 +48,6 @@
    "Package containing the interface to the frontend, backends and
     error reporting."))
 
-(defpackage :tridash.parser
-  (:use :generic-cl
-        :alexandria
-        :anaphora
-        :arrows
-        :iterate
-        :parse-number
-        :optima
-        :optima.ppcre
-
-        :tridash.interface)
-
-  (:shadowing-import-from :generic-cl
-                          :emptyp
-                          :accumulate
-                          :multiply)
-
-  (:import-from :lol
-                :defmacro!)
-
-  (:export
-   :+list-operator+
-   :*current-source-file*
-
-   ;; Declaration Types
-
-   :node-declaration
-   :node-declaration-location
-   :node-declaration-p
-
-   :atom-node
-   :atom-node-identifier
-   :atom-node-p
-
-   :literal-node
-   :literal-node-value
-   :literal-node-p
-
-   :functor-node
-   :functor-node-operator
-   :functor-node-operands
-   :functor-node-p
-
-   ;; Parser
-
-   :make-parser
-   :add-operator
-
-   ;; Identifiers
-
-   :node-path->name
-   :id-symbol
-
-   :symbol-mapping
-   :symbol-mappings)
-
-  (:documentation
-   "Package containing the parser and lexer."))
-
 (defpackage :tridash.ir
   (:use :generic-cl)
 
