@@ -35,7 +35,7 @@
 
                (:module
                 "src"
-
+                :serial t
                 :components
                 ((:module
                   "util"
@@ -65,6 +65,7 @@
                  (:file "conditions")
                  (:file "outer-nodes")
                  (:file "strictness")
+                 (:file "compiler.util")
                  (:file "builder")
                  (:file "macros")
                  (:file "macro-runtime")
