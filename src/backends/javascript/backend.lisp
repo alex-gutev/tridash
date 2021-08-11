@@ -188,38 +188,13 @@
   (with-open-file (*standard-output* out-file :direction :output :if-exists :supersede)
     (with-slots (initial-values) *backend-state*
       (with-hash-keys
-          ((type "type")
-           (module-name "module-name")
-           (main-ui "main-ui"))
+          ((module-name "module-name"))
           options
 
-        (match type
-          ((cl:equalp "html")
-
-           (let ((code (list code (make-html-set-initial-values initial-values))))
-             (->>
-              (get-root-node main-ui)
-              (create-html-file
-
-               (if module-name
-                   (make-js-module code module-name)
-                   (lexical-block
-                    (js-var "exports" (js-object))
-                    code))))))
-
-          (_
-           (-<> (make-set-initial-values initial-values)
-                (list code <>)
-                (wrap-module module-name)
-                (output-code))))))))
-
-(defun get-root-node (node)
-  "Gets the root HTML node specified by NODE."
-
-  (multiple-value-bind (module node) (node-path->name node)
-    (->> (get-module module *global-module-table*)
-         (tridash.frontend::lookup-node node)
-         (element-node))))
+        (-<> (make-set-initial-values initial-values)
+             (list code <>)
+             (wrap-module module-name)
+             (output-code))))))
 
 
 (defun wrap-module (code module-name)
@@ -303,13 +278,6 @@
 
 
 ;;; Initialize nodes to initial values
-
-(defun make-html-set-initial-values (initial-values)
-  "Generates the setting of initial node values code for HTML files."
-
-  (when initial-values
-    (make-onloaded-method
-     (list (make-set-initial-values initial-values)))))
 
 (defun make-set-initial-values (initial-values)
   "Generates code which sets the initial state of the module."

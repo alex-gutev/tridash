@@ -820,8 +820,6 @@
   "Compiles a functor expression in which the operator is an
    `external-meta-node'."
 
-  (declare (ignore outer-nodes))
-
   (let* ((name (attribute :wasm-name meta-node)))
 
     (acond

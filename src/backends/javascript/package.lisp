@@ -139,7 +139,6 @@
         :tridash.interface
         :tridash.frontend
         :tridash.frontend.strictness
-        :tridash.builder.html
 
         :tridash.backend.js.ast)
 

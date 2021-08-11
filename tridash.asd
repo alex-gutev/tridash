@@ -21,19 +21,6 @@
   :author "Alexander Gutev"
   :license "GPL v3"
   :components ((:module
-                "plump"
-
-                :components
-                ((:file "package")
-                 (:file "entities")
-                 (:file "lexer")
-                 (:file "tag-dispatcher")
-                 (:file "dom")
-                 (:file "parser")
-                 (:file "processing")
-                 (:file "special-tags")))
-
-               (:module
                 "src"
                 :serial t
                 :components
@@ -73,12 +60,6 @@
                  (:file "prog-builder")
                  (:file "main")
 
-                 (:module "builders/html"
-                          :serial t
-                          :components ((:file "package")
-                                       (:file "builder")
-                                       (:file "script-parser")))
-
                  (:module "backends/javascript"
                           :serial t
                           :components ((:file "package")
@@ -86,16 +67,14 @@
                                        (:file "print")
                                        (:file "symbols")
                                        (:file "backend")
-                                       (:file "functions")
-                                       (:file "html")))
+                                       (:file "functions")))
 
                  (:module "backends/wasm"
                           :serial t
                           :components ((:file "package")
                                        (:file "expressions")
                                        (:file "builtin")
-                                       (:file "backend")
-                                       (:file "html"))))))
+                                       (:file "backend"))))))
 
   :depends-on (:anaphora
                :iterate
@@ -118,10 +97,7 @@
 
                :generic-cl
                :generic-cl.util
-               :wasm-encoder
-
-               ;; Plump dependencies
-               :array-utils)
+               :wasm-encoder)
 
   :in-order-to ((asdf:test-op (asdf:test-op :tridash/test)))
 
@@ -153,12 +129,6 @@
                  (:file "strictness")
                  (:file "macros")
                  (:file "macros-core-module")
-
-                 (:module
-                  "builders/html"
-
-                  :components
-                  ((:file "builder")))
 
                  (:module
                   "backends/javascript"

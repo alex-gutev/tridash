@@ -788,14 +788,15 @@
 (test compile-error-usupported-external-meta-node
   "Test that compiling an unsupported external-meta-node results in an error."
 
-  (with-external-meta-nodes ("not-a-function")
-    (signals
-     unsupported-meta-node-error
+  (let ((*global-module-table* nil))
+    (with-external-meta-nodes ("not-a-function")
+      (signals
+          unsupported-meta-node-error
 
-     (tridash->cl-function
-      (mock-meta-node
-       (arg)
-       (functor not-a-function arg))))))
+        (tridash->cl-function
+         (mock-meta-node
+          (arg)
+          (functor not-a-function arg)))))))
 
 
 ;;; Test Calling Tridash Meta-Nodes from CL

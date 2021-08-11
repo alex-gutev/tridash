@@ -278,9 +278,7 @@
    OPTIONS is a map containing command-line output options.
    LOAD-OPTIONS are the keyword arguments passed to MAKE-LOADER-CODE."
 
-  (with-hash-keys ((type "type")
-                   (module-name "module-name")
-                   (main-ui "main-ui")
+  (with-hash-keys ((module-name "module-name")
                    (linkage "linkage"))
       options
 
@@ -291,22 +289,9 @@
       (unless (= linkage 'embed)
         (output-wasm-file out-file wasm-module))
 
-      (match type
-        ((cl:equalp "html")
-
-         (with-open-file (*standard-output* out-file :direction :output :if-exists :supersede)
-           (let ((*print-indented* (parse-boolean (get "indented" options))))
-             (create-html-file
-              (wrap-js-module
-               (list* (js-var "exports" (js-object)) code)
-               module-name)
-
-              (get-root-node main-ui)))))
-
-        (_
-         (-> (pathname out-file)
-             js-file-name
-             (output-js-file code options)))))))
+      (-> (pathname out-file)
+          js-file-name
+          (output-js-file code options)))))
 
 (defun wrap-js-module (code module-name)
   "If MODULE-NAME is non-NIL wrap CODE in an anonymous function with
