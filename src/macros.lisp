@@ -768,11 +768,9 @@
 
   (declare (ignore module))
 
-  (match-syntax +quote-operator+
-      ((any thing))
-      args
-
-    (unwrap-declaration thing)))
+  (match-syntax operator args
+    ((list thing)
+     (unwrap-declaration thing))))
 
 
 ;;; Macro Attributes

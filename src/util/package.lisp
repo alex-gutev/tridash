@@ -52,10 +52,7 @@
    :with-struct-slots
 
    :with-retry-restart
-   :retry
-
-   ;; Optima Patterns
-   :optional)
+   :retry)
 
   (:documentation
    "A collection of utility functions and macros."))

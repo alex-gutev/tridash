@@ -106,6 +106,3 @@
 
 (defun retry ()
   (invoke-restart 'retry))
-
-(defpattern optional (arg)
-  `(or ,arg nil))

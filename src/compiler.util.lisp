@@ -20,6 +20,8 @@
 
 (in-package :tridash.frontend)
 
+;;; Macros
+
 (defmacro at-source (&body body)
   "Sets the node position to source in the dynamic extent of the forms
    in BODY. All declarations, processed by the forms in body, are
@@ -35,11 +37,108 @@
   `(let ((*source-node* ,source))
      ,@body))
 
+(defmacro ensure-top-level (operator &body body)
+  "Signals an error condition of type
+   `SPECIAL-OPERATOR-REFERENCE-ERROR' if the declaration currently
+   being processed is not at top-level."
+
+  `(progn
+     (unless (top-level?)
+       (error 'special-operator-reference-error :operator ,operator))
+
+     ,@body))
+
 (defun top-level? ()
   "Returns true if the declaration currently being processed is at the
    top level."
 
   (zerop *level*))
+
+(defmacro! match-syntax (operator o!args &body patterns)
+  "Checks whether the arguments to an operator match the given pattern clauses
+
+   OPERATOR:
+
+      The operator, used in error reporting (evaluated).
+
+   ARGS:
+
+     The list of arguments (evaluated)
+
+   PATTERNS:
+
+     Optima pattern matching clauses.
+
+     If none of the clauses match, a condition of type
+     `INVALID-ARGUMENTS-ERROR' is signalled."
+
+  `(match ,g!args
+     ,@patterns
+
+     (_
+      (error 'invalid-arguments-error
+             :operator ,operator
+             :arguments ,g!args
+             :expected ',(map #'first patterns)))))
+
+
+;;; Optima Patterns
+
+(defpattern atom (pattern)
+  `(atom-expression- (identifier ,pattern)))
+
+(defpattern functor (operator operands)
+  `(functor-expression-
+    (operator ,operator)
+    (operands ,operands)))
+
+(defpattern node (pattern)
+  `(and (type
+         (or atom-expression
+             functor-expression
+             node
+             module))
+        ,pattern))
+
+(defpattern integer-literal (pattern)
+  `(literal-value- (value (and (type integer) ,pattern))))
+
+(defpattern string-literal (pattern)
+  `(literal-value- (value (and (type string) ,pattern))))
+
+(defpattern id (name)
+  (check-type name string)
+
+  `(eql (id-symbol ,name)))
+
+(defpattern optional (&rest patterns)
+  (reduce
+   (lambda (pattern expr)
+     `(or (cons ,pattern ,expr) nil))
+   patterns
+   :initial-value nil
+   :from-end t))
+
+(defpattern rest (pattern things)
+  (with-gensyms (thing)
+    `(guard ,things
+            (and
+             (listp ,things)
+             (every
+              (lambda (,thing)
+                (match ,thing
+                  (,pattern t)))
+              ,things)))))
+
+
+;;; Types
+
+(deftype operator-associativity ()
+  "Represents an operator associativity identifier symbol."
+
+  `(member ,(id-symbol "left")
+           ,(id-symbol "right")))
+
 
 ;;; Wrapping and Unwrapping Node Expressions
 
