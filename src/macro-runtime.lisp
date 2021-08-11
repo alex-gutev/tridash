@@ -427,7 +427,10 @@
         (let ((*create-nodes* nil)
               (*create-top-level-nodes* nil))
           (at-source
-            (process-declaration (resolve node) module :top-level t)))
+            (-> node
+                resolve
+                wrap-expression
+                (process-declaration module :top-level t))))
 
       (non-existent-node-error ()
         (error 'tridash-fail)))))

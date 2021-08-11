@@ -54,7 +54,9 @@
                 :remove-node
                 :process-subnode
 
-                :build-meta-nodes)
+                :build-meta-nodes
+
+                :wrap-expression)
 
   (:local-nicknames (:ir :tridash.ir))
 

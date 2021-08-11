@@ -772,7 +772,7 @@
       ((any thing))
       args
 
-    thing))
+    (unwrap-declaration thing)))
 
 
 ;;; Macro Attributes

@@ -141,12 +141,12 @@
              (let ((place (or place '_)))
                (match pattern
                  ('atom
-                  `(or (atom-node- (identifier ,place))
+                  `(or (atom-expression- (identifier ,place))
                        (and (type symbol) ,place)))
 
                  ('node
-                  `(and (or (type atom-node)
-                            (type functor-node)
+                  `(and (or (type atom-expression)
+                            (type functor-expression)
                             (type symbol)
                             (type list)
                             (type node)
@@ -155,16 +155,16 @@
 
                  ((list 'atom value)
                   (let ((sym (id-symbol value)))
-                    `(or (atom-node- (identifier (and ',sym ,place)))
+                    `(or (atom-expression- (identifier (and ',sym ,place)))
                          (and ',sym ,place))))
 
                  ((and (or 'integer 'string) type)
-                  `(or (literal-node- (value (and (type ,type) ,place)))
+                  `(or (literal-value- (value (and (type ,type) ,place)))
                        (and (type ,type) ,place)))
 
                  ((list* 'functor (list op-pattern op-place) args)
                   `(and
-                    (or (functor-node-
+                    (or (functor-expression-
                          (operator ,(make-pattern op-pattern op-place))
                          (operands ,(make-patterns args)))
 

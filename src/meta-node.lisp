@@ -159,10 +159,10 @@
   "Process DECLARATION, in module MODULE, which is assumed to be the
    result of a macro expansion."
 
-  (process-declaration declaration
-                       module
-                       :level *level*
-                       :add-outer nil))
+  (-> (wrap-expression declaration)
+      (process-declaration module
+                           :level *level*
+                           :add-outer nil)))
 
 
 ;;; Macro Functions

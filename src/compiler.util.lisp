@@ -41,19 +41,43 @@
 
   (zerop *level*))
 
+;;; Wrapping and Unwrapping Node Expressions
+
+(defun wrap-expression (expression &optional (location '(0 . 0)))
+  "Convert a list representation of a node expression into
+   `NODE-EXPRESSION' objects."
+
+  (match expression
+    ((cons op operands)
+     (functor-expression
+      (wrap-expression op)
+      (map #'wrap-expression operands)
+      :location location))
+
+    ((or t nil) expression)
+
+    ((type symbol)
+     (atom-expression expression :location location))
+
+    ((type (or node-expression node))
+     expression)
+
+    (_
+     (literal-value expression :location location))))
+
 (defun unwrap-declaration (decl)
-  "Converts a declaration, wrapped in `ATOM-NODE', `FUNCTOR-NODE' or
-   `LITERAL-NODE' structures to a CL primitive representation."
+  "Converts a declaration, wrapped in `ATOM-EXPRESSION', `FUNCTOR-EXPRESSION' or
+   `LITERAL-VALUE' structures to a CL primitive representation."
 
   (match decl
-    ((atom-node- identifier)
+    ((atom-expression- identifier)
      identifier)
 
-    ((functor-node- operator operands)
+    ((functor-expression- operator operands)
      (list* (unwrap-declaration operator)
             (map #'unwrap-declaration operands)))
 
-    ((literal-node- value)
+    ((literal-value- value)
      value)
 
     ((type list)

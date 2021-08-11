@@ -424,9 +424,9 @@ Example: tridashc ui.trd : node-name=ui")
 
   (dolist (decl stack)
     (typecase decl
-      (node-declaration
+      (node-expression
        (destructuring-bind (line . column)
-           (node-declaration-location decl)
+           (node-expression-location decl)
          (format *error-output* "In ~a at ~a:~a~%~%"
                  (unwrap-declaration decl)
                  line column)))

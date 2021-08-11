@@ -208,14 +208,14 @@
    EXPECTED."
 
   (match* (got expected)
-    (((or (atom-node- (identifier got))
+    (((or (atom-expression- (identifier got))
           (and (type symbol) got))
 
       (and (type symbol) expected))
 
      (= got expected))
 
-    (((or (functor-node- (operator got-op) (operands got-args))
+    (((or (functor-expression- (operator got-op) (operands got-args))
           (list* got-op got-args))
 
       (list* exp-op exp-args))
@@ -224,7 +224,7 @@
           (length= got-args exp-args)
           (every #'decl= exp-args got-args)))
 
-    (((or (literal-node- (value got)) got)
+    (((or (literal-value- (value got)) got)
       expected)
 
      (= got expected))))

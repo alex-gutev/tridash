@@ -40,22 +40,22 @@
 
    ;; Declaration Types
 
-   :node-declaration
-   :node-declaration-location
-   :node-declaration-p
+   :node-expression
+   :node-expression-location
+   :node-expression-p
 
-   :atom-node
-   :atom-node-identifier
-   :atom-node-p
+   :atom-expression
+   :atom-expression-identifier
+   :atom-expression-p
 
-   :literal-node
-   :literal-node-value
-   :literal-node-p
+   :literal-value
+   :literal-value-value
+   :literal-value-p
 
-   :functor-node
-   :functor-node-operator
-   :functor-node-operands
-   :functor-node-p
+   :functor-expression
+   :functor-expression-operator
+   :functor-expression-operands
+   :functor-expression-p
 
    ;; Parser
 

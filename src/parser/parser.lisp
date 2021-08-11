@@ -37,30 +37,35 @@
 
 ;;;; Declaration Types
 
-(defstruct node-declaration
-  "Represents a node declaration. Stores the location at which the
-   node declaration occurs in the source file."
+(defstruct node-expression
+  "Represents a node expression.
+
+   LOCATION is the location at which the expression occurs in the
+   source file, as a CONS of the form (LINE . COLUMN) where LINE is
+   the line and COLUMN is the column."
 
   location)
 
-(defstruct (atom-node (:include node-declaration)
-                      (:constructor atom-node (identifier &key location)))
+(defstruct (atom-expression (:include node-expression)
+                      (:constructor atom-expression (identifier &key location)))
 
-  "Represents an atom node declaration wit the identifier IDENTIFIER."
+  "Represents an atom node expression.
+
+   IDENTIFIER is the atom node identifier"
 
   identifier)
 
-(defstruct (literal-node (:include node-declaration)
-                         (:constructor literal-node (value &key location)))
+(defstruct (literal-value (:include node-expression)
+                         (:constructor literal-value (value &key location)))
 
-  "Represents the literal value VALUE."
+  "Represents the literal value expression with value VALUE."
 
   value)
 
-(defstruct (functor-node (:include node-declaration)
-                         (:constructor functor-node (operator operands &key location)))
+(defstruct (functor-expression (:include node-expression)
+                         (:constructor functor-expression (operator operands &key location)))
 
-  "Represents a functor node declaration with operator OPERATOR and
+  "Represents a functor node expression with operator OPERATOR and
    operands OPERANDS."
 
   operator
@@ -182,8 +187,8 @@
               operators are not parsed into the expression."
 
              (if-let (operand (parse-expression min-prec nil))
-               (functor-node operator (list operand)
-                             :location (node-declaration-location operand))
+               (functor-expression operator (list operand)
+                                   :location (node-expression-location operand))
                operator))
 
            (parse-infix-expression (lhs min-prec)
@@ -203,13 +208,13 @@
                    (parse-operand nil prec)
                    (parse-infix-expression (next-precedence prec assoc))
                    (list lhs <>)
-                   (functor-node op <> :location (node-declaration-location lhs))
+                   (functor-expression op <> :location (node-expression-location lhs))
                    (parse-infix-expression min-prec)))
 
                  ((operand-list? lex min-prec)
                   (parse-infix-expression
-                   (functor-node lhs (parse-prefix-operands lex)
-                                 :location (node-declaration-location lhs))
+                   (functor-expression lhs (parse-prefix-operands lex)
+                                       :location (node-expression-location lhs))
                    min-prec))
 
                  (t lhs))))
@@ -250,7 +255,7 @@
 
   (next-token lex :line-term line-term)
 
-  (literal-node
+  (literal-value
    (parse-integer lexeme)
    :location (prior-position lex lexeme)))
 
@@ -260,7 +265,7 @@
 
   (next-token lex :line-term line-term)
 
-  (literal-node
+  (literal-value
    (parse-real-number lexeme)
    :location (prior-position lex lexeme)))
 
@@ -269,7 +274,7 @@
 
   (next-token lex :line-term line-term)
 
-  (literal-node
+  (literal-value
    (parse-string lexeme)
    :location (prior-position lex lexeme)))
 
@@ -328,7 +333,7 @@
 
   (next-token lex :line-term line-term)
 
-  (atom-node
+  (atom-expression
    (id-symbol lexeme)
    :location (prior-position lex lexeme)))
 
@@ -443,7 +448,7 @@
   (let ((*list-delimiter* delimiter)
         (pos (lexer-position lex)))
 
-    (functor-node
+    (functor-expression
      +list-operator+
 
      (iter
@@ -516,7 +521,7 @@
            (when (>= (first info) min-prec)
              (next-token lex)
              (values
-              (atom-node op :location (prior-position lex lexeme))
+              (atom-expression op :location (prior-position lex lexeme))
               (first info)
               (second info))))
 

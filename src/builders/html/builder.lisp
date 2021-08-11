@@ -156,7 +156,7 @@
 (defun make-html-element-node (html-id tag module-table)
   "Builds the node referencing the HTML element with id HTML-ID."
 
-  (-> (build-node (html-node-id html-id) module-table)
+  (-> (build-node (wrap-expression (html-node-id html-id)) module-table)
       (node->html-node :tag-name tag :element-id html-id)))
 
 (defun html-attributes->html-nodes (node html-id tag-name)
@@ -175,6 +175,7 @@
    element with id HTML-ID."
 
   (let ((node (-> (list +subnode-operator+ (html-node-id html-id) (id-symbol attribute))
+                  wrap-expression
                   (build-node module-table))))
 
     (make-attribute-reference node html-id tag attribute)
@@ -212,7 +213,7 @@
    HTML-NODE and the node declaration DECL."
 
   (let ((name (name html-node)))
-    (build-node `(,+bind-operator+ ,decl ,name) module-table)
+    (build-node (wrap-expression `(,+bind-operator+ ,decl ,name)) module-table)
 
     ;; Establish the binding in the other direction, handling all
     ;; `target-node-error' conditions since they are caused by the
@@ -221,7 +222,8 @@
 
     (handler-case
         (build-node
-         `(,+bind-operator+ ,name ,decl)
+         (wrap-expression
+          `(,+bind-operator+ ,name ,decl))
          module-table)
 
       (target-node-error ()))))

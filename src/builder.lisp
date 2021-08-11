@@ -297,40 +297,31 @@
 
 ;;;; Methods: Processing Declarations
 
-(defmethod process-declaration ((atom atom-node) module &key)
-  (process-declaration (atom-node-identifier atom)
-                       module
-                       :level *level*
-                       :add-stack nil))
+(defmethod process-declaration ((atom atom-expression) module &key)
+  "Compile an atom node expression.
 
-(defmethod process-declaration ((functor functor-node) module &key)
-  (process-declaration (cons (functor-node-operator functor) (functor-node-operands functor))
-                       module
-                       :level *level*
-                       :add-stack nil))
+   Creates a node with the given identifier and add it to MODULE, if
+   it does not already contain a node with that identifier.
 
-(defmethod process-declaration ((literal literal-node) module &key)
-  (process-declaration (literal-node-value literal)
-                       module
-                       :level *level*
-                       :add-stack nil))
+   Returns the corresponding node."
 
+  (->> (and *create-top-level-nodes* (top-level?))
+       (or *create-nodes*)
+       (ensure-node (atom-expression-identifier atom) module)))
 
-(defmethod process-declaration ((functor list) module &key)
-  "Processes the functor declaration by calling PROCESS-FUNCTOR with
-   the OPERATOR argument being the CAR of FUNCTOR and OPERANDS being
-   the CDR of FUNCTOR."
+(defmethod process-declaration ((functor functor-expression) module &key)
+  "Compile a functor node expression."
 
-  (destructuring-bind (operator . operands) functor
-    (process-functor operator operands module)))
+  (process-functor (functor-expression-operator functor)
+                   (functor-expression-operands functor)
+                   module))
 
-(defmethod process-declaration ((name symbol) module &key)
-  "Creates a node with identifier NAME and adds it to MODULE, if
-   MODULE does not already contain a node with that
-   identifier. Returns the newly created, or existing, node."
+(defmethod process-declaration ((literal literal-value) module &key)
+  "Compile a literal value.
 
-  (ensure-node name module (or *create-nodes*
-                               (and *create-top-level-nodes* (top-level?)))))
+   Simply returns the literal value."
+
+  (literal-value-value literal))
 
 (defmethod process-declaration :around (decl module &key top-level (add-outer t) ((:level *level*) (if top-level 0 (1+ *level*))) (add-stack t))
   "Processes the declaration with DECL added to the front of
@@ -382,13 +373,6 @@
   "Literal true constant."
   t)
 
-(defmethod process-declaration (literal module &key)
-  "Method for literal values (everything which is not a symbol or list
-   is considered a literal). The literal value is simply returned."
-
-  (declare (ignore module))
-  literal)
-
 (defmethod process-declaration ((node node) (module t) &key)
   "Returns the node."
 
@@ -410,8 +394,8 @@
 
 ;;; Special Operators
 
-(defmethod process-functor ((operator atom-node) args module)
-  (process-functor (atom-node-identifier operator) args module))
+(defmethod process-functor ((operator atom-expression) args module)
+  (process-functor (atom-expression-identifier operator) args module))
 
 
 ;;; Operator Declarations
@@ -468,7 +452,7 @@
         ((rest (atom modules)))
         args
 
-      (foreach #L(process-declaration (list +alias-operator+ %1 %1) module :top-level t)
+      (foreach #L(process-declaration (functor-expression +alias-operator+ (list %1 %1)) module :top-level t)
                modules))))
 
 (defmethod process-functor ((operator (eql +alias-operator+)) args module)
@@ -549,7 +533,7 @@
        name
        (make-instance 'meta-node-spec
                       :name name
-                      :operands (parse-operands (map #'unwrap-declaration args) module)
+                      :operands (parse-operands args module)
                       :definition body)
        module))))
 
@@ -561,8 +545,7 @@
         ((atom name) (rest (any operands)))
         args
 
-      (-<> (map #'unwrap-declaration operands)
-           (parse-operands module)
+      (-<> (parse-operands operands module)
            (add-external-meta-node name module :operands <>)))))
 
 (defun parse-operands (operands module)
@@ -573,17 +556,19 @@
   (match-state operands
     :start 'required
     (required
-     (list* (and (type symbol) operand)
-            rest)
+     (list* (atom-expression- (identifier operand)) rest)
      :from required
 
      (cons operand (next rest)))
 
     (optional
      (list*
-      (list (eql +optional-argument+)
-            (and (type symbol) operand)
-            default)
+      (functor-expression-
+       (operator
+        (atom-expression- (identifier (eql +optional-argument+))))
+       (operands
+        (list (atom-expression- (identifier operand))
+              default)))
       rest)
 
      :from (required optional)
@@ -593,8 +578,11 @@
 
     (optional
      (list*
-      (list (eql +optional-argument+)
-            (and (type symbol) operand))
+      (functor-expression-
+       (operator
+        (atom-expression- (identifier (eql +optional-argument+))))
+       (operands
+        (list (atom-expression- (identifier operand)))))
       rest)
 
      :from (required optional)
@@ -603,11 +591,14 @@
            (next rest)))
 
     (rest
-     (and
-      (list (list (eql +rest-argument+) (type symbol)))
-      whole)
+     (list
+      (functor-expression-
+       (operator
+        (atom-expression- (identifier (eql +rest-argument+))))
+       (operands
+        (list (atom-expression- (identifier operand))))))
 
-     whole)
+     (list (list +rest-argument+ operand)))
 
     (end nil)
 
@@ -630,7 +621,7 @@
       (let* ((*create-nodes* t)
              (attribute (string attribute)))
 
-        (let ((node (process-declaration (unwrap-declaration node) module))
+        (let ((node (process-declaration node module))
               (value (unwrap-declaration value)))
 
           (unless (node? node)
@@ -659,7 +650,7 @@
         (((or string atom) attribute) (node node))
         args
 
-      (let ((node (process-operator-node (unwrap-declaration node) module))
+      (let ((node (process-operator-node node module))
             (attribute (string attribute)))
 
         (unless (meta-node? node)
@@ -745,18 +736,19 @@
       ((node node) (node context-id) (optional (node fail-test)))
       operands
 
-    (let ((node (process-declaration (unwrap-declaration node) module)))
+    (let ((node (process-declaration node module))
+          (context-id (unwrap-declaration context-id)))
       (unless (node? node)
         (error 'not-node-error :node node))
 
       (if *source-node*
           (make-instance 'context-node
-                         :context-id (unwrap-declaration context-id)
+                         :context-id context-id
                          :node node
                          :fail-test
                          (if fail-test
                              (let ((*create-nodes* nil))
-                               (-<> (process-declaration (unwrap-declaration fail-test) module)
+                               (-<> (process-declaration fail-test module)
                                     list
                                     (bind-operands node <> :context context-id)
                                     first
@@ -772,7 +764,7 @@
       operands
 
     (ir:node-ref
-     (process-declaration (unwrap-declaration node) module
+     (process-declaration node module
                           :add-outer nil :level *level*))))
 
 
@@ -890,9 +882,8 @@
       ((node node) (atom key))
       operands
 
-    (let* ((node (unwrap-declaration node))
-           (object-node (at-source (process-declaration node module :add-outer nil))))
-      (process-subnode object-node key))))
+    (let* ((object-node (at-source (process-declaration node module :add-outer nil))))
+      (process-subnode object-node (unwrap-declaration key)))))
 
 
 (defgeneric process-subnode (object-node key)
@@ -907,7 +898,8 @@
   (let* ((object-decl (name object-node))
          (module (home-module object-node))
          (name (list +subnode-operator+ object-decl key))
-         (subnode (ensure-node name module t)))
+         (subnode (ensure-node name module t))
+         (object-decl (wrap-expression object-decl)))
     (make-source-subnode object-decl key subnode module)
 
     (handler-case
@@ -967,7 +959,7 @@
 
   (let ((*create-nodes* nil))
     (at-source
-      (aprog1 (process-declaration operator module)
+      (aprog1 (process-declaration (wrap-expression operator) module)
         (unless (node? it)
           (error 'non-node-operator-error :operator it))))))
 
@@ -980,7 +972,7 @@
 
   (acond
     ((and *source-node* (target-transform-node meta-node))
-     (let ((source (process-declaration (gensym) module)))
+     (let ((source (process-declaration (wrap-expression (gensym)) module)))
        (transform-target-meta-node
         it
         source
@@ -1197,6 +1189,7 @@
   (-<> (list (unwrap-declaration source) (unwrap-declaration decl))
        (call-meta-node transform <>)
        (let ((*tridash-call-reason* :target-transform)) <>)
+       wrap-expression
        (process-declaration module :top-level t)))
 
 
@@ -1208,8 +1201,13 @@
    value and the module in the second."
 
   (flet ((process-operand (operand)
-           (match (unwrap-declaration operand)
-             ((list (eql +optional-argument+) (and (type symbol) name) value)
+           (match operand
+             ((functor-expression-
+               (operator
+                (atom-expression- (identifier (eql +optional-argument+))))
+               (operands
+                (list (atom-expression- (identifier name)) value)))
+
               (list +optional-argument+
                     name
                     (process-declaration value module)))
