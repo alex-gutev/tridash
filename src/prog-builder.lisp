@@ -18,7 +18,7 @@
 
 ;;;; Generic Interfaces
 
-(in-package :tridash.frontend)
+(in-package :tridash)
 
 
 ;;;; Compiler Interface

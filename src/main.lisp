@@ -79,6 +79,9 @@
   `(awhen (getf ,options ,opt)
      ,@body))
 
+(define-file-builder trd (path module-table)
+  (with-open-file (in path)
+    (build-parsed-nodes (make-parser in) module-table)))
 
 ;;;; Entry Point
 

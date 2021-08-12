@@ -1,7 +1,7 @@
-;;;; builder.lisp
+;;;; compiler.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018-2019  Alexander Gutev
+;;;; Copyright (C) 2018-2021  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -30,10 +30,6 @@
   "The module to which the nodes currently being compiled are
    added. This differs from the module in the CURRENT-MODULE slot of
    *GLOBAL-NODE-TABLE* when building meta-node definitions.")
-
-(define-file-builder trd (path module-table)
-  (with-open-file (in path)
-    (build-parsed-nodes (make-parser in) module-table)))
 
 (defun build-parsed-nodes (parser &optional (*global-module-table* *global-module-table*))
   "Builds the `NODE' objects from the node declarations returned by

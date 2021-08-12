@@ -1,7 +1,7 @@
 ;;;; tridash.asd
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018-2019  Alexander Gutev
+;;;; Copyright (C) 2018-2021  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -40,23 +40,29 @@
                    (:file "lexer")
                    (:file "parser")))
 
+                 (:module
+                  "frontend"
+                  :serial t
+                  :components
+                  ((:file "package")
+                   (:file "operators")
+                   (:file "expressions")
+                   (:file "builder-interface")
+                   (:file "node")
+                   (:file "meta-node")
+                   (:file "module")
+                   (:file "module-table")
+                   (:file "conditions")
+                   (:file "outer-nodes")
+                   (:file "strictness")
+                   (:file "util")
+                   (:file "compiler")
+                   (:file "macros")
+                   (:file "macro-runtime")
+                   (:file "coalescer")))
+
                  (:file "package")
                  (:file "interface")
-                 (:file "operators")
-                 (:file "expressions")
-                 (:file "builder-interface")
-                 (:file "node")
-                 (:file "meta-node")
-                 (:file "module")
-                 (:file "module-table")
-                 (:file "conditions")
-                 (:file "outer-nodes")
-                 (:file "strictness")
-                 (:file "compiler.util")
-                 (:file "builder")
-                 (:file "macros")
-                 (:file "macro-runtime")
-                 (:file "coalescer")
                  (:file "prog-builder")
                  (:file "main")
 
