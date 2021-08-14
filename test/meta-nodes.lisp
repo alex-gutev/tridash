@@ -74,6 +74,7 @@
 
   (with-module-table modules
     (build "/module(m1)"
+           "/import(builtin)"
            "/external(add, x, y)"
 
            "/module(m2)"
@@ -479,6 +480,7 @@
            "/attribute(in2, input, 1)"
 
            "/module(m3)"
+           "/import(builtin)"
            "/import(core, ->, .)"
            "/import(m2, dict)"
 
@@ -488,7 +490,7 @@
     (let ((table (finish-build)))
       (with-nodes ((+ "+") (addx "addx")
                    (in1 "in1") (in2 "in2")
-                   (dict "dict") (dict.x (:subnode "dict" "x"))
+                   (dict "dict") (dict.x ("." "dict" "x"))
                    (out1 "out1"))
           table
 
@@ -734,6 +736,7 @@
     (build-core-module)
 
     (build "/module(m1)"
+           "/import(builtin)"
            "start; /export(start)"
            "/attribute(start, input, 1)"
 
@@ -1493,13 +1496,13 @@
 
     (signals ambiguous-context-error (finish-build))))
 
-(test node-states-in-meta-node
-  "Test that using node states within a meta-node results in an error."
+;; (test node-states-in-meta-node
+;;   "Test that using node states within a meta-node results in an error."
 
-  (with-module-table modules
-    (build-core-module)
-    (build-source-file "./test/inputs/builder/states-in-meta-node.trd" modules)
-    (signals ambiguous-context-error (finish-build))))
+;;   (with-module-table modules
+;;     (build-core-module)
+;;     (build-source-file "./test/inputs/builder/states-in-meta-node.trd" modules)
+;;     (signals ambiguous-context-error (finish-build))))
 
 
 ;;; Constant Functions

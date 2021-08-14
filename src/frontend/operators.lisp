@@ -1,7 +1,7 @@
 ;;;; operators.lisp
 ;;;;
 ;;;; Tridash Programming Language.
-;;;; Copyright (C) 2018  Alexander Gutev
+;;;; Copyright (C) 2021  Alexander Gutev
 ;;;;
 ;;;; This program is free software: you can redistribute it and/or modify
 ;;;; it under the terms of the GNU General Public License as published by
@@ -18,111 +18,129 @@
 
 (in-package :tridash.frontend)
 
-;;;; Special Operator Constants
+;;;; Special Expression Types
+
+(defstruct (special-expression (:include functor-expression))
+  "Represents a special expression, which is a functor expression of a
+   special operator.")
 
 ;;; Basic Operators
 
-(defconstant +bind-operator+ :bind
-  "Operator for establishing bindings between nodes.")
+(defconstant +bind-operator+ (id-symbol "->"))
 
-(defconstant +op-operator+ (id-symbol "/operator")
-  "Operator for marking nodes as infix operators.")
+(defstruct (bind-expression (:include special-expression))
+  "Represents a binding declaration between two nodes.")
 
-(defconstant +quote-operator+ (id-symbol "/quote")
-  "Operator for suppressing processing of declarations.")
 
-(defconstant +ref-operator+ (id-symbol :ref)
-  "Operator for referencing another node without creating a binding.")
+(defconstant +quote-operator+ (id-symbol "/quote"))
+
+(defstruct (quote-expression (:include special-expression))
+  "Represents a quote expression.")
+
+
+(defconstant +ref-operator+ (id-symbol "&"))
+
+(defstruct (ref-expression (:include special-expression))
+  "Represents a raw node reference expression.")
+
+
+(defconstant +register-operator-operator+ (id-symbol "/operator"))
+
+(defstruct (register-operator-expression (:include special-expression))
+  "Represents a register infix/prefix operator declaration.")
 
 
 ;;; Contexts
 
-(defconstant +context-operator+ (id-symbol "/context")
-  "Operator for explicitly specifying the context to which bindings
-   are established.")
+(defconstant +context-operator+ (id-symbol "/context"))
 
-(defconstant +state-operator+ (id-symbol "/state")
-  "Operator for establishing a binding between different states of a
-   node.")
+(defstruct (context-expression (:include special-expression))
+  "Represents an explicit node context expression.")
+
+
+(defconstant +old-value-operator+ (id-symbol "old"))
+
+(defstruct (old-value-expression (:include special-expression))
+  "Represents a reference to a node's previous value.")
 
 
 ;;; Subnodes and Outer Nodes.
 
-(defconstant +outer-operator+ :outer
-  "Special operator for referencing nodes defined in an outer scope.")
+(defconstant +outer-node-operator+ (id-symbol ".."))
 
-(defconstant +subnode-operator+ :subnode
-  "Special operator for accessing sub-nodes of a node.")
+(defstruct (outer-node-expression (:include special-expression))
+  "Represents a reference to node defined in an outer scope.")
+
+
+(defconstant +subnode-operator+ (id-symbol "."))
+
+(defstruct (subnode-expression (:include special-expression))
+  "Represents a reference to a subnode of a node.")
 
 
 ;;; Meta-nodes
 
-(defconstant +def-operator+ :define
-  "Operator for defining meta-nodes.")
+(defconstant +define-meta-node-operator+ (id-symbol ":"))
 
-(defconstant +extern-operator+ (id-symbol "/external")
-  "Special operator for adding stubs for meta-nodes which are defined
-   externally.")
+(defstruct (define-meta-node-expression (:include special-expression))
+  "Represents a meta-node definition.")
+
+
+(defconstant +external-meta-node-operator+ (id-symbol "/external"))
+
+(defstruct (external-meta-node-expression (:include special-expression))
+  "Represents an external meta-node declaration.")
+
 
 (defconstant +self-node+ (id-symbol "self")
-  "Special node which references the current meta-node.")
+  "Identifier of the special node which references the current
+   meta-node.")
 
 
 ;;; Attributes
 
-(defconstant +attribute-operator+ (id-symbol "/attribute")
-  "Special operator for setting node attributes.")
+(defconstant +attribute-operator+ (id-symbol "/attribute"))
 
-(defconstant +attribute-processor-operator+ (id-symbol "/attribute-processor")
-  "Special operator for setting a meta-node to process a particular
-   attribute.")
+(defstruct (attribute-expression (:include special-expression))
+  "Represents a node attribute declaration.")
+
+
+(defconstant +attribute-processor-operator+ (id-symbol "/attribute-processor"))
+
+(defstruct (attribute-processor-expression (:include special-expression))
+  "Represents an attribute processor declaration.")
 
 
 ;;; Modules
 
-(defconstant +module-operator+ (id-symbol "/module")
-  "Operator which sets the current module.")
+(defconstant +module-operator+ (id-symbol "/module"))
 
-(defconstant +import-operator+ (id-symbol "/import")
-  "Operator for importing nodes, from another module, into the current
-   module.")
-
-(defconstant +alias-operator+ (id-symbol "/use-as")
-  "Operator for adding an alias for a module to the current module.")
-
-(defconstant +use-operator+ (id-symbol "/use")
-  "Operator for using a module, using its name as an alias, from the
-   current module.")
-
-(defconstant +export-operator+ (id-symbol "/export")
-  "Operator for adding a node to the public nodes table of the current
-   module.")
-
-(defconstant +in-module-operator+ (id-symbol "/in")
-  "Operator for referencing a node in another module which does not
-   have an alias in the current module.")
+(defstruct (module-expression (:include special-expression))
+  "Represents a module declaration.")
 
 
-(defconstant +special-operators+
-  (list +bind-operator+
-        +context-operator+
+(defconstant +import-operator+ (id-symbol "/import"))
 
-        +def-operator+
-        +extern-operator+
-        +op-operator+
-        +outer-operator+
-        +subnode-operator+
-        +attribute-operator+
-        +module-operator+
-        +import-operator+
-        +use-operator+
-        +export-operator+
-        +in-module-operator+
-        +list-operator+
+(defstruct (import-expression (:include special-expression))
+  "Represents an import node declaration.")
 
-        +quote-operator+)
 
-  "List of all special operators")
+(defconstant +alias-operator+ (id-symbol "/use-as"))
+
+(defstruct (alias-expression (:include special-expression))
+  "Represents an alias module declaration.")
+
+
+(defconstant +export-operator+ (id-symbol "/export"))
+
+(defstruct (export-expression (:include special-expression))
+  "Represents an export node declaration.")
+
+
+(defconstant +in-module-operator+ (id-symbol "/in"))
+
+(defstruct (in-module-expression (:include special-expression))
+  "Represents a reference to a node in another module.")
 
 
 ;;; Infix Operators

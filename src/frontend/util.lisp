@@ -172,6 +172,10 @@
     ((atom-expression- identifier)
      identifier)
 
+    ((node-list-expression- operands)
+     (list* +list-operator+
+            (map #'unwrap-declaration operands)))
+
     ((functor-expression- operator operands)
      (list* (unwrap-declaration operator)
             (map #'unwrap-declaration operands)))

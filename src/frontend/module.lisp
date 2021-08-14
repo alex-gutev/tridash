@@ -191,9 +191,6 @@
 (defun add-meta-node (name node module)
   "Adds the `META-NODE' NODE with name NAME to MODULE."
 
-  (when (memberp name +special-operators+)
-    (error 'redefine-special-operator-error :name name))
-
   (add-node name node module))
 
 (defun add-external-meta-node (name module &key operands)

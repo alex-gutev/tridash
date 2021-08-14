@@ -237,13 +237,13 @@
     (let ((table (finish-build)))
       (test-not-nodes table
                       '("parse" "in1")
-                      '(:subnode "p" "value")
-                      '("not" (:subnode "p" "fail"))
-                      '(:bind (:subnode "p" "value") "a")
-                      '(:bind "in2" "b"))
+                      '("." "p" "value")
+                      '("not" ("." "p" "fail"))
+                      '("->" ("." "p" "value") "a")
+                      '("->" "in2" "b"))
 
       (with-nodes ((in1 "in1") (in2 "in2") (p "p")
-                   (p.fail (:subnode "p" "fail"))
+                   (p.fail ("." "p" "fail"))
                    (a "a") (b "b")
 
                    (parse "parse") (not "not"))
@@ -435,6 +435,7 @@
   "Test coalescing of cross-module bindings."
 
   (with-module-table modules
+    (build-core-module)
     (build "/module(m1)"
            "/import(builtin)"
 
@@ -443,6 +444,7 @@
 
     (build "/module(m2)"
            "/import(builtin)"
+           "/import(core, /use)"
            "/use(m1)"
 
            "m1.b -> a; b -> cc; cc -> d"
@@ -464,6 +466,7 @@
   "Test coalescing of cross-module bindings of functor nodes."
 
   (with-module-table modules
+    (build-core-module)
     (build "/module(m1)"
            "/import(builtin)"
 
@@ -472,6 +475,7 @@
 
     (build "/module(m2)"
            "/import(builtin)"
+           "/import(core, /use)"
            "/use(m1)"
 
            "/external(+, x, y); /operator(+, 50, left)"
@@ -742,89 +746,89 @@
 
 ;;; Node States
 
-(test node-state-from-any-state
-  "Test coalescing of nodes with states, with from any state transition."
+;; (test node-state-from-any-state
+;;   "Test coalescing of nodes with states, with from any state transition."
 
-  (with-module-table modules
-    (build-core-module)
-    (build "/import(core, not)"
-           "not on -> /state(on, toggle)"
-           "start -> on"
+;;   (with-module-table modules
+;;     (build-core-module)
+;;     (build "/import(core, not)"
+;;            "not on -> /state(on, toggle)"
+;;            "start -> on"
 
-           "the-state -> /state(on)"
+;;            "the-state -> /state(on)"
 
-           "/attribute(start, input, 1)"
-           "/attribute(the-state, input, 1)")
+;;            "/attribute(start, input, 1)"
+;;            "/attribute(the-state, input, 1)")
 
-    (with-nodes ((on "on")
-                 (toggle-state-on ("/state" "on" "toggle"))
-                 (the-state "the-state")
-                 (start "start")
+;;     (with-nodes ((on "on")
+;;                  (toggle-state-on ("/state" "on" "toggle"))
+;;                  (the-state "the-state")
+;;                  (start "start")
 
-                 (if "if") (not "not"))
+;;                  (if "if") (not "not"))
 
-        (finish-build modules)
+;;         (finish-build modules)
 
-      (let ((equal (get :symbol-equal tridash.frontend::*core-meta-nodes*))
-            (previous (get :previous-value tridash.frontend::*core-meta-nodes*)))
+;;       (let ((equal (get :symbol-equal tridash.frontend::*core-meta-nodes*))
+;;             (previous (get :previous-value tridash.frontend::*core-meta-nodes*)))
 
-        (has-value-function (the-state (toggle toggle-state-on))
-            on
+;;         (has-value-function (the-state (toggle toggle-state-on))
+;;             on
 
-          `(,if (,equal ,the-state ,(id-symbol "toggle"))
-                (,previous ,(ir:node-ref toggle-state-on))
-                (,previous ,(ir:node-ref on))))
+;;           `(,if (,equal ,the-state ,(id-symbol "toggle"))
+;;                 (,previous ,(ir:node-ref toggle-state-on))
+;;                 (,previous ,(ir:node-ref on))))
 
-        (test-binding start on)
-
-
-        (has-value-function (on)
-            toggle-state-on
-          `(,not ,on))))))
-
-(test node-state-specific-state
-  "Test coalescing of nodes with specific state transition."
-
-  (with-module-table modules
-    (build-core-module)
-    (build "/import(core, not)"
-           "not on -> /state(on, default, toggle)"
-           "start -> on"
-
-           "the-state -> /state(on)"
-
-           "/attribute(start, input, 1)"
-           "/attribute(the-state, input, 1)")
-
-    (with-nodes ((on "on")
-                 (state-on ("/state" "on"))
-                 (toggle-state-on ("/state" "on" "default" "toggle"))
-                 (the-state "the-state")
-                 (start "start")
-
-                 (if "if") (not "not"))
-
-        (finish-build modules)
-
-      (let ((equal (get :symbol-equal tridash.frontend::*core-meta-nodes*))
-            (previous (get :previous-value tridash.frontend::*core-meta-nodes*)))
-
-        (has-value-function ((state state-on) (toggle toggle-state-on))
-            on
-
-          `(,if
-            (,if (,equal (,previous ,(ir:node-ref state-on)) ,(id-symbol "default"))
-                 (,equal ,state ,(id-symbol "toggle"))
-                 ,(ir:node-ref *node-false*))
-
-            (,previous ,(ir:node-ref toggle-state-on))
-            (,previous ,(ir:node-ref on))))
-
-        (test-binding start on)
+;;         (test-binding start on)
 
 
-        (has-value-function (on)
-            toggle-state-on
-          `(,not ,on))
+;;         (has-value-function (on)
+;;             toggle-state-on
+;;           `(,not ,on))))))
 
-        (test-binding the-state state-on)))))
+;; (test node-state-specific-state
+;;   "Test coalescing of nodes with specific state transition."
+
+;;   (with-module-table modules
+;;     (build-core-module)
+;;     (build "/import(core, not)"
+;;            "not on -> /state(on, default, toggle)"
+;;            "start -> on"
+
+;;            "the-state -> /state(on)"
+
+;;            "/attribute(start, input, 1)"
+;;            "/attribute(the-state, input, 1)")
+
+;;     (with-nodes ((on "on")
+;;                  (state-on ("/state" "on"))
+;;                  (toggle-state-on ("/state" "on" "default" "toggle"))
+;;                  (the-state "the-state")
+;;                  (start "start")
+
+;;                  (if "if") (not "not"))
+
+;;         (finish-build modules)
+
+;;       (let ((equal (get :symbol-equal tridash.frontend::*core-meta-nodes*))
+;;             (previous (get :previous-value tridash.frontend::*core-meta-nodes*)))
+
+;;         (has-value-function ((state state-on) (toggle toggle-state-on))
+;;             on
+
+;;           `(,if
+;;             (,if (,equal (,previous ,(ir:node-ref state-on)) ,(id-symbol "default"))
+;;                  (,equal ,state ,(id-symbol "toggle"))
+;;                  ,(ir:node-ref *node-false*))
+
+;;             (,previous ,(ir:node-ref toggle-state-on))
+;;             (,previous ,(ir:node-ref on))))
+
+;;         (test-binding start on)
+
+
+;;         (has-value-function (on)
+;;             toggle-state-on
+;;           `(,not ,on))
+
+;;         (test-binding the-state state-on)))))

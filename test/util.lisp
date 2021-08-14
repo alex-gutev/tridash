@@ -208,15 +208,27 @@
    EXPECTED."
 
   (match* (got expected)
-    (((or (atom-expression- (identifier got))
-          (and (type symbol) got))
+    (((cons got-car got-cdr)
+      (cons exp-car exp-cdr))
+
+     (and (decl= exp-car got-car)
+          (decl= exp-cdr got-cdr)))
+
+    ((nil nil) t)
+
+    (((atom-expression- (identifier got))
 
       (and (type symbol) expected))
 
      (= got expected))
 
-    (((or (functor-expression- (operator got-op) (operands got-args))
-          (list* got-op got-args))
+    (((node-list-expression- (operands got-ops))
+      (list* (eql (id-symbol +list-operator+)) exp-ops))
+
+     (and (length= got-ops exp-ops)
+          (every #'decl= exp-ops got-ops)))
+
+    (((functor-expression- (operator got-op) (operands got-args))
 
       (list* exp-op exp-args))
 
@@ -224,7 +236,7 @@
           (length= got-args exp-args)
           (every #'decl= exp-args got-args)))
 
-    (((or (literal-value- (value got)) got)
+    (((literal-value- (value got))
       expected)
 
      (= got expected))))
@@ -242,6 +254,7 @@
 (defun build-core-module (&optional (modules *global-module-table*))
   "Builds the `core` module into the `MODULE-TABLE' MODULES."
 
+  (build-source-file #p"./modules/core/builtin.trd" modules)
   (build-source-file #p"./modules/core/operators.trd" modules)
   (build-source-file #p"./modules/core/external.trd" modules)
   (build-source-file #p"./modules/core/primitives.trd" modules)

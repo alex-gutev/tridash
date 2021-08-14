@@ -71,7 +71,7 @@ match*(place, arg) : {
         )
     }
 
-    list*(' /prog, map(parse-pattern, patterns))
+    list*(& /prog, map(parse-pattern, patterns))
 }
 
 /attribute(match*, macro, True)
@@ -113,7 +113,7 @@ match(place, arg) : {
     make-condition(case, else) : {
         condition <- case.pattern.condition
 
-        list!(' if, condition, case.value, else) -> @ self
+        list!(& if, condition, case.value, else) -> @ self
         case.value -> @ self
     }
 
@@ -129,7 +129,7 @@ match(place, arg) : {
 
     bindings <- foldl(append, map(pattern-binding, patterns))
 
-    list*(' /prog, append(bindings, list(condition)))
+    list*(& /prog, append(bindings, list(condition)))
 }
 
 /attribute(match, macro, True)

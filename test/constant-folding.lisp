@@ -173,6 +173,7 @@
   "Test constant folding across modules."
 
   (with-module-table modules
+    (build-core-module)
     (build "/module(m1)"
            "/import(builtin)"
            "1 -> constant"
@@ -180,6 +181,7 @@
 
            "/module(m2)"
            "/import(builtin)"
+           "/import(core, /use)"
            "/use(m1)"
            "/external(add, x, y)"
 

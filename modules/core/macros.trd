@@ -96,40 +96,27 @@
 /attribute(!, macro, 1)
 
 
-### Node States
+### Modules
 
-## References the state with identifier `state` of `node`.
+## Shorthand for /use-as with a pseudo-node identifier that is
+## identical to the module identifier.
 ##
-## Bindings, involving the explicit state as the target, will only
-## take effect when the state of `node` changes to `state`.
+## Create a pseudo-node for each module in `modules`, with the same
+## identifier as the module identifier.
 ##
-## `state` may also be a functor of the form `=>(from-state,
-## to-state)` (or `from-state => to-state` since `=>` is registered as
-## an infix operator) in which case the bindings only take effect when
-## the state of `node` changes from the state with identifier
-## `from-state` to the state with identifier `to-state`.
-##
-## The state of `node` is controlled by binding to the node
-## `/state(node)`.
-##
-## `node`  : The node
-## `state` : The state
+## modules: List of modules.
 
-::(node, state) : {
-    state -> list(' =>, from, to)
+/use(.. modules) : {
+    make-use-as(module) :
+        list(& /use-as, module, module)
 
-    list!(' /state, node, from, to) -> @ self
-    list(' /state, node, state) -> @ self
+    clauses <- map(make-use-as, modules)
+    list*(& /prog, clauses)
 }
+/attribute(/use, macro, 1)
 
-=>(.. args) :
-    fail("`=>` may only appear on the right hand side of the `::` operator.")
-
-/attribute(::, macro, 1)
-/attribute(=>, macro, 1)
 
 
 ### Export Declarations
 
-/export(case, !)
-/export(::, =>)
+/export(case, !, /use)

@@ -69,6 +69,7 @@
   "Test checking for ambiguous contexts in atom nodes across modules."
 
   (with-module-table modules
+    (build-core-module)
     (build "/module(m1)"
            "/import(builtin)"
            "a -> d"
@@ -76,6 +77,7 @@
 
            "/module(m2)"
            "/import(builtin)"
+           "/import(core, /use)"
            "/use(m1)"
 
            "m1.a -> b; b -> cc; cc -> m1.d"
@@ -87,6 +89,7 @@
   "Test checking for ambiguous contexts in functor nodes."
 
   (with-module-table modules
+    (build-core-module)
     (build "/external(add, x, y)"
            "add(a, b) -> d"
            "a -> cc; cc -> d"
@@ -99,13 +102,17 @@
   "Test checking for ambiguous contexts in functor nodes across modules."
 
   (with-module-table modules
+    (build-core-module)
+
     (build "/module(m1)"
+           "/import(builtin)"
            "a; b;"
            "/attribute(a, input, 1)"
            "/attribute(b, input, 1)"
 
            "/module(m2)"
            "/import(builtin)"
+           "/import(core, /use)"
            "/use(m1)"
 
            "/external(add, x, y)"

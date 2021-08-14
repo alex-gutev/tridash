@@ -761,18 +761,6 @@
 
 
 
-;;; Macro-Writing
-
-(defmethod process-functor ((operator (eql +quote-operator+)) args module)
-  "Returns the raw argument unprocessed."
-
-  (declare (ignore module))
-
-  (match-syntax operator args
-    ((list thing)
-     (unwrap-declaration thing))))
-
-
 ;;; Macro Attributes
 
 (defmethod process-attribute (node (attribute (eql (id-symbol "MACRO"))) value (module t))
@@ -786,4 +774,4 @@
     value))
 
 (defmethod process-attribute ((node t) (attribute (eql (id-symbol "TARGET-TRANSFORM"))) value module)
-  (process-operator-node value module))
+  (process-operator-node (wrap-expression value) module))

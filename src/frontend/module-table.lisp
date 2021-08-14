@@ -73,7 +73,9 @@
    object. If MODULE is not present in the MODULES a new empty
    `MODULE' is created."
 
-  (ensure-get module (modules modules) (make-instance 'module :name module)))
+  (ensure-get module (modules modules)
+    (aprog1 (make-instance 'module :name module)
+      (import-builtin-nodes modules it))))
 
 (defun get-module (module &optional (modules *global-module-table*))
   "Returns the `MODULE' with identifier MODULE in MODULES. If there is
@@ -116,17 +118,42 @@
   "Builtin Meta-Node Specifications")
 
 (defconstant +core-macro-nodes+
-  `((-> ,+bind-operator+ 10 :right)
-    (\: ,+def-operator+ 5 :right)
-    (|.| ,+subnode-operator+ 1000 :left)
-    (& ,+ref-operator+)
-    (|..| ,+outer-operator+)
-    (prog ,+list-operator+))
+  `((,+bind-operator+ make-bind-expression 10 :right)
+    (,+quote-operator+ make-quote-expression)
+    (,+ref-operator+ make-ref-expression)
+    (,+register-operator-operator+ make-register-operator-expression)
+    (,+context-operator+ make-context-expression)
+    (,+outer-node-operator+ make-outer-node-expression)
+    (,+subnode-operator+ make-subnode-expression 1000 :left)
+
+    (,+define-meta-node-operator+ make-define-meta-node-expression 5 :right)
+    (,+external-meta-node-operator+ make-external-meta-node-expression)
+
+    (,+attribute-operator+ make-attribute-expression)
+    (,+attribute-processor-operator+ make-attribute-processor-expression)
+
+    (,+module-operator+ make-module-expression)
+    (,+import-operator+ make-import-expression)
+    (,+alias-operator+ make-alias-expression)
+    (,+export-operator+ make-export-expression)
+    (,+in-module-operator+ make-in-module-expression)
+
+    (,+list-operator+ make-node-list-expression))
 
   "List of core macro nodes where each a element is a list with the
    first item being the node's identifier and the second item being
-   the operator to which the macro node expands to.")
+   the name of the function implementing the macro.")
 
+(defconstant +imported-core-nodes+
+  (list +module-operator+
+        +import-operator+
+        +alias-operator+
+        +export-operator+
+        +in-module-operator+
+        +list-operator+)
+
+  "List of operators (from the builtin module) which should be
+   imported automatically into every module.")
 
 (defparameter *core-meta-nodes*
   (external-meta-nodes +core-meta-nodes+)
@@ -188,8 +215,8 @@
   "Adds the core macro nodes in +CORE-MACRO-NODES+ to the module
    BUILTIN."
 
-  (doseq ((node operator &rest op-info) +core-macro-nodes+)
-    (let ((meta-node (macro-node node nil operator)))
+  (doseq ((node fn &rest op-info) +core-macro-nodes+)
+    (let ((meta-node (macro-node node nil fn)))
       (with-slots (name) meta-node
         (add-meta-node name meta-node builtin)
         (export-node name builtin)
@@ -213,6 +240,10 @@
 
   (destructuring-bind (precedence &optional (assoc :left)) op-info
     (add-operator position name precedence assoc (operator-nodes builtin))))
+
+(defun make-node-list-expression (&key operator operands)
+  (declare (ignore operator))
+  (node-list-expression operands))
 
 (defun chr-macro (operator operands module)
   "Character macro-node function. Converts its argument to a literal
@@ -240,6 +271,16 @@
         (otherwise
          (error 'tridash-fail :fail-type (get :type-error *core-meta-nodes*)))))))
 
+(defun import-builtin-nodes (module-table module)
+  "Import the builtin nodes, in the list +IMPORTED-CORE-NODES+ into
+   MODULE."
+
+  (with-slots (modules) module-table
+    (when-let (builtin (get (id-symbol "builtin") modules))
+      (loop
+         for op in +imported-core-nodes+
+         do
+           (import-node op builtin module)))))
 
 ;;;; Creating Core Expressions
 
@@ -260,3 +301,26 @@
 (defun catch-expression (try catch &optional (test :none))
   (ir:functor (get :catch *core-meta-nodes*)
               (list try catch test)))
+
+;;;; Reference Previous Value of Node
+
+(defun previous-value (node &optional (coalescablep nil))
+  "Generate an expression which references the value of node prior to
+   the latest node value update.
+
+   If COALESCABLEP is T, NODE may be coalesced if it does not
+   reference its own previous value, otherwise it may not be
+   coalesced."
+
+  (if coalescablep
+      (setf (attribute :non-coalescable-self-reference node) t))
+
+  ;; Set these two attributes as an actual runtime node object is
+  ;; required to be able to reference its previous value.
+  (setf (attribute :coalescable node) nil)
+  (setf (attribute :removable node) nil)
+
+  (->> node
+       ir:node-ref
+       list
+       (ir:functor (get :previous-value *core-meta-nodes*))))

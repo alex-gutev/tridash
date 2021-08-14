@@ -87,7 +87,7 @@ make-pattern-declarations(pattern) : {
 
     bindings <- map(contextualize-binding, pattern.bindings)
 
-    list*(& prog, conditionalize-bindings(pattern.condition, bindings))
+    list*(& /prog, conditionalize-bindings(pattern.condition, bindings))
 }
 
 ## Creates the `Pattern` object for the pattern declaration `pattern`

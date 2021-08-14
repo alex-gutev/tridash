@@ -34,7 +34,6 @@
 ### Language Primitives
 
 /module(core)
-/import(builtin)
 
 ### Quoting
 
@@ -152,7 +151,7 @@ when(.. args) :
 
 # Export operators imported from the `builtin` module.
 
-/export(:, ., &, c, .., prog)
+/export(c)
 /export(if, catch)
 /export(True, False)
 /export(member)

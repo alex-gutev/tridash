@@ -57,6 +57,7 @@
                    (:file "strictness")
                    (:file "util")
                    (:file "compiler")
+                   (:file "special-operators")
                    (:file "macros")
                    (:file "macro-runtime")
                    (:file "coalescer")))

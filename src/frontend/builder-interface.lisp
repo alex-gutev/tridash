@@ -92,12 +92,6 @@
     not in MODULE it is added to the outer node references of
     *META-NODE*."))
 
-(defgeneric process-functor (operator operands module)
-  (:documentation
-   "Processes a functor node declaration. Creates the node(s)
-    specified by the declaration and adds them to MODULE. Returns the
-    node created, if any."))
-
 ;;;; Processing Attributes
 
 (defgeneric process-attribute (node attribute value module)

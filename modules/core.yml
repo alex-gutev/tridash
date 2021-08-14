@@ -33,6 +33,7 @@
 
 
 sources:
+  - core/builtin.trd
   - core/operators.trd
   - core/external.trd
   - core/primitives.trd

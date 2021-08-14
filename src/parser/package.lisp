@@ -57,6 +57,10 @@
    :functor-expression-operands
    :functor-expression-p
 
+   :node-list-expression
+   :node-list-expression-operands
+   :node-list-expression-p
+
    ;; Parser
 
    :make-parser

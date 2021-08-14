@@ -210,6 +210,7 @@
 
   (with-module-table modules
     (build "/module(m1)"
+           "/import(builtin)"
 
            "/external(add, x, y)"
            "/external(reverse-add, sum)"
@@ -452,7 +453,7 @@
     (build "/context(a, c1).field -> out")
 
     (with-nodes ((a "a") (out "out")
-                 (a.field (:subnode "a" "field")))
+                 (a.field ("." "a" "field")))
         modules
 
       (test-simple-binding a.field out)
@@ -476,7 +477,7 @@
     (build "in -> /context(a, c1).field")
 
     (with-nodes ((in "in") (a "a")
-                 (a.field (:subnode "a" "field")))
+                 (a.field ("." "a" "field")))
         modules
 
       (test-simple-binding in a.field)
@@ -626,15 +627,14 @@
 (test meta-node-definition-error-redefine-special-operator
   "Test error raised on attempts to redefine a special operator."
 
-  (test-error redefine-special-operator-error "/context(x) : x")
-  (test-error redefine-special-operator-error "/external(x) : x")
-  (test-error redefine-special-operator-error "/operator(a, b) : f(b, a)")
-  (test-error redefine-special-operator-error "/attribute(m, n) : f(m,n)")
-  (test-error redefine-special-operator-error "/module(m) : m")
-  (test-error redefine-special-operator-error "/import(x) : x")
-  (test-error redefine-special-operator-error "/use(z) : z")
-  (test-error redefine-special-operator-error "/export(y) : h(y)")
-  (test-error redefine-special-operator-error "/in(x, y) : add(x, y)"))
+  (test-error node-exists-error "/context(x) : x")
+  (test-error node-exists-error "/external(x) : x")
+  (test-error node-exists-error "/operator(a, b) : f(b, a)")
+  (test-error node-exists-error "/attribute(m, n) : f(m,n)")
+  (test-error node-exists-error "/module(m) : m")
+  (test-error node-exists-error "/import(x) : x")
+  (test-error node-exists-error "/export(y) : h(y)")
+  (test-error node-exists-error "/in(x, y) : add(x, y)"))
 
 (test meta-node-definition-error-node-exists
   "Test error raised on attempt to redefine node as meta-node."
@@ -715,15 +715,14 @@
 (test external-meta-node-definition-error-redefine-special-operator
   "Test error raised on attempts to redefine a special operator with external meta-node."
 
-  (test-error redefine-special-operator-error "/external(/context)")
-  (test-error redefine-special-operator-error "/external(/external)")
-  (test-error redefine-special-operator-error "/external(/operator)")
-  (test-error redefine-special-operator-error "/external(/attribute)")
-  (test-error redefine-special-operator-error "/external(/module)")
-  (test-error redefine-special-operator-error "/external(/import)")
-  (test-error redefine-special-operator-error "/external(/use)")
-  (test-error redefine-special-operator-error "/external(/export)")
-  (test-error redefine-special-operator-error "/external(/in)"))
+  (test-error node-exists-error "/external(/context)")
+  (test-error node-exists-error "/external(/external)")
+  (test-error node-exists-error "/external(/operator)")
+  (test-error node-exists-error "/external(/attribute)")
+  (test-error node-exists-error "/external(/module)")
+  (test-error node-exists-error "/external(/import)")
+  (test-error node-exists-error "/external(/export)")
+  (test-error node-exists-error "/external(/in)"))
 
 (test external-meta-node-error-node-exists
   "Test error raised on attempt to redefine node as external meta-node."
@@ -1179,7 +1178,7 @@
       (build "x -> a.first; y -> a.last; a.last -> y")
 
       (with-nodes ((x "x") (y "y") (a "a")
-                   (a.first (:subnode "a" "first")) (a.last (:subnode "a" "last")))
+                   (a.first ("." "a" "first")) (a.last ("." "a" "last")))
           modules
 
         (test-object-fn a (list "first" a.first) (list "last" a.last))
@@ -1201,7 +1200,7 @@
       (with-nodes ((person-fn "Person")
                    (first "first") (last "last")
                    (person ("Person" "first" "last"))
-                   (person.first (:subnode ("Person" "first" "last") "first"))
+                   (person.first ("." ("Person" "first" "last") "first"))
                    (name "name"))
           modules
 
@@ -1214,20 +1213,21 @@
 
   (with-subnode-test
     (with-module-table modules
+      (build-core-module modules)
       (build "/module(mod1)"
              "/import(builtin)"
              "x -> a.first"
 
              "/module(mod2)"
-             "/import(builtin)"
+             "/import(core)"
              "/use(mod1)"
              "y -> mod1.a.second")
 
       (with-modules ((mod1 "mod1") (mod2 "mod2")) modules
         (with-nodes ((a "a")
                      (x "x")
-                     (a.first (:subnode "a" "first"))
-                     (a.second (:subnode "a" "second")))
+                     (a.first ("." "a" "first"))
+                     (a.second ("." "a" "second")))
             mod1
 
           (with-nodes ((y "y")) mod2
@@ -1241,77 +1241,77 @@
 
 ;;; Node States
 
-(test node-state-any-state
-  "Test node state bindings from any state."
+;; (test node-state-any-state
+;;   "Test node state bindings from any state."
 
-  (with-module-table modules
-    (build "/external(not, x)"
-           "not(on) -> /state(on, toggle)"
-           "0 -> on"
+;;   (with-module-table modules
+;;     (build "/external(not, x)"
+;;            "not(on) -> /state(on, toggle)"
+;;            "0 -> on"
 
-           "the-state -> /state(on)")
+;;            "the-state -> /state(on)")
 
-    (with-nodes ((on "on")
-                 (state-on ("/state" "on"))
-                 (toggle-state-on ("/state" "on" "toggle"))
-                 (not-on ("not" "on"))
-                 (the-state "the-state")
-                 (if "if"))
-        modules
+;;     (with-nodes ((on "on")
+;;                  (state-on ("/state" "on"))
+;;                  (toggle-state-on ("/state" "on" "toggle"))
+;;                  (not-on ("not" "on"))
+;;                  (the-state "the-state")
+;;                  (if "if"))
+;;         modules
 
-      (let ((equal (get :symbol-equal tridash.frontend::*core-meta-nodes*))
-            (previous (get :previous-value tridash.frontend::*core-meta-nodes*)))
+;;       (let ((equal (get :symbol-equal tridash.frontend::*core-meta-nodes*))
+;;             (previous (get :previous-value tridash.frontend::*core-meta-nodes*)))
 
-        (has-value-function (state-on (toggle toggle-state-on))
-            on
+;;         (has-value-function (state-on (toggle toggle-state-on))
+;;             on
 
-          `(,if (,equal ,state-on ,(id-symbol "toggle"))
-                (,previous ,(ir:node-ref toggle-state-on))
-                (,previous ,(ir:node-ref on))))
+;;           `(,if (,equal ,state-on ,(id-symbol "toggle"))
+;;                 (,previous ,(ir:node-ref toggle-state-on))
+;;                 (,previous ,(ir:node-ref on))))
 
-        (test-value-function on :init 0)
+;;         (test-value-function on :init 0)
 
-        (test-binding not-on toggle-state-on)
-        (test-binding the-state state-on)))))
+;;         (test-binding not-on toggle-state-on)
+;;         (test-binding the-state state-on)))))
 
-(test node-state-specific-state
-  "Test node state bindings with specific state transition."
+;; (test node-state-specific-state
+;;   "Test node state bindings with specific state transition."
 
-  (with-module-table modules
-    (build "/external(not, x)"
-           "not(on) -> /state(on, default, toggle)"
-           "False -> on"
+;;   (with-module-table modules
+;;     (build "/external(not, x)"
+;;            "not(on) -> /state(on, default, toggle)"
+;;            "False -> on"
 
-           "the-state -> /state(on)")
+;;            "the-state -> /state(on)")
 
-    (with-nodes ((on "on")
-                 (state-on ("/state" "on"))
-                 (toggle-state-on ("/state" "on" "default" "toggle"))
-                 (not-on ("not" "on"))
-                 (the-state "the-state")
-                 (if "if")
+;;     (with-nodes ((on "on")
+;;                  (state-on ("/state" "on"))
+;;                  (toggle-state-on ("/state" "on" "default" "toggle"))
+;;                  (not-on ("not" "on"))
+;;                  (the-state "the-state")
+;;                  (if "if")
 
-                 (false "False"))
-        modules
+;;                  (false "False"))
+;;         modules
 
-      (let ((equal (get :symbol-equal tridash.frontend::*core-meta-nodes*))
-            (previous (get :previous-value tridash.frontend::*core-meta-nodes*)))
+;;       (let ((equal (get :symbol-equal tridash.frontend::*core-meta-nodes*))
+;;             (previous (get :previous-value tridash.frontend::*core-meta-nodes*)))
 
-        (has-value-function ((state state-on) (toggle toggle-state-on))
-            on
+;;         (has-value-function ((state state-on) (toggle toggle-state-on))
+;;             on
 
-          `(,if
-            (,if (,equal (,previous ,(ir:node-ref state-on)) ,(id-symbol "default"))
-                 (,equal ,state ,(id-symbol "toggle"))
-                 ,(ir:node-ref *node-false*))
+;;           `(,if
+;;             (,if (,equal (,previous ,(ir:node-ref state-on)) ,(id-symbol "default"))
+;;                  (,equal ,state ,(id-symbol "toggle"))
+;;                  ,(ir:node-ref *node-false*))
 
-            (,previous ,(ir:node-ref toggle-state-on))
-            (,previous ,(ir:node-ref on))))
+;;             (,previous ,(ir:node-ref toggle-state-on))
+;;             (,previous ,(ir:node-ref on))))
 
-        (test-simple-binding false on)
+;;         (test-simple-binding false on)
 
-        (test-binding not-on toggle-state-on)
-        (test-binding the-state state-on)))))
+;;         (test-binding not-on toggle-state-on)
+;;         (test-binding the-state state-on)))))
 
 
 ;;; Modules
@@ -1345,8 +1345,9 @@
 
   (with-modules-test
     (with-module-nodes
+      (build-core-module)
       (build "/module(mod2)"
-             "/import(builtin)"
+             "/import(core)"
              "/use(my-mod)"
 
              "my-mod.a -> a"
@@ -1470,6 +1471,7 @@
   "Test semantic error conditions when using modules."
 
   (with-module-table modules
+    (build-core-module modules)
     (build "x;y"
            "/module(my-mod); a; b"
            "/module(my-mod); /import(builtin); +(x,y) : add(x,y); /operator(+, 50, left)"
@@ -1477,6 +1479,7 @@
 
     (build "/module(mod2)"
            "/import(builtin)"
+           "/import(core, /use)"
            "/use(my-mod)"
 
            "my-mod.a -> a"
@@ -1514,7 +1517,7 @@
 (test non-existent-module-errors
   "Test that using non-existent modules signals an error."
 
-  (test-error non-existent-module-error "/use(no-such-module)")
+  (test-error non-existent-module-error "/import(core); /use(no-such-module)")
   (test-error non-existent-module-error "/use-as(no-such-module, m)")
   (test-error non-existent-module-error "/import(no-such-module)")
   (test-error non-existent-module-error "/import(no-such-module, node)")
@@ -1535,8 +1538,8 @@
 (test module-error-syntax-/use
   "Test syntax errors with `/use` operator."
 
-  (test-error invalid-arguments-error "/use(1,2,3)")
-  (test-top-level-only "/use(m1)" "/module(m1)" "/module(m2); /import(builtin)"))
+  (test-error invalid-arguments-error "/import(core, /use); /use(1,2,3)")
+  (test-top-level-only "{ /import(core, /use); /use(m1) }" "/module(m1)" "/module(m2); /import(builtin)"))
 
 (test module-error-syntax-/use-as
   "Test syntax errors with `/user-as` operator."
@@ -1580,6 +1583,8 @@
   (test-error module-node-reference-error
               "/module(m1)"
               "/module(m2)"
+              "/import(builtin)"
+              "/import(core, /use)"
               "/use(m1)"
               "/external(add, x, y)"
               "add(m1, x)")
@@ -1588,11 +1593,13 @@
               "/module(m1)"
               "/module(m2)"
               "/import(builtin)"
+              "/import(core, /use)"
               "/use(m1)"
               "m1 -> x")
   (test-error target-node-error
               "/module(m1)"
               "/module(m2)"
               "/import(builtin)"
+              "/import(core, /use)"
               "/use(m1)"
               "x -> m1"))

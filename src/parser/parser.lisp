@@ -47,7 +47,7 @@
   location)
 
 (defstruct (atom-expression (:include node-expression)
-                      (:constructor atom-expression (identifier &key location)))
+                            (:constructor atom-expression (identifier &key location)))
 
   "Represents an atom node expression.
 
@@ -56,14 +56,14 @@
   identifier)
 
 (defstruct (literal-value (:include node-expression)
-                         (:constructor literal-value (value &key location)))
+                          (:constructor literal-value (value &key location)))
 
   "Represents the literal value expression with value VALUE."
 
   value)
 
 (defstruct (functor-expression (:include node-expression)
-                         (:constructor functor-expression (operator operands &key location)))
+                               (:constructor functor-expression (operator operands &key location)))
 
   "Represents a functor node expression with operator OPERATOR and
    operands OPERANDS."
@@ -71,6 +71,10 @@
   operator
   operands)
 
+(defstruct (node-list-expression (:include functor-expression)
+                                 (:constructor node-list-expression (operands &key location)))
+
+  "Represents a grouped list of nodes within braces { ... }.")
 
 ;;;; Adding operators
 
@@ -448,9 +452,7 @@
   (let ((*list-delimiter* delimiter)
         (pos (lexer-position lex)))
 
-    (functor-expression
-     +list-operator+
-
+    (node-list-expression
      (iter
        (for type = (has-input? lex))
        (until (= type delimiter))

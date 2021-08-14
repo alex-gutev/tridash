@@ -143,16 +143,19 @@
    defs))
 
 
-(defun macro-node (name operands operator)
-  "Creates an `EXTERNAL-META-NODE', with identifier NAME, which has a
-   macro function that expands to a functor declaration with operator
-   OPERATOR."
+(defun macro-node (name operands fn)
+  "Create an `EXTERNAL-META-NODE' to function as a macro node.
+
+   NAME is the name of the meta-node to create.
+
+   OPERANDS is the operand specification.
+
+   FN is a function implementing the macro expansion."
 
   (aprog1 (external-meta-node name operands)
     (setf (node-macro-function it)
           (lambda (op operands module)
-            (declare (ignore op))
-            (-> (cons operator operands)
+            (-> (funcall fn :operator op :operands operands)
                 (process-macro-expansion module))))))
 
 (defun process-macro-expansion (declaration module)
