@@ -566,6 +566,23 @@
 
 ;;; Meta-Node Definitions
 
+(defun operands= (expected got)
+  (destructuring-bind (&optional required optional rest)
+      expected
+
+    (and (= (required got) required)
+         (= (optional got) optional)
+         (= (rest-argument got) rest))))
+
+(defmacro is-operands (expected got)
+  (once-only (expected got)
+    `(is (operands= ,expected ,got)
+         "~%~2TGot Operands:~%~%~s~%~%~2TExpected:~%~%~s~%"
+         (list (required ,got)
+               (optional ,got)
+               (rest-argument ,got))
+         ,expected)))
+
 (test meta-node-simple-definition
   "Test basic meta-node definitions."
 
@@ -575,7 +592,7 @@
 
     (with-nodes ((add "add") (a "a") (b "b") (add-ab ("add" "a" "b"))) modules
       (is (typep add 'meta-node))
-      (is (= (decls '!\x '!\y) (operands add)))
+      (is-operands (decls '(!\x !\y)) (operands add))
       (is (decl= (decls '(!+ !\x !\y)) (definition add)))
 
       (test-node-function add-ab add add a b))))
@@ -590,13 +607,15 @@
 
     (with-nodes ((f "f") (x "x")) modules
       (is (typep f 'meta-node))
-      (is (= (decls '!\a
-                    '(!\: !\b 1)
-                    (list '!\: '!\c x)
-                    '(!\: !\d :none)
-                    '(!.. !|rest|))
+      (is-operands
+       (decls '(!\a)
+              (list
+               (cons '!\b 1)
+               (cons '!\c x)
+               (cons '!\d :none))
+              '!|rest|)
 
-             (operands f))))))
+       (operands f)))))
 
 (test meta-node-definition-error-syntax
   "Test syntax errors in meta-node definition."
@@ -664,8 +683,8 @@
       (is (typep add 'external-meta-node))
       (is (typep sub 'external-meta-node))
 
-      (is (= (decls '!\x '!\y) (operands add)))
-      (is (= (decls '!\x '!\y) (operands sub)))
+      (is-operands (decls '(!\x !\y)) (operands add))
+      (is-operands (decls '(!\x !\y)) (operands sub))
 
       (test-node-function add-ab add add a b)
       (test-node-function sub-ab sub sub a b))))
@@ -680,13 +699,15 @@
 
     (with-nodes ((f "f") (x "x")) modules
       (is (typep f 'external-meta-node))
-      (is (= (decls '!\a
-                    '(!\: !\b 1)
-                    (list '!\: '!\c x)
-                    '(!\: !\d :none)
-                    '(!.. !|rest|))
+      (is-operands
+       (decls '(!\a)
+              (list
+               (cons '!\b 1)
+               (cons '!\c x)
+               (cons '!\d :none))
+              '!|rest|)
 
-             (operands f))))))
+       (operands f)))))
 
 (test external-meta-node-definition-error-syntax
   "Test syntax error in external meta-node definition."

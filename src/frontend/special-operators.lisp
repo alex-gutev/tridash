@@ -150,7 +150,6 @@
         (define-meta-node-expression-operands decl)
 
       ((list* (functor (atom name) args) body)
-
        (add-meta-node
         name
         (make-instance 'meta-node-spec
@@ -172,63 +171,75 @@
             (add-external-meta-node name module :operands <>))))))
 
 (defun parse-operands (operands module)
-  "Parses the operand list OPERANDS. Checks that the structure of the
-   list is correct and processes the default values of optional
-   arguments."
+  "Parses the operand list, of a meta-node definition.
 
-  (match-state operands
-    :start 'required
-    (required
-     (list* (atom-expression- (identifier operand)) rest)
-     :from required
+   OPERANDS: Operands of the meta-node definition.
 
-     (cons operand (next rest)))
+   MODULE: Module in which the definition is processed
 
-    (optional
-     (list*
-      (functor-expression-
-       (operator
-        (atom-expression- (identifier (eql +optional-argument+))))
-       (operands
-        (list (atom-expression- (identifier operand))
-              default)))
-      rest)
+   Returns a `META-NODE-OPERANDS' structure."
 
-     :from (required optional)
+  (labels ((parse-required (operands &optional args)
+             (match operands
+               ((list* (atom-expression- (identifier operand)) rest)
 
-     (cons (list +optional-argument+ operand (process-declaration default module))
-           (next rest)))
+                (parse-required rest (cons operand args)))
 
-    (optional
-     (list*
-      (functor-expression-
-       (operator
-        (atom-expression- (identifier (eql +optional-argument+))))
-       (operands
-        (list (atom-expression- (identifier operand)))))
-      rest)
+               (_
+                (values
+                 (nreverse args)
+                 operands))))
 
-     :from (required optional)
+           (parse-optional (operands &optional args)
+             (match operands
+               ((list*
+                 (functor-expression-
+                  (operator
+                   (atom-expression- (identifier (eql +optional-argument+))))
+                  (operands
+                   (list* (atom-expression- (identifier operand))
+                          (optional default))))
+                 rest)
 
-     (cons (list +optional-argument+ operand :none)
-           (next rest)))
+                (-<>> (if default (process-declaration default module) :none)
+                      (cons operand)
+                      (cons <> args)
+                      (parse-optional rest)))
 
-    (rest
-     (list
-      (functor-expression-
-       (operator
-        (atom-expression- (identifier (eql +rest-argument+))))
-       (operands
-        (list (atom-expression- (identifier operand))))))
+               (_
+                (values
+                 (nreverse args)
+                 operands))))
 
-     (list (list +rest-argument+ operand)))
+           (parse-rest (operands)
+             (match operands
+               ((list
+                 (functor-expression-
+                  (operator
+                   (atom-expression- (identifier (eql +rest-argument+))))
+                  (operands
+                   (list (atom-expression- (identifier operand))))))
 
-    (end nil)
+                operand)
 
-    (other
-     operands
+               (nil)
 
-     (error 'invalid-operand-list-error :operands operands))))
+               (_
+                (error 'invalid-operand-list-error :operands operands)))))
+
+    (multiple-value-bind (required rest)
+        (parse-required operands)
+
+      (multiple-value-bind (optional rest)
+          (parse-optional rest)
+
+        (multiple-value-bind (rest-arg)
+            (parse-rest rest)
+
+          (make-instance 'meta-node-operands
+                         :required required
+                         :optional optional
+                         :rest-argument rest-arg))))))
 
 
 ;;; Node Attributes

@@ -135,6 +135,11 @@
    :meta-node?
    :external-meta-node?
 
+   :meta-node-operands
+   :required
+   :optional
+   :rest-argument
+
    :operand-node-names
    :operand-nodes
    :outer-node-operand-names

@@ -35,8 +35,7 @@
     :initform nil
     :accessor operands
     :documentation
-    "List containing the symbols naming the local nodes to which the
-     values of the arguments are bound.")
+    "`META-NODE-OPERANDS' object specifying the meta-node's operands.")
 
    (definition
     :initarg :definition
@@ -55,8 +54,7 @@
     :initform nil
     :accessor operands
     :documentation
-    "List containing the local nodes to which the values of the
-     arguments are bound.")
+    "`META-NODE-OPERANDS' object specifying the meta-node's operands.")
 
    (outer-nodes
     :initform (make-hash-map)
@@ -95,12 +93,35 @@
     :initform nil
     :accessor operands
     :documentation
-    "List containing the symbols naming the local nodes to which the
-     values of the arguments are bound."))
+    "`META-NODE-OPERANDS' object specifying the meta-node's operands."))
 
   (:documentation
    "Represents a meta-node which is defined externally, not in Tridash
     source code."))
+
+(defclass meta-node-operands ()
+  ((required
+    :initarg :required
+    :accessor required
+    :documentation
+    "List of the names of the required arguments.")
+
+   (optional
+    :initarg :optional
+    :accessor optional
+    :documentation
+    "List of optional arguments. Each element is of the form (NAME
+    . NODE) where NAME is the argument name and NODE is the node
+    representing the default value.")
+
+   (rest-argument
+    :initarg :rest-argument
+    :accessor rest-argument
+    :documentation
+    "Name of the rest argument."))
+
+  (:documentation
+   "Specifies the structure of a meta-node's operands."))
 
 
 (defun external-meta-node (name operands &optional attributes)
@@ -114,12 +135,22 @@
                       string-downcase
                       id-symbol)
                   (id-symbol name))))
-    (aprog1 (make-instance 'external-meta-node
-                           :name name
-                           :operands operands)
 
-      (doseq ((attribute value) attributes)
-        (setf (attribute attribute it) value)))))
+    (destructuring-bind (&optional required optional rest-argument)
+        operands
+
+      (aprog1
+          (->> (make-instance 'meta-node-operands
+                              :required required
+                              :optional optional
+                              :rest-argument rest-argument)
+
+               (make-instance 'external-meta-node
+                              :name name
+                              :operands))
+
+        (doseq ((attribute value) attributes)
+          (setf (attribute attribute it) value))))))
 
 (defun external-meta-nodes (defs)
   "Creates a map of `EXTERNAL-META-NODE's where the keys are the
@@ -254,17 +285,14 @@
     (map #'name (call-next-method))))
 
 (defun operand-nodes (meta-node)
-  "Return the internal `node' objects to which the operands of
-   META-NODE are bound."
+  "Return a list of all the operand node of a meta-node."
 
-  (map
-   (lambda (operand)
-     (match operand
-       ((or (list* (eql +optional-argument+) name _)
-            (list (eql +rest-argument+) name)
-            name)
-        name)))
-   (operands meta-node)))
+  (with-slots (required optional rest-argument)
+      (operands meta-node)
+
+    (append required
+            (map #'car optional)
+            (ensure-list rest-argument))))
 
 
 (defun outer-node-operand-names (meta-node)
@@ -286,15 +314,10 @@
   "Returns the default values for the optional arguments of
    META-NODE."
 
-  (flet ((optional? (operand)
-           (match operand
-             ((list* (eql +optional-argument+) _)
-              t))))
-
-    (->> meta-node
-         operands
-         (remove-if-not #'optional?)
-         (map #'third))))
+  (->> meta-node
+       operands
+       optional
+       (map #'cdr)))
 
 (defun check-arity (meta-node arguments)
   "Checks that the correct number of arguments are given to
@@ -330,30 +353,14 @@
    the CDR is the maximum number of arguments, NIL if there is no
    maximum, that META-NODE accepts."
 
-  (reduce
-   (lambda (arity operand)
-     (match operand
-       ;; Outer Nodes
-       ((cons (eql +outer-node-argument+) _)
-        (return-from meta-node-arity arity))
+  (with-slots (required optional rest-argument)
+      (operands meta-node)
 
-       ;; Rest Arguments
-       ((list (eql +rest-argument+) _)
-        (return-from meta-node-arity (cons (car arity) nil)))
-
-       ;; Optional Arguments
-       ((list (eql +optional-argument+) _ _)
-        (destructuring-bind (min . max) arity
-          (cons min (1+ max))))
-
-       ;; Required Arguments
-       (_
-        (let ((arity (1+ (car arity))))
-          (cons arity arity)))))
-
-   (operands meta-node)
-
-   :initial-value (cons 0 0)))
+    (cons
+     (length required)
+     (unless rest-argument
+       (+ (length required)
+          (length optional))))))
 
 
 ;;; Print Methods

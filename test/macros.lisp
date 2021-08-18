@@ -141,30 +141,61 @@
    `IR:LINK' object corresponding to the operand, and the symbol
    SELF is bound to the `META-NODE' object."
 
-  (flet ((make-operand (operand)
-           (match operand
-             ((or (list 'optional symb value)
-                  (list 'optional symb))
-              (list +optional-argument+ (make-instance 'node :name symb) value))
+  (labels ((make-required (operands &optional args)
+             (match operands
+               ((list* (and (type symbol) name) operands)
+                (->> (cons `(make-instance 'node :name ',name) args)
+                     (make-required operands)))
 
-             ((list 'rest symb)
-              (list +rest-argument+ (make-instance 'node :name symb)))
+               (_
+                (values (nreverse args) operands))))
 
-             (_ (make-instance 'node :name operand))))
+           (make-optional (operands &optional args)
+             (match operands
+               ((list* (or (list 'optional (and (type symbol) name))
+                           (list 'optional (and (type symbol) name) value))
+                       operands)
 
-         (operand-node (operand)
-           (match operand
-             ((list* 'optional symb _)
-              symb)
+                (-<>> `(cons (make-instance 'node :name ',name) ,value)
+                      (cons <> args)
+                      (make-optional operands)))
 
-             ((list 'rest symb)
-              symb)
+               (_
+                (values (nreverse args) operands))))
 
-             (_ operand))))
+           (make-rest (operands)
+             (ematch operands
+               ((list (list 'rest (and (type symbol) name)))
+                `(make-instance 'node :name ',name))
+
+               (nil)))
+
+           (operand-node (operand)
+             (match operand
+               ((list* 'optional symb _)
+                symb)
+
+               ((list 'rest symb)
+                symb)
+
+               (_ operand)))
+
+           (make-operands (operands)
+             (multiple-value-bind (required operands)
+                 (make-required operands)
+
+               (multiple-value-bind (optional operands)
+                   (make-optional operands)
+
+                 `(make-instance 'meta-node-operands
+                                 :required (list ,@required)
+                                 :optional (list ,@optional)
+                                 :rest-argument ,(make-rest operands))))))
+
 
     `(let ((self (make-instance 'final-meta-node
                                 :name 'test-meta-node
-                                :operands ',(map #'make-operand operands)))
+                                :operands ,(make-operands operands)))
            ,@(map #`(,a1 (ir:link (make-instance 'node :name ',a1)))
                   (map #'operand-node operands)))
 
@@ -221,7 +252,7 @@
      (a b)
      (functor if (functor < a b) (functor - b a) (functor - a b))
 
-     ($a $b)
+     ($a $b &optional)
      '(let nil
        (!|if| (!< $a $b)
         (thunk (!- $b $a))
@@ -236,7 +267,7 @@
      (a b)
      (if-expression (functor < a b) (functor - b a) (functor - a b))
 
-     ($a $b)
+     ($a $b &optional)
      '(let nil
        (!|if| (!< $a $b)
         (thunk (!- $b $a))
@@ -253,7 +284,7 @@
       `((sum ,(functor + x y))
         (diff ,(functor - x y))))
 
-     ($x $y)
+     ($x $y &optional)
      '(let nil
        (alist-hash-map
         (list
@@ -269,7 +300,7 @@
    (member-expression
     (member-expression object 'key1) 'key2)
 
-   ($obj)
+   ($obj &optional)
    '(let nil
      (!|member| (!|member| $obj 'key1) 'key2))))
 
@@ -284,7 +315,7 @@
       (functor / a b)
       (functor * a b))
 
-     ($a $b)
+     ($a $b &optional)
 
      '(let nil
        (!|catch| (!/ $a $b) (thunk (!* $a $b)))))))
@@ -296,7 +327,7 @@
    ()
    (fail-expression)
 
-   ()
+   (&optional)
    '(let nil
      (!|fail|))))
 
@@ -310,7 +341,7 @@
      (ir:expression-block
       (functor + a 1))
 
-     ($a)
+     ($a &optional)
      '(let nil
        (!+ $a 1)))))
 
@@ -324,7 +355,7 @@
      (let ((block (ir:expression-block (functor + a 1) :count 2)))
        (functor + block block))
 
-     ($a)
+     ($a &optional)
      '(let ($a+1)
        (setf $a+1 (thunk (!+ $a 1)))
 
@@ -340,7 +371,7 @@
        (a)
        (functor meta-node (functor - a))
 
-       ($a)
+       ($a &optional)
        `(let nil
           (call-tridash-meta-node ,meta-node (list (!- $a))))))))
 
@@ -354,7 +385,7 @@
        (x)
        (functor apply (ir:meta-node-ref not) x)
 
-       ($x)
+       ($x &optional)
        `(let nil
           (call-tridash-meta-node
            ,apply
@@ -376,7 +407,7 @@
        (x y z)
        (functor apply (ir:meta-node-ref if) x y z)
 
-       ($x $y $z)
+       ($x $y $z &optional)
        `(let nil
           (call-tridash-meta-node
            ,apply
@@ -398,7 +429,7 @@
        (x y)
        (functor apply (ir:meta-node-ref and) x y)
 
-       ($x $y)
+       ($x $y &optional)
        `(let nil
           (call-tridash-meta-node
            ,apply
@@ -420,7 +451,7 @@
        (x y)
        (functor apply (ir:meta-node-ref or) x y)
 
-       ($x $y)
+       ($x $y &optional)
        `(let nil
           (call-tridash-meta-node
            ,apply
@@ -443,14 +474,14 @@
      (x)
      (functor apply (ir:meta-node-ref f) x)
 
-     ($x)
+     ($x &optional)
      `(let nil
         (call-tridash-meta-node
          ,apply
          (list
           #'(lambda (&rest $args)
               (if (correct-arity?% '(1 . 1) (length $args))
-                  (destructuring-bind ($x2) $args
+                  (destructuring-bind ($x2 &optional) $args
                     (call-tridash-meta-node ,f (list $x2)))
                   (fail-arity-error)))
           $x))))))
@@ -465,7 +496,7 @@
      (x)
      (functor apply (ir:meta-node-ref f :optional (list 1 2)) x)
 
-     ($x)
+     ($x &optional)
      `(let nil
         (call-tridash-meta-node
          ,apply
@@ -487,14 +518,14 @@
      (x)
      (functor apply (ir:meta-node-ref f) x)
 
-     ($x)
+     ($x &optional)
      `(let nil
         (call-tridash-meta-node
          ,apply
          (list
           #'(lambda (&rest $args)
               (if (correct-arity?% '(2) (length $args))
-                  (destructuring-bind ($x2 $y &rest $xs &aux ($rest (or $xs +empty-list+)))
+                  (destructuring-bind ($x2 $y &optional &rest $xs &aux ($rest (or $xs +empty-list+)))
                       $args
                     (call-tridash-meta-node ,f (list $x2 $y $rest)))
                   (fail-arity-error)))
@@ -508,7 +539,7 @@
    (f x y)
    (functor f x y)
 
-   ($f $x $y)
+   ($f $x $y &optional)
    `(let nil
       (call-node $f (list $x $y)))))
 
@@ -521,7 +552,7 @@
      ()
      (functor and "hello" (functor and 1 (functor and 2.3 'symbol)))
 
-     ()
+     (&optional)
      '(let nil
        (!|and| "hello"
         (thunk
@@ -541,7 +572,7 @@
       (functor * (functor + a b) (functor - c d))
       (functor - d))
 
-     ($a $b $c $d)
+     ($a $b $c $d &optional)
      '(let nil
        (!/
         (!* (!+ $a $b) (!- $c $d))
@@ -574,7 +605,7 @@
           (functor >= 8 y)
           (functor != x y))))))
 
-     ($x $y)
+     ($x $y &optional)
      '(let nil
        (!|not|
         (!|or|
@@ -608,7 +639,7 @@
        (functor real? y)
        (functor string? z)))
 
-     ($x $y $z)
+     ($x $y $z &optional)
      '(let nil
        (!|or|
         (!|int?| $x)
@@ -629,7 +660,7 @@
                     acc
                     (functor self (functor - n 1) (functor * n acc)))
 
-     ($n $acc)
+     ($n $acc &optional)
      `(let nil
         (!|if| (!< $n 2)
           $acc
@@ -648,7 +679,7 @@
               acc
               (functor self (functor - n 1) (functor * n acc)))
 
-     ($n $acc)
+     ($n $acc &optional)
      `(let nil
         (!|if| (!< $n 2)
           $acc
@@ -668,7 +699,7 @@
               (ir:expression-block
                (functor self (functor - n 1) (functor * n acc))))
 
-     ($n $acc)
+     ($n $acc &optional)
      `(let nil
         (!|if| (!< $n 2)
           $acc
@@ -678,13 +709,13 @@
 (test compile-tail-recursive-or-functor
   "Test compilation of `or` functor in recursive tail position."
 
-  (with-core-nodes ("or" "=" "!=" "-")
+  (with-core-nodes ("or" "=" "-")
     (test-compile-meta-node
 
      (n)
      (functor or (functor = n 0) (functor self (functor - n 1)))
 
-     ($n)
+     ($n &optional)
      `(let nil
         (!|or| (!= $n 0)
           (thunk
@@ -693,13 +724,13 @@
 (test compile-tail-recursive-and-functor
   "Test compilation of `and` functor in recursive tail position."
 
-  (with-core-nodes ("and" "=" "!=" "-")
+  (with-core-nodes ("and" "=" "-")
     (test-compile-meta-node
 
      (n)
      (functor and (functor = n 0) (functor self (functor - n 1)))
 
-     ($n)
+     ($n &optional)
      `(let nil
         (!|and| (!= $n 0)
           (thunk
@@ -715,7 +746,7 @@
      (catch-expression (functor self (functor + n 1))
                        (functor self (functor - n 1)))
 
-     ($n)
+     ($n &optional)
      `(let nil
         (!|catch| (call-tridash-meta-node ,self (list (!+ $n 1)))
           (thunk
@@ -779,7 +810,7 @@
        (setf (ir:expression it)
              (functor cons a (functor cons b (ir:cyclic-reference it)))))
 
-     ($a $b)
+     ($a $b &optional)
      '(let ($block)
        (setf $block
         (thunk (!|cons| $a (thunk (!|cons| $b $block)))))

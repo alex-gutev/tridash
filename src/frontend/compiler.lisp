@@ -250,23 +250,27 @@
         (build-meta-nodes (meta-nodes definition))))))
 
 (defun add-operand-nodes (operands module)
-  "Creates nodes, in MODULE, for each operand in OPERANDS. Returns the
-   operands list with the operand symbols replaced by the created
-   local nodes."
+  "Creates nodes, in MODULE, for each operand in OPERANDS.
 
-  (flet ((add-operand (operand)
-           (match operand
-             ((list* type name value)
-              (-<> (aprog1
-                       (ensure-node name module t)
-                     (add-input it module))
-                   (list* type <> value)))
+   Returns a new `META-NODE-OPERANDS' object with the operand symbols
+   replaced by the corresponding local nodes."
 
-             (name
-              (aprog1
-                  (ensure-node name module t)
-                (add-input it module))))))
-    (map #'add-operand operands)))
+  (labels ((add-operand (name)
+             (aprog1 (ensure-node name module t)
+               (add-input it module)))
+
+           (add-optional (operand)
+             (destructuring-bind (name . default)
+                 operand
+
+               (cons (add-operand name) default))))
+
+    (with-slots (required optional rest-argument) operands
+      (make-instance
+       'meta-node-operands
+       :required (map #'add-operand required)
+       :optional (map #'add-optional optional)
+       :rest-argument (and rest-argument (add-operand rest-argument))))))
 
 (defun make-self-node (module)
   "Create the self node. MODULE is the `MODULE' containing the
@@ -506,51 +510,62 @@
    should be added."
 
   (with-slots (operands) meta-node
-    (labels ((get-arguments (operands)
-               (match operands
-                 ((list (list (eql +rest-argument+) operand))
-                  (list (ir:argument-list (ensure-list (get-operand operand)))))
+    (with-slots (required optional rest-argument)
+        operands
 
-                 ((list*
-                   (list (eql +optional-argument+) operand default)
-                   operands)
+      (macrolet ((operand-value (operand default)
+                   (with-gensyms (value supplied-p)
+                     `(multiple-value-bind (,value ,supplied-p)
+                          (get-operand ,operand)
 
-                  (multiple-value-bind (value supplied-p)
-                      (get-operand operand)
+                        (if ,supplied-p
+                            ,value
+                            ,default)))))
 
-                    (cons
-                     (if supplied-p
-                         value
-                         (post-process-node default module))
+        (labels ((get-required (operands)
+                   (map
+                    (lambda (operand)
+                      (operand-value
+                       operand
+                       (error 'missing-argument-error
+                              :meta-node meta-node
+                              :operand (operand-name operand))))
+                    operands))
 
-                     (get-arguments operands))))
+                 (get-optional (operands)
+                   (map
+                    (lambda (operand)
+                      (destructuring-bind (operand . default) operand
+                        (operand-value
+                         operand
+                         (post-process-node default module))))
+                    operands))
 
-                 ((list* operand operands)
-                  (multiple-value-bind (value supplied-p)
-                      (get-operand operand)
+                 (get-rest-argument (operand)
+                   (when operand
+                     (list (ir:argument-list (ensure-list (get-operand operand))))))
 
-                    (if supplied-p
-                        (cons value (get-arguments operands))
-                        (error 'missing-argument-error
-                               :meta-node meta-node
-                               :operand (operand-name operand)))))))
+                 (get-operand (operand)
+                   (multiple-value-prog1
+                       (get (operand-name operand) map)
 
-             (get-operand (operand)
-               (multiple-value-prog1
-                   (get (operand-name operand) map)
+                     (erase map (operand-name operand))))
 
-                 (erase map (operand-name operand))))
+                 (operand-name (operand)
+                   (etypecase operand
+                     (node (name operand))
+                     (symbol operand))))
 
-             (operand-name (operand)
-               (etypecase operand
-                 (node (name operand))
-                 (symbol operand))))
+          (prog1
+              (append
+               (get-required required)
+               (get-optional optional)
+               (get-rest-argument rest-argument))
 
-      (prog1 (get-arguments operands)
-        (unless (emptyp map)
-          (error 'unknown-arguments-error
-                 :meta-node meta-node
-                 :arguments (map-keys map)))))))
+            (unless (emptyp map)
+              (error 'unknown-arguments-error
+                     :meta-node meta-node
+                     :arguments (map-keys map)))))))))
 
 (defun make-argument-map (meta-node values)
   "Create a map mapping meta-node operand names to their supplied values.
@@ -565,53 +580,74 @@
     (let ((map (make-hash-map))
           (num-values (length values)))
 
-      (labels ((add-positional (operands values)
-                 (multiple-value-match (values operands values)
-                   ((_
-                     (list* (list (eql +optional-argument+) (type symbol) _) _))
+      (with-slots (required optional rest-argument) operands
+        (labels ((add-required (operands values)
+                   (if operands
+                       (awhen (add-argument (first operands) values)
+                         (add-required (rest operands) it))
 
-                    (add-keyword values))
+                       (add-optional optional values)))
 
-                   (((list (list (eql +rest-argument+) operand))
-                     _)
+                 (add-optional (operands values)
+                   (if operands
+                       (destructuring-bind ((name . default) &rest operands)
+                           operands
+                         (declare (ignore default))
 
-                    (add-arg operand values))
+                         (awhen (add-argument name values)
+                           (add-optional operands it)))
 
-                   (((or (list* (list (eql +optional-argument+) operand _) _)
-                         (list* operand operands))
-                     (list* value values))
+                       (add-rest-argument values)))
 
-                    (add-arg operand value)
-                    (add-positional operands values))
+                 (add-rest-argument (values)
+                   (match values
+                     ((list* (list (eql +optional-argument+) (type symbol) _) _)
+                      (add-keyword values))
 
-                   ((nil (list* _ _))
-                    (error 'too-many-arguments-error
-                           :meta-node meta-node
-                           :max-arguments (cdr (meta-node-arity meta-node))
-                           :num-arguments num-values))))
+                     (_
+                      (cond
+                        (rest-argument
+                         (add-to-map rest-argument values))
 
-               (add-keyword (values)
-                 (match values
-                   ((list* (list (eql +optional-argument+) (and name (type symbol)) value)
-                           values)
-                    (add-arg name value)
-                    (add-keyword values))
+                        ((not (emptyp values))
+                         (error 'too-many-arguments-error
+                                :meta-node meta-node
+                                :max-arguments (cdr (meta-node-arity meta-node))
+                                :num-arguments num-values))))))
 
-                   (nil)
+                 (add-argument (name values)
+                   (match values
+                     ((list* (list (eql +optional-argument+) (type symbol) _) _)
+                      (add-keyword values)
+                      nil)
 
-                   (_
-                    (error 'malformed-keyword-arguments-error))))
+                     ((list* value values)
+                      (add-to-map name value)
+                      values)))
 
-               (add-arg (operand value)
-                 (setf (get (operand-name operand) map) value))
 
-               (operand-name (operand)
-                 (etypecase operand
-                   (node (name operand))
-                   (symbol operand))))
+                 (add-keyword (values)
+                   (match values
+                     ((list* (list (eql +optional-argument+) (and name (type symbol)) value)
+                             values)
+                      (add-to-map name value)
+                      (add-keyword values))
 
-        (add-positional operands values)
-        map))))
+                     (nil)
+
+                     (_
+                      (error 'malformed-keyword-arguments-error))))
+
+                 (add-to-map (operand value)
+                   (setf (get (operand-name operand) map) value))
+
+                 (operand-name (operand)
+                   (etypecase operand
+                     (node (name operand))
+                     (symbol operand))))
+
+          (add-required required values)
+          map)))))
 
 (defmethod process-attribute ((node t) (attribute (eql (id-symbol "TARGET-NODE"))) value module)
   (process-operator-node (wrap-expression value) module))

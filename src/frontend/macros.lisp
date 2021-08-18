@@ -247,8 +247,7 @@
 
   (let ((*current-meta-node* meta-node)
         (*operand-vars* (make-hash-map))
-        (*expression-blocks* (make-hash-map))
-        (*return-nil* nil))
+        (*expression-blocks* (make-hash-map)))
 
     (flet ((add-operand (operand)
              (ensure-get operand *operand-vars* (gensym (mkstr operand)))))
@@ -278,56 +277,32 @@
 (defun make-meta-node-lambda-list (meta-node)
   "Creates the lambda-list of the CL function of META-NODE."
 
-  (match-state (operands meta-node)
-    :start 'required
+  (with-slots (required optional rest-argument)
+      (operands meta-node)
 
-    (required
-     (cons (and (type node) arg) args)
-     :from required
+    (append
+     (map (compose #'get-operand-var #'name) required)
 
-     (cons (get-operand-var (name arg)) (next args)))
+     '(&optional)
 
-    (optional
-     (and (cons (list* (eql +optional-argument+) _) _)
-          args)
-     :from required
+     ;; Optional Arguments
 
-     (cons '&optional (next args)))
+     (map
+      (lambda (operand)
+        (destructuring-bind (node . value) operand
+          (when (has-nodes? value)
+            (error 'macro-outer-node-error))
 
-    (optional
-     (cons (list (eql +optional-argument+) arg value)
-           args)
-     :from optional
+          (list (get-operand-var (name node))
+                (tridash->cl value))))
+      optional)
 
-     (when (has-nodes? value)
-       (error 'macro-outer-node-error))
+     ;; Rest Argument
 
-     (cons (list (get-operand-var (name arg))
-                 (tridash->cl value))
-           (next args)))
+     (when rest-argument
+       (list (list (get-operand-var (name rest-argument)) '+empty-list+)))
 
-    (rest
-     (and (list* (list (eql +rest-argument+) _) _) args)
-     :from required
-
-     (cons '&optional (next args)))
-
-    (rest
-     (cons (list (eql +rest-argument+) arg) args)
-
-     (cons
-      (list (get-operand-var (name arg)) '+empty-list+)
-      (next args)))
-
-    (outer
-     nil
-     :from required
-
-     (awhen (next nil)
-       (cons '&optional (next nil))))
-
-    (outer
-     nil
+     ;; Referenced Outer Node Values
 
      (map
       (lambda (node)
@@ -477,9 +452,8 @@
   "Generates a CL expression that creates a `HASH-MAP'."
 
   (flet ((make-entry (pair)
-           (let ((*return-nil* nil))
-             (destructuring-bind (key value) pair
-               `(cons ',key ,(tridash->cl value :thunk t))))))
+           (destructuring-bind (key value) pair
+             `(cons ',key ,(tridash->cl value :thunk t)))))
 
     `(alist-hash-map (list ,@(map #'make-entry (ir:entries object))))))
 
@@ -616,57 +590,40 @@
 
   (fail-thunk +fail-type-arity-error+))
 
-(defun destructure-meta-node-args (operands optional)
-  "Creates the destructuring lambda-list for the meta-node argument
-   list OPERANDS. OPTIONAL is the list containing the default values
-   of the optional arguments."
+(defun destructure-meta-node-args (operands defaults)
+  "Creates the destructuring lambda-list for the meta-node operands.
 
-  (let ((lambda-list (make-collector nil))
-        (vars (make-collector nil)))
+   OPERANDS is a `META-NODE-OPERANDS' object.
 
-    (labels ((process-required (args)
-               (match args
-                 ((list* (list* (eql +optional-argument+) _) _)
-                  (accumulate lambda-list '&optional)
-                  (process-optional args optional))
+   DEFAULTS is the list of default values given for the optional
+   arguments."
 
-                 ((list* (list* (eql +rest-argument+) _) _)
-                  (make-rest))
+  (with-slots (required optional rest-argument) operands
+    (let ((required-vars
+           (make-gensym-list (length required)))
 
-                 ((list* (not (type cons)) args)
-                  (let ((var (gensym)))
-                    (accumulate lambda-list var)
-                    (accumulate vars var))
+          (optional-vars
+           (make-gensym-list (length optional)))
 
-                  (process-required args))))
+          (rest-var
+           (when rest-argument (gensym)))
 
-             (process-optional (args optional)
-               (match args
-                 ((list* (list* (eql +optional-argument+) _) args)
-                  (let ((var (gensym)))
-                    (accumulate lambda-list (list var (tridash->cl (first optional))))
-                    (accumulate vars var))
+          (rest-arg-var
+           (when rest-argument (gensym))))
 
-                  (process-optional args (rest optional)))
+      (values
+       (append required-vars
+               '(&optional)
 
-                 ((list* (list* (eql +rest-argument+) _) _)
-                  (make-rest))))
+               (map
+                (lambda (var default)
+                  (list var (tridash->cl default)))
+                optional-vars defaults)
 
-             (make-rest ()
-               (accumulate lambda-list '&rest)
+               (when rest-argument
+                 `(&rest ,rest-var &aux (,rest-arg-var (or ,rest-var +empty-list+)))))
 
-               (let ((var (gensym))
-                     (rest-var (gensym)))
-
-                 (accumulate lambda-list var)
-                 (accumulate lambda-list '&aux)
-                 (accumulate lambda-list `(,rest-var (or ,var +empty-list+)))
-
-                 (accumulate vars rest-var))))
-
-      (process-required operands)
-      (values (collector-sequence lambda-list)
-              (collector-sequence vars)))))
+       (append required-vars optional-vars (ensure-list rest-arg-var))))))
 
 (defun has-nodes? (expression)
   "Checks whether EXPRESSION references any nodes."
@@ -705,9 +662,15 @@
   "Group the arguments in ARGS, which correspond to the rest
    arguments, in a single list."
 
-  (aif (position +rest-argument+ (operands meta-node) :key #'ensure-car)
-       (group-rest-args args it)
-       args))
+  (with-slots (required optional rest-argument)
+      (operands meta-node)
+
+    (if-let (rest (and rest-argument
+                       (+ (length required)
+                          (length optional))))
+
+      (group-rest-args args rest)
+      args)))
 
 (defun group-rest-args (args n)
   "Returns a list in which the elements after the N'th element of ARGS

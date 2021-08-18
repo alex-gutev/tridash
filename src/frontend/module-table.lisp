@@ -90,19 +90,23 @@
 ;;;; Builtin Module Definition
 
 (defconstant +core-meta-nodes+
-  `((if (cond then (,+optional-argument+ else :none)) ((:strictness (or cond (and then else)))))
-    (:member (object key) ((:strictness (or object key))))
+  `((if ((cond then) ((else . :none)))
+        ((:strictness (or cond (and then else)))))
+
+    (:member ((object key)) ((:strictness (or object key))))
 
     ;; Reference Old Values
-    (:previous-value (node) ((:strictness node)))
+    (:previous-value ((node)) ((:strictness node)))
 
     ;; Equality
-    ((:symbol-equal "symbol-equal") (a b) ((:strictness (or a b))))
+    ((:symbol-equal "symbol-equal") ((a b)) ((:strictness (or a b))))
 
     ;; Failures
-    (:catch (try catch (,+optional-argument+ test :none)) ((:strictness try)))
-    (:fail ((,+optional-argument+ type :none)))
-    (:fail-type (thing) ((:strictness thing)))
+    (:catch ((try catch) ((test . :none)))
+            ((:strictness try)))
+
+    (:fail (nil ((type . :none))))
+    (:fail-type ((thing)) ((:strictness thing)))
 
     ;; Failure Types
     ((:empty-list "Empty-List") ())
