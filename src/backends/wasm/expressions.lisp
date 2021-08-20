@@ -1411,7 +1411,14 @@
     (flet ((make-operand (index)
              (make-value-block :label index)))
 
-      (let* ((labels (coerce (range 0 (length operands)) 'list))
+      (let* ((labels
+                 (-<>>
+                  (+ (length (required operands))
+                    (length (optional operands))
+                    (if (rest-argument operands) 1 0))
+                  (range 0)
+                  (coerce <> 'list)))
+
              (operands (map #'make-operand labels))
 
              (outer-nodes
@@ -1529,13 +1536,6 @@
                     ,block
                   ,@loads))
 
-             (num-optional (arity)
-               "Determine the number of optional arguments."
-
-               (destructuring-bind (min . max) arity
-                 (- (or max (1- (length operands)))
-                    min)))
-
              (make-rest-array (start)
                "Generate code which creates an array containing the
                 rest arguments."
@@ -1592,59 +1592,62 @@
                    (call (import "runtime" "empty_list"))
                    (local.set (ref ,start))))))
 
-      (let* ((num-outer-nodes (length (outer-node-references meta-node)))
-             (num-operands (length operands))
-             (arity (meta-node-arity meta-node))
-             (num-optional (num-optional arity)))
+      (with-slots (required optional rest-argument) operands
+        (let* ((num-outer-nodes (length (outer-node-references meta-node)))
+               (num-operands (+ (length required)
+                                (length optional)
+                                (if rest-argument 1 0)))
+               (num-optional (length optional))
+               (arity (meta-node-arity meta-node)))
 
-        (multiple-value-bind (locals code)
-            (->
-             `((local.get $args)
-               (i32.load (offset 4))
-               (local.set $count)
+          (multiple-value-bind (locals code)
+              (->
+               `((local.get $args)
+                 (i32.load (offset 4))
+                 (local.set $count)
 
-               ;; Check Arity
-               ,(make-arity-check arity)
+                 ;; Check Arity
+                 ,(make-arity-check arity)
 
-               ;; Load required arguments
-               ,@(map-extend-to 'list #'load-operand (range 0 (car arity)))
+                 ;; Load required arguments
+                 ,@(map-extend-to 'list #'load-operand (range 0 (car arity)))
 
-               ;; Load optional arguments if any
-               ,@(when (plusp num-optional)
-                   (list (load-optional (car arity) num-optional)))
+                 ;; Load optional arguments if any
+                 ,@(when (plusp num-optional)
+                     (list (load-optional (car arity) num-optional)))
 
-               ;; Construct rest argument list
-               ,@(unless (cdr arity)
-                   (make-rest-array (1- (length operands))))
+                 ;; Construct rest argument list
+                 ,@(when rest-argument
+                     (make-rest-array (1- num-operands)))
 
-               ;; Load outer node values
-               ,@(when (plusp num-outer-nodes)
-                   (map-extend-to 'list #'load-default-value
-                                  (range num-operands (+ num-operands num-outer-nodes))
-                                  (map (curry #'* 4) (range num-optional))))
+                 ;; Load outer node values
+                 ,@(when (plusp num-outer-nodes)
+                     (map-extend-to 'list #'load-default-value
+                                    (range num-operands (+ num-operands num-outer-nodes))
+                                    (map (curry #'* 4) (range num-optional))))
 
-               ;; Body Instructions
-               ,@(map-extend #'value-block-instructions blocks)
-               (local.get (ref ,result)))
+                 ;; Body Instructions
+                 ,@(map-extend #'value-block-instructions blocks)
+                 (local.get (ref ,result)))
 
-             (make-function-body
-              (alist-hash-map
-               (if (or (plusp num-optional)
-                       (plusp num-outer-nodes))
+               (make-function-body
+                (alist-hash-map
+                 (if (or (plusp num-optional)
+                         (plusp num-outer-nodes))
 
-                   '(($args . 0)
-                     ($defaults . 1))
+                     '(($args . 0)
+                       ($defaults . 1))
 
-                   '(($args . 0))))
-              (locals-map blocks)))
+                     '(($args . 0))))
+                (locals-map blocks)))
 
-          (make-wasm-function-spec
-           :params (if (or (plusp num-optional) (plusp num-outer-nodes))
-                       '(i32 i32)
-                       '(i32))
-           :results '(i32)
-           :locals locals
-           :code code))))))
+            (make-wasm-function-spec
+             :params (if (or (plusp num-optional) (plusp num-outer-nodes))
+                         '(i32 i32)
+                         '(i32))
+             :results '(i32)
+             :locals locals
+             :code code)))))))
 
 (defun make-arity-check (arity)
   "Generate code which checks that the number of arguments (stored in
