@@ -251,16 +251,46 @@
               (values (subseq args 0 it) (subseq args (1+ it)))
               (values args nil)))
 
-       (make-operand (operand)
-         (match operand
-           ((or (list 'optional symb value)
-                (list 'optional symb))
-            (list +optional-argument+ (make-instance 'node :name symb) value))
+       (make-required (operands &optional args)
+         (match operands
+           ((list* (and (type symbol) name) operands)
+            (->> (cons (make-instance 'node :name name) args)
+                 (make-required operands)))
 
-           ((list 'rest symb)
-            (list +rest-argument+ (make-instance 'node :name symb)))
+           (_
+            (values (nreverse args) operands))))
 
-           (_ (make-instance 'node :name operand))))
+       (make-optional (operands &optional args)
+         (match operands
+           ((list* (or (list 'optional (and (type symbol) name))
+                       (list 'optional (and (type symbol) name) value))
+                   operands)
+
+            (-<>> (cons (make-instance 'node :name name) value)
+                  (cons <> args)
+                  (make-optional operands)))
+
+           (_
+            (values (nreverse args) operands))))
+
+       (make-rest (operands)
+         (ematch operands
+           ((list (list 'rest (and (type symbol) name)))
+            (make-instance 'node :name name))
+
+           (nil)))
+
+       (make-operands (operands)
+         (multiple-value-bind (required operands)
+             (make-required operands)
+
+           (multiple-value-bind (optional operands)
+               (make-optional operands)
+
+             (make-instance 'meta-node-operands
+                            :required required
+                            :optional optional
+                            :rest-argument (make-rest operands)))))
 
        (make-outer-operand (operand)
          (cons operand (make-instance 'node :name operand)))
@@ -275,7 +305,7 @@
               (aprog1
                   (make-instance 'final-meta-node
                                  :name name
-                                 :operands (map #'make-operand operands))
+                                 :operands (make-operands operands))
 
                 (setf (outer-nodes it)
                       (map-to 'hash-map #'make-outer-operand outer-nodes))

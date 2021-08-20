@@ -812,60 +812,48 @@
            (operands
             (compile-operands operands (make-list (length operands) :initial-element nil))))
 
-      (make-value-block
-       :operands operands
+      (with-slots (required optional rest-argument)
+          (operands node)
 
-       :expression
+        (let* ((required-vars (repeatedly #'next-var (length required) 'list))
+               (optional-vars (repeatedly #'next-var (length optional) 'list))
+               (optional-args
+                (map
+                 (lambda (var default)
+                   (js-call "=" var default))
 
-       (let ((op-values operands)
-             (fn-args (make-collector nil))
-             (call-args (make-collector nil))
-             (rest-arg nil))
+                 optional-vars
+                 operands))
 
-         (nlet-tail make-args
-             ((operands (operands node))
-              (op-values op-values))
+               (rest-var (when rest-argument (next-var)))
+               (rest-arg (when rest-var
+                           (js-call "..." rest-var))))
 
-           (ematch operands
-             ((list* (list (eql +optional-argument+) _ _) rest)
-              (let ((var (next-var)))
-                (accumulate call-args var)
-                (accumulate fn-args (js-call "=" var (first op-values))))
+          (make-value-block
+           :operands operands
 
-              (make-args rest (rest op-values)))
+           :expression
 
-             ((list* (list (eql +rest-argument+) _) rest)
-              (let ((var (next-var)))
-                (setf rest-arg var)
+           (js-lambda
+            (append required-vars
+                    optional-args
+                    (ensure-list rest-arg))
 
-                (accumulate call-args var)
-                (accumulate fn-args (js-call "..." var)))
+            (list
+             (make-arity-check node)
 
-              (make-args rest op-values))
+             (when rest-arg
+               (js-if
+                (js-call "===" (js-member rest-var "length") 0)
+                (js-call "=" rest-var (empty-list))))
 
-             ((list* (type (or symbol node)) rest)
-              (let ((var (next-var)))
-                (accumulate call-args var)
-                (accumulate fn-args var))
+             (->> (append required-vars
+                          optional-vars
+                          (ensure-list rest-var)
+                          (subseq operands (length optional)))
 
-              (make-args rest op-values))
-
-             (nil
-              (extend call-args op-values))))
-
-         (js-lambda
-          (collector-sequence fn-args)
-
-          (list
-           (make-arity-check node)
-
-           (when rest-arg
-             (js-if
-              (js-call "===" (js-member rest-arg "length") 0)
-              (js-call "=" rest-arg (empty-list))))
-
-           (return-call-result
-            (make-meta-node-call "result" node (collector-sequence call-args))))))))))
+                  (make-meta-node-call "result" node)
+                  (return-call-result))))))))))
 
 (defun make-arity-check (meta-node)
   "Generates code which checks that the correct number of arguments

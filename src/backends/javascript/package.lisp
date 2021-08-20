@@ -147,6 +147,9 @@
                           :multiply
                           :accumulate)
 
+  (:import-from :generic-cl.util
+                :repeatedly)
+
   (:import-from :let-over-lambda
                 :mkstr
                 :symb
