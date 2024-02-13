@@ -1,6 +1,9 @@
 Tridash
 =======
 
+> [!IMPORTANT]  
+> Tridash will no longer be developed. Future development will focus on the [Live Cells](https://docs.page/alex-gutev/live_cells) project, which incorporates some of the ideas presented here.
+
 Tridash is a programming language which aims to make application state
 management easier and less error-prone.
 
